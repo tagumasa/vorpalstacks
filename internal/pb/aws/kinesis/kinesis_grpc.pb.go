@@ -24,12 +24,15 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	KinesisService_AddTagsToStream_FullMethodName               = "/kinesis.KinesisService/AddTagsToStream"
+	KinesisService_CreateChannel_FullMethodName                 = "/kinesis.KinesisService/CreateChannel"
 	KinesisService_CreateStream_FullMethodName                  = "/kinesis.KinesisService/CreateStream"
 	KinesisService_DecreaseStreamRetentionPeriod_FullMethodName = "/kinesis.KinesisService/DecreaseStreamRetentionPeriod"
+	KinesisService_DeleteChannel_FullMethodName                 = "/kinesis.KinesisService/DeleteChannel"
 	KinesisService_DeleteResourcePolicy_FullMethodName          = "/kinesis.KinesisService/DeleteResourcePolicy"
 	KinesisService_DeleteStream_FullMethodName                  = "/kinesis.KinesisService/DeleteStream"
 	KinesisService_DeregisterStreamConsumer_FullMethodName      = "/kinesis.KinesisService/DeregisterStreamConsumer"
 	KinesisService_DescribeAccountSettings_FullMethodName       = "/kinesis.KinesisService/DescribeAccountSettings"
+	KinesisService_DescribeChannel_FullMethodName               = "/kinesis.KinesisService/DescribeChannel"
 	KinesisService_DescribeLimits_FullMethodName                = "/kinesis.KinesisService/DescribeLimits"
 	KinesisService_DescribeStream_FullMethodName                = "/kinesis.KinesisService/DescribeStream"
 	KinesisService_DescribeStreamConsumer_FullMethodName        = "/kinesis.KinesisService/DescribeStreamConsumer"
@@ -40,6 +43,7 @@ const (
 	KinesisService_GetResourcePolicy_FullMethodName             = "/kinesis.KinesisService/GetResourcePolicy"
 	KinesisService_GetShardIterator_FullMethodName              = "/kinesis.KinesisService/GetShardIterator"
 	KinesisService_IncreaseStreamRetentionPeriod_FullMethodName = "/kinesis.KinesisService/IncreaseStreamRetentionPeriod"
+	KinesisService_ListChannels_FullMethodName                  = "/kinesis.KinesisService/ListChannels"
 	KinesisService_ListShards_FullMethodName                    = "/kinesis.KinesisService/ListShards"
 	KinesisService_ListStreamConsumers_FullMethodName           = "/kinesis.KinesisService/ListStreamConsumers"
 	KinesisService_ListStreams_FullMethodName                   = "/kinesis.KinesisService/ListStreams"
@@ -58,6 +62,7 @@ const (
 	KinesisService_TagResource_FullMethodName                   = "/kinesis.KinesisService/TagResource"
 	KinesisService_UntagResource_FullMethodName                 = "/kinesis.KinesisService/UntagResource"
 	KinesisService_UpdateAccountSettings_FullMethodName         = "/kinesis.KinesisService/UpdateAccountSettings"
+	KinesisService_UpdateChannel_FullMethodName                 = "/kinesis.KinesisService/UpdateChannel"
 	KinesisService_UpdateMaxRecordSize_FullMethodName           = "/kinesis.KinesisService/UpdateMaxRecordSize"
 	KinesisService_UpdateShardCount_FullMethodName              = "/kinesis.KinesisService/UpdateShardCount"
 	KinesisService_UpdateStreamMode_FullMethodName              = "/kinesis.KinesisService/UpdateStreamMode"
@@ -74,6 +79,10 @@ type KinesisServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToStream(ctx context.Context, in *AddTagsToStreamInput, opts ...grpc.CallOption) (*common.Empty, error)
+	// Creates a channel that delivers records from a Kinesis data stream to a destination. A channel reads records from the specified stream and writes them to streaming tables on Apache Iceberg (Amazon ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateChannel(ctx context.Context, in *CreateChannelInput, opts ...grpc.CallOption) (*CreateChannelOutput, error)
 	// Creates a Kinesis data stream. A stream captures and transports data records that are continuously emitted from different data sources or producers. Scale-out within a stream is explicitly supporte...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -82,6 +91,10 @@ type KinesisServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DecreaseStreamRetentionPeriod(ctx context.Context, in *DecreaseStreamRetentionPeriodInput, opts ...grpc.CallOption) (*common.Empty, error)
+	// Deletes the specified channel. Deleting a channel stops delivery from the source stream to the destination. Data already delivered to the destination is not deleted. A stream cannot be deleted whil...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteChannel(ctx context.Context, in *DeleteChannelInput, opts ...grpc.CallOption) (*common.Empty, error)
 	// Delete a policy for the specified data stream or consumer. Request patterns can be one of the following: Data stream pattern: arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+ Consumer pattern: ^(arn):aws.*...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -98,6 +111,10 @@ type KinesisServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeAccountSettings(ctx context.Context, in *DescribeAccountSettingsInput, opts ...grpc.CallOption) (*DescribeAccountSettingsOutput, error)
+	// Describes the specified channel, including its configuration and current status. Use this operation to verify that a channel reached the ACTIVE state after creation, or to diagnose a channel in the...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeChannel(ctx context.Context, in *DescribeChannelInput, opts ...grpc.CallOption) (*DescribeChannelOutput, error)
 	// Describes the shard limits and usage for the account. If you update your account limits, the old limits might be returned for a few minutes. This operation has a limit of one transaction per second...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -138,6 +155,10 @@ type KinesisServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	IncreaseStreamRetentionPeriod(ctx context.Context, in *IncreaseStreamRetentionPeriodInput, opts ...grpc.CallOption) (*common.Empty, error)
+	// Lists the channels in your account. You can filter the results by source stream. The results are paginated. Use the NextToken value returned in the response to retrieve additional results. Use this...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListChannels(ctx context.Context, in *ListChannelsInput, opts ...grpc.CallOption) (*ListChannelsOutput, error)
 	// Lists the shards in a stream and provides information about each shard. This operation has a limit of 1000 transactions per second per data stream. When invoking this API, you must use either the S...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -210,6 +231,10 @@ type KinesisServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateAccountSettings(ctx context.Context, in *UpdateAccountSettingsInput, opts ...grpc.CallOption) (*UpdateAccountSettingsOutput, error)
+	// Updates the data freshness interval or the Amazon CloudWatch Logs configuration of an existing channel. You cannot change the destination, source stream, record format, schema, encryption configura...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateChannel(ctx context.Context, in *UpdateChannelInput, opts ...grpc.CallOption) (*UpdateChannelOutput, error)
 	// This allows you to update the MaxRecordSize of a single record that you can write to, and read from a stream. You can ingest and digest single records up to 10240 KiB.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -222,7 +247,7 @@ type KinesisServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateStreamMode(ctx context.Context, in *UpdateStreamModeInput, opts ...grpc.CallOption) (*common.Empty, error)
-	// Updates the warm throughput configuration for the specified Amazon Kinesis Data Streams on-demand data stream. This operation allows you to proactively scale your on-demand data stream to a specifi...
+	// Updates the warm throughput configuration for the specified Amazon Kinesis Data Streams on-demand data stream. Updates the warm throughput configuration for the specified on-demand data stream. Use...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateStreamWarmThroughput(ctx context.Context, in *UpdateStreamWarmThroughputInput, opts ...grpc.CallOption) (*UpdateStreamWarmThroughputOutput, error)
@@ -246,6 +271,16 @@ func (c *kinesisServiceClient) AddTagsToStream(ctx context.Context, in *AddTagsT
 	return out, nil
 }
 
+func (c *kinesisServiceClient) CreateChannel(ctx context.Context, in *CreateChannelInput, opts ...grpc.CallOption) (*CreateChannelOutput, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateChannelOutput)
+	err := c.cc.Invoke(ctx, KinesisService_CreateChannel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *kinesisServiceClient) CreateStream(ctx context.Context, in *CreateStreamInput, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
@@ -260,6 +295,16 @@ func (c *kinesisServiceClient) DecreaseStreamRetentionPeriod(ctx context.Context
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
 	err := c.cc.Invoke(ctx, KinesisService_DecreaseStreamRetentionPeriod_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kinesisServiceClient) DeleteChannel(ctx context.Context, in *DeleteChannelInput, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, KinesisService_DeleteChannel_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -300,6 +345,16 @@ func (c *kinesisServiceClient) DescribeAccountSettings(ctx context.Context, in *
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DescribeAccountSettingsOutput)
 	err := c.cc.Invoke(ctx, KinesisService_DescribeAccountSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kinesisServiceClient) DescribeChannel(ctx context.Context, in *DescribeChannelInput, opts ...grpc.CallOption) (*DescribeChannelOutput, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeChannelOutput)
+	err := c.cc.Invoke(ctx, KinesisService_DescribeChannel_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -400,6 +455,16 @@ func (c *kinesisServiceClient) IncreaseStreamRetentionPeriod(ctx context.Context
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
 	err := c.cc.Invoke(ctx, KinesisService_IncreaseStreamRetentionPeriod_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *kinesisServiceClient) ListChannels(ctx context.Context, in *ListChannelsInput, opts ...grpc.CallOption) (*ListChannelsOutput, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListChannelsOutput)
+	err := c.cc.Invoke(ctx, KinesisService_ListChannels_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -586,6 +651,16 @@ func (c *kinesisServiceClient) UpdateAccountSettings(ctx context.Context, in *Up
 	return out, nil
 }
 
+func (c *kinesisServiceClient) UpdateChannel(ctx context.Context, in *UpdateChannelInput, opts ...grpc.CallOption) (*UpdateChannelOutput, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateChannelOutput)
+	err := c.cc.Invoke(ctx, KinesisService_UpdateChannel_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *kinesisServiceClient) UpdateMaxRecordSize(ctx context.Context, in *UpdateMaxRecordSizeInput, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
@@ -636,6 +711,10 @@ type KinesisServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToStream(context.Context, *AddTagsToStreamInput) (*common.Empty, error)
+	// Creates a channel that delivers records from a Kinesis data stream to a destination. A channel reads records from the specified stream and writes them to streaming tables on Apache Iceberg (Amazon ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateChannel(context.Context, *CreateChannelInput) (*CreateChannelOutput, error)
 	// Creates a Kinesis data stream. A stream captures and transports data records that are continuously emitted from different data sources or producers. Scale-out within a stream is explicitly supporte...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -644,6 +723,10 @@ type KinesisServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DecreaseStreamRetentionPeriod(context.Context, *DecreaseStreamRetentionPeriodInput) (*common.Empty, error)
+	// Deletes the specified channel. Deleting a channel stops delivery from the source stream to the destination. Data already delivered to the destination is not deleted. A stream cannot be deleted whil...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteChannel(context.Context, *DeleteChannelInput) (*common.Empty, error)
 	// Delete a policy for the specified data stream or consumer. Request patterns can be one of the following: Data stream pattern: arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+ Consumer pattern: ^(arn):aws.*...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -660,6 +743,10 @@ type KinesisServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeAccountSettings(context.Context, *DescribeAccountSettingsInput) (*DescribeAccountSettingsOutput, error)
+	// Describes the specified channel, including its configuration and current status. Use this operation to verify that a channel reached the ACTIVE state after creation, or to diagnose a channel in the...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeChannel(context.Context, *DescribeChannelInput) (*DescribeChannelOutput, error)
 	// Describes the shard limits and usage for the account. If you update your account limits, the old limits might be returned for a few minutes. This operation has a limit of one transaction per second...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -700,6 +787,10 @@ type KinesisServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	IncreaseStreamRetentionPeriod(context.Context, *IncreaseStreamRetentionPeriodInput) (*common.Empty, error)
+	// Lists the channels in your account. You can filter the results by source stream. The results are paginated. Use the NextToken value returned in the response to retrieve additional results. Use this...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListChannels(context.Context, *ListChannelsInput) (*ListChannelsOutput, error)
 	// Lists the shards in a stream and provides information about each shard. This operation has a limit of 1000 transactions per second per data stream. When invoking this API, you must use either the S...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -772,6 +863,10 @@ type KinesisServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateAccountSettings(context.Context, *UpdateAccountSettingsInput) (*UpdateAccountSettingsOutput, error)
+	// Updates the data freshness interval or the Amazon CloudWatch Logs configuration of an existing channel. You cannot change the destination, source stream, record format, schema, encryption configura...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateChannel(context.Context, *UpdateChannelInput) (*UpdateChannelOutput, error)
 	// This allows you to update the MaxRecordSize of a single record that you can write to, and read from a stream. You can ingest and digest single records up to 10240 KiB.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -784,7 +879,7 @@ type KinesisServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateStreamMode(context.Context, *UpdateStreamModeInput) (*common.Empty, error)
-	// Updates the warm throughput configuration for the specified Amazon Kinesis Data Streams on-demand data stream. This operation allows you to proactively scale your on-demand data stream to a specifi...
+	// Updates the warm throughput configuration for the specified Amazon Kinesis Data Streams on-demand data stream. Updates the warm throughput configuration for the specified on-demand data stream. Use...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateStreamWarmThroughput(context.Context, *UpdateStreamWarmThroughputInput) (*UpdateStreamWarmThroughputOutput, error)
@@ -801,11 +896,17 @@ type UnimplementedKinesisServiceServer struct{}
 func (UnimplementedKinesisServiceServer) AddTagsToStream(context.Context, *AddTagsToStreamInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddTagsToStream not implemented")
 }
+func (UnimplementedKinesisServiceServer) CreateChannel(context.Context, *CreateChannelInput) (*CreateChannelOutput, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateChannel not implemented")
+}
 func (UnimplementedKinesisServiceServer) CreateStream(context.Context, *CreateStreamInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateStream not implemented")
 }
 func (UnimplementedKinesisServiceServer) DecreaseStreamRetentionPeriod(context.Context, *DecreaseStreamRetentionPeriodInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DecreaseStreamRetentionPeriod not implemented")
+}
+func (UnimplementedKinesisServiceServer) DeleteChannel(context.Context, *DeleteChannelInput) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteChannel not implemented")
 }
 func (UnimplementedKinesisServiceServer) DeleteResourcePolicy(context.Context, *DeleteResourcePolicyInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteResourcePolicy not implemented")
@@ -818,6 +919,9 @@ func (UnimplementedKinesisServiceServer) DeregisterStreamConsumer(context.Contex
 }
 func (UnimplementedKinesisServiceServer) DescribeAccountSettings(context.Context, *DescribeAccountSettingsInput) (*DescribeAccountSettingsOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method DescribeAccountSettings not implemented")
+}
+func (UnimplementedKinesisServiceServer) DescribeChannel(context.Context, *DescribeChannelInput) (*DescribeChannelOutput, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeChannel not implemented")
 }
 func (UnimplementedKinesisServiceServer) DescribeLimits(context.Context, *DescribeLimitsInput) (*DescribeLimitsOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method DescribeLimits not implemented")
@@ -848,6 +952,9 @@ func (UnimplementedKinesisServiceServer) GetShardIterator(context.Context, *GetS
 }
 func (UnimplementedKinesisServiceServer) IncreaseStreamRetentionPeriod(context.Context, *IncreaseStreamRetentionPeriodInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method IncreaseStreamRetentionPeriod not implemented")
+}
+func (UnimplementedKinesisServiceServer) ListChannels(context.Context, *ListChannelsInput) (*ListChannelsOutput, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListChannels not implemented")
 }
 func (UnimplementedKinesisServiceServer) ListShards(context.Context, *ListShardsInput) (*ListShardsOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListShards not implemented")
@@ -903,6 +1010,9 @@ func (UnimplementedKinesisServiceServer) UntagResource(context.Context, *UntagRe
 func (UnimplementedKinesisServiceServer) UpdateAccountSettings(context.Context, *UpdateAccountSettingsInput) (*UpdateAccountSettingsOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateAccountSettings not implemented")
 }
+func (UnimplementedKinesisServiceServer) UpdateChannel(context.Context, *UpdateChannelInput) (*UpdateChannelOutput, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateChannel not implemented")
+}
 func (UnimplementedKinesisServiceServer) UpdateMaxRecordSize(context.Context, *UpdateMaxRecordSizeInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateMaxRecordSize not implemented")
 }
@@ -954,6 +1064,24 @@ func _KinesisService_AddTagsToStream_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KinesisService_CreateChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateChannelInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KinesisServiceServer).CreateChannel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KinesisService_CreateChannel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KinesisServiceServer).CreateChannel(ctx, req.(*CreateChannelInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KinesisService_CreateStream_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateStreamInput)
 	if err := dec(in); err != nil {
@@ -986,6 +1114,24 @@ func _KinesisService_DecreaseStreamRetentionPeriod_Handler(srv interface{}, ctx 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KinesisServiceServer).DecreaseStreamRetentionPeriod(ctx, req.(*DecreaseStreamRetentionPeriodInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KinesisService_DeleteChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteChannelInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KinesisServiceServer).DeleteChannel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KinesisService_DeleteChannel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KinesisServiceServer).DeleteChannel(ctx, req.(*DeleteChannelInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1058,6 +1204,24 @@ func _KinesisService_DescribeAccountSettings_Handler(srv interface{}, ctx contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KinesisServiceServer).DescribeAccountSettings(ctx, req.(*DescribeAccountSettingsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KinesisService_DescribeChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeChannelInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KinesisServiceServer).DescribeChannel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KinesisService_DescribeChannel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KinesisServiceServer).DescribeChannel(ctx, req.(*DescribeChannelInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1238,6 +1402,24 @@ func _KinesisService_IncreaseStreamRetentionPeriod_Handler(srv interface{}, ctx 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(KinesisServiceServer).IncreaseStreamRetentionPeriod(ctx, req.(*IncreaseStreamRetentionPeriodInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _KinesisService_ListChannels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListChannelsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KinesisServiceServer).ListChannels(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KinesisService_ListChannels_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KinesisServiceServer).ListChannels(ctx, req.(*ListChannelsInput))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1566,6 +1748,24 @@ func _KinesisService_UpdateAccountSettings_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _KinesisService_UpdateChannel_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateChannelInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KinesisServiceServer).UpdateChannel(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: KinesisService_UpdateChannel_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KinesisServiceServer).UpdateChannel(ctx, req.(*UpdateChannelInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _KinesisService_UpdateMaxRecordSize_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateMaxRecordSizeInput)
 	if err := dec(in); err != nil {
@@ -1650,12 +1850,20 @@ var KinesisService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _KinesisService_AddTagsToStream_Handler,
 		},
 		{
+			MethodName: "CreateChannel",
+			Handler:    _KinesisService_CreateChannel_Handler,
+		},
+		{
 			MethodName: "CreateStream",
 			Handler:    _KinesisService_CreateStream_Handler,
 		},
 		{
 			MethodName: "DecreaseStreamRetentionPeriod",
 			Handler:    _KinesisService_DecreaseStreamRetentionPeriod_Handler,
+		},
+		{
+			MethodName: "DeleteChannel",
+			Handler:    _KinesisService_DeleteChannel_Handler,
 		},
 		{
 			MethodName: "DeleteResourcePolicy",
@@ -1672,6 +1880,10 @@ var KinesisService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DescribeAccountSettings",
 			Handler:    _KinesisService_DescribeAccountSettings_Handler,
+		},
+		{
+			MethodName: "DescribeChannel",
+			Handler:    _KinesisService_DescribeChannel_Handler,
 		},
 		{
 			MethodName: "DescribeLimits",
@@ -1712,6 +1924,10 @@ var KinesisService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IncreaseStreamRetentionPeriod",
 			Handler:    _KinesisService_IncreaseStreamRetentionPeriod_Handler,
+		},
+		{
+			MethodName: "ListChannels",
+			Handler:    _KinesisService_ListChannels_Handler,
 		},
 		{
 			MethodName: "ListShards",
@@ -1784,6 +2000,10 @@ var KinesisService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateAccountSettings",
 			Handler:    _KinesisService_UpdateAccountSettings_Handler,
+		},
+		{
+			MethodName: "UpdateChannel",
+			Handler:    _KinesisService_UpdateChannel_Handler,
 		},
 		{
 			MethodName: "UpdateMaxRecordSize",

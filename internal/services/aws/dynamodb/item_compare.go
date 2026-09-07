@@ -8,42 +8,10 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-func evaluateKeyCondition(item *dbstore.Item, expr string, names map[string]string, values map[string]*dbstore.AttributeValue) bool {
-	tokens := tokenizeExpression(expr)
-	if len(tokens) < 3 {
-		return true
-	}
-
-	attrName := resolveName(tokens[0], names)
-	op := tokens[1]
-
-	attr, ok := item.Attributes[attrName]
-	if !ok {
-		return false
-	}
-
-	if strings.ToUpper(op) == "BETWEEN" && len(tokens) >= 5 {
-		val1 := resolveValue(tokens[2], values, names)
-		val2 := resolveValue(tokens[4], values, names)
-		return compareBetween(attr, val1, val2)
-	}
-
-	if strings.ToUpper(op) == "IN" && len(tokens) >= 4 {
-		var inValues []*dbstore.AttributeValue
-		for i := 2; i < len(tokens); i++ {
-			if tokens[i] != "(" && tokens[i] != ")" && tokens[i] != "," {
-				inValues = append(inValues, resolveValue(tokens[i], values, names))
-			}
-		}
-		return compareIn(attr, inValues)
-	}
-
-	value := resolveValue(tokens[2], values, names)
-	return compareAttributeValues(attr, op, value)
-}
-
 func compareBetween(attr, low, high *dbstore.AttributeValue) bool {
-	return genericCompare(attr, low) >= 0 && genericCompare(attr, high) <= 0
+	cLow, okLow := compareOrderedValues(attr, low)
+	cHigh, okHigh := compareOrderedValues(attr, high)
+	return okLow && okHigh && cLow >= 0 && cHigh <= 0
 }
 
 func compareIn(attr *dbstore.AttributeValue, inValues []*dbstore.AttributeValue) bool {
@@ -99,13 +67,17 @@ func compareAttributeValues(attr *dbstore.AttributeValue, op string, value *dbst
 	case "<>", "!=", "NE":
 		return !attributeValuesEqual(attr, value)
 	case "<", "LT":
-		return genericCompare(attr, value) < 0
+		c, ok := compareOrderedValues(attr, value)
+		return ok && c < 0
 	case "<=", "LE":
-		return genericCompare(attr, value) <= 0
+		c, ok := compareOrderedValues(attr, value)
+		return ok && c <= 0
 	case ">", "GT":
-		return genericCompare(attr, value) > 0
+		c, ok := compareOrderedValues(attr, value)
+		return ok && c > 0
 	case ">=", "GE":
-		return genericCompare(attr, value) >= 0
+		c, ok := compareOrderedValues(attr, value)
+		return ok && c >= 0
 	}
 
 	return false
@@ -261,17 +233,28 @@ func compareNumbers(a, b *dbstore.AttributeValue) int {
 	return numA.Cmp(numB)
 }
 
-func genericCompare(a, b *dbstore.AttributeValue) int {
+// compareOrderedValues applies DynamoDB ordering rules: only same-type
+// S/N/B operand pairs are ordered (numbers numerically, binaries bytewise);
+// every other pair — mismatched types, BOOL, sets, lists, maps, NULL — is
+// incomparable and reports ok=false.
+func compareOrderedValues(a, b *dbstore.AttributeValue) (int, bool) {
 	if a.S != nil && b.S != nil {
-		return strings.Compare(*a.S, *b.S)
+		return strings.Compare(*a.S, *b.S), true
 	}
 	if a.N != nil && b.N != nil {
-		return compareNumbers(a, b)
+		return compareNumbers(a, b), true
 	}
 	if a.B != nil && b.B != nil {
-		return bytes.Compare(a.B, b.B)
+		return bytes.Compare(a.B, b.B), true
 	}
-	return 0
+	return 0, false
+}
+
+// genericCompare orders two attributes for the key-condition engines,
+// whose operands are schema-typed; incomparable pairs compare as equal.
+func genericCompare(a, b *dbstore.AttributeValue) int {
+	c, _ := compareOrderedValues(a, b)
+	return c
 }
 
 func normalizeNumberString(n string) string {

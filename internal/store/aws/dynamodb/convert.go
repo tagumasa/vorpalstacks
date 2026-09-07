@@ -1,6 +1,8 @@
 package dynamodb
 
 import (
+	"time"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 	types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
@@ -13,12 +15,18 @@ func GlobalTableToProto(g *GlobalTable) *pb.GlobalTable {
 	if g == nil {
 		return nil
 	}
+	gsiWrite := make([]*pb.IndexAutoScalingSettings, len(g.GlobalSecondaryIndexWriteSettings))
+	for i, index := range g.GlobalSecondaryIndexWriteSettings {
+		gsiWrite[i] = indexAutoScalingSettingsToProto(index)
+	}
 	return &pb.GlobalTable{
-		GlobalTableName:   g.GlobalTableName,
-		GlobalTableArn:    g.GlobalTableArn,
-		GlobalTableStatus: g.GlobalTableStatus,
-		CreationDateTime:  timestamppb.New(g.CreationDateTime),
-		ReplicationGroup:  replicasToProto(g.ReplicationGroup),
+		GlobalTableName:                   g.GlobalTableName,
+		GlobalTableArn:                    g.GlobalTableArn,
+		GlobalTableStatus:                 g.GlobalTableStatus,
+		CreationDateTime:                  timestamppb.New(g.CreationDateTime),
+		ReplicationGroup:                  replicasToProto(g.ReplicationGroup),
+		WriteAutoScalingSettings:          autoScalingSettingsToProto(g.WriteAutoScalingSettings),
+		GlobalSecondaryIndexWriteSettings: gsiWrite,
 	}
 }
 
@@ -27,12 +35,18 @@ func ProtoToGlobalTable(p *pb.GlobalTable) *GlobalTable {
 	if p == nil {
 		return nil
 	}
+	gsiWrite := make([]IndexAutoScalingSettings, len(p.GlobalSecondaryIndexWriteSettings))
+	for i, index := range p.GlobalSecondaryIndexWriteSettings {
+		gsiWrite[i] = protoToIndexAutoScalingSettings(index)
+	}
 	return &GlobalTable{
-		GlobalTableName:   p.GlobalTableName,
-		GlobalTableArn:    p.GlobalTableArn,
-		GlobalTableStatus: p.GlobalTableStatus,
-		CreationDateTime:  p.CreationDateTime.AsTime(),
-		ReplicationGroup:  protoToReplicas(p.ReplicationGroup),
+		GlobalTableName:                   p.GlobalTableName,
+		GlobalTableArn:                    p.GlobalTableArn,
+		GlobalTableStatus:                 p.GlobalTableStatus,
+		CreationDateTime:                  p.CreationDateTime.AsTime(),
+		ReplicationGroup:                  protoToReplicas(p.ReplicationGroup),
+		WriteAutoScalingSettings:          protoToAutoScalingSettings(p.WriteAutoScalingSettings),
+		GlobalSecondaryIndexWriteSettings: gsiWrite,
 	}
 }
 
@@ -42,12 +56,22 @@ func replicasToProto(r []*Replica) []*pb.Replica {
 	}
 	result := make([]*pb.Replica, len(r))
 	for i, replica := range r {
+		gsiRead := make([]*pb.IndexAutoScalingSettings, len(replica.GlobalSecondaryIndexReadSettings))
+		for j, index := range replica.GlobalSecondaryIndexReadSettings {
+			gsiRead[j] = indexAutoScalingSettingsToProto(index)
+		}
 		result[i] = &pb.Replica{
-			RegionName:                    replica.RegionName,
-			ReplicaStatus:                 replica.ReplicaStatus,
-			BillingMode:                   replica.BillingMode,
-			ProvisionedReadCapacityUnits:  replica.ProvisionedReadCapacityUnits,
-			ProvisionedWriteCapacityUnits: replica.ProvisionedWriteCapacityUnits,
+			RegionName:                       replica.RegionName,
+			ReplicaStatus:                    replica.ReplicaStatus,
+			BillingMode:                      replica.BillingMode,
+			ProvisionedReadCapacityUnits:     replica.ProvisionedReadCapacityUnits,
+			ProvisionedWriteCapacityUnits:    replica.ProvisionedWriteCapacityUnits,
+			ReadAutoScalingSettings:          autoScalingSettingsToProto(replica.ReadAutoScalingSettings),
+			GlobalSecondaryIndexReadSettings: gsiRead,
+			TableClass:                       replica.TableClass,
+		}
+		if replica.TableClassLastUpdated != nil {
+			result[i].TableClassLastUpdated = timestamppb.New(*replica.TableClassLastUpdated)
 		}
 	}
 	return result
@@ -59,18 +83,31 @@ func protoToReplicas(p []*pb.Replica) []*Replica {
 	}
 	result := make([]*Replica, len(p))
 	for i, replica := range p {
+		gsiRead := make([]IndexAutoScalingSettings, len(replica.GlobalSecondaryIndexReadSettings))
+		for j, index := range replica.GlobalSecondaryIndexReadSettings {
+			gsiRead[j] = protoToIndexAutoScalingSettings(index)
+		}
+		var tableClassUpdated *time.Time
+		if replica.TableClassLastUpdated != nil {
+			updated := replica.TableClassLastUpdated.AsTime()
+			tableClassUpdated = &updated
+		}
 		result[i] = &Replica{
-			RegionName:                    replica.RegionName,
-			ReplicaStatus:                 replica.ReplicaStatus,
-			BillingMode:                   replica.BillingMode,
-			ProvisionedReadCapacityUnits:  replica.ProvisionedReadCapacityUnits,
-			ProvisionedWriteCapacityUnits: replica.ProvisionedWriteCapacityUnits,
+			RegionName:                       replica.RegionName,
+			ReplicaStatus:                    replica.ReplicaStatus,
+			BillingMode:                      replica.BillingMode,
+			ProvisionedReadCapacityUnits:     replica.ProvisionedReadCapacityUnits,
+			ProvisionedWriteCapacityUnits:    replica.ProvisionedWriteCapacityUnits,
+			ReadAutoScalingSettings:          protoToAutoScalingSettings(replica.ReadAutoScalingSettings),
+			GlobalSecondaryIndexReadSettings: gsiRead,
+			TableClass:                       replica.TableClass,
+			TableClassLastUpdated:            tableClassUpdated,
 		}
 	}
 	return result
 }
 
-// TableToProto converts API Table to storage proto.
+// restoreSummaryToProto converts a RestoreSummary to its protobuf form.
 func restoreSummaryToProto(r *RestoreSummary) *pb.RestoreSummary {
 	if r == nil {
 		return nil
@@ -152,6 +189,7 @@ func TableToProto(t *Table) *pb.Table {
 		BillingMode:                   billingModeToProto(t.BillingMode),
 		GlobalSecondaryIndexes:        globalSecondaryIndexesToProto(t.GlobalSecondaryIndexes),
 		LocalSecondaryIndexes:         localSecondaryIndexesToProto(t.LocalSecondaryIndexes),
+		VectorIndexes:                 vectorIndexesToProto(t.VectorIndexes),
 		StreamSpecification:           streamSpecificationToProto(t.StreamSpecification),
 		SseDescription:                sseDescriptionToProto(t.SSEDescription),
 		TableSizeBytes:                t.TableSizeBytes,
@@ -170,6 +208,9 @@ func TableToProto(t *Table) *pb.Table {
 		WarmThroughput:                warmThroughputToProto(t.WarmThroughput),
 		OnDemandThroughput:            onDemandThroughputToProto(t.OnDemandThroughput),
 		RestoreSummary:                restoreSummaryToProto(t.RestoreSummary),
+		ResourcePolicyRevisionId:      int32(t.ResourcePolicyRevisionId),
+		ContributorInsightsUpdatedAt:  timestamppb.New(t.ContributorInsightsUpdatedAt),
+		GlobalTableSourceArn:          t.GlobalTableSourceArn,
 	}
 }
 
@@ -179,7 +220,7 @@ func ProtoToTable(p *pb.Table) *Table {
 		return nil
 	}
 
-	return &Table{
+	table := &Table{
 		Name:                          p.Name,
 		ARN:                           p.Arn,
 		Status:                        protoToTableStatus(p.Status),
@@ -191,6 +232,7 @@ func ProtoToTable(p *pb.Table) *Table {
 		BillingMode:                   protoToBillingMode(p.BillingMode),
 		GlobalSecondaryIndexes:        protoToGlobalSecondaryIndexes(p.GlobalSecondaryIndexes),
 		LocalSecondaryIndexes:         protoToLocalSecondaryIndexes(p.LocalSecondaryIndexes),
+		VectorIndexes:                 protoToVectorIndexes(p.VectorIndexes),
 		StreamSpecification:           protoToStreamSpecification(p.StreamSpecification),
 		SSEDescription:                protoToSSEDescription(p.SseDescription),
 		TableSizeBytes:                p.TableSizeBytes,
@@ -209,26 +251,13 @@ func ProtoToTable(p *pb.Table) *Table {
 		WarmThroughput:                protoToWarmThroughput(p.WarmThroughput),
 		OnDemandThroughput:            protoToOnDemandThroughput(p.OnDemandThroughput),
 		RestoreSummary:                protoToRestoreSummary(p.RestoreSummary),
+		ResourcePolicyRevisionId:      int(p.ResourcePolicyRevisionId),
+		GlobalTableSourceArn:          p.GlobalTableSourceArn,
 	}
-}
-
-// ItemToProto converts API Item map to proto Item.
-func ItemToProto(tableName string, attrs map[string]*AttributeValue) *pb.Item {
-	if attrs == nil {
-		return nil
+	if p.ContributorInsightsUpdatedAt != nil {
+		table.ContributorInsightsUpdatedAt = p.ContributorInsightsUpdatedAt.AsTime()
 	}
-	return &pb.Item{
-		TableName:  tableName,
-		Attributes: attributeValueMapToProtoDirect(attrs),
-	}
-}
-
-// ProtoToItem converts proto Item to API Item map.
-func ProtoToItem(p *pb.Item) map[string]*AttributeValue {
-	if p == nil {
-		return nil
-	}
-	return protoToAttributeValueMapDirect(p.Attributes)
+	return table
 }
 
 // Enum conversion functions
@@ -517,6 +546,80 @@ func protoToProjection(p *pb.Projection) *Projection {
 		ProjectionType:   p.ProjectionType,
 		NonKeyAttributes: p.NonKeyAttributes,
 	}
+}
+
+func vectorIndexesToProto(idx []*VectorIndex) []*pb.VectorIndex {
+	if idx == nil {
+		return nil
+	}
+	result := make([]*pb.VectorIndex, len(idx))
+	for i, v := range idx {
+		result[i] = &pb.VectorIndex{
+			IndexName:           v.IndexName,
+			IndexArn:            v.IndexArn,
+			VectorAttributeName: v.VectorAttributeName,
+			Dimensions:          v.Dimensions,
+			DistanceFunction:    v.DistanceFunction,
+			Projection:          projectionToProto(v.Projection),
+			SearchSchema:        searchSchemaToProto(v.SearchSchema),
+			IndexStatus:         indexStatusToProto(v.IndexStatus),
+			Backfilling:         v.Backfilling,
+			IndexSizeBytes:      v.IndexSizeBytes,
+			ItemCount:           v.ItemCount,
+		}
+	}
+	return result
+}
+
+func protoToVectorIndexes(idx []*pb.VectorIndex) []*VectorIndex {
+	if idx == nil {
+		return nil
+	}
+	result := make([]*VectorIndex, len(idx))
+	for i, v := range idx {
+		result[i] = &VectorIndex{
+			IndexName:           v.IndexName,
+			IndexArn:            v.IndexArn,
+			VectorAttributeName: v.VectorAttributeName,
+			Dimensions:          v.Dimensions,
+			DistanceFunction:    v.DistanceFunction,
+			Projection:          protoToProjection(v.Projection),
+			SearchSchema:        protoToSearchSchema(v.SearchSchema),
+			IndexStatus:         protoToIndexStatus(v.IndexStatus),
+			Backfilling:         v.Backfilling,
+			IndexSizeBytes:      v.IndexSizeBytes,
+			ItemCount:           v.ItemCount,
+		}
+	}
+	return result
+}
+
+func searchSchemaToProto(schema []*SearchSchemaElement) []*pb.SearchSchemaElement {
+	if schema == nil {
+		return nil
+	}
+	result := make([]*pb.SearchSchemaElement, len(schema))
+	for i, e := range schema {
+		result[i] = &pb.SearchSchemaElement{
+			AttributeName:           e.AttributeName,
+			SearchSchemaElementType: e.SearchSchemaElementType,
+		}
+	}
+	return result
+}
+
+func protoToSearchSchema(schema []*pb.SearchSchemaElement) []*SearchSchemaElement {
+	if schema == nil {
+		return nil
+	}
+	result := make([]*SearchSchemaElement, len(schema))
+	for i, e := range schema {
+		result[i] = &SearchSchemaElement{
+			AttributeName:           e.AttributeName,
+			SearchSchemaElementType: e.SearchSchemaElementType,
+		}
+	}
+	return result
 }
 
 func globalSecondaryIndexesToProto(idx []*GlobalSecondaryIndex) []*pb.GlobalSecondaryIndex {

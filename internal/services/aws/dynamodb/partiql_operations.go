@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"sort"
-	"strconv"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -24,6 +23,15 @@ func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.
 	}
 
 	params := parsePartiQLParams(req.Parameters)
+	// Normalise `?` placeholders into their explicit whole-statement :vN
+	// form before dispatch: the engines' parses (including the manual
+	// UPDATE path's per-segment re-parses) then share one numbering, and
+	// the count check rejects a parameter list that does not carry exactly
+	// one value per placeholder.
+	statement, placeholderCount := preparePartiQLStatement(statement)
+	if err := validateParameterCount(placeholderCount, params); err != nil {
+		return nil, err
+	}
 	consistentRead := request.GetBoolParam(req.Parameters, "ConsistentRead")
 	limit := request.GetIntParam(req.Parameters, "Limit")
 	if limit > 0 {
@@ -70,45 +78,35 @@ func (s *DynamoDBService) ExecuteStatement(ctx context.Context, reqCtx *request.
 	return result, nil
 }
 
-func applySetAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) {
+// applySetAssignments writes SET clause assignments into attrs. Values are
+// literals or bound parameters resolved through the shared materialiser;
+// an unresolvable placeholder fails the statement.
+func applySetAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
 	for _, asgn := range assignments {
-		var attrValue *dbstore.AttributeValue
+		value := asgn.value
 
-		if funcExpr, ok := asgn.value.(*sqlparser.FuncExpr); ok && strings.EqualFold(funcExpr.Name.String(), "if_not_exists") {
-			if len(funcExpr.Exprs) >= 2 {
-				if aliased, ok := funcExpr.Exprs[0].(*sqlparser.AliasedExpr); ok {
-					if colName, ok := aliased.Expr.(*sqlparser.ColName); ok {
-						attrName := colName.Name.String()
-						if existing, exists := attrs[attrName]; exists && existing != nil {
-							continue
-						}
-					}
-				}
-				if aliased, ok := funcExpr.Exprs[1].(*sqlparser.AliasedExpr); ok {
-					if sqlVal, ok := aliased.Expr.(*sqlparser.SQLVal); ok {
-						attrValue = exprToAttributeValueWithParams(sqlVal, params)
+		// if_not_exists(attr, fallback) keeps the existing attribute when
+		// the referenced one is already present.
+		if funcExpr, ok := value.(*sqlparser.FuncExpr); ok && strings.EqualFold(funcExpr.Name.String(), "if_not_exists") && len(funcExpr.Exprs) >= 2 {
+			if aliased, ok := funcExpr.Exprs[0].(*sqlparser.AliasedExpr); ok {
+				if colName, ok := aliased.Expr.(*sqlparser.ColName); ok {
+					if existing, exists := attrs[colName.Name.String()]; exists && existing != nil {
+						continue
 					}
 				}
 			}
-		} else if e, ok := asgn.value.(*sqlparser.SQLVal); ok {
-			if e.Type == sqlparser.ValArg {
-				if strings.HasPrefix(string(e.Val), ":") {
-					idxStr := strings.TrimPrefix(string(e.Val), ":v")
-					if idx, err := strconv.Atoi(idxStr); err == nil && params != nil && idx > 0 && idx <= len(params.Parameters) {
-						attrValue = paramToAttributeValue(params.Parameters[idx-1])
-					}
-				}
-			} else {
-				attrValue = exprToAttributeValue(e)
+			if aliased, ok := funcExpr.Exprs[1].(*sqlparser.AliasedExpr); ok {
+				value = aliased.Expr
 			}
-		} else {
-			attrValue = exprToAttributeValue(asgn.value)
 		}
 
-		if attrValue != nil {
-			attrs[asgn.attrName] = attrValue
+		attrValue, err := exprToAttributeValueWithParams(value, params)
+		if err != nil {
+			return err
 		}
+		attrs[asgn.attrName] = attrValue
 	}
+	return nil
 }
 
 func buildKeyFromSchema(keySchema []*dbstore.KeySchemaElement, itemData map[string]*dbstore.AttributeValue) map[string]*dbstore.AttributeValue {
@@ -124,6 +122,10 @@ func buildKeyFromSchema(keySchema []*dbstore.KeySchemaElement, itemData map[stri
 	return key
 }
 
+// extractPartitionKeyFromWhere extracts the partition-key equality value
+// from a WHERE clause and renders it with the store key encoding, so the
+// partition scan prefix matches stored keys of every key type (a raw number
+// literal or stringified parameter matches nothing on encoded keys).
 func extractPartitionKeyFromWhere(expr sqlparser.Expr, pkName string, params *partiQLParams) string {
 	if expr == nil || pkName == "" {
 		return ""
@@ -132,7 +134,7 @@ func extractPartitionKeyFromWhere(expr sqlparser.Expr, pkName string, params *pa
 	if cmp, ok := expr.(*sqlparser.ComparisonExpr); ok {
 		if col, ok := cmp.Left.(*sqlparser.ColName); ok {
 			if col.Name.String() == pkName && cmp.Operator == sqlparser.EqualStr {
-				return extractValueString(cmp.Right, params)
+				return dbstore.EncodeKeyValue(extractValueAttr(cmp.Right, params))
 			}
 		}
 	}
@@ -147,24 +149,19 @@ func extractPartitionKeyFromWhere(expr sqlparser.Expr, pkName string, params *pa
 	return ""
 }
 
-func extractValueString(expr sqlparser.Expr, params *partiQLParams) string {
-	switch e := expr.(type) {
-	case *sqlparser.SQLVal:
-		switch e.Type {
-		case sqlparser.StrVal:
-			return string(e.Val)
-		case sqlparser.IntVal, sqlparser.FloatVal:
-			return string(e.Val)
-		case sqlparser.ValArg:
-			if strings.HasPrefix(string(e.Val), ":") {
-				idxStr := strings.TrimPrefix(string(e.Val), ":v")
-				if idx, err := strconv.Atoi(idxStr); err == nil && params != nil && idx > 0 && idx <= len(params.Parameters) {
-					return paramToString(params.Parameters[idx-1])
-				}
-			}
+// extractValueAttr materialises a WHERE-clause literal or bound parameter as
+// an AttributeValue via the shared value materialiser. An unresolvable
+// expression yields nil, which never matches a partition key.
+func extractValueAttr(expr sqlparser.Expr, params *partiQLParams) *dbstore.AttributeValue {
+	switch expr.(type) {
+	case *sqlparser.SQLVal, *sqlparser.ObjectLiteral, *sqlparser.ValTuple, *sqlparser.NullVal, *sqlparser.BoolVal:
+		v, err := exprToAttributeValueWithParams(expr, params)
+		if err != nil {
+			return nil
 		}
+		return v
 	}
-	return ""
+	return nil
 }
 
 func extractTableNameFromStatement(statement string) string {
@@ -223,6 +220,10 @@ func sortItemsByOrderBy(items []*dbstore.Item, orderBy *orderByClause) []*dbstor
 	return sorted
 }
 
+// compareItemsByAttr orders two items by one attribute using DynamoDB
+// ordering: same-type S/N/B compare (numbers numerically); any other pair
+// — including type mismatches — is unordered and keeps the stable order.
+// Items missing the attribute sort first.
 func compareItemsByAttr(a, b *dbstore.Item, attrName, direction string) int {
 	aVal, aOk := a.Attributes[attrName]
 	bVal, bOk := b.Attributes[attrName]
@@ -237,10 +238,10 @@ func compareItemsByAttr(a, b *dbstore.Item, attrName, direction string) int {
 		return 1
 	}
 
-	aStr := attrValueToCompareString(aVal)
-	bStr := attrValueToCompareString(bVal)
-
-	cmp := compareValues(aStr, bStr)
+	cmp, ok := compareOrderedValues(aVal, bVal)
+	if !ok {
+		return 0
+	}
 
 	if direction == "DESC" {
 		return -cmp
@@ -248,28 +249,29 @@ func compareItemsByAttr(a, b *dbstore.Item, attrName, direction string) int {
 	return cmp
 }
 
-func attrValueToCompareString(attr *dbstore.AttributeValue) string {
-	if attr == nil {
-		return ""
-	}
-	if attr.S != nil {
-		return *attr.S
-	}
-	if attr.N != nil {
-		return *attr.N
-	}
-	if attr.BOOL != nil {
-		if *attr.BOOL {
-			return "true"
-		}
-		return "false"
-	}
-	return ""
-}
-
 // applyRemoveAttrs deletes the named top-level attributes from the item.
 func applyRemoveAttrs(attrs map[string]*dbstore.AttributeValue, removeAttrs []string) {
 	for _, name := range removeAttrs {
 		delete(attrs, name)
 	}
+}
+
+// updateClauseTargetNames collects every top-level attribute name an UPDATE
+// statement writes across its SET, REMOVE, ADD and DELETE clauses. The key
+// attributes identify the item being updated, so any clause touching one of
+// them is rejected before the statement applies.
+func updateClauseTargetNames(clauses updateClauses) []string {
+	names := make([]string, 0, len(clauses.setAssignments)+len(clauses.removeAttrs)+
+		len(clauses.addAssignments)+len(clauses.deleteAssignments))
+	for _, asgn := range clauses.setAssignments {
+		names = append(names, asgn.attrName)
+	}
+	names = append(names, clauses.removeAttrs...)
+	for _, asgn := range clauses.addAssignments {
+		names = append(names, asgn.attrName)
+	}
+	for _, asgn := range clauses.deleteAssignments {
+		names = append(names, asgn.attrName)
+	}
+	return names
 }

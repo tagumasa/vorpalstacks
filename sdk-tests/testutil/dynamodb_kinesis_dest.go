@@ -103,7 +103,20 @@ func (f *kinesisDestFixture) teardown(ctx context.Context, kc *kinesis.Client, d
 			StreamArn: aws.String(f.streamArn),
 		})
 	}
-	time.Sleep(1500 * time.Millisecond)
+	// Best effort: wait for the destination to report DISABLED so the
+	// table delete does not race the streaming teardown.
+	_ = waitFor(250*time.Millisecond, 10*time.Second, func() bool {
+		dests, err := describeKinesisDestinations(ctx, dc, f.tableName)
+		if err != nil {
+			return false
+		}
+		for _, d := range dests {
+			if aws.ToString(d.StreamArn) == f.streamArn {
+				return d.DestinationStatus == dynamodbtypes.DestinationStatusDisabled
+			}
+		}
+		return true
+	})
 	_, _ = dc.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(f.tableName)})
 	for _, sn := range []string{f.streamA, f.streamB} {
 		_, _ = kc.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
@@ -143,11 +156,14 @@ func waitKinesisDestinationStatus(ctx context.Context, dc *dynamodb.Client, tabl
 }
 
 // kinesisDestRecordPayload mirrors the JSON DynamoDB writes into a Kinesis
-// destination stream for one item change.
+// destination stream for one item change: the Streams record's dynamodb
+// envelope.
 type kinesisDestRecordPayload struct {
-	Keys                        map[string]map[string]string `json:"Keys"`
-	EventName                   string                       `json:"eventName"`
-	ApproximateCreationDateTime float64                      `json:"ApproximateCreationDateTime"`
+	EventName string `json:"eventName"`
+	DynamoDB  struct {
+		Keys                        map[string]map[string]string `json:"Keys"`
+		ApproximateCreationDateTime float64                      `json:"ApproximateCreationDateTime"`
+	} `json:"dynamodb"`
 }
 
 // readFirstKinesisDestRecord reads the first record from the stream's first
@@ -294,12 +310,12 @@ func (r *TestRunner) dynamoDBKinesisDestinationTests(ctx context.Context, client
 		if payload.EventName != "INSERT" {
 			return fmt.Errorf("record eventName = %s, want INSERT", payload.EventName)
 		}
-		if payload.Keys["pk"]["S"] != "item-1" {
-			return fmt.Errorf("record keys = %v, want pk item-1", payload.Keys)
+		if payload.DynamoDB.Keys["pk"]["S"] != "item-1" {
+			return fmt.Errorf("record keys = %v, want pk item-1", payload.DynamoDB.Keys)
 		}
 		// Millisecond precision: epoch-milliseconds (~1.7e12), not seconds.
-		if payload.ApproximateCreationDateTime < 1e12 {
-			return fmt.Errorf("record ApproximateCreationDateTime = %f, want millisecond precision", payload.ApproximateCreationDateTime)
+		if payload.DynamoDB.ApproximateCreationDateTime < 1e12 {
+			return fmt.Errorf("record ApproximateCreationDateTime = %f, want millisecond precision", payload.DynamoDB.ApproximateCreationDateTime)
 		}
 
 		update, err := client.UpdateKinesisStreamingDestination(ctx, &dynamodb.UpdateKinesisStreamingDestinationInput{

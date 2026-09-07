@@ -1712,7 +1712,7 @@ func (x *AliasTarget) GetHostedzoneid() string {
 
 type AssociateVPCWithHostedZoneRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
 	Vpc           *VPC                   `protobuf:"bytes,506158953,opt,name=vpc,proto3" json:"vpc,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1750,8 +1750,8 @@ func (*AssociateVPCWithHostedZoneRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *AssociateVPCWithHostedZoneRequest) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -1869,7 +1869,7 @@ func (x *Change) GetResourcerecordset() *ResourceRecordSet {
 type ChangeBatch struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Changes       []*Change              `protobuf:"bytes,516230891,rep,name=changes,proto3" json:"changes,omitempty"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1912,8 +1912,8 @@ func (x *ChangeBatch) GetChanges() []*Change {
 }
 
 func (x *ChangeBatch) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -2024,7 +2024,7 @@ func (x *ChangeCidrCollectionResponse) GetId() string {
 
 type ChangeInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Status        ChangeStatus           `protobuf:"varint,6222352,opt,name=status,proto3,enum=route53.ChangeStatus" json:"status,omitempty"`
 	Submittedat   string                 `protobuf:"bytes,343958936,opt,name=submittedat,proto3" json:"submittedat,omitempty"`
@@ -2063,8 +2063,8 @@ func (*ChangeInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChangeInfo) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -2292,7 +2292,7 @@ func (*ChangeTagsForResourceResponse) Descriptor() ([]byte, []int) {
 
 type CidrBlockInUseException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2328,16 +2328,16 @@ func (*CidrBlockInUseException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CidrBlockInUseException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CidrBlockSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cidrblock     string                 `protobuf:"bytes,56494185,opt,name=cidrblock,proto3" json:"cidrblock,omitempty"`
-	Locationname  string                 `protobuf:"bytes,158186566,opt,name=locationname,proto3" json:"locationname,omitempty"`
+	Cidrblock     *string                `protobuf:"bytes,56494185,opt,name=cidrblock,proto3,oneof" json:"cidrblock,omitempty"`
+	Locationname  *string                `protobuf:"bytes,158186566,opt,name=locationname,proto3,oneof" json:"locationname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2373,24 +2373,24 @@ func (*CidrBlockSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *CidrBlockSummary) GetCidrblock() string {
-	if x != nil {
-		return x.Cidrblock
+	if x != nil && x.Cidrblock != nil {
+		return *x.Cidrblock
 	}
 	return ""
 }
 
 func (x *CidrBlockSummary) GetLocationname() string {
-	if x != nil {
-		return x.Locationname
+	if x != nil && x.Locationname != nil {
+		return *x.Locationname
 	}
 	return ""
 }
 
 type CidrCollection struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Version       *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2427,22 +2427,22 @@ func (*CidrCollection) Descriptor() ([]byte, []int) {
 }
 
 func (x *CidrCollection) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *CidrCollection) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *CidrCollection) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -2456,7 +2456,7 @@ func (x *CidrCollection) GetVersion() int64 {
 
 type CidrCollectionAlreadyExistsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2492,8 +2492,8 @@ func (*CidrCollectionAlreadyExistsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CidrCollectionAlreadyExistsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2560,7 +2560,7 @@ func (x *CidrCollectionChange) GetLocationname() string {
 
 type CidrCollectionInUseException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2596,15 +2596,15 @@ func (*CidrCollectionInUseException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CidrCollectionInUseException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CidrCollectionVersionMismatchException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2640,8 +2640,8 @@ func (*CidrCollectionVersionMismatchException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CidrCollectionVersionMismatchException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2800,9 +2800,9 @@ func (x *CloudWatchAlarmConfiguration) GetThreshold() float64 {
 
 type CollectionSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Version       *int64                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2839,22 +2839,22 @@ func (*CollectionSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *CollectionSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *CollectionSummary) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *CollectionSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -2868,7 +2868,7 @@ func (x *CollectionSummary) GetVersion() int64 {
 
 type ConcurrentModification struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2904,15 +2904,15 @@ func (*ConcurrentModification) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConcurrentModification) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ConflictingDomainExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2948,15 +2948,15 @@ func (*ConflictingDomainExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictingDomainExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ConflictingTypes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2992,8 +2992,8 @@ func (*ConflictingTypes) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictingTypes) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3105,7 +3105,7 @@ func (x *CreateCidrCollectionRequest) GetName() string {
 type CreateCidrCollectionResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Collection    *CidrCollection        `protobuf:"bytes,114272434,opt,name=collection,proto3" json:"collection,omitempty"`
-	Location      string                 `protobuf:"bytes,465604039,opt,name=location,proto3" json:"location,omitempty"`
+	Location      *string                `protobuf:"bytes,465604039,opt,name=location,proto3,oneof" json:"location,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3148,8 +3148,8 @@ func (x *CreateCidrCollectionResponse) GetCollection() *CidrCollection {
 }
 
 func (x *CreateCidrCollectionResponse) GetLocation() string {
-	if x != nil {
-		return x.Location
+	if x != nil && x.Location != nil {
+		return *x.Location
 	}
 	return ""
 }
@@ -3261,7 +3261,7 @@ func (x *CreateHealthCheckResponse) GetLocation() string {
 type CreateHostedZoneRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Callerreference  string                 `protobuf:"bytes,151211160,opt,name=callerreference,proto3" json:"callerreference,omitempty"`
-	Delegationsetid  string                 `protobuf:"bytes,307328801,opt,name=delegationsetid,proto3" json:"delegationsetid,omitempty"`
+	Delegationsetid  *string                `protobuf:"bytes,307328801,opt,name=delegationsetid,proto3,oneof" json:"delegationsetid,omitempty"`
 	Hostedzoneconfig *HostedZoneConfig      `protobuf:"bytes,881519,opt,name=hostedzoneconfig,proto3" json:"hostedzoneconfig,omitempty"`
 	Name             string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Vpc              *VPC                   `protobuf:"bytes,506158953,opt,name=vpc,proto3" json:"vpc,omitempty"`
@@ -3307,8 +3307,8 @@ func (x *CreateHostedZoneRequest) GetCallerreference() string {
 }
 
 func (x *CreateHostedZoneRequest) GetDelegationsetid() string {
-	if x != nil {
-		return x.Delegationsetid
+	if x != nil && x.Delegationsetid != nil {
+		return *x.Delegationsetid
 	}
 	return ""
 }
@@ -3653,7 +3653,7 @@ func (x *CreateQueryLoggingConfigResponse) GetQueryloggingconfig() *QueryLogging
 type CreateReusableDelegationSetRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Callerreference string                 `protobuf:"bytes,151211160,opt,name=callerreference,proto3" json:"callerreference,omitempty"`
-	Hostedzoneid    string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
+	Hostedzoneid    *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -3696,8 +3696,8 @@ func (x *CreateReusableDelegationSetRequest) GetCallerreference() string {
 }
 
 func (x *CreateReusableDelegationSetRequest) GetHostedzoneid() string {
-	if x != nil {
-		return x.Hostedzoneid
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
 	}
 	return ""
 }
@@ -3884,7 +3884,7 @@ func (x *CreateTrafficPolicyInstanceResponse) GetTrafficpolicyinstance() *Traffi
 
 type CreateTrafficPolicyRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Document      string                 `protobuf:"bytes,407108341,opt,name=document,proto3" json:"document,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3922,8 +3922,8 @@ func (*CreateTrafficPolicyRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateTrafficPolicyRequest) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -3996,7 +3996,7 @@ func (x *CreateTrafficPolicyResponse) GetTrafficpolicy() *TrafficPolicy {
 
 type CreateTrafficPolicyVersionRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Document      string                 `protobuf:"bytes,407108341,opt,name=document,proto3" json:"document,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -4034,8 +4034,8 @@ func (*CreateTrafficPolicyVersionRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateTrafficPolicyVersionRequest) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -4212,7 +4212,7 @@ func (x *CreateVPCAssociationAuthorizationResponse) GetVpc() *VPC {
 
 type DNSSECNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4248,16 +4248,16 @@ func (*DNSSECNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *DNSSECNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DNSSECStatus struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Servesignature string                 `protobuf:"bytes,466239599,opt,name=servesignature,proto3" json:"servesignature,omitempty"`
-	Statusmessage  string                 `protobuf:"bytes,72590095,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
+	Servesignature *string                `protobuf:"bytes,466239599,opt,name=servesignature,proto3,oneof" json:"servesignature,omitempty"`
+	Statusmessage  *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4293,15 +4293,15 @@ func (*DNSSECStatus) Descriptor() ([]byte, []int) {
 }
 
 func (x *DNSSECStatus) GetServesignature() string {
-	if x != nil {
-		return x.Servesignature
+	if x != nil && x.Servesignature != nil {
+		return *x.Servesignature
 	}
 	return ""
 }
 
 func (x *DNSSECStatus) GetStatusmessage() string {
-	if x != nil {
-		return x.Statusmessage
+	if x != nil && x.Statusmessage != nil {
+		return *x.Statusmessage
 	}
 	return ""
 }
@@ -4404,8 +4404,8 @@ func (x *DeactivateKeySigningKeyResponse) GetChangeinfo() *ChangeInfo {
 
 type DelegationSet struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Callerreference string                 `protobuf:"bytes,151211160,opt,name=callerreference,proto3" json:"callerreference,omitempty"`
-	Id              string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
+	Callerreference *string                `protobuf:"bytes,151211160,opt,name=callerreference,proto3,oneof" json:"callerreference,omitempty"`
+	Id              *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Nameservers     []string               `protobuf:"bytes,340971511,rep,name=nameservers,proto3" json:"nameservers,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -4442,15 +4442,15 @@ func (*DelegationSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *DelegationSet) GetCallerreference() string {
-	if x != nil {
-		return x.Callerreference
+	if x != nil && x.Callerreference != nil {
+		return *x.Callerreference
 	}
 	return ""
 }
 
 func (x *DelegationSet) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -4464,7 +4464,7 @@ func (x *DelegationSet) GetNameservers() []string {
 
 type DelegationSetAlreadyCreated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4500,15 +4500,15 @@ func (*DelegationSetAlreadyCreated) Descriptor() ([]byte, []int) {
 }
 
 func (x *DelegationSetAlreadyCreated) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DelegationSetAlreadyReusable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4544,15 +4544,15 @@ func (*DelegationSetAlreadyReusable) Descriptor() ([]byte, []int) {
 }
 
 func (x *DelegationSetAlreadyReusable) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DelegationSetInUse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4588,15 +4588,15 @@ func (*DelegationSetInUse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DelegationSetInUse) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DelegationSetNotAvailable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4632,15 +4632,15 @@ func (*DelegationSetNotAvailable) Descriptor() ([]byte, []int) {
 }
 
 func (x *DelegationSetNotAvailable) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DelegationSetNotReusable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4676,8 +4676,8 @@ func (*DelegationSetNotReusable) Descriptor() ([]byte, []int) {
 }
 
 func (x *DelegationSetNotReusable) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5584,7 +5584,7 @@ func (x *DisableHostedZoneDNSSECResponse) GetChangeinfo() *ChangeInfo {
 
 type DisassociateVPCFromHostedZoneRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
 	Vpc           *VPC                   `protobuf:"bytes,506158953,opt,name=vpc,proto3" json:"vpc,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -5622,8 +5622,8 @@ func (*DisassociateVPCFromHostedZoneRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DisassociateVPCFromHostedZoneRequest) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -5776,9 +5776,9 @@ func (x *EnableHostedZoneDNSSECResponse) GetChangeinfo() *ChangeInfo {
 
 type GeoLocation struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Continentcode   string                 `protobuf:"bytes,180194347,opt,name=continentcode,proto3" json:"continentcode,omitempty"`
-	Countrycode     string                 `protobuf:"bytes,485287065,opt,name=countrycode,proto3" json:"countrycode,omitempty"`
-	Subdivisioncode string                 `protobuf:"bytes,444328268,opt,name=subdivisioncode,proto3" json:"subdivisioncode,omitempty"`
+	Continentcode   *string                `protobuf:"bytes,180194347,opt,name=continentcode,proto3,oneof" json:"continentcode,omitempty"`
+	Countrycode     *string                `protobuf:"bytes,485287065,opt,name=countrycode,proto3,oneof" json:"countrycode,omitempty"`
+	Subdivisioncode *string                `protobuf:"bytes,444328268,opt,name=subdivisioncode,proto3,oneof" json:"subdivisioncode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -5814,34 +5814,34 @@ func (*GeoLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *GeoLocation) GetContinentcode() string {
-	if x != nil {
-		return x.Continentcode
+	if x != nil && x.Continentcode != nil {
+		return *x.Continentcode
 	}
 	return ""
 }
 
 func (x *GeoLocation) GetCountrycode() string {
-	if x != nil {
-		return x.Countrycode
+	if x != nil && x.Countrycode != nil {
+		return *x.Countrycode
 	}
 	return ""
 }
 
 func (x *GeoLocation) GetSubdivisioncode() string {
-	if x != nil {
-		return x.Subdivisioncode
+	if x != nil && x.Subdivisioncode != nil {
+		return *x.Subdivisioncode
 	}
 	return ""
 }
 
 type GeoLocationDetails struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Continentcode   string                 `protobuf:"bytes,180194347,opt,name=continentcode,proto3" json:"continentcode,omitempty"`
-	Continentname   string                 `protobuf:"bytes,203176953,opt,name=continentname,proto3" json:"continentname,omitempty"`
-	Countrycode     string                 `protobuf:"bytes,485287065,opt,name=countrycode,proto3" json:"countrycode,omitempty"`
-	Countryname     string                 `protobuf:"bytes,16070667,opt,name=countryname,proto3" json:"countryname,omitempty"`
-	Subdivisioncode string                 `protobuf:"bytes,444328268,opt,name=subdivisioncode,proto3" json:"subdivisioncode,omitempty"`
-	Subdivisionname string                 `protobuf:"bytes,412782294,opt,name=subdivisionname,proto3" json:"subdivisionname,omitempty"`
+	Continentcode   *string                `protobuf:"bytes,180194347,opt,name=continentcode,proto3,oneof" json:"continentcode,omitempty"`
+	Continentname   *string                `protobuf:"bytes,203176953,opt,name=continentname,proto3,oneof" json:"continentname,omitempty"`
+	Countrycode     *string                `protobuf:"bytes,485287065,opt,name=countrycode,proto3,oneof" json:"countrycode,omitempty"`
+	Countryname     *string                `protobuf:"bytes,16070667,opt,name=countryname,proto3,oneof" json:"countryname,omitempty"`
+	Subdivisioncode *string                `protobuf:"bytes,444328268,opt,name=subdivisioncode,proto3,oneof" json:"subdivisioncode,omitempty"`
+	Subdivisionname *string                `protobuf:"bytes,412782294,opt,name=subdivisionname,proto3,oneof" json:"subdivisionname,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -5877,53 +5877,53 @@ func (*GeoLocationDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *GeoLocationDetails) GetContinentcode() string {
-	if x != nil {
-		return x.Continentcode
+	if x != nil && x.Continentcode != nil {
+		return *x.Continentcode
 	}
 	return ""
 }
 
 func (x *GeoLocationDetails) GetContinentname() string {
-	if x != nil {
-		return x.Continentname
+	if x != nil && x.Continentname != nil {
+		return *x.Continentname
 	}
 	return ""
 }
 
 func (x *GeoLocationDetails) GetCountrycode() string {
-	if x != nil {
-		return x.Countrycode
+	if x != nil && x.Countrycode != nil {
+		return *x.Countrycode
 	}
 	return ""
 }
 
 func (x *GeoLocationDetails) GetCountryname() string {
-	if x != nil {
-		return x.Countryname
+	if x != nil && x.Countryname != nil {
+		return *x.Countryname
 	}
 	return ""
 }
 
 func (x *GeoLocationDetails) GetSubdivisioncode() string {
-	if x != nil {
-		return x.Subdivisioncode
+	if x != nil && x.Subdivisioncode != nil {
+		return *x.Subdivisioncode
 	}
 	return ""
 }
 
 func (x *GeoLocationDetails) GetSubdivisionname() string {
-	if x != nil {
-		return x.Subdivisionname
+	if x != nil && x.Subdivisionname != nil {
+		return *x.Subdivisionname
 	}
 	return ""
 }
 
 type GeoProximityLocation struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Awsregion      string                 `protobuf:"bytes,245430451,opt,name=awsregion,proto3" json:"awsregion,omitempty"`
+	Awsregion      *string                `protobuf:"bytes,245430451,opt,name=awsregion,proto3,oneof" json:"awsregion,omitempty"`
 	Bias           *int32                 `protobuf:"varint,60849893,opt,name=bias,proto3,oneof" json:"bias,omitempty"`
 	Coordinates    *Coordinates           `protobuf:"bytes,231283401,opt,name=coordinates,proto3" json:"coordinates,omitempty"`
-	Localzonegroup string                 `protobuf:"bytes,60150354,opt,name=localzonegroup,proto3" json:"localzonegroup,omitempty"`
+	Localzonegroup *string                `protobuf:"bytes,60150354,opt,name=localzonegroup,proto3,oneof" json:"localzonegroup,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5959,8 +5959,8 @@ func (*GeoProximityLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *GeoProximityLocation) GetAwsregion() string {
-	if x != nil {
-		return x.Awsregion
+	if x != nil && x.Awsregion != nil {
+		return *x.Awsregion
 	}
 	return ""
 }
@@ -5980,8 +5980,8 @@ func (x *GeoProximityLocation) GetCoordinates() *Coordinates {
 }
 
 func (x *GeoProximityLocation) GetLocalzonegroup() string {
-	if x != nil {
-		return x.Localzonegroup
+	if x != nil && x.Localzonegroup != nil {
+		return *x.Localzonegroup
 	}
 	return ""
 }
@@ -6348,9 +6348,9 @@ func (x *GetDNSSECResponse) GetStatus() *DNSSECStatus {
 
 type GetGeoLocationRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Continentcode   string                 `protobuf:"bytes,180194347,opt,name=continentcode,proto3" json:"continentcode,omitempty"`
-	Countrycode     string                 `protobuf:"bytes,485287065,opt,name=countrycode,proto3" json:"countrycode,omitempty"`
-	Subdivisioncode string                 `protobuf:"bytes,444328268,opt,name=subdivisioncode,proto3" json:"subdivisioncode,omitempty"`
+	Continentcode   *string                `protobuf:"bytes,180194347,opt,name=continentcode,proto3,oneof" json:"continentcode,omitempty"`
+	Countrycode     *string                `protobuf:"bytes,485287065,opt,name=countrycode,proto3,oneof" json:"countrycode,omitempty"`
+	Subdivisioncode *string                `protobuf:"bytes,444328268,opt,name=subdivisioncode,proto3,oneof" json:"subdivisioncode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -6386,22 +6386,22 @@ func (*GetGeoLocationRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetGeoLocationRequest) GetContinentcode() string {
-	if x != nil {
-		return x.Continentcode
+	if x != nil && x.Continentcode != nil {
+		return *x.Continentcode
 	}
 	return ""
 }
 
 func (x *GetGeoLocationRequest) GetCountrycode() string {
-	if x != nil {
-		return x.Countrycode
+	if x != nil && x.Countrycode != nil {
+		return *x.Countrycode
 	}
 	return ""
 }
 
 func (x *GetGeoLocationRequest) GetSubdivisioncode() string {
-	if x != nil {
-		return x.Subdivisioncode
+	if x != nil && x.Subdivisioncode != nil {
+		return *x.Subdivisioncode
 	}
 	return ""
 }
@@ -7712,7 +7712,7 @@ func (x *HealthCheck) GetLinkedservice() *LinkedService {
 
 type HealthCheckAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7748,8 +7748,8 @@ func (*HealthCheckAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *HealthCheckAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -7761,18 +7761,18 @@ type HealthCheckConfig struct {
 	Disabled                     *bool                        `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
 	Enablesni                    *bool                        `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
 	Failurethreshold             *int32                       `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
-	Fullyqualifieddomainname     string                       `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3" json:"fullyqualifieddomainname,omitempty"`
+	Fullyqualifieddomainname     *string                      `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3,oneof" json:"fullyqualifieddomainname,omitempty"`
 	Healththreshold              *int32                       `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
-	Ipaddress                    string                       `protobuf:"bytes,169333741,opt,name=ipaddress,proto3" json:"ipaddress,omitempty"`
+	Ipaddress                    *string                      `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
 	Insufficientdatahealthstatus InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus" json:"insufficientdatahealthstatus,omitempty"`
 	Inverted                     *bool                        `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
 	Measurelatency               *bool                        `protobuf:"varint,87136848,opt,name=measurelatency,proto3,oneof" json:"measurelatency,omitempty"`
 	Port                         *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Regions                      []HealthCheckRegion          `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
 	Requestinterval              *int32                       `protobuf:"varint,350673112,opt,name=requestinterval,proto3,oneof" json:"requestinterval,omitempty"`
-	Resourcepath                 string                       `protobuf:"bytes,117584551,opt,name=resourcepath,proto3" json:"resourcepath,omitempty"`
-	Routingcontrolarn            string                       `protobuf:"bytes,206883790,opt,name=routingcontrolarn,proto3" json:"routingcontrolarn,omitempty"`
-	Searchstring                 string                       `protobuf:"bytes,318687365,opt,name=searchstring,proto3" json:"searchstring,omitempty"`
+	Resourcepath                 *string                      `protobuf:"bytes,117584551,opt,name=resourcepath,proto3,oneof" json:"resourcepath,omitempty"`
+	Routingcontrolarn            *string                      `protobuf:"bytes,206883790,opt,name=routingcontrolarn,proto3,oneof" json:"routingcontrolarn,omitempty"`
+	Searchstring                 *string                      `protobuf:"bytes,318687365,opt,name=searchstring,proto3,oneof" json:"searchstring,omitempty"`
 	Type                         HealthCheckType              `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.HealthCheckType" json:"type,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -7844,8 +7844,8 @@ func (x *HealthCheckConfig) GetFailurethreshold() int32 {
 }
 
 func (x *HealthCheckConfig) GetFullyqualifieddomainname() string {
-	if x != nil {
-		return x.Fullyqualifieddomainname
+	if x != nil && x.Fullyqualifieddomainname != nil {
+		return *x.Fullyqualifieddomainname
 	}
 	return ""
 }
@@ -7858,8 +7858,8 @@ func (x *HealthCheckConfig) GetHealththreshold() int32 {
 }
 
 func (x *HealthCheckConfig) GetIpaddress() string {
-	if x != nil {
-		return x.Ipaddress
+	if x != nil && x.Ipaddress != nil {
+		return *x.Ipaddress
 	}
 	return ""
 }
@@ -7907,22 +7907,22 @@ func (x *HealthCheckConfig) GetRequestinterval() int32 {
 }
 
 func (x *HealthCheckConfig) GetResourcepath() string {
-	if x != nil {
-		return x.Resourcepath
+	if x != nil && x.Resourcepath != nil {
+		return *x.Resourcepath
 	}
 	return ""
 }
 
 func (x *HealthCheckConfig) GetRoutingcontrolarn() string {
-	if x != nil {
-		return x.Routingcontrolarn
+	if x != nil && x.Routingcontrolarn != nil {
+		return *x.Routingcontrolarn
 	}
 	return ""
 }
 
 func (x *HealthCheckConfig) GetSearchstring() string {
-	if x != nil {
-		return x.Searchstring
+	if x != nil && x.Searchstring != nil {
+		return *x.Searchstring
 	}
 	return ""
 }
@@ -7936,7 +7936,7 @@ func (x *HealthCheckConfig) GetType() HealthCheckType {
 
 type HealthCheckInUse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7972,15 +7972,15 @@ func (*HealthCheckInUse) Descriptor() ([]byte, []int) {
 }
 
 func (x *HealthCheckInUse) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type HealthCheckObservation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Ipaddress     string                 `protobuf:"bytes,169333741,opt,name=ipaddress,proto3" json:"ipaddress,omitempty"`
+	Ipaddress     *string                `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
 	Region        HealthCheckRegion      `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.HealthCheckRegion" json:"region,omitempty"`
 	Statusreport  *StatusReport          `protobuf:"bytes,27958834,opt,name=statusreport,proto3" json:"statusreport,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8018,8 +8018,8 @@ func (*HealthCheckObservation) Descriptor() ([]byte, []int) {
 }
 
 func (x *HealthCheckObservation) GetIpaddress() string {
-	if x != nil {
-		return x.Ipaddress
+	if x != nil && x.Ipaddress != nil {
+		return *x.Ipaddress
 	}
 	return ""
 }
@@ -8040,7 +8040,7 @@ func (x *HealthCheckObservation) GetStatusreport() *StatusReport {
 
 type HealthCheckVersionMismatch struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8076,8 +8076,8 @@ func (*HealthCheckVersionMismatch) Descriptor() ([]byte, []int) {
 }
 
 func (x *HealthCheckVersionMismatch) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -8184,7 +8184,7 @@ func (x *HostedZone) GetVpcs() []*VPC {
 
 type HostedZoneAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8220,15 +8220,15 @@ func (*HostedZoneAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type HostedZoneConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Privatezone   *bool                  `protobuf:"varint,506703867,opt,name=privatezone,proto3,oneof" json:"privatezone,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8265,8 +8265,8 @@ func (*HostedZoneConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneConfig) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -8280,7 +8280,7 @@ func (x *HostedZoneConfig) GetPrivatezone() bool {
 
 type HostedZoneFailureReasons struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Acceleratedrecovery string                 `protobuf:"bytes,356087092,opt,name=acceleratedrecovery,proto3" json:"acceleratedrecovery,omitempty"`
+	Acceleratedrecovery *string                `protobuf:"bytes,356087092,opt,name=acceleratedrecovery,proto3,oneof" json:"acceleratedrecovery,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8316,8 +8316,8 @@ func (*HostedZoneFailureReasons) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneFailureReasons) GetAcceleratedrecovery() string {
-	if x != nil {
-		return x.Acceleratedrecovery
+	if x != nil && x.Acceleratedrecovery != nil {
+		return *x.Acceleratedrecovery
 	}
 	return ""
 }
@@ -8428,7 +8428,7 @@ func (x *HostedZoneLimit) GetValue() int64 {
 
 type HostedZoneNotEmpty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8464,15 +8464,15 @@ func (*HostedZoneNotEmpty) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneNotEmpty) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type HostedZoneNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8508,15 +8508,15 @@ func (*HostedZoneNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type HostedZoneNotPrivate struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8552,16 +8552,16 @@ func (*HostedZoneNotPrivate) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneNotPrivate) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type HostedZoneOwner struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Owningaccount string                 `protobuf:"bytes,339968073,opt,name=owningaccount,proto3" json:"owningaccount,omitempty"`
-	Owningservice string                 `protobuf:"bytes,462487817,opt,name=owningservice,proto3" json:"owningservice,omitempty"`
+	Owningaccount *string                `protobuf:"bytes,339968073,opt,name=owningaccount,proto3,oneof" json:"owningaccount,omitempty"`
+	Owningservice *string                `protobuf:"bytes,462487817,opt,name=owningservice,proto3,oneof" json:"owningservice,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8597,22 +8597,22 @@ func (*HostedZoneOwner) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZoneOwner) GetOwningaccount() string {
-	if x != nil {
-		return x.Owningaccount
+	if x != nil && x.Owningaccount != nil {
+		return *x.Owningaccount
 	}
 	return ""
 }
 
 func (x *HostedZoneOwner) GetOwningservice() string {
-	if x != nil {
-		return x.Owningservice
+	if x != nil && x.Owningservice != nil {
+		return *x.Owningservice
 	}
 	return ""
 }
 
 type HostedZonePartiallyDelegated struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8648,8 +8648,8 @@ func (*HostedZonePartiallyDelegated) Descriptor() ([]byte, []int) {
 }
 
 func (x *HostedZonePartiallyDelegated) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -8716,7 +8716,7 @@ func (x *HostedZoneSummary) GetOwner() *HostedZoneOwner {
 
 type IncompatibleVersion struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8752,15 +8752,15 @@ func (*IncompatibleVersion) Descriptor() ([]byte, []int) {
 }
 
 func (x *IncompatibleVersion) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientCloudWatchLogsResourcePolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8796,15 +8796,15 @@ func (*InsufficientCloudWatchLogsResourcePolicy) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientCloudWatchLogsResourcePolicy) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidArgument struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8840,15 +8840,15 @@ func (*InvalidArgument) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidArgument) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidChangeBatch struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Messages      []string               `protobuf:"bytes,230838,rep,name=messages,proto3" json:"messages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8885,8 +8885,8 @@ func (*InvalidChangeBatch) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidChangeBatch) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -8900,7 +8900,7 @@ func (x *InvalidChangeBatch) GetMessages() []string {
 
 type InvalidDomainName struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8936,15 +8936,15 @@ func (*InvalidDomainName) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDomainName) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8980,15 +8980,15 @@ func (*InvalidInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidInput) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidKMSArn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9024,15 +9024,15 @@ func (*InvalidKMSArn) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidKMSArn) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidKeySigningKeyName struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9068,15 +9068,15 @@ func (*InvalidKeySigningKeyName) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidKeySigningKeyName) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidKeySigningKeyStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9112,15 +9112,15 @@ func (*InvalidKeySigningKeyStatus) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidKeySigningKeyStatus) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidPaginationToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9156,15 +9156,15 @@ func (*InvalidPaginationToken) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidPaginationToken) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidSigningStatus struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9200,15 +9200,15 @@ func (*InvalidSigningStatus) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidSigningStatus) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTrafficPolicyDocument struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9244,15 +9244,15 @@ func (*InvalidTrafficPolicyDocument) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidTrafficPolicyDocument) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidVPCId struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9288,30 +9288,30 @@ func (*InvalidVPCId) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidVPCId) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KeySigningKey struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Createddate              string                 `protobuf:"bytes,416929840,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Dnskeyrecord             string                 `protobuf:"bytes,33128395,opt,name=dnskeyrecord,proto3" json:"dnskeyrecord,omitempty"`
-	Dsrecord                 string                 `protobuf:"bytes,123290342,opt,name=dsrecord,proto3" json:"dsrecord,omitempty"`
-	Digestalgorithmmnemonic  string                 `protobuf:"bytes,209907099,opt,name=digestalgorithmmnemonic,proto3" json:"digestalgorithmmnemonic,omitempty"`
+	Createddate              *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Dnskeyrecord             *string                `protobuf:"bytes,33128395,opt,name=dnskeyrecord,proto3,oneof" json:"dnskeyrecord,omitempty"`
+	Dsrecord                 *string                `protobuf:"bytes,123290342,opt,name=dsrecord,proto3,oneof" json:"dsrecord,omitempty"`
+	Digestalgorithmmnemonic  *string                `protobuf:"bytes,209907099,opt,name=digestalgorithmmnemonic,proto3,oneof" json:"digestalgorithmmnemonic,omitempty"`
 	Digestalgorithmtype      *int32                 `protobuf:"varint,255175667,opt,name=digestalgorithmtype,proto3,oneof" json:"digestalgorithmtype,omitempty"`
-	Digestvalue              string                 `protobuf:"bytes,277868387,opt,name=digestvalue,proto3" json:"digestvalue,omitempty"`
+	Digestvalue              *string                `protobuf:"bytes,277868387,opt,name=digestvalue,proto3,oneof" json:"digestvalue,omitempty"`
 	Flag                     *int32                 `protobuf:"varint,504820984,opt,name=flag,proto3,oneof" json:"flag,omitempty"`
 	Keytag                   *int32                 `protobuf:"varint,245478853,opt,name=keytag,proto3,oneof" json:"keytag,omitempty"`
-	Kmsarn                   string                 `protobuf:"bytes,205584974,opt,name=kmsarn,proto3" json:"kmsarn,omitempty"`
-	Lastmodifieddate         string                 `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3" json:"lastmodifieddate,omitempty"`
-	Name                     string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Publickey                string                 `protobuf:"bytes,167335776,opt,name=publickey,proto3" json:"publickey,omitempty"`
-	Signingalgorithmmnemonic string                 `protobuf:"bytes,379080734,opt,name=signingalgorithmmnemonic,proto3" json:"signingalgorithmmnemonic,omitempty"`
+	Kmsarn                   *string                `protobuf:"bytes,205584974,opt,name=kmsarn,proto3,oneof" json:"kmsarn,omitempty"`
+	Lastmodifieddate         *string                `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
+	Name                     *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Publickey                *string                `protobuf:"bytes,167335776,opt,name=publickey,proto3,oneof" json:"publickey,omitempty"`
+	Signingalgorithmmnemonic *string                `protobuf:"bytes,379080734,opt,name=signingalgorithmmnemonic,proto3,oneof" json:"signingalgorithmmnemonic,omitempty"`
 	Signingalgorithmtype     *int32                 `protobuf:"varint,407768874,opt,name=signingalgorithmtype,proto3,oneof" json:"signingalgorithmtype,omitempty"`
-	Status                   string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
-	Statusmessage            string                 `protobuf:"bytes,72590095,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
+	Status                   *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Statusmessage            *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -9347,29 +9347,29 @@ func (*KeySigningKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *KeySigningKey) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetDnskeyrecord() string {
-	if x != nil {
-		return x.Dnskeyrecord
+	if x != nil && x.Dnskeyrecord != nil {
+		return *x.Dnskeyrecord
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetDsrecord() string {
-	if x != nil {
-		return x.Dsrecord
+	if x != nil && x.Dsrecord != nil {
+		return *x.Dsrecord
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetDigestalgorithmmnemonic() string {
-	if x != nil {
-		return x.Digestalgorithmmnemonic
+	if x != nil && x.Digestalgorithmmnemonic != nil {
+		return *x.Digestalgorithmmnemonic
 	}
 	return ""
 }
@@ -9382,8 +9382,8 @@ func (x *KeySigningKey) GetDigestalgorithmtype() int32 {
 }
 
 func (x *KeySigningKey) GetDigestvalue() string {
-	if x != nil {
-		return x.Digestvalue
+	if x != nil && x.Digestvalue != nil {
+		return *x.Digestvalue
 	}
 	return ""
 }
@@ -9403,36 +9403,36 @@ func (x *KeySigningKey) GetKeytag() int32 {
 }
 
 func (x *KeySigningKey) GetKmsarn() string {
-	if x != nil {
-		return x.Kmsarn
+	if x != nil && x.Kmsarn != nil {
+		return *x.Kmsarn
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetLastmodifieddate() string {
-	if x != nil {
-		return x.Lastmodifieddate
+	if x != nil && x.Lastmodifieddate != nil {
+		return *x.Lastmodifieddate
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetPublickey() string {
-	if x != nil {
-		return x.Publickey
+	if x != nil && x.Publickey != nil {
+		return *x.Publickey
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetSigningalgorithmmnemonic() string {
-	if x != nil {
-		return x.Signingalgorithmmnemonic
+	if x != nil && x.Signingalgorithmmnemonic != nil {
+		return *x.Signingalgorithmmnemonic
 	}
 	return ""
 }
@@ -9445,22 +9445,22 @@ func (x *KeySigningKey) GetSigningalgorithmtype() int32 {
 }
 
 func (x *KeySigningKey) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *KeySigningKey) GetStatusmessage() string {
-	if x != nil {
-		return x.Statusmessage
+	if x != nil && x.Statusmessage != nil {
+		return *x.Statusmessage
 	}
 	return ""
 }
 
 type KeySigningKeyAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9496,15 +9496,15 @@ func (*KeySigningKeyAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *KeySigningKeyAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KeySigningKeyInParentDSRecord struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9540,15 +9540,15 @@ func (*KeySigningKeyInParentDSRecord) Descriptor() ([]byte, []int) {
 }
 
 func (x *KeySigningKeyInParentDSRecord) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KeySigningKeyInUse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9584,15 +9584,15 @@ func (*KeySigningKeyInUse) Descriptor() ([]byte, []int) {
 }
 
 func (x *KeySigningKeyInUse) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KeySigningKeyWithActiveStatusNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9628,15 +9628,15 @@ func (*KeySigningKeyWithActiveStatusNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *KeySigningKeyWithActiveStatusNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LastVPCAssociation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9672,15 +9672,15 @@ func (*LastVPCAssociation) Descriptor() ([]byte, []int) {
 }
 
 func (x *LastVPCAssociation) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LimitsExceeded struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9716,16 +9716,16 @@ func (*LimitsExceeded) Descriptor() ([]byte, []int) {
 }
 
 func (x *LimitsExceeded) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LinkedService struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Description      string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Serviceprincipal string                 `protobuf:"bytes,146694383,opt,name=serviceprincipal,proto3" json:"serviceprincipal,omitempty"`
+	Description      *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Serviceprincipal *string                `protobuf:"bytes,146694383,opt,name=serviceprincipal,proto3,oneof" json:"serviceprincipal,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -9761,15 +9761,15 @@ func (*LinkedService) Descriptor() ([]byte, []int) {
 }
 
 func (x *LinkedService) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *LinkedService) GetServiceprincipal() string {
-	if x != nil {
-		return x.Serviceprincipal
+	if x != nil && x.Serviceprincipal != nil {
+		return *x.Serviceprincipal
 	}
 	return ""
 }
@@ -9777,9 +9777,9 @@ func (x *LinkedService) GetServiceprincipal() string {
 type ListCidrBlocksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Collectionid  string                 `protobuf:"bytes,128052453,opt,name=collectionid,proto3" json:"collectionid,omitempty"`
-	Locationname  string                 `protobuf:"bytes,158186566,opt,name=locationname,proto3" json:"locationname,omitempty"`
-	Maxresults    string                 `protobuf:"bytes,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Locationname  *string                `protobuf:"bytes,158186566,opt,name=locationname,proto3,oneof" json:"locationname,omitempty"`
+	Maxresults    *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9822,22 +9822,22 @@ func (x *ListCidrBlocksRequest) GetCollectionid() string {
 }
 
 func (x *ListCidrBlocksRequest) GetLocationname() string {
-	if x != nil {
-		return x.Locationname
+	if x != nil && x.Locationname != nil {
+		return *x.Locationname
 	}
 	return ""
 }
 
 func (x *ListCidrBlocksRequest) GetMaxresults() string {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return ""
 }
 
 func (x *ListCidrBlocksRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9845,7 +9845,7 @@ func (x *ListCidrBlocksRequest) GetNexttoken() string {
 type ListCidrBlocksResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cidrblocks    []*CidrBlockSummary    `protobuf:"bytes,134660738,rep,name=cidrblocks,proto3" json:"cidrblocks,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9888,16 +9888,16 @@ func (x *ListCidrBlocksResponse) GetCidrblocks() []*CidrBlockSummary {
 }
 
 func (x *ListCidrBlocksResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListCidrCollectionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxresults    string                 `protobuf:"bytes,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Maxresults    *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9933,15 +9933,15 @@ func (*ListCidrCollectionsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListCidrCollectionsRequest) GetMaxresults() string {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return ""
 }
 
 func (x *ListCidrCollectionsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9949,7 +9949,7 @@ func (x *ListCidrCollectionsRequest) GetNexttoken() string {
 type ListCidrCollectionsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Cidrcollections []*CollectionSummary   `protobuf:"bytes,502378541,rep,name=cidrcollections,proto3" json:"cidrcollections,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -9992,8 +9992,8 @@ func (x *ListCidrCollectionsResponse) GetCidrcollections() []*CollectionSummary 
 }
 
 func (x *ListCidrCollectionsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10001,8 +10001,8 @@ func (x *ListCidrCollectionsResponse) GetNexttoken() string {
 type ListCidrLocationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Collectionid  string                 `protobuf:"bytes,128052453,opt,name=collectionid,proto3" json:"collectionid,omitempty"`
-	Maxresults    string                 `protobuf:"bytes,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Maxresults    *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10045,15 +10045,15 @@ func (x *ListCidrLocationsRequest) GetCollectionid() string {
 }
 
 func (x *ListCidrLocationsRequest) GetMaxresults() string {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return ""
 }
 
 func (x *ListCidrLocationsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10061,7 +10061,7 @@ func (x *ListCidrLocationsRequest) GetNexttoken() string {
 type ListCidrLocationsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Cidrlocations []*LocationSummary     `protobuf:"bytes,480481962,rep,name=cidrlocations,proto3" json:"cidrlocations,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10104,18 +10104,18 @@ func (x *ListCidrLocationsResponse) GetCidrlocations() []*LocationSummary {
 }
 
 func (x *ListCidrLocationsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListGeoLocationsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems             string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Startcontinentcode   string                 `protobuf:"bytes,272774541,opt,name=startcontinentcode,proto3" json:"startcontinentcode,omitempty"`
-	Startcountrycode     string                 `protobuf:"bytes,182995791,opt,name=startcountrycode,proto3" json:"startcountrycode,omitempty"`
-	Startsubdivisioncode string                 `protobuf:"bytes,206846290,opt,name=startsubdivisioncode,proto3" json:"startsubdivisioncode,omitempty"`
+	Maxitems             *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Startcontinentcode   *string                `protobuf:"bytes,272774541,opt,name=startcontinentcode,proto3,oneof" json:"startcontinentcode,omitempty"`
+	Startcountrycode     *string                `protobuf:"bytes,182995791,opt,name=startcountrycode,proto3,oneof" json:"startcountrycode,omitempty"`
+	Startsubdivisioncode *string                `protobuf:"bytes,206846290,opt,name=startsubdivisioncode,proto3,oneof" json:"startsubdivisioncode,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -10151,29 +10151,29 @@ func (*ListGeoLocationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListGeoLocationsRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListGeoLocationsRequest) GetStartcontinentcode() string {
-	if x != nil {
-		return x.Startcontinentcode
+	if x != nil && x.Startcontinentcode != nil {
+		return *x.Startcontinentcode
 	}
 	return ""
 }
 
 func (x *ListGeoLocationsRequest) GetStartcountrycode() string {
-	if x != nil {
-		return x.Startcountrycode
+	if x != nil && x.Startcountrycode != nil {
+		return *x.Startcountrycode
 	}
 	return ""
 }
 
 func (x *ListGeoLocationsRequest) GetStartsubdivisioncode() string {
-	if x != nil {
-		return x.Startsubdivisioncode
+	if x != nil && x.Startsubdivisioncode != nil {
+		return *x.Startsubdivisioncode
 	}
 	return ""
 }
@@ -10183,9 +10183,9 @@ type ListGeoLocationsResponse struct {
 	Geolocationdetailslist []*GeoLocationDetails  `protobuf:"bytes,448447430,rep,name=geolocationdetailslist,proto3" json:"geolocationdetailslist,omitempty"`
 	Istruncated            *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems               string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nextcontinentcode      string                 `protobuf:"bytes,14234018,opt,name=nextcontinentcode,proto3" json:"nextcontinentcode,omitempty"`
-	Nextcountrycode        string                 `protobuf:"bytes,147948496,opt,name=nextcountrycode,proto3" json:"nextcountrycode,omitempty"`
-	Nextsubdivisioncode    string                 `protobuf:"bytes,385449253,opt,name=nextsubdivisioncode,proto3" json:"nextsubdivisioncode,omitempty"`
+	Nextcontinentcode      *string                `protobuf:"bytes,14234018,opt,name=nextcontinentcode,proto3,oneof" json:"nextcontinentcode,omitempty"`
+	Nextcountrycode        *string                `protobuf:"bytes,147948496,opt,name=nextcountrycode,proto3,oneof" json:"nextcountrycode,omitempty"`
+	Nextsubdivisioncode    *string                `protobuf:"bytes,385449253,opt,name=nextsubdivisioncode,proto3,oneof" json:"nextsubdivisioncode,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -10242,30 +10242,30 @@ func (x *ListGeoLocationsResponse) GetMaxitems() string {
 }
 
 func (x *ListGeoLocationsResponse) GetNextcontinentcode() string {
-	if x != nil {
-		return x.Nextcontinentcode
+	if x != nil && x.Nextcontinentcode != nil {
+		return *x.Nextcontinentcode
 	}
 	return ""
 }
 
 func (x *ListGeoLocationsResponse) GetNextcountrycode() string {
-	if x != nil {
-		return x.Nextcountrycode
+	if x != nil && x.Nextcountrycode != nil {
+		return *x.Nextcountrycode
 	}
 	return ""
 }
 
 func (x *ListGeoLocationsResponse) GetNextsubdivisioncode() string {
-	if x != nil {
-		return x.Nextsubdivisioncode
+	if x != nil && x.Nextsubdivisioncode != nil {
+		return *x.Nextsubdivisioncode
 	}
 	return ""
 }
 
 type ListHealthChecksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
+	Maxitems      *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10301,15 +10301,15 @@ func (*ListHealthChecksRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListHealthChecksRequest) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 func (x *ListHealthChecksRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
@@ -10320,7 +10320,7 @@ type ListHealthChecksResponse struct {
 	Istruncated   *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	Maxitems      string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10384,17 +10384,17 @@ func (x *ListHealthChecksResponse) GetMaxitems() string {
 }
 
 func (x *ListHealthChecksResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListHostedZonesByNameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dnsname       string                 `protobuf:"bytes,171901432,opt,name=dnsname,proto3" json:"dnsname,omitempty"`
-	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Maxitems      string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Dnsname       *string                `protobuf:"bytes,171901432,opt,name=dnsname,proto3,oneof" json:"dnsname,omitempty"`
+	Hostedzoneid  *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
+	Maxitems      *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10430,35 +10430,35 @@ func (*ListHostedZonesByNameRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListHostedZonesByNameRequest) GetDnsname() string {
-	if x != nil {
-		return x.Dnsname
+	if x != nil && x.Dnsname != nil {
+		return *x.Dnsname
 	}
 	return ""
 }
 
 func (x *ListHostedZonesByNameRequest) GetHostedzoneid() string {
-	if x != nil {
-		return x.Hostedzoneid
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
 	}
 	return ""
 }
 
 func (x *ListHostedZonesByNameRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 type ListHostedZonesByNameResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Dnsname          string                 `protobuf:"bytes,171901432,opt,name=dnsname,proto3" json:"dnsname,omitempty"`
-	Hostedzoneid     string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
+	Dnsname          *string                `protobuf:"bytes,171901432,opt,name=dnsname,proto3,oneof" json:"dnsname,omitempty"`
+	Hostedzoneid     *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
 	Hostedzones      []*HostedZone          `protobuf:"bytes,86735402,rep,name=hostedzones,proto3" json:"hostedzones,omitempty"`
 	Istruncated      *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems         string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nextdnsname      string                 `protobuf:"bytes,488331797,opt,name=nextdnsname,proto3" json:"nextdnsname,omitempty"`
-	Nexthostedzoneid string                 `protobuf:"bytes,162450165,opt,name=nexthostedzoneid,proto3" json:"nexthostedzoneid,omitempty"`
+	Nextdnsname      *string                `protobuf:"bytes,488331797,opt,name=nextdnsname,proto3,oneof" json:"nextdnsname,omitempty"`
+	Nexthostedzoneid *string                `protobuf:"bytes,162450165,opt,name=nexthostedzoneid,proto3,oneof" json:"nexthostedzoneid,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -10494,15 +10494,15 @@ func (*ListHostedZonesByNameResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListHostedZonesByNameResponse) GetDnsname() string {
-	if x != nil {
-		return x.Dnsname
+	if x != nil && x.Dnsname != nil {
+		return *x.Dnsname
 	}
 	return ""
 }
 
 func (x *ListHostedZonesByNameResponse) GetHostedzoneid() string {
-	if x != nil {
-		return x.Hostedzoneid
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
 	}
 	return ""
 }
@@ -10529,23 +10529,23 @@ func (x *ListHostedZonesByNameResponse) GetMaxitems() string {
 }
 
 func (x *ListHostedZonesByNameResponse) GetNextdnsname() string {
-	if x != nil {
-		return x.Nextdnsname
+	if x != nil && x.Nextdnsname != nil {
+		return *x.Nextdnsname
 	}
 	return ""
 }
 
 func (x *ListHostedZonesByNameResponse) GetNexthostedzoneid() string {
-	if x != nil {
-		return x.Nexthostedzoneid
+	if x != nil && x.Nexthostedzoneid != nil {
+		return *x.Nexthostedzoneid
 	}
 	return ""
 }
 
 type ListHostedZonesByVPCRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems      string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Maxitems      *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Vpcid         string                 `protobuf:"bytes,325135798,opt,name=vpcid,proto3" json:"vpcid,omitempty"`
 	Vpcregion     VPCRegion              `protobuf:"varint,474180765,opt,name=vpcregion,proto3,enum=route53.VPCRegion" json:"vpcregion,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10583,15 +10583,15 @@ func (*ListHostedZonesByVPCRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListHostedZonesByVPCRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListHostedZonesByVPCRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10614,7 +10614,7 @@ type ListHostedZonesByVPCResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Hostedzonesummaries []*HostedZoneSummary   `protobuf:"bytes,111631021,rep,name=hostedzonesummaries,proto3" json:"hostedzonesummaries,omitempty"`
 	Maxitems            string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken           *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -10664,18 +10664,18 @@ func (x *ListHostedZonesByVPCResponse) GetMaxitems() string {
 }
 
 func (x *ListHostedZonesByVPCResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListHostedZonesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Delegationsetid string                 `protobuf:"bytes,307328801,opt,name=delegationsetid,proto3" json:"delegationsetid,omitempty"`
+	Delegationsetid *string                `protobuf:"bytes,307328801,opt,name=delegationsetid,proto3,oneof" json:"delegationsetid,omitempty"`
 	Hostedzonetype  HostedZoneType         `protobuf:"varint,409319401,opt,name=hostedzonetype,proto3,enum=route53.HostedZoneType" json:"hostedzonetype,omitempty"`
-	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems        string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Marker          *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
+	Maxitems        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -10711,8 +10711,8 @@ func (*ListHostedZonesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListHostedZonesRequest) GetDelegationsetid() string {
-	if x != nil {
-		return x.Delegationsetid
+	if x != nil && x.Delegationsetid != nil {
+		return *x.Delegationsetid
 	}
 	return ""
 }
@@ -10725,15 +10725,15 @@ func (x *ListHostedZonesRequest) GetHostedzonetype() HostedZoneType {
 }
 
 func (x *ListHostedZonesRequest) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 func (x *ListHostedZonesRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
@@ -10744,7 +10744,7 @@ type ListHostedZonesResponse struct {
 	Istruncated   *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	Maxitems      string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10808,17 +10808,17 @@ func (x *ListHostedZonesResponse) GetMaxitems() string {
 }
 
 func (x *ListHostedZonesResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListQueryLoggingConfigsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Maxresults    string                 `protobuf:"bytes,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Hostedzoneid  *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
+	Maxresults    *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10854,29 +10854,29 @@ func (*ListQueryLoggingConfigsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueryLoggingConfigsRequest) GetHostedzoneid() string {
-	if x != nil {
-		return x.Hostedzoneid
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
 	}
 	return ""
 }
 
 func (x *ListQueryLoggingConfigsRequest) GetMaxresults() string {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return ""
 }
 
 func (x *ListQueryLoggingConfigsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListQueryLoggingConfigsResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken           *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queryloggingconfigs []*QueryLoggingConfig  `protobuf:"bytes,87688172,rep,name=queryloggingconfigs,proto3" json:"queryloggingconfigs,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -10913,8 +10913,8 @@ func (*ListQueryLoggingConfigsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueryLoggingConfigsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10929,9 +10929,9 @@ func (x *ListQueryLoggingConfigsResponse) GetQueryloggingconfigs() []*QueryLoggi
 type ListResourceRecordSetsRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Hostedzoneid          string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Maxitems              string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Startrecordidentifier string                 `protobuf:"bytes,518502950,opt,name=startrecordidentifier,proto3" json:"startrecordidentifier,omitempty"`
-	Startrecordname       string                 `protobuf:"bytes,145299062,opt,name=startrecordname,proto3" json:"startrecordname,omitempty"`
+	Maxitems              *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Startrecordidentifier *string                `protobuf:"bytes,518502950,opt,name=startrecordidentifier,proto3,oneof" json:"startrecordidentifier,omitempty"`
+	Startrecordname       *string                `protobuf:"bytes,145299062,opt,name=startrecordname,proto3,oneof" json:"startrecordname,omitempty"`
 	Startrecordtype       RRType                 `protobuf:"varint,408714791,opt,name=startrecordtype,proto3,enum=route53.RRType" json:"startrecordtype,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -10975,22 +10975,22 @@ func (x *ListResourceRecordSetsRequest) GetHostedzoneid() string {
 }
 
 func (x *ListResourceRecordSetsRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListResourceRecordSetsRequest) GetStartrecordidentifier() string {
-	if x != nil {
-		return x.Startrecordidentifier
+	if x != nil && x.Startrecordidentifier != nil {
+		return *x.Startrecordidentifier
 	}
 	return ""
 }
 
 func (x *ListResourceRecordSetsRequest) GetStartrecordname() string {
-	if x != nil {
-		return x.Startrecordname
+	if x != nil && x.Startrecordname != nil {
+		return *x.Startrecordname
 	}
 	return ""
 }
@@ -11006,8 +11006,8 @@ type ListResourceRecordSetsResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Istruncated          *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems             string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nextrecordidentifier string                 `protobuf:"bytes,424069527,opt,name=nextrecordidentifier,proto3" json:"nextrecordidentifier,omitempty"`
-	Nextrecordname       string                 `protobuf:"bytes,131258783,opt,name=nextrecordname,proto3" json:"nextrecordname,omitempty"`
+	Nextrecordidentifier *string                `protobuf:"bytes,424069527,opt,name=nextrecordidentifier,proto3,oneof" json:"nextrecordidentifier,omitempty"`
+	Nextrecordname       *string                `protobuf:"bytes,131258783,opt,name=nextrecordname,proto3,oneof" json:"nextrecordname,omitempty"`
 	Nextrecordtype       RRType                 `protobuf:"varint,97817846,opt,name=nextrecordtype,proto3,enum=route53.RRType" json:"nextrecordtype,omitempty"`
 	Resourcerecordsets   []*ResourceRecordSet   `protobuf:"bytes,77807302,rep,name=resourcerecordsets,proto3" json:"resourcerecordsets,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -11059,15 +11059,15 @@ func (x *ListResourceRecordSetsResponse) GetMaxitems() string {
 }
 
 func (x *ListResourceRecordSetsResponse) GetNextrecordidentifier() string {
-	if x != nil {
-		return x.Nextrecordidentifier
+	if x != nil && x.Nextrecordidentifier != nil {
+		return *x.Nextrecordidentifier
 	}
 	return ""
 }
 
 func (x *ListResourceRecordSetsResponse) GetNextrecordname() string {
-	if x != nil {
-		return x.Nextrecordname
+	if x != nil && x.Nextrecordname != nil {
+		return *x.Nextrecordname
 	}
 	return ""
 }
@@ -11088,8 +11088,8 @@ func (x *ListResourceRecordSetsResponse) GetResourcerecordsets() []*ResourceReco
 
 type ListReusableDelegationSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
-	Maxitems      string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
+	Maxitems      *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11125,15 +11125,15 @@ func (*ListReusableDelegationSetsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListReusableDelegationSetsRequest) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 func (x *ListReusableDelegationSetsRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
@@ -11144,7 +11144,7 @@ type ListReusableDelegationSetsResponse struct {
 	Istruncated    *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
 	Maxitems       string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Nextmarker     string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker     *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -11208,8 +11208,8 @@ func (x *ListReusableDelegationSetsResponse) GetMaxitems() string {
 }
 
 func (x *ListReusableDelegationSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11408,8 +11408,8 @@ func (x *ListTagsForResourcesResponse) GetResourcetagsets() []*ResourceTagSet {
 
 type ListTrafficPoliciesRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Maxitems              string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyidmarker string                 `protobuf:"bytes,426883336,opt,name=trafficpolicyidmarker,proto3" json:"trafficpolicyidmarker,omitempty"`
+	Maxitems              *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Trafficpolicyidmarker *string                `protobuf:"bytes,426883336,opt,name=trafficpolicyidmarker,proto3,oneof" json:"trafficpolicyidmarker,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -11445,15 +11445,15 @@ func (*ListTrafficPoliciesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTrafficPoliciesRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListTrafficPoliciesRequest) GetTrafficpolicyidmarker() string {
-	if x != nil {
-		return x.Trafficpolicyidmarker
+	if x != nil && x.Trafficpolicyidmarker != nil {
+		return *x.Trafficpolicyidmarker
 	}
 	return ""
 }
@@ -11529,8 +11529,8 @@ func (x *ListTrafficPoliciesResponse) GetTrafficpolicysummaries() []*TrafficPoli
 type ListTrafficPolicyInstancesByHostedZoneRequest struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	Hostedzoneid                    string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Maxitems                        string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyinstancenamemarker string                 `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3" json:"trafficpolicyinstancenamemarker,omitempty"`
+	Maxitems                        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Trafficpolicyinstancenamemarker *string                `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
 	Trafficpolicyinstancetypemarker RRType                 `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -11574,15 +11574,15 @@ func (x *ListTrafficPolicyInstancesByHostedZoneRequest) GetHostedzoneid() string
 }
 
 func (x *ListTrafficPolicyInstancesByHostedZoneRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListTrafficPolicyInstancesByHostedZoneRequest) GetTrafficpolicyinstancenamemarker() string {
-	if x != nil {
-		return x.Trafficpolicyinstancenamemarker
+	if x != nil && x.Trafficpolicyinstancenamemarker != nil {
+		return *x.Trafficpolicyinstancenamemarker
 	}
 	return ""
 }
@@ -11598,7 +11598,7 @@ type ListTrafficPolicyInstancesByHostedZoneResponse struct {
 	state                           protoimpl.MessageState   `protogen:"open.v1"`
 	Istruncated                     *bool                    `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems                        string                   `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyinstancenamemarker string                   `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3" json:"trafficpolicyinstancenamemarker,omitempty"`
+	Trafficpolicyinstancenamemarker *string                  `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
 	Trafficpolicyinstancetypemarker RRType                   `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyinstances          []*TrafficPolicyInstance `protobuf:"bytes,199455009,rep,name=trafficpolicyinstances,proto3" json:"trafficpolicyinstances,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
@@ -11650,8 +11650,8 @@ func (x *ListTrafficPolicyInstancesByHostedZoneResponse) GetMaxitems() string {
 }
 
 func (x *ListTrafficPolicyInstancesByHostedZoneResponse) GetTrafficpolicyinstancenamemarker() string {
-	if x != nil {
-		return x.Trafficpolicyinstancenamemarker
+	if x != nil && x.Trafficpolicyinstancenamemarker != nil {
+		return *x.Trafficpolicyinstancenamemarker
 	}
 	return ""
 }
@@ -11672,10 +11672,10 @@ func (x *ListTrafficPolicyInstancesByHostedZoneResponse) GetTrafficpolicyinstanc
 
 type ListTrafficPolicyInstancesByPolicyRequest struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
-	Hostedzoneidmarker              string                 `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3" json:"hostedzoneidmarker,omitempty"`
-	Maxitems                        string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
+	Hostedzoneidmarker              *string                `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3,oneof" json:"hostedzoneidmarker,omitempty"`
+	Maxitems                        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
 	Trafficpolicyid                 string                 `protobuf:"bytes,40235222,opt,name=trafficpolicyid,proto3" json:"trafficpolicyid,omitempty"`
-	Trafficpolicyinstancenamemarker string                 `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3" json:"trafficpolicyinstancenamemarker,omitempty"`
+	Trafficpolicyinstancenamemarker *string                `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
 	Trafficpolicyinstancetypemarker RRType                 `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyversion            int32                  `protobuf:"varint,479078485,opt,name=trafficpolicyversion,proto3" json:"trafficpolicyversion,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
@@ -11713,15 +11713,15 @@ func (*ListTrafficPolicyInstancesByPolicyRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyRequest) GetHostedzoneidmarker() string {
-	if x != nil {
-		return x.Hostedzoneidmarker
+	if x != nil && x.Hostedzoneidmarker != nil {
+		return *x.Hostedzoneidmarker
 	}
 	return ""
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
@@ -11734,8 +11734,8 @@ func (x *ListTrafficPolicyInstancesByPolicyRequest) GetTrafficpolicyid() string 
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyRequest) GetTrafficpolicyinstancenamemarker() string {
-	if x != nil {
-		return x.Trafficpolicyinstancenamemarker
+	if x != nil && x.Trafficpolicyinstancenamemarker != nil {
+		return *x.Trafficpolicyinstancenamemarker
 	}
 	return ""
 }
@@ -11756,10 +11756,10 @@ func (x *ListTrafficPolicyInstancesByPolicyRequest) GetTrafficpolicyversion() in
 
 type ListTrafficPolicyInstancesByPolicyResponse struct {
 	state                           protoimpl.MessageState   `protogen:"open.v1"`
-	Hostedzoneidmarker              string                   `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3" json:"hostedzoneidmarker,omitempty"`
+	Hostedzoneidmarker              *string                  `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3,oneof" json:"hostedzoneidmarker,omitempty"`
 	Istruncated                     *bool                    `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems                        string                   `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyinstancenamemarker string                   `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3" json:"trafficpolicyinstancenamemarker,omitempty"`
+	Trafficpolicyinstancenamemarker *string                  `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
 	Trafficpolicyinstancetypemarker RRType                   `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyinstances          []*TrafficPolicyInstance `protobuf:"bytes,199455009,rep,name=trafficpolicyinstances,proto3" json:"trafficpolicyinstances,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
@@ -11797,8 +11797,8 @@ func (*ListTrafficPolicyInstancesByPolicyResponse) Descriptor() ([]byte, []int) 
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyResponse) GetHostedzoneidmarker() string {
-	if x != nil {
-		return x.Hostedzoneidmarker
+	if x != nil && x.Hostedzoneidmarker != nil {
+		return *x.Hostedzoneidmarker
 	}
 	return ""
 }
@@ -11818,8 +11818,8 @@ func (x *ListTrafficPolicyInstancesByPolicyResponse) GetMaxitems() string {
 }
 
 func (x *ListTrafficPolicyInstancesByPolicyResponse) GetTrafficpolicyinstancenamemarker() string {
-	if x != nil {
-		return x.Trafficpolicyinstancenamemarker
+	if x != nil && x.Trafficpolicyinstancenamemarker != nil {
+		return *x.Trafficpolicyinstancenamemarker
 	}
 	return ""
 }
@@ -11840,9 +11840,9 @@ func (x *ListTrafficPolicyInstancesByPolicyResponse) GetTrafficpolicyinstances()
 
 type ListTrafficPolicyInstancesRequest struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
-	Hostedzoneidmarker              string                 `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3" json:"hostedzoneidmarker,omitempty"`
-	Maxitems                        string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyinstancenamemarker string                 `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3" json:"trafficpolicyinstancenamemarker,omitempty"`
+	Hostedzoneidmarker              *string                `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3,oneof" json:"hostedzoneidmarker,omitempty"`
+	Maxitems                        *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Trafficpolicyinstancenamemarker *string                `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
 	Trafficpolicyinstancetypemarker RRType                 `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -11879,22 +11879,22 @@ func (*ListTrafficPolicyInstancesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTrafficPolicyInstancesRequest) GetHostedzoneidmarker() string {
-	if x != nil {
-		return x.Hostedzoneidmarker
+	if x != nil && x.Hostedzoneidmarker != nil {
+		return *x.Hostedzoneidmarker
 	}
 	return ""
 }
 
 func (x *ListTrafficPolicyInstancesRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListTrafficPolicyInstancesRequest) GetTrafficpolicyinstancenamemarker() string {
-	if x != nil {
-		return x.Trafficpolicyinstancenamemarker
+	if x != nil && x.Trafficpolicyinstancenamemarker != nil {
+		return *x.Trafficpolicyinstancenamemarker
 	}
 	return ""
 }
@@ -11908,10 +11908,10 @@ func (x *ListTrafficPolicyInstancesRequest) GetTrafficpolicyinstancetypemarker()
 
 type ListTrafficPolicyInstancesResponse struct {
 	state                           protoimpl.MessageState   `protogen:"open.v1"`
-	Hostedzoneidmarker              string                   `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3" json:"hostedzoneidmarker,omitempty"`
+	Hostedzoneidmarker              *string                  `protobuf:"bytes,475055952,opt,name=hostedzoneidmarker,proto3,oneof" json:"hostedzoneidmarker,omitempty"`
 	Istruncated                     *bool                    `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxitems                        string                   `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyinstancenamemarker string                   `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3" json:"trafficpolicyinstancenamemarker,omitempty"`
+	Trafficpolicyinstancenamemarker *string                  `protobuf:"bytes,136215379,opt,name=trafficpolicyinstancenamemarker,proto3,oneof" json:"trafficpolicyinstancenamemarker,omitempty"`
 	Trafficpolicyinstancetypemarker RRType                   `protobuf:"varint,30935978,opt,name=trafficpolicyinstancetypemarker,proto3,enum=route53.RRType" json:"trafficpolicyinstancetypemarker,omitempty"`
 	Trafficpolicyinstances          []*TrafficPolicyInstance `protobuf:"bytes,199455009,rep,name=trafficpolicyinstances,proto3" json:"trafficpolicyinstances,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
@@ -11949,8 +11949,8 @@ func (*ListTrafficPolicyInstancesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTrafficPolicyInstancesResponse) GetHostedzoneidmarker() string {
-	if x != nil {
-		return x.Hostedzoneidmarker
+	if x != nil && x.Hostedzoneidmarker != nil {
+		return *x.Hostedzoneidmarker
 	}
 	return ""
 }
@@ -11970,8 +11970,8 @@ func (x *ListTrafficPolicyInstancesResponse) GetMaxitems() string {
 }
 
 func (x *ListTrafficPolicyInstancesResponse) GetTrafficpolicyinstancenamemarker() string {
-	if x != nil {
-		return x.Trafficpolicyinstancenamemarker
+	if x != nil && x.Trafficpolicyinstancenamemarker != nil {
+		return *x.Trafficpolicyinstancenamemarker
 	}
 	return ""
 }
@@ -11993,8 +11993,8 @@ func (x *ListTrafficPolicyInstancesResponse) GetTrafficpolicyinstances() []*Traf
 type ListTrafficPolicyVersionsRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Id                         string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Maxitems                   string                 `protobuf:"bytes,506899220,opt,name=maxitems,proto3" json:"maxitems,omitempty"`
-	Trafficpolicyversionmarker string                 `protobuf:"bytes,228559295,opt,name=trafficpolicyversionmarker,proto3" json:"trafficpolicyversionmarker,omitempty"`
+	Maxitems                   *string                `protobuf:"bytes,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Trafficpolicyversionmarker *string                `protobuf:"bytes,228559295,opt,name=trafficpolicyversionmarker,proto3,oneof" json:"trafficpolicyversionmarker,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -12037,15 +12037,15 @@ func (x *ListTrafficPolicyVersionsRequest) GetId() string {
 }
 
 func (x *ListTrafficPolicyVersionsRequest) GetMaxitems() string {
-	if x != nil {
-		return x.Maxitems
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
 	}
 	return ""
 }
 
 func (x *ListTrafficPolicyVersionsRequest) GetTrafficpolicyversionmarker() string {
-	if x != nil {
-		return x.Trafficpolicyversionmarker
+	if x != nil && x.Trafficpolicyversionmarker != nil {
+		return *x.Trafficpolicyversionmarker
 	}
 	return ""
 }
@@ -12121,8 +12121,8 @@ func (x *ListTrafficPolicyVersionsResponse) GetTrafficpolicyversionmarker() stri
 type ListVPCAssociationAuthorizationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Maxresults    string                 `protobuf:"bytes,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Maxresults    *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12165,15 +12165,15 @@ func (x *ListVPCAssociationAuthorizationsRequest) GetHostedzoneid() string {
 }
 
 func (x *ListVPCAssociationAuthorizationsRequest) GetMaxresults() string {
-	if x != nil {
-		return x.Maxresults
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
 	}
 	return ""
 }
 
 func (x *ListVPCAssociationAuthorizationsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -12181,7 +12181,7 @@ func (x *ListVPCAssociationAuthorizationsRequest) GetNexttoken() string {
 type ListVPCAssociationAuthorizationsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Vpcs          []*VPC                 `protobuf:"bytes,424064898,rep,name=vpcs,proto3" json:"vpcs,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12225,8 +12225,8 @@ func (x *ListVPCAssociationAuthorizationsResponse) GetHostedzoneid() string {
 }
 
 func (x *ListVPCAssociationAuthorizationsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -12240,7 +12240,7 @@ func (x *ListVPCAssociationAuthorizationsResponse) GetVpcs() []*VPC {
 
 type LocationSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Locationname  string                 `protobuf:"bytes,158186566,opt,name=locationname,proto3" json:"locationname,omitempty"`
+	Locationname  *string                `protobuf:"bytes,158186566,opt,name=locationname,proto3,oneof" json:"locationname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12276,15 +12276,15 @@ func (*LocationSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *LocationSummary) GetLocationname() string {
-	if x != nil {
-		return x.Locationname
+	if x != nil && x.Locationname != nil {
+		return *x.Locationname
 	}
 	return ""
 }
 
 type NoSuchChange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12320,15 +12320,15 @@ func (*NoSuchChange) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchChange) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchCidrCollectionException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12364,15 +12364,15 @@ func (*NoSuchCidrCollectionException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchCidrCollectionException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchCidrLocationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12408,15 +12408,15 @@ func (*NoSuchCidrLocationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchCidrLocationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchCloudWatchLogsLogGroup struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12452,15 +12452,15 @@ func (*NoSuchCloudWatchLogsLogGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchCloudWatchLogsLogGroup) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchDelegationSet struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12496,15 +12496,15 @@ func (*NoSuchDelegationSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchDelegationSet) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchGeoLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12540,15 +12540,15 @@ func (*NoSuchGeoLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchGeoLocation) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchHealthCheck struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12584,15 +12584,15 @@ func (*NoSuchHealthCheck) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchHealthCheck) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchHostedZone struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12628,15 +12628,15 @@ func (*NoSuchHostedZone) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchHostedZone) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchKeySigningKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12672,15 +12672,15 @@ func (*NoSuchKeySigningKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchKeySigningKey) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchQueryLoggingConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12716,15 +12716,15 @@ func (*NoSuchQueryLoggingConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchQueryLoggingConfig) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchTrafficPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12760,15 +12760,15 @@ func (*NoSuchTrafficPolicy) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchTrafficPolicy) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoSuchTrafficPolicyInstance struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12804,15 +12804,15 @@ func (*NoSuchTrafficPolicyInstance) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoSuchTrafficPolicyInstance) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NotAuthorizedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12848,15 +12848,15 @@ func (*NotAuthorizedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NotAuthorizedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PriorRequestNotComplete struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12892,15 +12892,15 @@ func (*PriorRequestNotComplete) Descriptor() ([]byte, []int) {
 }
 
 func (x *PriorRequestNotComplete) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PublicZoneVPCAssociation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12936,8 +12936,8 @@ func (*PublicZoneVPCAssociation) Descriptor() ([]byte, []int) {
 }
 
 func (x *PublicZoneVPCAssociation) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -13004,7 +13004,7 @@ func (x *QueryLoggingConfig) GetId() string {
 
 type QueryLoggingConfigAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13040,8 +13040,8 @@ func (*QueryLoggingConfigAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryLoggingConfigAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -13097,14 +13097,14 @@ type ResourceRecordSet struct {
 	Failover                ResourceRecordSetFailover `protobuf:"varint,26793064,opt,name=failover,proto3,enum=route53.ResourceRecordSetFailover" json:"failover,omitempty"`
 	Geolocation             *GeoLocation              `protobuf:"bytes,267973346,opt,name=geolocation,proto3" json:"geolocation,omitempty"`
 	Geoproximitylocation    *GeoProximityLocation     `protobuf:"bytes,94319785,opt,name=geoproximitylocation,proto3" json:"geoproximitylocation,omitempty"`
-	Healthcheckid           string                    `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3" json:"healthcheckid,omitempty"`
+	Healthcheckid           *string                   `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3,oneof" json:"healthcheckid,omitempty"`
 	Multivalueanswer        *bool                     `protobuf:"varint,424105486,opt,name=multivalueanswer,proto3,oneof" json:"multivalueanswer,omitempty"`
 	Name                    string                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Region                  ResourceRecordSetRegion   `protobuf:"varint,154040478,opt,name=region,proto3,enum=route53.ResourceRecordSetRegion" json:"region,omitempty"`
 	Resourcerecords         []*ResourceRecord         `protobuf:"bytes,519418974,rep,name=resourcerecords,proto3" json:"resourcerecords,omitempty"`
-	Setidentifier           string                    `protobuf:"bytes,201408985,opt,name=setidentifier,proto3" json:"setidentifier,omitempty"`
+	Setidentifier           *string                   `protobuf:"bytes,201408985,opt,name=setidentifier,proto3,oneof" json:"setidentifier,omitempty"`
 	Ttl                     *int64                    `protobuf:"varint,526904700,opt,name=ttl,proto3,oneof" json:"ttl,omitempty"`
-	Trafficpolicyinstanceid string                    `protobuf:"bytes,251421439,opt,name=trafficpolicyinstanceid,proto3" json:"trafficpolicyinstanceid,omitempty"`
+	Trafficpolicyinstanceid *string                   `protobuf:"bytes,251421439,opt,name=trafficpolicyinstanceid,proto3,oneof" json:"trafficpolicyinstanceid,omitempty"`
 	Type                    RRType                    `protobuf:"varint,290836590,opt,name=type,proto3,enum=route53.RRType" json:"type,omitempty"`
 	Weight                  *int64                    `protobuf:"varint,422581466,opt,name=weight,proto3,oneof" json:"weight,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -13177,8 +13177,8 @@ func (x *ResourceRecordSet) GetGeoproximitylocation() *GeoProximityLocation {
 }
 
 func (x *ResourceRecordSet) GetHealthcheckid() string {
-	if x != nil {
-		return x.Healthcheckid
+	if x != nil && x.Healthcheckid != nil {
+		return *x.Healthcheckid
 	}
 	return ""
 }
@@ -13212,8 +13212,8 @@ func (x *ResourceRecordSet) GetResourcerecords() []*ResourceRecord {
 }
 
 func (x *ResourceRecordSet) GetSetidentifier() string {
-	if x != nil {
-		return x.Setidentifier
+	if x != nil && x.Setidentifier != nil {
+		return *x.Setidentifier
 	}
 	return ""
 }
@@ -13226,8 +13226,8 @@ func (x *ResourceRecordSet) GetTtl() int64 {
 }
 
 func (x *ResourceRecordSet) GetTrafficpolicyinstanceid() string {
-	if x != nil {
-		return x.Trafficpolicyinstanceid
+	if x != nil && x.Trafficpolicyinstanceid != nil {
+		return *x.Trafficpolicyinstanceid
 	}
 	return ""
 }
@@ -13248,7 +13248,7 @@ func (x *ResourceRecordSet) GetWeight() int64 {
 
 type ResourceTagSet struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourceid    string                 `protobuf:"bytes,526146833,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
+	Resourceid    *string                `protobuf:"bytes,526146833,opt,name=resourceid,proto3,oneof" json:"resourceid,omitempty"`
 	Resourcetype  TagResourceType        `protobuf:"varint,301342558,opt,name=resourcetype,proto3,enum=route53.TagResourceType" json:"resourcetype,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -13286,8 +13286,8 @@ func (*ResourceTagSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceTagSet) GetResourceid() string {
-	if x != nil {
-		return x.Resourceid
+	if x != nil && x.Resourceid != nil {
+		return *x.Resourceid
 	}
 	return ""
 }
@@ -13360,8 +13360,8 @@ func (x *ReusableDelegationSetLimit) GetValue() int64 {
 
 type StatusReport struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Checkedtime   string                 `protobuf:"bytes,152550560,opt,name=checkedtime,proto3" json:"checkedtime,omitempty"`
-	Status        string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Checkedtime   *string                `protobuf:"bytes,152550560,opt,name=checkedtime,proto3,oneof" json:"checkedtime,omitempty"`
+	Status        *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13397,23 +13397,23 @@ func (*StatusReport) Descriptor() ([]byte, []int) {
 }
 
 func (x *StatusReport) GetCheckedtime() string {
-	if x != nil {
-		return x.Checkedtime
+	if x != nil && x.Checkedtime != nil {
+		return *x.Checkedtime
 	}
 	return ""
 }
 
 func (x *StatusReport) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type Tag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Key           *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13449,27 +13449,27 @@ func (*Tag) Descriptor() ([]byte, []int) {
 }
 
 func (x *Tag) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *Tag) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
 
 type TestDNSAnswerRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Edns0Clientsubnetip   string                 `protobuf:"bytes,506730999,opt,name=edns0clientsubnetip,proto3" json:"edns0clientsubnetip,omitempty"`
-	Edns0Clientsubnetmask string                 `protobuf:"bytes,381322620,opt,name=edns0clientsubnetmask,proto3" json:"edns0clientsubnetmask,omitempty"`
+	Edns0Clientsubnetip   *string                `protobuf:"bytes,506730999,opt,name=edns0clientsubnetip,proto3,oneof" json:"edns0clientsubnetip,omitempty"`
+	Edns0Clientsubnetmask *string                `protobuf:"bytes,381322620,opt,name=edns0clientsubnetmask,proto3,oneof" json:"edns0clientsubnetmask,omitempty"`
 	Hostedzoneid          string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
 	Recordname            string                 `protobuf:"bytes,204939016,opt,name=recordname,proto3" json:"recordname,omitempty"`
 	Recordtype            RRType                 `protobuf:"varint,441248261,opt,name=recordtype,proto3,enum=route53.RRType" json:"recordtype,omitempty"`
-	Resolverip            string                 `protobuf:"bytes,95000907,opt,name=resolverip,proto3" json:"resolverip,omitempty"`
+	Resolverip            *string                `protobuf:"bytes,95000907,opt,name=resolverip,proto3,oneof" json:"resolverip,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -13505,15 +13505,15 @@ func (*TestDNSAnswerRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *TestDNSAnswerRequest) GetEdns0Clientsubnetip() string {
-	if x != nil {
-		return x.Edns0Clientsubnetip
+	if x != nil && x.Edns0Clientsubnetip != nil {
+		return *x.Edns0Clientsubnetip
 	}
 	return ""
 }
 
 func (x *TestDNSAnswerRequest) GetEdns0Clientsubnetmask() string {
-	if x != nil {
-		return x.Edns0Clientsubnetmask
+	if x != nil && x.Edns0Clientsubnetmask != nil {
+		return *x.Edns0Clientsubnetmask
 	}
 	return ""
 }
@@ -13540,8 +13540,8 @@ func (x *TestDNSAnswerRequest) GetRecordtype() RRType {
 }
 
 func (x *TestDNSAnswerRequest) GetResolverip() string {
-	if x != nil {
-		return x.Resolverip
+	if x != nil && x.Resolverip != nil {
+		return *x.Resolverip
 	}
 	return ""
 }
@@ -13632,7 +13632,7 @@ func (x *TestDNSAnswerResponse) GetResponsecode() string {
 
 type ThrottlingException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13668,15 +13668,15 @@ func (*ThrottlingException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ThrottlingException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyHealthChecks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13712,15 +13712,15 @@ func (*TooManyHealthChecks) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyHealthChecks) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyHostedZones struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13756,15 +13756,15 @@ func (*TooManyHostedZones) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyHostedZones) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyKeySigningKeys struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13800,15 +13800,15 @@ func (*TooManyKeySigningKeys) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyKeySigningKeys) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyTrafficPolicies struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13844,15 +13844,15 @@ func (*TooManyTrafficPolicies) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyTrafficPolicies) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyTrafficPolicyInstances struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13888,15 +13888,15 @@ func (*TooManyTrafficPolicyInstances) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyTrafficPolicyInstances) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyTrafficPolicyVersionsForCurrentPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13932,15 +13932,15 @@ func (*TooManyTrafficPolicyVersionsForCurrentPolicy) Descriptor() ([]byte, []int
 }
 
 func (x *TooManyTrafficPolicyVersionsForCurrentPolicy) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyVPCAssociationAuthorizations struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13976,15 +13976,15 @@ func (*TooManyVPCAssociationAuthorizations) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyVPCAssociationAuthorizations) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TrafficPolicy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Document      string                 `protobuf:"bytes,407108341,opt,name=document,proto3" json:"document,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
@@ -14025,8 +14025,8 @@ func (*TrafficPolicy) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrafficPolicy) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -14068,7 +14068,7 @@ func (x *TrafficPolicy) GetVersion() int32 {
 
 type TrafficPolicyAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14104,15 +14104,15 @@ func (*TrafficPolicyAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrafficPolicyAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TrafficPolicyInUse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14148,8 +14148,8 @@ func (*TrafficPolicyInUse) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrafficPolicyInUse) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -14264,7 +14264,7 @@ func (x *TrafficPolicyInstance) GetTrafficpolicyversion() int32 {
 
 type TrafficPolicyInstanceAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14300,8 +14300,8 @@ func (*TrafficPolicyInstanceAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrafficPolicyInstanceAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -14389,18 +14389,18 @@ type UpdateHealthCheckRequest struct {
 	Disabled                     *bool                        `protobuf:"varint,533633318,opt,name=disabled,proto3,oneof" json:"disabled,omitempty"`
 	Enablesni                    *bool                        `protobuf:"varint,70122887,opt,name=enablesni,proto3,oneof" json:"enablesni,omitempty"`
 	Failurethreshold             *int32                       `protobuf:"varint,176846565,opt,name=failurethreshold,proto3,oneof" json:"failurethreshold,omitempty"`
-	Fullyqualifieddomainname     string                       `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3" json:"fullyqualifieddomainname,omitempty"`
+	Fullyqualifieddomainname     *string                      `protobuf:"bytes,459321509,opt,name=fullyqualifieddomainname,proto3,oneof" json:"fullyqualifieddomainname,omitempty"`
 	Healthcheckid                string                       `protobuf:"bytes,312971637,opt,name=healthcheckid,proto3" json:"healthcheckid,omitempty"`
 	Healthcheckversion           *int64                       `protobuf:"varint,89568396,opt,name=healthcheckversion,proto3,oneof" json:"healthcheckversion,omitempty"`
 	Healththreshold              *int32                       `protobuf:"varint,215873163,opt,name=healththreshold,proto3,oneof" json:"healththreshold,omitempty"`
-	Ipaddress                    string                       `protobuf:"bytes,169333741,opt,name=ipaddress,proto3" json:"ipaddress,omitempty"`
+	Ipaddress                    *string                      `protobuf:"bytes,169333741,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
 	Insufficientdatahealthstatus InsufficientDataHealthStatus `protobuf:"varint,493115723,opt,name=insufficientdatahealthstatus,proto3,enum=route53.InsufficientDataHealthStatus" json:"insufficientdatahealthstatus,omitempty"`
 	Inverted                     *bool                        `protobuf:"varint,55175513,opt,name=inverted,proto3,oneof" json:"inverted,omitempty"`
 	Port                         *int32                       `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Regions                      []HealthCheckRegion          `protobuf:"varint,36200107,rep,packed,name=regions,proto3,enum=route53.HealthCheckRegion" json:"regions,omitempty"`
 	Resetelements                []ResettableElementName      `protobuf:"varint,16543458,rep,packed,name=resetelements,proto3,enum=route53.ResettableElementName" json:"resetelements,omitempty"`
-	Resourcepath                 string                       `protobuf:"bytes,117584551,opt,name=resourcepath,proto3" json:"resourcepath,omitempty"`
-	Searchstring                 string                       `protobuf:"bytes,318687365,opt,name=searchstring,proto3" json:"searchstring,omitempty"`
+	Resourcepath                 *string                      `protobuf:"bytes,117584551,opt,name=resourcepath,proto3,oneof" json:"resourcepath,omitempty"`
+	Searchstring                 *string                      `protobuf:"bytes,318687365,opt,name=searchstring,proto3,oneof" json:"searchstring,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -14471,8 +14471,8 @@ func (x *UpdateHealthCheckRequest) GetFailurethreshold() int32 {
 }
 
 func (x *UpdateHealthCheckRequest) GetFullyqualifieddomainname() string {
-	if x != nil {
-		return x.Fullyqualifieddomainname
+	if x != nil && x.Fullyqualifieddomainname != nil {
+		return *x.Fullyqualifieddomainname
 	}
 	return ""
 }
@@ -14499,8 +14499,8 @@ func (x *UpdateHealthCheckRequest) GetHealththreshold() int32 {
 }
 
 func (x *UpdateHealthCheckRequest) GetIpaddress() string {
-	if x != nil {
-		return x.Ipaddress
+	if x != nil && x.Ipaddress != nil {
+		return *x.Ipaddress
 	}
 	return ""
 }
@@ -14541,15 +14541,15 @@ func (x *UpdateHealthCheckRequest) GetResetelements() []ResettableElementName {
 }
 
 func (x *UpdateHealthCheckRequest) GetResourcepath() string {
-	if x != nil {
-		return x.Resourcepath
+	if x != nil && x.Resourcepath != nil {
+		return *x.Resourcepath
 	}
 	return ""
 }
 
 func (x *UpdateHealthCheckRequest) GetSearchstring() string {
-	if x != nil {
-		return x.Searchstring
+	if x != nil && x.Searchstring != nil {
+		return *x.Searchstring
 	}
 	return ""
 }
@@ -14600,7 +14600,7 @@ func (x *UpdateHealthCheckResponse) GetHealthcheck() *HealthCheck {
 
 type UpdateHostedZoneCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Comment       string                 `protobuf:"bytes,407871487,opt,name=comment,proto3" json:"comment,omitempty"`
+	Comment       *string                `protobuf:"bytes,407871487,opt,name=comment,proto3,oneof" json:"comment,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -14637,8 +14637,8 @@ func (*UpdateHostedZoneCommentRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateHostedZoneCommentRequest) GetComment() string {
-	if x != nil {
-		return x.Comment
+	if x != nil && x.Comment != nil {
+		return *x.Comment
 	}
 	return ""
 }
@@ -15000,7 +15000,7 @@ func (x *UpdateTrafficPolicyInstanceResponse) GetTrafficpolicyinstance() *Traffi
 
 type VPC struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Vpcid         string                 `protobuf:"bytes,325135798,opt,name=vpcid,proto3" json:"vpcid,omitempty"`
+	Vpcid         *string                `protobuf:"bytes,325135798,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
 	Vpcregion     VPCRegion              `protobuf:"varint,474180765,opt,name=vpcregion,proto3,enum=route53.VPCRegion" json:"vpcregion,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -15037,8 +15037,8 @@ func (*VPC) Descriptor() ([]byte, []int) {
 }
 
 func (x *VPC) GetVpcid() string {
-	if x != nil {
-		return x.Vpcid
+	if x != nil && x.Vpcid != nil {
+		return *x.Vpcid
 	}
 	return ""
 }
@@ -15052,7 +15052,7 @@ func (x *VPC) GetVpcregion() VPCRegion {
 
 type VPCAssociationAuthorizationNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15088,15 +15088,15 @@ func (*VPCAssociationAuthorizationNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *VPCAssociationAuthorizationNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type VPCAssociationNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15132,8 +15132,8 @@ func (*VPCAssociationNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *VPCAssociationNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -15160,34 +15160,40 @@ const file_route53_proto_rawDesc = "" +
 	"\adnsname\x18\xf8\x83\xfcQ \x01(\tR\adnsname\x12;\n" +
 	"\x14evaluatetargethealth\x18\ue1ec\xc3\x01 \x01(\bH\x00R\x14evaluatetargethealth\x88\x01\x01\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneidB\x17\n" +
-	"\x15_evaluatetargethealth\"\x8d\x01\n" +
-	"!AssociateVPCWithHostedZoneRequest\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12&\n" +
+	"\x15_evaluatetargethealth\"\x9e\x01\n" +
+	"!AssociateVPCWithHostedZoneRequest\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\"\n" +
-	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpc\"]\n" +
+	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpcB\n" +
+	"\n" +
+	"\b_comment\"]\n" +
 	"\"AssociateVPCWithHostedZoneResponse\x127\n" +
 	"\n" +
 	"changeinfo\x18\ued4b\xd0\x01 \x01(\v2\x13.route53.ChangeInfoR\n" +
 	"changeinfo\"\x88\x01\n" +
 	"\x06Change\x120\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x15.route53.ChangeActionR\x06action\x12L\n" +
-	"\x11resourcerecordset\x18\xb5\xaa\xbd\xa4\x01 \x01(\v2\x1a.route53.ResourceRecordSetR\x11resourcerecordset\"Z\n" +
+	"\x11resourcerecordset\x18\xb5\xaa\xbd\xa4\x01 \x01(\v2\x1a.route53.ResourceRecordSetR\x11resourcerecordset\"k\n" +
 	"\vChangeBatch\x12-\n" +
-	"\achanges\x18띔\xf6\x01 \x03(\v2\x0f.route53.ChangeR\achanges\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\"\xba\x01\n" +
+	"\achanges\x18띔\xf6\x01 \x03(\v2\x0f.route53.ChangeR\achanges\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01B\n" +
+	"\n" +
+	"\b_comment\"\xba\x01\n" +
 	"\x1bChangeCidrCollectionRequest\x12;\n" +
 	"\achanges\x18띔\xf6\x01 \x03(\v2\x1d.route53.CidrCollectionChangeR\achanges\x124\n" +
 	"\x11collectionversion\x18\xbc\xff\xd8- \x01(\x03H\x00R\x11collectionversion\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x14\n" +
 	"\x12_collectionversion\"2\n" +
 	"\x1cChangeCidrCollectionResponse\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\x96\x01\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\xa7\x01\n" +
 	"\n" +
-	"ChangeInfo\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\x12\n" +
+	"ChangeInfo\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x120\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x15.route53.ChangeStatusR\x06status\x12$\n" +
-	"\vsubmittedat\x18\x98ˁ\xa4\x01 \x01(\tR\vsubmittedat\"\x84\x01\n" +
+	"\vsubmittedat\x18\x98ˁ\xa4\x01 \x01(\tR\vsubmittedatB\n" +
+	"\n" +
+	"\b_comment\"\x84\x01\n" +
 	"\x1fChangeResourceRecordSetsRequest\x129\n" +
 	"\vchangebatch\x18\xb4\xba\xa0\v \x01(\v2\x14.route53.ChangeBatchR\vchangebatch\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\"[\n" +
@@ -15202,29 +15208,43 @@ const file_route53_proto_rawDesc = "" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
 	"resourceid\x12@\n" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x18.route53.TagResourceTypeR\fresourcetype\"\x1f\n" +
-	"\x1dChangeTagsForResourceResponse\"6\n" +
-	"\x17CidrBlockInUseException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"Z\n" +
-	"\x10CidrBlockSummary\x12\x1f\n" +
-	"\tcidrblock\x18\xe9\x90\xf8\x1a \x01(\tR\tcidrblock\x12%\n" +
-	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\"\x80\x01\n" +
-	"\x0eCidrCollection\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\x1dChangeTagsForResourceResponse\"G\n" +
+	"\x17CidrBlockInUseException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"\b_version\"C\n" +
-	"$CidrCollectionAlreadyExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9d\x01\n" +
+	"\b_message\"\x83\x01\n" +
+	"\x10CidrBlockSummary\x12$\n" +
+	"\tcidrblock\x18\xe9\x90\xf8\x1a \x01(\tH\x00R\tcidrblock\x88\x01\x01\x12*\n" +
+	"\flocationname\x18\xc6\xf8\xb6K \x01(\tH\x01R\flocationname\x88\x01\x01B\f\n" +
+	"\n" +
+	"_cidrblockB\x0f\n" +
+	"\r_locationname\"\xa7\x01\n" +
+	"\x0eCidrCollection\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x03R\aversion\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\n" +
+	"\n" +
+	"\b_version\"T\n" +
+	"$CidrCollectionAlreadyExistsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9d\x01\n" +
 	"\x14CidrCollectionChange\x12>\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2#.route53.CidrCollectionChangeActionR\x06action\x12\x1e\n" +
 	"\bcidrlist\x18\xe0\x80\xe5\x89\x01 \x03(\tR\bcidrlist\x12%\n" +
-	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\";\n" +
-	"\x1cCidrCollectionInUseException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"E\n" +
-	"&CidrCollectionVersionMismatchException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"a\n" +
+	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\"L\n" +
+	"\x1cCidrCollectionInUseException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"V\n" +
+	"&CidrCollectionVersionMismatchException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"a\n" +
 	"\x11CidrRoutingConfig\x12%\n" +
 	"\fcollectionid\x18\xe5ه= \x01(\tR\fcollectionid\x12%\n" +
 	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\"\x8e\x03\n" +
@@ -15240,43 +15260,54 @@ const file_route53_proto_rawDesc = "" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x19\n" +
 	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x123\n" +
 	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x12.route53.StatisticR\tstatistic\x12 \n" +
-	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\"\x83\x01\n" +
-	"\x11CollectionSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x00R\aversion\x88\x01\x01B\n" +
+	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\"\xaa\x01\n" +
+	"\x11CollectionSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x03H\x03R\aversion\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\n" +
 	"\n" +
-	"\b_version\"5\n" +
-	"\x16ConcurrentModification\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
-	"\x17ConflictingDomainExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"/\n" +
-	"\x10ConflictingTypes\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"M\n" +
+	"\b_version\"F\n" +
+	"\x16ConcurrentModification\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17ConflictingDomainExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"@\n" +
+	"\x10ConflictingTypes\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
 	"\vCoordinates\x12\x1d\n" +
 	"\blatitude\x18\xe6\x82\xf9k \x01(\tR\blatitude\x12\x1f\n" +
 	"\tlongitude\x18\xef\xc9\xe58 \x01(\tR\tlongitude\"a\n" +
 	"\x1bCreateCidrCollectionRequest\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"z\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8c\x01\n" +
 	"\x1cCreateCidrCollectionResponse\x12:\n" +
 	"\n" +
 	"collection\x18\xb2Ѿ6 \x01(\v2\x17.route53.CidrCollectionR\n" +
-	"collection\x12\x1e\n" +
-	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\x94\x01\n" +
+	"collection\x12#\n" +
+	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tH\x00R\blocation\x88\x01\x01B\v\n" +
+	"\t_location\"\x94\x01\n" +
 	"\x18CreateHealthCheckRequest\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12K\n" +
 	"\x11healthcheckconfig\x18\xa4\xda\xd0' \x01(\v2\x1a.route53.HealthCheckConfigR\x11healthcheckconfig\"w\n" +
 	"\x19CreateHealthCheckResponse\x12:\n" +
 	"\vhealthcheck\x18\x82\xa0\x83\xb4\x01 \x01(\v2\x14.route53.HealthCheckR\vhealthcheck\x12\x1e\n" +
-	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\xf8\x01\n" +
+	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\x91\x02\n" +
 	"\x17CreateHostedZoneRequest\x12+\n" +
-	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12,\n" +
-	"\x0fdelegationsetid\x18\xa1\xeeŒ\x01 \x01(\tR\x0fdelegationsetid\x12G\n" +
+	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x121\n" +
+	"\x0fdelegationsetid\x18\xa1\xeeŒ\x01 \x01(\tH\x00R\x0fdelegationsetid\x88\x01\x01\x12G\n" +
 	"\x10hostedzoneconfig\x18\xef\xe65 \x01(\v2\x19.route53.HostedZoneConfigR\x10hostedzoneconfig\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\"\n" +
-	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpc\"\x91\x02\n" +
+	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpcB\x12\n" +
+	"\x10_delegationsetid\"\x91\x02\n" +
 	"\x18CreateHostedZoneResponse\x127\n" +
 	"\n" +
 	"changeinfo\x18\ued4b\xd0\x01 \x01(\v2\x13.route53.ChangeInfoR\n" +
@@ -15304,10 +15335,11 @@ const file_route53_proto_rawDesc = "" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\"\x93\x01\n" +
 	" CreateQueryLoggingConfigResponse\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12O\n" +
-	"\x12queryloggingconfig\x18\xbb\x96\xfb\xea\x01 \x01(\v2\x1b.route53.QueryLoggingConfigR\x12queryloggingconfig\"y\n" +
+	"\x12queryloggingconfig\x18\xbb\x96\xfb\xea\x01 \x01(\v2\x1b.route53.QueryLoggingConfigR\x12queryloggingconfig\"\x8f\x01\n" +
 	"\"CreateReusableDelegationSetRequest\x12+\n" +
-	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\"\x86\x01\n" +
+	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x00R\fhostedzoneid\x88\x01\x01B\x0f\n" +
+	"\r_hostedzoneid\"\x86\x01\n" +
 	"#CreateReusableDelegationSetResponse\x12?\n" +
 	"\rdelegationset\x18\xa6\xe4\xfbZ \x01(\v2\x16.route53.DelegationSetR\rdelegationset\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\xde\x01\n" +
@@ -15319,18 +15351,22 @@ const file_route53_proto_rawDesc = "" +
 	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversion\"\x9e\x01\n" +
 	"#CreateTrafficPolicyInstanceResponse\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12W\n" +
-	"\x15trafficpolicyinstance\x18\x94\xfc\x87b \x01(\v2\x1e.route53.TrafficPolicyInstanceR\x15trafficpolicyinstance\"q\n" +
-	"\x1aCreateTrafficPolicyRequest\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\x1e\n" +
+	"\x15trafficpolicyinstance\x18\x94\xfc\x87b \x01(\v2\x1e.route53.TrafficPolicyInstanceR\x15trafficpolicyinstance\"\x82\x01\n" +
+	"\x1aCreateTrafficPolicyRequest\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12\x1e\n" +
 	"\bdocument\x18\xf5\xf5\x8f\xc2\x01 \x01(\tR\bdocument\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"~\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\n" +
+	"\n" +
+	"\b_comment\"~\n" +
 	"\x1bCreateTrafficPolicyResponse\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12?\n" +
-	"\rtrafficpolicy\x18\xc9\xe2\xdbI \x01(\v2\x16.route53.TrafficPolicyR\rtrafficpolicy\"u\n" +
-	"!CreateTrafficPolicyVersionRequest\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\x1e\n" +
+	"\rtrafficpolicy\x18\xc9\xe2\xdbI \x01(\v2\x16.route53.TrafficPolicyR\rtrafficpolicy\"\x86\x01\n" +
+	"!CreateTrafficPolicyVersionRequest\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12\x1e\n" +
 	"\bdocument\x18\xf5\xf5\x8f\xc2\x01 \x01(\tR\bdocument\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\x85\x01\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\n" +
+	"\n" +
+	"\b_comment\"\x85\x01\n" +
 	"\"CreateTrafficPolicyVersionResponse\x12\x1e\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12?\n" +
 	"\rtrafficpolicy\x18\xc9\xe2\xdbI \x01(\v2\x16.route53.TrafficPolicyR\rtrafficpolicy\"v\n" +
@@ -15339,33 +15375,49 @@ const file_route53_proto_rawDesc = "" +
 	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpc\"w\n" +
 	")CreateVPCAssociationAuthorizationResponse\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\"\n" +
-	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpc\"-\n" +
-	"\x0eDNSSECNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"c\n" +
-	"\fDNSSECStatus\x12*\n" +
-	"\x0eservesignature\x18\uf029\xde\x01 \x01(\tR\x0eservesignature\x12'\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tR\rstatusmessage\"_\n" +
+	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpc\">\n" +
+	"\x0eDNSSECNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x92\x01\n" +
+	"\fDNSSECStatus\x12/\n" +
+	"\x0eservesignature\x18\uf029\xde\x01 \x01(\tH\x00R\x0eservesignature\x88\x01\x01\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x01R\rstatusmessage\x88\x01\x01B\x11\n" +
+	"\x0f_servesignatureB\x10\n" +
+	"\x0e_statusmessage\"_\n" +
 	"\x1eDeactivateKeySigningKeyRequest\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"Z\n" +
 	"\x1fDeactivateKeySigningKeyResponse\x127\n" +
 	"\n" +
 	"changeinfo\x18\ued4b\xd0\x01 \x01(\v2\x13.route53.ChangeInfoR\n" +
-	"changeinfo\"v\n" +
-	"\rDelegationSet\x12+\n" +
-	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12$\n" +
-	"\vnameservers\x18\xf7\x9fˢ\x01 \x03(\tR\vnameservers\":\n" +
-	"\x1bDelegationSetAlreadyCreated\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cDelegationSetAlreadyReusable\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12DelegationSetInUse\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19DelegationSetNotAvailable\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18DelegationSetNotReusable\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
+	"changeinfo\"\x9b\x01\n" +
+	"\rDelegationSet\x120\n" +
+	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tH\x00R\x0fcallerreference\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12$\n" +
+	"\vnameservers\x18\xf7\x9fˢ\x01 \x03(\tR\vnameserversB\x12\n" +
+	"\x10_callerreferenceB\x05\n" +
+	"\x03_id\"K\n" +
+	"\x1bDelegationSetAlreadyCreated\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cDelegationSetAlreadyReusable\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12DelegationSetInUse\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19DelegationSetNotAvailable\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18DelegationSetNotReusable\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"1\n" +
 	"\x1bDeleteCidrCollectionRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\x1e\n" +
 	"\x1cDeleteCidrCollectionResponse\"D\n" +
@@ -15410,11 +15462,13 @@ const file_route53_proto_rawDesc = "" +
 	"\x1fDisableHostedZoneDNSSECResponse\x127\n" +
 	"\n" +
 	"changeinfo\x18\ued4b\xd0\x01 \x01(\v2\x13.route53.ChangeInfoR\n" +
-	"changeinfo\"\x90\x01\n" +
-	"$DisassociateVPCFromHostedZoneRequest\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12&\n" +
+	"changeinfo\"\xa1\x01\n" +
+	"$DisassociateVPCFromHostedZoneRequest\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\"\n" +
-	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpc\"`\n" +
+	"\x03vpc\x18龭\xf1\x01 \x01(\v2\f.route53.VPCR\x03vpcB\n" +
+	"\n" +
+	"\b_comment\"`\n" +
 	"%DisassociateVPCFromHostedZoneResponse\x127\n" +
 	"\n" +
 	"changeinfo\x18\ued4b\xd0\x01 \x01(\v2\x13.route53.ChangeInfoR\n" +
@@ -15424,24 +15478,36 @@ const file_route53_proto_rawDesc = "" +
 	"\x1eEnableHostedZoneDNSSECResponse\x127\n" +
 	"\n" +
 	"changeinfo\x18\ued4b\xd0\x01 \x01(\v2\x13.route53.ChangeInfoR\n" +
-	"changeinfo\"\x8a\x01\n" +
-	"\vGeoLocation\x12'\n" +
-	"\rcontinentcode\x18\xab\x98\xf6U \x01(\tR\rcontinentcode\x12$\n" +
-	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tR\vcountrycode\x12,\n" +
-	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tR\x0fsubdivisioncode\"\x8d\x02\n" +
-	"\x12GeoLocationDetails\x12'\n" +
-	"\rcontinentcode\x18\xab\x98\xf6U \x01(\tR\rcontinentcode\x12'\n" +
-	"\rcontinentname\x18\xf9\xf7\xf0` \x01(\tR\rcontinentname\x12$\n" +
-	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tR\vcountrycode\x12#\n" +
-	"\vcountryname\x18\x8b\xf0\xd4\a \x01(\tR\vcountryname\x12,\n" +
-	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tR\x0fsubdivisioncode\x12,\n" +
-	"\x0fsubdivisionname\x18֝\xea\xc4\x01 \x01(\tR\x0fsubdivisionname\"\xc2\x01\n" +
-	"\x14GeoProximityLocation\x12\x1f\n" +
-	"\tawsregion\x18\xb3\xf1\x83u \x01(\tR\tawsregion\x12\x1a\n" +
-	"\x04bias\x18\xe5\xfd\x81\x1d \x01(\x05H\x00R\x04bias\x88\x01\x01\x129\n" +
-	"\vcoordinates\x18ɵ\xa4n \x01(\v2\x14.route53.CoordinatesR\vcoordinates\x12)\n" +
-	"\x0elocalzonegroup\x18Ҥ\xd7\x1c \x01(\tR\x0elocalzonegroupB\a\n" +
-	"\x05_bias\"K\n" +
+	"changeinfo\"\xcf\x01\n" +
+	"\vGeoLocation\x12,\n" +
+	"\rcontinentcode\x18\xab\x98\xf6U \x01(\tH\x00R\rcontinentcode\x88\x01\x01\x12)\n" +
+	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tH\x01R\vcountrycode\x88\x01\x01\x121\n" +
+	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tH\x02R\x0fsubdivisioncode\x88\x01\x01B\x10\n" +
+	"\x0e_continentcodeB\x0e\n" +
+	"\f_countrycodeB\x12\n" +
+	"\x10_subdivisioncode\"\x97\x03\n" +
+	"\x12GeoLocationDetails\x12,\n" +
+	"\rcontinentcode\x18\xab\x98\xf6U \x01(\tH\x00R\rcontinentcode\x88\x01\x01\x12,\n" +
+	"\rcontinentname\x18\xf9\xf7\xf0` \x01(\tH\x01R\rcontinentname\x88\x01\x01\x12)\n" +
+	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tH\x02R\vcountrycode\x88\x01\x01\x12(\n" +
+	"\vcountryname\x18\x8b\xf0\xd4\a \x01(\tH\x03R\vcountryname\x88\x01\x01\x121\n" +
+	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tH\x04R\x0fsubdivisioncode\x88\x01\x01\x121\n" +
+	"\x0fsubdivisionname\x18֝\xea\xc4\x01 \x01(\tH\x05R\x0fsubdivisionname\x88\x01\x01B\x10\n" +
+	"\x0e_continentcodeB\x10\n" +
+	"\x0e_continentnameB\x0e\n" +
+	"\f_countrycodeB\x0e\n" +
+	"\f_countrynameB\x12\n" +
+	"\x10_subdivisioncodeB\x12\n" +
+	"\x10_subdivisionname\"\xed\x01\n" +
+	"\x14GeoProximityLocation\x12$\n" +
+	"\tawsregion\x18\xb3\xf1\x83u \x01(\tH\x00R\tawsregion\x88\x01\x01\x12\x1a\n" +
+	"\x04bias\x18\xe5\xfd\x81\x1d \x01(\x05H\x01R\x04bias\x88\x01\x01\x129\n" +
+	"\vcoordinates\x18ɵ\xa4n \x01(\v2\x14.route53.CoordinatesR\vcoordinates\x12.\n" +
+	"\x0elocalzonegroup\x18Ҥ\xd7\x1c \x01(\tH\x02R\x0elocalzonegroup\x88\x01\x01B\f\n" +
+	"\n" +
+	"_awsregionB\a\n" +
+	"\x05_biasB\x11\n" +
+	"\x0f_localzonegroup\"K\n" +
 	"\x16GetAccountLimitRequest\x121\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.route53.AccountLimitTypeR\x04type\"c\n" +
 	"\x17GetAccountLimitResponse\x12\x17\n" +
@@ -15460,11 +15526,14 @@ const file_route53_proto_rawDesc = "" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\"\x88\x01\n" +
 	"\x11GetDNSSECResponse\x12A\n" +
 	"\x0ekeysigningkeys\x18\xbc\xe8\xf1) \x03(\v2\x16.route53.KeySigningKeyR\x0ekeysigningkeys\x120\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\v2\x15.route53.DNSSECStatusR\x06status\"\x94\x01\n" +
-	"\x15GetGeoLocationRequest\x12'\n" +
-	"\rcontinentcode\x18\xab\x98\xf6U \x01(\tR\rcontinentcode\x12$\n" +
-	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tR\vcountrycode\x12,\n" +
-	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tR\x0fsubdivisioncode\"h\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\v2\x15.route53.DNSSECStatusR\x06status\"\xd9\x01\n" +
+	"\x15GetGeoLocationRequest\x12,\n" +
+	"\rcontinentcode\x18\xab\x98\xf6U \x01(\tH\x00R\rcontinentcode\x88\x01\x01\x12)\n" +
+	"\vcountrycode\x18\x99ɳ\xe7\x01 \x01(\tH\x01R\vcountrycode\x88\x01\x01\x121\n" +
+	"\x0fsubdivisioncode\x18\xcc\xd2\xef\xd3\x01 \x01(\tH\x02R\x0fsubdivisioncode\x88\x01\x01B\x10\n" +
+	"\x0e_continentcodeB\x0e\n" +
+	"\f_countrycodeB\x12\n" +
+	"\x10_subdivisioncode\"h\n" +
 	"\x16GetGeoLocationResponse\x12N\n" +
 	"\x12geolocationdetails\x18ڦ\xe2! \x01(\v2\x1b.route53.GeoLocationDetailsR\x12geolocationdetails\"\x1c\n" +
 	"\x1aGetHealthCheckCountRequest\"M\n" +
@@ -15531,45 +15600,60 @@ const file_route53_proto_rawDesc = "" +
 	"\x11healthcheckconfig\x18\xa4\xda\xd0' \x01(\v2\x1a.route53.HealthCheckConfigR\x11healthcheckconfig\x121\n" +
 	"\x12healthcheckversion\x18\x8c\xe9\xda* \x01(\x03R\x12healthcheckversion\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12@\n" +
-	"\rlinkedservice\x18\x94\xf1\x92\xd1\x01 \x01(\v2\x16.route53.LinkedServiceR\rlinkedservice\"7\n" +
-	"\x18HealthCheckAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9d\b\n" +
+	"\rlinkedservice\x18\x94\xf1\x92\xd1\x01 \x01(\v2\x16.route53.LinkedServiceR\rlinkedservice\"H\n" +
+	"\x18HealthCheckAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x99\t\n" +
 	"\x11HealthCheckConfig\x12F\n" +
 	"\x0falarmidentifier\x18\xba\xb7\xd2\xff\x01 \x01(\v2\x18.route53.AlarmIdentifierR\x0falarmidentifier\x120\n" +
 	"\x11childhealthchecks\x18\xbf\xe1\xc2\xe7\x01 \x03(\tR\x11childhealthchecks\x12#\n" +
 	"\bdisabled\x18\xa6\xb2\xba\xfe\x01 \x01(\bH\x00R\bdisabled\x88\x01\x01\x12$\n" +
 	"\tenablesni\x18\x87\xfb\xb7! \x01(\bH\x01R\tenablesni\x88\x01\x01\x122\n" +
-	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12>\n" +
-	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tR\x18fullyqualifieddomainname\x120\n" +
-	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x03R\x0fhealththreshold\x88\x01\x01\x12\x1f\n" +
-	"\tipaddress\x18\xed\xa7\xdfP \x01(\tR\tipaddress\x12m\n" +
+	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12C\n" +
+	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tH\x03R\x18fullyqualifieddomainname\x88\x01\x01\x120\n" +
+	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x04R\x0fhealththreshold\x88\x01\x01\x12$\n" +
+	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x05R\tipaddress\x88\x01\x01\x12m\n" +
 	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusR\x1cinsufficientdatahealthstatus\x12\"\n" +
-	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x04R\binverted\x88\x01\x01\x12.\n" +
-	"\x0emeasurelatency\x18д\xc6) \x01(\bH\x05R\x0emeasurelatency\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x06R\x04port\x88\x01\x01\x127\n" +
+	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x06R\binverted\x88\x01\x01\x12.\n" +
+	"\x0emeasurelatency\x18д\xc6) \x01(\bH\aR\x0emeasurelatency\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\bR\x04port\x88\x01\x01\x127\n" +
 	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x121\n" +
-	"\x0frequestinterval\x18ر\x9b\xa7\x01 \x01(\x05H\aR\x0frequestinterval\x88\x01\x01\x12%\n" +
-	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tR\fresourcepath\x12/\n" +
-	"\x11routingcontrolarn\x18Η\xd3b \x01(\tR\x11routingcontrolarn\x12&\n" +
-	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tR\fsearchstring\x120\n" +
+	"\x0frequestinterval\x18ر\x9b\xa7\x01 \x01(\x05H\tR\x0frequestinterval\x88\x01\x01\x12*\n" +
+	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tH\n" +
+	"R\fresourcepath\x88\x01\x01\x124\n" +
+	"\x11routingcontrolarn\x18Η\xd3b \x01(\tH\vR\x11routingcontrolarn\x88\x01\x01\x12+\n" +
+	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tH\fR\fsearchstring\x88\x01\x01\x120\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x18.route53.HealthCheckTypeR\x04typeB\v\n" +
 	"\t_disabledB\f\n" +
 	"\n" +
 	"_enablesniB\x13\n" +
-	"\x11_failurethresholdB\x12\n" +
-	"\x10_healththresholdB\v\n" +
+	"\x11_failurethresholdB\x1b\n" +
+	"\x19_fullyqualifieddomainnameB\x12\n" +
+	"\x10_healththresholdB\f\n" +
+	"\n" +
+	"_ipaddressB\v\n" +
 	"\t_invertedB\x11\n" +
 	"\x0f_measurelatencyB\a\n" +
 	"\x05_portB\x12\n" +
-	"\x10_requestinterval\"/\n" +
-	"\x10HealthCheckInUse\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xae\x01\n" +
-	"\x16HealthCheckObservation\x12\x1f\n" +
-	"\tipaddress\x18\xed\xa7\xdfP \x01(\tR\tipaddress\x125\n" +
+	"\x10_requestintervalB\x0f\n" +
+	"\r_resourcepathB\x14\n" +
+	"\x12_routingcontrolarnB\x0f\n" +
+	"\r_searchstring\"@\n" +
+	"\x10HealthCheckInUse\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xc1\x01\n" +
+	"\x16HealthCheckObservation\x12$\n" +
+	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x00R\tipaddress\x88\x01\x01\x125\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2\x1a.route53.HealthCheckRegionR\x06region\x12<\n" +
-	"\fstatusreport\x18\xb2\xbc\xaa\r \x01(\v2\x15.route53.StatusReportR\fstatusreport\"9\n" +
-	"\x1aHealthCheckVersionMismatch\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9a\x03\n" +
+	"\fstatusreport\x18\xb2\xbc\xaa\r \x01(\v2\x15.route53.StatusReportR\fstatusreportB\f\n" +
+	"\n" +
+	"_ipaddress\"J\n" +
+	"\x1aHealthCheckVersionMismatch\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9a\x03\n" +
 	"\n" +
 	"HostedZone\x12+\n" +
 	"\x0fcallerreference\x18\x98\x99\x8dH \x01(\tR\x0fcallerreference\x124\n" +
@@ -15580,224 +15664,351 @@ const file_route53_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12?\n" +
 	"\x16resourcerecordsetcount\x18\xccι\x9f\x01 \x01(\x03H\x00R\x16resourcerecordsetcount\x88\x01\x01\x12$\n" +
 	"\x04vpcs\x18\x82\xef\x9a\xca\x01 \x03(\v2\f.route53.VPCR\x04vpcsB\x19\n" +
-	"\x17_resourcerecordsetcount\"6\n" +
-	"\x17HostedZoneAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"k\n" +
-	"\x10HostedZoneConfig\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12)\n" +
-	"\vprivatezone\x18\xfb\xdf\xce\xf1\x01 \x01(\bH\x00R\vprivatezone\x88\x01\x01B\x0e\n" +
-	"\f_privatezone\"P\n" +
-	"\x18HostedZoneFailureReasons\x124\n" +
-	"\x13acceleratedrecovery\x18\xb4\xea\xe5\xa9\x01 \x01(\tR\x13acceleratedrecovery\"\xc9\x01\n" +
+	"\x17_resourcerecordsetcount\"G\n" +
+	"\x17HostedZoneAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"|\n" +
+	"\x10HostedZoneConfig\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12)\n" +
+	"\vprivatezone\x18\xfb\xdf\xce\xf1\x01 \x01(\bH\x01R\vprivatezone\x88\x01\x01B\n" +
+	"\n" +
+	"\b_commentB\x0e\n" +
+	"\f_privatezone\"m\n" +
+	"\x18HostedZoneFailureReasons\x129\n" +
+	"\x13acceleratedrecovery\x18\xb4\xea\xe5\xa9\x01 \x01(\tH\x00R\x13acceleratedrecovery\x88\x01\x01B\x16\n" +
+	"\x14_acceleratedrecovery\"\xc9\x01\n" +
 	"\x12HostedZoneFeatures\x12d\n" +
 	"\x19acceleratedrecoverystatus\x18\xa6\xb7\x81\xf2\x01 \x01(\x0e2\".route53.AcceleratedRecoveryStatusR\x19acceleratedrecoverystatus\x12M\n" +
 	"\x0efailurereasons\x18\xebȡ\xd4\x01 \x01(\v2!.route53.HostedZoneFailureReasonsR\x0efailurereasons\"a\n" +
 	"\x0fHostedZoneLimit\x124\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1c.route53.HostedZoneLimitTypeR\x04type\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03R\x05value\"1\n" +
-	"\x12HostedZoneNotEmpty\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12HostedZoneNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14HostedZoneNotPrivate\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"e\n" +
-	"\x0fHostedZoneOwner\x12(\n" +
-	"\rowningaccount\x18ɀ\x8e\xa2\x01 \x01(\tR\rowningaccount\x12(\n" +
-	"\rowningservice\x18\x89\x82\xc4\xdc\x01 \x01(\tR\rowningservice\";\n" +
-	"\x1cHostedZonePartiallyDelegated\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x86\x01\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03R\x05value\"B\n" +
+	"\x12HostedZoneNotEmpty\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12HostedZoneNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14HostedZoneNotPrivate\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x93\x01\n" +
+	"\x0fHostedZoneOwner\x12-\n" +
+	"\rowningaccount\x18ɀ\x8e\xa2\x01 \x01(\tH\x00R\rowningaccount\x88\x01\x01\x12-\n" +
+	"\rowningservice\x18\x89\x82\xc4\xdc\x01 \x01(\tH\x01R\rowningservice\x88\x01\x01B\x10\n" +
+	"\x0e_owningaccountB\x10\n" +
+	"\x0e_owningservice\"L\n" +
+	"\x1cHostedZonePartiallyDelegated\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x86\x01\n" +
 	"\x11HostedZoneSummary\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\x18.route53.HostedZoneOwnerR\x05owner\"2\n" +
-	"\x13IncompatibleVersion\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"G\n" +
-	"(InsufficientCloudWatchLogsResourcePolicy\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\".\n" +
-	"\x0fInvalidArgument\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"O\n" +
-	"\x12InvalidChangeBatch\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12\x1c\n" +
-	"\bmessages\x18\xb6\x8b\x0e \x03(\tR\bmessages\"0\n" +
-	"\x11InvalidDomainName\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"+\n" +
-	"\fInvalidInput\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\",\n" +
-	"\rInvalidKMSArn\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18InvalidKeySigningKeyName\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aInvalidKeySigningKeyStatus\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16InvalidPaginationToken\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14InvalidSigningStatus\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cInvalidTrafficPolicyDocument\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"+\n" +
-	"\fInvalidVPCId\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xdd\x05\n" +
-	"\rKeySigningKey\x12$\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12%\n" +
-	"\fdnskeyrecord\x18\xcb\xff\xe5\x0f \x01(\tR\fdnskeyrecord\x12\x1d\n" +
-	"\bdsrecord\x18\xe6\x85\xe5: \x01(\tR\bdsrecord\x12;\n" +
-	"\x17digestalgorithmmnemonic\x18\x9bۋd \x01(\tR\x17digestalgorithmmnemonic\x128\n" +
-	"\x13digestalgorithmtype\x18\xf3\xd7\xd6y \x01(\x05H\x00R\x13digestalgorithmtype\x88\x01\x01\x12$\n" +
-	"\vdigestvalue\x18\xe3\u07bf\x84\x01 \x01(\tR\vdigestvalue\x12\x1b\n" +
-	"\x04flag\x18\xf8\xe9\xdb\xf0\x01 \x01(\x05H\x01R\x04flag\x88\x01\x01\x12\x1e\n" +
-	"\x06keytag\x18\xc5\xeb\x86u \x01(\x05H\x02R\x06keytag\x88\x01\x01\x12\x19\n" +
-	"\x06kmsarn\x18\xce\xf4\x83b \x01(\tR\x06kmsarn\x12-\n" +
-	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tR\x10lastmodifieddate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1f\n" +
-	"\tpublickey\x18\xe0\xae\xe5O \x01(\tR\tpublickey\x12>\n" +
-	"\x18signingalgorithmmnemonic\x18\x9e\xa0\xe1\xb4\x01 \x01(\tR\x18signingalgorithmmnemonic\x12;\n" +
-	"\x14signingalgorithmtype\x18\xaa\x9e\xb8\xc2\x01 \x01(\x05H\x03R\x14signingalgorithmtype\x88\x01\x01\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12'\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tR\rstatusmessageB\x16\n" +
-	"\x14_digestalgorithmtypeB\a\n" +
-	"\x05_flagB\t\n" +
-	"\a_keytagB\x17\n" +
-	"\x15_signingalgorithmtype\"9\n" +
-	"\x1aKeySigningKeyAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
-	"\x1dKeySigningKeyInParentDSRecord\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12KeySigningKeyInUse\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"D\n" +
-	"%KeySigningKeyWithActiveStatusNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12LastVPCAssociation\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"-\n" +
-	"\x0eLimitsExceeded\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"c\n" +
-	"\rLinkedService\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12-\n" +
-	"\x10serviceprincipal\x18\xef\xc1\xf9E \x01(\tR\x10serviceprincipal\"\xaa\x01\n" +
-	"\x15ListCidrBlocksRequest\x12%\n" +
-	"\fcollectionid\x18\xe5ه= \x01(\tR\fcollectionid\x12%\n" +
-	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\x12\"\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\x18.route53.HostedZoneOwnerR\x05owner\"C\n" +
+	"\x13IncompatibleVersion\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tR\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"w\n" +
+	"\b_message\"X\n" +
+	"(InsufficientCloudWatchLogsResourcePolicy\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"?\n" +
+	"\x0fInvalidArgument\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"`\n" +
+	"\x12InvalidChangeBatch\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12\x1c\n" +
+	"\bmessages\x18\xb6\x8b\x0e \x03(\tR\bmessagesB\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11InvalidDomainName\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"<\n" +
+	"\fInvalidInput\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"=\n" +
+	"\rInvalidKMSArn\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18InvalidKeySigningKeyName\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aInvalidKeySigningKeyStatus\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16InvalidPaginationToken\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14InvalidSigningStatus\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cInvalidTrafficPolicyDocument\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"<\n" +
+	"\fInvalidVPCId\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe4\a\n" +
+	"\rKeySigningKey\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12*\n" +
+	"\fdnskeyrecord\x18\xcb\xff\xe5\x0f \x01(\tH\x01R\fdnskeyrecord\x88\x01\x01\x12\"\n" +
+	"\bdsrecord\x18\xe6\x85\xe5: \x01(\tH\x02R\bdsrecord\x88\x01\x01\x12@\n" +
+	"\x17digestalgorithmmnemonic\x18\x9bۋd \x01(\tH\x03R\x17digestalgorithmmnemonic\x88\x01\x01\x128\n" +
+	"\x13digestalgorithmtype\x18\xf3\xd7\xd6y \x01(\x05H\x04R\x13digestalgorithmtype\x88\x01\x01\x12)\n" +
+	"\vdigestvalue\x18\xe3\u07bf\x84\x01 \x01(\tH\x05R\vdigestvalue\x88\x01\x01\x12\x1b\n" +
+	"\x04flag\x18\xf8\xe9\xdb\xf0\x01 \x01(\x05H\x06R\x04flag\x88\x01\x01\x12\x1e\n" +
+	"\x06keytag\x18\xc5\xeb\x86u \x01(\x05H\aR\x06keytag\x88\x01\x01\x12\x1e\n" +
+	"\x06kmsarn\x18\xce\xf4\x83b \x01(\tH\bR\x06kmsarn\x88\x01\x01\x122\n" +
+	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tH\tR\x10lastmodifieddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\n" +
+	"R\x04name\x88\x01\x01\x12$\n" +
+	"\tpublickey\x18\xe0\xae\xe5O \x01(\tH\vR\tpublickey\x88\x01\x01\x12C\n" +
+	"\x18signingalgorithmmnemonic\x18\x9e\xa0\xe1\xb4\x01 \x01(\tH\fR\x18signingalgorithmmnemonic\x88\x01\x01\x12;\n" +
+	"\x14signingalgorithmtype\x18\xaa\x9e\xb8\xc2\x01 \x01(\x05H\rR\x14signingalgorithmtype\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x0eR\x06status\x88\x01\x01\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x0fR\rstatusmessage\x88\x01\x01B\x0e\n" +
+	"\f_createddateB\x0f\n" +
+	"\r_dnskeyrecordB\v\n" +
+	"\t_dsrecordB\x1a\n" +
+	"\x18_digestalgorithmmnemonicB\x16\n" +
+	"\x14_digestalgorithmtypeB\x0e\n" +
+	"\f_digestvalueB\a\n" +
+	"\x05_flagB\t\n" +
+	"\a_keytagB\t\n" +
+	"\a_kmsarnB\x13\n" +
+	"\x11_lastmodifieddateB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_publickeyB\x1b\n" +
+	"\x19_signingalgorithmmnemonicB\x17\n" +
+	"\x15_signingalgorithmtypeB\t\n" +
+	"\a_statusB\x10\n" +
+	"\x0e_statusmessage\"J\n" +
+	"\x1aKeySigningKeyAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dKeySigningKeyInParentDSRecord\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12KeySigningKeyInUse\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%KeySigningKeyWithActiveStatusNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12LastVPCAssociation\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\">\n" +
+	"\x0eLimitsExceeded\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x92\x01\n" +
+	"\rLinkedService\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x122\n" +
+	"\x10serviceprincipal\x18\xef\xc1\xf9E \x01(\tH\x01R\x10serviceprincipal\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\x13\n" +
+	"\x11_serviceprincipal\"\xe7\x01\n" +
+	"\x15ListCidrBlocksRequest\x12%\n" +
+	"\fcollectionid\x18\xe5ه= \x01(\tR\fcollectionid\x12*\n" +
+	"\flocationname\x18\xc6\xf8\xb6K \x01(\tH\x00R\flocationname\x88\x01\x01\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01B\x0f\n" +
+	"\r_locationnameB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8a\x01\n" +
 	"\x16ListCidrBlocksResponse\x12<\n" +
 	"\n" +
 	"cidrblocks\x18\x82\x85\x9b@ \x03(\v2\x19.route53.CidrBlockSummaryR\n" +
-	"cidrblocks\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"a\n" +
-	"\x1aListCidrCollectionsRequest\x12\"\n" +
+	"cidrblocks\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tR\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x88\x01\n" +
+	"_nexttoken\"\x88\x01\n" +
+	"\x1aListCidrCollectionsRequest\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x9b\x01\n" +
 	"\x1bListCidrCollectionsResponse\x12H\n" +
-	"\x0fcidrcollections\x18\xad\xe0\xc6\xef\x01 \x03(\v2\x1a.route53.CollectionSummaryR\x0fcidrcollections\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x86\x01\n" +
-	"\x18ListCidrLocationsRequest\x12%\n" +
-	"\fcollectionid\x18\xe5ه= \x01(\tR\fcollectionid\x12\"\n" +
+	"\x0fcidrcollections\x18\xad\xe0\xc6\xef\x01 \x03(\v2\x1a.route53.CollectionSummaryR\x0fcidrcollections\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tR\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x80\x01\n" +
+	"_nexttoken\"\xad\x01\n" +
+	"\x18ListCidrLocationsRequest\x12%\n" +
+	"\fcollectionid\x18\xe5ه= \x01(\tR\fcollectionid\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x93\x01\n" +
 	"\x19ListCidrLocationsResponse\x12B\n" +
-	"\rcidrlocations\x18\xaa\xa5\x8e\xe5\x01 \x03(\v2\x18.route53.LocationSummaryR\rcidrlocations\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd3\x01\n" +
-	"\x17ListGeoLocationsRequest\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x122\n" +
-	"\x12startcontinentcode\x18\x8d눂\x01 \x01(\tR\x12startcontinentcode\x12-\n" +
-	"\x10startcountrycode\x18ϖ\xa1W \x01(\tR\x10startcountrycode\x125\n" +
-	"\x14startsubdivisioncode\x18\xd2\xf2\xd0b \x01(\tR\x14startsubdivisioncode\"\xe1\x02\n" +
+	"\rcidrlocations\x18\xaa\xa5\x8e\xe5\x01 \x03(\v2\x18.route53.LocationSummaryR\rcidrlocations\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xb9\x02\n" +
+	"\x17ListGeoLocationsRequest\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x127\n" +
+	"\x12startcontinentcode\x18\x8d눂\x01 \x01(\tH\x01R\x12startcontinentcode\x88\x01\x01\x122\n" +
+	"\x10startcountrycode\x18ϖ\xa1W \x01(\tH\x02R\x10startcountrycode\x88\x01\x01\x12:\n" +
+	"\x14startsubdivisioncode\x18\xd2\xf2\xd0b \x01(\tH\x03R\x14startsubdivisioncode\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x15\n" +
+	"\x13_startcontinentcodeB\x13\n" +
+	"\x11_startcountrycodeB\x17\n" +
+	"\x15_startsubdivisioncode\"\xb2\x03\n" +
 	"\x18ListGeoLocationsResponse\x12W\n" +
 	"\x16geolocationdetailslist\x18Ƈ\xeb\xd5\x01 \x03(\v2\x1b.route53.GeoLocationDetailsR\x16geolocationdetailslist\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12/\n" +
-	"\x11nextcontinentcode\x18\xa2\xe3\xe4\x06 \x01(\tR\x11nextcontinentcode\x12+\n" +
-	"\x0fnextcountrycode\x18Ї\xc6F \x01(\tR\x0fnextcountrycode\x124\n" +
-	"\x13nextsubdivisioncode\x18\xa5\xfa\xe5\xb7\x01 \x01(\tR\x13nextsubdivisioncodeB\x0e\n" +
-	"\f_istruncated\"T\n" +
-	"\x17ListHealthChecksRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\"\xf1\x01\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x124\n" +
+	"\x11nextcontinentcode\x18\xa2\xe3\xe4\x06 \x01(\tH\x01R\x11nextcontinentcode\x88\x01\x01\x120\n" +
+	"\x0fnextcountrycode\x18Ї\xc6F \x01(\tH\x02R\x0fnextcountrycode\x88\x01\x01\x129\n" +
+	"\x13nextsubdivisioncode\x18\xa5\xfa\xe5\xb7\x01 \x01(\tH\x03R\x13nextsubdivisioncode\x88\x01\x01B\x0e\n" +
+	"\f_istruncatedB\x14\n" +
+	"\x12_nextcontinentcodeB\x12\n" +
+	"\x10_nextcountrycodeB\x16\n" +
+	"\x14_nextsubdivisioncode\"v\n" +
+	"\x17ListHealthChecksRequest\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01B\t\n" +
+	"\a_markerB\v\n" +
+	"\t_maxitems\"\x85\x02\n" +
 	"\x18ListHealthChecksResponse\x12<\n" +
 	"\fhealthchecks\x18\xf7Ơ\xf6\x01 \x03(\v2\x14.route53.HealthCheckR\fhealthchecks\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12\"\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\x0e\n" +
-	"\f_istruncated\"\x83\x01\n" +
-	"\x1cListHostedZonesByNameRequest\x12\x1b\n" +
-	"\adnsname\x18\xf8\x83\xfcQ \x01(\tR\adnsname\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\"\xcd\x02\n" +
-	"\x1dListHostedZonesByNameResponse\x12\x1b\n" +
-	"\adnsname\x18\xf8\x83\xfcQ \x01(\tR\adnsname\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x128\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\x0e\n" +
+	"\f_istruncatedB\r\n" +
+	"\v_nextmarker\"\xbc\x01\n" +
+	"\x1cListHostedZonesByNameRequest\x12 \n" +
+	"\adnsname\x18\xf8\x83\xfcQ \x01(\tH\x00R\adnsname\x88\x01\x01\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x01R\fhostedzoneid\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x02R\bmaxitems\x88\x01\x01B\n" +
+	"\n" +
+	"\b_dnsnameB\x0f\n" +
+	"\r_hostedzoneidB\v\n" +
+	"\t_maxitems\"\xa3\x03\n" +
+	"\x1dListHostedZonesByNameResponse\x12 \n" +
+	"\adnsname\x18\xf8\x83\xfcQ \x01(\tH\x00R\adnsname\x88\x01\x01\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x01R\fhostedzoneid\x88\x01\x01\x128\n" +
 	"\vhostedzones\x18\xaa\xf4\xad) \x03(\v2\x13.route53.HostedZoneR\vhostedzones\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12$\n" +
-	"\vnextdnsname\x18\x95\xb4\xed\xe8\x01 \x01(\tR\vnextdnsname\x12-\n" +
-	"\x10nexthostedzoneid\x18\xf5\x95\xbbM \x01(\tR\x10nexthostedzoneidB\x0e\n" +
-	"\f_istruncated\"\xae\x01\n" +
-	"\x1bListHostedZonesByVPCRequest\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x18\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x02R\vistruncated\x88\x01\x01\x12\x1e\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12)\n" +
+	"\vnextdnsname\x18\x95\xb4\xed\xe8\x01 \x01(\tH\x03R\vnextdnsname\x88\x01\x01\x122\n" +
+	"\x10nexthostedzoneid\x18\xf5\x95\xbbM \x01(\tH\x04R\x10nexthostedzoneid\x88\x01\x01B\n" +
+	"\n" +
+	"\b_dnsnameB\x0f\n" +
+	"\r_hostedzoneidB\x0e\n" +
+	"\f_istruncatedB\x0e\n" +
+	"\f_nextdnsnameB\x13\n" +
+	"\x11_nexthostedzoneid\"\xd3\x01\n" +
+	"\x1bListHostedZonesByVPCRequest\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x18\n" +
 	"\x05vpcid\x18\xb6ۄ\x9b\x01 \x01(\tR\x05vpcid\x124\n" +
-	"\tvpcregion\x18\x9dٍ\xe2\x01 \x01(\x0e2\x12.route53.VPCRegionR\tvpcregion\"\xb0\x01\n" +
+	"\tvpcregion\x18\x9dٍ\xe2\x01 \x01(\x0e2\x12.route53.VPCRegionR\tvpcregionB\v\n" +
+	"\t_maxitemsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xc3\x01\n" +
 	"\x1cListHostedZonesByVPCResponse\x12O\n" +
 	"\x13hostedzonesummaries\x18\xad\xb5\x9d5 \x03(\v2\x1a.route53.HostedZoneSummaryR\x13hostedzonesummaries\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc6\x01\n" +
-	"\x16ListHostedZonesRequest\x12,\n" +
-	"\x0fdelegationsetid\x18\xa1\xeeŒ\x01 \x01(\tR\x0fdelegationsetid\x12C\n" +
-	"\x0ehostedzonetype\x18\xe9\xef\x96\xc3\x01 \x01(\x0e2\x17.route53.HostedZoneTypeR\x0ehostedzonetype\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\"\xec\x01\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x81\x02\n" +
+	"\x16ListHostedZonesRequest\x121\n" +
+	"\x0fdelegationsetid\x18\xa1\xeeŒ\x01 \x01(\tH\x00R\x0fdelegationsetid\x88\x01\x01\x12C\n" +
+	"\x0ehostedzonetype\x18\xe9\xef\x96\xc3\x01 \x01(\x0e2\x17.route53.HostedZoneTypeR\x0ehostedzonetype\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x02R\bmaxitems\x88\x01\x01B\x12\n" +
+	"\x10_delegationsetidB\t\n" +
+	"\a_markerB\v\n" +
+	"\t_maxitems\"\x80\x02\n" +
 	"\x17ListHostedZonesResponse\x128\n" +
 	"\vhostedzones\x18\xaa\xf4\xad) \x03(\v2\x13.route53.HostedZoneR\vhostedzones\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12\"\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\x0e\n" +
-	"\f_istruncated\"\x8d\x01\n" +
-	"\x1eListQueryLoggingConfigsRequest\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\x0e\n" +
+	"\f_istruncatedB\r\n" +
+	"\v_nextmarker\"\xca\x01\n" +
+	"\x1eListQueryLoggingConfigsRequest\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x00R\fhostedzoneid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tR\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
-	"\x1fListQueryLoggingConfigsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12P\n" +
-	"\x13queryloggingconfigs\x18\xec\x87\xe8) \x03(\v2\x1b.route53.QueryLoggingConfigR\x13queryloggingconfigs\"\x8d\x02\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01B\x0f\n" +
+	"\r_hostedzoneidB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa7\x01\n" +
+	"\x1fListQueryLoggingConfigsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12P\n" +
+	"\x13queryloggingconfigs\x18\xec\x87\xe8) \x03(\v2\x1b.route53.QueryLoggingConfigR\x13queryloggingconfigsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xd7\x02\n" +
 	"\x1dListResourceRecordSetsRequest\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x128\n" +
-	"\x15startrecordidentifier\x18\xa6\xf4\x9e\xf7\x01 \x01(\tR\x15startrecordidentifier\x12+\n" +
-	"\x0fstartrecordname\x18\xf6\xac\xa4E \x01(\tR\x0fstartrecordname\x12=\n" +
-	"\x0fstartrecordtype\x18\xa7\xfc\xf1\xc2\x01 \x01(\x0e2\x0f.route53.RRTypeR\x0fstartrecordtype\"\xe8\x02\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12=\n" +
+	"\x15startrecordidentifier\x18\xa6\xf4\x9e\xf7\x01 \x01(\tH\x01R\x15startrecordidentifier\x88\x01\x01\x120\n" +
+	"\x0fstartrecordname\x18\xf6\xac\xa4E \x01(\tH\x02R\x0fstartrecordname\x88\x01\x01\x12=\n" +
+	"\x0fstartrecordtype\x18\xa7\xfc\xf1\xc2\x01 \x01(\x0e2\x0f.route53.RRTypeR\x0fstartrecordtypeB\v\n" +
+	"\t_maxitemsB\x18\n" +
+	"\x16_startrecordidentifierB\x12\n" +
+	"\x10_startrecordname\"\x9e\x03\n" +
 	"\x1eListResourceRecordSetsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x126\n" +
-	"\x14nextrecordidentifier\x18\x97\x93\x9b\xca\x01 \x01(\tR\x14nextrecordidentifier\x12)\n" +
-	"\x0enextrecordname\x18\x9f\xb3\xcb> \x01(\tR\x0enextrecordname\x12:\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12;\n" +
+	"\x14nextrecordidentifier\x18\x97\x93\x9b\xca\x01 \x01(\tH\x01R\x14nextrecordidentifier\x88\x01\x01\x12.\n" +
+	"\x0enextrecordname\x18\x9f\xb3\xcb> \x01(\tH\x02R\x0enextrecordname\x88\x01\x01\x12:\n" +
 	"\x0enextrecordtype\x18\xf6\xa9\xd2. \x01(\x0e2\x0f.route53.RRTypeR\x0enextrecordtype\x12M\n" +
 	"\x12resourcerecordsets\x18\xc6\xfd\x8c% \x03(\v2\x1a.route53.ResourceRecordSetR\x12resourcerecordsetsB\x0e\n" +
-	"\f_istruncated\"^\n" +
-	"!ListReusableDelegationSetsRequest\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\"\x81\x02\n" +
+	"\f_istruncatedB\x17\n" +
+	"\x15_nextrecordidentifierB\x11\n" +
+	"\x0f_nextrecordname\"\x80\x01\n" +
+	"!ListReusableDelegationSetsRequest\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01B\t\n" +
+	"\a_markerB\v\n" +
+	"\t_maxitems\"\x95\x02\n" +
 	"\"ListReusableDelegationSetsResponse\x12B\n" +
 	"\x0edelegationsets\x18\xe3\xfa\xdd\xe3\x01 \x03(\v2\x16.route53.DelegationSetR\x0edelegationsets\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
 	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12\"\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\x0e\n" +
-	"\f_istruncated\"\x82\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\x0e\n" +
+	"\f_istruncatedB\r\n" +
+	"\v_nextmarker\"\x82\x01\n" +
 	"\x1aListTagsForResourceRequest\x12\"\n" +
 	"\n" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
@@ -15809,163 +16020,229 @@ const file_route53_proto_rawDesc = "" +
 	"\vresourceids\x18څ\x9c\v \x03(\tR\vresourceids\x12@\n" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x18.route53.TagResourceTypeR\fresourcetype\"e\n" +
 	"\x1cListTagsForResourcesResponse\x12E\n" +
-	"\x0fresourcetagsets\x18\x97\xd8\xe4\xac\x01 \x03(\v2\x17.route53.ResourceTagSetR\x0fresourcetagsets\"v\n" +
-	"\x1aListTrafficPoliciesRequest\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x128\n" +
-	"\x15trafficpolicyidmarker\x18\x88\xf2\xc6\xcb\x01 \x01(\tR\x15trafficpolicyidmarker\"\x8b\x02\n" +
+	"\x0fresourcetagsets\x18\x97\xd8\xe4\xac\x01 \x03(\v2\x17.route53.ResourceTagSetR\x0fresourcetagsets\"\xa7\x01\n" +
+	"\x1aListTrafficPoliciesRequest\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12=\n" +
+	"\x15trafficpolicyidmarker\x18\x88\xf2\xc6\xcb\x01 \x01(\tH\x01R\x15trafficpolicyidmarker\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x18\n" +
+	"\x16_trafficpolicyidmarker\"\x8b\x02\n" +
 	"\x1bListTrafficPoliciesResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x128\n" +
 	"\x15trafficpolicyidmarker\x18\x88\xf2\xc6\xcb\x01 \x01(\tR\x15trafficpolicyidmarker\x12X\n" +
 	"\x16trafficpolicysummaries\x18\xb5\xfb\xd6b \x03(\v2\x1d.route53.TrafficPolicySummaryR\x16trafficpolicysummariesB\x0e\n" +
-	"\f_istruncated\"\xa2\x02\n" +
+	"\f_istruncated\"\xdd\x02\n" +
 	"-ListTrafficPolicyInstancesByHostedZoneRequest\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12K\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tR\x1ftrafficpolicyinstancenamemarker\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\"\x90\x03\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12P\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x01R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarkerB\v\n" +
+	"\t_maxitemsB\"\n" +
+	" _trafficpolicyinstancenamemarker\"\xb9\x03\n" +
 	".ListTrafficPolicyInstancesByHostedZoneResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12K\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tR\x1ftrafficpolicyinstancenamemarker\x12\\\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12P\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x01R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
 	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x12Y\n" +
 	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x0e\n" +
-	"\f_istruncated\"\x8f\x03\n" +
-	")ListTrafficPolicyInstancesByPolicyRequest\x122\n" +
-	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tR\x12hostedzoneidmarker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12+\n" +
-	"\x0ftrafficpolicyid\x18\xd6\xe1\x97\x13 \x01(\tR\x0ftrafficpolicyid\x12K\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tR\x1ftrafficpolicyinstancenamemarker\x12\\\n" +
+	"\f_istruncatedB\"\n" +
+	" _trafficpolicyinstancenamemarker\"\xe6\x03\n" +
+	")ListTrafficPolicyInstancesByPolicyRequest\x127\n" +
+	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01\x12+\n" +
+	"\x0ftrafficpolicyid\x18\xd6\xe1\x97\x13 \x01(\tR\x0ftrafficpolicyid\x12P\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
 	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x126\n" +
-	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversion\"\xc0\x03\n" +
-	"*ListTrafficPolicyInstancesByPolicyResponse\x122\n" +
-	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tR\x12hostedzoneidmarker\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12K\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tR\x1ftrafficpolicyinstancenamemarker\x12\\\n" +
+	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversionB\x15\n" +
+	"\x13_hostedzoneidmarkerB\v\n" +
+	"\t_maxitemsB\"\n" +
+	" _trafficpolicyinstancenamemarker\"\x85\x04\n" +
+	"*ListTrafficPolicyInstancesByPolicyResponse\x127\n" +
+	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12(\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12\x1e\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12P\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
 	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x12Y\n" +
-	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x0e\n" +
-	"\f_istruncated\"\xa2\x02\n" +
-	"!ListTrafficPolicyInstancesRequest\x122\n" +
-	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tR\x12hostedzoneidmarker\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12K\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tR\x1ftrafficpolicyinstancenamemarker\x12\\\n" +
-	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\"\xb8\x03\n" +
-	"\"ListTrafficPolicyInstancesResponse\x122\n" +
-	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tR\x12hostedzoneidmarker\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12K\n" +
-	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tR\x1ftrafficpolicyinstancenamemarker\x12\\\n" +
+	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x15\n" +
+	"\x13_hostedzoneidmarkerB\x0e\n" +
+	"\f_istruncatedB\"\n" +
+	" _trafficpolicyinstancenamemarker\"\xf9\x02\n" +
+	"!ListTrafficPolicyInstancesRequest\x127\n" +
+	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x01R\bmaxitems\x88\x01\x01\x12P\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
+	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarkerB\x15\n" +
+	"\x13_hostedzoneidmarkerB\v\n" +
+	"\t_maxitemsB\"\n" +
+	" _trafficpolicyinstancenamemarker\"\xfd\x03\n" +
+	"\"ListTrafficPolicyInstancesResponse\x127\n" +
+	"\x12hostedzoneidmarker\x18Ў\xc3\xe2\x01 \x01(\tH\x00R\x12hostedzoneidmarker\x88\x01\x01\x12(\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12\x1e\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12P\n" +
+	"\x1ftrafficpolicyinstancenamemarker\x18\xd3\xf6\xf9@ \x01(\tH\x02R\x1ftrafficpolicyinstancenamemarker\x88\x01\x01\x12\\\n" +
 	"\x1ftrafficpolicyinstancetypemarker\x18\xaa\x97\xe0\x0e \x01(\x0e2\x0f.route53.RRTypeR\x1ftrafficpolicyinstancetypemarker\x12Y\n" +
-	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x0e\n" +
-	"\f_istruncated\"\x99\x01\n" +
+	"\x16trafficpolicyinstances\x18\xa1\xe2\x8d_ \x03(\v2\x1e.route53.TrafficPolicyInstanceR\x16trafficpolicyinstancesB\x15\n" +
+	"\x13_hostedzoneidmarkerB\x0e\n" +
+	"\f_istruncatedB\"\n" +
+	" _trafficpolicyinstancenamemarker\"\xcf\x01\n" +
 	" ListTrafficPolicyVersionsRequest\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1e\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12A\n" +
-	"\x1atrafficpolicyversionmarker\x18\xbf\x93\xfel \x01(\tR\x1atrafficpolicyversionmarker\"\x85\x02\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tH\x00R\bmaxitems\x88\x01\x01\x12F\n" +
+	"\x1atrafficpolicyversionmarker\x18\xbf\x93\xfel \x01(\tH\x01R\x1atrafficpolicyversionmarker\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x1d\n" +
+	"\x1b_trafficpolicyversionmarker\"\x85\x02\n" +
 	"!ListTrafficPolicyVersionsResponse\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\tR\bmaxitems\x12C\n" +
 	"\x0ftrafficpolicies\x18\xdd\xfe\x905 \x03(\v2\x16.route53.TrafficPolicyR\x0ftrafficpolicies\x12A\n" +
 	"\x1atrafficpolicyversionmarker\x18\xbf\x93\xfel \x01(\tR\x1atrafficpolicyversionmarkerB\x0e\n" +
-	"\f_istruncated\"\x96\x01\n" +
+	"\f_istruncated\"\xbd\x01\n" +
 	"'ListVPCAssociationAuthorizationsRequest\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\"\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tR\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x99\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xac\x01\n" +
 	"(ListVPCAssociationAuthorizationsResponse\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12$\n" +
-	"\x04vpcs\x18\x82\xef\x9a\xca\x01 \x03(\v2\f.route53.VPCR\x04vpcs\"8\n" +
-	"\x0fLocationSummary\x12%\n" +
-	"\flocationname\x18\xc6\xf8\xb6K \x01(\tR\flocationname\"+\n" +
-	"\fNoSuchChange\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
-	"\x1dNoSuchCidrCollectionException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\":\n" +
-	"\x1bNoSuchCidrLocationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cNoSuchCloudWatchLogsLogGroup\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13NoSuchDelegationSet\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"0\n" +
-	"\x11NoSuchGeoLocation\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"0\n" +
-	"\x11NoSuchHealthCheck\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"/\n" +
-	"\x10NoSuchHostedZone\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13NoSuchKeySigningKey\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18NoSuchQueryLoggingConfig\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13NoSuchTrafficPolicy\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bNoSuchTrafficPolicyInstance\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16NotAuthorizedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
-	"\x17PriorRequestNotComplete\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18PublicZoneVPCAssociation\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x92\x01\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12$\n" +
+	"\x04vpcs\x18\x82\xef\x9a\xca\x01 \x03(\v2\f.route53.VPCR\x04vpcsB\f\n" +
+	"\n" +
+	"_nexttoken\"N\n" +
+	"\x0fLocationSummary\x12*\n" +
+	"\flocationname\x18\xc6\xf8\xb6K \x01(\tH\x00R\flocationname\x88\x01\x01B\x0f\n" +
+	"\r_locationname\"<\n" +
+	"\fNoSuchChange\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dNoSuchCidrCollectionException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bNoSuchCidrLocationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cNoSuchCloudWatchLogsLogGroup\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13NoSuchDelegationSet\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11NoSuchGeoLocation\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11NoSuchHealthCheck\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"@\n" +
+	"\x10NoSuchHostedZone\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13NoSuchKeySigningKey\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18NoSuchQueryLoggingConfig\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13NoSuchTrafficPolicy\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bNoSuchTrafficPolicyInstance\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16NotAuthorizedException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17PriorRequestNotComplete\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18PublicZoneVPCAssociation\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x92\x01\n" +
 	"\x12QueryLoggingConfig\x12@\n" +
 	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\">\n" +
-	"\x1fQueryLoggingConfigAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"*\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"O\n" +
+	"\x1fQueryLoggingConfigAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"*\n" +
 	"\x0eResourceRecord\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xde\x06\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xad\a\n" +
 	"\x11ResourceRecordSet\x12:\n" +
 	"\valiastarget\x18\x9b\xb9\xa6\x97\x01 \x01(\v2\x14.route53.AliasTargetR\valiastarget\x12L\n" +
 	"\x11cidrroutingconfig\x18\xbe¬\xaa\x01 \x01(\v2\x1a.route53.CidrRoutingConfigR\x11cidrroutingconfig\x12A\n" +
 	"\bfailover\x18\xe8\xa8\xe3\f \x01(\x0e2\".route53.ResourceRecordSetFailoverR\bfailover\x129\n" +
 	"\vgeolocation\x18\xe2\xe5\xe3\x7f \x01(\v2\x14.route53.GeoLocationR\vgeolocation\x12T\n" +
-	"\x14geoproximitylocation\x18\xa9\xe9\xfc, \x01(\v2\x1d.route53.GeoProximityLocationR\x14geoproximitylocation\x12(\n" +
-	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tR\rhealthcheckid\x123\n" +
-	"\x10multivalueanswer\x18\x8e\xac\x9d\xca\x01 \x01(\bH\x00R\x10multivalueanswer\x88\x01\x01\x12\x15\n" +
+	"\x14geoproximitylocation\x18\xa9\xe9\xfc, \x01(\v2\x1d.route53.GeoProximityLocationR\x14geoproximitylocation\x12-\n" +
+	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tH\x00R\rhealthcheckid\x88\x01\x01\x123\n" +
+	"\x10multivalueanswer\x18\x8e\xac\x9d\xca\x01 \x01(\bH\x01R\x10multivalueanswer\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12;\n" +
 	"\x06region\x18\x9e\xf1\xb9I \x01(\x0e2 .route53.ResourceRecordSetRegionR\x06region\x12E\n" +
-	"\x0fresourcerecords\x18\xde\xe8\xd6\xf7\x01 \x03(\v2\x17.route53.ResourceRecordR\x0fresourcerecords\x12'\n" +
-	"\rsetidentifier\x18ك\x85` \x01(\tR\rsetidentifier\x12\x19\n" +
-	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03H\x01R\x03ttl\x88\x01\x01\x12;\n" +
-	"\x17trafficpolicyinstanceid\x18\xff\xc5\xf1w \x01(\tR\x17trafficpolicyinstanceid\x12'\n" +
+	"\x0fresourcerecords\x18\xde\xe8\xd6\xf7\x01 \x03(\v2\x17.route53.ResourceRecordR\x0fresourcerecords\x12,\n" +
+	"\rsetidentifier\x18ك\x85` \x01(\tH\x02R\rsetidentifier\x88\x01\x01\x12\x19\n" +
+	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03H\x03R\x03ttl\x88\x01\x01\x12@\n" +
+	"\x17trafficpolicyinstanceid\x18\xff\xc5\xf1w \x01(\tH\x04R\x17trafficpolicyinstanceid\x88\x01\x01\x12'\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\x12\x1f\n" +
-	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03H\x02R\x06weight\x88\x01\x01B\x13\n" +
-	"\x11_multivalueanswerB\x06\n" +
-	"\x04_ttlB\t\n" +
-	"\a_weight\"\x9c\x01\n" +
-	"\x0eResourceTagSet\x12\"\n" +
+	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03H\x05R\x06weight\x88\x01\x01B\x10\n" +
+	"\x0e_healthcheckidB\x13\n" +
+	"\x11_multivalueanswerB\x10\n" +
+	"\x0e_setidentifierB\x06\n" +
+	"\x04_ttlB\x1a\n" +
+	"\x18_trafficpolicyinstanceidB\t\n" +
+	"\a_weight\"\xb0\x01\n" +
+	"\x0eResourceTagSet\x12'\n" +
 	"\n" +
-	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
-	"resourceid\x12@\n" +
+	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x00R\n" +
+	"resourceid\x88\x01\x01\x12@\n" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x18.route53.TagResourceTypeR\fresourcetype\x12$\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.route53.TagR\x04tags\"w\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.route53.TagR\x04tagsB\r\n" +
+	"\v_resourceid\"w\n" +
 	"\x1aReusableDelegationSetLimit\x12?\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2'.route53.ReusableDelegationSetLimitTypeR\x04type\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03R\x05value\"N\n" +
-	"\fStatusReport\x12#\n" +
-	"\vcheckedtime\x18\xa0\xf9\xdeH \x01(\tR\vcheckedtime\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"4\n" +
-	"\x03Tag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xa9\x02\n" +
-	"\x14TestDNSAnswerRequest\x124\n" +
-	"\x13edns0clientsubnetip\x18\xf7\xb3\xd0\xf1\x01 \x01(\tR\x13edns0clientsubnetip\x128\n" +
-	"\x15edns0clientsubnetmask\x18\xfc\x8a\xea\xb5\x01 \x01(\tR\x15edns0clientsubnetmask\x12&\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03R\x05value\"s\n" +
+	"\fStatusReport\x12(\n" +
+	"\vcheckedtime\x18\xa0\xf9\xdeH \x01(\tH\x00R\vcheckedtime\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x01R\x06status\x88\x01\x01B\x0e\n" +
+	"\f_checkedtimeB\t\n" +
+	"\a_status\"P\n" +
+	"\x03Tag\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x06\n" +
+	"\x04_keyB\b\n" +
+	"\x06_value\"\xf9\x02\n" +
+	"\x14TestDNSAnswerRequest\x129\n" +
+	"\x13edns0clientsubnetip\x18\xf7\xb3\xd0\xf1\x01 \x01(\tH\x00R\x13edns0clientsubnetip\x88\x01\x01\x12=\n" +
+	"\x15edns0clientsubnetmask\x18\xfc\x8a\xea\xb5\x01 \x01(\tH\x01R\x15edns0clientsubnetmask\x88\x01\x01\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12!\n" +
 	"\n" +
 	"recordname\x18\x88\xbe\xdca \x01(\tR\n" +
 	"recordname\x123\n" +
 	"\n" +
 	"recordtype\x18\x85Գ\xd2\x01 \x01(\x0e2\x0f.route53.RRTypeR\n" +
-	"recordtype\x12!\n" +
+	"recordtype\x12&\n" +
 	"\n" +
-	"resolverip\x18˲\xa6- \x01(\tR\n" +
-	"resolverip\"\xfe\x01\n" +
+	"resolverip\x18˲\xa6- \x01(\tH\x02R\n" +
+	"resolverip\x88\x01\x01B\x16\n" +
+	"\x14_edns0clientsubnetipB\x18\n" +
+	"\x16_edns0clientsubnetmaskB\r\n" +
+	"\v_resolverip\"\xfe\x01\n" +
 	"\x15TestDNSAnswerResponse\x12\"\n" +
 	"\n" +
 	"nameserver\x18\xe2֍\xe2\x01 \x01(\tR\n" +
@@ -15980,34 +16257,56 @@ const file_route53_proto_rawDesc = "" +
 	"\n" +
 	"recordtype\x18\x85Գ\xd2\x01 \x01(\x0e2\x0f.route53.RRTypeR\n" +
 	"recordtype\x12&\n" +
-	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\tR\fresponsecode\"2\n" +
-	"\x13ThrottlingException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13TooManyHealthChecks\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12TooManyHostedZones\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15TooManyKeySigningKeys\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16TooManyTrafficPolicies\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
-	"\x1dTooManyTrafficPolicyInstances\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"K\n" +
-	",TooManyTrafficPolicyVersionsForCurrentPolicy\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"B\n" +
-	"#TooManyVPCAssociationAuthorizations\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbf\x01\n" +
-	"\rTrafficPolicy\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\x1e\n" +
+	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\tR\fresponsecode\"C\n" +
+	"\x13ThrottlingException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13TooManyHealthChecks\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12TooManyHostedZones\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15TooManyKeySigningKeys\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16TooManyTrafficPolicies\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dTooManyTrafficPolicyInstances\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\\\n" +
+	",TooManyTrafficPolicyVersionsForCurrentPolicy\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#TooManyVPCAssociationAuthorizations\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xd0\x01\n" +
+	"\rTrafficPolicy\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12\x1e\n" +
 	"\bdocument\x18\xf5\xf5\x8f\xc2\x01 \x01(\tR\bdocument\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12'\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x05R\aversion\"9\n" +
-	"\x1aTrafficPolicyAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12TrafficPolicyInUse\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xde\x02\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x05R\aversionB\n" +
+	"\n" +
+	"\b_comment\"J\n" +
+	"\x1aTrafficPolicyAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12TrafficPolicyInUse\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xde\x02\n" +
 	"\x15TrafficPolicyInstance\x12&\n" +
 	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
@@ -16017,46 +16316,56 @@ const file_route53_proto_rawDesc = "" +
 	"\x03ttl\x18\xfcڟ\xfb\x01 \x01(\x03R\x03ttl\x12+\n" +
 	"\x0ftrafficpolicyid\x18\xd6\xe1\x97\x13 \x01(\tR\x0ftrafficpolicyid\x12@\n" +
 	"\x11trafficpolicytype\x18\xc1Κf \x01(\x0e2\x0f.route53.RRTypeR\x11trafficpolicytype\x126\n" +
-	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversion\"A\n" +
-	"\"TrafficPolicyInstanceAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc7\x01\n" +
+	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversion\"R\n" +
+	"\"TrafficPolicyInstanceAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xc7\x01\n" +
 	"\x14TrafficPolicySummary\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12(\n" +
 	"\rlatestversion\x18\xcb\xd6\xcb\xca\x01 \x01(\x05R\rlatestversion\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x121\n" +
 	"\x12trafficpolicycount\x18象K \x01(\x05R\x12trafficpolicycount\x12'\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\"\xf9\a\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.route53.RRTypeR\x04type\"\xda\b\n" +
 	"\x18UpdateHealthCheckRequest\x12F\n" +
 	"\x0falarmidentifier\x18\xba\xb7\xd2\xff\x01 \x01(\v2\x18.route53.AlarmIdentifierR\x0falarmidentifier\x120\n" +
 	"\x11childhealthchecks\x18\xbf\xe1\xc2\xe7\x01 \x03(\tR\x11childhealthchecks\x12#\n" +
 	"\bdisabled\x18\xa6\xb2\xba\xfe\x01 \x01(\bH\x00R\bdisabled\x88\x01\x01\x12$\n" +
 	"\tenablesni\x18\x87\xfb\xb7! \x01(\bH\x01R\tenablesni\x88\x01\x01\x122\n" +
-	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12>\n" +
-	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tR\x18fullyqualifieddomainname\x12(\n" +
+	"\x10failurethreshold\x18\xe5\xed\xa9T \x01(\x05H\x02R\x10failurethreshold\x88\x01\x01\x12C\n" +
+	"\x18fullyqualifieddomainname\x18\xa5\xe1\x82\xdb\x01 \x01(\tH\x03R\x18fullyqualifieddomainname\x88\x01\x01\x12(\n" +
 	"\rhealthcheckid\x18\xf5\xa2\x9e\x95\x01 \x01(\tR\rhealthcheckid\x126\n" +
-	"\x12healthcheckversion\x18\x8c\xe9\xda* \x01(\x03H\x03R\x12healthcheckversion\x88\x01\x01\x120\n" +
-	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x04R\x0fhealththreshold\x88\x01\x01\x12\x1f\n" +
-	"\tipaddress\x18\xed\xa7\xdfP \x01(\tR\tipaddress\x12m\n" +
+	"\x12healthcheckversion\x18\x8c\xe9\xda* \x01(\x03H\x04R\x12healthcheckversion\x88\x01\x01\x120\n" +
+	"\x0fhealththreshold\x18\x8b\xed\xf7f \x01(\x05H\x05R\x0fhealththreshold\x88\x01\x01\x12$\n" +
+	"\tipaddress\x18\xed\xa7\xdfP \x01(\tH\x06R\tipaddress\x88\x01\x01\x12m\n" +
 	"\x1cinsufficientdatahealthstatus\x18˲\x91\xeb\x01 \x01(\x0e2%.route53.InsufficientDataHealthStatusR\x1cinsufficientdatahealthstatus\x12\"\n" +
-	"\binverted\x18\xd9ҧ\x1a \x01(\bH\x05R\binverted\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x06R\x04port\x88\x01\x01\x127\n" +
+	"\binverted\x18\xd9ҧ\x1a \x01(\bH\aR\binverted\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\bR\x04port\x88\x01\x01\x127\n" +
 	"\aregions\x18\xab\xbd\xa1\x11 \x03(\x0e2\x1a.route53.HealthCheckRegionR\aregions\x12G\n" +
-	"\rresetelements\x18\xe2\xdd\xf1\a \x03(\x0e2\x1e.route53.ResettableElementNameR\rresetelements\x12%\n" +
-	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tR\fresourcepath\x12&\n" +
-	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tR\fsearchstringB\v\n" +
+	"\rresetelements\x18\xe2\xdd\xf1\a \x03(\x0e2\x1e.route53.ResettableElementNameR\rresetelements\x12*\n" +
+	"\fresourcepath\x18\xa7\xe5\x888 \x01(\tH\tR\fresourcepath\x88\x01\x01\x12+\n" +
+	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\tH\n" +
+	"R\fsearchstring\x88\x01\x01B\v\n" +
 	"\t_disabledB\f\n" +
 	"\n" +
 	"_enablesniB\x13\n" +
-	"\x11_failurethresholdB\x15\n" +
+	"\x11_failurethresholdB\x1b\n" +
+	"\x19_fullyqualifieddomainnameB\x15\n" +
 	"\x13_healthcheckversionB\x12\n" +
-	"\x10_healththresholdB\v\n" +
+	"\x10_healththresholdB\f\n" +
+	"\n" +
+	"_ipaddressB\v\n" +
 	"\t_invertedB\a\n" +
-	"\x05_port\"W\n" +
+	"\x05_portB\x0f\n" +
+	"\r_resourcepathB\x0f\n" +
+	"\r_searchstring\"W\n" +
 	"\x19UpdateHealthCheckResponse\x12:\n" +
-	"\vhealthcheck\x18\x82\xa0\x83\xb4\x01 \x01(\v2\x14.route53.HealthCheckR\vhealthcheck\"R\n" +
-	"\x1eUpdateHostedZoneCommentRequest\x12\x1c\n" +
-	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tR\acomment\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"Z\n" +
+	"\vhealthcheck\x18\x82\xa0\x83\xb4\x01 \x01(\v2\x14.route53.HealthCheckR\vhealthcheck\"c\n" +
+	"\x1eUpdateHostedZoneCommentRequest\x12!\n" +
+	"\acomment\x18\xff\xbf\xbe\xc2\x01 \x01(\tH\x00R\acomment\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\n" +
+	"\n" +
+	"\b_comment\"Z\n" +
 	"\x1fUpdateHostedZoneCommentResponse\x127\n" +
 	"\n" +
 	"hostedzone\x18\xa1\xb5\x87\xde\x01 \x01(\v2\x13.route53.HostedZoneR\n" +
@@ -16078,14 +16387,19 @@ const file_route53_proto_rawDesc = "" +
 	"\x0ftrafficpolicyid\x18\xd6\xe1\x97\x13 \x01(\tR\x0ftrafficpolicyid\x126\n" +
 	"\x14trafficpolicyversion\x18\xd5и\xe4\x01 \x01(\x05R\x14trafficpolicyversion\"~\n" +
 	"#UpdateTrafficPolicyInstanceResponse\x12W\n" +
-	"\x15trafficpolicyinstance\x18\x94\xfc\x87b \x01(\v2\x1e.route53.TrafficPolicyInstanceR\x15trafficpolicyinstance\"U\n" +
-	"\x03VPC\x12\x18\n" +
-	"\x05vpcid\x18\xb6ۄ\x9b\x01 \x01(\tR\x05vpcid\x124\n" +
-	"\tvpcregion\x18\x9dٍ\xe2\x01 \x01(\x0e2\x12.route53.VPCRegionR\tvpcregion\"B\n" +
-	"#VPCAssociationAuthorizationNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16VPCAssociationNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage*\x9d\x03\n" +
+	"\x15trafficpolicyinstance\x18\x94\xfc\x87b \x01(\v2\x1e.route53.TrafficPolicyInstanceR\x15trafficpolicyinstance\"d\n" +
+	"\x03VPC\x12\x1d\n" +
+	"\x05vpcid\x18\xb6ۄ\x9b\x01 \x01(\tH\x00R\x05vpcid\x88\x01\x01\x124\n" +
+	"\tvpcregion\x18\x9dٍ\xe2\x01 \x01(\x0e2\x12.route53.VPCRegionR\tvpcregionB\b\n" +
+	"\x06_vpcid\"S\n" +
+	"#VPCAssociationAuthorizationNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16VPCAssociationNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message*\x9d\x03\n" +
 	"\x19AcceleratedRecoveryStatus\x12(\n" +
 	"$ACCELERATED_RECOVERY_STATUS_DISABLED\x10\x00\x12.\n" +
 	"*ACCELERATED_RECOVERY_STATUS_DISABLE_FAILED\x10\x01\x12<\n" +
@@ -16976,28 +17290,147 @@ func file_route53_proto_init() {
 		return
 	}
 	file_route53_proto_msgTypes[4].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[5].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[8].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[9].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[11].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[16].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[17].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[18].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[19].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[21].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[22].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[25].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[26].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[27].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[28].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[31].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[34].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[40].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[44].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[46].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[50].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[51].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[54].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[55].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[56].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[57].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[58].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[59].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[81].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[85].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[86].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[87].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[96].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[125].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[126].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[127].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[128].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[129].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[130].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[131].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[132].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[133].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[136].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[137].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[138].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[139].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[140].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[142].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[143].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[144].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[145].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[146].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[147].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[148].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[149].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[150].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[151].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[152].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[153].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[154].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[155].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[156].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[157].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[158].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[159].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[160].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[161].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[162].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[163].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[164].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[165].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[166].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[167].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[168].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[169].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[170].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[171].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[172].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[173].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[174].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[175].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[176].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[177].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[178].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[179].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[180].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[181].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[182].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[183].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[184].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[189].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[190].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[191].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[192].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[193].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[194].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[195].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[196].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[197].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[198].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[199].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[200].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[201].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[202].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[203].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[204].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[205].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[206].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[207].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[208].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[209].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[210].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[211].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[212].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[213].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[214].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[215].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[216].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[218].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[220].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[221].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[223].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[224].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[225].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[227].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[228].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[229].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[230].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[231].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[232].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[233].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[234].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[235].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[236].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[237].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[239].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[241].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[243].OneofWrappers = []any{}
 	file_route53_proto_msgTypes[245].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[251].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[252].OneofWrappers = []any{}
+	file_route53_proto_msgTypes[253].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

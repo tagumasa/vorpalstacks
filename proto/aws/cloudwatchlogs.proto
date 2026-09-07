@@ -63,7 +63,7 @@ service CloudWatchLogsService {
   // Protocol: awsJson1_1
   rpc CreateLogStream(CreateLogStreamRequest) returns (common.Empty);
 
-  // Creates a lookup table by uploading CSV data. You can use lookup tables to enrich log data in CloudWatch Logs Insights queries with reference data such as user details, application names, or error ...
+  // Creates a lookup table by uploading CSV data or from CloudWatch Logs query results. You can use lookup tables to enrich log data in CloudWatch Logs queries with reference data such as user details,...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc CreateLookupTable(CreateLookupTableRequest) returns (CreateLookupTableResponse);
@@ -213,7 +213,7 @@ service CloudWatchLogsService {
   // Protocol: awsJson1_1
   rpc DescribeExportTasks(DescribeExportTasksRequest) returns (DescribeExportTasksResponse);
 
-  // Returns a list of custom and default field indexes which are discovered in log data. For more information about field index policies, see PutIndexPolicy.
+  // Returns a list of field indexes discovered in log data. By default, the response includes the DEFAULT, CUSTOM, and INACTIVE index categories. To return indexes from other categories, use the indexC...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DescribeFieldIndexes(DescribeFieldIndexesRequest) returns (DescribeFieldIndexesResponse);
@@ -368,6 +368,11 @@ service CloudWatchLogsService {
   // Protocol: awsJson1_1
   rpc GetScheduledQueryHistory(GetScheduledQueryHistoryRequest) returns (GetScheduledQueryHistoryResponse);
 
+  // Returns the storage tier policy for the account.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc GetStorageTierPolicy(GetStorageTierPolicyRequest) returns (GetStorageTierPolicyResponse);
+
   // Returns the information about the log transformer associated with this log group. This operation returns data only for transformers created at the log group level. To get information for an account...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -508,6 +513,11 @@ service CloudWatchLogsService {
   // Protocol: awsJson1_1
   rpc PutRetentionPolicy(PutRetentionPolicyRequest) returns (common.Empty);
 
+  // Sets the storage tier policy for the account. When you set the storage tier to INTELLIGENT_TIERING, the service automatically moves log data to the most cost-effective storage tier based on access ...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc PutStorageTierPolicy(PutStorageTierPolicyRequest) returns (PutStorageTierPolicyResponse);
+
   // Creates or updates a subscription filter and associates it with the specified log group. With subscription filters, you can subscribe to a real-time stream of log events ingested through PutLogEven...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -583,7 +593,7 @@ service CloudWatchLogsService {
   // Protocol: awsJson1_1
   rpc UpdateLogAnomalyDetector(UpdateLogAnomalyDetectorRequest) returns (common.Empty);
 
-  // Updates an existing lookup table by replacing all of its CSV content. After the update completes, queries that use this table will use the new data. This is a full replacement operation. All existi...
+  // Updates an existing lookup table by replacing all of its content with new CSV data or CloudWatch Logs query results. After the update completes, queries that use this table use the new data. This i...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc UpdateLookupTable(UpdateLookupTableRequest) returns (UpdateLookupTableResponse);
@@ -601,7 +611,7 @@ service CloudWatchLogsService {
 
 message AccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -611,19 +621,19 @@ message AccessDeniedException {
 
 message AccountPolicy {
 
-  string accountid = 516110962;
+  optional string accountid = 516110962;
 
   optional int64 lastupdatedtime = 388324342;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   PolicyType policytype = 319277736;
 
   Scope scope = 506131436;
 
-  string selectioncriteria = 145052429;
+  optional string selectioncriteria = 145052429;
 
 }
 
@@ -705,13 +715,13 @@ message Anomaly {
 
   string patternid = 292391181;
 
-  string patternregex = 249573581;
+  optional string patternregex = 249573581;
 
   string patternstring = 484736421;
 
   repeated PatternToken patterntokens = 434268088;
 
-  string priority = 350544650;
+  optional string priority = 350544650;
 
   State state = 405877495;
 
@@ -729,7 +739,7 @@ message Anomaly {
 
 message AnomalyDetector {
 
-  string anomalydetectorarn = 446490540;
+  optional string anomalydetectorarn = 446490540;
 
   AnomalyDetectorStatus anomalydetectorstatus = 458778431;
 
@@ -737,13 +747,13 @@ message AnomalyDetector {
 
   optional int64 creationtimestamp = 206588645;
 
-  string detectorname = 114651981;
+  optional string detectorname = 114651981;
 
   EvaluationFrequency evaluationfrequency = 533700360;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   optional int64 lastmodifiedtimestamp = 40019279;
 
@@ -775,9 +785,9 @@ message AssociateKmsKeyRequest {
 
   string kmskeyid = 510698477;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
-  string resourceidentifier = 309427407;
+  optional string resourceidentifier = 309427407;
 
 }
 
@@ -795,7 +805,7 @@ message AssociateSourceToS3TableIntegrationRequest {
 
 message AssociateSourceToS3TableIntegrationResponse {
 
-  string identifier = 145074239;
+  optional string identifier = 145074239;
 
 }
 
@@ -807,13 +817,13 @@ message CSV {
 
   repeated string columns = 179509821;
 
-  string delimiter = 202749435;
+  optional string delimiter = 202749435;
 
-  string destination = 316564672;
+  optional string destination = 316564672;
 
-  string quotecharacter = 92052223;
+  optional string quotecharacter = 92052223;
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -839,7 +849,7 @@ message CancelImportTaskResponse {
 
   optional int64 creationtime = 53551750;
 
-  string importid = 513429114;
+  optional string importid = 513429114;
 
   ImportStatistics importstatistics = 60366280;
 
@@ -855,7 +865,7 @@ message CancelImportTaskResponse {
 
 message ConfigurationTemplate {
 
-  string allowedactionforallowvendedlogsdeliveryforresource = 179630824;
+  optional string allowedactionforallowvendedlogsdeliveryforresource = 179630824;
 
   repeated string allowedfielddelimiters = 266366692;
 
@@ -871,13 +881,13 @@ message ConfigurationTemplate {
 
   repeated DeliverySourceConfigurationSchema deliverysourceconfiguration = 391472875;
 
-  string logtype = 257838938;
+  optional string logtype = 257838938;
 
-  string resourcetype = 7604990;
+  optional string resourcetype = 7604990;
 
   S3TablesIntegration s3tablesintegration = 191610965;
 
-  string service = 383770213;
+  optional string service = 383770213;
 
 }
 
@@ -887,7 +897,7 @@ message ConfigurationTemplate {
 
 message ConfigurationTemplateDeliveryConfigValues {
 
-  string fielddelimiter = 433214845;
+  optional string fielddelimiter = 433214845;
 
   repeated string recordfields = 309625178;
 
@@ -901,7 +911,7 @@ message ConfigurationTemplateDeliveryConfigValues {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -937,7 +947,7 @@ message CreateDeliveryRequest {
 
   string deliverysourcename = 277065836;
 
-  string fielddelimiter = 433214845;
+  optional string fielddelimiter = 433214845;
 
   repeated string recordfields = 309625178;
 
@@ -961,15 +971,15 @@ message CreateExportTaskRequest {
 
   string destination = 316564672;
 
-  string destinationprefix = 172629044;
+  optional string destinationprefix = 172629044;
 
   int64 from = 365789302;
 
   string loggroupname = 95756236;
 
-  string logstreamnameprefix = 24068871;
+  optional string logstreamnameprefix = 24068871;
 
-  string taskname = 82438536;
+  optional string taskname = 82438536;
 
   int64 to = 38094885;
 
@@ -979,7 +989,7 @@ message CreateExportTaskRequest {
 
 message CreateExportTaskResponse {
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -1001,9 +1011,9 @@ message CreateImportTaskResponse {
 
   optional int64 creationtime = 53551750;
 
-  string importdestinationarn = 94477180;
+  optional string importdestinationarn = 94477180;
 
-  string importid = 513429114;
+  optional string importid = 513429114;
 
 }
 
@@ -1013,13 +1023,13 @@ message CreateLogAnomalyDetectorRequest {
 
   optional int64 anomalyvisibilitytime = 287987260;
 
-  string detectorname = 114651981;
+  optional string detectorname = 114651981;
 
   EvaluationFrequency evaluationfrequency = 533700360;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   repeated string loggrouparnlist = 374867736;
 
@@ -1031,7 +1041,7 @@ message CreateLogAnomalyDetectorRequest {
 
 message CreateLogAnomalyDetectorResponse {
 
-  string anomalydetectorarn = 446490540;
+  optional string anomalydetectorarn = 446490540;
 
 }
 
@@ -1041,7 +1051,7 @@ message CreateLogGroupRequest {
 
   optional bool deletionprotectionenabled = 475522738;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   LogGroupClass loggroupclass = 518605953;
 
@@ -1065,13 +1075,15 @@ message CreateLogStreamRequest {
 
 message CreateLookupTableRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   string lookuptablename = 443998607;
 
-  string tablebody = 438636408;
+  optional string queryid = 336975759;
+
+  optional string tablebody = 438636408;
 
   map<string, string> tags = 337046433;
 
@@ -1083,7 +1095,7 @@ message CreateLookupTableResponse {
 
   optional int64 createdat = 370722959;
 
-  string lookuptablearn = 150245445;
+  optional string lookuptablearn = 150245445;
 
 }
 
@@ -1091,7 +1103,7 @@ message CreateLookupTableResponse {
 
 message CreateScheduledQueryRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
@@ -1119,7 +1131,7 @@ message CreateScheduledQueryRequest {
 
   map<string, string> tags = 337046433;
 
-  string timezone = 190615331;
+  optional string timezone = 190615331;
 
 }
 
@@ -1127,7 +1139,7 @@ message CreateScheduledQueryRequest {
 
 message CreateScheduledQueryResponse {
 
-  string scheduledqueryarn = 240292916;
+  optional string scheduledqueryarn = 240292916;
 
   ScheduledQueryState state = 405877495;
 
@@ -1139,9 +1151,9 @@ message CreateScheduledQueryResponse {
 
 message DataAlreadyAcceptedException {
 
-  string expectedsequencetoken = 419198802;
+  optional string expectedsequencetoken = 419198802;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1167,7 +1179,7 @@ message DataSource {
 
   string name = 221887975;
 
-  string type = 287830350;
+  optional string type = 287830350;
 
 }
 
@@ -1179,7 +1191,7 @@ message DataSourceFilter {
 
   string name = 221887975;
 
-  string type = 287830350;
+  optional string type = 287830350;
 
 }
 
@@ -1189,19 +1201,19 @@ message DataSourceFilter {
 
 message DateTimeConverter {
 
-  string locale = 186372248;
+  optional string locale = 186372248;
 
   repeated string matchpatterns = 310725878;
 
   string source = 466561497;
 
-  string sourcetimezone = 154904028;
+  optional string sourcetimezone = 154904028;
 
   string target = 308316233;
 
-  string targetformat = 416820428;
+  optional string targetformat = 416820428;
 
-  string targettimezone = 310709132;
+  optional string targettimezone = 310709132;
 
 }
 
@@ -1367,11 +1379,11 @@ message DeleteQueryDefinitionResponse {
 
 message DeleteResourcePolicyRequest {
 
-  string expectedrevisionid = 469613378;
+  optional string expectedrevisionid = 469613378;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
-  string resourcearn = 67806797;
+  optional string resourcearn = 67806797;
 
 }
 
@@ -1413,7 +1425,7 @@ message DeleteSyslogConfigurationRequest {
 
   string loggroupidentifier = 468281308;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
 }
 
@@ -1431,17 +1443,17 @@ message DeleteTransformerRequest {
 
 message Delivery {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string deliverydestinationarn = 156800339;
+  optional string deliverydestinationarn = 156800339;
 
   DeliveryDestinationType deliverydestinationtype = 33253176;
 
-  string deliverysourcename = 277065836;
+  optional string deliverysourcename = 277065836;
 
-  string fielddelimiter = 433214845;
+  optional string fielddelimiter = 433214845;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   repeated string recordfields = 309625178;
 
@@ -1457,13 +1469,13 @@ message Delivery {
 
 message DeliveryDestination {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
   DeliveryDestinationConfiguration deliverydestinationconfiguration = 256504432;
 
   DeliveryDestinationType deliverydestinationtype = 33253176;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   OutputFormat outputformat = 217347480;
 
@@ -1501,17 +1513,17 @@ enum DeliveryDestinationType {
 
 message DeliverySource {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
   map<string, string> deliverysourceconfiguration = 391472875;
 
-  string logtype = 257838938;
+  optional string logtype = 257838938;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated string resourcearns = 465810734;
 
-  string service = 383770213;
+  optional string service = 383770213;
 
   DeliverySourceStatus status = 441153520;
 
@@ -1531,9 +1543,9 @@ message DeliverySourceConfigurationSchema {
 
   string keyname = 407579016;
 
-  double maxvalue = 418368199;
+  optional double maxvalue = 418368199;
 
-  double minvalue = 60930797;
+  optional double minvalue = 60930797;
 
   repeated string supportedvalues = 292967456;
 
@@ -1581,9 +1593,9 @@ message DescribeAccountPoliciesRequest {
 
   repeated string accountidentifiers = 349304053;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   PolicyType policytype = 319277736;
 
@@ -1595,7 +1607,7 @@ message DescribeAccountPoliciesResponse {
 
   repeated AccountPolicy accountpolicies = 43946431;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1609,11 +1621,11 @@ message DescribeConfigurationTemplatesRequest {
 
   repeated string logtypes = 460758815;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string resourcetypes = 78421387;
 
-  string service = 383770213;
+  optional string service = 383770213;
 
 }
 
@@ -1623,7 +1635,7 @@ message DescribeConfigurationTemplatesResponse {
 
   repeated ConfigurationTemplate configurationtemplates = 91645093;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1633,7 +1645,7 @@ message DescribeDeliveriesRequest {
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1643,7 +1655,7 @@ message DescribeDeliveriesResponse {
 
   repeated Delivery deliveries = 154341066;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1653,7 +1665,7 @@ message DescribeDeliveryDestinationsRequest {
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1663,7 +1675,7 @@ message DescribeDeliveryDestinationsResponse {
 
   repeated DeliveryDestination deliverydestinations = 236883221;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1673,7 +1685,7 @@ message DescribeDeliverySourcesRequest {
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1683,7 +1695,7 @@ message DescribeDeliverySourcesResponse {
 
   repeated DeliverySource deliverysources = 5432066;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1691,11 +1703,11 @@ message DescribeDeliverySourcesResponse {
 
 message DescribeDestinationsRequest {
 
-  string destinationnameprefix = 160941145;
+  optional string destinationnameprefix = 160941145;
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1705,7 +1717,7 @@ message DescribeDestinationsResponse {
 
   repeated Destination destinations = 1617189;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1715,11 +1727,11 @@ message DescribeExportTasksRequest {
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ExportTaskStatusCode statuscode = 299352223;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -1729,7 +1741,7 @@ message DescribeExportTasksResponse {
 
   repeated ExportTask exporttasks = 40181908;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1737,9 +1749,11 @@ message DescribeExportTasksResponse {
 
 message DescribeFieldIndexesRequest {
 
+  repeated IndexCategory indexcategories = 253293064;
+
   repeated string loggroupidentifiers = 409873785;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1749,7 +1763,7 @@ message DescribeFieldIndexesResponse {
 
   repeated FieldIndex fieldindexes = 138171666;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1763,7 +1777,7 @@ message DescribeImportTaskBatchesRequest {
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1773,11 +1787,11 @@ message DescribeImportTaskBatchesResponse {
 
   repeated ImportBatch importbatches = 506952441;
 
-  string importid = 513429114;
+  optional string importid = 513429114;
 
-  string importsourcearn = 161570329;
+  optional string importsourcearn = 161570329;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1785,15 +1799,15 @@ message DescribeImportTaskBatchesResponse {
 
 message DescribeImportTasksRequest {
 
-  string importid = 513429114;
+  optional string importid = 513429114;
 
-  string importsourcearn = 161570329;
+  optional string importsourcearn = 161570329;
 
   ImportStatus importstatus = 31427999;
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1803,7 +1817,7 @@ message DescribeImportTasksResponse {
 
   repeated Import imports = 218216166;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1813,7 +1827,7 @@ message DescribeIndexPoliciesRequest {
 
   repeated string loggroupidentifiers = 409873785;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1823,7 +1837,7 @@ message DescribeIndexPoliciesResponse {
 
   repeated IndexPolicy indexpolicies = 463340482;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1841,11 +1855,11 @@ message DescribeLogGroupsRequest {
 
   repeated string loggroupidentifiers = 409873785;
 
-  string loggroupnamepattern = 253299540;
+  optional string loggroupnamepattern = 253299540;
 
-  string loggroupnameprefix = 255310944;
+  optional string loggroupnameprefix = 255310944;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1855,7 +1869,7 @@ message DescribeLogGroupsResponse {
 
   repeated LogGroup loggroups = 507247778;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1867,13 +1881,13 @@ message DescribeLogStreamsRequest {
 
   optional int32 limit = 316332341;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
-  string logstreamnameprefix = 24068871;
+  optional string logstreamnameprefix = 24068871;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   OrderBy orderby = 63062531;
 
@@ -1885,7 +1899,7 @@ message DescribeLogStreamsResponse {
 
   repeated LogStream logstreams = 201936239;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1893,11 +1907,11 @@ message DescribeLogStreamsResponse {
 
 message DescribeLookupTablesRequest {
 
-  string lookuptablenameprefix = 505420195;
+  optional string lookuptablenameprefix = 505420195;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1907,7 +1921,7 @@ message DescribeLookupTablesResponse {
 
   repeated LookupTable lookuptables = 375663739;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1915,17 +1929,17 @@ message DescribeLookupTablesResponse {
 
 message DescribeMetricFiltersRequest {
 
-  string filternameprefix = 46988721;
+  optional string filternameprefix = 46988721;
 
   optional int32 limit = 316332341;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
-  string metricnamespace = 315894261;
+  optional string metricnamespace = 315894261;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1935,7 +1949,7 @@ message DescribeMetricFiltersResponse {
 
   repeated MetricFilter metricfilters = 449173825;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1943,11 +1957,11 @@ message DescribeMetricFiltersResponse {
 
 message DescribeQueriesRequest {
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   QueryLanguage querylanguage = 343791606;
 
@@ -1959,7 +1973,7 @@ message DescribeQueriesRequest {
 
 message DescribeQueriesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated QueryInfo queries = 26054724;
 
@@ -1971,9 +1985,9 @@ message DescribeQueryDefinitionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string querydefinitionnameprefix = 28618146;
+  optional string querydefinitionnameprefix = 28618146;
 
   QueryLanguage querylanguage = 343791606;
 
@@ -1983,7 +1997,7 @@ message DescribeQueryDefinitionsRequest {
 
 message DescribeQueryDefinitionsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated QueryDefinition querydefinitions = 195658648;
 
@@ -1995,11 +2009,11 @@ message DescribeResourcePoliciesRequest {
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   PolicyScope policyscope = 288841470;
 
-  string resourcearn = 67806797;
+  optional string resourcearn = 67806797;
 
 }
 
@@ -2007,7 +2021,7 @@ message DescribeResourcePoliciesRequest {
 
 message DescribeResourcePoliciesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ResourcePolicy resourcepolicies = 220332616;
 
@@ -2017,13 +2031,13 @@ message DescribeResourcePoliciesResponse {
 
 message DescribeSubscriptionFiltersRequest {
 
-  string filternameprefix = 46988721;
+  optional string filternameprefix = 46988721;
 
   optional int32 limit = 316332341;
 
   string loggroupname = 95756236;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2031,7 +2045,7 @@ message DescribeSubscriptionFiltersRequest {
 
 message DescribeSubscriptionFiltersResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SubscriptionFilter subscriptionfilters = 453910816;
 
@@ -2043,17 +2057,17 @@ message DescribeSubscriptionFiltersResponse {
 
 message Destination {
 
-  string accesspolicy = 336061518;
+  optional string accesspolicy = 336061518;
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
   optional int64 creationtime = 53551750;
 
-  string destinationname = 284844189;
+  optional string destinationname = 284844189;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
-  string targetarn = 367964720;
+  optional string targetarn = 367964720;
 
 }
 
@@ -2063,6 +2077,8 @@ message Destination {
 
 message DestinationConfiguration {
 
+  LookupTableConfiguration lookuptableconfiguration = 354828242;
+
   S3Configuration s3configuration = 506726172;
 
 }
@@ -2071,9 +2087,9 @@ message DestinationConfiguration {
 
 message DisassociateKmsKeyRequest {
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
-  string resourceidentifier = 309427407;
+  optional string resourceidentifier = 309427407;
 
 }
 
@@ -2089,7 +2105,7 @@ message DisassociateSourceFromS3TableIntegrationRequest {
 
 message DisassociateSourceFromS3TableIntegrationResponse {
 
-  string identifier = 145074239;
+  optional string identifier = 145074239;
 
 }
 
@@ -2191,21 +2207,21 @@ enum ExecutionStatus {
 
 message ExportTask {
 
-  string destination = 316564672;
+  optional string destination = 316564672;
 
-  string destinationprefix = 172629044;
+  optional string destinationprefix = 172629044;
 
   ExportTaskExecutionInfo executioninfo = 110255734;
 
   optional int64 from = 365789302;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   ExportTaskStatus status = 441153520;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
-  string taskname = 82438536;
+  optional string taskname = 82438536;
 
   optional int64 to = 38094885;
 
@@ -2231,7 +2247,7 @@ message ExportTaskStatus {
 
   ExportTaskStatusCode code = 422669557;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2259,15 +2275,17 @@ enum ExportTaskStatusCode {
 
 message FieldIndex {
 
-  string fieldindexname = 52826287;
+  optional string fieldindexname = 52826287;
 
   optional int64 firsteventtime = 236445651;
+
+  IndexCategory indexcategory = 262849168;
 
   optional int64 lasteventtime = 54472587;
 
   optional int64 lastscantime = 464250390;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
   IndexType type = 287830350;
 
@@ -2279,7 +2297,7 @@ message FieldIndex {
 
 message FieldsData {
 
-  bytes data = 410182310;
+  optional bytes data = 410182310;
 
 }
 
@@ -2289,21 +2307,21 @@ message FilterLogEventsRequest {
 
   optional int64 endtime = 329679852;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
   optional bool interleaved = 405276841;
 
   optional int32 limit = 316332341;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
-  string logstreamnameprefix = 24068871;
+  optional string logstreamnameprefix = 24068871;
 
   repeated string logstreamnames = 178825732;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   optional bool startfromhead = 472305066;
 
@@ -2319,7 +2337,7 @@ message FilterLogEventsResponse {
 
   repeated FilteredLogEvent events = 316203909;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SearchedLogStream searchedlogstreams = 67617196;
 
@@ -2331,13 +2349,13 @@ message FilterLogEventsResponse {
 
 message FilteredLogEvent {
 
-  string eventid = 255267571;
+  optional string eventid = 255267571;
 
   optional int64 ingestiontime = 179367957;
 
-  string logstreamname = 438025123;
+  optional string logstreamname = 438025123;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   optional int64 timestamp = 310629668;
 
@@ -2367,9 +2385,9 @@ message GetDataProtectionPolicyResponse {
 
   optional int64 lastupdatedtime = 388324342;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
 }
 
@@ -2451,7 +2469,7 @@ message GetIntegrationResponse {
 
   IntegrationDetails integrationdetails = 475519038;
 
-  string integrationname = 183183535;
+  optional string integrationname = 183183535;
 
   IntegrationStatus integrationstatus = 12110360;
 
@@ -2477,13 +2495,13 @@ message GetLogAnomalyDetectorResponse {
 
   optional int64 creationtimestamp = 206588645;
 
-  string detectorname = 114651981;
+  optional string detectorname = 114651981;
 
   EvaluationFrequency evaluationfrequency = 533700360;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   optional int64 lastmodifiedtimestamp = 40019279;
 
@@ -2499,13 +2517,13 @@ message GetLogEventsRequest {
 
   optional int32 limit = 316332341;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   string logstreamname = 438025123;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   optional bool startfromhead = 472305066;
 
@@ -2521,9 +2539,9 @@ message GetLogEventsResponse {
 
   repeated OutputLogEvent events = 316203909;
 
-  string nextbackwardtoken = 265738167;
+  optional string nextbackwardtoken = 265738167;
 
-  string nextforwardtoken = 262037315;
+  optional string nextforwardtoken = 262037315;
 
 }
 
@@ -2549,9 +2567,9 @@ message GetLogFieldsResponse {
 
 message GetLogGroupFieldsRequest {
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   optional int64 time = 490511333;
 
@@ -2629,19 +2647,19 @@ message GetLookupTableRequest {
 
 message GetLookupTableResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   optional int64 lastupdatedtime = 388324342;
 
-  string lookuptablearn = 150245445;
+  optional string lookuptablearn = 150245445;
 
-  string lookuptablename = 443998607;
+  optional string lookuptablename = 443998607;
 
   optional int64 sizebytes = 244232000;
 
-  string tablebody = 438636408;
+  optional string tablebody = 438636408;
 
 }
 
@@ -2651,7 +2669,7 @@ message GetQueryResultsRequest {
 
   optional int32 maxitems = 486225716;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string queryid = 336975759;
 
@@ -2661,9 +2679,9 @@ message GetQueryResultsRequest {
 
 message GetQueryResultsResponse {
 
-  string encryptionkey = 138098284;
+  optional string encryptionkey = 138098284;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   QueryLanguage querylanguage = 343791606;
 
@@ -2687,7 +2705,7 @@ message GetScheduledQueryHistoryRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   int64 starttime = 178154767;
 
@@ -2697,11 +2715,11 @@ message GetScheduledQueryHistoryRequest {
 
 message GetScheduledQueryHistoryResponse {
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string scheduledqueryarn = 240292916;
+  optional string scheduledqueryarn = 240292916;
 
   repeated TriggerHistoryRecord triggerhistory = 6841438;
 
@@ -2721,13 +2739,13 @@ message GetScheduledQueryResponse {
 
   optional int64 creationtime = 53551750;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
   optional int64 endtimeoffset = 214490153;
 
-  string executionrolearn = 230613553;
+  optional string executionrolearn = 230613553;
 
   ExecutionStatus lastexecutionstatus = 7800596;
 
@@ -2737,27 +2755,43 @@ message GetScheduledQueryResponse {
 
   repeated string loggroupidentifiers = 409873785;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   QueryLanguage querylanguage = 343791606;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
   optional int64 scheduleendtime = 111645113;
 
-  string scheduleexpression = 287794975;
+  optional string scheduleexpression = 287794975;
 
   optional int64 schedulestarttime = 464194170;
 
   ScheduleType scheduletype = 75972645;
 
-  string scheduledqueryarn = 240292916;
+  optional string scheduledqueryarn = 240292916;
 
   optional int64 starttimeoffset = 308525274;
 
   ScheduledQueryState state = 405877495;
 
-  string timezone = 190615331;
+  optional string timezone = 190615331;
+
+}
+
+
+
+message GetStorageTierPolicyRequest {
+
+}
+
+
+
+message GetStorageTierPolicyResponse {
+
+  optional int64 lastupdatedtime = 388324342;
+
+  StorageTier storagetier = 47374847;
 
 }
 
@@ -2777,7 +2811,7 @@ message GetTransformerResponse {
 
   optional int64 lastmodifiedtime = 374093504;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
   repeated Processor transformerconfig = 384836439;
 
@@ -2791,7 +2825,7 @@ message Grok {
 
   string match = 505425815;
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -2801,9 +2835,9 @@ message Grok {
 
 message GroupingIdentifier {
 
-  string key = 135645293;
+  optional string key = 135645293;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -2815,15 +2849,15 @@ message Import {
 
   optional int64 creationtime = 53551750;
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
-  string importdestinationarn = 94477180;
+  optional string importdestinationarn = 94477180;
 
   ImportFilter importfilter = 170561015;
 
-  string importid = 513429114;
+  optional string importid = 513429114;
 
-  string importsourcearn = 161570329;
+  optional string importsourcearn = 161570329;
 
   ImportStatistics importstatistics = 60366280;
 
@@ -2841,7 +2875,7 @@ message ImportBatch {
 
   string batchid = 194363415;
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
   ImportStatus status = 441153520;
 
@@ -2885,17 +2919,31 @@ enum ImportStatus {
 
 
 
+enum IndexCategory {
+
+  INDEX_CATEGORY_AUTO = 0;
+
+  INDEX_CATEGORY_CUSTOM = 1;
+
+  INDEX_CATEGORY_DEFAULT = 2;
+
+  INDEX_CATEGORY_INACTIVE = 3;
+
+}
+
+
+
 // This structure contains information about one field index policy in this account.
 
 message IndexPolicy {
 
   optional int64 lastupdatetime = 189280082;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   IndexSource source = 466561497;
 
@@ -2969,7 +3017,7 @@ enum IntegrationStatus {
 
 message IntegrationSummary {
 
-  string integrationname = 183183535;
+  optional string integrationname = 183183535;
 
   IntegrationStatus integrationstatus = 12110360;
 
@@ -2991,7 +3039,7 @@ enum IntegrationType {
 
 message InternalServerException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3001,7 +3049,7 @@ message InternalServerException {
 
 message InternalStreamingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3011,7 +3059,7 @@ message InternalStreamingException {
 
 message InvalidOperationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3021,7 +3069,7 @@ message InvalidOperationException {
 
 message InvalidParameterException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3031,9 +3079,9 @@ message InvalidParameterException {
 
 message InvalidSequenceTokenException {
 
-  string expectedsequencetoken = 419198802;
+  optional string expectedsequencetoken = 419198802;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3043,7 +3091,7 @@ message InvalidSequenceTokenException {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3073,9 +3121,9 @@ message ListAggregateLogGroupSummariesRequest {
 
   LogGroupClass loggroupclass = 518605953;
 
-  string loggroupnamepattern = 253299540;
+  optional string loggroupnamepattern = 253299540;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3085,7 +3133,7 @@ message ListAggregateLogGroupSummariesResponse {
 
   repeated AggregateLogGroupSummary aggregateloggroupsummaries = 255519548;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3093,11 +3141,11 @@ message ListAggregateLogGroupSummariesResponse {
 
 message ListAnomaliesRequest {
 
-  string anomalydetectorarn = 446490540;
+  optional string anomalydetectorarn = 446490540;
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   SuppressionState suppressionstate = 124822782;
 
@@ -3109,7 +3157,7 @@ message ListAnomaliesResponse {
 
   repeated Anomaly anomalies = 242998947;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3117,7 +3165,7 @@ message ListAnomaliesResponse {
 
 message ListIntegrationsRequest {
 
-  string integrationnameprefix = 275225987;
+  optional string integrationnameprefix = 275225987;
 
   IntegrationStatus integrationstatus = 12110360;
 
@@ -3137,11 +3185,11 @@ message ListIntegrationsResponse {
 
 message ListLogAnomalyDetectorsRequest {
 
-  string filterloggrouparn = 72011610;
+  optional string filterloggrouparn = 72011610;
 
   optional int32 limit = 316332341;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3151,7 +3199,7 @@ message ListLogAnomalyDetectorsResponse {
 
   repeated AnomalyDetector anomalydetectors = 379268934;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3161,7 +3209,7 @@ message ListLogGroupsForQueryRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string queryid = 336975759;
 
@@ -3173,7 +3221,7 @@ message ListLogGroupsForQueryResponse {
 
   repeated string loggroupidentifiers = 409873785;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3193,11 +3241,11 @@ message ListLogGroupsRequest {
 
   LogGroupClass loggroupclass = 518605953;
 
-  string loggroupnamepattern = 253299540;
+  optional string loggroupnamepattern = 253299540;
 
   repeated TagFilter loggrouptags = 412319602;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3207,7 +3255,7 @@ message ListLogGroupsResponse {
 
   repeated LogGroupSummary loggroups = 507247778;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3217,7 +3265,7 @@ message ListScheduledQueriesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ScheduleType scheduletype = 75972645;
 
@@ -3229,7 +3277,7 @@ message ListScheduledQueriesRequest {
 
 message ListScheduledQueriesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ScheduledQuerySummary scheduledqueries = 275803785;
 
@@ -3243,7 +3291,7 @@ message ListSourcesForS3TableIntegrationRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -3251,7 +3299,7 @@ message ListSourcesForS3TableIntegrationRequest {
 
 message ListSourcesForS3TableIntegrationResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated S3TableIntegrationSource sources = 303994930;
 
@@ -3261,13 +3309,13 @@ message ListSourcesForS3TableIntegrationResponse {
 
 message ListSyslogConfigurationsRequest {
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
 }
 
@@ -3275,7 +3323,7 @@ message ListSyslogConfigurationsRequest {
 
 message ListSyslogConfigurationsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SyslogConfiguration syslogconfigurations = 13243488;
 
@@ -3327,9 +3375,9 @@ message ListToMap {
 
   string source = 466561497;
 
-  string target = 308316233;
+  optional string target = 308316233;
 
-  string valuekey = 260470114;
+  optional string valuekey = 260470114;
 
 }
 
@@ -3341,11 +3389,11 @@ message LiveTailSessionLogEvent {
 
   optional int64 ingestiontime = 179367957;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string logstreamname = 438025123;
+  optional string logstreamname = 438025123;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   optional int64 timestamp = 310629668;
 
@@ -3367,7 +3415,7 @@ message LiveTailSessionMetadata {
 
 message LiveTailSessionStart {
 
-  string logeventfilterpattern = 81051802;
+  optional string logeventfilterpattern = 81051802;
 
   repeated string loggroupidentifiers = 409873785;
 
@@ -3375,9 +3423,9 @@ message LiveTailSessionStart {
 
   repeated string logstreamnames = 178825732;
 
-  string requestid = 376827552;
+  optional string requestid = 376827552;
 
-  string sessionid = 505783131;
+  optional string sessionid = 505783131;
 
 }
 
@@ -3399,7 +3447,7 @@ message LiveTailSessionUpdate {
 
 message LogEvent {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   optional int64 timestamp = 310629668;
 
@@ -3415,7 +3463,7 @@ message LogFieldType {
 
   repeated LogFieldsListItem fields = 104883581;
 
-  string type = 287830350;
+  optional string type = 287830350;
 
 }
 
@@ -3425,7 +3473,7 @@ message LogFieldType {
 
 message LogFieldsListItem {
 
-  string logfieldname = 243412097;
+  optional string logfieldname = 243412097;
 
   LogFieldType logfieldtype = 491059716;
 
@@ -3437,7 +3485,7 @@ message LogFieldsListItem {
 
 message LogGroup {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
   optional bool bearertokenauthenticationenabled = 513390155;
 
@@ -3449,13 +3497,13 @@ message LogGroup {
 
   repeated InheritedProperty inheritedproperties = 178880393;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
-  string loggrouparn = 6742512;
+  optional string loggrouparn = 6742512;
 
   LogGroupClass loggroupclass = 518605953;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   optional int32 metricfiltercount = 347145747;
 
@@ -3483,7 +3531,7 @@ enum LogGroupClass {
 
 message LogGroupField {
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   optional int32 percent = 368704091;
 
@@ -3495,11 +3543,11 @@ message LogGroupField {
 
 message LogGroupSummary {
 
-  string loggrouparn = 6742512;
+  optional string loggrouparn = 6742512;
 
   LogGroupClass loggroupclass = 518605953;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
 }
 
@@ -3509,7 +3557,7 @@ message LogGroupSummary {
 
 message LogStream {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
   optional int64 creationtime = 53551750;
 
@@ -3519,11 +3567,11 @@ message LogStream {
 
   optional int64 lastingestiontime = 56929529;
 
-  string logstreamname = 438025123;
+  optional string logstreamname = 438025123;
 
   optional int64 storedbytes = 260235622;
 
-  string uploadsequencetoken = 139889111;
+  optional string uploadsequencetoken = 139889111;
 
 }
 
@@ -3533,21 +3581,39 @@ message LogStream {
 
 message LookupTable {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   optional int64 lastupdatedtime = 388324342;
 
-  string lookuptablearn = 150245445;
+  optional string lookuptablearn = 150245445;
 
-  string lookuptablename = 443998607;
+  optional string lookuptablename = 443998607;
 
   optional int64 recordscount = 324699757;
 
   optional int64 sizebytes = 244232000;
 
   repeated string tablefields = 295273623;
+
+}
+
+
+
+// Configuration for a lookup table destination. Use it to automatically refresh a lookup table with query results on a schedule.
+
+message LookupTableConfiguration {
+
+  optional string description = 342834026;
+
+  optional string kmskeyid = 510698477;
+
+  string rolearn = 170019745;
+
+  string tablename = 299343869;
+
+  map<string, string> tags = 337046433;
 
 }
 
@@ -3567,7 +3633,7 @@ message LowerCaseString {
 
 message MalformedQueryException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   QueryCompileError querycompileerror = 116576135;
 
@@ -3585,13 +3651,13 @@ message MetricFilter {
 
   repeated string emitsystemfielddimensions = 437431321;
 
-  string fieldselectioncriteria = 303984807;
+  optional string fieldselectioncriteria = 303984807;
 
-  string filtername = 395125013;
+  optional string filtername = 395125013;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   repeated MetricTransformation metrictransformations = 169353806;
 
@@ -3603,7 +3669,7 @@ message MetricFilter {
 
 message MetricFilterMatchRecord {
 
-  string eventmessage = 299743039;
+  optional string eventmessage = 299743039;
 
   optional int64 eventnumber = 220470463;
 
@@ -3617,7 +3683,7 @@ message MetricFilterMatchRecord {
 
 message MetricTransformation {
 
-  double defaultvalue = 403858624;
+  optional double defaultvalue = 403858624;
 
   map<string, string> dimensions = 116965553;
 
@@ -3671,11 +3737,11 @@ enum OCSFVersion {
 
 message OpenSearchApplication {
 
-  string applicationarn = 230367005;
+  optional string applicationarn = 230367005;
 
-  string applicationendpoint = 379513629;
+  optional string applicationendpoint = 379513629;
 
-  string applicationid = 531796353;
+  optional string applicationid = 531796353;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3687,9 +3753,9 @@ message OpenSearchApplication {
 
 message OpenSearchCollection {
 
-  string collectionarn = 461567321;
+  optional string collectionarn = 461567321;
 
-  string collectionendpoint = 354351753;
+  optional string collectionendpoint = 354351753;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3701,7 +3767,7 @@ message OpenSearchCollection {
 
 message OpenSearchDataAccessPolicy {
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3713,7 +3779,7 @@ message OpenSearchDataAccessPolicy {
 
 message OpenSearchDataSource {
 
-  string datasourcename = 231923996;
+  optional string datasourcename = 231923996;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3725,7 +3791,7 @@ message OpenSearchDataSource {
 
 message OpenSearchEncryptionPolicy {
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3761,7 +3827,7 @@ message OpenSearchIntegrationDetails {
 
 message OpenSearchLifecyclePolicy {
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3773,7 +3839,7 @@ message OpenSearchLifecyclePolicy {
 
 message OpenSearchNetworkPolicy {
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   OpenSearchResourceStatus status = 441153520;
 
@@ -3785,13 +3851,13 @@ message OpenSearchNetworkPolicy {
 
 message OpenSearchResourceConfig {
 
-  string applicationarn = 230367005;
+  optional string applicationarn = 230367005;
 
   repeated string dashboardviewerprincipals = 157196451;
 
   string datasourcerolearn = 205136432;
 
-  string kmskeyarn = 341492497;
+  optional string kmskeyarn = 341492497;
 
   int32 retentiondays = 536209775;
 
@@ -3805,7 +3871,7 @@ message OpenSearchResourceStatus {
 
   OpenSearchResourceStatusType status = 441153520;
 
-  string statusmessage = 474462255;
+  optional string statusmessage = 474462255;
 
 }
 
@@ -3829,7 +3895,7 @@ message OpenSearchWorkspace {
 
   OpenSearchResourceStatus status = 441153520;
 
-  string workspaceid = 98455084;
+  optional string workspaceid = 98455084;
 
 }
 
@@ -3839,7 +3905,7 @@ message OpenSearchWorkspace {
 
 message OperationAbortedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3877,7 +3943,7 @@ message OutputLogEvent {
 
   optional int64 ingestiontime = 179367957;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   optional int64 timestamp = 310629668;
 
@@ -3889,7 +3955,7 @@ message OutputLogEvent {
 
 message ParseCloudfront {
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3899,9 +3965,9 @@ message ParseCloudfront {
 
 message ParseJSON {
 
-  string destination = 316564672;
+  optional string destination = 316564672;
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3911,19 +3977,19 @@ message ParseJSON {
 
 message ParseKeyValue {
 
-  string destination = 316564672;
+  optional string destination = 316564672;
 
-  string fielddelimiter = 433214845;
+  optional string fielddelimiter = 433214845;
 
-  string keyprefix = 318004009;
+  optional string keyprefix = 318004009;
 
-  string keyvaluedelimiter = 186408507;
+  optional string keyvaluedelimiter = 186408507;
 
-  string nonmatchvalue = 229964203;
+  optional string nonmatchvalue = 229964203;
 
   optional bool overwriteifexists = 230880030;
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3933,7 +3999,7 @@ message ParseKeyValue {
 
 message ParsePostgres {
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3943,7 +4009,7 @@ message ParsePostgres {
 
 message ParseRoute53 {
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3955,11 +4021,11 @@ message ParseToOCSF {
 
   EventSource eventsource = 260249947;
 
-  string mappingversion = 29454072;
+  optional string mappingversion = 29454072;
 
   OCSFVersion ocsfversion = 3840275;
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3969,7 +4035,7 @@ message ParseToOCSF {
 
 message ParseVPC {
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3979,7 +4045,7 @@ message ParseVPC {
 
 message ParseWAF {
 
-  string source = 466561497;
+  optional string source = 466561497;
 
 }
 
@@ -3993,11 +4059,11 @@ message PatternToken {
 
   map<string, int64> enumerations = 14171326;
 
-  string inferredtokenname = 57553257;
+  optional string inferredtokenname = 57553257;
 
   optional bool isdynamic = 17462495;
 
-  string tokenstring = 180629740;
+  optional string tokenstring = 180629740;
 
 }
 
@@ -4007,7 +4073,7 @@ message PatternToken {
 
 message Policy {
 
-  string deliverydestinationpolicy = 413241666;
+  optional string deliverydestinationpolicy = 413241666;
 
 }
 
@@ -4103,7 +4169,7 @@ message PutAccountPolicyRequest {
 
   Scope scope = 506131436;
 
-  string selectioncriteria = 145052429;
+  optional string selectioncriteria = 145052429;
 
 }
 
@@ -4141,9 +4207,9 @@ message PutDataProtectionPolicyResponse {
 
   optional int64 lastupdatedtime = 388324342;
 
-  string loggroupidentifier = 468281308;
+  optional string loggroupidentifier = 468281308;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
 }
 
@@ -4281,7 +4347,7 @@ message PutIntegrationRequest {
 
 message PutIntegrationResponse {
 
-  string integrationname = 183183535;
+  optional string integrationname = 183183535;
 
   IntegrationStatus integrationstatus = 12110360;
 
@@ -4299,7 +4365,7 @@ message PutLogEventsRequest {
 
   string logstreamname = 438025123;
 
-  string sequencetoken = 2309662;
+  optional string sequencetoken = 2309662;
 
 }
 
@@ -4307,7 +4373,7 @@ message PutLogEventsRequest {
 
 message PutLogEventsResponse {
 
-  string nextsequencetoken = 211087843;
+  optional string nextsequencetoken = 211087843;
 
   RejectedEntityInfo rejectedentityinfo = 4125469;
 
@@ -4333,7 +4399,7 @@ message PutMetricFilterRequest {
 
   repeated string emitsystemfielddimensions = 437431321;
 
-  string fieldselectioncriteria = 303984807;
+  optional string fieldselectioncriteria = 303984807;
 
   string filtername = 395125013;
 
@@ -4349,7 +4415,7 @@ message PutMetricFilterRequest {
 
 message PutQueryDefinitionRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   repeated string loggroupnames = 337702569;
 
@@ -4357,7 +4423,7 @@ message PutQueryDefinitionRequest {
 
   repeated QueryParameter parameters = 145043162;
 
-  string querydefinitionid = 178455620;
+  optional string querydefinitionid = 178455620;
 
   QueryLanguage querylanguage = 343791606;
 
@@ -4369,7 +4435,7 @@ message PutQueryDefinitionRequest {
 
 message PutQueryDefinitionResponse {
 
-  string querydefinitionid = 178455620;
+  optional string querydefinitionid = 178455620;
 
 }
 
@@ -4377,13 +4443,13 @@ message PutQueryDefinitionResponse {
 
 message PutResourcePolicyRequest {
 
-  string expectedrevisionid = 469613378;
+  optional string expectedrevisionid = 469613378;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
-  string resourcearn = 67806797;
+  optional string resourcearn = 67806797;
 
 }
 
@@ -4393,7 +4459,7 @@ message PutResourcePolicyResponse {
 
   ResourcePolicy resourcepolicy = 305429200;
 
-  string revisionid = 369170086;
+  optional string revisionid = 369170086;
 
 }
 
@@ -4409,6 +4475,24 @@ message PutRetentionPolicyRequest {
 
 
 
+message PutStorageTierPolicyRequest {
+
+  StorageTier storagetier = 47374847;
+
+}
+
+
+
+message PutStorageTierPolicyResponse {
+
+  optional int64 lastupdatedtime = 388324342;
+
+  StorageTier storagetier = 47374847;
+
+}
+
+
+
 message PutSubscriptionFilterRequest {
 
   optional bool applyontransformedlogs = 99775525;
@@ -4419,7 +4503,7 @@ message PutSubscriptionFilterRequest {
 
   repeated string emitsystemfields = 392618203;
 
-  string fieldselectioncriteria = 303984807;
+  optional string fieldselectioncriteria = 303984807;
 
   string filtername = 395125013;
 
@@ -4427,7 +4511,7 @@ message PutSubscriptionFilterRequest {
 
   string loggroupname = 95756236;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -4437,7 +4521,7 @@ message PutSyslogConfigurationRequest {
 
   string loggroupidentifier = 468281308;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
 }
 
@@ -4459,7 +4543,7 @@ message QueryCompileError {
 
   QueryCompileErrorLocation location = 200649127;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4485,15 +4569,15 @@ message QueryDefinition {
 
   repeated string loggroupnames = 337702569;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated QueryParameter parameters = 145043162;
 
-  string querydefinitionid = 178455620;
+  optional string querydefinitionid = 178455620;
 
   QueryLanguage querylanguage = 343791606;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
 }
 
@@ -4503,23 +4587,23 @@ message QueryDefinition {
 
 message QueryInfo {
 
-  double bytesscanned = 533301977;
+  optional double bytesscanned = 533301977;
 
   optional int64 createtime = 297700189;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   optional int64 queryduration = 97719576;
 
-  string queryid = 336975759;
+  optional string queryid = 336975759;
 
   QueryLanguage querylanguage = 343791606;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
   QueryStatus status = 441153520;
 
-  string useridentity = 427070345;
+  optional string useridentity = 427070345;
 
 }
 
@@ -4541,9 +4625,9 @@ enum QueryLanguage {
 
 message QueryParameter {
 
-  string defaultvalue = 403858624;
+  optional string defaultvalue = 403858624;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string name = 221887975;
 
@@ -4555,17 +4639,19 @@ message QueryParameter {
 
 message QueryStatistics {
 
-  double bytesscanned = 533301977;
+  optional double bytesscanned = 533301977;
 
-  double estimatedbytesskipped = 243901805;
+  optional double estimatedbytesskipped = 243901805;
 
-  double estimatedrecordsskipped = 495275708;
+  optional double estimatedrecordsskipped = 495275708;
 
-  double loggroupsscanned = 188426568;
+  optional double loggroupsscanned = 188426568;
 
-  double recordsmatched = 338750832;
+  optional double recordsmatched = 338750832;
 
-  double recordsscanned = 431708156;
+  optional double recordsscanned = 431708156;
+
+  optional double resultcount = 98369052;
 
 }
 
@@ -4597,7 +4683,7 @@ message RecordField {
 
   optional bool mandatory = 264682169;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
 }
 
@@ -4655,7 +4741,7 @@ message RenameKeys {
 
 message ResourceAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4675,7 +4761,7 @@ message ResourceConfig {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4687,15 +4773,15 @@ message ResourcePolicy {
 
   optional int64 lastupdatedtime = 388324342;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
   PolicyScope policyscope = 288841470;
 
-  string resourcearn = 67806797;
+  optional string resourcearn = 67806797;
 
-  string revisionid = 369170086;
+  optional string revisionid = 369170086;
 
 }
 
@@ -4705,9 +4791,9 @@ message ResourcePolicy {
 
 message ResultField {
 
-  string field = 125985384;
+  optional string field = 125985384;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -4719,9 +4805,9 @@ message S3Configuration {
 
   string destinationidentifier = 399670053;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
-  string owneraccountid = 19058423;
+  optional string owneraccountid = 19058423;
 
   string rolearn = 170019745;
 
@@ -4735,7 +4821,7 @@ message S3DeliveryConfiguration {
 
   optional bool enablehivecompatiblepath = 83012438;
 
-  string suffixpath = 249314700;
+  optional string suffixpath = 249314700;
 
 }
 
@@ -4749,13 +4835,13 @@ message S3TableIntegrationSource {
 
   DataSource datasource = 345762713;
 
-  string identifier = 145074239;
+  optional string identifier = 145074239;
 
-  string parentsourceidentifier = 514932276;
+  optional string parentsourceidentifier = 514932276;
 
   S3TableIntegrationSourceStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
 }
 
@@ -4779,9 +4865,9 @@ enum S3TableIntegrationSourceStatus {
 
 message S3TablesIntegration {
 
-  string datasourcename = 524251644;
+  optional string datasourcename = 524251644;
 
-  string datasourcetype = 292963025;
+  optional string datasourcetype = 292963025;
 
 }
 
@@ -4801,13 +4887,13 @@ enum ScheduleType {
 
 message ScheduledQueryDestination {
 
-  string destinationidentifier = 399670053;
+  optional string destinationidentifier = 399670053;
 
   ScheduledQueryDestinationType destinationtype = 488995304;
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
-  string processedidentifier = 194381665;
+  optional string processedidentifier = 194381665;
 
   ActionStatus status = 441153520;
 
@@ -4817,7 +4903,9 @@ message ScheduledQueryDestination {
 
 enum ScheduledQueryDestinationType {
 
-  SCHEDULED_QUERY_DESTINATION_TYPE_S3 = 0;
+  SCHEDULED_QUERY_DESTINATION_TYPE_LOOKUP_TABLE = 0;
+
+  SCHEDULED_QUERY_DESTINATION_TYPE_S3 = 1;
 
 }
 
@@ -4847,17 +4935,17 @@ message ScheduledQuerySummary {
 
   optional int64 lastupdatedtime = 388324342;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string scheduleexpression = 287794975;
+  optional string scheduleexpression = 287794975;
 
   ScheduleType scheduletype = 75972645;
 
-  string scheduledqueryarn = 240292916;
+  optional string scheduledqueryarn = 240292916;
 
   ScheduledQueryState state = 405877495;
 
-  string timezone = 190615331;
+  optional string timezone = 190615331;
 
 }
 
@@ -4875,7 +4963,7 @@ enum Scope {
 
 message SearchedLogStream {
 
-  string logstreamname = 438025123;
+  optional string logstreamname = 438025123;
 
   optional bool searchedcompletely = 449344361;
 
@@ -4887,7 +4975,7 @@ message SearchedLogStream {
 
 message ServiceQuotaExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4897,7 +4985,7 @@ message ServiceQuotaExceededException {
 
 message ServiceUnavailableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4907,7 +4995,7 @@ message ServiceUnavailableException {
 
 message SessionStreamingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4917,7 +5005,7 @@ message SessionStreamingException {
 
 message SessionTimeoutException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5007,7 +5095,7 @@ enum StandardUnit {
 
 message StartLiveTailRequest {
 
-  string logeventfilterpattern = 81051802;
+  optional string logeventfilterpattern = 81051802;
 
   repeated string loggroupidentifiers = 409873785;
 
@@ -5051,7 +5139,7 @@ message StartQueryRequest {
 
   repeated string loggroupidentifiers = 409873785;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
   repeated string loggroupnames = 337702569;
 
@@ -5067,7 +5155,7 @@ message StartQueryRequest {
 
 message StartQueryResponse {
 
-  string queryid = 336975759;
+  optional string queryid = 336975759;
 
 }
 
@@ -5101,6 +5189,16 @@ message StopQueryResponse {
 
 
 
+enum StorageTier {
+
+  STORAGE_TIER_STANDARD = 0;
+
+  STORAGE_TIER_INTELLIGENT_TIERING = 1;
+
+}
+
+
+
 // Represents a subscription filter.
 
 message SubscriptionFilter {
@@ -5109,21 +5207,21 @@ message SubscriptionFilter {
 
   optional int64 creationtime = 53551750;
 
-  string destinationarn = 427601315;
+  optional string destinationarn = 427601315;
 
   Distribution distribution = 345526572;
 
   repeated string emitsystemfields = 392618203;
 
-  string fieldselectioncriteria = 303984807;
+  optional string fieldselectioncriteria = 303984807;
 
-  string filtername = 395125013;
+  optional string filtername = 395125013;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
-  string loggroupname = 95756236;
+  optional string loggroupname = 95756236;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -5203,11 +5301,11 @@ message SyslogConfiguration {
 
   optional int64 createdat = 370722959;
 
-  string loggrouparn = 6742512;
+  optional string loggrouparn = 6742512;
 
   SyslogSourceType sourcetype = 25547057;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
 }
 
@@ -5293,7 +5391,7 @@ message TestTransformerResponse {
 
 message ThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5303,9 +5401,9 @@ message ThrottlingException {
 
 message TooManyTagsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string resourcename = 17776375;
+  optional string resourcename = 17776375;
 
 }
 
@@ -5315,11 +5413,11 @@ message TooManyTagsException {
 
 message TransformedLogRecord {
 
-  string eventmessage = 299743039;
+  optional string eventmessage = 299743039;
 
   optional int64 eventnumber = 220470463;
 
-  string transformedeventmessage = 209045014;
+  optional string transformedeventmessage = 209045014;
 
 }
 
@@ -5331,11 +5429,11 @@ message TriggerHistoryRecord {
 
   repeated ScheduledQueryDestination destinations = 1617189;
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
   ExecutionStatus executionstatus = 6216448;
 
-  string queryid = 336975759;
+  optional string queryid = 336975759;
 
   optional int64 triggeredtimestamp = 257556475;
 
@@ -5393,7 +5491,7 @@ message TypeConverterEntry {
 
 message UnrecognizedClientException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5423,11 +5521,11 @@ message UpdateAnomalyRequest {
 
   string anomalydetectorarn = 446490540;
 
-  string anomalyid = 201902912;
+  optional string anomalyid = 201902912;
 
   optional bool baseline = 200859203;
 
-  string patternid = 292391181;
+  optional string patternid = 292391181;
 
   SuppressionPeriod suppressionperiod = 217163962;
 
@@ -5439,7 +5537,7 @@ message UpdateAnomalyRequest {
 
 message UpdateDeliveryConfigurationRequest {
 
-  string fielddelimiter = 433214845;
+  optional string fielddelimiter = 433214845;
 
   string id = 389573345;
 
@@ -5467,7 +5565,7 @@ message UpdateLogAnomalyDetectorRequest {
 
   EvaluationFrequency evaluationfrequency = 533700360;
 
-  string filterpattern = 144868248;
+  optional string filterpattern = 144868248;
 
 }
 
@@ -5475,13 +5573,15 @@ message UpdateLogAnomalyDetectorRequest {
 
 message UpdateLookupTableRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   string lookuptablearn = 150245445;
 
-  string tablebody = 438636408;
+  optional string queryid = 336975759;
+
+  optional string tablebody = 438636408;
 
 }
 
@@ -5491,7 +5591,7 @@ message UpdateLookupTableResponse {
 
   optional int64 lastupdatedtime = 388324342;
 
-  string lookuptablearn = 150245445;
+  optional string lookuptablearn = 150245445;
 
 }
 
@@ -5499,7 +5599,7 @@ message UpdateLookupTableResponse {
 
 message UpdateScheduledQueryRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
@@ -5525,7 +5625,7 @@ message UpdateScheduledQueryRequest {
 
   ScheduledQueryState state = 405877495;
 
-  string timezone = 190615331;
+  optional string timezone = 190615331;
 
 }
 
@@ -5535,13 +5635,13 @@ message UpdateScheduledQueryResponse {
 
   optional int64 creationtime = 53551750;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DestinationConfiguration destinationconfiguration = 145518016;
 
   optional int64 endtimeoffset = 214490153;
 
-  string executionrolearn = 230613553;
+  optional string executionrolearn = 230613553;
 
   ExecutionStatus lastexecutionstatus = 7800596;
 
@@ -5551,27 +5651,27 @@ message UpdateScheduledQueryResponse {
 
   repeated string loggroupidentifiers = 409873785;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   QueryLanguage querylanguage = 343791606;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
   optional int64 scheduleendtime = 111645113;
 
-  string scheduleexpression = 287794975;
+  optional string scheduleexpression = 287794975;
 
   optional int64 schedulestarttime = 464194170;
 
   ScheduleType scheduletype = 75972645;
 
-  string scheduledqueryarn = 240292916;
+  optional string scheduledqueryarn = 240292916;
 
   optional int64 starttimeoffset = 308525274;
 
   ScheduledQueryState state = 405877495;
 
-  string timezone = 190615331;
+  optional string timezone = 190615331;
 
 }
 
@@ -5591,7 +5691,7 @@ message UpperCaseString {
 
 message ValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

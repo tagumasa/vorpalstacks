@@ -391,7 +391,7 @@ service AppSyncService {
 
 message AccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -417,23 +417,23 @@ message AdditionalAuthenticationProvider {
 
 message Api {
 
-  string apiarn = 11472747;
+  optional string apiarn = 11472747;
 
-  string apiid = 113380971;
+  optional string apiid = 113380971;
 
-  string created = 300774588;
+  optional string created = 300774588;
 
   map<string, string> dns = 443214013;
 
   EventConfig eventconfig = 362776750;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string ownercontact = 17074121;
+  optional string ownercontact = 17074121;
 
   map<string, string> tags = 337046433;
 
-  string wafwebaclarn = 457120111;
+  optional string wafwebaclarn = 457120111;
 
   optional bool xrayenabled = 467402691;
 
@@ -445,13 +445,13 @@ message Api {
 
 message ApiAssociation {
 
-  string apiid = 113380971;
+  optional string apiid = 113380971;
 
   AssociationStatus associationstatus = 350428071;
 
-  string deploymentdetail = 69787328;
+  optional string deploymentdetail = 69787328;
 
-  string domainname = 390326667;
+  optional string domainname = 390326667;
 
 }
 
@@ -549,11 +549,11 @@ message ApiKey {
 
   optional int64 deletes = 265381308;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional int64 expires = 512673668;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -563,7 +563,7 @@ message ApiKey {
 
 message ApiKeyLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -573,7 +573,7 @@ message ApiKeyLimitExceededException {
 
 message ApiKeyValidityOutOfBoundsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -583,7 +583,7 @@ message ApiKeyValidityOutOfBoundsException {
 
 message ApiLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -621,7 +621,7 @@ message AssociateApiResponse {
 
 message AssociateMergedGraphqlApiRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string mergedapiidentifier = 445201257;
 
@@ -643,7 +643,7 @@ message AssociateMergedGraphqlApiResponse {
 
 message AssociateSourceGraphqlApiRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string mergedapiidentifier = 445201257;
 
@@ -741,9 +741,9 @@ enum AuthorizationType {
 
 message AwsIamConfig {
 
-  string signingregion = 4431097;
+  optional string signingregion = 4431097;
 
-  string signingservicename = 308630853;
+  optional string signingservicename = 308630853;
 
 }
 
@@ -765,7 +765,7 @@ message BadRequestException {
 
   BadRequestDetail detail = 3430549;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   BadRequestReason reason = 413359642;
 
@@ -807,19 +807,19 @@ message CachingConfig {
 
 message ChannelNamespace {
 
-  string apiid = 113380971;
+  optional string apiid = 113380971;
 
-  string channelnamespacearn = 274706367;
+  optional string channelnamespacearn = 274706367;
 
-  string codehandlers = 84884626;
+  optional string codehandlers = 84884626;
 
-  string created = 300774588;
+  optional string created = 300774588;
 
   HandlerConfigs handlerconfigs = 381556359;
 
-  string lastmodified = 410744903;
+  optional string lastmodified = 410744903;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated AuthMode publishauthmodes = 313792955;
 
@@ -835,11 +835,11 @@ message ChannelNamespace {
 
 message CodeError {
 
-  string errortype = 183231834;
+  optional string errortype = 183231834;
 
   CodeErrorLocation location = 200649127;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -863,7 +863,7 @@ message CodeErrorLocation {
 
 message CognitoConfig {
 
-  string appidclientregex = 477233206;
+  optional string appidclientregex = 477233206;
 
   string awsregion = 69183763;
 
@@ -877,7 +877,7 @@ message CognitoConfig {
 
 message CognitoUserPoolConfig {
 
-  string appidclientregex = 477233206;
+  optional string appidclientregex = 477233206;
 
   string awsregion = 69183763;
 
@@ -891,7 +891,7 @@ message CognitoUserPoolConfig {
 
 message ConcurrentModificationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -911,7 +911,7 @@ enum ConflictDetectionType {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -967,7 +967,7 @@ message CreateApiKeyRequest {
 
   string apiid = 113380971;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional int64 expires = 512673668;
 
@@ -989,7 +989,7 @@ message CreateApiRequest {
 
   string name = 221887975;
 
-  string ownercontact = 17074121;
+  optional string ownercontact = 17074121;
 
   map<string, string> tags = 337046433;
 
@@ -1009,7 +1009,7 @@ message CreateChannelNamespaceRequest {
 
   string apiid = 113380971;
 
-  string codehandlers = 84884626;
+  optional string codehandlers = 84884626;
 
   HandlerConfigs handlerconfigs = 381556359;
 
@@ -1037,7 +1037,7 @@ message CreateDataSourceRequest {
 
   string apiid = 113380971;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DynamodbDataSourceConfig dynamodbconfig = 189264204;
 
@@ -1057,7 +1057,7 @@ message CreateDataSourceRequest {
 
   RelationalDatabaseDataSourceConfig relationaldatabaseconfig = 33295308;
 
-  string servicerolearn = 122834020;
+  optional string servicerolearn = 122834020;
 
   DataSourceType type = 287830350;
 
@@ -1077,7 +1077,7 @@ message CreateDomainNameRequest {
 
   string certificatearn = 425831704;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string domainname = 390326667;
 
@@ -1099,21 +1099,21 @@ message CreateFunctionRequest {
 
   string apiid = 113380971;
 
-  string code = 422669557;
+  optional string code = 422669557;
 
   string datasourcename = 231923996;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string functionversion = 43418548;
+  optional string functionversion = 43418548;
 
   optional int32 maxbatchsize = 45298679;
 
   string name = 221887975;
 
-  string requestmappingtemplate = 451326335;
+  optional string requestmappingtemplate = 451326335;
 
-  string responsemappingtemplate = 393186939;
+  optional string responsemappingtemplate = 393186939;
 
   AppSyncRuntime runtime = 79706412;
 
@@ -1147,13 +1147,13 @@ message CreateGraphqlApiRequest {
 
   LogConfig logconfig = 24002932;
 
-  string mergedapiexecutionrolearn = 216513787;
+  optional string mergedapiexecutionrolearn = 216513787;
 
   string name = 221887975;
 
   OpenIDConnectConfig openidconnectconfig = 357500045;
 
-  string ownercontact = 17074121;
+  optional string ownercontact = 17074121;
 
   optional int32 querydepthlimit = 70244048;
 
@@ -1185,9 +1185,9 @@ message CreateResolverRequest {
 
   CachingConfig cachingconfig = 49322281;
 
-  string code = 422669557;
+  optional string code = 422669557;
 
-  string datasourcename = 231923996;
+  optional string datasourcename = 231923996;
 
   string fieldname = 487483205;
 
@@ -1199,9 +1199,9 @@ message CreateResolverRequest {
 
   PipelineConfig pipelineconfig = 128197026;
 
-  string requestmappingtemplate = 451326335;
+  optional string requestmappingtemplate = 451326335;
 
-  string responsemappingtemplate = 393186939;
+  optional string responsemappingtemplate = 393186939;
 
   AppSyncRuntime runtime = 79706412;
 
@@ -1245,9 +1245,9 @@ message CreateTypeResponse {
 
 message DataSource {
 
-  string datasourcearn = 290317248;
+  optional string datasourcearn = 290317248;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DynamodbDataSourceConfig dynamodbconfig = 189264204;
 
@@ -1261,13 +1261,13 @@ message DataSource {
 
   DataSourceLevelMetricsConfig metricsconfig = 278835313;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   OpenSearchServiceDataSourceConfig opensearchserviceconfig = 306254355;
 
   RelationalDatabaseDataSourceConfig relationaldatabaseconfig = 33295308;
 
-  string servicerolearn = 122834020;
+  optional string servicerolearn = 122834020;
 
   DataSourceType type = 287830350;
 
@@ -1283,11 +1283,11 @@ message DataSourceIntrospectionModel {
 
   repeated DataSourceIntrospectionModelIndex indexes = 15185596;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   DataSourceIntrospectionModelIndex primarykey = 104739345;
 
-  string sdl = 2421083;
+  optional string sdl = 2421083;
 
 }
 
@@ -1299,7 +1299,7 @@ message DataSourceIntrospectionModelField {
 
   optional int64 length = 63976982;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   DataSourceIntrospectionModelFieldType type = 287830350;
 
@@ -1311,9 +1311,9 @@ message DataSourceIntrospectionModelField {
 
 message DataSourceIntrospectionModelFieldType {
 
-  string kind = 420733508;
+  optional string kind = 420733508;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   DataSourceIntrospectionModelFieldType type = 287830350;
 
@@ -1329,7 +1329,7 @@ message DataSourceIntrospectionModelIndex {
 
   repeated string fields = 104883581;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
 }
 
@@ -1341,7 +1341,7 @@ message DataSourceIntrospectionResult {
 
   repeated DataSourceIntrospectionModel models = 343003788;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1577,7 +1577,7 @@ message DeltaSyncConfig {
 
   optional int64 basetablettl = 458768025;
 
-  string deltasynctablename = 459106938;
+  optional string deltasynctablename = 459106938;
 
   optional int64 deltasynctablettl = 344917499;
 
@@ -1639,17 +1639,17 @@ message DisassociateSourceGraphqlApiResponse {
 
 message DomainNameConfig {
 
-  string appsyncdomainname = 228006585;
+  optional string appsyncdomainname = 228006585;
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string domainname = 390326667;
+  optional string domainname = 390326667;
 
-  string domainnamearn = 244019094;
+  optional string domainnamearn = 244019094;
 
-  string hostedzoneid = 26826334;
+  optional string hostedzoneid = 26826334;
 
   map<string, string> tags = 337046433;
 
@@ -1705,7 +1705,7 @@ message EnhancedMetricsConfig {
 
 message ErrorDetail {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1717,7 +1717,7 @@ message EvaluateCodeErrorDetail {
 
   repeated CodeError codeerrors = 44076292;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1729,7 +1729,7 @@ message EvaluateCodeRequest {
 
   string context = 210178173;
 
-  string function = 517358154;
+  optional string function = 517358154;
 
   AppSyncRuntime runtime = 79706412;
 
@@ -1741,13 +1741,13 @@ message EvaluateCodeResponse {
 
   EvaluateCodeErrorDetail error = 26314578;
 
-  string evaluationresult = 453215623;
+  optional string evaluationresult = 453215623;
 
   repeated string logs = 251836551;
 
-  string outerrors = 489340565;
+  optional string outerrors = 489340565;
 
-  string stash = 53015939;
+  optional string stash = 53015939;
 
 }
 
@@ -1767,13 +1767,13 @@ message EvaluateMappingTemplateResponse {
 
   ErrorDetail error = 26314578;
 
-  string evaluationresult = 453215623;
+  optional string evaluationresult = 453215623;
 
   repeated string logs = 251836551;
 
-  string outerrors = 489340565;
+  optional string outerrors = 489340565;
 
-  string stash = 53015939;
+  optional string stash = 53015939;
 
 }
 
@@ -1873,25 +1873,25 @@ message FlushApiCacheResponse {
 
 message FunctionConfiguration {
 
-  string code = 422669557;
+  optional string code = 422669557;
 
-  string datasourcename = 231923996;
+  optional string datasourcename = 231923996;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string functionarn = 451665297;
+  optional string functionarn = 451665297;
 
-  string functionid = 156610413;
+  optional string functionid = 156610413;
 
-  string functionversion = 43418548;
+  optional string functionversion = 43418548;
 
   optional int32 maxbatchsize = 45298679;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string requestmappingtemplate = 451326335;
+  optional string requestmappingtemplate = 451326335;
 
-  string responsemappingtemplate = 393186939;
+  optional string responsemappingtemplate = 393186939;
 
   AppSyncRuntime runtime = 79706412;
 
@@ -1979,7 +1979,7 @@ message GetDataSourceIntrospectionRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1987,13 +1987,13 @@ message GetDataSourceIntrospectionRequest {
 
 message GetDataSourceIntrospectionResponse {
 
-  string introspectionid = 284517058;
+  optional string introspectionid = 284517058;
 
   DataSourceIntrospectionResult introspectionresult = 230048374;
 
   DataSourceIntrospectionStatus introspectionstatus = 29503511;
 
-  string introspectionstatusdetail = 445981432;
+  optional string introspectionstatusdetail = 445981432;
 
 }
 
@@ -2097,7 +2097,7 @@ message GetIntrospectionSchemaRequest {
 
 message GetIntrospectionSchemaResponse {
 
-  bytes schema = 310182711 [(aws.http_payload) = true];
+  optional bytes schema = 310182711 [(aws.http_payload) = true];
 
 }
 
@@ -2133,7 +2133,7 @@ message GetSchemaCreationStatusRequest {
 
 message GetSchemaCreationStatusResponse {
 
-  string details = 426242982;
+  optional string details = 426242982;
 
   SchemaStatus status = 441153520;
 
@@ -2213,7 +2213,7 @@ enum GraphQLApiVisibility {
 
 message GraphQLSchemaException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2225,11 +2225,11 @@ message GraphqlApi {
 
   repeated AdditionalAuthenticationProvider additionalauthenticationproviders = 159806731;
 
-  string apiid = 113380971;
+  optional string apiid = 113380971;
 
   GraphQLApiType apitype = 74688128;
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
   AuthenticationType authenticationtype = 42854794;
 
@@ -2243,15 +2243,15 @@ message GraphqlApi {
 
   LogConfig logconfig = 24002932;
 
-  string mergedapiexecutionrolearn = 216513787;
+  optional string mergedapiexecutionrolearn = 216513787;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   OpenIDConnectConfig openidconnectconfig = 357500045;
 
-  string owner = 359091413;
+  optional string owner = 359091413;
 
-  string ownercontact = 17074121;
+  optional string ownercontact = 17074121;
 
   optional int32 querydepthlimit = 70244048;
 
@@ -2265,7 +2265,7 @@ message GraphqlApi {
 
   GraphQLApiVisibility visibility = 523761126;
 
-  string wafwebaclarn = 457120111;
+  optional string wafwebaclarn = 457120111;
 
   optional bool xrayenabled = 467402691;
 
@@ -2313,7 +2313,7 @@ message HttpDataSourceConfig {
 
   AuthorizationConfig authorizationconfig = 454006601;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
 }
 
@@ -2335,7 +2335,7 @@ message Integration {
 
 message InternalFailureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2359,7 +2359,7 @@ message LambdaAuthorizerConfig {
 
   string authorizeruri = 525146137;
 
-  string identityvalidationexpression = 227211199;
+  optional string identityvalidationexpression = 227211199;
 
 }
 
@@ -2379,7 +2379,7 @@ message LambdaConfig {
 
 message LambdaConflictHandlerConfig {
 
-  string lambdaconflicthandlerarn = 534620524;
+  optional string lambdaconflicthandlerarn = 534620524;
 
 }
 
@@ -2399,7 +2399,7 @@ message LambdaDataSourceConfig {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2411,7 +2411,7 @@ message ListApiKeysRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2421,7 +2421,7 @@ message ListApiKeysResponse {
 
   repeated ApiKey apikeys = 317373592;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2431,7 +2431,7 @@ message ListApisRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2441,7 +2441,7 @@ message ListApisResponse {
 
   repeated Api apis = 65740317;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2453,7 +2453,7 @@ message ListChannelNamespacesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2463,7 +2463,7 @@ message ListChannelNamespacesResponse {
 
   repeated ChannelNamespace channelnamespaces = 37336425;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2475,7 +2475,7 @@ message ListDataSourcesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2485,7 +2485,7 @@ message ListDataSourcesResponse {
 
   repeated DataSource datasources = 477389554;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2495,7 +2495,7 @@ message ListDomainNamesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2505,7 +2505,7 @@ message ListDomainNamesResponse {
 
   repeated DomainNameConfig domainnameconfigs = 132375990;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2517,7 +2517,7 @@ message ListFunctionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2527,7 +2527,7 @@ message ListFunctionsResponse {
 
   repeated FunctionConfiguration functions = 88752463;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2539,7 +2539,7 @@ message ListGraphqlApisRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   Ownership owner = 359091413;
 
@@ -2551,7 +2551,7 @@ message ListGraphqlApisResponse {
 
   repeated GraphqlApi graphqlapis = 176811080;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2565,7 +2565,7 @@ message ListResolversByFunctionRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2573,7 +2573,7 @@ message ListResolversByFunctionRequest {
 
 message ListResolversByFunctionResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated Resolver resolvers = 137920273;
 
@@ -2587,7 +2587,7 @@ message ListResolversRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string typename = 475024751;
 
@@ -2597,7 +2597,7 @@ message ListResolversRequest {
 
 message ListResolversResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated Resolver resolvers = 137920273;
 
@@ -2611,7 +2611,7 @@ message ListSourceApiAssociationsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2619,7 +2619,7 @@ message ListSourceApiAssociationsRequest {
 
 message ListSourceApiAssociationsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SourceApiAssociationSummary sourceapiassociationsummaries = 466694574;
 
@@ -2653,7 +2653,7 @@ message ListTypesByAssociationRequest {
 
   string mergedapiidentifier = 445201257;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2661,7 +2661,7 @@ message ListTypesByAssociationRequest {
 
 message ListTypesByAssociationResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated Type types = 534824091;
 
@@ -2677,7 +2677,7 @@ message ListTypesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -2685,7 +2685,7 @@ message ListTypesRequest {
 
 message ListTypesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated Type types = 534824091;
 
@@ -2721,7 +2721,7 @@ enum MergeType {
 
 message NotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2733,7 +2733,7 @@ message OpenIDConnectConfig {
 
   optional int64 authttl = 457364410;
 
-  string clientid = 5306436;
+  optional string clientid = 5306436;
 
   optional int64 iatttl = 170754408;
 
@@ -2831,15 +2831,15 @@ message RdsDataApiConfig {
 
 message RdsHttpEndpointConfig {
 
-  string awsregion = 69183763;
+  optional string awsregion = 69183763;
 
-  string awssecretstorearn = 327289763;
+  optional string awssecretstorearn = 327289763;
 
-  string databasename = 295544572;
+  optional string databasename = 295544572;
 
-  string dbclusteridentifier = 137045009;
+  optional string dbclusteridentifier = 137045009;
 
-  string schema = 310182711;
+  optional string schema = 310182711;
 
 }
 
@@ -2871,11 +2871,11 @@ message Resolver {
 
   CachingConfig cachingconfig = 49322281;
 
-  string code = 422669557;
+  optional string code = 422669557;
 
-  string datasourcename = 231923996;
+  optional string datasourcename = 231923996;
 
-  string fieldname = 487483205;
+  optional string fieldname = 487483205;
 
   ResolverKind kind = 420733508;
 
@@ -2885,17 +2885,17 @@ message Resolver {
 
   PipelineConfig pipelineconfig = 128197026;
 
-  string requestmappingtemplate = 451326335;
+  optional string requestmappingtemplate = 451326335;
 
-  string resolverarn = 114796439;
+  optional string resolverarn = 114796439;
 
-  string responsemappingtemplate = 393186939;
+  optional string responsemappingtemplate = 393186939;
 
   AppSyncRuntime runtime = 79706412;
 
   SyncConfig syncconfig = 478900021;
 
-  string typename = 475024751;
+  optional string typename = 475024751;
 
 }
 
@@ -2961,7 +2961,7 @@ enum SchemaStatus {
 
 message ServiceQuotaExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2971,27 +2971,27 @@ message ServiceQuotaExceededException {
 
 message SourceApiAssociation {
 
-  string associationarn = 298745140;
+  optional string associationarn = 298745140;
 
-  string associationid = 424136370;
+  optional string associationid = 424136370;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string lastsuccessfulmergedate = 496587250;
+  optional string lastsuccessfulmergedate = 496587250;
 
-  string mergedapiarn = 420265351;
+  optional string mergedapiarn = 420265351;
 
-  string mergedapiid = 113995743;
+  optional string mergedapiid = 113995743;
 
-  string sourceapiarn = 379015280;
+  optional string sourceapiarn = 379015280;
 
   SourceApiAssociationConfig sourceapiassociationconfig = 67984118;
 
   SourceApiAssociationStatus sourceapiassociationstatus = 218602082;
 
-  string sourceapiassociationstatusdetail = 285099537;
+  optional string sourceapiassociationstatusdetail = 285099537;
 
-  string sourceapiid = 59486486;
+  optional string sourceapiid = 59486486;
 
 }
 
@@ -3033,19 +3033,19 @@ enum SourceApiAssociationStatus {
 
 message SourceApiAssociationSummary {
 
-  string associationarn = 298745140;
+  optional string associationarn = 298745140;
 
-  string associationid = 424136370;
+  optional string associationid = 424136370;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string mergedapiarn = 420265351;
+  optional string mergedapiarn = 420265351;
 
-  string mergedapiid = 113995743;
+  optional string mergedapiid = 113995743;
 
-  string sourceapiarn = 379015280;
+  optional string sourceapiarn = 379015280;
 
-  string sourceapiid = 59486486;
+  optional string sourceapiid = 59486486;
 
 }
 
@@ -3061,11 +3061,11 @@ message StartDataSourceIntrospectionRequest {
 
 message StartDataSourceIntrospectionResponse {
 
-  string introspectionid = 284517058;
+  optional string introspectionid = 284517058;
 
   DataSourceIntrospectionStatus introspectionstatus = 29503511;
 
-  string introspectionstatusdetail = 445981432;
+  optional string introspectionstatusdetail = 445981432;
 
 }
 
@@ -3141,15 +3141,15 @@ message TagResourceResponse {
 
 message Type {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string definition = 68443297;
+  optional string definition = 68443297;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   TypeDefinitionFormat format = 429753683;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
 }
 
@@ -3169,7 +3169,7 @@ enum TypeDefinitionFormat {
 
 message UnauthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3223,7 +3223,7 @@ message UpdateApiKeyRequest {
 
   string apiid = 113380971;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional int64 expires = 512673668;
 
@@ -3249,7 +3249,7 @@ message UpdateApiRequest {
 
   string name = 221887975;
 
-  string ownercontact = 17074121;
+  optional string ownercontact = 17074121;
 
 }
 
@@ -3267,7 +3267,7 @@ message UpdateChannelNamespaceRequest {
 
   string apiid = 113380971;
 
-  string codehandlers = 84884626;
+  optional string codehandlers = 84884626;
 
   HandlerConfigs handlerconfigs = 381556359;
 
@@ -3293,7 +3293,7 @@ message UpdateDataSourceRequest {
 
   string apiid = 113380971;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   DynamodbDataSourceConfig dynamodbconfig = 189264204;
 
@@ -3313,7 +3313,7 @@ message UpdateDataSourceRequest {
 
   RelationalDatabaseDataSourceConfig relationaldatabaseconfig = 33295308;
 
-  string servicerolearn = 122834020;
+  optional string servicerolearn = 122834020;
 
   DataSourceType type = 287830350;
 
@@ -3331,7 +3331,7 @@ message UpdateDataSourceResponse {
 
 message UpdateDomainNameRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string domainname = 390326667;
 
@@ -3351,23 +3351,23 @@ message UpdateFunctionRequest {
 
   string apiid = 113380971;
 
-  string code = 422669557;
+  optional string code = 422669557;
 
   string datasourcename = 231923996;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string functionid = 156610413;
 
-  string functionversion = 43418548;
+  optional string functionversion = 43418548;
 
   optional int32 maxbatchsize = 45298679;
 
   string name = 221887975;
 
-  string requestmappingtemplate = 451326335;
+  optional string requestmappingtemplate = 451326335;
 
-  string responsemappingtemplate = 393186939;
+  optional string responsemappingtemplate = 393186939;
 
   AppSyncRuntime runtime = 79706412;
 
@@ -3401,13 +3401,13 @@ message UpdateGraphqlApiRequest {
 
   LogConfig logconfig = 24002932;
 
-  string mergedapiexecutionrolearn = 216513787;
+  optional string mergedapiexecutionrolearn = 216513787;
 
   string name = 221887975;
 
   OpenIDConnectConfig openidconnectconfig = 357500045;
 
-  string ownercontact = 17074121;
+  optional string ownercontact = 17074121;
 
   optional int32 querydepthlimit = 70244048;
 
@@ -3435,9 +3435,9 @@ message UpdateResolverRequest {
 
   CachingConfig cachingconfig = 49322281;
 
-  string code = 422669557;
+  optional string code = 422669557;
 
-  string datasourcename = 231923996;
+  optional string datasourcename = 231923996;
 
   string fieldname = 487483205;
 
@@ -3449,9 +3449,9 @@ message UpdateResolverRequest {
 
   PipelineConfig pipelineconfig = 128197026;
 
-  string requestmappingtemplate = 451326335;
+  optional string requestmappingtemplate = 451326335;
 
-  string responsemappingtemplate = 393186939;
+  optional string responsemappingtemplate = 393186939;
 
   AppSyncRuntime runtime = 79706412;
 
@@ -3475,7 +3475,7 @@ message UpdateSourceApiAssociationRequest {
 
   string associationid = 424136370;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string mergedapiidentifier = 445201257;
 
@@ -3497,7 +3497,7 @@ message UpdateTypeRequest {
 
   string apiid = 113380971;
 
-  string definition = 68443297;
+  optional string definition = 68443297;
 
   TypeDefinitionFormat format = 429753683;
 
@@ -3519,7 +3519,7 @@ message UpdateTypeResponse {
 
 message UserPoolConfig {
 
-  string appidclientregex = 477233206;
+  optional string appidclientregex = 477233206;
 
   string awsregion = 69183763;
 

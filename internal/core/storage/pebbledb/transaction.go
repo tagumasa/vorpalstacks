@@ -198,5 +198,45 @@ func (t *Txn) NewLazyIterator(start, end []byte) *LazyIterator {
 		encryptor: t.db.encryptor,
 		ttlOpts:   ttlOpts,
 		first:     true,
+		seekFirst: iter.First,
+		move:      iter.Next,
+	}
+}
+
+// NewReverseLazyIterator creates a lazy iterator that walks the given range
+// of the transaction backwards, starting at the largest key strictly less
+// than before (or the largest key in range when before is nil). The
+// returned iterator uses the same LazyIterator type as
+// DB.NewReverseLazyIterator.
+func (t *Txn) NewReverseLazyIterator(start, end, before []byte) *LazyIterator {
+	if t.closed {
+		return &LazyIterator{err: ErrTxnClosed}
+	}
+
+	iter, err := t.NewIter(&pebble.IterOptions{
+		LowerBound: start,
+		UpperBound: end,
+	})
+	if err != nil {
+		return &LazyIterator{err: err}
+	}
+
+	var ttlOpts *TTLOptions
+	if t.db.opts.TTL.Enabled {
+		ttlOpts = &t.db.opts.TTL
+	}
+
+	seek := iter.Last
+	if before != nil {
+		seek = func() bool { return iter.SeekLT(before) }
+	}
+
+	return &LazyIterator{
+		iter:      iter,
+		encryptor: t.db.encryptor,
+		ttlOpts:   ttlOpts,
+		first:     true,
+		seekFirst: seek,
+		move:      iter.Prev,
 	}
 }

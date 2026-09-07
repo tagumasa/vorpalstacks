@@ -316,9 +316,9 @@ service WAFV2Service {
 
 message APIKeySummary {
 
-  string apikey = 274818239;
+  optional string apikey = 274818239;
 
-  string creationtimestamp = 24480293;
+  optional string creationtimestamp = 24480293;
 
   repeated string tokendomains = 11638560;
 
@@ -466,7 +466,7 @@ message AndStatement {
 
 message ApplicationAttribute {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated string values = 223158876;
 
@@ -518,11 +518,13 @@ enum AssociatedResourceType {
 
   ASSOCIATED_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE = 1;
 
-  ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT = 2;
+  ASSOCIATED_RESOURCE_TYPE_AGENTCORE_GATEWAY = 2;
 
-  ASSOCIATED_RESOURCE_TYPE_API_GATEWAY = 3;
+  ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT = 3;
 
-  ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE = 4;
+  ASSOCIATED_RESOURCE_TYPE_API_GATEWAY = 4;
+
+  ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE = 5;
 
 }
 
@@ -605,6 +607,8 @@ message ByteMatchStatement {
   FieldToMatch fieldtomatch = 338348372;
 
   PositionalConstraint positionalconstraint = 260734525;
+
+  repeated PreParseTextTransformation preparsetexttransformations = 68274401;
 
   bytes searchstring = 318687365;
 
@@ -1310,7 +1314,7 @@ message CreateAPIKeyRequest {
 
 message CreateAPIKeyResponse {
 
-  string apikey = 274818239;
+  optional string apikey = 274818239;
 
 }
 
@@ -1320,7 +1324,7 @@ message CreateIPSetRequest {
 
   repeated string addresses = 375939972;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   IPAddressVersion ipaddressversion = 313363841;
 
@@ -1344,7 +1348,7 @@ message CreateIPSetResponse {
 
 message CreateRegexPatternSetRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -1372,7 +1376,7 @@ message CreateRuleGroupRequest {
 
   map<string, CustomResponseBody> customresponsebodies = 42731774;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   MonetizationConfig monetizationconfig = 528380847;
 
@@ -1414,7 +1418,7 @@ message CreateWebACLRequest {
 
   DefaultAction defaultaction = 322663861;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   MonetizationConfig monetizationconfig = 528380847;
 
@@ -1506,7 +1510,7 @@ message CustomRequestHandling {
 
 message CustomResponse {
 
-  string customresponsebodykey = 77361257;
+  optional string customresponsebodykey = 77361257;
 
   int32 responsecode = 447553700;
 
@@ -1532,19 +1536,19 @@ message CustomResponseBody {
 
 message DataPointEntry {
 
-  string category = 263447954;
+  optional string category = 263447954;
 
-  string date = 458388346;
+  optional string date = 458388346;
 
-  string groupbyvalue = 232052215;
+  optional string groupbyvalue = 232052215;
 
-  string intent = 158359916;
+  optional string intent = 158359916;
 
   optional int64 monetizeservedcount = 221393899;
 
   optional int64 settledcount = 164622674;
 
-  string totalamount = 45332786;
+  optional string totalamount = 45332786;
 
 }
 
@@ -1626,7 +1630,7 @@ message DeleteFirewallManagerRuleGroupsRequest {
 
 message DeleteFirewallManagerRuleGroupsResponse {
 
-  string nextwebacllocktoken = 89595355;
+  optional string nextwebacllocktoken = 89595355;
 
 }
 
@@ -1786,7 +1790,7 @@ message DescribeManagedRuleGroupRequest {
 
   string vendorname = 159329689;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -1800,13 +1804,13 @@ message DescribeManagedRuleGroupResponse {
 
   repeated LabelSummary consumedlabels = 43813949;
 
-  string labelnamespace = 39797417;
+  optional string labelnamespace = 39797417;
 
   repeated RuleSummary rules = 42675585;
 
-  string snstopicarn = 374815596;
+  optional string snstopicarn = 374815596;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -1816,9 +1820,9 @@ message DescribeManagedRuleGroupResponse {
 
 message DisallowedFeature {
 
-  string feature = 512819934;
+  optional string feature = 512819934;
 
-  string requiredpricingplan = 501231534;
+  optional string requiredpricingplan = 501231534;
 
 }
 
@@ -1984,11 +1988,11 @@ enum FilterRequirement {
 
 message FilterSource {
 
-  string botcategory = 117673751;
+  optional string botcategory = 117673751;
 
-  string botname = 88172446;
+  optional string botname = 88172446;
 
-  string botorganization = 397082802;
+  optional string botorganization = 397082802;
 
 }
 
@@ -2060,7 +2064,7 @@ message GenerateMobileSdkReleaseUrlRequest {
 
 message GenerateMobileSdkReleaseUrlResponse {
 
-  string url = 354018239;
+  optional string url = 354018239;
 
 }
 
@@ -2090,7 +2094,7 @@ message GetDecryptedAPIKeyRequest {
 
 message GetDecryptedAPIKeyResponse {
 
-  string creationtimestamp = 24480293;
+  optional string creationtimestamp = 24480293;
 
   repeated string tokendomains = 11638560;
 
@@ -2114,7 +2118,7 @@ message GetIPSetResponse {
 
   IPSet ipset = 436412565;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
 }
 
@@ -2154,7 +2158,7 @@ message GetManagedRuleSetRequest {
 
 message GetManagedRuleSetResponse {
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
   ManagedRuleSet managedruleset = 151429153;
 
@@ -2190,7 +2194,7 @@ message GetPermissionPolicyRequest {
 
 message GetPermissionPolicyResponse {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
 }
 
@@ -2198,7 +2202,7 @@ message GetPermissionPolicyResponse {
 
 message GetRateBasedStatementManagedKeysRequest {
 
-  string rulegrouprulename = 20574264;
+  optional string rulegrouprulename = 20574264;
 
   string rulename = 214688793;
 
@@ -2236,7 +2240,7 @@ message GetRegexPatternSetRequest {
 
 message GetRegexPatternSetResponse {
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
   RegexPatternSet regexpatternset = 9374915;
 
@@ -2254,7 +2258,7 @@ message GetRevenueStatisticsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2272,7 +2276,7 @@ message GetRevenueStatisticsRequest {
 
 message GetRevenueStatisticsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RevenuePathStatistics revenuepathstatistics = 38598240;
 
@@ -2316,7 +2320,7 @@ message GetRevenueStatisticsTimeSeriesRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2332,7 +2336,7 @@ message GetRevenueStatisticsTimeSeriesResponse {
 
   repeated DataPointEntry datapoints = 261595367;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2340,11 +2344,11 @@ message GetRevenueStatisticsTimeSeriesResponse {
 
 message GetRuleGroupRequest {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   Scope scope = 65430924;
 
@@ -2354,7 +2358,7 @@ message GetRuleGroupRequest {
 
 message GetRuleGroupResponse {
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
   RuleGroup rulegroup = 267398571;
 
@@ -2392,15 +2396,15 @@ message GetSampledRequestsResponse {
 
 message GetTopPathStatisticsByTrafficRequest {
 
-  string botcategory = 117673751;
+  optional string botcategory = 117673751;
 
-  string botname = 88172446;
+  optional string botname = 88172446;
 
-  string botorganization = 397082802;
+  optional string botorganization = 397082802;
 
   int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 numberoftoptrafficbotsperpath = 302037370;
 
@@ -2408,7 +2412,7 @@ message GetTopPathStatisticsByTrafficRequest {
 
   TimeWindow timewindow = 140543513;
 
-  string uripathprefix = 222177395;
+  optional string uripathprefix = 222177395;
 
   string webaclarn = 526110243;
 
@@ -2418,7 +2422,7 @@ message GetTopPathStatisticsByTrafficRequest {
 
 message GetTopPathStatisticsByTrafficResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated PathStatistics pathstatistics = 322056386;
 
@@ -2448,11 +2452,11 @@ message GetWebACLForResourceResponse {
 
 message GetWebACLRequest {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   Scope scope = 65430924;
 
@@ -2462,9 +2466,9 @@ message GetWebACLRequest {
 
 message GetWebACLResponse {
 
-  string applicationintegrationurl = 182743751;
+  optional string applicationintegrationurl = 182743751;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
   WebACL webacl = 343373504;
 
@@ -2492,9 +2496,9 @@ enum GroupByType {
 
 message HTTPHeader {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -2504,17 +2508,17 @@ message HTTPHeader {
 
 message HTTPRequest {
 
-  string clientip = 247557856;
+  optional string clientip = 247557856;
 
-  string country = 83164786;
+  optional string country = 83164786;
 
-  string httpversion = 12814936;
+  optional string httpversion = 12814936;
 
   repeated HTTPHeader headers = 323967370;
 
-  string method = 413321041;
+  optional string method = 413321041;
 
-  string uri = 443116318;
+  optional string uri = 443116318;
 
 }
 
@@ -2576,7 +2580,7 @@ message IPSet {
 
   repeated string addresses = 375939972;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   IPAddressVersion ipaddressversion = 313363841;
 
@@ -2618,15 +2622,15 @@ message IPSetReferenceStatement {
 
 message IPSetSummary {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -2772,7 +2776,7 @@ message LabelNameCondition {
 
 message LabelSummary {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -2782,7 +2786,7 @@ message ListAPIKeysRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2794,9 +2798,9 @@ message ListAPIKeysResponse {
 
   repeated APIKeySummary apikeysummaries = 137828491;
 
-  string applicationintegrationurl = 182743751;
+  optional string applicationintegrationurl = 182743751;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2808,7 +2812,7 @@ message ListAvailableManagedRuleGroupVersionsRequest {
 
   string name = 266367751;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2820,9 +2824,9 @@ message ListAvailableManagedRuleGroupVersionsRequest {
 
 message ListAvailableManagedRuleGroupVersionsResponse {
 
-  string currentdefaultversion = 329624010;
+  optional string currentdefaultversion = 329624010;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated ManagedRuleGroupVersion versions = 252099085;
 
@@ -2834,7 +2838,7 @@ message ListAvailableManagedRuleGroupsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2846,7 +2850,7 @@ message ListAvailableManagedRuleGroupsResponse {
 
   repeated ManagedRuleGroupSummary managedrulegroups = 46574561;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2856,7 +2860,7 @@ message ListIPSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2868,7 +2872,7 @@ message ListIPSetsResponse {
 
   repeated IPSetSummary ipsets = 434949030;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2880,7 +2884,7 @@ message ListLoggingConfigurationsRequest {
 
   LogScope logscope = 188235840;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2892,7 +2896,7 @@ message ListLoggingConfigurationsResponse {
 
   repeated LoggingConfiguration loggingconfigurations = 387361734;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2902,7 +2906,7 @@ message ListManagedRuleSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2914,7 +2918,7 @@ message ListManagedRuleSetsResponse {
 
   repeated ManagedRuleSetSummary managedrulesets = 141451946;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2924,7 +2928,7 @@ message ListMobileSdkReleasesRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Platform platform = 468905683;
 
@@ -2934,7 +2938,7 @@ message ListMobileSdkReleasesRequest {
 
 message ListMobileSdkReleasesResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated ReleaseSummary releasesummaries = 494914987;
 
@@ -2946,7 +2950,7 @@ message ListRegexPatternSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2956,7 +2960,7 @@ message ListRegexPatternSetsRequest {
 
 message ListRegexPatternSetsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RegexPatternSetSummary regexpatternsets = 305199780;
 
@@ -2986,7 +2990,7 @@ message ListRuleGroupsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -2996,7 +3000,7 @@ message ListRuleGroupsRequest {
 
 message ListRuleGroupsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RuleGroupSummary rulegroups = 270019740;
 
@@ -3012,7 +3016,7 @@ message ListSettlementRecordsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -3028,7 +3032,7 @@ message ListSettlementRecordsRequest {
 
 message ListSettlementRecordsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated SettlementRecord settlements = 284636764;
 
@@ -3040,7 +3044,7 @@ message ListTagsForResourceRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   string resourcearn = 369516653;
 
@@ -3050,7 +3054,7 @@ message ListTagsForResourceRequest {
 
 message ListTagsForResourceResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   TagInfoForResource taginfoforresource = 8132955;
 
@@ -3062,7 +3066,7 @@ message ListWebACLsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   Scope scope = 65430924;
 
@@ -3072,7 +3076,7 @@ message ListWebACLsRequest {
 
 message ListWebACLsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated WebACLSummary webacls = 68158245;
 
@@ -3152,19 +3156,19 @@ message ManagedProductDescriptor {
 
   optional bool isversioningsupported = 195956662;
 
-  string managedrulesetname = 161099140;
+  optional string managedrulesetname = 161099140;
 
-  string productdescription = 78087559;
+  optional string productdescription = 78087559;
 
-  string productid = 53264354;
+  optional string productid = 53264354;
 
-  string productlink = 191063997;
+  optional string productlink = 191063997;
 
-  string producttitle = 452337643;
+  optional string producttitle = 452337643;
 
-  string snstopicarn = 374815596;
+  optional string snstopicarn = 374815596;
 
-  string vendorname = 159329689;
+  optional string vendorname = 159329689;
 
 }
 
@@ -3182,7 +3186,7 @@ message ManagedRuleGroupConfig {
 
   AWSManagedRulesBotControlRuleSet awsmanagedrulesbotcontrolruleset = 283828283;
 
-  string loginpath = 128281874;
+  optional string loginpath = 128281874;
 
   PasswordField passwordfield = 318147221;
 
@@ -3210,7 +3214,7 @@ message ManagedRuleGroupStatement {
 
   string vendorname = 159329689;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -3220,11 +3224,11 @@ message ManagedRuleGroupStatement {
 
 message ManagedRuleGroupSummary {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string vendorname = 159329689;
+  optional string vendorname = 159329689;
 
   optional bool versioningsupported = 166873158;
 
@@ -3236,9 +3240,9 @@ message ManagedRuleGroupSummary {
 
 message ManagedRuleGroupVersion {
 
-  string lastupdatetimestamp = 118818825;
+  optional string lastupdatetimestamp = 118818825;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -3250,17 +3254,17 @@ message ManagedRuleSet {
 
   string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
-  string labelnamespace = 39797417;
+  optional string labelnamespace = 39797417;
 
   string name = 266367751;
 
   map<string, ManagedRuleSetVersion> publishedversions = 168260833;
 
-  string recommendedversion = 83103137;
+  optional string recommendedversion = 83103137;
 
 }
 
@@ -3270,17 +3274,17 @@ message ManagedRuleSet {
 
 message ManagedRuleSetSummary {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string labelnamespace = 39797417;
+  optional string labelnamespace = 39797417;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -3290,17 +3294,17 @@ message ManagedRuleSetSummary {
 
 message ManagedRuleSetVersion {
 
-  string associatedrulegrouparn = 416522796;
+  optional string associatedrulegrouparn = 416522796;
 
   optional int64 capacity = 107253930;
 
-  string expirytimestamp = 460460551;
+  optional string expirytimestamp = 460460551;
 
   optional int32 forecastedlifetime = 149179979;
 
-  string lastupdatetimestamp = 118818825;
+  optional string lastupdatetimestamp = 118818825;
 
-  string publishtimestamp = 477892057;
+  optional string publishtimestamp = 477892057;
 
 }
 
@@ -3330,13 +3334,13 @@ message Method {
 
 message MobileSdkRelease {
 
-  string releasenotes = 98800172;
+  optional string releasenotes = 98800172;
 
-  string releaseversion = 8739171;
+  optional string releaseversion = 8739171;
 
   repeated Tag tags = 381526209;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
 }
 
@@ -3370,7 +3374,7 @@ message MonetizationFilter {
 
 message MonetizeAction {
 
-  string pricemultiplier = 510698862;
+  optional string pricemultiplier = 510698862;
 
 }
 
@@ -3462,135 +3466,137 @@ enum ParameterExceptionField {
 
   PARAMETER_EXCEPTION_FIELD_WALLET_ADDRESS = 10;
 
-  PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION = 11;
+  PARAMETER_EXCEPTION_FIELD_PRE_PARSE_TEXT_TRANSFORMATION = 11;
 
-  PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG = 12;
+  PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION = 12;
 
-  PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE = 13;
+  PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG = 13;
 
-  PARAMETER_EXCEPTION_FIELD_IP_ADDRESS = 14;
+  PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE = 14;
 
-  PARAMETER_EXCEPTION_FIELD_METRIC_NAME = 15;
+  PARAMETER_EXCEPTION_FIELD_IP_ADDRESS = 15;
 
-  PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION = 16;
+  PARAMETER_EXCEPTION_FIELD_METRIC_NAME = 16;
 
-  PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION = 17;
+  PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION = 17;
 
-  PARAMETER_EXCEPTION_FIELD_WEB_ACL = 18;
+  PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION = 18;
 
-  PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION = 19;
+  PARAMETER_EXCEPTION_FIELD_WEB_ACL = 19;
 
-  PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN = 20;
+  PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION = 20;
 
-  PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR = 21;
+  PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN = 21;
 
-  PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE = 22;
+  PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR = 22;
 
-  PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG = 23;
+  PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE = 23;
 
-  PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN = 24;
+  PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG = 24;
 
-  PARAMETER_EXCEPTION_FIELD_HEADER_NAME = 25;
+  PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN = 25;
 
-  PARAMETER_EXCEPTION_FIELD_AND_STATEMENT = 26;
+  PARAMETER_EXCEPTION_FIELD_HEADER_NAME = 26;
 
-  PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET = 27;
+  PARAMETER_EXCEPTION_FIELD_AND_STATEMENT = 27;
 
-  PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG = 28;
+  PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET = 28;
 
-  PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE = 29;
+  PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG = 29;
 
-  PARAMETER_EXCEPTION_FIELD_OR_STATEMENT = 30;
+  PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE = 30;
 
-  PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE = 31;
+  PARAMETER_EXCEPTION_FIELD_OR_STATEMENT = 31;
 
-  PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT = 32;
+  PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE = 32;
 
-  PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER = 33;
+  PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT = 33;
 
-  PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT = 34;
+  PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER = 34;
 
-  PARAMETER_EXCEPTION_FIELD_STATEMENT = 35;
+  PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT = 35;
 
-  PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT = 36;
+  PARAMETER_EXCEPTION_FIELD_STATEMENT = 36;
 
-  PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR = 37;
+  PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT = 37;
 
-  PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT = 38;
+  PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR = 38;
 
-  PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT = 39;
+  PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT = 39;
 
-  PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK = 40;
+  PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT = 40;
 
-  PARAMETER_EXCEPTION_FIELD_RULE = 41;
+  PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK = 41;
 
-  PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT = 42;
+  PARAMETER_EXCEPTION_FIELD_RULE = 42;
 
-  PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE = 43;
+  PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT = 43;
 
-  PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG = 44;
+  PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE = 44;
 
-  PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN = 45;
+  PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG = 45;
 
-  PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT = 46;
+  PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN = 46;
 
-  PARAMETER_EXCEPTION_FIELD_TAGS = 47;
+  PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT = 47;
 
-  PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT = 48;
+  PARAMETER_EXCEPTION_FIELD_TAGS = 48;
 
-  PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT = 49;
+  PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT = 49;
 
-  PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE = 50;
+  PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT = 50;
 
-  PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT = 51;
+  PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE = 51;
 
-  PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION = 52;
+  PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT = 52;
 
-  PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE = 53;
+  PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION = 53;
 
-  PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT = 54;
+  PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE = 54;
 
-  PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY = 55;
+  PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT = 55;
 
-  PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE = 56;
+  PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY = 56;
 
-  PARAMETER_EXCEPTION_FIELD_POSITION = 57;
+  PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE = 57;
 
-  PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING = 58;
+  PARAMETER_EXCEPTION_FIELD_POSITION = 58;
 
-  PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION = 59;
+  PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING = 59;
 
-  PARAMETER_EXCEPTION_FIELD_IP_SET = 60;
+  PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION = 60;
 
-  PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET = 61;
+  PARAMETER_EXCEPTION_FIELD_IP_SET = 61;
 
-  PARAMETER_EXCEPTION_FIELD_RULE_GROUP = 62;
+  PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET = 62;
 
-  PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE = 63;
+  PARAMETER_EXCEPTION_FIELD_RULE_GROUP = 63;
 
-  PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT = 64;
+  PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE = 64;
 
-  PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN = 65;
+  PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT = 65;
 
-  PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION = 66;
+  PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN = 66;
 
-  PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT = 67;
+  PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION = 67;
 
-  PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING = 68;
+  PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT = 68;
 
-  PARAMETER_EXCEPTION_FIELD_TAG_KEYS = 69;
+  PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING = 69;
 
-  PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH = 70;
+  PARAMETER_EXCEPTION_FIELD_TAG_KEYS = 70;
 
-  PARAMETER_EXCEPTION_FIELD_RULE_ACTION = 71;
+  PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH = 71;
 
-  PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS = 72;
+  PARAMETER_EXCEPTION_FIELD_RULE_ACTION = 72;
 
-  PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT = 73;
+  PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS = 73;
 
-  PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN = 74;
+  PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT = 74;
 
-  PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT = 75;
+  PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN = 75;
+
+  PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT = 76;
 
 }
 
@@ -3684,6 +3690,34 @@ enum PositionalConstraint {
 
 
 
+// A pre-parse text transformation that normalizes the raw query string before WAF parses it into individual query arguments. Pre-parse text transformations are only supported when FieldToMatch is Sin...
+
+message PreParseTextTransformation {
+
+  int32 priority = 109944618;
+
+  PreParseTextTransformationType type = 290836590;
+
+}
+
+
+
+enum PreParseTextTransformationType {
+
+  PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE = 0;
+
+  PRE_PARSE_TEXT_TRANSFORMATION_TYPE_REPLACE_SEMICOLONS_WITH_AMPERSANDS = 1;
+
+  PRE_PARSE_TEXT_TRANSFORMATION_TYPE_NONE = 2;
+
+  PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI = 3;
+
+  PRE_PARSE_TEXT_TRANSFORMATION_TYPE_COMBINE_DUPLICATE_QUERY_ARGS_BY_COMMA = 4;
+
+}
+
+
+
 // The price per request for a payment network, specifying the amount and cryptocurrency.
 
 message Price {
@@ -3720,7 +3754,7 @@ message PutManagedRuleSetVersionsRequest {
 
   string name = 266367751;
 
-  string recommendedversion = 83103137;
+  optional string recommendedversion = 83103137;
 
   Scope scope = 65430924;
 
@@ -3732,7 +3766,7 @@ message PutManagedRuleSetVersionsRequest {
 
 message PutManagedRuleSetVersionsResponse {
 
-  string nextlocktoken = 473728437;
+  optional string nextlocktoken = 473728437;
 
 }
 
@@ -3984,7 +4018,7 @@ message RateLimitUriPath {
 
 message Regex {
 
-  string regexstring = 138533058;
+  optional string regexstring = 138533058;
 
 }
 
@@ -3995,6 +4029,8 @@ message Regex {
 message RegexMatchStatement {
 
   FieldToMatch fieldtomatch = 338348372;
+
+  repeated PreParseTextTransformation preparsetexttransformations = 68274401;
 
   string regexstring = 138533058;
 
@@ -4008,13 +4044,13 @@ message RegexMatchStatement {
 
 message RegexPatternSet {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated Regex regularexpressionlist = 123612838;
 
@@ -4030,6 +4066,8 @@ message RegexPatternSetReferenceStatement {
 
   FieldToMatch fieldtomatch = 338348372;
 
+  repeated PreParseTextTransformation preparsetexttransformations = 68274401;
+
   repeated TextTransformation texttransformations = 261837309;
 
 }
@@ -4040,15 +4078,15 @@ message RegexPatternSetReferenceStatement {
 
 message RegexPatternSetSummary {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -4058,9 +4096,9 @@ message RegexPatternSetSummary {
 
 message ReleaseSummary {
 
-  string releaseversion = 8739171;
+  optional string releaseversion = 8739171;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
 }
 
@@ -4116,15 +4154,17 @@ enum ResourceType {
 
   RESOURCE_TYPE_COGNITIO_USER_POOL = 1;
 
-  RESOURCE_TYPE_APPLICATION_LOAD_BALANCER = 2;
+  RESOURCE_TYPE_AGENTCORE_GATEWAY = 2;
 
-  RESOURCE_TYPE_APPSYNC = 3;
+  RESOURCE_TYPE_APPLICATION_LOAD_BALANCER = 3;
 
-  RESOURCE_TYPE_AMPLIFY = 4;
+  RESOURCE_TYPE_APPSYNC = 4;
 
-  RESOURCE_TYPE_API_GATEWAY = 5;
+  RESOURCE_TYPE_AMPLIFY = 5;
 
-  RESOURCE_TYPE_APP_RUNNER_SERVICE = 6;
+  RESOURCE_TYPE_API_GATEWAY = 6;
+
+  RESOURCE_TYPE_APP_RUNNER_SERVICE = 7;
 
 }
 
@@ -4216,15 +4256,15 @@ message RevenueBreakdown {
 
   Currency currency = 342827607;
 
-  string totalamount = 45332786;
+  optional string totalamount = 45332786;
 
   optional int64 totalmonetizeserved = 410017796;
 
   optional int64 totalsettled = 72471795;
 
-  string unverifiedamount = 256171183;
+  optional string unverifiedamount = 256171183;
 
-  string verifiedamount = 118239818;
+  optional string verifiedamount = 118239818;
 
 }
 
@@ -4318,11 +4358,11 @@ message RuleGroup {
 
   map<string, CustomResponseBody> customresponsebodies = 42731774;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
-  string labelnamespace = 39797417;
+  optional string labelnamespace = 39797417;
 
   MonetizationConfig monetizationconfig = 528380847;
 
@@ -4354,15 +4394,15 @@ message RuleGroupReferenceStatement {
 
 message RuleGroupSummary {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -4374,7 +4414,7 @@ message RuleSummary {
 
   RuleAction action = 175614240;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -4384,7 +4424,7 @@ message RuleSummary {
 
 message SampledHTTPRequest {
 
-  string action = 175614240;
+  optional string action = 175614240;
 
   CaptchaResponse captcharesponse = 484053583;
 
@@ -4392,7 +4432,7 @@ message SampledHTTPRequest {
 
   repeated Label labels = 178416811;
 
-  string overriddenaction = 35244204;
+  optional string overriddenaction = 35244204;
 
   HTTPRequest request = 38093139;
 
@@ -4400,9 +4440,9 @@ message SampledHTTPRequest {
 
   optional int32 responsecodesent = 108347942;
 
-  string rulenamewithinrulegroup = 317544521;
+  optional string rulenamewithinrulegroup = 317544521;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   int64 weight = 422581466;
 
@@ -4448,37 +4488,37 @@ message SettlementRecord {
 
   string amount = 72127338;
 
-  string contentpath = 524626210;
+  optional string contentpath = 524626210;
 
   Currency currency = 342827607;
 
-  string intent = 158359916;
+  optional string intent = 158359916;
 
-  string network = 158641510;
+  optional string network = 158641510;
 
-  string organization = 426894091;
+  optional string organization = 426894091;
 
-  string payeraddress = 44160939;
+  optional string payeraddress = 44160939;
 
-  string requestid = 396701568;
+  optional string requestid = 396701568;
 
-  string requesttimestamp = 276028395;
+  optional string requesttimestamp = 276028395;
 
-  string sourcecategory = 18388337;
+  optional string sourcecategory = 18388337;
 
-  string sourcename = 497856572;
+  optional string sourcename = 497856572;
 
   SettlementStatus status = 6222352;
 
   string timestamp = 162390468;
 
-  string transactionid = 390910639;
+  optional string transactionid = 390910639;
 
   optional bool verified = 144122342;
 
-  string walletaddress = 230208029;
+  optional string walletaddress = 230208029;
 
-  string webaclarn = 526110243;
+  optional string webaclarn = 526110243;
 
 }
 
@@ -4544,6 +4584,8 @@ message SizeConstraintStatement {
 
   FieldToMatch fieldtomatch = 338348372;
 
+  repeated PreParseTextTransformation preparsetexttransformations = 68274401;
+
   int64 size = 105352829;
 
   repeated TextTransformation texttransformations = 261837309;
@@ -4582,17 +4624,17 @@ message SourceStatistics {
 
   string amount = 72127338;
 
-  string groupbyvalue = 232052215;
+  optional string groupbyvalue = 232052215;
 
-  string intent = 158359916;
+  optional string intent = 158359916;
 
-  string organization = 426894091;
+  optional string organization = 426894091;
 
   double percentage = 341153238;
 
   int64 requestcount = 288519674;
 
-  string sourcecategory = 18388337;
+  optional string sourcecategory = 18388337;
 
   string sourcename = 497856572;
 
@@ -4607,6 +4649,8 @@ message SourceStatistics {
 message SqliMatchStatement {
 
   FieldToMatch fieldtomatch = 338348372;
+
+  repeated PreParseTextTransformation preparsetexttransformations = 68274401;
 
   SensitivityLevel sensitivitylevel = 12020595;
 
@@ -4672,7 +4716,7 @@ message Tag {
 
 message TagInfoForResource {
 
-  string resourcearn = 369516653;
+  optional string resourcearn = 369516653;
 
   repeated Tag taglist = 429416860;
 
@@ -4714,43 +4758,63 @@ enum TextTransformationType {
 
   TEXT_TRANSFORMATION_TYPE_URL_DECODE = 1;
 
-  TEXT_TRANSFORMATION_TYPE_HEX_DECODE = 2;
+  TEXT_TRANSFORMATION_TYPE_TRIM_LEFT = 2;
 
-  TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH = 3;
+  TEXT_TRANSFORMATION_TYPE_HEX_DECODE = 3;
 
-  TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE = 4;
+  TEXT_TRANSFORMATION_TYPE_CMD_LINE_WIN = 4;
 
-  TEXT_TRANSFORMATION_TYPE_NONE = 5;
+  TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH = 5;
 
-  TEXT_TRANSFORMATION_TYPE_BASE64_DECODE = 6;
+  TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE = 6;
 
-  TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI = 7;
+  TEXT_TRANSFORMATION_TYPE_NONE = 7;
 
-  TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE = 8;
+  TEXT_TRANSFORMATION_TYPE_BASE64_DECODE = 8;
 
-  TEXT_TRANSFORMATION_TYPE_JS_DECODE = 9;
+  TEXT_TRANSFORMATION_TYPE_TRIM_RIGHT = 9;
 
-  TEXT_TRANSFORMATION_TYPE_MD5 = 10;
+  TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI = 10;
 
-  TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN = 11;
+  TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE = 11;
 
-  TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS = 12;
+  TEXT_TRANSFORMATION_TYPE_JS_DECODE = 12;
 
-  TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT = 13;
+  TEXT_TRANSFORMATION_TYPE_SHA256 = 13;
 
-  TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE = 14;
+  TEXT_TRANSFORMATION_TYPE_CMD_LINE_UNIX = 14;
 
-  TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE = 15;
+  TEXT_TRANSFORMATION_TYPE_TRIM = 15;
 
-  TEXT_TRANSFORMATION_TYPE_CSS_DECODE = 16;
+  TEXT_TRANSFORMATION_TYPE_MD5 = 16;
 
-  TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS = 17;
+  TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN = 17;
 
-  TEXT_TRANSFORMATION_TYPE_LOWERCASE = 18;
+  TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS = 18;
 
-  TEXT_TRANSFORMATION_TYPE_CMD_LINE = 19;
+  TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT = 19;
 
-  TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS = 20;
+  TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE = 20;
+
+  TEXT_TRANSFORMATION_TYPE_REMOVE_WHITESPACE = 21;
+
+  TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE = 22;
+
+  TEXT_TRANSFORMATION_TYPE_REMOVE_COMMENTS_CHAR = 23;
+
+  TEXT_TRANSFORMATION_TYPE_CSS_DECODE = 24;
+
+  TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS = 25;
+
+  TEXT_TRANSFORMATION_TYPE_JS_DECODE_EXT = 26;
+
+  TEXT_TRANSFORMATION_TYPE_LOWERCASE = 27;
+
+  TEXT_TRANSFORMATION_TYPE_CMD_LINE = 28;
+
+  TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS = 29;
+
+  TEXT_TRANSFORMATION_TYPE_UPPERCASE = 30;
 
 }
 
@@ -4798,7 +4862,7 @@ message UpdateIPSetRequest {
 
   repeated string addresses = 375939972;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
@@ -4814,7 +4878,7 @@ message UpdateIPSetRequest {
 
 message UpdateIPSetResponse {
 
-  string nextlocktoken = 473728437;
+  optional string nextlocktoken = 473728437;
 
 }
 
@@ -4840,11 +4904,11 @@ message UpdateManagedRuleSetVersionExpiryDateRequest {
 
 message UpdateManagedRuleSetVersionExpiryDateResponse {
 
-  string expiringversion = 282072504;
+  optional string expiringversion = 282072504;
 
-  string expirytimestamp = 460460551;
+  optional string expirytimestamp = 460460551;
 
-  string nextlocktoken = 473728437;
+  optional string nextlocktoken = 473728437;
 
 }
 
@@ -4852,7 +4916,7 @@ message UpdateManagedRuleSetVersionExpiryDateResponse {
 
 message UpdateRegexPatternSetRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
@@ -4870,7 +4934,7 @@ message UpdateRegexPatternSetRequest {
 
 message UpdateRegexPatternSetResponse {
 
-  string nextlocktoken = 473728437;
+  optional string nextlocktoken = 473728437;
 
 }
 
@@ -4880,7 +4944,7 @@ message UpdateRuleGroupRequest {
 
   map<string, CustomResponseBody> customresponsebodies = 42731774;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
@@ -4902,7 +4966,7 @@ message UpdateRuleGroupRequest {
 
 message UpdateRuleGroupResponse {
 
-  string nextlocktoken = 473728437;
+  optional string nextlocktoken = 473728437;
 
 }
 
@@ -4924,7 +4988,7 @@ message UpdateWebACLRequest {
 
   DefaultAction defaultaction = 322663861;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
@@ -4950,7 +5014,7 @@ message UpdateWebACLRequest {
 
 message UpdateWebACLResponse {
 
-  string nextlocktoken = 473728437;
+  optional string nextlocktoken = 473728437;
 
 }
 
@@ -4998,7 +5062,7 @@ message UsernameField {
 
 message VersionToPublish {
 
-  string associatedrulegrouparn = 416522796;
+  optional string associatedrulegrouparn = 416522796;
 
   optional int32 forecastedlifetime = 149179979;
 
@@ -5024,7 +5088,7 @@ message VisibilityConfig {
 
 message WAFAssociatedItemException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5034,7 +5098,7 @@ message WAFAssociatedItemException {
 
 message WAFConfigurationWarningException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5044,7 +5108,7 @@ message WAFConfigurationWarningException {
 
 message WAFDuplicateItemException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5054,7 +5118,7 @@ message WAFDuplicateItemException {
 
 message WAFExpiredManagedRuleGroupVersionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5066,7 +5130,7 @@ message WAFFeatureNotIncludedInPricingPlanException {
 
   repeated DisallowedFeature disallowedfeatures = 445316575;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5076,7 +5140,7 @@ message WAFFeatureNotIncludedInPricingPlanException {
 
 message WAFInternalErrorException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5086,7 +5150,7 @@ message WAFInternalErrorException {
 
 message WAFInvalidOperationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5098,11 +5162,11 @@ message WAFInvalidParameterException {
 
   ParameterExceptionField field = 263732488;
 
-  string parameter = 407419825;
+  optional string parameter = 407419825;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5112,7 +5176,7 @@ message WAFInvalidParameterException {
 
 message WAFInvalidPermissionPolicyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5122,7 +5186,7 @@ message WAFInvalidPermissionPolicyException {
 
 message WAFInvalidResourceException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5132,9 +5196,9 @@ message WAFInvalidResourceException {
 
 message WAFLimitsExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
 }
 
@@ -5144,7 +5208,7 @@ message WAFLimitsExceededException {
 
 message WAFLogDestinationPermissionIssueException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5154,7 +5218,7 @@ message WAFLogDestinationPermissionIssueException {
 
 message WAFNonexistentItemException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5164,7 +5228,7 @@ message WAFNonexistentItemException {
 
 message WAFOptimisticLockException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5174,7 +5238,7 @@ message WAFOptimisticLockException {
 
 message WAFServiceLinkedRoleErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5184,7 +5248,7 @@ message WAFServiceLinkedRoleErrorException {
 
 message WAFSubscriptionNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5194,7 +5258,7 @@ message WAFSubscriptionNotFoundException {
 
 message WAFTagOperationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5204,7 +5268,7 @@ message WAFTagOperationException {
 
 message WAFTagOperationInternalErrorException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5214,7 +5278,7 @@ message WAFTagOperationInternalErrorException {
 
 message WAFUnavailableEntityException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5224,7 +5288,7 @@ message WAFUnavailableEntityException {
 
 message WAFUnsupportedAggregateKeyTypeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5252,11 +5316,11 @@ message WebACL {
 
   DefaultAction defaultaction = 322663861;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string id = 384350465;
 
-  string labelnamespace = 39797417;
+  optional string labelnamespace = 39797417;
 
   optional bool managedbyfirewallmanager = 415792743;
 
@@ -5286,15 +5350,15 @@ message WebACL {
 
 message WebACLSummary {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string locktoken = 47056792;
+  optional string locktoken = 47056792;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -5305,6 +5369,8 @@ message WebACLSummary {
 message XssMatchStatement {
 
   FieldToMatch fieldtomatch = 338348372;
+
+  repeated PreParseTextTransformation preparsetexttransformations = 68274401;
 
   repeated TextTransformation texttransformations = 261837309;
 

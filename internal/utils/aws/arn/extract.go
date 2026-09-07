@@ -198,3 +198,13 @@ func ParseStreamARN(arn string) string {
 	}
 	return ""
 }
+
+// ExtractBackupNameFromARN extracts the backup name from a DynamoDB backup
+// ARN (table/<table>/backup/<backup>).
+func ExtractBackupNameFromARN(arn string) string {
+	_, _, _, _, resource := SplitARN(arn)
+	if idx := strings.Index(resource, "/backup/"); idx != -1 {
+		return resource[idx+len("/backup/"):]
+	}
+	return ""
+}

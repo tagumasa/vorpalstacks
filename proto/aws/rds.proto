@@ -851,7 +851,7 @@ message AccountAttributesMessage {
 
 message AccountQuota {
 
-  string accountquotaname = 370733632;
+  optional string accountquotaname = 370733632;
 
   optional int64 max = 480764858;
 
@@ -903,7 +903,7 @@ message AddRoleToDBClusterMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string featurename = 218369023;
+  optional string featurename = 218369023;
 
   string rolearn = 322567169;
 
@@ -967,7 +967,7 @@ message AdditionalStorageVolume {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   string volumename = 186940557;
 
@@ -985,13 +985,17 @@ message AdditionalStorageVolumeOutput {
 
   optional int32 maxallocatedstorage = 7107036;
 
+  optional int32 storageoperationpercentprogress = 174239916;
+
+  optional string storageoperationstatus = 130220862;
+
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
-  string storagevolumestatus = 151502747;
+  optional string storagevolumestatus = 151502747;
 
-  string volumename = 186940557;
+  optional string volumename = 186940557;
 
 }
 
@@ -1051,7 +1055,7 @@ enum AuthScheme {
 
 message AuthorizationAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1061,7 +1065,7 @@ message AuthorizationAlreadyExistsFault {
 
 message AuthorizationNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1071,7 +1075,7 @@ message AuthorizationNotFoundFault {
 
 message AuthorizationQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1081,15 +1085,15 @@ message AuthorizationQuotaExceededFault {
 
 message AuthorizeDBSecurityGroupIngressMessage {
 
-  string cidrip = 371456799;
+  optional string cidrip = 371456799;
 
   string dbsecuritygroupname = 52398568;
 
-  string ec2securitygroupid = 521100060;
+  optional string ec2securitygroupid = 521100060;
 
-  string ec2securitygroupname = 404380646;
+  optional string ec2securitygroupname = 404380646;
 
-  string ec2securitygroupownerid = 139129853;
+  optional string ec2securitygroupownerid = 139129853;
 
 }
 
@@ -1117,7 +1121,7 @@ enum AutomationMode {
 
 message AvailabilityZone {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1129,7 +1133,7 @@ message AvailableAdditionalStorageVolumesOption {
 
   optional int32 maxiops = 94551037;
 
-  double maxiopspergib = 246799832;
+  optional double maxiopspergib = 246799832;
 
   optional int32 maxstoragesize = 492016524;
 
@@ -1137,13 +1141,13 @@ message AvailableAdditionalStorageVolumesOption {
 
   optional int32 miniops = 522437851;
 
-  double miniopspergib = 511052642;
+  optional double miniopspergib = 511052642;
 
   optional int32 minstoragesize = 208793958;
 
   optional int32 minstoragethroughput = 205668327;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   optional bool supportsiops = 381324741;
 
@@ -1159,11 +1163,11 @@ message AvailableAdditionalStorageVolumesOption {
 
 message AvailableProcessorFeature {
 
-  string allowedvalues = 294513354;
+  optional string allowedvalues = 294513354;
 
-  string defaultvalue = 218709920;
+  optional string defaultvalue = 218709920;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1189,7 +1193,7 @@ message BacktrackDBClusterMessage {
 
 message BackupPolicyNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1199,25 +1203,25 @@ message BackupPolicyNotFoundFault {
 
 message BlueGreenDeployment {
 
-  string bluegreendeploymentidentifier = 142726945;
+  optional string bluegreendeploymentidentifier = 142726945;
 
-  string bluegreendeploymentname = 7203345;
+  optional string bluegreendeploymentname = 7203345;
 
-  string createtime = 490895933;
+  optional string createtime = 490895933;
 
-  string deletetime = 343477420;
+  optional string deletetime = 343477420;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
   repeated SwitchoverDetail switchoverdetails = 303610212;
 
   repeated Tag taglist = 429416860;
 
-  string target = 191361385;
+  optional string target = 191361385;
 
   repeated BlueGreenDeploymentTask tasks = 429824110;
 
@@ -1229,7 +1233,7 @@ message BlueGreenDeployment {
 
 message BlueGreenDeploymentAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1239,7 +1243,7 @@ message BlueGreenDeploymentAlreadyExistsFault {
 
 message BlueGreenDeploymentNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1249,9 +1253,9 @@ message BlueGreenDeploymentNotFoundFault {
 
 message BlueGreenDeploymentTask {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -1269,21 +1273,21 @@ message CancelExportTaskMessage {
 
 message Certificate {
 
-  string certificatearn = 92693880;
+  optional string certificatearn = 92693880;
 
-  string certificateidentifier = 295615364;
+  optional string certificateidentifier = 295615364;
 
-  string certificatetype = 488482873;
+  optional string certificatetype = 488482873;
 
   optional bool customeroverride = 208573578;
 
-  string customeroverridevalidtill = 464453647;
+  optional string customeroverridevalidtill = 464453647;
 
-  string thumbprint = 4265923;
+  optional string thumbprint = 4265923;
 
-  string validfrom = 43613258;
+  optional string validfrom = 43613258;
 
-  string validtill = 383307891;
+  optional string validtill = 383307891;
 
 }
 
@@ -1293,9 +1297,9 @@ message Certificate {
 
 message CertificateDetails {
 
-  string caidentifier = 222204755;
+  optional string caidentifier = 222204755;
 
-  string validtill = 383307891;
+  optional string validtill = 383307891;
 
 }
 
@@ -1307,9 +1311,9 @@ message CertificateMessage {
 
   repeated Certificate certificates = 411978970;
 
-  string defaultcertificatefornewlaunches = 385312482;
+  optional string defaultcertificatefornewlaunches = 385312482;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -1319,7 +1323,7 @@ message CertificateMessage {
 
 message CertificateNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1329,9 +1333,9 @@ message CertificateNotFoundFault {
 
 message CharacterSet {
 
-  string charactersetdescription = 154663819;
+  optional string charactersetdescription = 154663819;
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
 }
 
@@ -1375,21 +1379,21 @@ message ClusterPendingModifiedValues {
 
   CertificateDetails certificatedetails = 450099239;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
   optional int32 iops = 1043585;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
   PendingCloudwatchLogsExports pendingcloudwatchlogsexports = 188240935;
 
   RdsCustomClusterConfiguration rdscustomclusterconfiguration = 171768636;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
 }
 
@@ -1411,7 +1415,7 @@ message ConnectionPoolConfiguration {
 
   optional int32 connectionborrowtimeout = 374352488;
 
-  string initquery = 363231170;
+  optional string initquery = 363231170;
 
   optional int32 maxconnectionspercent = 325223332;
 
@@ -1429,7 +1433,7 @@ message ConnectionPoolConfigurationInfo {
 
   optional int32 connectionborrowtimeout = 374352488;
 
-  string initquery = 363231170;
+  optional string initquery = 363231170;
 
   optional int32 maxconnectionspercent = 325223332;
 
@@ -1445,9 +1449,9 @@ message ConnectionPoolConfigurationInfo {
 
 message ContextAttribute {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -1481,9 +1485,9 @@ message CopyDBClusterSnapshotMessage {
 
   optional bool copytags = 446093102;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string presignedurl = 334334652;
+  optional string presignedurl = 334334652;
 
   string sourcedbclustersnapshotidentifier = 344557892;
 
@@ -1535,21 +1539,21 @@ message CopyDBSnapshotMessage {
 
   optional bool copytags = 446093102;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string presignedurl = 334334652;
+  optional string presignedurl = 334334652;
 
-  string snapshotavailabilityzone = 225920145;
+  optional string snapshotavailabilityzone = 225920145;
 
-  string snapshottarget = 11070801;
+  optional string snapshottarget = 11070801;
 
   string sourcedbsnapshotidentifier = 363859646;
 
   repeated Tag tags = 381526209;
 
-  string targetcustomavailabilityzone = 210947251;
+  optional string targetcustomavailabilityzone = 210947251;
 
   string targetdbsnapshotidentifier = 330560174;
 
@@ -1599,19 +1603,19 @@ message CreateBlueGreenDeploymentRequest {
 
   optional int32 targetallocatedstorage = 89579947;
 
-  string targetdbclusterparametergroupname = 491206010;
+  optional string targetdbclusterparametergroupname = 491206010;
 
-  string targetdbinstanceclass = 63035848;
+  optional string targetdbinstanceclass = 63035848;
 
-  string targetdbparametergroupname = 125977128;
+  optional string targetdbparametergroupname = 125977128;
 
-  string targetengineversion = 121840823;
+  optional string targetengineversion = 121840823;
 
   optional int32 targetiops = 189332302;
 
   optional int32 targetstoragethroughput = 270198852;
 
-  string targetstoragetype = 462201058;
+  optional string targetstoragetype = 462201058;
 
   optional bool upgradetargetstorageconfig = 292642894;
 
@@ -1631,7 +1635,7 @@ message CreateBlueGreenDeploymentResponse {
 
 message CreateCustomDBEngineVersionFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1641,23 +1645,23 @@ message CreateCustomDBEngineVersionMessage {
 
   repeated string databaseinstallationfiles = 193412256;
 
-  string databaseinstallationfiless3bucketname = 220962149;
+  optional string databaseinstallationfiless3bucketname = 220962149;
 
-  string databaseinstallationfiless3prefix = 166024378;
+  optional string databaseinstallationfiless3prefix = 166024378;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string engine = 459347292;
 
   string engineversion = 44953462;
 
-  string imageid = 332504120;
+  optional string imageid = 332504120;
 
-  string kmskeyid = 13237581;
+  optional string kmskeyid = 13237581;
 
-  string manifest = 339830149;
+  optional string manifest = 339830149;
 
-  string sourcecustomdbengineversionidentifier = 141261439;
+  optional string sourcecustomdbengineversionidentifier = 141261439;
 
   repeated Tag tags = 381526209;
 
@@ -1691,6 +1695,8 @@ message CreateDBClusterMessage {
 
   optional int32 allocatedstorage = 463241784;
 
+  repeated DBClusterAssociatedRole associatedroles = 428985325;
+
   optional bool autominorversionupgrade = 32758492;
 
   repeated string availabilityzones = 109527122;
@@ -1699,9 +1705,9 @@ message CreateDBClusterMessage {
 
   optional int32 backupretentionperiod = 411111671;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
   ClusterScalabilityType clusterscalabilitytype = 266209549;
 
@@ -1709,23 +1715,23 @@ message CreateDBClusterMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string dbclusterinstanceclass = 187882689;
+  optional string dbclusterinstanceclass = 187882689;
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
-  string dbsystemid = 213073032;
+  optional string dbsystemid = 213073032;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -1743,53 +1749,53 @@ message CreateDBClusterMessage {
 
   string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string enginemode = 292587685;
+  optional string enginemode = 292587685;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
-  string globalclusteridentifier = 114980092;
+  optional string globalclusteridentifier = 114980092;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool managemasteruserpassword = 71308055;
 
   MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string presignedurl = 334334652;
+  optional string presignedurl = 334334652;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   optional bool publiclyaccessible = 256833310;
 
   RdsCustomClusterConfiguration rdscustomclusterconfiguration = 171768636;
 
-  string replicationsourceidentifier = 432981256;
+  optional string replicationsourceidentifier = 432981256;
 
   ScalingConfiguration scalingconfiguration = 53633761;
 
@@ -1797,7 +1803,7 @@ message CreateDBClusterMessage {
 
   optional bool storageencrypted = 378808047;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -1875,35 +1881,35 @@ message CreateDBInstanceMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string backuptarget = 426947907;
+  optional string backuptarget = 426947907;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
   optional bool copytagstosnapshot = 457270425;
 
-  string customiaminstanceprofile = 466590166;
+  optional string customiaminstanceprofile = 466590166;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
   string dbinstanceclass = 423358041;
 
   string dbinstanceidentifier = 272754580;
 
-  string dbname = 135387881;
+  optional string dbname = 135387881;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
   repeated string dbsecuritygroups = 420763246;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
-  string dbsystemid = 213073032;
+  optional string dbsystemid = 213073032;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
@@ -1911,17 +1917,17 @@ message CreateDBInstanceMessage {
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainauthsecretarn = 22808303;
+  optional string domainauthsecretarn = 22808303;
 
   repeated string domaindnsips = 26209911;
 
-  string domainfqdn = 309760675;
+  optional string domainfqdn = 309760675;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
-  string domainou = 249985822;
+  optional string domainou = 249985822;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -1933,51 +1939,51 @@ message CreateDBInstanceMessage {
 
   string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   optional bool managemasteruserpassword = 71308055;
 
   MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 maxallocatedstorage = 7107036;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
   optional bool multiaz = 354702794;
 
   optional bool multitenant = 311489371;
 
-  string ncharcharactersetname = 107704944;
+  optional string ncharcharactersetname = 107704944;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
@@ -1989,17 +1995,17 @@ message CreateDBInstanceMessage {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
   repeated Tag tags = 381526209;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string tdecredentialpassword = 67652301;
+  optional string tdecredentialpassword = 67652301;
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -2015,23 +2021,23 @@ message CreateDBInstanceReadReplicaMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
-  string backuptarget = 426947907;
+  optional string backuptarget = 426947907;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   optional bool copytagstosnapshot = 457270425;
 
-  string customiaminstanceprofile = 466590166;
+  optional string customiaminstanceprofile = 466590166;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
   string dbinstanceidentifier = 272754580;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
@@ -2039,17 +2045,17 @@ message CreateDBInstanceReadReplicaMessage {
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainauthsecretarn = 22808303;
+  optional string domainauthsecretarn = 22808303;
 
   repeated string domaindnsips = 26209911;
 
-  string domainfqdn = 309760675;
+  optional string domainfqdn = 309760675;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
-  string domainou = 249985822;
+  optional string domainou = 249985822;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -2061,27 +2067,27 @@ message CreateDBInstanceReadReplicaMessage {
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional int32 maxallocatedstorage = 7107036;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
   optional bool multiaz = 354702794;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string presignedurl = 334334652;
+  optional string presignedurl = 334334652;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
@@ -2089,13 +2095,13 @@ message CreateDBInstanceReadReplicaMessage {
 
   ReplicaMode replicamode = 134604609;
 
-  string sourcedbclusteridentifier = 319462008;
+  optional string sourcedbclusteridentifier = 319462008;
 
-  string sourcedbinstanceidentifier = 330655991;
+  optional string sourcedbinstanceidentifier = 330655991;
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -2251,7 +2257,7 @@ message CreateDBShardGroupMessage {
 
   double maxacu = 248469229;
 
-  double minacu = 357455091;
+  optional double minacu = 357455091;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -2319,7 +2325,7 @@ message CreateEventSubscriptionMessage {
 
   repeated string sourceids = 507107075;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
   string subscriptionname = 181900944;
 
@@ -2339,19 +2345,19 @@ message CreateEventSubscriptionResult {
 
 message CreateGlobalClusterMessage {
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   optional bool deletionprotection = 504781905;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   string globalclusteridentifier = 114980092;
 
-  string sourcedbclusteridentifier = 319462008;
+  optional string sourcedbclusteridentifier = 319462008;
 
   optional bool storageencrypted = 378808047;
 
@@ -2373,13 +2379,13 @@ message CreateIntegrationMessage {
 
   map<string, string> additionalencryptioncontext = 264606229;
 
-  string datafilter = 441498776;
+  optional string datafilter = 441498776;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string integrationname = 399304719;
 
-  string kmskeyid = 13237581;
+  optional string kmskeyid = 13237581;
 
   string sourcearn = 439903072;
 
@@ -2419,19 +2425,19 @@ message CreateOptionGroupResult {
 
 message CreateTenantDatabaseMessage {
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
   string dbinstanceidentifier = 272754580;
 
   optional bool managemasteruserpassword = 71308055;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
   string masterusername = 110287892;
 
-  string ncharcharactersetname = 107704944;
+  optional string ncharcharactersetname = 107704944;
 
   repeated Tag tags = 381526209;
 
@@ -2453,7 +2459,7 @@ message CreateTenantDatabaseResult {
 
 message CustomAvailabilityZoneNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2463,9 +2469,9 @@ message CustomAvailabilityZoneNotFoundFault {
 
 message CustomDBEngineVersionAMI {
 
-  string imageid = 332504120;
+  optional string imageid = 332504120;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -2475,7 +2481,7 @@ message CustomDBEngineVersionAMI {
 
 message CustomDBEngineVersionAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2485,7 +2491,7 @@ message CustomDBEngineVersionAlreadyExistsFault {
 
 message CustomDBEngineVersionNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2495,7 +2501,7 @@ message CustomDBEngineVersionNotFoundFault {
 
 message CustomDBEngineVersionQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2517,9 +2523,9 @@ enum CustomEngineVersionStatus {
 
 message DBCluster {
 
-  string activitystreamkinesisstreamname = 172036658;
+  optional string activitystreamkinesisstreamname = 172036658;
 
-  string activitystreamkmskeyid = 394779710;
+  optional string activitystreamkmskeyid = 394779710;
 
   ActivityStreamMode activitystreammode = 19126712;
 
@@ -2531,11 +2537,11 @@ message DBCluster {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string automaticrestarttime = 497974735;
+  optional string automaticrestarttime = 497974735;
 
   repeated string availabilityzones = 109527122;
 
-  string awsbackuprecoverypointarn = 496169795;
+  optional string awsbackuprecoverypointarn = 496169795;
 
   optional int64 backtrackconsumedchangerecords = 90708912;
 
@@ -2547,11 +2553,11 @@ message DBCluster {
 
   CertificateDetails certificatedetails = 450099239;
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
-  string clonegroupid = 66234961;
+  optional string clonegroupid = 66234961;
 
-  string clustercreatetime = 119020389;
+  optional string clustercreatetime = 119020389;
 
   ClusterScalabilityType clusterscalabilitytype = 266209549;
 
@@ -2561,69 +2567,69 @@ message DBCluster {
 
   repeated string customendpoints = 168629153;
 
-  string dbclusterarn = 173586159;
+  optional string dbclusterarn = 173586159;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbclusterinstanceclass = 187882689;
+  optional string dbclusterinstanceclass = 187882689;
 
   repeated DBClusterMember dbclustermembers = 244422719;
 
   repeated DBClusterOptionGroupStatus dbclusteroptiongroupmemberships = 246934587;
 
-  string dbclusterparametergroup = 260166678;
+  optional string dbclusterparametergroup = 260166678;
 
-  string dbsubnetgroup = 390486926;
+  optional string dbsubnetgroup = 390486926;
 
-  string dbsystemid = 213073032;
+  optional string dbsystemid = 213073032;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
-  string dbclusterresourceid = 203287771;
+  optional string dbclusterresourceid = 203287771;
 
   optional bool deletionprotection = 504781905;
 
   repeated DomainMembership domainmemberships = 340588819;
 
-  string earliestbacktracktime = 350400008;
+  optional string earliestbacktracktime = 350400008;
 
-  string earliestrestorabletime = 151224339;
+  optional string earliestrestorabletime = 151224339;
 
   repeated string enabledcloudwatchlogsexports = 312380693;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string enginemode = 292587685;
+  optional string enginemode = 292587685;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
-  string globalclusteridentifier = 114980092;
+  optional string globalclusteridentifier = 114980092;
 
   optional bool globalwriteforwardingrequested = 401516695;
 
   WriteForwardingStatus globalwriteforwardingstatus = 147047845;
 
-  string hostedzoneid = 346531710;
+  optional string hostedzoneid = 346531710;
 
   optional bool httpendpointenabled = 136929710;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  string iooptimizednextallowedmodificationtime = 206659625;
+  optional string iooptimizednextallowedmodificationtime = 206659625;
 
   optional bool internetaccessgatewayenabled = 452956890;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string latestrestorabletime = 238336097;
+  optional string latestrestorabletime = 238336097;
 
   LimitlessDatabase limitlessdatabase = 444817377;
 
@@ -2631,31 +2637,31 @@ message DBCluster {
 
   MasterUserSecret masterusersecret = 260483101;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
   optional bool multiaz = 354702794;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
   ClusterPendingModifiedValues pendingmodifiedvalues = 10750914;
 
-  string percentprogress = 66105414;
+  optional string percentprogress = 66105414;
 
   optional bool performanceinsightsenabled = 390617050;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -2663,17 +2669,17 @@ message DBCluster {
 
   repeated string readreplicaidentifiers = 524252782;
 
-  string readerendpoint = 481361340;
+  optional string readerendpoint = 481361340;
 
-  string replicationsourceidentifier = 432981256;
+  optional string replicationsourceidentifier = 432981256;
 
   ScalingConfigurationInfo scalingconfigurationinfo = 315238749;
 
-  string serverlessv2platformversion = 348862429;
+  optional string serverlessv2platformversion = 348862429;
 
   ServerlessV2ScalingConfigurationInfo serverlessv2scalingconfiguration = 357537595;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   repeated DBClusterStatusInfo statusinfos = 421770169;
 
@@ -2683,7 +2689,7 @@ message DBCluster {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated Tag taglist = 429416860;
 
@@ -2701,7 +2707,19 @@ message DBCluster {
 
 message DBClusterAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// Contains information about an Amazon Web Services Identity and Access Management (IAM) role to associate with a DB cluster. You can specify this structure in the AssociatedRoles parameter of Create...
+
+message DBClusterAssociatedRole {
+
+  optional string featurename = 218369023;
+
+  string rolearn = 322567169;
 
 }
 
@@ -2715,45 +2733,45 @@ message DBClusterAutomatedBackup {
 
   repeated string availabilityzones = 109527122;
 
-  string awsbackuprecoverypointarn = 496169795;
+  optional string awsbackuprecoverypointarn = 496169795;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string clustercreatetime = 119020389;
+  optional string clustercreatetime = 119020389;
 
-  string dbclusterarn = 173586159;
+  optional string dbclusterarn = 173586159;
 
-  string dbclusterautomatedbackupsarn = 438490226;
+  optional string dbclusterautomatedbackupsarn = 438490226;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbclusterresourceid = 203287771;
+  optional string dbclusterresourceid = 203287771;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginemode = 292587685;
+  optional string enginemode = 292587685;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string region = 154040478;
+  optional string region = 154040478;
 
   RestoreWindow restorewindow = 45362386;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   optional bool storageencrypted = 378808047;
 
@@ -2761,11 +2779,11 @@ message DBClusterAutomatedBackup {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated Tag taglist = 429416860;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -2775,7 +2793,7 @@ message DBClusterAutomatedBackupMessage {
 
   repeated DBClusterAutomatedBackup dbclusterautomatedbackups = 242879383;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2785,7 +2803,7 @@ message DBClusterAutomatedBackupMessage {
 
 message DBClusterAutomatedBackupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2795,7 +2813,7 @@ message DBClusterAutomatedBackupNotFoundFault {
 
 message DBClusterAutomatedBackupQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2805,17 +2823,17 @@ message DBClusterAutomatedBackupQuotaExceededFault {
 
 message DBClusterBacktrack {
 
-  string backtrackidentifier = 278512699;
+  optional string backtrackidentifier = 278512699;
 
-  string backtrackrequestcreationtime = 444757335;
+  optional string backtrackrequestcreationtime = 444757335;
 
-  string backtrackto = 524951089;
+  optional string backtrackto = 524951089;
 
-  string backtrackedfrom = 434477305;
+  optional string backtrackedfrom = 434477305;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -2827,7 +2845,7 @@ message DBClusterBacktrackMessage {
 
   repeated DBClusterBacktrack dbclusterbacktracks = 65225193;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2837,7 +2855,7 @@ message DBClusterBacktrackMessage {
 
 message DBClusterBacktrackNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2847,13 +2865,13 @@ message DBClusterCapacityInfo {
 
   optional int32 currentcapacity = 171966615;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
   optional int32 pendingcapacity = 405898457;
 
   optional int32 secondsbeforetimeout = 141553913;
 
-  string timeoutaction = 444876627;
+  optional string timeoutaction = 444876627;
 
 }
 
@@ -2863,25 +2881,25 @@ message DBClusterCapacityInfo {
 
 message DBClusterEndpoint {
 
-  string customendpointtype = 164193420;
+  optional string customendpointtype = 164193420;
 
-  string dbclusterendpointarn = 283728474;
+  optional string dbclusterendpointarn = 283728474;
 
-  string dbclusterendpointidentifier = 318277614;
+  optional string dbclusterendpointidentifier = 318277614;
 
-  string dbclusterendpointresourceidentifier = 321654390;
+  optional string dbclusterendpointresourceidentifier = 321654390;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
-  string endpointtype = 486186837;
+  optional string endpointtype = 486186837;
 
   repeated string excludedmembers = 395651603;
 
   repeated string staticmembers = 176064991;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -2891,7 +2909,7 @@ message DBClusterEndpoint {
 
 message DBClusterEndpointAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2901,7 +2919,7 @@ message DBClusterEndpointMessage {
 
   repeated DBClusterEndpoint dbclusterendpoints = 283715448;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2911,7 +2929,7 @@ message DBClusterEndpointMessage {
 
 message DBClusterEndpointNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2921,7 +2939,7 @@ message DBClusterEndpointNotFoundFault {
 
 message DBClusterEndpointQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2931,9 +2949,9 @@ message DBClusterEndpointQuotaExceededFault {
 
 message DBClusterMember {
 
-  string dbclusterparametergroupstatus = 237254592;
+  optional string dbclusterparametergroupstatus = 237254592;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
   optional bool isclusterwriter = 506087795;
 
@@ -2949,7 +2967,7 @@ message DBClusterMessage {
 
   repeated DBCluster dbclusters = 474293657;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2959,7 +2977,7 @@ message DBClusterMessage {
 
 message DBClusterNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2969,9 +2987,9 @@ message DBClusterNotFoundFault {
 
 message DBClusterOptionGroupStatus {
 
-  string dbclusteroptiongroupname = 25126019;
+  optional string dbclusteroptiongroupname = 25126019;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -2981,13 +2999,13 @@ message DBClusterOptionGroupStatus {
 
 message DBClusterParameterGroup {
 
-  string dbclusterparametergrouparn = 337924141;
+  optional string dbclusterparametergrouparn = 337924141;
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
-  string dbparametergroupfamily = 351778594;
+  optional string dbparametergroupfamily = 351778594;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
 }
 
@@ -2997,7 +3015,7 @@ message DBClusterParameterGroup {
 
 message DBClusterParameterGroupDetails {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Parameter parameters = 494900218;
 
@@ -3009,7 +3027,7 @@ message DBClusterParameterGroupDetails {
 
 message DBClusterParameterGroupNameMessage {
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
 }
 
@@ -3019,7 +3037,7 @@ message DBClusterParameterGroupNameMessage {
 
 message DBClusterParameterGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3031,7 +3049,7 @@ message DBClusterParameterGroupsMessage {
 
   repeated DBClusterParameterGroup dbclusterparametergroups = 258038931;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3041,7 +3059,7 @@ message DBClusterParameterGroupsMessage {
 
 message DBClusterQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3051,11 +3069,11 @@ message DBClusterQuotaExceededFault {
 
 message DBClusterRole {
 
-  string featurename = 218369023;
+  optional string featurename = 218369023;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -3065,7 +3083,7 @@ message DBClusterRole {
 
 message DBClusterRoleAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3075,7 +3093,7 @@ message DBClusterRoleAlreadyExistsFault {
 
 message DBClusterRoleNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3085,7 +3103,7 @@ message DBClusterRoleNotFoundFault {
 
 message DBClusterRoleQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3101,45 +3119,45 @@ message DBClusterSnapshot {
 
   optional int32 backupretentionperiod = 411111671;
 
-  string clustercreatetime = 119020389;
+  optional string clustercreatetime = 119020389;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbclustersnapshotarn = 468809279;
+  optional string dbclustersnapshotarn = 468809279;
 
-  string dbclustersnapshotidentifier = 204169569;
+  optional string dbclustersnapshotidentifier = 204169569;
 
-  string dbsystemid = 213073032;
+  optional string dbsystemid = 213073032;
 
-  string dbclusterresourceid = 203287771;
+  optional string dbclusterresourceid = 203287771;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginemode = 292587685;
+  optional string enginemode = 292587685;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 percentprogress = 66105414;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string snapshotcreatetime = 168899877;
+  optional string snapshotcreatetime = 168899877;
 
-  string snapshottype = 399375494;
+  optional string snapshottype = 399375494;
 
-  string sourcedbclustersnapshotarn = 75298872;
+  optional string sourcedbclustersnapshotarn = 75298872;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   optional bool storageencrypted = 378808047;
 
@@ -3147,11 +3165,11 @@ message DBClusterSnapshot {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated Tag taglist = 429416860;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -3161,7 +3179,7 @@ message DBClusterSnapshot {
 
 message DBClusterSnapshotAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3171,7 +3189,7 @@ message DBClusterSnapshotAlreadyExistsFault {
 
 message DBClusterSnapshotAttribute {
 
-  string attributename = 352717485;
+  optional string attributename = 352717485;
 
   repeated string attributevalues = 192289814;
 
@@ -3185,7 +3203,7 @@ message DBClusterSnapshotAttributesResult {
 
   repeated DBClusterSnapshotAttribute dbclustersnapshotattributes = 159465255;
 
-  string dbclustersnapshotidentifier = 204169569;
+  optional string dbclustersnapshotidentifier = 204169569;
 
 }
 
@@ -3197,7 +3215,7 @@ message DBClusterSnapshotMessage {
 
   repeated DBClusterSnapshot dbclustersnapshots = 52656105;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3207,7 +3225,7 @@ message DBClusterSnapshotMessage {
 
 message DBClusterSnapshotNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3217,13 +3235,13 @@ message DBClusterSnapshotNotFoundFault {
 
 message DBClusterStatusInfo {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   optional bool normal = 417212275;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string statustype = 183616024;
+  optional string statustype = 183616024;
 
 }
 
@@ -3233,45 +3251,45 @@ message DBClusterStatusInfo {
 
 message DBEngineVersion {
 
-  string createtime = 490895933;
+  optional string createtime = 490895933;
 
-  string customdbengineversionmanifest = 228677156;
+  optional string customdbengineversionmanifest = 228677156;
 
-  string dbenginedescription = 308369458;
+  optional string dbenginedescription = 308369458;
 
-  string dbenginemediatype = 6736340;
+  optional string dbenginemediatype = 6736340;
 
-  string dbengineversionarn = 368224371;
+  optional string dbengineversionarn = 368224371;
 
-  string dbengineversiondescription = 532378692;
+  optional string dbengineversiondescription = 532378692;
 
-  string dbparametergroupfamily = 351778594;
+  optional string dbparametergroupfamily = 351778594;
 
   repeated string databaseinstallationfiles = 193412256;
 
-  string databaseinstallationfiless3bucketname = 220962149;
+  optional string databaseinstallationfiless3bucketname = 220962149;
 
-  string databaseinstallationfiless3prefix = 166024378;
+  optional string databaseinstallationfiless3prefix = 166024378;
 
   CharacterSet defaultcharacterset = 154454048;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   repeated string exportablelogtypes = 76126621;
 
-  string failurereason = 232322142;
+  optional string failurereason = 232322142;
 
   CustomDBEngineVersionAMI image = 420259739;
 
-  string kmskeyid = 13237581;
+  optional string kmskeyid = 13237581;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
   ServerlessV2FeaturesSupport serverlessv2featuressupport = 201006376;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   repeated string supportedcacertificateidentifiers = 431488825;
 
@@ -3317,7 +3335,7 @@ message DBEngineVersionMessage {
 
   repeated DBEngineVersion dbengineversions = 445640181;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3329,9 +3347,9 @@ message DBInstance {
 
   optional bool activitystreamenginenativeauditfieldsincluded = 167255294;
 
-  string activitystreamkinesisstreamname = 172036658;
+  optional string activitystreamkinesisstreamname = 172036658;
 
-  string activitystreamkmskeyid = 394779710;
+  optional string activitystreamkmskeyid = 394779710;
 
   ActivityStreamMode activitystreammode = 19126712;
 
@@ -3347,43 +3365,43 @@ message DBInstance {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string automaticrestarttime = 497974735;
+  optional string automaticrestarttime = 497974735;
 
   AutomationMode automationmode = 234653746;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
-  string awsbackuprecoverypointarn = 496169795;
+  optional string awsbackuprecoverypointarn = 496169795;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string backuptarget = 426947907;
+  optional string backuptarget = 426947907;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   CertificateDetails certificatedetails = 450099239;
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
   optional bool copytagstosnapshot = 457270425;
 
-  string customiaminstanceprofile = 466590166;
+  optional string customiaminstanceprofile = 466590166;
 
   optional bool customerownedipenabled = 411704889;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbinstancearn = 520508360;
+  optional string dbinstancearn = 520508360;
 
   repeated DBInstanceAutomatedBackupsReplication dbinstanceautomatedbackupsreplications = 50389927;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbinstancestatus = 9029731;
+  optional string dbinstancestatus = 9029731;
 
-  string dbname = 135387881;
+  optional string dbname = 135387881;
 
   repeated DBParameterGroupStatus dbparametergroups = 87728011;
 
@@ -3391,13 +3409,13 @@ message DBInstance {
 
   DBSubnetGroup dbsubnetgroup = 390486926;
 
-  string dbsystemid = 213073032;
+  optional string dbsystemid = 213073032;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional int32 dbinstanceport = 122890396;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   optional bool dedicatedlogvolume = 386476811;
 
@@ -3409,63 +3427,63 @@ message DBInstance {
 
   Endpoint endpoint = 132634269;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
-  string enhancedmonitoringresourcearn = 233441497;
+  optional string enhancedmonitoringresourcearn = 233441497;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  string instancecreatetime = 479568832;
+  optional string instancecreatetime = 479568832;
 
   optional int32 iops = 1043585;
 
   optional bool isstorageconfigupgradeavailable = 401311200;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string latestrestorabletime = 238336097;
+  optional string latestrestorabletime = 238336097;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   Endpoint listenerendpoint = 52162985;
 
   MasterUserSecret masterusersecret = 260483101;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 maxallocatedstorage = 7107036;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
   optional bool multiaz = 354702794;
 
   optional bool multitenant = 311489371;
 
-  string ncharcharactersetname = 107704944;
+  optional string ncharcharactersetname = 107704944;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
   repeated OptionGroupMembership optiongroupmemberships = 295991077;
 
   PendingModifiedValues pendingmodifiedvalues = 10750914;
 
-  string percentprogress = 66105414;
+  optional string percentprogress = 66105414;
 
   optional bool performanceinsightsenabled = 390617050;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
@@ -3477,15 +3495,15 @@ message DBInstance {
 
   repeated string readreplicadbinstanceidentifiers = 261713211;
 
-  string readreplicasourcedbclusteridentifier = 381359650;
+  optional string readreplicasourcedbclusteridentifier = 381359650;
 
-  string readreplicasourcedbinstanceidentifier = 306391633;
+  optional string readreplicasourcedbinstanceidentifier = 306391633;
 
   ReplicaMode replicamode = 134604609;
 
-  string resumefullautomationmodetime = 491133479;
+  optional string resumefullautomationmodetime = 491133479;
 
-  string secondaryavailabilityzone = 228625469;
+  optional string secondaryavailabilityzone = 228625469;
 
   repeated DBInstanceStatusInfo statusinfos = 421770169;
 
@@ -3493,17 +3511,21 @@ message DBInstance {
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
+  optional int32 storageoperationpercentprogress = 174239916;
+
+  optional string storageoperationstatus = 130220862;
+
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
-  string storagevolumestatus = 151502747;
+  optional string storagevolumestatus = 151502747;
 
   repeated Tag taglist = 429416860;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
 
   UpgradeRolloutOrder upgraderolloutorder = 522027557;
 
@@ -3517,7 +3539,7 @@ message DBInstance {
 
 message DBInstanceAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3531,71 +3553,71 @@ message DBInstanceAutomatedBackup {
 
   optional int32 allocatedstorage = 463241784;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
-  string awsbackuprecoverypointarn = 496169795;
+  optional string awsbackuprecoverypointarn = 496169795;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string backuptarget = 426947907;
+  optional string backuptarget = 426947907;
 
-  string dbinstancearn = 520508360;
+  optional string dbinstancearn = 520508360;
 
-  string dbinstanceautomatedbackupsarn = 463983301;
+  optional string dbinstanceautomatedbackupsarn = 463983301;
 
   repeated DBInstanceAutomatedBackupsReplication dbinstanceautomatedbackupsreplications = 50389927;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   optional bool dedicatedlogvolume = 386476811;
 
   optional bool encrypted = 322167380;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  string instancecreatetime = 479568832;
+  optional string instancecreatetime = 479568832;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional bool multitenant = 311489371;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string region = 154040478;
+  optional string region = 154040478;
 
   RestoreWindow restorewindow = 45362386;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated Tag taglist = 429416860;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -3607,7 +3629,7 @@ message DBInstanceAutomatedBackupMessage {
 
   repeated DBInstanceAutomatedBackup dbinstanceautomatedbackups = 436014382;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3617,7 +3639,7 @@ message DBInstanceAutomatedBackupMessage {
 
 message DBInstanceAutomatedBackupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3627,7 +3649,7 @@ message DBInstanceAutomatedBackupNotFoundFault {
 
 message DBInstanceAutomatedBackupQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3637,7 +3659,7 @@ message DBInstanceAutomatedBackupQuotaExceededFault {
 
 message DBInstanceAutomatedBackupsReplication {
 
-  string dbinstanceautomatedbackupsarn = 463983301;
+  optional string dbinstanceautomatedbackupsarn = 463983301;
 
 }
 
@@ -3649,7 +3671,7 @@ message DBInstanceMessage {
 
   repeated DBInstance dbinstances = 124401898;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3659,7 +3681,7 @@ message DBInstanceMessage {
 
 message DBInstanceNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3669,7 +3691,7 @@ message DBInstanceNotFoundFault {
 
 message DBInstanceNotReadyFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3679,11 +3701,11 @@ message DBInstanceNotReadyFault {
 
 message DBInstanceRole {
 
-  string featurename = 218369023;
+  optional string featurename = 218369023;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -3693,7 +3715,7 @@ message DBInstanceRole {
 
 message DBInstanceRoleAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3703,7 +3725,7 @@ message DBInstanceRoleAlreadyExistsFault {
 
 message DBInstanceRoleNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3713,7 +3735,7 @@ message DBInstanceRoleNotFoundFault {
 
 message DBInstanceRoleQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3723,13 +3745,13 @@ message DBInstanceRoleQuotaExceededFault {
 
 message DBInstanceStatusInfo {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   optional bool normal = 417212275;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string statustype = 183616024;
+  optional string statustype = 183616024;
 
 }
 
@@ -3739,7 +3761,7 @@ message DBInstanceStatusInfo {
 
 message DBLogFileNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3749,9 +3771,9 @@ message DBLogFileNotFoundFault {
 
 message DBMajorEngineVersion {
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
   repeated SupportedEngineLifecycle supportedenginelifecycles = 492071887;
 
@@ -3763,13 +3785,13 @@ message DBMajorEngineVersion {
 
 message DBParameterGroup {
 
-  string dbparametergrouparn = 311052949;
+  optional string dbparametergrouparn = 311052949;
 
-  string dbparametergroupfamily = 351778594;
+  optional string dbparametergroupfamily = 351778594;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
 }
 
@@ -3779,7 +3801,7 @@ message DBParameterGroup {
 
 message DBParameterGroupAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3789,7 +3811,7 @@ message DBParameterGroupAlreadyExistsFault {
 
 message DBParameterGroupDetails {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Parameter parameters = 494900218;
 
@@ -3801,7 +3823,7 @@ message DBParameterGroupDetails {
 
 message DBParameterGroupNameMessage {
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
 }
 
@@ -3811,7 +3833,7 @@ message DBParameterGroupNameMessage {
 
 message DBParameterGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3821,7 +3843,7 @@ message DBParameterGroupNotFoundFault {
 
 message DBParameterGroupQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3831,9 +3853,9 @@ message DBParameterGroupQuotaExceededFault {
 
 message DBParameterGroupStatus {
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
-  string parameterapplystatus = 247572783;
+  optional string parameterapplystatus = 247572783;
 
 }
 
@@ -3845,7 +3867,7 @@ message DBParameterGroupsMessage {
 
   repeated DBParameterGroup dbparametergroups = 87728011;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3857,35 +3879,35 @@ message DBProxy {
 
   repeated UserAuthConfigInfo auth = 359396464;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string dbproxyarn = 347165077;
+  optional string dbproxyarn = 347165077;
 
-  string dbproxyname = 232356319;
+  optional string dbproxyname = 232356319;
 
   optional bool debuglogging = 105593218;
 
-  string defaultauthscheme = 436791396;
+  optional string defaultauthscheme = 436791396;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
   EndpointNetworkType endpointnetworktype = 300530723;
 
-  string enginefamily = 298996604;
+  optional string enginefamily = 298996604;
 
   optional int32 idleclienttimeout = 96765376;
 
   optional bool requiretls = 503360838;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
   DBProxyStatus status = 6222352;
 
   TargetConnectionNetworkType targetconnectionnetworktype = 474595735;
 
-  string updateddate = 98230565;
+  optional string updateddate = 98230565;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -3899,7 +3921,7 @@ message DBProxy {
 
 message DBProxyAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3909,15 +3931,15 @@ message DBProxyAlreadyExistsFault {
 
 message DBProxyEndpoint {
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string dbproxyendpointarn = 239606092;
+  optional string dbproxyendpointarn = 239606092;
 
-  string dbproxyendpointname = 150012592;
+  optional string dbproxyendpointname = 150012592;
 
-  string dbproxyname = 232356319;
+  optional string dbproxyname = 232356319;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
   EndpointNetworkType endpointnetworktype = 300530723;
 
@@ -3927,7 +3949,7 @@ message DBProxyEndpoint {
 
   DBProxyEndpointTargetRole targetrole = 534667769;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -3941,7 +3963,7 @@ message DBProxyEndpoint {
 
 message DBProxyEndpointAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3951,7 +3973,7 @@ message DBProxyEndpointAlreadyExistsFault {
 
 message DBProxyEndpointNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3961,7 +3983,7 @@ message DBProxyEndpointNotFoundFault {
 
 message DBProxyEndpointQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3999,7 +4021,7 @@ enum DBProxyEndpointTargetRole {
 
 message DBProxyNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4009,7 +4031,7 @@ message DBProxyNotFoundFault {
 
 message DBProxyQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4043,19 +4065,19 @@ enum DBProxyStatus {
 
 message DBProxyTarget {
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
   optional int32 port = 46480583;
 
-  string rdsresourceid = 200404394;
+  optional string rdsresourceid = 200404394;
 
   TargetRole role = 271285818;
 
-  string targetarn = 217664144;
+  optional string targetarn = 217664144;
 
   TargetHealth targethealth = 419437151;
 
-  string trackedclusterid = 311875409;
+  optional string trackedclusterid = 311875409;
 
   TargetType type = 290836590;
 
@@ -4067,7 +4089,7 @@ message DBProxyTarget {
 
 message DBProxyTargetAlreadyRegisteredFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4079,19 +4101,19 @@ message DBProxyTargetGroup {
 
   ConnectionPoolConfigurationInfo connectionpoolconfig = 26720670;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string dbproxyname = 232356319;
+  optional string dbproxyname = 232356319;
 
   optional bool isdefault = 101743631;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string targetgrouparn = 341837023;
+  optional string targetgrouparn = 341837023;
 
-  string targetgroupname = 385716593;
+  optional string targetgroupname = 385716593;
 
-  string updateddate = 98230565;
+  optional string updateddate = 98230565;
 
 }
 
@@ -4101,7 +4123,7 @@ message DBProxyTargetGroup {
 
 message DBProxyTargetGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4111,7 +4133,7 @@ message DBProxyTargetGroupNotFoundFault {
 
 message DBProxyTargetNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4121,45 +4143,45 @@ message DBProxyTargetNotFoundFault {
 
 message DBRecommendation {
 
-  string additionalinfo = 62481793;
+  optional string additionalinfo = 62481793;
 
-  string category = 263447954;
+  optional string category = 263447954;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string detection = 32289485;
+  optional string detection = 32289485;
 
-  string impact = 75836600;
+  optional string impact = 75836600;
 
   IssueDetails issuedetails = 101012567;
 
   repeated DocLink links = 302123151;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
-  string recommendation = 187905871;
+  optional string recommendation = 187905871;
 
-  string recommendationid = 340359348;
+  optional string recommendationid = 340359348;
 
   repeated RecommendedAction recommendedactions = 36131384;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
-  string severity = 276886227;
+  optional string severity = 276886227;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string typedetection = 301340373;
+  optional string typedetection = 301340373;
 
-  string typeid = 363573977;
+  optional string typeid = 363573977;
 
-  string typerecommendation = 117620999;
+  optional string typerecommendation = 117620999;
 
-  string updatedtime = 156274570;
+  optional string updatedtime = 156274570;
 
 }
 
@@ -4177,7 +4199,7 @@ message DBRecommendationsMessage {
 
   repeated DBRecommendation dbrecommendations = 212855958;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -4187,19 +4209,19 @@ message DBRecommendationsMessage {
 
 message DBSecurityGroup {
 
-  string dbsecuritygrouparn = 309695204;
+  optional string dbsecuritygrouparn = 309695204;
 
-  string dbsecuritygroupdescription = 406862407;
+  optional string dbsecuritygroupdescription = 406862407;
 
-  string dbsecuritygroupname = 52398568;
+  optional string dbsecuritygroupname = 52398568;
 
   repeated EC2SecurityGroup ec2securitygroups = 66268240;
 
   repeated IPRange ipranges = 479364503;
 
-  string ownerid = 375630298;
+  optional string ownerid = 375630298;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -4209,7 +4231,7 @@ message DBSecurityGroup {
 
 message DBSecurityGroupAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4219,9 +4241,9 @@ message DBSecurityGroupAlreadyExistsFault {
 
 message DBSecurityGroupMembership {
 
-  string dbsecuritygroupname = 52398568;
+  optional string dbsecuritygroupname = 52398568;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -4233,7 +4255,7 @@ message DBSecurityGroupMessage {
 
   repeated DBSecurityGroup dbsecuritygroups = 420763246;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -4243,7 +4265,7 @@ message DBSecurityGroupMessage {
 
 message DBSecurityGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4253,7 +4275,7 @@ message DBSecurityGroupNotFoundFault {
 
 message DBSecurityGroupNotSupportedFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4263,7 +4285,7 @@ message DBSecurityGroupNotSupportedFault {
 
 message DBSecurityGroupQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4275,23 +4297,23 @@ message DBShardGroup {
 
   optional int32 computeredundancy = 518573958;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbshardgrouparn = 323840332;
+  optional string dbshardgrouparn = 323840332;
 
-  string dbshardgroupidentifier = 111693640;
+  optional string dbshardgroupidentifier = 111693640;
 
-  string dbshardgroupresourceid = 153207862;
+  optional string dbshardgroupresourceid = 153207862;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
-  double maxacu = 248469229;
+  optional double maxacu = 248469229;
 
-  double minacu = 357455091;
+  optional double minacu = 357455091;
 
   optional bool publiclyaccessible = 256833310;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   repeated Tag taglist = 429416860;
 
@@ -4303,7 +4325,7 @@ message DBShardGroup {
 
 message DBShardGroupAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4313,7 +4335,7 @@ message DBShardGroupAlreadyExistsFault {
 
 message DBShardGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4327,83 +4349,85 @@ message DBSnapshot {
 
   optional int32 allocatedstorage = 463241784;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbsnapshotarn = 232729495;
+  optional string dbsnapshotarn = 232729495;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
-  string dbsystemid = 213073032;
+  optional string dbsystemid = 213073032;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   optional bool dedicatedlogvolume = 386476811;
 
   optional bool encrypted = 322167380;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
+
+  optional int64 fullsnapshotsizeinbytes = 211880170;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
-  string instancecreatetime = 479568832;
+  optional string instancecreatetime = 479568832;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional bool multitenant = 311489371;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string originalsnapshotcreatetime = 134270140;
+  optional string originalsnapshotcreatetime = 134270140;
 
   optional int32 percentprogress = 66105414;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
-  string snapshotavailabilityzone = 225920145;
+  optional string snapshotavailabilityzone = 225920145;
 
-  string snapshotcreatetime = 168899877;
+  optional string snapshotcreatetime = 168899877;
 
-  string snapshotdatabasetime = 38476730;
+  optional string snapshotdatabasetime = 38476730;
 
-  string snapshottarget = 11070801;
+  optional string snapshottarget = 11070801;
 
-  string snapshottype = 399375494;
+  optional string snapshottype = 399375494;
 
-  string sourcedbsnapshotidentifier = 363859646;
+  optional string sourcedbsnapshotidentifier = 363859646;
 
-  string sourceregion = 213476941;
+  optional string sourceregion = 213476941;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   StorageEncryptionType storageencryptiontype = 6656660;
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated Tag taglist = 429416860;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -4413,7 +4437,7 @@ message DBSnapshot {
 
 message DBSnapshotAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4423,7 +4447,7 @@ message DBSnapshotAlreadyExistsFault {
 
 message DBSnapshotAttribute {
 
-  string attributename = 352717485;
+  optional string attributename = 352717485;
 
   repeated string attributevalues = 192289814;
 
@@ -4437,7 +4461,7 @@ message DBSnapshotAttributesResult {
 
   repeated DBSnapshotAttribute dbsnapshotattributes = 242389519;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
 }
 
@@ -4449,7 +4473,7 @@ message DBSnapshotMessage {
 
   repeated DBSnapshot dbsnapshots = 367747857;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -4459,7 +4483,7 @@ message DBSnapshotMessage {
 
 message DBSnapshotNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4469,31 +4493,31 @@ message DBSnapshotNotFoundFault {
 
 message DBSnapshotTenantDatabase {
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
-  string dbsnapshottenantdatabasearn = 175797114;
+  optional string dbsnapshottenantdatabasearn = 175797114;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
-  string enginename = 102940129;
+  optional string enginename = 102940129;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
-  string ncharcharactersetname = 107704944;
+  optional string ncharcharactersetname = 107704944;
 
-  string snapshottype = 399375494;
+  optional string snapshottype = 399375494;
 
   repeated Tag taglist = 429416860;
 
-  string tenantdbname = 443960809;
+  optional string tenantdbname = 443960809;
 
-  string tenantdatabasecreatetime = 33824958;
+  optional string tenantdatabasecreatetime = 33824958;
 
-  string tenantdatabaseresourceid = 241460050;
+  optional string tenantdatabaseresourceid = 241460050;
 
 }
 
@@ -4503,7 +4527,7 @@ message DBSnapshotTenantDatabase {
 
 message DBSnapshotTenantDatabaseNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4513,7 +4537,7 @@ message DBSnapshotTenantDatabasesMessage {
 
   repeated DBSnapshotTenantDatabase dbsnapshottenantdatabases = 175377304;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -4523,19 +4547,19 @@ message DBSnapshotTenantDatabasesMessage {
 
 message DBSubnetGroup {
 
-  string dbsubnetgrouparn = 462416357;
+  optional string dbsubnetgrouparn = 462416357;
 
-  string dbsubnetgroupdescription = 111127330;
+  optional string dbsubnetgroupdescription = 111127330;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
-  string subnetgroupstatus = 470254430;
+  optional string subnetgroupstatus = 470254430;
 
   repeated Subnet subnets = 414921506;
 
   repeated string supportednetworktypes = 290618199;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -4545,7 +4569,7 @@ message DBSubnetGroup {
 
 message DBSubnetGroupAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4555,7 +4579,7 @@ message DBSubnetGroupAlreadyExistsFault {
 
 message DBSubnetGroupDoesNotCoverEnoughAZs {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4567,7 +4591,7 @@ message DBSubnetGroupMessage {
 
   repeated DBSubnetGroup dbsubnetgroups = 29544667;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -4577,7 +4601,7 @@ message DBSubnetGroupMessage {
 
 message DBSubnetGroupNotAllowedFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4587,7 +4611,7 @@ message DBSubnetGroupNotAllowedFault {
 
 message DBSubnetGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4597,7 +4621,7 @@ message DBSubnetGroupNotFoundFault {
 
 message DBSubnetGroupQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4607,7 +4631,7 @@ message DBSubnetGroupQuotaExceededFault {
 
 message DBSubnetQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4617,7 +4641,7 @@ message DBSubnetQuotaExceededFault {
 
 message DBUpgradeDependencyFailureFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4703,7 +4727,7 @@ message DeleteDBClusterMessage {
 
   optional bool deleteautomatedbackups = 162333068;
 
-  string finaldbsnapshotidentifier = 475816475;
+  optional string finaldbsnapshotidentifier = 475816475;
 
   optional bool skipfinalsnapshot = 357211619;
 
@@ -4751,9 +4775,9 @@ message DeleteDBClusterSnapshotResult {
 
 message DeleteDBInstanceAutomatedBackupMessage {
 
-  string dbinstanceautomatedbackupsarn = 463983301;
+  optional string dbinstanceautomatedbackupsarn = 463983301;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
 }
 
@@ -4775,7 +4799,7 @@ message DeleteDBInstanceMessage {
 
   optional bool deleteautomatedbackups = 162333068;
 
-  string finaldbsnapshotidentifier = 475816475;
+  optional string finaldbsnapshotidentifier = 475816475;
 
   optional bool skipfinalsnapshot = 357211619;
 
@@ -4935,7 +4959,7 @@ message DeleteTenantDatabaseMessage {
 
   string dbinstanceidentifier = 272754580;
 
-  string finaldbsnapshotidentifier = 475816475;
+  optional string finaldbsnapshotidentifier = 475816475;
 
   optional bool skipfinalsnapshot = 357211619;
 
@@ -4961,7 +4985,7 @@ message DeregisterDBProxyTargetsRequest {
 
   string dbproxyname = 232356319;
 
-  string targetgroupname = 385716593;
+  optional string targetgroupname = 385716593;
 
 }
 
@@ -4983,11 +5007,11 @@ message DescribeAccountAttributesMessage {
 
 message DescribeBlueGreenDeploymentsRequest {
 
-  string bluegreendeploymentidentifier = 142726945;
+  optional string bluegreendeploymentidentifier = 142726945;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -4999,7 +5023,7 @@ message DescribeBlueGreenDeploymentsResponse {
 
   repeated BlueGreenDeployment bluegreendeployments = 26284201;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5009,11 +5033,11 @@ message DescribeBlueGreenDeploymentsResponse {
 
 message DescribeCertificatesMessage {
 
-  string certificateidentifier = 295615364;
+  optional string certificateidentifier = 295615364;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5023,13 +5047,13 @@ message DescribeCertificatesMessage {
 
 message DescribeDBClusterAutomatedBackupsMessage {
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbclusterresourceid = 203287771;
+  optional string dbclusterresourceid = 203287771;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5041,13 +5065,13 @@ message DescribeDBClusterAutomatedBackupsMessage {
 
 message DescribeDBClusterBacktracksMessage {
 
-  string backtrackidentifier = 278512699;
+  optional string backtrackidentifier = 278512699;
 
   string dbclusteridentifier = 340406993;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5057,13 +5081,13 @@ message DescribeDBClusterBacktracksMessage {
 
 message DescribeDBClusterEndpointsMessage {
 
-  string dbclusterendpointidentifier = 318277614;
+  optional string dbclusterendpointidentifier = 318277614;
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5075,11 +5099,11 @@ message DescribeDBClusterEndpointsMessage {
 
 message DescribeDBClusterParameterGroupsMessage {
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5095,11 +5119,11 @@ message DescribeDBClusterParametersMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
 }
 
@@ -5127,11 +5151,11 @@ message DescribeDBClusterSnapshotAttributesResult {
 
 message DescribeDBClusterSnapshotsMessage {
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
-  string dbclustersnapshotidentifier = 204169569;
+  optional string dbclustersnapshotidentifier = 204169569;
 
-  string dbclusterresourceid = 203287771;
+  optional string dbclusterresourceid = 203287771;
 
   repeated Filter filters = 188393197;
 
@@ -5139,11 +5163,11 @@ message DescribeDBClusterSnapshotsMessage {
 
   optional bool includeshared = 30653391;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string snapshottype = 399375494;
+  optional string snapshottype = 399375494;
 
 }
 
@@ -5153,13 +5177,13 @@ message DescribeDBClusterSnapshotsMessage {
 
 message DescribeDBClustersMessage {
 
-  string dbclusteridentifier = 340406993;
+  optional string dbclusteridentifier = 340406993;
 
   repeated Filter filters = 188393197;
 
   optional bool includeshared = 30653391;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5169,13 +5193,13 @@ message DescribeDBClustersMessage {
 
 message DescribeDBEngineVersionsMessage {
 
-  string dbparametergroupfamily = 351778594;
+  optional string dbparametergroupfamily = 351778594;
 
   optional bool defaultonly = 18470185;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   repeated Filter filters = 188393197;
 
@@ -5185,7 +5209,7 @@ message DescribeDBEngineVersionsMessage {
 
   optional bool listsupportedtimezones = 149832388;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5197,15 +5221,15 @@ message DescribeDBEngineVersionsMessage {
 
 message DescribeDBInstanceAutomatedBackupsMessage {
 
-  string dbinstanceautomatedbackupsarn = 463983301;
+  optional string dbinstanceautomatedbackupsarn = 463983301;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5217,11 +5241,11 @@ message DescribeDBInstanceAutomatedBackupsMessage {
 
 message DescribeDBInstancesMessage {
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5235,7 +5259,7 @@ message DescribeDBLogFilesDetails {
 
   optional int64 lastwritten = 484158293;
 
-  string logfilename = 420656629;
+  optional string logfilename = 420656629;
 
   optional int64 size = 105352829;
 
@@ -5253,11 +5277,11 @@ message DescribeDBLogFilesMessage {
 
   optional int64 filesize = 346241219;
 
-  string filenamecontains = 258161154;
+  optional string filenamecontains = 258161154;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5271,7 +5295,7 @@ message DescribeDBLogFilesResponse {
 
   repeated DescribeDBLogFilesDetails describedblogfiles = 43309544;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5279,11 +5303,11 @@ message DescribeDBLogFilesResponse {
 
 message DescribeDBMajorEngineVersionsRequest {
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5295,7 +5319,7 @@ message DescribeDBMajorEngineVersionsResponse {
 
   repeated DBMajorEngineVersion dbmajorengineversions = 175810944;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5305,11 +5329,11 @@ message DescribeDBMajorEngineVersionsResponse {
 
 message DescribeDBParameterGroupsMessage {
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5323,11 +5347,11 @@ message DescribeDBParametersMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
 }
 
@@ -5335,11 +5359,11 @@ message DescribeDBParametersMessage {
 
 message DescribeDBProxiesRequest {
 
-  string dbproxyname = 232356319;
+  optional string dbproxyname = 232356319;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5351,7 +5375,7 @@ message DescribeDBProxiesResponse {
 
   repeated DBProxy dbproxies = 327634354;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5359,13 +5383,13 @@ message DescribeDBProxiesResponse {
 
 message DescribeDBProxyEndpointsRequest {
 
-  string dbproxyendpointname = 150012592;
+  optional string dbproxyendpointname = 150012592;
 
-  string dbproxyname = 232356319;
+  optional string dbproxyname = 232356319;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5377,7 +5401,7 @@ message DescribeDBProxyEndpointsResponse {
 
   repeated DBProxyEndpoint dbproxyendpoints = 266031270;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5389,11 +5413,11 @@ message DescribeDBProxyTargetGroupsRequest {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string targetgroupname = 385716593;
+  optional string targetgroupname = 385716593;
 
 }
 
@@ -5401,7 +5425,7 @@ message DescribeDBProxyTargetGroupsRequest {
 
 message DescribeDBProxyTargetGroupsResponse {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated DBProxyTargetGroup targetgroups = 146645961;
 
@@ -5415,11 +5439,11 @@ message DescribeDBProxyTargetsRequest {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string targetgroupname = 385716593;
+  optional string targetgroupname = 385716593;
 
 }
 
@@ -5427,7 +5451,7 @@ message DescribeDBProxyTargetsRequest {
 
 message DescribeDBProxyTargetsResponse {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated DBProxyTarget targets = 262180226;
 
@@ -5439,13 +5463,13 @@ message DescribeDBRecommendationsMessage {
 
   repeated Filter filters = 188393197;
 
-  string lastupdatedafter = 99798431;
+  optional string lastupdatedafter = 99798431;
 
-  string lastupdatedbefore = 400596144;
+  optional string lastupdatedbefore = 400596144;
 
-  string locale = 493771704;
+  optional string locale = 493771704;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5457,11 +5481,11 @@ message DescribeDBRecommendationsMessage {
 
 message DescribeDBSecurityGroupsMessage {
 
-  string dbsecuritygroupname = 52398568;
+  optional string dbsecuritygroupname = 52398568;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5471,11 +5495,11 @@ message DescribeDBSecurityGroupsMessage {
 
 message DescribeDBShardGroupsMessage {
 
-  string dbshardgroupidentifier = 111693640;
+  optional string dbshardgroupidentifier = 111693640;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5487,7 +5511,7 @@ message DescribeDBShardGroupsResponse {
 
   repeated DBShardGroup dbshardgroups = 317464742;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5513,19 +5537,19 @@ message DescribeDBSnapshotAttributesResult {
 
 message DescribeDBSnapshotTenantDatabasesMessage {
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string snapshottype = 399375494;
+  optional string snapshottype = 399375494;
 
 }
 
@@ -5535,11 +5559,11 @@ message DescribeDBSnapshotTenantDatabasesMessage {
 
 message DescribeDBSnapshotsMessage {
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   repeated Filter filters = 188393197;
 
@@ -5547,11 +5571,11 @@ message DescribeDBSnapshotsMessage {
 
   optional bool includeshared = 30653391;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string snapshottype = 399375494;
+  optional string snapshottype = 399375494;
 
 }
 
@@ -5561,11 +5585,11 @@ message DescribeDBSnapshotsMessage {
 
 message DescribeDBSubnetGroupsMessage {
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5581,7 +5605,7 @@ message DescribeEngineDefaultClusterParametersMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5605,7 +5629,7 @@ message DescribeEngineDefaultParametersMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5627,7 +5651,7 @@ message DescribeEventCategoriesMessage {
 
   repeated Filter filters = 188393197;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
 }
 
@@ -5639,11 +5663,11 @@ message DescribeEventSubscriptionsMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string subscriptionname = 181900944;
+  optional string subscriptionname = 181900944;
 
 }
 
@@ -5655,21 +5679,21 @@ message DescribeEventsMessage {
 
   optional int32 duration = 348604718;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
   repeated string eventcategories = 3676820;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string sourceidentifier = 190015756;
+  optional string sourceidentifier = 190015756;
 
   SourceType sourcetype = 195731217;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
 }
 
@@ -5677,15 +5701,15 @@ message DescribeEventsMessage {
 
 message DescribeExportTasksMessage {
 
-  string exporttaskidentifier = 120967762;
+  optional string exporttaskidentifier = 120967762;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
   ExportSourceType sourcetype = 195731217;
 
@@ -5697,9 +5721,9 @@ message DescribeGlobalClustersMessage {
 
   repeated Filter filters = 188393197;
 
-  string globalclusteridentifier = 114980092;
+  optional string globalclusteridentifier = 114980092;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5711,9 +5735,9 @@ message DescribeIntegrationsMessage {
 
   repeated Filter filters = 188393197;
 
-  string integrationidentifier = 11597767;
+  optional string integrationidentifier = 11597767;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5725,7 +5749,7 @@ message DescribeIntegrationsResponse {
 
   repeated Integration integrations = 133935099;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -5739,9 +5763,9 @@ message DescribeOptionGroupOptionsMessage {
 
   repeated Filter filters = 188393197;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5753,17 +5777,17 @@ message DescribeOptionGroupOptionsMessage {
 
 message DescribeOptionGroupsMessage {
 
-  string enginename = 102940129;
+  optional string enginename = 102940129;
 
   repeated Filter filters = 188393197;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
 }
 
@@ -5773,19 +5797,19 @@ message DescribeOptionGroupsMessage {
 
 message DescribeOrderableDBInstanceOptionsMessage {
 
-  string availabilityzonegroup = 415527484;
+  optional string availabilityzonegroup = 415527484;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
   string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   repeated Filter filters = 188393197;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
@@ -5801,11 +5825,11 @@ message DescribePendingMaintenanceActionsMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string resourceidentifier = 279224111;
+  optional string resourceidentifier = 279224111;
 
 }
 
@@ -5815,27 +5839,27 @@ message DescribePendingMaintenanceActionsMessage {
 
 message DescribeReservedDBInstancesMessage {
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
-  string duration = 348604718;
+  optional string duration = 348604718;
 
   repeated Filter filters = 188393197;
 
-  string leaseid = 32039517;
+  optional string leaseid = 32039517;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
   optional bool multiaz = 354702794;
 
-  string offeringtype = 210941500;
+  optional string offeringtype = 210941500;
 
-  string productdescription = 78087559;
+  optional string productdescription = 78087559;
 
-  string reserveddbinstanceid = 68820086;
+  optional string reserveddbinstanceid = 68820086;
 
-  string reserveddbinstancesofferingid = 475669635;
+  optional string reserveddbinstancesofferingid = 475669635;
 
 }
 
@@ -5845,23 +5869,23 @@ message DescribeReservedDBInstancesMessage {
 
 message DescribeReservedDBInstancesOfferingsMessage {
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
-  string duration = 348604718;
+  optional string duration = 348604718;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
   optional bool multiaz = 354702794;
 
-  string offeringtype = 210941500;
+  optional string offeringtype = 210941500;
 
-  string productdescription = 78087559;
+  optional string productdescription = 78087559;
 
-  string reserveddbinstancesofferingid = 475669635;
+  optional string reserveddbinstancesofferingid = 475669635;
 
 }
 
@@ -5873,17 +5897,17 @@ message DescribeServerlessV2PlatformVersionsMessage {
 
   optional bool defaultonly = 18470185;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
   repeated Filter filters = 188393197;
 
   optional bool includeall = 5416227;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string serverlessv2platformversion = 348862429;
+  optional string serverlessv2platformversion = 348862429;
 
 }
 
@@ -5895,11 +5919,11 @@ message DescribeSourceRegionsMessage {
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
 }
 
@@ -5907,15 +5931,15 @@ message DescribeSourceRegionsMessage {
 
 message DescribeTenantDatabasesMessage {
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
   repeated Filter filters = 188393197;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxrecords = 220314370;
 
-  string tenantdbname = 443960809;
+  optional string tenantdbname = 443960809;
 
 }
 
@@ -5951,7 +5975,7 @@ message DisableHttpEndpointResponse {
 
   optional bool httpendpointenabled = 136929710;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
 }
 
@@ -5961,9 +5985,9 @@ message DisableHttpEndpointResponse {
 
 message DocLink {
 
-  string text = 504638815;
+  optional string text = 504638815;
 
-  string url = 354018239;
+  optional string url = 354018239;
 
 }
 
@@ -5973,19 +5997,19 @@ message DocLink {
 
 message DomainMembership {
 
-  string authsecretarn = 83343211;
+  optional string authsecretarn = 83343211;
 
   repeated string dnsips = 112593339;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string fqdn = 187797391;
+  optional string fqdn = 187797391;
 
-  string iamrolename = 191653342;
+  optional string iamrolename = 191653342;
 
-  string ou = 467970162;
+  optional string ou = 467970162;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -5995,7 +6019,7 @@ message DomainMembership {
 
 message DomainNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6005,9 +6029,9 @@ message DomainNotFoundFault {
 
 message DoubleRange {
 
-  double from = 410269078;
+  optional double from = 410269078;
 
-  double to = 32872005;
+  optional double to = 32872005;
 
 }
 
@@ -6019,9 +6043,9 @@ message DownloadDBLogFilePortionDetails {
 
   optional bool additionaldatapending = 427791376;
 
-  string logfiledata = 354203328;
+  optional string logfiledata = 354203328;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -6035,7 +6059,7 @@ message DownloadDBLogFilePortionMessage {
 
   string logfilename = 420656629;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 numberoflines = 93443161;
 
@@ -6047,13 +6071,13 @@ message DownloadDBLogFilePortionMessage {
 
 message EC2SecurityGroup {
 
-  string ec2securitygroupid = 521100060;
+  optional string ec2securitygroupid = 521100060;
 
-  string ec2securitygroupname = 404380646;
+  optional string ec2securitygroupname = 404380646;
 
-  string ec2securitygroupownerid = 139129853;
+  optional string ec2securitygroupownerid = 139129853;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -6063,7 +6087,7 @@ message EC2SecurityGroup {
 
 message Ec2ImagePropertiesNotSupportedFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6081,7 +6105,7 @@ message EnableHttpEndpointResponse {
 
   optional bool httpendpointenabled = 136929710;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
 }
 
@@ -6091,9 +6115,9 @@ message EnableHttpEndpointResponse {
 
 message Endpoint {
 
-  string address = 268787956;
+  optional string address = 268787956;
 
-  string hostedzoneid = 346531710;
+  optional string hostedzoneid = 346531710;
 
   optional int32 port = 46480583;
 
@@ -6117,9 +6141,9 @@ enum EndpointNetworkType {
 
 message EngineDefaults {
 
-  string dbparametergroupfamily = 351778594;
+  optional string dbparametergroupfamily = 351778594;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Parameter parameters = 494900218;
 
@@ -6143,15 +6167,15 @@ enum EngineFamily {
 
 message Event {
 
-  string date = 458388346;
+  optional string date = 458388346;
 
   repeated string eventcategories = 3676820;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
-  string sourceidentifier = 190015756;
+  optional string sourceidentifier = 190015756;
 
   SourceType sourcetype = 195731217;
 
@@ -6165,7 +6189,7 @@ message EventCategoriesMap {
 
   repeated string eventcategories = 3676820;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
 }
 
@@ -6185,25 +6209,25 @@ message EventCategoriesMessage {
 
 message EventSubscription {
 
-  string custsubscriptionid = 34626299;
+  optional string custsubscriptionid = 34626299;
 
-  string customerawsid = 465559608;
+  optional string customerawsid = 465559608;
 
   optional bool enabled = 478602303;
 
   repeated string eventcategorieslist = 508733244;
 
-  string eventsubscriptionarn = 350612974;
+  optional string eventsubscriptionarn = 350612974;
 
-  string snstopicarn = 374815596;
+  optional string snstopicarn = 374815596;
 
   repeated string sourceidslist = 484349727;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string subscriptioncreationtime = 180376685;
+  optional string subscriptioncreationtime = 180376685;
 
 }
 
@@ -6213,7 +6237,7 @@ message EventSubscription {
 
 message EventSubscriptionQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6225,7 +6249,7 @@ message EventSubscriptionsMessage {
 
   repeated EventSubscription eventsubscriptionslist = 157846668;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -6237,7 +6261,7 @@ message EventsMessage {
 
   repeated Event events = 3416229;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -6259,35 +6283,35 @@ message ExportTask {
 
   repeated string exportonly = 104912558;
 
-  string exporttaskidentifier = 120967762;
+  optional string exporttaskidentifier = 120967762;
 
-  string failurecause = 304578341;
+  optional string failurecause = 304578341;
 
-  string iamrolearn = 228393658;
+  optional string iamrolearn = 228393658;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional int32 percentprogress = 66105414;
 
-  string s3bucket = 114031434;
+  optional string s3bucket = 114031434;
 
-  string s3prefix = 21529336;
+  optional string s3prefix = 21529336;
 
-  string snapshottime = 25121101;
+  optional string snapshottime = 25121101;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
   ExportSourceType sourcetype = 195731217;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string taskendtime = 145989753;
+  optional string taskendtime = 145989753;
 
-  string taskstarttime = 200950330;
+  optional string taskstarttime = 200950330;
 
   optional int32 totalextracteddataingb = 71329474;
 
-  string warningmessage = 497413775;
+  optional string warningmessage = 497413775;
 
 }
 
@@ -6297,7 +6321,7 @@ message ExportTask {
 
 message ExportTaskAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6307,7 +6331,7 @@ message ExportTaskAlreadyExistsFault {
 
 message ExportTaskNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6317,7 +6341,7 @@ message ExportTasksMessage {
 
   repeated ExportTask exporttasks = 129825140;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -6329,7 +6353,7 @@ message FailoverDBClusterMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string targetdbinstanceidentifier = 241268391;
+  optional string targetdbinstanceidentifier = 241268391;
 
 }
 
@@ -6369,13 +6393,13 @@ message FailoverGlobalClusterResult {
 
 message FailoverState {
 
-  string fromdbclusterarn = 119220095;
+  optional string fromdbclusterarn = 119220095;
 
   optional bool isdatalossallowed = 28895927;
 
   FailoverStatus status = 6222352;
 
-  string todbclusterarn = 469618472;
+  optional string todbclusterarn = 469618472;
 
 }
 
@@ -6409,29 +6433,29 @@ message Filter {
 
 message GlobalCluster {
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   optional bool deletionprotection = 504781905;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   FailoverState failoverstate = 304680521;
 
-  string globalclusterarn = 276790160;
+  optional string globalclusterarn = 276790160;
 
-  string globalclusteridentifier = 114980092;
+  optional string globalclusteridentifier = 114980092;
 
   repeated GlobalClusterMember globalclustermembers = 315949036;
 
-  string globalclusterresourceid = 398885538;
+  optional string globalclusterresourceid = 398885538;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   optional bool storageencrypted = 378808047;
 
@@ -6447,7 +6471,7 @@ message GlobalCluster {
 
 message GlobalClusterAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6457,7 +6481,7 @@ message GlobalClusterAlreadyExistsFault {
 
 message GlobalClusterMember {
 
-  string dbclusterarn = 173586159;
+  optional string dbclusterarn = 173586159;
 
   WriteForwardingStatus globalwriteforwardingstatus = 147047845;
 
@@ -6485,7 +6509,7 @@ enum GlobalClusterMemberSynchronizationStatus {
 
 message GlobalClusterNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6495,7 +6519,7 @@ message GlobalClusterNotFoundFault {
 
 message GlobalClusterQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6505,7 +6529,7 @@ message GlobalClustersMessage {
 
   repeated GlobalCluster globalclusters = 386209410;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -6527,9 +6551,9 @@ enum IAMAuthMode {
 
 message IPRange {
 
-  string cidrip = 371456799;
+  optional string cidrip = 371456799;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -6539,7 +6563,7 @@ message IPRange {
 
 message IamRoleMissingPermissionsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6549,7 +6573,7 @@ message IamRoleMissingPermissionsFault {
 
 message IamRoleNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6559,7 +6583,7 @@ message IamRoleNotFoundFault {
 
 message InstanceQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6569,7 +6593,7 @@ message InstanceQuotaExceededFault {
 
 message InsufficientAvailableIPsInSubnetFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6579,7 +6603,7 @@ message InsufficientAvailableIPsInSubnetFault {
 
 message InsufficientDBClusterCapacityFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6589,7 +6613,7 @@ message InsufficientDBClusterCapacityFault {
 
 message InsufficientDBInstanceCapacityFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6599,7 +6623,7 @@ message InsufficientDBInstanceCapacityFault {
 
 message InsufficientStorageClusterCapacityFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6611,27 +6635,27 @@ message Integration {
 
   map<string, string> additionalencryptioncontext = 264606229;
 
-  string createtime = 490895933;
+  optional string createtime = 490895933;
 
-  string datafilter = 441498776;
+  optional string datafilter = 441498776;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   repeated IntegrationError errors = 166551719;
 
-  string integrationarn = 465862597;
+  optional string integrationarn = 465862597;
 
-  string integrationname = 399304719;
+  optional string integrationname = 399304719;
 
-  string kmskeyid = 13237581;
+  optional string kmskeyid = 13237581;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
   IntegrationStatus status = 6222352;
 
   repeated Tag tags = 381526209;
 
-  string targetarn = 217664144;
+  optional string targetarn = 217664144;
 
 }
 
@@ -6641,7 +6665,7 @@ message Integration {
 
 message IntegrationAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6651,7 +6675,7 @@ message IntegrationAlreadyExistsFault {
 
 message IntegrationConflictOperationFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6663,7 +6687,7 @@ message IntegrationError {
 
   string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
 }
 
@@ -6673,7 +6697,7 @@ message IntegrationError {
 
 message IntegrationNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6683,7 +6707,7 @@ message IntegrationNotFoundFault {
 
 message IntegrationQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6713,7 +6737,7 @@ enum IntegrationStatus {
 
 message InvalidBlueGreenDeploymentStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6723,7 +6747,7 @@ message InvalidBlueGreenDeploymentStateFault {
 
 message InvalidCustomDBEngineVersionStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6733,7 +6757,7 @@ message InvalidCustomDBEngineVersionStateFault {
 
 message InvalidDBClusterAutomatedBackupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6743,7 +6767,7 @@ message InvalidDBClusterAutomatedBackupStateFault {
 
 message InvalidDBClusterCapacityFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6753,7 +6777,7 @@ message InvalidDBClusterCapacityFault {
 
 message InvalidDBClusterEndpointStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6763,7 +6787,7 @@ message InvalidDBClusterEndpointStateFault {
 
 message InvalidDBClusterSnapshotStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6773,7 +6797,7 @@ message InvalidDBClusterSnapshotStateFault {
 
 message InvalidDBClusterStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6783,7 +6807,7 @@ message InvalidDBClusterStateFault {
 
 message InvalidDBInstanceAutomatedBackupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6793,7 +6817,7 @@ message InvalidDBInstanceAutomatedBackupStateFault {
 
 message InvalidDBInstanceStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6803,7 +6827,7 @@ message InvalidDBInstanceStateFault {
 
 message InvalidDBParameterGroupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6813,7 +6837,7 @@ message InvalidDBParameterGroupStateFault {
 
 message InvalidDBProxyEndpointStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6823,7 +6847,7 @@ message InvalidDBProxyEndpointStateFault {
 
 message InvalidDBProxyStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6833,7 +6857,7 @@ message InvalidDBProxyStateFault {
 
 message InvalidDBSecurityGroupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6843,7 +6867,7 @@ message InvalidDBSecurityGroupStateFault {
 
 message InvalidDBShardGroupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6853,7 +6877,7 @@ message InvalidDBShardGroupStateFault {
 
 message InvalidDBSnapshotStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6863,7 +6887,7 @@ message InvalidDBSnapshotStateFault {
 
 message InvalidDBSubnetGroupFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6873,7 +6897,7 @@ message InvalidDBSubnetGroupFault {
 
 message InvalidDBSubnetGroupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6883,7 +6907,7 @@ message InvalidDBSubnetGroupStateFault {
 
 message InvalidDBSubnetStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6893,7 +6917,7 @@ message InvalidDBSubnetStateFault {
 
 message InvalidEventSubscriptionStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6903,7 +6927,7 @@ message InvalidEventSubscriptionStateFault {
 
 message InvalidExportOnlyFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6913,7 +6937,7 @@ message InvalidExportOnlyFault {
 
 message InvalidExportSourceStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6923,7 +6947,7 @@ message InvalidExportSourceStateFault {
 
 message InvalidExportTaskStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6933,7 +6957,7 @@ message InvalidExportTaskStateFault {
 
 message InvalidGlobalClusterStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6943,7 +6967,7 @@ message InvalidGlobalClusterStateFault {
 
 message InvalidIntegrationStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6953,7 +6977,7 @@ message InvalidIntegrationStateFault {
 
 message InvalidOptionGroupStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6963,7 +6987,7 @@ message InvalidOptionGroupStateFault {
 
 message InvalidResourceStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6973,7 +6997,7 @@ message InvalidResourceStateFault {
 
 message InvalidRestoreFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6983,7 +7007,7 @@ message InvalidRestoreFault {
 
 message InvalidS3BucketFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6993,7 +7017,7 @@ message InvalidS3BucketFault {
 
 message InvalidSubnet {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7003,7 +7027,7 @@ message InvalidSubnet {
 
 message InvalidVPCNetworkStateFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7023,7 +7047,7 @@ message IssueDetails {
 
 message KMSKeyNotAccessibleFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7043,7 +7067,7 @@ enum LifecycleSupportName {
 
 message LimitlessDatabase {
 
-  double minrequiredacu = 325776882;
+  optional double minrequiredacu = 325776882;
 
   LimitlessDatabaseStatus status = 6222352;
 
@@ -7115,11 +7139,11 @@ enum MasterUserAuthenticationType {
 
 message MasterUserSecret {
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string secretarn = 241012025;
+  optional string secretarn = 241012025;
 
-  string secretstatus = 365505716;
+  optional string secretstatus = 365505716;
 
 }
 
@@ -7129,7 +7153,7 @@ message MasterUserSecret {
 
 message MaxDBShardGroupLimitReached {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7141,11 +7165,11 @@ message Metric {
 
   MetricQuery metricquery = 234811608;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated MetricReference references = 470510572;
 
-  string statisticsdetails = 387906073;
+  optional string statisticsdetails = 387906073;
 
 }
 
@@ -7165,7 +7189,7 @@ message MetricQuery {
 
 message MetricReference {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   ReferenceDetails referencedetails = 378966857;
 
@@ -7177,9 +7201,9 @@ message MetricReference {
 
 message MinimumEngineVersionPerAllowedValue {
 
-  string allowedvalue = 46566337;
+  optional string allowedvalue = 46566337;
 
-  string minimumengineversion = 447657876;
+  optional string minimumengineversion = 447657876;
 
 }
 
@@ -7189,7 +7213,7 @@ message ModifyActivityStreamRequest {
 
   AuditPolicyState auditpolicystate = 229378680;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
 }
 
@@ -7199,9 +7223,9 @@ message ModifyActivityStreamResponse {
 
   optional bool enginenativeauditfieldsincluded = 276327711;
 
-  string kinesisstreamname = 433177563;
+  optional string kinesisstreamname = 433177563;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   ActivityStreamMode mode = 323909427;
 
@@ -7227,7 +7251,7 @@ message ModifyAdditionalStorageVolume {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   string volumename = 186940557;
 
@@ -7237,7 +7261,7 @@ message ModifyAdditionalStorageVolume {
 
 message ModifyCertificatesMessage {
 
-  string certificateidentifier = 295615364;
+  optional string certificateidentifier = 295615364;
 
   optional bool removecustomeroverride = 318671170;
 
@@ -7261,7 +7285,7 @@ message ModifyCurrentDBClusterCapacityMessage {
 
   optional int32 secondsbeforetimeout = 141553913;
 
-  string timeoutaction = 444876627;
+  optional string timeoutaction = 444876627;
 
 }
 
@@ -7269,7 +7293,7 @@ message ModifyCurrentDBClusterCapacityMessage {
 
 message ModifyCustomDBEngineVersionMessage {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string engine = 459347292;
 
@@ -7285,7 +7309,7 @@ message ModifyDBClusterEndpointMessage {
 
   string dbclusterendpointidentifier = 318277614;
 
-  string endpointtype = 486186837;
+  optional string endpointtype = 486186837;
 
   repeated string excludedmembers = 395651603;
 
@@ -7309,13 +7333,13 @@ message ModifyDBClusterMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string awsbackuprecoverypointarn = 496169795;
+  optional string awsbackuprecoverypointarn = 496169795;
 
   optional int64 backtrackwindow = 265584658;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   CloudwatchLogsExportConfiguration cloudwatchlogsexportconfiguration = 311727375;
 
@@ -7323,19 +7347,19 @@ message ModifyDBClusterMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string dbclusterinstanceclass = 187882689;
+  optional string dbclusterinstanceclass = 187882689;
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
-  string dbinstanceparametergroupname = 505550326;
+  optional string dbinstanceparametergroupname = 505550326;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
   optional bool enableglobalwriteforwarding = 121619476;
 
@@ -7349,9 +7373,11 @@ message ModifyDBClusterMessage {
 
   optional bool enableperformanceinsights = 485203758;
 
-  string enginemode = 292587685;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string enginemode = 292587685;
+
+  optional string engineversion = 44953462;
 
   optional int32 iops = 1043585;
 
@@ -7359,29 +7385,29 @@ message ModifyDBClusterMessage {
 
   MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string newdbclusteridentifier = 86287437;
+  optional string newdbclusteridentifier = 86287437;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   optional bool rotatemasteruserpassword = 30523131;
 
@@ -7389,7 +7415,7 @@ message ModifyDBClusterMessage {
 
   ServerlessV2ScalingConfiguration serverlessv2scalingconfiguration = 357537595;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -7457,11 +7483,11 @@ message ModifyDBInstanceMessage {
 
   AutomationMode automationmode = 234653746;
 
-  string awsbackuprecoverypointarn = 496169795;
+  optional string awsbackuprecoverypointarn = 496169795;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   optional bool certificaterotationrestart = 202488618;
 
@@ -7469,17 +7495,17 @@ message ModifyDBInstanceMessage {
 
   optional bool copytagstosnapshot = 457270425;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
   string dbinstanceidentifier = 272754580;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
   optional int32 dbportnumber = 107009294;
 
   repeated string dbsecuritygroups = 420763246;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
@@ -7489,17 +7515,17 @@ message ModifyDBInstanceMessage {
 
   optional bool disabledomain = 69430808;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainauthsecretarn = 22808303;
+  optional string domainauthsecretarn = 22808303;
 
   repeated string domaindnsips = 26209911;
 
-  string domainfqdn = 309760675;
+  optional string domainfqdn = 309760675;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
-  string domainou = 249985822;
+  optional string domainou = 249985822;
 
   optional bool enablecustomerownedip = 491377047;
 
@@ -7507,45 +7533,47 @@ message ModifyDBInstanceMessage {
 
   optional bool enableperformanceinsights = 485203758;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string enginelifecyclesupport = 29464465;
+
+  optional string engineversion = 44953462;
 
   optional int32 iops = 1043585;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   optional bool managemasteruserpassword = 71308055;
 
   MasterUserAuthenticationType masteruserauthenticationtype = 87836781;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
   optional int32 maxallocatedstorage = 7107036;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
   optional bool multiaz = 354702794;
 
   optional bool multitenant = 311489371;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string newdbinstanceidentifier = 331758776;
+  optional string newdbinstanceidentifier = 331758776;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
@@ -7561,13 +7589,13 @@ message ModifyDBInstanceMessage {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string tdecredentialpassword = 67652301;
+  optional string tdecredentialpassword = 67652301;
 
   optional bool usedefaultprocessorfeatures = 363226693;
 
@@ -7601,7 +7629,7 @@ message ModifyDBProxyEndpointRequest {
 
   string dbproxyendpointname = 150012592;
 
-  string newdbproxyendpointname = 197773532;
+  optional string newdbproxyendpointname = 197773532;
 
   repeated string vpcsecuritygroupids = 151967510;
 
@@ -7629,11 +7657,11 @@ message ModifyDBProxyRequest {
 
   optional int32 idleclienttimeout = 96765376;
 
-  string newdbproxyname = 134374587;
+  optional string newdbproxyname = 134374587;
 
   optional bool requiretls = 503360838;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
   repeated string securitygroups = 515282516;
 
@@ -7655,7 +7683,7 @@ message ModifyDBProxyTargetGroupRequest {
 
   string dbproxyname = 232356319;
 
-  string newname = 121738059;
+  optional string newname = 121738059;
 
   string targetgroupname = 385716593;
 
@@ -7673,13 +7701,13 @@ message ModifyDBProxyTargetGroupResponse {
 
 message ModifyDBRecommendationMessage {
 
-  string locale = 493771704;
+  optional string locale = 493771704;
 
   string recommendationid = 340359348;
 
   repeated RecommendedActionUpdate recommendedactionupdates = 471838781;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -7691,9 +7719,9 @@ message ModifyDBShardGroupMessage {
 
   string dbshardgroupidentifier = 111693640;
 
-  double maxacu = 248469229;
+  optional double maxacu = 248469229;
 
-  double minacu = 357455091;
+  optional double minacu = 357455091;
 
 }
 
@@ -7727,9 +7755,9 @@ message ModifyDBSnapshotMessage {
 
   string dbsnapshotidentifier = 479186745;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
 }
 
@@ -7747,7 +7775,7 @@ message ModifyDBSnapshotResult {
 
 message ModifyDBSubnetGroupMessage {
 
-  string dbsubnetgroupdescription = 111127330;
+  optional string dbsubnetgroupdescription = 111127330;
 
   string dbsubnetgroupname = 84186031;
 
@@ -7773,9 +7801,9 @@ message ModifyEventSubscriptionMessage {
 
   repeated string eventcategories = 3676820;
 
-  string snstopicarn = 374815596;
+  optional string snstopicarn = 374815596;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
   string subscriptionname = 181900944;
 
@@ -7797,11 +7825,11 @@ message ModifyGlobalClusterMessage {
 
   optional bool deletionprotection = 504781905;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   string globalclusteridentifier = 114980092;
 
-  string newglobalclusteridentifier = 421899376;
+  optional string newglobalclusteridentifier = 421899376;
 
 }
 
@@ -7817,13 +7845,13 @@ message ModifyGlobalClusterResult {
 
 message ModifyIntegrationMessage {
 
-  string datafilter = 441498776;
+  optional string datafilter = 441498776;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string integrationidentifier = 11597767;
 
-  string integrationname = 399304719;
+  optional string integrationname = 399304719;
 
 }
 
@@ -7859,11 +7887,11 @@ message ModifyTenantDatabaseMessage {
 
   optional bool managemasteruserpassword = 71308055;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
-  string newtenantdbname = 362680365;
+  optional string newtenantdbname = 362680365;
 
   optional bool rotatemasteruserpassword = 30523131;
 
@@ -7885,7 +7913,7 @@ message ModifyTenantDatabaseResult {
 
 message NetworkTypeNotSupported {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7897,13 +7925,13 @@ message Option {
 
   repeated DBSecurityGroupMembership dbsecuritygroupmemberships = 369814246;
 
-  string optiondescription = 22505791;
+  optional string optiondescription = 22505791;
 
-  string optionname = 64759952;
+  optional string optionname = 64759952;
 
   repeated OptionSetting optionsettings = 246309466;
 
-  string optionversion = 306144137;
+  optional string optionversion = 306144137;
 
   optional bool permanent = 141702118;
 
@@ -7927,7 +7955,7 @@ message OptionConfiguration {
 
   repeated OptionSetting optionsettings = 246309466;
 
-  string optionversion = 306144137;
+  optional string optionversion = 306144137;
 
   optional int32 port = 46480583;
 
@@ -7943,25 +7971,25 @@ message OptionGroup {
 
   optional bool allowsvpcandnonvpcinstancememberships = 278228920;
 
-  string copytimestamp = 32851589;
+  optional string copytimestamp = 32851589;
 
-  string enginename = 102940129;
+  optional string enginename = 102940129;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
-  string optiongrouparn = 174912779;
+  optional string optiongrouparn = 174912779;
 
-  string optiongroupdescription = 26349548;
+  optional string optiongroupdescription = 26349548;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
   repeated Option options = 356388166;
 
-  string sourceaccountid = 192243819;
+  optional string sourceaccountid = 192243819;
 
-  string sourceoptiongroup = 34500521;
+  optional string sourceoptiongroup = 34500521;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -7971,7 +7999,7 @@ message OptionGroup {
 
 message OptionGroupAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7981,9 +8009,9 @@ message OptionGroupAlreadyExistsFault {
 
 message OptionGroupMembership {
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -7993,7 +8021,7 @@ message OptionGroupMembership {
 
 message OptionGroupNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8007,15 +8035,15 @@ message OptionGroupOption {
 
   optional int32 defaultport = 501321242;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string enginename = 102940129;
+  optional string enginename = 102940129;
 
-  string majorengineversion = 390856805;
+  optional string majorengineversion = 390856805;
 
-  string minimumrequiredminorengineversion = 178370168;
+  optional string minimumrequiredminorengineversion = 178370168;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated OptionGroupOptionSetting optiongroupoptionsettings = 45420088;
 
@@ -8045,11 +8073,11 @@ message OptionGroupOption {
 
 message OptionGroupOptionSetting {
 
-  string allowedvalues = 294513354;
+  optional string allowedvalues = 294513354;
 
-  string applytype = 65384676;
+  optional string applytype = 65384676;
 
-  string defaultvalue = 218709920;
+  optional string defaultvalue = 218709920;
 
   optional bool ismodifiable = 378567392;
 
@@ -8057,9 +8085,9 @@ message OptionGroupOptionSetting {
 
   repeated MinimumEngineVersionPerAllowedValue minimumengineversionperallowedvalue = 216587872;
 
-  string settingdescription = 136590352;
+  optional string settingdescription = 136590352;
 
-  string settingname = 191373713;
+  optional string settingname = 191373713;
 
 }
 
@@ -8069,7 +8097,7 @@ message OptionGroupOptionSetting {
 
 message OptionGroupOptionsMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated OptionGroupOption optiongroupoptions = 355413780;
 
@@ -8081,7 +8109,7 @@ message OptionGroupOptionsMessage {
 
 message OptionGroupQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8091,7 +8119,7 @@ message OptionGroupQuotaExceededFault {
 
 message OptionGroups {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated OptionGroup optiongroupslist = 280121477;
 
@@ -8103,23 +8131,23 @@ message OptionGroups {
 
 message OptionSetting {
 
-  string allowedvalues = 294513354;
+  optional string allowedvalues = 294513354;
 
-  string applytype = 65384676;
+  optional string applytype = 65384676;
 
-  string datatype = 67988590;
+  optional string datatype = 67988590;
 
-  string defaultvalue = 218709920;
+  optional string defaultvalue = 218709920;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional bool iscollection = 414448514;
 
   optional bool ismodifiable = 378567392;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -8131,7 +8159,7 @@ message OptionVersion {
 
   optional bool isdefault = 101743631;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -8141,7 +8169,7 @@ message OptionVersion {
 
 message OrderableDBInstanceOption {
 
-  string availabilityzonegroup = 415527484;
+  optional string availabilityzonegroup = 415527484;
 
   repeated AvailabilityZone availabilityzones = 109527122;
 
@@ -8149,33 +8177,33 @@ message OrderableDBInstanceOption {
 
   repeated AvailableProcessorFeature availableprocessorfeatures = 522056052;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   optional int32 maxiopsperdbinstance = 408072995;
 
-  double maxiopspergib = 246799832;
+  optional double maxiopspergib = 246799832;
 
   optional int32 maxstoragesize = 492016524;
 
   optional int32 maxstoragethroughputperdbinstance = 29414919;
 
-  double maxstoragethroughputperiops = 3684931;
+  optional double maxstoragethroughputperiops = 3684931;
 
   optional int32 miniopsperdbinstance = 497359021;
 
-  double miniopspergib = 511052642;
+  optional double miniopspergib = 511052642;
 
   optional int32 minstoragesize = 208793958;
 
   optional int32 minstoragethroughputperdbinstance = 258587249;
 
-  double minstoragethroughputperiops = 65365041;
+  optional double minstoragethroughputperiops = 65365041;
 
   optional bool multiazcapable = 505918340;
 
@@ -8183,7 +8211,7 @@ message OrderableDBInstanceOption {
 
   optional bool readreplicacapable = 231235798;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated string supportedactivitystreammodes = 193600057;
 
@@ -8227,7 +8255,7 @@ message OrderableDBInstanceOption {
 
 message OrderableDBInstanceOptionsMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated OrderableDBInstanceOption orderabledbinstanceoptions = 29320461;
 
@@ -8239,7 +8267,7 @@ message OrderableDBInstanceOptionsMessage {
 
 message Outpost {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -8249,25 +8277,25 @@ message Outpost {
 
 message Parameter {
 
-  string allowedvalues = 294513354;
+  optional string allowedvalues = 294513354;
 
   ApplyMethod applymethod = 521377563;
 
-  string applytype = 65384676;
+  optional string applytype = 65384676;
 
-  string datatype = 67988590;
+  optional string datatype = 67988590;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional bool ismodifiable = 378567392;
 
-  string minimumengineversion = 447657876;
+  optional string minimumengineversion = 447657876;
 
-  string parametername = 318572308;
+  optional string parametername = 318572308;
 
-  string parametervalue = 471366210;
+  optional string parametervalue = 471366210;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
   repeated string supportedenginemodes = 233150490;
 
@@ -8291,17 +8319,17 @@ message PendingCloudwatchLogsExports {
 
 message PendingMaintenanceAction {
 
-  string action = 175614240;
+  optional string action = 175614240;
 
-  string autoappliedafterdate = 408069844;
+  optional string autoappliedafterdate = 408069844;
 
-  string currentapplydate = 92791415;
+  optional string currentapplydate = 92791415;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string forcedapplydate = 83582353;
+  optional string forcedapplydate = 83582353;
 
-  string optinstatus = 536182928;
+  optional string optinstatus = 536182928;
 
 }
 
@@ -8311,7 +8339,7 @@ message PendingMaintenanceAction {
 
 message PendingMaintenanceActionsMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ResourcePendingMaintenanceActions pendingmaintenanceactions = 300063191;
 
@@ -8331,27 +8359,27 @@ message PendingModifiedValues {
 
   optional int32 backupretentionperiod = 411111671;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   optional bool dedicatedlogvolume = 386476811;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional bool iamdatabaseauthenticationenabled = 148277621;
 
   optional int32 iops = 1043585;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
   optional bool multiaz = 354702794;
 
@@ -8363,11 +8391,11 @@ message PendingModifiedValues {
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
-  string resumefullautomationmodetime = 491133479;
+  optional string resumefullautomationmodetime = 491133479;
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
 }
 
@@ -8379,7 +8407,7 @@ message PerformanceInsightsMetricDimensionGroup {
 
   repeated string dimensions = 462933457;
 
-  string group = 91525165;
+  optional string group = 91525165;
 
   optional int32 limit = 412502741;
 
@@ -8393,7 +8421,7 @@ message PerformanceInsightsMetricQuery {
 
   PerformanceInsightsMetricDimensionGroup groupby = 125823402;
 
-  string metric = 386667298;
+  optional string metric = 386667298;
 
 }
 
@@ -8403,13 +8431,13 @@ message PerformanceInsightsMetricQuery {
 
 message PerformanceIssueDetails {
 
-  string analysis = 200169284;
+  optional string analysis = 200169284;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
   repeated Metric metrics = 436365847;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
 }
 
@@ -8419,7 +8447,7 @@ message PerformanceIssueDetails {
 
 message PointInTimeRestoreNotEnabledFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8429,9 +8457,9 @@ message PointInTimeRestoreNotEnabledFault {
 
 message ProcessorFeature {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -8463,7 +8491,7 @@ message PromoteReadReplicaMessage {
 
   string dbinstanceidentifier = 272754580;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -8483,7 +8511,7 @@ message PromoteReadReplicaResult {
 
 message ProvisionedIopsNotAvailableInAZFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8495,7 +8523,7 @@ message PurchaseReservedDBInstancesOfferingMessage {
 
   optional int32 dbinstancecount = 162916176;
 
-  string reserveddbinstanceid = 68820086;
+  optional string reserveddbinstanceid = 68820086;
 
   string reserveddbinstancesofferingid = 475669635;
 
@@ -8531,11 +8559,11 @@ message Range {
 
 message RdsCustomClusterConfiguration {
 
-  string interconnectsubnetid = 491243054;
+  optional string interconnectsubnetid = 491243054;
 
   ReplicaMode replicamode = 134604609;
 
-  string transitgatewaymulticastdomainid = 268441742;
+  optional string transitgatewaymulticastdomainid = 268441742;
 
 }
 
@@ -8589,23 +8617,23 @@ message RebootDBShardGroupMessage {
 
 message RecommendedAction {
 
-  string actionid = 208854899;
+  optional string actionid = 208854899;
 
   repeated string applymodes = 253083126;
 
   repeated ContextAttribute contextattributes = 394372478;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   IssueDetails issuedetails = 101012567;
 
-  string operation = 26084007;
+  optional string operation = 26084007;
 
   repeated RecommendedActionParameter parameters = 494900218;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
 }
 
@@ -8615,9 +8643,9 @@ message RecommendedAction {
 
 message RecommendedActionParameter {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -8639,9 +8667,9 @@ message RecommendedActionUpdate {
 
 message RecurringCharge {
 
-  double recurringchargeamount = 175166921;
+  optional double recurringchargeamount = 175166921;
 
-  string recurringchargefrequency = 159708355;
+  optional string recurringchargefrequency = 159708355;
 
 }
 
@@ -8665,7 +8693,7 @@ message RegisterDBProxyTargetsRequest {
 
   string dbproxyname = 232356319;
 
-  string targetgroupname = 385716593;
+  optional string targetgroupname = 385716593;
 
 }
 
@@ -8701,7 +8729,7 @@ message RemoveRoleFromDBClusterMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string featurename = 218369023;
+  optional string featurename = 218369023;
 
   string rolearn = 322567169;
 
@@ -8767,37 +8795,37 @@ enum ReplicaMode {
 
 message ReservedDBInstance {
 
-  string currencycode = 481882700;
+  optional string currencycode = 481882700;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
   optional int32 dbinstancecount = 162916176;
 
   optional int32 duration = 348604718;
 
-  double fixedprice = 409544735;
+  optional double fixedprice = 409544735;
 
-  string leaseid = 32039517;
+  optional string leaseid = 32039517;
 
   optional bool multiaz = 354702794;
 
-  string offeringtype = 210941500;
+  optional string offeringtype = 210941500;
 
-  string productdescription = 78087559;
+  optional string productdescription = 78087559;
 
   repeated RecurringCharge recurringcharges = 319488566;
 
-  string reserveddbinstancearn = 382385488;
+  optional string reserveddbinstancearn = 382385488;
 
-  string reserveddbinstanceid = 68820086;
+  optional string reserveddbinstanceid = 68820086;
 
-  string reserveddbinstancesofferingid = 475669635;
+  optional string reserveddbinstancesofferingid = 475669635;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
-  double usageprice = 194468534;
+  optional double usageprice = 194468534;
 
 }
 
@@ -8807,7 +8835,7 @@ message ReservedDBInstance {
 
 message ReservedDBInstanceAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8817,7 +8845,7 @@ message ReservedDBInstanceAlreadyExistsFault {
 
 message ReservedDBInstanceMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ReservedDBInstance reserveddbinstances = 363480386;
 
@@ -8829,7 +8857,7 @@ message ReservedDBInstanceMessage {
 
 message ReservedDBInstanceNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8839,7 +8867,7 @@ message ReservedDBInstanceNotFoundFault {
 
 message ReservedDBInstanceQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8849,25 +8877,25 @@ message ReservedDBInstanceQuotaExceededFault {
 
 message ReservedDBInstancesOffering {
 
-  string currencycode = 481882700;
+  optional string currencycode = 481882700;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
   optional int32 duration = 348604718;
 
-  double fixedprice = 409544735;
+  optional double fixedprice = 409544735;
 
   optional bool multiaz = 354702794;
 
-  string offeringtype = 210941500;
+  optional string offeringtype = 210941500;
 
-  string productdescription = 78087559;
+  optional string productdescription = 78087559;
 
   repeated RecurringCharge recurringcharges = 319488566;
 
-  string reserveddbinstancesofferingid = 475669635;
+  optional string reserveddbinstancesofferingid = 475669635;
 
-  double usageprice = 194468534;
+  optional double usageprice = 194468534;
 
 }
 
@@ -8877,7 +8905,7 @@ message ReservedDBInstancesOffering {
 
 message ReservedDBInstancesOfferingMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ReservedDBInstancesOffering reserveddbinstancesofferings = 461280021;
 
@@ -8889,7 +8917,7 @@ message ReservedDBInstancesOfferingMessage {
 
 message ReservedDBInstancesOfferingNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8927,7 +8955,7 @@ message ResetDBParameterGroupMessage {
 
 message ResourceNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8939,7 +8967,7 @@ message ResourcePendingMaintenanceActions {
 
   repeated PendingMaintenanceAction pendingmaintenanceactiondetails = 358572378;
 
-  string resourceidentifier = 279224111;
+  optional string resourceidentifier = 279224111;
 
 }
 
@@ -8947,29 +8975,31 @@ message ResourcePendingMaintenanceActions {
 
 message RestoreDBClusterFromS3Message {
 
+  repeated DBClusterAssociatedRole associatedroles = 428985325;
+
   repeated string availabilityzones = 109527122;
 
   optional int64 backtrackwindow = 265584658;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
   optional bool copytagstosnapshot = 457270425;
 
   string dbclusteridentifier = 340406993;
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -8977,35 +9007,35 @@ message RestoreDBClusterFromS3Message {
 
   string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool managemasteruserpassword = 71308055;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
   string masterusername = 110287892;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   string s3bucketname = 320495427;
 
   string s3ingestionrolearn = 494570459;
 
-  string s3prefix = 21529336;
+  optional string s3prefix = 21529336;
 
   ServerlessV2ScalingConfiguration serverlessv2scalingconfiguration = 357537595;
 
@@ -9015,7 +9045,7 @@ message RestoreDBClusterFromS3Message {
 
   optional bool storageencrypted = 378808047;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -9039,6 +9069,8 @@ message RestoreDBClusterFromS3Result {
 
 message RestoreDBClusterFromSnapshotMessage {
 
+  repeated DBClusterAssociatedRole associatedroles = 428985325;
+
   repeated string availabilityzones = 109527122;
 
   optional int64 backtrackwindow = 265584658;
@@ -9049,19 +9081,19 @@ message RestoreDBClusterFromSnapshotMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string dbclusterinstanceclass = 187882689;
+  optional string dbclusterinstanceclass = 187882689;
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -9075,31 +9107,31 @@ message RestoreDBClusterFromSnapshotMessage {
 
   string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string enginemode = 292587685;
+  optional string enginemode = 292587685;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
   optional bool publiclyaccessible = 256833310;
 
@@ -9111,7 +9143,7 @@ message RestoreDBClusterFromSnapshotMessage {
 
   string snapshotidentifier = 399355719;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -9135,6 +9167,8 @@ message RestoreDBClusterFromSnapshotResult {
 
 message RestoreDBClusterToPointInTimeMessage {
 
+  repeated DBClusterAssociatedRole associatedroles = 428985325;
+
   optional int64 backtrackwindow = 265584658;
 
   optional int32 backupretentionperiod = 411111671;
@@ -9143,17 +9177,17 @@ message RestoreDBClusterToPointInTimeMessage {
 
   string dbclusteridentifier = 340406993;
 
-  string dbclusterinstanceclass = 187882689;
+  optional string dbclusterinstanceclass = 187882689;
 
-  string dbclusterparametergroupname = 385487703;
+  optional string dbclusterparametergroupname = 385487703;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -9165,47 +9199,47 @@ message RestoreDBClusterToPointInTimeMessage {
 
   optional bool enablevpcnetworking = 169949840;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string enginemode = 292587685;
+  optional string enginemode = 292587685;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
   optional bool publiclyaccessible = 256833310;
 
   RdsCustomClusterConfiguration rdscustomclusterconfiguration = 171768636;
 
-  string restoretotime = 116850538;
+  optional string restoretotime = 116850538;
 
-  string restoretype = 379354682;
+  optional string restoretype = 379354682;
 
   ScalingConfiguration scalingconfiguration = 53633761;
 
   ServerlessV2ScalingConfiguration serverlessv2scalingconfiguration = 357537595;
 
-  string sourcedbclusteridentifier = 319462008;
+  optional string sourcedbclusteridentifier = 319462008;
 
-  string sourcedbclusterresourceid = 337065478;
+  optional string sourcedbclusterresourceid = 337065478;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -9237,47 +9271,47 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string backuptarget = 426947907;
+  optional string backuptarget = 426947907;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   optional bool copytagstosnapshot = 457270425;
 
-  string customiaminstanceprofile = 466590166;
+  optional string customiaminstanceprofile = 466590166;
 
-  string dbclustersnapshotidentifier = 204169569;
+  optional string dbclustersnapshotidentifier = 204169569;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
   string dbinstanceidentifier = 272754580;
 
-  string dbname = 135387881;
+  optional string dbname = 135387881;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   optional bool dedicatedlogvolume = 386476811;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainauthsecretarn = 22808303;
+  optional string domainauthsecretarn = 22808303;
 
   repeated string domaindnsips = 26209911;
 
-  string domainfqdn = 309760675;
+  optional string domainfqdn = 309760675;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
-  string domainou = 249985822;
+  optional string domainou = 249985822;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -9285,27 +9319,27 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   optional bool enableiamdatabaseauthentication = 463292667;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
   optional int32 iops = 1043585;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   optional bool managemasteruserpassword = 71308055;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
   optional bool multiaz = 354702794;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
@@ -9313,15 +9347,15 @@ message RestoreDBInstanceFromDBSnapshotMessage {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
   repeated Tag tags = 381526209;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string tdecredentialpassword = 67652301;
+  optional string tdecredentialpassword = 67652301;
 
   optional bool usedefaultprocessorfeatures = 363226693;
 
@@ -9347,11 +9381,11 @@ message RestoreDBInstanceFromS3Message {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   optional bool copytagstosnapshot = 457270425;
 
@@ -9359,13 +9393,13 @@ message RestoreDBInstanceFromS3Message {
 
   string dbinstanceidentifier = 272754580;
 
-  string dbname = 135387881;
+  optional string dbname = 135387881;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
   repeated string dbsecuritygroups = 420763246;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   DatabaseInsightsMode databaseinsightsmode = 132399243;
 
@@ -9381,45 +9415,45 @@ message RestoreDBInstanceFromS3Message {
 
   string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional int32 iops = 1043585;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   optional bool managemasteruserpassword = 71308055;
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
   optional int32 maxallocatedstorage = 7107036;
 
   optional int32 monitoringinterval = 320121591;
 
-  string monitoringrolearn = 181188871;
+  optional string monitoringrolearn = 181188871;
 
   optional bool multiaz = 354702794;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
-  string performanceinsightskmskeyid = 395732922;
+  optional string performanceinsightskmskeyid = 395732922;
 
   optional int32 performanceinsightsretentionperiod = 50117548;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
-  string preferredmaintenancewindow = 99987842;
+  optional string preferredmaintenancewindow = 99987842;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
@@ -9429,7 +9463,7 @@ message RestoreDBInstanceFromS3Message {
 
   string s3ingestionrolearn = 494570459;
 
-  string s3prefix = 21529336;
+  optional string s3prefix = 21529336;
 
   string sourceengine = 165099131;
 
@@ -9439,7 +9473,7 @@ message RestoreDBInstanceFromS3Message {
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -9471,41 +9505,41 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   optional bool autominorversionupgrade = 32758492;
 
-  string availabilityzone = 391476601;
+  optional string availabilityzone = 391476601;
 
   optional int32 backupretentionperiod = 411111671;
 
-  string backuptarget = 426947907;
+  optional string backuptarget = 426947907;
 
-  string cacertificateidentifier = 471589144;
+  optional string cacertificateidentifier = 471589144;
 
   optional bool copytagstosnapshot = 457270425;
 
-  string customiaminstanceprofile = 466590166;
+  optional string customiaminstanceprofile = 466590166;
 
-  string dbinstanceclass = 423358041;
+  optional string dbinstanceclass = 423358041;
 
-  string dbname = 135387881;
+  optional string dbname = 135387881;
 
-  string dbparametergroupname = 174683359;
+  optional string dbparametergroupname = 174683359;
 
-  string dbsubnetgroupname = 84186031;
+  optional string dbsubnetgroupname = 84186031;
 
   optional bool dedicatedlogvolume = 386476811;
 
   optional bool deletionprotection = 504781905;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string domainauthsecretarn = 22808303;
+  optional string domainauthsecretarn = 22808303;
 
   repeated string domaindnsips = 26209911;
 
-  string domainfqdn = 309760675;
+  optional string domainfqdn = 309760675;
 
-  string domainiamrolename = 113148154;
+  optional string domainiamrolename = 113148154;
 
-  string domainou = 249985822;
+  optional string domainou = 249985822;
 
   repeated string enablecloudwatchlogsexports = 388544133;
 
@@ -9513,45 +9547,45 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   optional bool enableiamdatabaseauthentication = 463292667;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string enginelifecyclesupport = 29464465;
+  optional string enginelifecyclesupport = 29464465;
 
   optional int32 iops = 1043585;
 
-  string licensemodel = 59641010;
+  optional string licensemodel = 59641010;
 
   optional bool managemasteruserpassword = 71308055;
 
-  string masterusersecretkmskeyid = 430618134;
+  optional string masterusersecretkmskeyid = 430618134;
 
   optional int32 maxallocatedstorage = 7107036;
 
   optional bool multiaz = 354702794;
 
-  string networktype = 349272270;
+  optional string networktype = 349272270;
 
-  string optiongroupname = 303464901;
+  optional string optiongroupname = 303464901;
 
   optional int32 port = 46480583;
 
-  string preferredbackupwindow = 39404485;
+  optional string preferredbackupwindow = 39404485;
 
   repeated ProcessorFeature processorfeatures = 256227257;
 
   optional bool publiclyaccessible = 256833310;
 
-  string restoretime = 269715305;
+  optional string restoretime = 269715305;
 
-  string sourcedbinstanceautomatedbackupsarn = 56967340;
+  optional string sourcedbinstanceautomatedbackupsarn = 56967340;
 
-  string sourcedbinstanceidentifier = 330655991;
+  optional string sourcedbinstanceidentifier = 330655991;
 
-  string sourcedbiresourceid = 422726821;
+  optional string sourcedbiresourceid = 422726821;
 
   optional int32 storagethroughput = 465264045;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   repeated TagSpecification tagspecifications = 70375790;
 
@@ -9559,9 +9593,9 @@ message RestoreDBInstanceToPointInTimeMessage {
 
   string targetdbinstanceidentifier = 241268391;
 
-  string tdecredentialarn = 108659737;
+  optional string tdecredentialarn = 108659737;
 
-  string tdecredentialpassword = 67652301;
+  optional string tdecredentialpassword = 67652301;
 
   optional bool usedefaultprocessorfeatures = 363226693;
 
@@ -9585,9 +9619,9 @@ message RestoreDBInstanceToPointInTimeResult {
 
 message RestoreWindow {
 
-  string earliesttime = 256215958;
+  optional string earliesttime = 256215958;
 
-  string latesttime = 241725088;
+  optional string latesttime = 241725088;
 
 }
 
@@ -9597,15 +9631,15 @@ message RestoreWindow {
 
 message RevokeDBSecurityGroupIngressMessage {
 
-  string cidrip = 371456799;
+  optional string cidrip = 371456799;
 
   string dbsecuritygroupname = 52398568;
 
-  string ec2securitygroupid = 521100060;
+  optional string ec2securitygroupid = 521100060;
 
-  string ec2securitygroupname = 404380646;
+  optional string ec2securitygroupname = 404380646;
 
-  string ec2securitygroupownerid = 139129853;
+  optional string ec2securitygroupownerid = 139129853;
 
 }
 
@@ -9623,7 +9657,7 @@ message RevokeDBSecurityGroupIngressResult {
 
 message SNSInvalidTopicFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9633,7 +9667,7 @@ message SNSInvalidTopicFault {
 
 message SNSNoAuthorizationFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9643,7 +9677,7 @@ message SNSNoAuthorizationFault {
 
 message SNSTopicArnNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9653,7 +9687,7 @@ message SNSTopicArnNotFoundFault {
 
 message ScalarReferenceDetails {
 
-  double value = 289929579;
+  optional double value = 289929579;
 
 }
 
@@ -9673,7 +9707,7 @@ message ScalingConfiguration {
 
   optional int32 secondsuntilautopause = 181181478;
 
-  string timeoutaction = 444876627;
+  optional string timeoutaction = 444876627;
 
 }
 
@@ -9693,7 +9727,7 @@ message ScalingConfigurationInfo {
 
   optional int32 secondsuntilautopause = 181181478;
 
-  string timeoutaction = 444876627;
+  optional string timeoutaction = 444876627;
 
 }
 
@@ -9703,9 +9737,9 @@ message ScalingConfigurationInfo {
 
 message ServerlessV2FeaturesSupport {
 
-  double maxcapacity = 453778390;
+  optional double maxcapacity = 453778390;
 
-  double mincapacity = 195482820;
+  optional double mincapacity = 195482820;
 
 }
 
@@ -9715,17 +9749,17 @@ message ServerlessV2FeaturesSupport {
 
 message ServerlessV2PlatformVersionInfo {
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
   optional bool isdefault = 101743631;
 
   ServerlessV2FeaturesSupport serverlessv2featuressupport = 201006376;
 
-  string serverlessv2platformversion = 348862429;
+  optional string serverlessv2platformversion = 348862429;
 
-  string serverlessv2platformversiondescription = 160890615;
+  optional string serverlessv2platformversiondescription = 160890615;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -9735,7 +9769,7 @@ message ServerlessV2PlatformVersionInfo {
 
 message ServerlessV2PlatformVersionsMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ServerlessV2PlatformVersionInfo serverlessv2platformversions = 183019646;
 
@@ -9747,9 +9781,9 @@ message ServerlessV2PlatformVersionsMessage {
 
 message ServerlessV2ScalingConfiguration {
 
-  double maxcapacity = 453778390;
+  optional double maxcapacity = 453778390;
 
-  double mincapacity = 195482820;
+  optional double mincapacity = 195482820;
 
   optional int32 secondsuntilautopause = 181181478;
 
@@ -9761,9 +9795,9 @@ message ServerlessV2ScalingConfiguration {
 
 message ServerlessV2ScalingConfigurationInfo {
 
-  double maxcapacity = 453778390;
+  optional double maxcapacity = 453778390;
 
-  double mincapacity = 195482820;
+  optional double mincapacity = 195482820;
 
   optional int32 secondsuntilautopause = 181181478;
 
@@ -9775,7 +9809,7 @@ message ServerlessV2ScalingConfigurationInfo {
 
 message SharedSnapshotQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9785,7 +9819,7 @@ message SharedSnapshotQuotaExceededFault {
 
 message SnapshotQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9795,7 +9829,7 @@ message SnapshotQuotaExceededFault {
 
 message SourceClusterNotSupportedFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9805,7 +9839,7 @@ message SourceClusterNotSupportedFault {
 
 message SourceDatabaseNotSupportedFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9815,7 +9849,7 @@ message SourceDatabaseNotSupportedFault {
 
 message SourceNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9825,11 +9859,11 @@ message SourceNotFoundFault {
 
 message SourceRegion {
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   optional bool supportsdbinstanceautomatedbackupsreplication = 350478998;
 
@@ -9841,7 +9875,7 @@ message SourceRegion {
 
 message SourceRegionMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated SourceRegion sourceregions = 115078446;
 
@@ -9899,9 +9933,9 @@ message StartActivityStreamResponse {
 
   optional bool enginenativeauditfieldsincluded = 276327711;
 
-  string kinesisstreamname = 433177563;
+  optional string kinesisstreamname = 433177563;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   ActivityStreamMode mode = 323909427;
 
@@ -9931,9 +9965,9 @@ message StartDBInstanceAutomatedBackupsReplicationMessage {
 
   optional int32 backupretentionperiod = 411111671;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string presignedurl = 334334652;
+  optional string presignedurl = 334334652;
 
   string sourcedbinstancearn = 119545909;
 
@@ -9979,7 +10013,7 @@ message StartExportTaskMessage {
 
   string s3bucketname = 320495427;
 
-  string s3prefix = 21529336;
+  optional string s3prefix = 21529336;
 
   string sourcearn = 439903072;
 
@@ -9999,9 +10033,9 @@ message StopActivityStreamRequest {
 
 message StopActivityStreamResponse {
 
-  string kinesisstreamname = 433177563;
+  optional string kinesisstreamname = 433177563;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   ActivityStreamStatus status = 6222352;
 
@@ -10045,7 +10079,7 @@ message StopDBInstanceMessage {
 
   string dbinstanceidentifier = 272754580;
 
-  string dbsnapshotidentifier = 479186745;
+  optional string dbsnapshotidentifier = 479186745;
 
 }
 
@@ -10075,7 +10109,7 @@ enum StorageEncryptionType {
 
 message StorageQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10085,7 +10119,7 @@ message StorageQuotaExceededFault {
 
 message StorageTypeNotAvailableFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10095,7 +10129,7 @@ message StorageTypeNotAvailableFault {
 
 message StorageTypeNotSupportedFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10107,11 +10141,11 @@ message Subnet {
 
   AvailabilityZone subnetavailabilityzone = 443128546;
 
-  string subnetidentifier = 529146716;
+  optional string subnetidentifier = 529146716;
 
   Outpost subnetoutpost = 274085703;
 
-  string subnetstatus = 370202379;
+  optional string subnetstatus = 370202379;
 
 }
 
@@ -10121,7 +10155,7 @@ message Subnet {
 
 message SubnetAlreadyInUse {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10131,7 +10165,7 @@ message SubnetAlreadyInUse {
 
 message SubscriptionAlreadyExistFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10141,7 +10175,7 @@ message SubscriptionAlreadyExistFault {
 
 message SubscriptionCategoryNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10151,7 +10185,7 @@ message SubscriptionCategoryNotFoundFault {
 
 message SubscriptionNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10193,11 +10227,11 @@ message SwitchoverBlueGreenDeploymentResponse {
 
 message SwitchoverDetail {
 
-  string sourcemember = 465134123;
+  optional string sourcemember = 465134123;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string targetmember = 311559227;
+  optional string targetmember = 311559227;
 
 }
 
@@ -10241,9 +10275,9 @@ message SwitchoverReadReplicaResult {
 
 message Tag {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -10263,7 +10297,7 @@ message TagListMessage {
 
 message TagSpecification {
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
   repeated Tag tags = 381526209;
 
@@ -10285,7 +10319,7 @@ enum TargetConnectionNetworkType {
 
 message TargetHealth {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   TargetHealthReason reason = 20005178;
 
@@ -10355,33 +10389,33 @@ enum TargetType {
 
 message TenantDatabase {
 
-  string charactersetname = 488468644;
+  optional string charactersetname = 488468644;
 
-  string dbinstanceidentifier = 272754580;
+  optional string dbinstanceidentifier = 272754580;
 
-  string dbiresourceid = 483153532;
+  optional string dbiresourceid = 483153532;
 
   optional bool deletionprotection = 504781905;
 
   MasterUserSecret masterusersecret = 260483101;
 
-  string masterusername = 110287892;
+  optional string masterusername = 110287892;
 
-  string ncharcharactersetname = 107704944;
+  optional string ncharcharactersetname = 107704944;
 
   TenantDatabasePendingModifiedValues pendingmodifiedvalues = 10750914;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   repeated Tag taglist = 429416860;
 
-  string tenantdbname = 443960809;
+  optional string tenantdbname = 443960809;
 
-  string tenantdatabasearn = 24704640;
+  optional string tenantdatabasearn = 24704640;
 
-  string tenantdatabasecreatetime = 33824958;
+  optional string tenantdatabasecreatetime = 33824958;
 
-  string tenantdatabaseresourceid = 241460050;
+  optional string tenantdatabaseresourceid = 241460050;
 
 }
 
@@ -10391,7 +10425,7 @@ message TenantDatabase {
 
 message TenantDatabaseAlreadyExistsFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10401,7 +10435,7 @@ message TenantDatabaseAlreadyExistsFault {
 
 message TenantDatabaseNotFoundFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10411,9 +10445,9 @@ message TenantDatabaseNotFoundFault {
 
 message TenantDatabasePendingModifiedValues {
 
-  string masteruserpassword = 326176122;
+  optional string masteruserpassword = 326176122;
 
-  string tenantdbname = 443960809;
+  optional string tenantdbname = 443960809;
 
 }
 
@@ -10423,7 +10457,7 @@ message TenantDatabasePendingModifiedValues {
 
 message TenantDatabaseQuotaExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10431,7 +10465,7 @@ message TenantDatabaseQuotaExceededFault {
 
 message TenantDatabasesMessage {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated TenantDatabase tenantdatabases = 371150386;
 
@@ -10443,7 +10477,7 @@ message TenantDatabasesMessage {
 
 message Timezone {
 
-  string timezonename = 169004074;
+  optional string timezonename = 169004074;
 
 }
 
@@ -10453,7 +10487,7 @@ message Timezone {
 
 message UnsupportedDBEngineVersionFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10477,11 +10511,11 @@ message UpgradeTarget {
 
   optional bool autoupgrade = 459829255;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string engine = 459347292;
+  optional string engine = 459347292;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   optional bool ismajorversionupgrade = 371376543;
 
@@ -10511,13 +10545,13 @@ message UserAuthConfig {
 
   ClientPasswordAuthType clientpasswordauthtype = 527126870;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   IAMAuthMode iamauth = 478679741;
 
-  string secretarn = 241012025;
+  optional string secretarn = 241012025;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -10531,13 +10565,13 @@ message UserAuthConfigInfo {
 
   ClientPasswordAuthType clientpasswordauthtype = 527126870;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   IAMAuthMode iamauth = 478679741;
 
-  string secretarn = 241012025;
+  optional string secretarn = 241012025;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -10585,7 +10619,7 @@ message ValidStorageOptions {
 
   repeated DoubleRange storagethroughputtoiopsratio = 187705428;
 
-  string storagetype = 154478743;
+  optional string storagetype = 154478743;
 
   optional bool supportsstorageautoscaling = 530694083;
 
@@ -10599,7 +10633,7 @@ message ValidVolumeOptions {
 
   repeated ValidStorageOptions storage = 351133447;
 
-  string volumename = 186940557;
+  optional string volumename = 186940557;
 
 }
 
@@ -10609,7 +10643,7 @@ message ValidVolumeOptions {
 
 message VpcEncryptionControlViolationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10619,9 +10653,9 @@ message VpcEncryptionControlViolationException {
 
 message VpcSecurityGroupMembership {
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string vpcsecuritygroupid = 384421317;
+  optional string vpcsecuritygroupid = 384421317;
 
 }
 

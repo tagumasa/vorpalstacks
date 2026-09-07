@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -27,6 +28,7 @@ type CreateTableInput struct {
 	ProvisionedThroughput     *dbstore.ProvisionedThroughput
 	GlobalSecondaryIndexes    []*dbstore.GlobalSecondaryIndex
 	LocalSecondaryIndexes     []*dbstore.LocalSecondaryIndex
+	VectorIndexes             []*dbstore.VectorIndex
 	StreamSpecification       *dbstore.StreamSpecification
 	Tags                      []tagutil.Tag
 	DeletionProtectionEnabled bool
@@ -72,7 +74,7 @@ func (s *DynamoDBService) validateAndGetTableWithErr(reqCtx *request.RequestCont
 // updates, tags the table, and returns the fully-created table.
 func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, in CreateTableInput) (*dbstore.Table, error) {
 	// 1. Table name validation (length 3-255, allowed characters).
-	if !validateTableName(in.TableName) {
+	if !validateResourceName(in.TableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -93,8 +95,23 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 	if in.BillingMode == "" {
 		in.BillingMode = dbstore.BillingModeProvisioned
 	}
+	if !validateBillingModeValue(in.BillingMode) {
+		return nil, ErrInvalidParameter
+	}
 	if !validateBillingModeConsistency(in.BillingMode, in.ProvisionedThroughput) {
 		return nil, ErrInvalidParameter
+	}
+	// Provisioned throughput values must fall inside the documented quota
+	// range (DescribeLimits reports the same constants).
+	if in.ProvisionedThroughput != nil && !validateProvisionedThroughputValues(in.ProvisionedThroughput) {
+		return nil, ErrInvalidParameter
+	}
+	// A GSI that carries throughput settings must carry valid ones
+	// (PositiveLongObject minimum 1, same as the table-level check).
+	for _, gsi := range in.GlobalSecondaryIndexes {
+		if gsi.ProvisionedThroughput != nil && !validateProvisionedThroughputValues(gsi.ProvisionedThroughput) {
+			return nil, ErrInvalidParameter
+		}
 	}
 
 	// 5. Cross-index validation: every key attribute across table + GSIs +
@@ -106,23 +123,35 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 	if !validateLSIPartitionKey(in.KeySchema, in.LocalSecondaryIndexes) {
 		return nil, ErrInvalidParameter
 	}
-	if err := validateIndexNameUniqueness(in.GlobalSecondaryIndexes, in.LocalSecondaryIndexes); err != nil {
+	if err := validateIndexNameUniqueness(in.GlobalSecondaryIndexes, in.LocalSecondaryIndexes, in.VectorIndexes); err != nil {
+		return nil, err
+	}
+	if err := validateVectorAttributeDimensions(in.VectorIndexes); err != nil {
+		return nil, err
+	}
+	if len(in.VectorIndexes) > dbstore.VectorIndexesPerTable {
+		return nil, ErrInvalidParameter
+	}
+	if in.TableClass != "" && !validateTableClassValue(in.TableClass) {
+		return nil, ErrInvalidParameter
+	}
+	if err := validateStreamSpecification(in.StreamSpecification); err != nil {
 		return nil, err
 	}
 
 	// 6. Persist.
-	table, err := store.Tables().Create(
-		in.TableName,
-		in.KeySchema,
-		in.AttributeDefinitions,
-		in.BillingMode,
-		in.ProvisionedThroughput,
-		in.GlobalSecondaryIndexes,
-		in.LocalSecondaryIndexes,
-		in.StreamSpecification,
-		in.Tags,
-		in.DeletionProtectionEnabled,
-	)
+	table, err := store.Tables().Create(dbstore.CreateTableParams{
+		Name:                      in.TableName,
+		KeySchema:                 in.KeySchema,
+		AttributeDefinitions:      in.AttributeDefinitions,
+		BillingMode:               in.BillingMode,
+		ProvisionedThroughput:     in.ProvisionedThroughput,
+		GlobalSecondaryIndexes:    in.GlobalSecondaryIndexes,
+		LocalSecondaryIndexes:     in.LocalSecondaryIndexes,
+		StreamSpecification:       in.StreamSpecification,
+		Tags:                      in.Tags,
+		DeletionProtectionEnabled: in.DeletionProtectionEnabled,
+	})
 	if err != nil {
 		if dbstore.IsTableAlreadyExists(err) {
 			return nil, ErrTableAlreadyExists
@@ -153,6 +182,13 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 		table.TableClass = in.TableClass
 		needsPersist = true
 	}
+	if len(in.VectorIndexes) > 0 {
+		for _, vi := range in.VectorIndexes {
+			vi.IndexArn = table.ARN + "/index/" + vi.IndexName
+		}
+		table.VectorIndexes = in.VectorIndexes
+		needsPersist = true
+	}
 	if needsPersist {
 		if err := store.Tables().Put(table); err != nil {
 			return nil, err
@@ -161,7 +197,9 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 
 	// 8. Tags.
 	if len(in.Tags) > 0 {
-		store.Tables().Tags().Tag(in.TableName, tagutil.ToMap(in.Tags))
+		if err := store.Tables().Tags().Tag(in.TableName, tagutil.ToMap(in.Tags)); err != nil {
+			return nil, err
+		}
 	}
 
 	return table, nil
@@ -174,7 +212,10 @@ func (s *DynamoDBService) createTableCore(store dbstore.DynamoDBStoreInterface, 
 // deleteTableCore is the single entry point for table deletion shared by the
 // HTTP API and the admin gRPC handler. It validates the table name, checks
 // for deletion protection, performs the cascade delete, and returns the
-// archived table description.
+// archived table description. The cascade transaction runs under the
+// table's record lock so a concurrent metric flush cannot write the record
+// back after the cascade deletes it (the cascade queues no metric deltas,
+// so the post-commit flush never re-takes the lock).
 func (s *DynamoDBService) deleteTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName string) (*dbstore.Table, error) {
 	if !validateResourceName(tableName) {
 		return nil, ErrInvalidParameter
@@ -182,26 +223,52 @@ func (s *DynamoDBService) deleteTableCore(ctx context.Context, store dbstore.Dyn
 
 	var deletedTable *dbstore.Table
 
-	err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
-		table, err := txn.GetTable(tableName)
-		if err != nil {
-			if dbstore.IsTableNotFound(err) {
-				return ErrTableNotFound
+	err := store.Tables().WithTableLock(tableName, func() error {
+		return store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+			table, err := txn.GetTable(tableName)
+			if err != nil {
+				if dbstore.IsTableNotFound(err) {
+					return ErrTableNotFound
+				}
+				return err
 			}
-			return err
-		}
-		if table.DeletionProtectionEnabled {
-			return ErrTableDeletionProtected
-		}
-		deletedTable = table
-		return txn.DeleteTableCascade(tableName)
+			if table.DeletionProtectionEnabled {
+				return ErrTableDeletionProtected
+			}
+			deletedTable = table
+			return txn.DeleteTableCascade(tableName)
+		})
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	deletedTable.Status = dbstore.TableStatusArchived
+	deletedTable.Status = dbstore.TableStatusDeleting
 	return deletedTable, nil
+}
+
+// replicasForTable renders the Replicas member a TableDescription reports:
+// every region of the table's global-table replication group, or nil for a
+// standalone table. Replica tables are created synchronously on this
+// platform, so each region renders as a live ACTIVE replica unless the
+// record says otherwise.
+func (s *DynamoDBService) replicasForTable(store dbstore.DynamoDBStoreInterface, tableName string) []interface{} {
+	gt, err := store.GlobalTables().Get(tableName)
+	if err != nil || gt == nil || len(gt.ReplicationGroup) == 0 {
+		return nil
+	}
+	replicas := make([]interface{}, 0, len(gt.ReplicationGroup))
+	for _, r := range gt.ReplicationGroup {
+		status := r.ReplicaStatus
+		if status == "" {
+			status = "ACTIVE"
+		}
+		replicas = append(replicas, map[string]interface{}{
+			"RegionName":    r.RegionName,
+			"ReplicaStatus": status,
+		})
+	}
+	return replicas
 }
 
 // describeTableCore is the single entry point for table lookup shared by the
@@ -223,9 +290,17 @@ func (s *DynamoDBService) describeTableCore(store dbstore.DynamoDBStoreInterface
 }
 
 // listTablesCore is the single entry point for table listing shared by the
-// HTTP API and the admin gRPC handler. It delegates to the store after
-// validating the limit range.
+// HTTP API and the admin gRPC handler. It validates the Limit range (the
+// model's ListTablesInputLimit, 1-100) and the marker's table-name shape
+// before delegating to the store; an absent limit arrives as the documented
+// maximum from both planes.
 func (s *DynamoDBService) listTablesCore(store dbstore.DynamoDBStoreInterface, marker string, limit int) ([]*dbstore.Table, string, error) {
+	if !validateListTablesLimit(limit) {
+		return nil, "", ErrInvalidParameter
+	}
+	if marker != "" && !validateResourceName(marker) {
+		return nil, "", ErrInvalidParameter
+	}
 	return store.Tables().List(marker, limit)
 }
 
@@ -243,6 +318,7 @@ type UpdateTableInput struct {
 	ProvisionedThroughput *dbstore.ProvisionedThroughput // nil = no change
 	AttributeDefinitions  []*dbstore.AttributeDefinition // nil = no change
 	GSIUpdates            []interface{}                  // nil = no change
+	VectorIndexUpdates    []interface{}                  // nil = no change
 	StreamSpecification   *dbstore.StreamSpecification   // nil = no change
 	SSESpecification      *dbstore.SSEDescription        // nil = no change
 	DeletionProtectionSet bool                           // whether DeletionProtectionEnabled was provided
@@ -253,88 +329,153 @@ type UpdateTableInput struct {
 // updateTableCore is the single entry point for table updates shared by the
 // HTTP API and the admin gRPC handler. It validates all update parameters,
 // applies the changes to the table, persists them, and backfills any newly
-// created GSIs.
+// created GSIs. The record update runs through the store's locked
+// read-modify-write path, so concurrent counter flushes and settings writes
+// cannot be lost; the GSI backfill runs after the lock is released because
+// its chunk transactions take the same lock for their own metric flushes.
 func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.DynamoDBStoreInterface, in UpdateTableInput) (*dbstore.Table, error) {
-	if !validateTableName(in.TableName) {
+	if !validateResourceName(in.TableName) {
 		return nil, ErrInvalidParameter
 	}
-
-	table, err := store.Tables().Get(in.TableName)
-	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-	if table.Status != dbstore.TableStatusActive {
-		return nil, ErrTableNotActive
-	}
-
-	table = deepCopyTable(table)
-
-	if in.BillingMode != "" {
-		table.BillingMode = dbstore.BillingMode(in.BillingMode)
-	}
-
-	if in.ProvisionedThroughput != nil {
-		table.ProvisionedThroughput = in.ProvisionedThroughput
-	}
-
-	if !validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput) {
+	if in.BillingMode != "" && !validateBillingModeValue(dbstore.BillingMode(in.BillingMode)) {
 		return nil, ErrInvalidParameter
 	}
-
-	if len(in.AttributeDefinitions) > 0 {
-		if !validateAttributeDefinitions(table.KeySchema, in.AttributeDefinitions) {
-			return nil, ErrInvalidParameter
-		}
-		table.AttributeDefinitions = mergeAttributeDefinitions(table.AttributeDefinitions, in.AttributeDefinitions)
+	if in.TableClass != "" && !validateTableClassValue(in.TableClass) {
+		return nil, ErrInvalidParameter
+	}
+	if err := validateStreamSpecification(in.StreamSpecification); err != nil {
+		return nil, err
+	}
+	if in.ProvisionedThroughput != nil && !validateProvisionedThroughputValues(in.ProvisionedThroughput) {
+		return nil, ErrInvalidParameter
 	}
 
 	existingGSINames := make(map[string]bool)
-	for _, g := range table.GlobalSecondaryIndexes {
-		existingGSINames[g.IndexName] = true
+	deletedGSINames := []string{}
+	vectorCreatedNames := []string{}
+	vectorDeletedNames := []string{}
+	table, err := store.Tables().Update(in.TableName, func(table *dbstore.Table) error {
+		if table.Status != dbstore.TableStatusActive {
+			return ErrTableNotActive
+		}
+
+		if in.BillingMode != "" {
+			table.BillingMode = dbstore.BillingMode(in.BillingMode)
+			if table.BillingMode == dbstore.BillingModePayPerRequest {
+				// Switching to on-demand discards the provisioned capacity:
+				// an on-demand table keeps no throughput settings, and the
+				// consistency check below then rejects a request that tries
+				// to carry ProvisionedThroughput into the new mode.
+				table.ProvisionedThroughput = nil
+			}
+		}
+
+		if in.ProvisionedThroughput != nil {
+			table.ProvisionedThroughput = in.ProvisionedThroughput
+		}
+
+		if !validateBillingModeConsistency(table.BillingMode, table.ProvisionedThroughput) {
+			return ErrInvalidParameter
+		}
+
+		if len(in.AttributeDefinitions) > 0 {
+			if !validateAttributeDefinitions(table.KeySchema, in.AttributeDefinitions) {
+				return ErrInvalidParameter
+			}
+			table.AttributeDefinitions = mergeAttributeDefinitions(table.AttributeDefinitions, in.AttributeDefinitions)
+		}
+
+		for _, g := range table.GlobalSecondaryIndexes {
+			existingGSINames[g.IndexName] = true
+		}
+
+		if len(in.GSIUpdates) > 0 {
+			updatedGSIs, deleted, err := applyGSIUpdates(table.ARN, table.GlobalSecondaryIndexes, in.GSIUpdates)
+			if err != nil {
+				return err
+			}
+			table.GlobalSecondaryIndexes = updatedGSIs
+			deletedGSINames = deleted
+		}
+
+		if len(in.VectorIndexUpdates) > 0 {
+			updatedVector, created, deleted, err := applyVectorIndexUpdates(table.ARN, table.VectorIndexes, in.VectorIndexUpdates)
+			if err != nil {
+				return err
+			}
+			table.VectorIndexes = updatedVector
+			vectorCreatedNames = created
+			vectorDeletedNames = deleted
+		}
+
+		if !validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions) {
+			return ErrInvalidParameter
+		}
+		if err := validateIndexNameUniqueness(table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.VectorIndexes); err != nil {
+			return err
+		}
+		if err := validateVectorAttributeDimensions(table.VectorIndexes); err != nil {
+			return err
+		}
+		if len(table.VectorIndexes) > dbstore.VectorIndexesPerTable {
+			return ErrInvalidParameter
+		}
+
+		if in.StreamSpecification != nil {
+			table.StreamSpecification = in.StreamSpecification
+			if in.StreamSpecification.StreamEnabled {
+				now := time.Now().UTC()
+				table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
+				table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
+			} else {
+				table.StreamArn = ""
+				table.LatestStreamLabel = ""
+			}
+		}
+
+		if in.SSESpecification != nil {
+			table.SSEDescription = in.SSESpecification
+		}
+
+		if in.DeletionProtectionSet {
+			table.DeletionProtectionEnabled = in.DeletionProtection
+		}
+
+		if in.TableClass != "" {
+			table.TableClass = in.TableClass
+		}
+
+		table.LastUpdatedDateTime = time.Now().UTC()
+		return nil
+	})
+	if err != nil {
+		if dbstore.IsTableNotFound(err) || commonstore.IsNotFound(err) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, err
 	}
 
-	if len(in.GSIUpdates) > 0 {
-		updatedGSIs, err := applyGSIUpdates(table.ARN, table.GlobalSecondaryIndexes, in.GSIUpdates)
+	// A deleted index's entries must not outlive the index: a re-created
+	// same-name index would inherit stale entries that resolve to items no
+	// longer holding the index key attributes. The cleanup runs in its own
+	// transaction after the locked table update — TableStore.Update exposes
+	// no transaction to the mutate callback, and the storage layer is
+	// read-committed, so folding it into the table write would not close
+	// the stale-reader window either. Item writes between the two commits
+	// write no entries for the deleted index: the table record they read no
+	// longer lists it.
+	if len(deletedGSINames) > 0 {
+		err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+			for _, name := range deletedGSINames {
+				if err := txn.DeleteIndexEntriesForIndex(table.Name, name); err != nil {
+					return fmt.Errorf("delete index entries for %s: %w", name, err)
+				}
+			}
+			return nil
+		})
 		if err != nil {
 			return nil, err
 		}
-		table.GlobalSecondaryIndexes = updatedGSIs
-	}
-
-	if !validateAllKeyAttributesInDefs(table.KeySchema, table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes, table.AttributeDefinitions) {
-		return nil, ErrInvalidParameter
-	}
-	if err := validateIndexNameUniqueness(table.GlobalSecondaryIndexes, table.LocalSecondaryIndexes); err != nil {
-		return nil, err
-	}
-
-	if in.StreamSpecification != nil {
-		table.StreamSpecification = in.StreamSpecification
-		if in.StreamSpecification.StreamEnabled {
-			now := time.Now().UTC()
-			table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
-			table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
-		} else {
-			table.StreamArn = ""
-			table.LatestStreamLabel = ""
-		}
-	}
-
-	if in.SSESpecification != nil {
-		table.SSEDescription = in.SSESpecification
-	}
-
-	if in.DeletionProtectionSet {
-		table.DeletionProtectionEnabled = in.DeletionProtection
-	}
-
-	if in.TableClass != "" {
-		table.TableClass = in.TableClass
-	}
-
-	table.LastUpdatedDateTime = time.Now().UTC()
-	if err := store.Tables().Put(table); err != nil {
-		return nil, err
 	}
 
 	for _, g := range table.GlobalSecondaryIndexes {
@@ -342,6 +483,27 @@ func (s *DynamoDBService) updateTableCore(ctx context.Context, store dbstore.Dyn
 			continue
 		}
 		s.backfillGSI(ctx, store, table.Name, g.IndexName)
+	}
+
+	// A deleted vector index's entries must not outlive it, and a newly
+	// created one is populated from the existing items — the same lifecycle
+	// the GSI block above applies, through the vector twin helpers.
+	if len(vectorDeletedNames) > 0 {
+		err := store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+			for _, name := range vectorDeletedNames {
+				if err := txn.DeleteVectorEntriesForIndex(table.Name, name); err != nil {
+					return fmt.Errorf("delete vector index entries for %s: %w", name, err)
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, name := range vectorCreatedNames {
+		s.backfillVectorIndex(ctx, store, table.Name, name)
 	}
 
 	return table, nil

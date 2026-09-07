@@ -37,33 +37,24 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// LambdaServiceCheckpointDurableExecutionProcedure is the fully-qualified name of the
-	// LambdaService's CheckpointDurableExecution RPC.
-	LambdaServiceCheckpointDurableExecutionProcedure = "/lambda.LambdaService/CheckpointDurableExecution"
 	// LambdaServiceDeleteFunctionProcedure is the fully-qualified name of the LambdaService's
 	// DeleteFunction RPC.
 	LambdaServiceDeleteFunctionProcedure = "/lambda.LambdaService/DeleteFunction"
 	// LambdaServiceDeleteFunctionEventInvokeConfigProcedure is the fully-qualified name of the
 	// LambdaService's DeleteFunctionEventInvokeConfig RPC.
 	LambdaServiceDeleteFunctionEventInvokeConfigProcedure = "/lambda.LambdaService/DeleteFunctionEventInvokeConfig"
+	// LambdaServiceDeleteResourcePolicyProcedure is the fully-qualified name of the LambdaService's
+	// DeleteResourcePolicy RPC.
+	LambdaServiceDeleteResourcePolicyProcedure = "/lambda.LambdaService/DeleteResourcePolicy"
 	// LambdaServiceGetAccountSettingsProcedure is the fully-qualified name of the LambdaService's
 	// GetAccountSettings RPC.
 	LambdaServiceGetAccountSettingsProcedure = "/lambda.LambdaService/GetAccountSettings"
-	// LambdaServiceGetDurableExecutionProcedure is the fully-qualified name of the LambdaService's
-	// GetDurableExecution RPC.
-	LambdaServiceGetDurableExecutionProcedure = "/lambda.LambdaService/GetDurableExecution"
-	// LambdaServiceGetDurableExecutionHistoryProcedure is the fully-qualified name of the
-	// LambdaService's GetDurableExecutionHistory RPC.
-	LambdaServiceGetDurableExecutionHistoryProcedure = "/lambda.LambdaService/GetDurableExecutionHistory"
-	// LambdaServiceGetDurableExecutionStateProcedure is the fully-qualified name of the LambdaService's
-	// GetDurableExecutionState RPC.
-	LambdaServiceGetDurableExecutionStateProcedure = "/lambda.LambdaService/GetDurableExecutionState"
 	// LambdaServiceGetFunctionEventInvokeConfigProcedure is the fully-qualified name of the
 	// LambdaService's GetFunctionEventInvokeConfig RPC.
 	LambdaServiceGetFunctionEventInvokeConfigProcedure = "/lambda.LambdaService/GetFunctionEventInvokeConfig"
-	// LambdaServiceListDurableExecutionsByFunctionProcedure is the fully-qualified name of the
-	// LambdaService's ListDurableExecutionsByFunction RPC.
-	LambdaServiceListDurableExecutionsByFunctionProcedure = "/lambda.LambdaService/ListDurableExecutionsByFunction"
+	// LambdaServiceGetResourcePolicyProcedure is the fully-qualified name of the LambdaService's
+	// GetResourcePolicy RPC.
+	LambdaServiceGetResourcePolicyProcedure = "/lambda.LambdaService/GetResourcePolicy"
 	// LambdaServiceListFunctionEventInvokeConfigsProcedure is the fully-qualified name of the
 	// LambdaService's ListFunctionEventInvokeConfigs RPC.
 	LambdaServiceListFunctionEventInvokeConfigsProcedure = "/lambda.LambdaService/ListFunctionEventInvokeConfigs"
@@ -72,6 +63,9 @@ const (
 	// LambdaServicePutFunctionEventInvokeConfigProcedure is the fully-qualified name of the
 	// LambdaService's PutFunctionEventInvokeConfig RPC.
 	LambdaServicePutFunctionEventInvokeConfigProcedure = "/lambda.LambdaService/PutFunctionEventInvokeConfig"
+	// LambdaServicePutResourcePolicyProcedure is the fully-qualified name of the LambdaService's
+	// PutResourcePolicy RPC.
+	LambdaServicePutResourcePolicyProcedure = "/lambda.LambdaService/PutResourcePolicy"
 	// LambdaServiceSendDurableExecutionCallbackFailureProcedure is the fully-qualified name of the
 	// LambdaService's SendDurableExecutionCallbackFailure RPC.
 	LambdaServiceSendDurableExecutionCallbackFailureProcedure = "/lambda.LambdaService/SendDurableExecutionCallbackFailure"
@@ -81,9 +75,6 @@ const (
 	// LambdaServiceSendDurableExecutionCallbackSuccessProcedure is the fully-qualified name of the
 	// LambdaService's SendDurableExecutionCallbackSuccess RPC.
 	LambdaServiceSendDurableExecutionCallbackSuccessProcedure = "/lambda.LambdaService/SendDurableExecutionCallbackSuccess"
-	// LambdaServiceStopDurableExecutionProcedure is the fully-qualified name of the LambdaService's
-	// StopDurableExecution RPC.
-	LambdaServiceStopDurableExecutionProcedure = "/lambda.LambdaService/StopDurableExecution"
 	// LambdaServiceTagResourceProcedure is the fully-qualified name of the LambdaService's TagResource
 	// RPC.
 	LambdaServiceTagResourceProcedure = "/lambda.LambdaService/TagResource"
@@ -117,6 +108,21 @@ const (
 	// LambdaServiceCreateCodeSigningConfigProcedure is the fully-qualified name of the LambdaService's
 	// CreateCodeSigningConfig RPC.
 	LambdaServiceCreateCodeSigningConfigProcedure = "/lambda.LambdaService/CreateCodeSigningConfig"
+	// LambdaServiceGetDurableExecutionProcedure is the fully-qualified name of the LambdaService's
+	// GetDurableExecution RPC.
+	LambdaServiceGetDurableExecutionProcedure = "/lambda.LambdaService/GetDurableExecution"
+	// LambdaServiceCheckpointDurableExecutionProcedure is the fully-qualified name of the
+	// LambdaService's CheckpointDurableExecution RPC.
+	LambdaServiceCheckpointDurableExecutionProcedure = "/lambda.LambdaService/CheckpointDurableExecution"
+	// LambdaServiceGetDurableExecutionHistoryProcedure is the fully-qualified name of the
+	// LambdaService's GetDurableExecutionHistory RPC.
+	LambdaServiceGetDurableExecutionHistoryProcedure = "/lambda.LambdaService/GetDurableExecutionHistory"
+	// LambdaServiceGetDurableExecutionStateProcedure is the fully-qualified name of the LambdaService's
+	// GetDurableExecutionState RPC.
+	LambdaServiceGetDurableExecutionStateProcedure = "/lambda.LambdaService/GetDurableExecutionState"
+	// LambdaServiceStopDurableExecutionProcedure is the fully-qualified name of the LambdaService's
+	// StopDurableExecution RPC.
+	LambdaServiceStopDurableExecutionProcedure = "/lambda.LambdaService/StopDurableExecution"
 	// LambdaServiceListEventSourceMappingsProcedure is the fully-qualified name of the LambdaService's
 	// ListEventSourceMappings RPC.
 	LambdaServiceListEventSourceMappingsProcedure = "/lambda.LambdaService/ListEventSourceMappings"
@@ -192,10 +198,6 @@ const (
 
 // LambdaServiceClient is a client for the lambda.LambdaService service.
 type LambdaServiceClient interface {
-	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
-	// Protocol: restJson1
-	CheckpointDurableExecution(context.Context, *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error)
 	// Deletes a Lambda function. To delete a specific function version, use the Qualifier parameter. Otherwise, all versions and aliases are deleted. This doesn't require the user to have explicit permis...
 	// HTTP: DELETE /2015-03-31/functions/{FunctionName}
 	// Protocol: restJson1
@@ -204,30 +206,22 @@ type LambdaServiceClient interface {
 	// HTTP: DELETE /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	DeleteFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.DeleteFunctionEventInvokeConfigRequest]) (*connect.Response[common.Empty], error)
+	// Deletes a resource-based policy from a Lambda resource.
+	// HTTP: DELETE /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	DeleteResourcePolicy(context.Context, *connect.Request[lambda.DeleteResourcePolicyRequest]) (*connect.Response[common.Empty], error)
 	// Retrieves details about your account's limits and usage in an Amazon Web Services Region.
 	// HTTP: GET /2016-08-19/account-settings
 	// Protocol: restJson1
 	GetAccountSettings(context.Context, *connect.Request[lambda.GetAccountSettingsRequest]) (*connect.Response[lambda.GetAccountSettingsResponse], error)
-	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
-	// Protocol: restJson1
-	GetDurableExecution(context.Context, *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error)
-	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
-	// Protocol: restJson1
-	GetDurableExecutionHistory(context.Context, *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error)
-	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
-	// Protocol: restJson1
-	GetDurableExecutionState(context.Context, *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error)
 	// Retrieves the configuration for asynchronous invocation for a function, version, or alias. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	GetFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.GetFunctionEventInvokeConfigRequest]) (*connect.Response[lambda.FunctionEventInvokeConfig], error)
-	// Returns a list of durable executions for a specified Lambda function. You can filter the results by execution name, status, and start time range. This API supports pagination for large result sets.
-	// HTTP: GET /2025-12-01/functions/{FunctionName}/durable-executions
+	// Retrieves the resource-based policy attached to a Lambda resource.
+	// HTTP: GET /2026-07-09/resource-policy/{ResourceArn}
 	// Protocol: restJson1
-	ListDurableExecutionsByFunction(context.Context, *connect.Request[lambda.ListDurableExecutionsByFunctionRequest]) (*connect.Response[lambda.ListDurableExecutionsByFunctionResponse], error)
+	GetResourcePolicy(context.Context, *connect.Request[lambda.GetResourcePolicyRequest]) (*connect.Response[lambda.GetResourcePolicyResponse], error)
 	// Retrieves a list of configurations for asynchronous invocation for a function. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config/list
 	// Protocol: restJson1
@@ -240,6 +234,10 @@ type LambdaServiceClient interface {
 	// HTTP: PUT /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	PutFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.PutFunctionEventInvokeConfigRequest]) (*connect.Response[lambda.FunctionEventInvokeConfig], error)
+	// Adds a resource-based policy to a Lambda resource. Resource-based policies grant access to other Amazon Web Services accounts, organizations, or services. Resource-based policies apply to a single ...
+	// HTTP: PUT /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	PutResourcePolicy(context.Context, *connect.Request[lambda.PutResourcePolicyRequest]) (*connect.Response[lambda.PutResourcePolicyResponse], error)
 	// Sends a failure response for a callback operation in a durable execution. Use this API when an external system cannot complete a callback operation successfully.
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/fail
 	// Protocol: restJson1
@@ -252,10 +250,6 @@ type LambdaServiceClient interface {
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/succeed
 	// Protocol: restJson1
 	SendDurableExecutionCallbackSuccess(context.Context, *connect.Request[lambda.SendDurableExecutionCallbackSuccessRequest]) (*connect.Response[lambda.SendDurableExecutionCallbackSuccessResponse], error)
-	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
-	// Protocol: restJson1
-	StopDurableExecution(context.Context, *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error)
 	// Adds tags to a function, event source mapping, or code signing configuration.
 	// HTTP: POST /2017-03-31/tags/{Resource}
 	// Protocol: restJson1
@@ -300,6 +294,26 @@ type LambdaServiceClient interface {
 	// HTTP: POST /2020-04-22/code-signing-configs
 	// Protocol: restJson1
 	CreateCodeSigningConfig(context.Context, *connect.Request[lambda.CreateCodeSigningConfigRequest]) (*connect.Response[lambda.CreateCodeSigningConfigResponse], error)
+	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
+	// Protocol: restJson1
+	GetDurableExecution(context.Context, *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error)
+	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
+	// Protocol: restJson1
+	CheckpointDurableExecution(context.Context, *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error)
+	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
+	// Protocol: restJson1
+	GetDurableExecutionHistory(context.Context, *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error)
+	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
+	// Protocol: restJson1
+	GetDurableExecutionState(context.Context, *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error)
+	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
+	// Protocol: restJson1
+	StopDurableExecution(context.Context, *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error)
 	// Lists event source mappings. Specify an EventSourceArn to show only event source mappings for a single event source.
 	// HTTP: GET /2015-03-31/event-source-mappings
 	// Protocol: restJson1
@@ -409,12 +423,6 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 	baseURL = strings.TrimRight(baseURL, "/")
 	lambdaServiceMethods := lambda.File_lambda_proto.Services().ByName("LambdaService").Methods()
 	return &lambdaServiceClient{
-		checkpointDurableExecution: connect.NewClient[lambda.CheckpointDurableExecutionRequest, lambda.CheckpointDurableExecutionResponse](
-			httpClient,
-			baseURL+LambdaServiceCheckpointDurableExecutionProcedure,
-			connect.WithSchema(lambdaServiceMethods.ByName("CheckpointDurableExecution")),
-			connect.WithClientOptions(opts...),
-		),
 		deleteFunction: connect.NewClient[lambda.DeleteFunctionRequest, lambda.DeleteFunctionResponse](
 			httpClient,
 			baseURL+LambdaServiceDeleteFunctionProcedure,
@@ -427,28 +435,16 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(lambdaServiceMethods.ByName("DeleteFunctionEventInvokeConfig")),
 			connect.WithClientOptions(opts...),
 		),
+		deleteResourcePolicy: connect.NewClient[lambda.DeleteResourcePolicyRequest, common.Empty](
+			httpClient,
+			baseURL+LambdaServiceDeleteResourcePolicyProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("DeleteResourcePolicy")),
+			connect.WithClientOptions(opts...),
+		),
 		getAccountSettings: connect.NewClient[lambda.GetAccountSettingsRequest, lambda.GetAccountSettingsResponse](
 			httpClient,
 			baseURL+LambdaServiceGetAccountSettingsProcedure,
 			connect.WithSchema(lambdaServiceMethods.ByName("GetAccountSettings")),
-			connect.WithClientOptions(opts...),
-		),
-		getDurableExecution: connect.NewClient[lambda.GetDurableExecutionRequest, lambda.GetDurableExecutionResponse](
-			httpClient,
-			baseURL+LambdaServiceGetDurableExecutionProcedure,
-			connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecution")),
-			connect.WithClientOptions(opts...),
-		),
-		getDurableExecutionHistory: connect.NewClient[lambda.GetDurableExecutionHistoryRequest, lambda.GetDurableExecutionHistoryResponse](
-			httpClient,
-			baseURL+LambdaServiceGetDurableExecutionHistoryProcedure,
-			connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionHistory")),
-			connect.WithClientOptions(opts...),
-		),
-		getDurableExecutionState: connect.NewClient[lambda.GetDurableExecutionStateRequest, lambda.GetDurableExecutionStateResponse](
-			httpClient,
-			baseURL+LambdaServiceGetDurableExecutionStateProcedure,
-			connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionState")),
 			connect.WithClientOptions(opts...),
 		),
 		getFunctionEventInvokeConfig: connect.NewClient[lambda.GetFunctionEventInvokeConfigRequest, lambda.FunctionEventInvokeConfig](
@@ -457,10 +453,10 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(lambdaServiceMethods.ByName("GetFunctionEventInvokeConfig")),
 			connect.WithClientOptions(opts...),
 		),
-		listDurableExecutionsByFunction: connect.NewClient[lambda.ListDurableExecutionsByFunctionRequest, lambda.ListDurableExecutionsByFunctionResponse](
+		getResourcePolicy: connect.NewClient[lambda.GetResourcePolicyRequest, lambda.GetResourcePolicyResponse](
 			httpClient,
-			baseURL+LambdaServiceListDurableExecutionsByFunctionProcedure,
-			connect.WithSchema(lambdaServiceMethods.ByName("ListDurableExecutionsByFunction")),
+			baseURL+LambdaServiceGetResourcePolicyProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("GetResourcePolicy")),
 			connect.WithClientOptions(opts...),
 		),
 		listFunctionEventInvokeConfigs: connect.NewClient[lambda.ListFunctionEventInvokeConfigsRequest, lambda.ListFunctionEventInvokeConfigsResponse](
@@ -481,6 +477,12 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			connect.WithSchema(lambdaServiceMethods.ByName("PutFunctionEventInvokeConfig")),
 			connect.WithClientOptions(opts...),
 		),
+		putResourcePolicy: connect.NewClient[lambda.PutResourcePolicyRequest, lambda.PutResourcePolicyResponse](
+			httpClient,
+			baseURL+LambdaServicePutResourcePolicyProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("PutResourcePolicy")),
+			connect.WithClientOptions(opts...),
+		),
 		sendDurableExecutionCallbackFailure: connect.NewClient[lambda.SendDurableExecutionCallbackFailureRequest, lambda.SendDurableExecutionCallbackFailureResponse](
 			httpClient,
 			baseURL+LambdaServiceSendDurableExecutionCallbackFailureProcedure,
@@ -497,12 +499,6 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+LambdaServiceSendDurableExecutionCallbackSuccessProcedure,
 			connect.WithSchema(lambdaServiceMethods.ByName("SendDurableExecutionCallbackSuccess")),
-			connect.WithClientOptions(opts...),
-		),
-		stopDurableExecution: connect.NewClient[lambda.StopDurableExecutionRequest, lambda.StopDurableExecutionResponse](
-			httpClient,
-			baseURL+LambdaServiceStopDurableExecutionProcedure,
-			connect.WithSchema(lambdaServiceMethods.ByName("StopDurableExecution")),
 			connect.WithClientOptions(opts...),
 		),
 		tagResource: connect.NewClient[lambda.TagResourceRequest, common.Empty](
@@ -569,6 +565,36 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			httpClient,
 			baseURL+LambdaServiceCreateCodeSigningConfigProcedure,
 			connect.WithSchema(lambdaServiceMethods.ByName("CreateCodeSigningConfig")),
+			connect.WithClientOptions(opts...),
+		),
+		getDurableExecution: connect.NewClient[lambda.GetDurableExecutionRequest, lambda.GetDurableExecutionResponse](
+			httpClient,
+			baseURL+LambdaServiceGetDurableExecutionProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecution")),
+			connect.WithClientOptions(opts...),
+		),
+		checkpointDurableExecution: connect.NewClient[lambda.CheckpointDurableExecutionRequest, lambda.CheckpointDurableExecutionResponse](
+			httpClient,
+			baseURL+LambdaServiceCheckpointDurableExecutionProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("CheckpointDurableExecution")),
+			connect.WithClientOptions(opts...),
+		),
+		getDurableExecutionHistory: connect.NewClient[lambda.GetDurableExecutionHistoryRequest, lambda.GetDurableExecutionHistoryResponse](
+			httpClient,
+			baseURL+LambdaServiceGetDurableExecutionHistoryProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionHistory")),
+			connect.WithClientOptions(opts...),
+		),
+		getDurableExecutionState: connect.NewClient[lambda.GetDurableExecutionStateRequest, lambda.GetDurableExecutionStateResponse](
+			httpClient,
+			baseURL+LambdaServiceGetDurableExecutionStateProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionState")),
+			connect.WithClientOptions(opts...),
+		),
+		stopDurableExecution: connect.NewClient[lambda.StopDurableExecutionRequest, lambda.StopDurableExecutionResponse](
+			httpClient,
+			baseURL+LambdaServiceStopDurableExecutionProcedure,
+			connect.WithSchema(lambdaServiceMethods.ByName("StopDurableExecution")),
 			connect.WithClientOptions(opts...),
 		),
 		listEventSourceMappings: connect.NewClient[lambda.ListEventSourceMappingsRequest, lambda.ListEventSourceMappingsResponse](
@@ -720,22 +746,19 @@ func NewLambdaServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 
 // lambdaServiceClient implements LambdaServiceClient.
 type lambdaServiceClient struct {
-	checkpointDurableExecution             *connect.Client[lambda.CheckpointDurableExecutionRequest, lambda.CheckpointDurableExecutionResponse]
 	deleteFunction                         *connect.Client[lambda.DeleteFunctionRequest, lambda.DeleteFunctionResponse]
 	deleteFunctionEventInvokeConfig        *connect.Client[lambda.DeleteFunctionEventInvokeConfigRequest, common.Empty]
+	deleteResourcePolicy                   *connect.Client[lambda.DeleteResourcePolicyRequest, common.Empty]
 	getAccountSettings                     *connect.Client[lambda.GetAccountSettingsRequest, lambda.GetAccountSettingsResponse]
-	getDurableExecution                    *connect.Client[lambda.GetDurableExecutionRequest, lambda.GetDurableExecutionResponse]
-	getDurableExecutionHistory             *connect.Client[lambda.GetDurableExecutionHistoryRequest, lambda.GetDurableExecutionHistoryResponse]
-	getDurableExecutionState               *connect.Client[lambda.GetDurableExecutionStateRequest, lambda.GetDurableExecutionStateResponse]
 	getFunctionEventInvokeConfig           *connect.Client[lambda.GetFunctionEventInvokeConfigRequest, lambda.FunctionEventInvokeConfig]
-	listDurableExecutionsByFunction        *connect.Client[lambda.ListDurableExecutionsByFunctionRequest, lambda.ListDurableExecutionsByFunctionResponse]
+	getResourcePolicy                      *connect.Client[lambda.GetResourcePolicyRequest, lambda.GetResourcePolicyResponse]
 	listFunctionEventInvokeConfigs         *connect.Client[lambda.ListFunctionEventInvokeConfigsRequest, lambda.ListFunctionEventInvokeConfigsResponse]
 	listTags                               *connect.Client[lambda.ListTagsRequest, lambda.ListTagsResponse]
 	putFunctionEventInvokeConfig           *connect.Client[lambda.PutFunctionEventInvokeConfigRequest, lambda.FunctionEventInvokeConfig]
+	putResourcePolicy                      *connect.Client[lambda.PutResourcePolicyRequest, lambda.PutResourcePolicyResponse]
 	sendDurableExecutionCallbackFailure    *connect.Client[lambda.SendDurableExecutionCallbackFailureRequest, lambda.SendDurableExecutionCallbackFailureResponse]
 	sendDurableExecutionCallbackHeartbeat  *connect.Client[lambda.SendDurableExecutionCallbackHeartbeatRequest, lambda.SendDurableExecutionCallbackHeartbeatResponse]
 	sendDurableExecutionCallbackSuccess    *connect.Client[lambda.SendDurableExecutionCallbackSuccessRequest, lambda.SendDurableExecutionCallbackSuccessResponse]
-	stopDurableExecution                   *connect.Client[lambda.StopDurableExecutionRequest, lambda.StopDurableExecutionResponse]
 	tagResource                            *connect.Client[lambda.TagResourceRequest, common.Empty]
 	untagResource                          *connect.Client[lambda.UntagResourceRequest, common.Empty]
 	updateFunctionEventInvokeConfig        *connect.Client[lambda.UpdateFunctionEventInvokeConfigRequest, lambda.FunctionEventInvokeConfig]
@@ -747,6 +770,11 @@ type lambdaServiceClient struct {
 	listFunctionVersionsByCapacityProvider *connect.Client[lambda.ListFunctionVersionsByCapacityProviderRequest, lambda.ListFunctionVersionsByCapacityProviderResponse]
 	listCodeSigningConfigs                 *connect.Client[lambda.ListCodeSigningConfigsRequest, lambda.ListCodeSigningConfigsResponse]
 	createCodeSigningConfig                *connect.Client[lambda.CreateCodeSigningConfigRequest, lambda.CreateCodeSigningConfigResponse]
+	getDurableExecution                    *connect.Client[lambda.GetDurableExecutionRequest, lambda.GetDurableExecutionResponse]
+	checkpointDurableExecution             *connect.Client[lambda.CheckpointDurableExecutionRequest, lambda.CheckpointDurableExecutionResponse]
+	getDurableExecutionHistory             *connect.Client[lambda.GetDurableExecutionHistoryRequest, lambda.GetDurableExecutionHistoryResponse]
+	getDurableExecutionState               *connect.Client[lambda.GetDurableExecutionStateRequest, lambda.GetDurableExecutionStateResponse]
+	stopDurableExecution                   *connect.Client[lambda.StopDurableExecutionRequest, lambda.StopDurableExecutionResponse]
 	listEventSourceMappings                *connect.Client[lambda.ListEventSourceMappingsRequest, lambda.ListEventSourceMappingsResponse]
 	createEventSourceMapping               *connect.Client[lambda.CreateEventSourceMappingRequest, lambda.EventSourceMappingConfiguration]
 	getEventSourceMapping                  *connect.Client[lambda.GetEventSourceMappingRequest, lambda.EventSourceMappingConfiguration]
@@ -773,11 +801,6 @@ type lambdaServiceClient struct {
 	deleteProvisionedConcurrencyConfig     *connect.Client[lambda.DeleteProvisionedConcurrencyConfigRequest, common.Empty]
 }
 
-// CheckpointDurableExecution calls lambda.LambdaService.CheckpointDurableExecution.
-func (c *lambdaServiceClient) CheckpointDurableExecution(ctx context.Context, req *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error) {
-	return c.checkpointDurableExecution.CallUnary(ctx, req)
-}
-
 // DeleteFunction calls lambda.LambdaService.DeleteFunction.
 func (c *lambdaServiceClient) DeleteFunction(ctx context.Context, req *connect.Request[lambda.DeleteFunctionRequest]) (*connect.Response[lambda.DeleteFunctionResponse], error) {
 	return c.deleteFunction.CallUnary(ctx, req)
@@ -788,24 +811,14 @@ func (c *lambdaServiceClient) DeleteFunctionEventInvokeConfig(ctx context.Contex
 	return c.deleteFunctionEventInvokeConfig.CallUnary(ctx, req)
 }
 
+// DeleteResourcePolicy calls lambda.LambdaService.DeleteResourcePolicy.
+func (c *lambdaServiceClient) DeleteResourcePolicy(ctx context.Context, req *connect.Request[lambda.DeleteResourcePolicyRequest]) (*connect.Response[common.Empty], error) {
+	return c.deleteResourcePolicy.CallUnary(ctx, req)
+}
+
 // GetAccountSettings calls lambda.LambdaService.GetAccountSettings.
 func (c *lambdaServiceClient) GetAccountSettings(ctx context.Context, req *connect.Request[lambda.GetAccountSettingsRequest]) (*connect.Response[lambda.GetAccountSettingsResponse], error) {
 	return c.getAccountSettings.CallUnary(ctx, req)
-}
-
-// GetDurableExecution calls lambda.LambdaService.GetDurableExecution.
-func (c *lambdaServiceClient) GetDurableExecution(ctx context.Context, req *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error) {
-	return c.getDurableExecution.CallUnary(ctx, req)
-}
-
-// GetDurableExecutionHistory calls lambda.LambdaService.GetDurableExecutionHistory.
-func (c *lambdaServiceClient) GetDurableExecutionHistory(ctx context.Context, req *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error) {
-	return c.getDurableExecutionHistory.CallUnary(ctx, req)
-}
-
-// GetDurableExecutionState calls lambda.LambdaService.GetDurableExecutionState.
-func (c *lambdaServiceClient) GetDurableExecutionState(ctx context.Context, req *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error) {
-	return c.getDurableExecutionState.CallUnary(ctx, req)
 }
 
 // GetFunctionEventInvokeConfig calls lambda.LambdaService.GetFunctionEventInvokeConfig.
@@ -813,9 +826,9 @@ func (c *lambdaServiceClient) GetFunctionEventInvokeConfig(ctx context.Context, 
 	return c.getFunctionEventInvokeConfig.CallUnary(ctx, req)
 }
 
-// ListDurableExecutionsByFunction calls lambda.LambdaService.ListDurableExecutionsByFunction.
-func (c *lambdaServiceClient) ListDurableExecutionsByFunction(ctx context.Context, req *connect.Request[lambda.ListDurableExecutionsByFunctionRequest]) (*connect.Response[lambda.ListDurableExecutionsByFunctionResponse], error) {
-	return c.listDurableExecutionsByFunction.CallUnary(ctx, req)
+// GetResourcePolicy calls lambda.LambdaService.GetResourcePolicy.
+func (c *lambdaServiceClient) GetResourcePolicy(ctx context.Context, req *connect.Request[lambda.GetResourcePolicyRequest]) (*connect.Response[lambda.GetResourcePolicyResponse], error) {
+	return c.getResourcePolicy.CallUnary(ctx, req)
 }
 
 // ListFunctionEventInvokeConfigs calls lambda.LambdaService.ListFunctionEventInvokeConfigs.
@@ -831,6 +844,11 @@ func (c *lambdaServiceClient) ListTags(ctx context.Context, req *connect.Request
 // PutFunctionEventInvokeConfig calls lambda.LambdaService.PutFunctionEventInvokeConfig.
 func (c *lambdaServiceClient) PutFunctionEventInvokeConfig(ctx context.Context, req *connect.Request[lambda.PutFunctionEventInvokeConfigRequest]) (*connect.Response[lambda.FunctionEventInvokeConfig], error) {
 	return c.putFunctionEventInvokeConfig.CallUnary(ctx, req)
+}
+
+// PutResourcePolicy calls lambda.LambdaService.PutResourcePolicy.
+func (c *lambdaServiceClient) PutResourcePolicy(ctx context.Context, req *connect.Request[lambda.PutResourcePolicyRequest]) (*connect.Response[lambda.PutResourcePolicyResponse], error) {
+	return c.putResourcePolicy.CallUnary(ctx, req)
 }
 
 // SendDurableExecutionCallbackFailure calls
@@ -849,11 +867,6 @@ func (c *lambdaServiceClient) SendDurableExecutionCallbackHeartbeat(ctx context.
 // lambda.LambdaService.SendDurableExecutionCallbackSuccess.
 func (c *lambdaServiceClient) SendDurableExecutionCallbackSuccess(ctx context.Context, req *connect.Request[lambda.SendDurableExecutionCallbackSuccessRequest]) (*connect.Response[lambda.SendDurableExecutionCallbackSuccessResponse], error) {
 	return c.sendDurableExecutionCallbackSuccess.CallUnary(ctx, req)
-}
-
-// StopDurableExecution calls lambda.LambdaService.StopDurableExecution.
-func (c *lambdaServiceClient) StopDurableExecution(ctx context.Context, req *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error) {
-	return c.stopDurableExecution.CallUnary(ctx, req)
 }
 
 // TagResource calls lambda.LambdaService.TagResource.
@@ -910,6 +923,31 @@ func (c *lambdaServiceClient) ListCodeSigningConfigs(ctx context.Context, req *c
 // CreateCodeSigningConfig calls lambda.LambdaService.CreateCodeSigningConfig.
 func (c *lambdaServiceClient) CreateCodeSigningConfig(ctx context.Context, req *connect.Request[lambda.CreateCodeSigningConfigRequest]) (*connect.Response[lambda.CreateCodeSigningConfigResponse], error) {
 	return c.createCodeSigningConfig.CallUnary(ctx, req)
+}
+
+// GetDurableExecution calls lambda.LambdaService.GetDurableExecution.
+func (c *lambdaServiceClient) GetDurableExecution(ctx context.Context, req *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error) {
+	return c.getDurableExecution.CallUnary(ctx, req)
+}
+
+// CheckpointDurableExecution calls lambda.LambdaService.CheckpointDurableExecution.
+func (c *lambdaServiceClient) CheckpointDurableExecution(ctx context.Context, req *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error) {
+	return c.checkpointDurableExecution.CallUnary(ctx, req)
+}
+
+// GetDurableExecutionHistory calls lambda.LambdaService.GetDurableExecutionHistory.
+func (c *lambdaServiceClient) GetDurableExecutionHistory(ctx context.Context, req *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error) {
+	return c.getDurableExecutionHistory.CallUnary(ctx, req)
+}
+
+// GetDurableExecutionState calls lambda.LambdaService.GetDurableExecutionState.
+func (c *lambdaServiceClient) GetDurableExecutionState(ctx context.Context, req *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error) {
+	return c.getDurableExecutionState.CallUnary(ctx, req)
+}
+
+// StopDurableExecution calls lambda.LambdaService.StopDurableExecution.
+func (c *lambdaServiceClient) StopDurableExecution(ctx context.Context, req *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error) {
+	return c.stopDurableExecution.CallUnary(ctx, req)
 }
 
 // ListEventSourceMappings calls lambda.LambdaService.ListEventSourceMappings.
@@ -1034,10 +1072,6 @@ func (c *lambdaServiceClient) DeleteProvisionedConcurrencyConfig(ctx context.Con
 
 // LambdaServiceHandler is an implementation of the lambda.LambdaService service.
 type LambdaServiceHandler interface {
-	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
-	// Protocol: restJson1
-	CheckpointDurableExecution(context.Context, *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error)
 	// Deletes a Lambda function. To delete a specific function version, use the Qualifier parameter. Otherwise, all versions and aliases are deleted. This doesn't require the user to have explicit permis...
 	// HTTP: DELETE /2015-03-31/functions/{FunctionName}
 	// Protocol: restJson1
@@ -1046,30 +1080,22 @@ type LambdaServiceHandler interface {
 	// HTTP: DELETE /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	DeleteFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.DeleteFunctionEventInvokeConfigRequest]) (*connect.Response[common.Empty], error)
+	// Deletes a resource-based policy from a Lambda resource.
+	// HTTP: DELETE /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	DeleteResourcePolicy(context.Context, *connect.Request[lambda.DeleteResourcePolicyRequest]) (*connect.Response[common.Empty], error)
 	// Retrieves details about your account's limits and usage in an Amazon Web Services Region.
 	// HTTP: GET /2016-08-19/account-settings
 	// Protocol: restJson1
 	GetAccountSettings(context.Context, *connect.Request[lambda.GetAccountSettingsRequest]) (*connect.Response[lambda.GetAccountSettingsResponse], error)
-	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
-	// Protocol: restJson1
-	GetDurableExecution(context.Context, *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error)
-	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
-	// Protocol: restJson1
-	GetDurableExecutionHistory(context.Context, *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error)
-	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
-	// Protocol: restJson1
-	GetDurableExecutionState(context.Context, *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error)
 	// Retrieves the configuration for asynchronous invocation for a function, version, or alias. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	GetFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.GetFunctionEventInvokeConfigRequest]) (*connect.Response[lambda.FunctionEventInvokeConfig], error)
-	// Returns a list of durable executions for a specified Lambda function. You can filter the results by execution name, status, and start time range. This API supports pagination for large result sets.
-	// HTTP: GET /2025-12-01/functions/{FunctionName}/durable-executions
+	// Retrieves the resource-based policy attached to a Lambda resource.
+	// HTTP: GET /2026-07-09/resource-policy/{ResourceArn}
 	// Protocol: restJson1
-	ListDurableExecutionsByFunction(context.Context, *connect.Request[lambda.ListDurableExecutionsByFunctionRequest]) (*connect.Response[lambda.ListDurableExecutionsByFunctionResponse], error)
+	GetResourcePolicy(context.Context, *connect.Request[lambda.GetResourcePolicyRequest]) (*connect.Response[lambda.GetResourcePolicyResponse], error)
 	// Retrieves a list of configurations for asynchronous invocation for a function. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config/list
 	// Protocol: restJson1
@@ -1082,6 +1108,10 @@ type LambdaServiceHandler interface {
 	// HTTP: PUT /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	PutFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.PutFunctionEventInvokeConfigRequest]) (*connect.Response[lambda.FunctionEventInvokeConfig], error)
+	// Adds a resource-based policy to a Lambda resource. Resource-based policies grant access to other Amazon Web Services accounts, organizations, or services. Resource-based policies apply to a single ...
+	// HTTP: PUT /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	PutResourcePolicy(context.Context, *connect.Request[lambda.PutResourcePolicyRequest]) (*connect.Response[lambda.PutResourcePolicyResponse], error)
 	// Sends a failure response for a callback operation in a durable execution. Use this API when an external system cannot complete a callback operation successfully.
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/fail
 	// Protocol: restJson1
@@ -1094,10 +1124,6 @@ type LambdaServiceHandler interface {
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/succeed
 	// Protocol: restJson1
 	SendDurableExecutionCallbackSuccess(context.Context, *connect.Request[lambda.SendDurableExecutionCallbackSuccessRequest]) (*connect.Response[lambda.SendDurableExecutionCallbackSuccessResponse], error)
-	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
-	// Protocol: restJson1
-	StopDurableExecution(context.Context, *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error)
 	// Adds tags to a function, event source mapping, or code signing configuration.
 	// HTTP: POST /2017-03-31/tags/{Resource}
 	// Protocol: restJson1
@@ -1142,6 +1168,26 @@ type LambdaServiceHandler interface {
 	// HTTP: POST /2020-04-22/code-signing-configs
 	// Protocol: restJson1
 	CreateCodeSigningConfig(context.Context, *connect.Request[lambda.CreateCodeSigningConfigRequest]) (*connect.Response[lambda.CreateCodeSigningConfigResponse], error)
+	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
+	// Protocol: restJson1
+	GetDurableExecution(context.Context, *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error)
+	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
+	// Protocol: restJson1
+	CheckpointDurableExecution(context.Context, *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error)
+	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
+	// Protocol: restJson1
+	GetDurableExecutionHistory(context.Context, *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error)
+	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
+	// Protocol: restJson1
+	GetDurableExecutionState(context.Context, *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error)
+	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
+	// Protocol: restJson1
+	StopDurableExecution(context.Context, *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error)
 	// Lists event source mappings. Specify an EventSourceArn to show only event source mappings for a single event source.
 	// HTTP: GET /2015-03-31/event-source-mappings
 	// Protocol: restJson1
@@ -1247,12 +1293,6 @@ type LambdaServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	lambdaServiceMethods := lambda.File_lambda_proto.Services().ByName("LambdaService").Methods()
-	lambdaServiceCheckpointDurableExecutionHandler := connect.NewUnaryHandler(
-		LambdaServiceCheckpointDurableExecutionProcedure,
-		svc.CheckpointDurableExecution,
-		connect.WithSchema(lambdaServiceMethods.ByName("CheckpointDurableExecution")),
-		connect.WithHandlerOptions(opts...),
-	)
 	lambdaServiceDeleteFunctionHandler := connect.NewUnaryHandler(
 		LambdaServiceDeleteFunctionProcedure,
 		svc.DeleteFunction,
@@ -1265,28 +1305,16 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(lambdaServiceMethods.ByName("DeleteFunctionEventInvokeConfig")),
 		connect.WithHandlerOptions(opts...),
 	)
+	lambdaServiceDeleteResourcePolicyHandler := connect.NewUnaryHandler(
+		LambdaServiceDeleteResourcePolicyProcedure,
+		svc.DeleteResourcePolicy,
+		connect.WithSchema(lambdaServiceMethods.ByName("DeleteResourcePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
 	lambdaServiceGetAccountSettingsHandler := connect.NewUnaryHandler(
 		LambdaServiceGetAccountSettingsProcedure,
 		svc.GetAccountSettings,
 		connect.WithSchema(lambdaServiceMethods.ByName("GetAccountSettings")),
-		connect.WithHandlerOptions(opts...),
-	)
-	lambdaServiceGetDurableExecutionHandler := connect.NewUnaryHandler(
-		LambdaServiceGetDurableExecutionProcedure,
-		svc.GetDurableExecution,
-		connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecution")),
-		connect.WithHandlerOptions(opts...),
-	)
-	lambdaServiceGetDurableExecutionHistoryHandler := connect.NewUnaryHandler(
-		LambdaServiceGetDurableExecutionHistoryProcedure,
-		svc.GetDurableExecutionHistory,
-		connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionHistory")),
-		connect.WithHandlerOptions(opts...),
-	)
-	lambdaServiceGetDurableExecutionStateHandler := connect.NewUnaryHandler(
-		LambdaServiceGetDurableExecutionStateProcedure,
-		svc.GetDurableExecutionState,
-		connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionState")),
 		connect.WithHandlerOptions(opts...),
 	)
 	lambdaServiceGetFunctionEventInvokeConfigHandler := connect.NewUnaryHandler(
@@ -1295,10 +1323,10 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(lambdaServiceMethods.ByName("GetFunctionEventInvokeConfig")),
 		connect.WithHandlerOptions(opts...),
 	)
-	lambdaServiceListDurableExecutionsByFunctionHandler := connect.NewUnaryHandler(
-		LambdaServiceListDurableExecutionsByFunctionProcedure,
-		svc.ListDurableExecutionsByFunction,
-		connect.WithSchema(lambdaServiceMethods.ByName("ListDurableExecutionsByFunction")),
+	lambdaServiceGetResourcePolicyHandler := connect.NewUnaryHandler(
+		LambdaServiceGetResourcePolicyProcedure,
+		svc.GetResourcePolicy,
+		connect.WithSchema(lambdaServiceMethods.ByName("GetResourcePolicy")),
 		connect.WithHandlerOptions(opts...),
 	)
 	lambdaServiceListFunctionEventInvokeConfigsHandler := connect.NewUnaryHandler(
@@ -1319,6 +1347,12 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 		connect.WithSchema(lambdaServiceMethods.ByName("PutFunctionEventInvokeConfig")),
 		connect.WithHandlerOptions(opts...),
 	)
+	lambdaServicePutResourcePolicyHandler := connect.NewUnaryHandler(
+		LambdaServicePutResourcePolicyProcedure,
+		svc.PutResourcePolicy,
+		connect.WithSchema(lambdaServiceMethods.ByName("PutResourcePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
 	lambdaServiceSendDurableExecutionCallbackFailureHandler := connect.NewUnaryHandler(
 		LambdaServiceSendDurableExecutionCallbackFailureProcedure,
 		svc.SendDurableExecutionCallbackFailure,
@@ -1335,12 +1369,6 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 		LambdaServiceSendDurableExecutionCallbackSuccessProcedure,
 		svc.SendDurableExecutionCallbackSuccess,
 		connect.WithSchema(lambdaServiceMethods.ByName("SendDurableExecutionCallbackSuccess")),
-		connect.WithHandlerOptions(opts...),
-	)
-	lambdaServiceStopDurableExecutionHandler := connect.NewUnaryHandler(
-		LambdaServiceStopDurableExecutionProcedure,
-		svc.StopDurableExecution,
-		connect.WithSchema(lambdaServiceMethods.ByName("StopDurableExecution")),
 		connect.WithHandlerOptions(opts...),
 	)
 	lambdaServiceTagResourceHandler := connect.NewUnaryHandler(
@@ -1407,6 +1435,36 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 		LambdaServiceCreateCodeSigningConfigProcedure,
 		svc.CreateCodeSigningConfig,
 		connect.WithSchema(lambdaServiceMethods.ByName("CreateCodeSigningConfig")),
+		connect.WithHandlerOptions(opts...),
+	)
+	lambdaServiceGetDurableExecutionHandler := connect.NewUnaryHandler(
+		LambdaServiceGetDurableExecutionProcedure,
+		svc.GetDurableExecution,
+		connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecution")),
+		connect.WithHandlerOptions(opts...),
+	)
+	lambdaServiceCheckpointDurableExecutionHandler := connect.NewUnaryHandler(
+		LambdaServiceCheckpointDurableExecutionProcedure,
+		svc.CheckpointDurableExecution,
+		connect.WithSchema(lambdaServiceMethods.ByName("CheckpointDurableExecution")),
+		connect.WithHandlerOptions(opts...),
+	)
+	lambdaServiceGetDurableExecutionHistoryHandler := connect.NewUnaryHandler(
+		LambdaServiceGetDurableExecutionHistoryProcedure,
+		svc.GetDurableExecutionHistory,
+		connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionHistory")),
+		connect.WithHandlerOptions(opts...),
+	)
+	lambdaServiceGetDurableExecutionStateHandler := connect.NewUnaryHandler(
+		LambdaServiceGetDurableExecutionStateProcedure,
+		svc.GetDurableExecutionState,
+		connect.WithSchema(lambdaServiceMethods.ByName("GetDurableExecutionState")),
+		connect.WithHandlerOptions(opts...),
+	)
+	lambdaServiceStopDurableExecutionHandler := connect.NewUnaryHandler(
+		LambdaServiceStopDurableExecutionProcedure,
+		svc.StopDurableExecution,
+		connect.WithSchema(lambdaServiceMethods.ByName("StopDurableExecution")),
 		connect.WithHandlerOptions(opts...),
 	)
 	lambdaServiceListEventSourceMappingsHandler := connect.NewUnaryHandler(
@@ -1555,38 +1613,32 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 	)
 	return "/lambda.LambdaService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case LambdaServiceCheckpointDurableExecutionProcedure:
-			lambdaServiceCheckpointDurableExecutionHandler.ServeHTTP(w, r)
 		case LambdaServiceDeleteFunctionProcedure:
 			lambdaServiceDeleteFunctionHandler.ServeHTTP(w, r)
 		case LambdaServiceDeleteFunctionEventInvokeConfigProcedure:
 			lambdaServiceDeleteFunctionEventInvokeConfigHandler.ServeHTTP(w, r)
+		case LambdaServiceDeleteResourcePolicyProcedure:
+			lambdaServiceDeleteResourcePolicyHandler.ServeHTTP(w, r)
 		case LambdaServiceGetAccountSettingsProcedure:
 			lambdaServiceGetAccountSettingsHandler.ServeHTTP(w, r)
-		case LambdaServiceGetDurableExecutionProcedure:
-			lambdaServiceGetDurableExecutionHandler.ServeHTTP(w, r)
-		case LambdaServiceGetDurableExecutionHistoryProcedure:
-			lambdaServiceGetDurableExecutionHistoryHandler.ServeHTTP(w, r)
-		case LambdaServiceGetDurableExecutionStateProcedure:
-			lambdaServiceGetDurableExecutionStateHandler.ServeHTTP(w, r)
 		case LambdaServiceGetFunctionEventInvokeConfigProcedure:
 			lambdaServiceGetFunctionEventInvokeConfigHandler.ServeHTTP(w, r)
-		case LambdaServiceListDurableExecutionsByFunctionProcedure:
-			lambdaServiceListDurableExecutionsByFunctionHandler.ServeHTTP(w, r)
+		case LambdaServiceGetResourcePolicyProcedure:
+			lambdaServiceGetResourcePolicyHandler.ServeHTTP(w, r)
 		case LambdaServiceListFunctionEventInvokeConfigsProcedure:
 			lambdaServiceListFunctionEventInvokeConfigsHandler.ServeHTTP(w, r)
 		case LambdaServiceListTagsProcedure:
 			lambdaServiceListTagsHandler.ServeHTTP(w, r)
 		case LambdaServicePutFunctionEventInvokeConfigProcedure:
 			lambdaServicePutFunctionEventInvokeConfigHandler.ServeHTTP(w, r)
+		case LambdaServicePutResourcePolicyProcedure:
+			lambdaServicePutResourcePolicyHandler.ServeHTTP(w, r)
 		case LambdaServiceSendDurableExecutionCallbackFailureProcedure:
 			lambdaServiceSendDurableExecutionCallbackFailureHandler.ServeHTTP(w, r)
 		case LambdaServiceSendDurableExecutionCallbackHeartbeatProcedure:
 			lambdaServiceSendDurableExecutionCallbackHeartbeatHandler.ServeHTTP(w, r)
 		case LambdaServiceSendDurableExecutionCallbackSuccessProcedure:
 			lambdaServiceSendDurableExecutionCallbackSuccessHandler.ServeHTTP(w, r)
-		case LambdaServiceStopDurableExecutionProcedure:
-			lambdaServiceStopDurableExecutionHandler.ServeHTTP(w, r)
 		case LambdaServiceTagResourceProcedure:
 			lambdaServiceTagResourceHandler.ServeHTTP(w, r)
 		case LambdaServiceUntagResourceProcedure:
@@ -1609,6 +1661,16 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 			lambdaServiceListCodeSigningConfigsHandler.ServeHTTP(w, r)
 		case LambdaServiceCreateCodeSigningConfigProcedure:
 			lambdaServiceCreateCodeSigningConfigHandler.ServeHTTP(w, r)
+		case LambdaServiceGetDurableExecutionProcedure:
+			lambdaServiceGetDurableExecutionHandler.ServeHTTP(w, r)
+		case LambdaServiceCheckpointDurableExecutionProcedure:
+			lambdaServiceCheckpointDurableExecutionHandler.ServeHTTP(w, r)
+		case LambdaServiceGetDurableExecutionHistoryProcedure:
+			lambdaServiceGetDurableExecutionHistoryHandler.ServeHTTP(w, r)
+		case LambdaServiceGetDurableExecutionStateProcedure:
+			lambdaServiceGetDurableExecutionStateHandler.ServeHTTP(w, r)
+		case LambdaServiceStopDurableExecutionProcedure:
+			lambdaServiceStopDurableExecutionHandler.ServeHTTP(w, r)
 		case LambdaServiceListEventSourceMappingsProcedure:
 			lambdaServiceListEventSourceMappingsHandler.ServeHTTP(w, r)
 		case LambdaServiceCreateEventSourceMappingProcedure:
@@ -1666,10 +1728,6 @@ func NewLambdaServiceHandler(svc LambdaServiceHandler, opts ...connect.HandlerOp
 // UnimplementedLambdaServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedLambdaServiceHandler struct{}
 
-func (UnimplementedLambdaServiceHandler) CheckpointDurableExecution(context.Context, *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.CheckpointDurableExecution is not implemented"))
-}
-
 func (UnimplementedLambdaServiceHandler) DeleteFunction(context.Context, *connect.Request[lambda.DeleteFunctionRequest]) (*connect.Response[lambda.DeleteFunctionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.DeleteFunction is not implemented"))
 }
@@ -1678,28 +1736,20 @@ func (UnimplementedLambdaServiceHandler) DeleteFunctionEventInvokeConfig(context
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.DeleteFunctionEventInvokeConfig is not implemented"))
 }
 
+func (UnimplementedLambdaServiceHandler) DeleteResourcePolicy(context.Context, *connect.Request[lambda.DeleteResourcePolicyRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.DeleteResourcePolicy is not implemented"))
+}
+
 func (UnimplementedLambdaServiceHandler) GetAccountSettings(context.Context, *connect.Request[lambda.GetAccountSettingsRequest]) (*connect.Response[lambda.GetAccountSettingsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetAccountSettings is not implemented"))
-}
-
-func (UnimplementedLambdaServiceHandler) GetDurableExecution(context.Context, *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetDurableExecution is not implemented"))
-}
-
-func (UnimplementedLambdaServiceHandler) GetDurableExecutionHistory(context.Context, *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetDurableExecutionHistory is not implemented"))
-}
-
-func (UnimplementedLambdaServiceHandler) GetDurableExecutionState(context.Context, *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetDurableExecutionState is not implemented"))
 }
 
 func (UnimplementedLambdaServiceHandler) GetFunctionEventInvokeConfig(context.Context, *connect.Request[lambda.GetFunctionEventInvokeConfigRequest]) (*connect.Response[lambda.FunctionEventInvokeConfig], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetFunctionEventInvokeConfig is not implemented"))
 }
 
-func (UnimplementedLambdaServiceHandler) ListDurableExecutionsByFunction(context.Context, *connect.Request[lambda.ListDurableExecutionsByFunctionRequest]) (*connect.Response[lambda.ListDurableExecutionsByFunctionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.ListDurableExecutionsByFunction is not implemented"))
+func (UnimplementedLambdaServiceHandler) GetResourcePolicy(context.Context, *connect.Request[lambda.GetResourcePolicyRequest]) (*connect.Response[lambda.GetResourcePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetResourcePolicy is not implemented"))
 }
 
 func (UnimplementedLambdaServiceHandler) ListFunctionEventInvokeConfigs(context.Context, *connect.Request[lambda.ListFunctionEventInvokeConfigsRequest]) (*connect.Response[lambda.ListFunctionEventInvokeConfigsResponse], error) {
@@ -1714,6 +1764,10 @@ func (UnimplementedLambdaServiceHandler) PutFunctionEventInvokeConfig(context.Co
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.PutFunctionEventInvokeConfig is not implemented"))
 }
 
+func (UnimplementedLambdaServiceHandler) PutResourcePolicy(context.Context, *connect.Request[lambda.PutResourcePolicyRequest]) (*connect.Response[lambda.PutResourcePolicyResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.PutResourcePolicy is not implemented"))
+}
+
 func (UnimplementedLambdaServiceHandler) SendDurableExecutionCallbackFailure(context.Context, *connect.Request[lambda.SendDurableExecutionCallbackFailureRequest]) (*connect.Response[lambda.SendDurableExecutionCallbackFailureResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.SendDurableExecutionCallbackFailure is not implemented"))
 }
@@ -1724,10 +1778,6 @@ func (UnimplementedLambdaServiceHandler) SendDurableExecutionCallbackHeartbeat(c
 
 func (UnimplementedLambdaServiceHandler) SendDurableExecutionCallbackSuccess(context.Context, *connect.Request[lambda.SendDurableExecutionCallbackSuccessRequest]) (*connect.Response[lambda.SendDurableExecutionCallbackSuccessResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.SendDurableExecutionCallbackSuccess is not implemented"))
-}
-
-func (UnimplementedLambdaServiceHandler) StopDurableExecution(context.Context, *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.StopDurableExecution is not implemented"))
 }
 
 func (UnimplementedLambdaServiceHandler) TagResource(context.Context, *connect.Request[lambda.TagResourceRequest]) (*connect.Response[common.Empty], error) {
@@ -1772,6 +1822,26 @@ func (UnimplementedLambdaServiceHandler) ListCodeSigningConfigs(context.Context,
 
 func (UnimplementedLambdaServiceHandler) CreateCodeSigningConfig(context.Context, *connect.Request[lambda.CreateCodeSigningConfigRequest]) (*connect.Response[lambda.CreateCodeSigningConfigResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.CreateCodeSigningConfig is not implemented"))
+}
+
+func (UnimplementedLambdaServiceHandler) GetDurableExecution(context.Context, *connect.Request[lambda.GetDurableExecutionRequest]) (*connect.Response[lambda.GetDurableExecutionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetDurableExecution is not implemented"))
+}
+
+func (UnimplementedLambdaServiceHandler) CheckpointDurableExecution(context.Context, *connect.Request[lambda.CheckpointDurableExecutionRequest]) (*connect.Response[lambda.CheckpointDurableExecutionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.CheckpointDurableExecution is not implemented"))
+}
+
+func (UnimplementedLambdaServiceHandler) GetDurableExecutionHistory(context.Context, *connect.Request[lambda.GetDurableExecutionHistoryRequest]) (*connect.Response[lambda.GetDurableExecutionHistoryResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetDurableExecutionHistory is not implemented"))
+}
+
+func (UnimplementedLambdaServiceHandler) GetDurableExecutionState(context.Context, *connect.Request[lambda.GetDurableExecutionStateRequest]) (*connect.Response[lambda.GetDurableExecutionStateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.GetDurableExecutionState is not implemented"))
+}
+
+func (UnimplementedLambdaServiceHandler) StopDurableExecution(context.Context, *connect.Request[lambda.StopDurableExecutionRequest]) (*connect.Response[lambda.StopDurableExecutionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("lambda.LambdaService.StopDurableExecution is not implemented"))
 }
 
 func (UnimplementedLambdaServiceHandler) ListEventSourceMappings(context.Context, *connect.Request[lambda.ListEventSourceMappingsRequest]) (*connect.Response[lambda.ListEventSourceMappingsResponse], error) {

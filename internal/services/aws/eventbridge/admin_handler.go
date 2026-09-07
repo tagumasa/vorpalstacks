@@ -2,6 +2,7 @@ package eventbridge
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -53,7 +54,7 @@ func (h *AdminHandler) ListEventBuses(ctx context.Context, req *connect.Request[
 
 	return connect.NewResponse(&pb.ListEventBusesResponse{
 		Eventbuses: eventBuses,
-		Nexttoken:  result.NextToken,
+		Nexttoken:  proto.String(result.NextToken),
 	}), nil
 }
 
@@ -83,7 +84,7 @@ func (h *AdminHandler) ListRules(ctx context.Context, req *connect.Request[pb.Li
 
 	return connect.NewResponse(&pb.ListRulesResponse{
 		Rules:     rules,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -102,7 +103,7 @@ func (h *AdminHandler) CreateEventBus(ctx context.Context, req *connect.Request[
 	}
 
 	return connect.NewResponse(&pb.CreateEventBusResponse{
-		Eventbusarn: result.EventBus.ARN,
+		Eventbusarn: proto.String(result.EventBus.ARN),
 	}), nil
 }
 

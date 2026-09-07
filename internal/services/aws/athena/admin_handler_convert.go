@@ -1,6 +1,7 @@
 package athena
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -20,7 +21,7 @@ func (h *AdminHandler) getStores(headers http.Header) (*athenaStores, error) {
 func protoToCreateInput(msg *pb.CreateWorkGroupInput) WorkGroupCreateInput {
 	input := WorkGroupCreateInput{
 		Name:        msg.Name,
-		Description: msg.Description,
+		Description: msg.GetDescription(),
 	}
 	if msg.Configuration != nil {
 		protoCfg := msg.Configuration
@@ -36,11 +37,11 @@ func protoToCreateInput(msg *pb.CreateWorkGroupInput) WorkGroupCreateInput {
 			cfg.BytesScannedCutoff = &v
 		}
 		if protoCfg.Resultconfiguration != nil {
-			cfg.OutputLocation = protoCfg.Resultconfiguration.Outputlocation
+			cfg.OutputLocation = protoCfg.Resultconfiguration.GetOutputlocation()
 		}
 		if protoCfg.Engineversion != nil {
-			cfg.EngineVersionSelected = protoCfg.Engineversion.Selectedengineversion
-			cfg.EngineVersionEffective = protoCfg.Engineversion.Effectiveengineversion
+			cfg.EngineVersionSelected = protoCfg.Engineversion.GetSelectedengineversion()
+			cfg.EngineVersionEffective = protoCfg.Engineversion.GetEffectiveengineversion()
 		}
 		if protoCfg.Customercontentencryptionconfiguration != nil {
 			cfg.CustomerContentEncryptionKmsKey = protoCfg.Customercontentencryptionconfiguration.GetKmskey()
@@ -55,7 +56,7 @@ func protoToCreateInput(msg *pb.CreateWorkGroupInput) WorkGroupCreateInput {
 		if input.Tags == nil {
 			input.Tags = make(map[string]string)
 		}
-		input.Tags[tag.Key] = tag.Value
+		input.Tags[tag.GetKey()] = tag.GetValue()
 	}
 
 	return input
@@ -71,14 +72,14 @@ func toPbWorkGroupSummaries(items []WorkGroupOut) []*pb.WorkGroupSummary {
 			state = pb.WorkGroupState_WORK_GROUP_STATE_ENABLED
 		}
 		summary := &pb.WorkGroupSummary{
-			Name:  wg.Name,
+			Name:  proto.String(wg.Name),
 			State: state,
 		}
 		if wg.Description != "" {
-			summary.Description = wg.Description
+			summary.Description = proto.String(wg.Description)
 		}
 		if !wg.CreationTime.IsZero() {
-			summary.Creationtime = wg.CreationTime.Format(timeutils.ISO8601UTCFormat)
+			summary.Creationtime = proto.String(wg.CreationTime.Format(timeutils.ISO8601UTCFormat))
 		}
 		summaries = append(summaries, summary)
 	}

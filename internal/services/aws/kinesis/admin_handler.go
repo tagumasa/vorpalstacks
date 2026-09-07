@@ -41,7 +41,7 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 	}
 
 	result, err := h.service.listStreamsCore(stores, ListStreamsInput{
-		ExclusiveStartStreamName: req.Msg.Exclusivestartstreamname,
+		ExclusiveStartStreamName: req.Msg.GetExclusivestartstreamname(),
 		Limit:                    int(req.Msg.GetLimit()),
 		// The console's zero limit means "no limit chosen", matching the
 		// proto default for an absent member.
@@ -62,7 +62,7 @@ func (h *AdminHandler) ListStreams(ctx context.Context, req *connect.Request[pb.
 		Streamnames:     streamNames,
 		Streamsummaries: summaries,
 		Hasmorestreams:  proto.Bool(result.IsTruncated),
-		Nexttoken:       result.NextMarker,
+		Nexttoken:       proto.String(result.NextMarker),
 	}), nil
 }
 
@@ -75,8 +75,8 @@ func (h *AdminHandler) DescribeStream(ctx context.Context, req *connect.Request[
 	}
 
 	result, err := h.service.describeStreamCore(stores, DescribeStreamInput{
-		StreamName: req.Msg.Streamname,
-		StreamARN:  req.Msg.Streamarn,
+		StreamName: req.Msg.GetStreamname(),
+		StreamARN:  req.Msg.GetStreamarn(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

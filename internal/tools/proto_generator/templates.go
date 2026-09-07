@@ -45,7 +45,7 @@ enum {{.Name}} {
 {{else}}
 message {{.Name}} {
 {{range .Fields}}
-  {{if or (eq .Type "bool") (and (not .IsRequired) (or (eq .Type "int32") (eq .Type "int64")))}}optional {{end}}{{.Type}} {{.NameLower}} = {{.Number}}{{if .HTTPPayload}} [(aws.http_payload) = true]{{end}};
+  {{if fieldIsOptional .}}optional {{end}}{{.Type}} {{.NameLower}} = {{.Number}}{{if .HTTPPayload}} [(aws.http_payload) = true]{{end}};
 {{end}}
 }
 {{end}}
@@ -74,7 +74,31 @@ func templateFuncs() template.FuncMap {
 		"sanitizeComment":    sanitizeComment,
 		"emptyToCommonEmpty": emptyToCommonEmpty,
 		"httpRule":           httpRule,
+		"fieldIsOptional":    fieldIsOptional,
 	}
+}
+
+// fieldIsOptional reports whether a generated field carries explicit
+// presence: every non-required scalar is emitted optional so the admin
+// surface can distinguish an absent member from a zero value (the empty
+// string, 0, or false) — exactly the distinction the AWS wire protocol
+// makes between an omitted member and an empty one. Booleans are always
+// optional because proto3 has no other way to express an unset boolean.
+// Repeated fields and maps have no scalar presence semantics, message and
+// enum references are nil-able already, and required scalars are always
+// present on the wire.
+func fieldIsOptional(f FieldData) bool {
+	if f.Type == "bool" {
+		return true
+	}
+	if f.IsRequired || strings.HasPrefix(f.Type, "repeated ") || strings.HasPrefix(f.Type, "map<") {
+		return false
+	}
+	switch f.Type {
+	case "string", "int32", "int64", "double", "float", "bytes":
+		return true
+	}
+	return false
 }
 
 func httpRule(method, path, query string) string {

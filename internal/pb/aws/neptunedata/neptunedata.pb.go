@@ -844,7 +844,7 @@ func (x *CancelGremlinQueryInput) GetQueryid() string {
 
 type CancelGremlinQueryOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -880,8 +880,8 @@ func (*CancelGremlinQueryOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelGremlinQueryOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -932,7 +932,7 @@ func (x *CancelLoaderJobInput) GetLoadid() string {
 
 type CancelLoaderJobOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -968,17 +968,17 @@ func (*CancelLoaderJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelLoaderJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type CancelMLDataProcessingJobInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Clean             string                 `protobuf:"bytes,275644223,opt,name=clean,proto3" json:"clean,omitempty"`
+	Clean             *string                `protobuf:"bytes,275644223,opt,name=clean,proto3,oneof" json:"clean,omitempty"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1014,8 +1014,8 @@ func (*CancelMLDataProcessingJobInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMLDataProcessingJobInput) GetClean() string {
-	if x != nil {
-		return x.Clean
+	if x != nil && x.Clean != nil {
+		return *x.Clean
 	}
 	return ""
 }
@@ -1028,15 +1028,15 @@ func (x *CancelMLDataProcessingJobInput) GetId() string {
 }
 
 func (x *CancelMLDataProcessingJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 type CancelMLDataProcessingJobOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1072,17 +1072,17 @@ func (*CancelMLDataProcessingJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMLDataProcessingJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type CancelMLModelTrainingJobInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Clean             string                 `protobuf:"bytes,275644223,opt,name=clean,proto3" json:"clean,omitempty"`
+	Clean             *string                `protobuf:"bytes,275644223,opt,name=clean,proto3,oneof" json:"clean,omitempty"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1118,8 +1118,8 @@ func (*CancelMLModelTrainingJobInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMLModelTrainingJobInput) GetClean() string {
-	if x != nil {
-		return x.Clean
+	if x != nil && x.Clean != nil {
+		return *x.Clean
 	}
 	return ""
 }
@@ -1132,15 +1132,15 @@ func (x *CancelMLModelTrainingJobInput) GetId() string {
 }
 
 func (x *CancelMLModelTrainingJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 type CancelMLModelTrainingJobOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1176,17 +1176,17 @@ func (*CancelMLModelTrainingJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMLModelTrainingJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type CancelMLModelTransformJobInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Clean             string                 `protobuf:"bytes,275644223,opt,name=clean,proto3" json:"clean,omitempty"`
+	Clean             *string                `protobuf:"bytes,275644223,opt,name=clean,proto3,oneof" json:"clean,omitempty"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1222,8 +1222,8 @@ func (*CancelMLModelTransformJobInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMLModelTransformJobInput) GetClean() string {
-	if x != nil {
-		return x.Clean
+	if x != nil && x.Clean != nil {
+		return *x.Clean
 	}
 	return ""
 }
@@ -1236,15 +1236,15 @@ func (x *CancelMLModelTransformJobInput) GetId() string {
 }
 
 func (x *CancelMLModelTransformJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 type CancelMLModelTransformJobOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1280,8 +1280,8 @@ func (*CancelMLModelTransformJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelMLModelTransformJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -1289,7 +1289,7 @@ func (x *CancelMLModelTransformJobOutput) GetStatus() string {
 type CancelOpenCypherQueryInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Queryid       string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
-	Silent        string                 `protobuf:"bytes,66205701,opt,name=silent,proto3" json:"silent,omitempty"`
+	Silent        *string                `protobuf:"bytes,66205701,opt,name=silent,proto3,oneof" json:"silent,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1332,16 +1332,16 @@ func (x *CancelOpenCypherQueryInput) GetQueryid() string {
 }
 
 func (x *CancelOpenCypherQueryInput) GetSilent() string {
-	if x != nil {
-		return x.Silent
+	if x != nil && x.Silent != nil {
+		return *x.Silent
 	}
 	return ""
 }
 
 type CancelOpenCypherQueryOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Payload       string                 `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Payload       *string                `protobuf:"bytes,319780774,opt,name=payload,proto3,oneof" json:"payload,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1377,15 +1377,15 @@ func (*CancelOpenCypherQueryOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelOpenCypherQueryOutput) GetPayload() string {
-	if x != nil {
-		return x.Payload
+	if x != nil && x.Payload != nil {
+		return *x.Payload
 	}
 	return ""
 }
 
 func (x *CancelOpenCypherQueryOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -1632,15 +1632,15 @@ func (x *ConstraintViolationException) GetRequestid() string {
 
 type CreateMLEndpointInput struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Id                     string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Instancecount          string                 `protobuf:"bytes,486686778,opt,name=instancecount,proto3" json:"instancecount,omitempty"`
-	Instancetype           string                 `protobuf:"bytes,165816931,opt,name=instancetype,proto3" json:"instancetype,omitempty"`
-	Mlmodeltrainingjobid   string                 `protobuf:"bytes,429530992,opt,name=mlmodeltrainingjobid,proto3" json:"mlmodeltrainingjobid,omitempty"`
-	Mlmodeltransformjobid  string                 `protobuf:"bytes,444632140,opt,name=mlmodeltransformjobid,proto3" json:"mlmodeltransformjobid,omitempty"`
-	Modelname              string                 `protobuf:"bytes,176835330,opt,name=modelname,proto3" json:"modelname,omitempty"`
-	Neptuneiamrolearn      string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
-	Update                 string                 `protobuf:"bytes,135238773,opt,name=update,proto3" json:"update,omitempty"`
-	Volumeencryptionkmskey string                 `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3" json:"volumeencryptionkmskey,omitempty"`
+	Id                     *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Instancecount          *string                `protobuf:"bytes,486686778,opt,name=instancecount,proto3,oneof" json:"instancecount,omitempty"`
+	Instancetype           *string                `protobuf:"bytes,165816931,opt,name=instancetype,proto3,oneof" json:"instancetype,omitempty"`
+	Mlmodeltrainingjobid   *string                `protobuf:"bytes,429530992,opt,name=mlmodeltrainingjobid,proto3,oneof" json:"mlmodeltrainingjobid,omitempty"`
+	Mlmodeltransformjobid  *string                `protobuf:"bytes,444632140,opt,name=mlmodeltransformjobid,proto3,oneof" json:"mlmodeltransformjobid,omitempty"`
+	Modelname              *string                `protobuf:"bytes,176835330,opt,name=modelname,proto3,oneof" json:"modelname,omitempty"`
+	Neptuneiamrolearn      *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
+	Update                 *string                `protobuf:"bytes,135238773,opt,name=update,proto3,oneof" json:"update,omitempty"`
+	Volumeencryptionkmskey *string                `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3,oneof" json:"volumeencryptionkmskey,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1676,73 +1676,73 @@ func (*CreateMLEndpointInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateMLEndpointInput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetInstancecount() string {
-	if x != nil {
-		return x.Instancecount
+	if x != nil && x.Instancecount != nil {
+		return *x.Instancecount
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetInstancetype() string {
-	if x != nil {
-		return x.Instancetype
+	if x != nil && x.Instancetype != nil {
+		return *x.Instancetype
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetMlmodeltrainingjobid() string {
-	if x != nil {
-		return x.Mlmodeltrainingjobid
+	if x != nil && x.Mlmodeltrainingjobid != nil {
+		return *x.Mlmodeltrainingjobid
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetMlmodeltransformjobid() string {
-	if x != nil {
-		return x.Mlmodeltransformjobid
+	if x != nil && x.Mlmodeltransformjobid != nil {
+		return *x.Mlmodeltransformjobid
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetModelname() string {
-	if x != nil {
-		return x.Modelname
+	if x != nil && x.Modelname != nil {
+		return *x.Modelname
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetUpdate() string {
-	if x != nil {
-		return x.Update
+	if x != nil && x.Update != nil {
+		return *x.Update
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointInput) GetVolumeencryptionkmskey() string {
-	if x != nil {
-		return x.Volumeencryptionkmskey
+	if x != nil && x.Volumeencryptionkmskey != nil {
+		return *x.Volumeencryptionkmskey
 	}
 	return ""
 }
 
 type CreateMLEndpointOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtimeinmillis string                 `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3" json:"creationtimeinmillis,omitempty"`
-	Id                   string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Arn                  *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationtimeinmillis *string                `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3,oneof" json:"creationtimeinmillis,omitempty"`
+	Id                   *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1778,22 +1778,22 @@ func (*CreateMLEndpointOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateMLEndpointOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointOutput) GetCreationtimeinmillis() string {
-	if x != nil {
-		return x.Creationtimeinmillis
+	if x != nil && x.Creationtimeinmillis != nil {
+		return *x.Creationtimeinmillis
 	}
 	return ""
 }
 
 func (x *CreateMLEndpointOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -1801,8 +1801,8 @@ func (x *CreateMLEndpointOutput) GetId() string {
 type CustomModelTrainingParameters struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Sources3Directorypath     string                 `protobuf:"bytes,347172751,opt,name=sources3directorypath,proto3" json:"sources3directorypath,omitempty"`
-	Trainingentrypointscript  string                 `protobuf:"bytes,112497219,opt,name=trainingentrypointscript,proto3" json:"trainingentrypointscript,omitempty"`
-	Transformentrypointscript string                 `protobuf:"bytes,132466719,opt,name=transformentrypointscript,proto3" json:"transformentrypointscript,omitempty"`
+	Trainingentrypointscript  *string                `protobuf:"bytes,112497219,opt,name=trainingentrypointscript,proto3,oneof" json:"trainingentrypointscript,omitempty"`
+	Transformentrypointscript *string                `protobuf:"bytes,132466719,opt,name=transformentrypointscript,proto3,oneof" json:"transformentrypointscript,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1845,15 +1845,15 @@ func (x *CustomModelTrainingParameters) GetSources3Directorypath() string {
 }
 
 func (x *CustomModelTrainingParameters) GetTrainingentrypointscript() string {
-	if x != nil {
-		return x.Trainingentrypointscript
+	if x != nil && x.Trainingentrypointscript != nil {
+		return *x.Trainingentrypointscript
 	}
 	return ""
 }
 
 func (x *CustomModelTrainingParameters) GetTransformentrypointscript() string {
-	if x != nil {
-		return x.Transformentrypointscript
+	if x != nil && x.Transformentrypointscript != nil {
+		return *x.Transformentrypointscript
 	}
 	return ""
 }
@@ -1861,7 +1861,7 @@ func (x *CustomModelTrainingParameters) GetTransformentrypointscript() string {
 type CustomModelTransformParameters struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Sources3Directorypath     string                 `protobuf:"bytes,347172751,opt,name=sources3directorypath,proto3" json:"sources3directorypath,omitempty"`
-	Transformentrypointscript string                 `protobuf:"bytes,132466719,opt,name=transformentrypointscript,proto3" json:"transformentrypointscript,omitempty"`
+	Transformentrypointscript *string                `protobuf:"bytes,132466719,opt,name=transformentrypointscript,proto3,oneof" json:"transformentrypointscript,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -1904,17 +1904,17 @@ func (x *CustomModelTransformParameters) GetSources3Directorypath() string {
 }
 
 func (x *CustomModelTransformParameters) GetTransformentrypointscript() string {
-	if x != nil {
-		return x.Transformentrypointscript
+	if x != nil && x.Transformentrypointscript != nil {
+		return *x.Transformentrypointscript
 	}
 	return ""
 }
 
 type DeleteMLEndpointInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Clean             string                 `protobuf:"bytes,275644223,opt,name=clean,proto3" json:"clean,omitempty"`
+	Clean             *string                `protobuf:"bytes,275644223,opt,name=clean,proto3,oneof" json:"clean,omitempty"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1950,8 +1950,8 @@ func (*DeleteMLEndpointInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteMLEndpointInput) GetClean() string {
-	if x != nil {
-		return x.Clean
+	if x != nil && x.Clean != nil {
+		return *x.Clean
 	}
 	return ""
 }
@@ -1964,15 +1964,15 @@ func (x *DeleteMLEndpointInput) GetId() string {
 }
 
 func (x *DeleteMLEndpointInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 type DeleteMLEndpointOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2008,8 +2008,8 @@ func (*DeleteMLEndpointOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteMLEndpointOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -2017,8 +2017,8 @@ func (x *DeleteMLEndpointOutput) GetStatus() string {
 type DeletePropertygraphStatisticsOutput struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Payload       *DeleteStatisticsValueMap `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
-	Status        string                    `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
-	Statuscode    string                    `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Status        *string                   `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Statuscode    *string                   `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2061,15 +2061,15 @@ func (x *DeletePropertygraphStatisticsOutput) GetPayload() *DeleteStatisticsValu
 }
 
 func (x *DeletePropertygraphStatisticsOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *DeletePropertygraphStatisticsOutput) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -2077,8 +2077,8 @@ func (x *DeletePropertygraphStatisticsOutput) GetStatuscode() string {
 type DeleteSparqlStatisticsOutput struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Payload       *DeleteStatisticsValueMap `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
-	Status        string                    `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
-	Statuscode    string                    `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Status        *string                   `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Statuscode    *string                   `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2121,23 +2121,23 @@ func (x *DeleteSparqlStatisticsOutput) GetPayload() *DeleteStatisticsValueMap {
 }
 
 func (x *DeleteSparqlStatisticsOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *DeleteSparqlStatisticsOutput) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
 
 type DeleteStatisticsValueMap struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Active        string                 `protobuf:"bytes,427137328,opt,name=active,proto3" json:"active,omitempty"`
-	Statisticsid  string                 `protobuf:"bytes,38716584,opt,name=statisticsid,proto3" json:"statisticsid,omitempty"`
+	Active        *string                `protobuf:"bytes,427137328,opt,name=active,proto3,oneof" json:"active,omitempty"`
+	Statisticsid  *string                `protobuf:"bytes,38716584,opt,name=statisticsid,proto3,oneof" json:"statisticsid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2173,22 +2173,22 @@ func (*DeleteStatisticsValueMap) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteStatisticsValueMap) GetActive() string {
-	if x != nil {
-		return x.Active
+	if x != nil && x.Active != nil {
+		return *x.Active
 	}
 	return ""
 }
 
 func (x *DeleteStatisticsValueMap) GetStatisticsid() string {
-	if x != nil {
-		return x.Statisticsid
+	if x != nil && x.Statisticsid != nil {
+		return *x.Statisticsid
 	}
 	return ""
 }
 
 type EdgeStructure struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Count          string                 `protobuf:"bytes,431087093,opt,name=count,proto3" json:"count,omitempty"`
+	Count          *string                `protobuf:"bytes,431087093,opt,name=count,proto3,oneof" json:"count,omitempty"`
 	Edgeproperties []string               `protobuf:"bytes,355699522,rep,name=edgeproperties,proto3" json:"edgeproperties,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -2225,8 +2225,8 @@ func (*EdgeStructure) Descriptor() ([]byte, []int) {
 }
 
 func (x *EdgeStructure) GetCount() string {
-	if x != nil {
-		return x.Count
+	if x != nil && x.Count != nil {
+		return *x.Count
 	}
 	return ""
 }
@@ -2241,7 +2241,7 @@ func (x *EdgeStructure) GetEdgeproperties() []string {
 type ExecuteFastResetInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        Action                 `protobuf:"varint,73674496,opt,name=action,proto3,enum=neptunedata.Action" json:"action,omitempty"`
-	Token         string                 `protobuf:"bytes,343534131,opt,name=token,proto3" json:"token,omitempty"`
+	Token         *string                `protobuf:"bytes,343534131,opt,name=token,proto3,oneof" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2284,8 +2284,8 @@ func (x *ExecuteFastResetInput) GetAction() Action {
 }
 
 func (x *ExecuteFastResetInput) GetToken() string {
-	if x != nil {
-		return x.Token
+	if x != nil && x.Token != nil {
+		return *x.Token
 	}
 	return ""
 }
@@ -2388,7 +2388,7 @@ func (x *ExecuteGremlinExplainQueryInput) GetGremlinquery() string {
 
 type ExecuteGremlinExplainQueryOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Output        []byte                 `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        []byte                 `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2432,11 +2432,11 @@ func (x *ExecuteGremlinExplainQueryOutput) GetOutput() []byte {
 
 type ExecuteGremlinProfileQueryInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Chop          string                 `protobuf:"bytes,304696890,opt,name=chop,proto3" json:"chop,omitempty"`
+	Chop          *string                `protobuf:"bytes,304696890,opt,name=chop,proto3,oneof" json:"chop,omitempty"`
 	Gremlinquery  string                 `protobuf:"bytes,3360948,opt,name=gremlinquery,proto3" json:"gremlinquery,omitempty"`
-	Indexops      string                 `protobuf:"bytes,133985190,opt,name=indexops,proto3" json:"indexops,omitempty"`
-	Results       string                 `protobuf:"bytes,206523126,opt,name=results,proto3" json:"results,omitempty"`
-	Serializer    string                 `protobuf:"bytes,526065802,opt,name=serializer,proto3" json:"serializer,omitempty"`
+	Indexops      *string                `protobuf:"bytes,133985190,opt,name=indexops,proto3,oneof" json:"indexops,omitempty"`
+	Results       *string                `protobuf:"bytes,206523126,opt,name=results,proto3,oneof" json:"results,omitempty"`
+	Serializer    *string                `protobuf:"bytes,526065802,opt,name=serializer,proto3,oneof" json:"serializer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2472,8 +2472,8 @@ func (*ExecuteGremlinProfileQueryInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecuteGremlinProfileQueryInput) GetChop() string {
-	if x != nil {
-		return x.Chop
+	if x != nil && x.Chop != nil {
+		return *x.Chop
 	}
 	return ""
 }
@@ -2486,29 +2486,29 @@ func (x *ExecuteGremlinProfileQueryInput) GetGremlinquery() string {
 }
 
 func (x *ExecuteGremlinProfileQueryInput) GetIndexops() string {
-	if x != nil {
-		return x.Indexops
+	if x != nil && x.Indexops != nil {
+		return *x.Indexops
 	}
 	return ""
 }
 
 func (x *ExecuteGremlinProfileQueryInput) GetResults() string {
-	if x != nil {
-		return x.Results
+	if x != nil && x.Results != nil {
+		return *x.Results
 	}
 	return ""
 }
 
 func (x *ExecuteGremlinProfileQueryInput) GetSerializer() string {
-	if x != nil {
-		return x.Serializer
+	if x != nil && x.Serializer != nil {
+		return *x.Serializer
 	}
 	return ""
 }
 
 type ExecuteGremlinProfileQueryOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Output        []byte                 `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        []byte                 `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2553,7 +2553,7 @@ func (x *ExecuteGremlinProfileQueryOutput) GetOutput() []byte {
 type ExecuteGremlinQueryInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Gremlinquery  string                 `protobuf:"bytes,3360948,opt,name=gremlinquery,proto3" json:"gremlinquery,omitempty"`
-	Serializer    string                 `protobuf:"bytes,526065802,opt,name=serializer,proto3" json:"serializer,omitempty"`
+	Serializer    *string                `protobuf:"bytes,526065802,opt,name=serializer,proto3,oneof" json:"serializer,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2596,17 +2596,17 @@ func (x *ExecuteGremlinQueryInput) GetGremlinquery() string {
 }
 
 func (x *ExecuteGremlinQueryInput) GetSerializer() string {
-	if x != nil {
-		return x.Serializer
+	if x != nil && x.Serializer != nil {
+		return *x.Serializer
 	}
 	return ""
 }
 
 type ExecuteGremlinQueryOutput struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Meta          string                        `protobuf:"bytes,33443673,opt,name=meta,proto3" json:"meta,omitempty"`
-	Requestid     string                        `protobuf:"bytes,376827552,opt,name=requestid,proto3" json:"requestid,omitempty"`
-	Result        string                        `protobuf:"bytes,171406885,opt,name=result,proto3" json:"result,omitempty"`
+	Meta          *string                       `protobuf:"bytes,33443673,opt,name=meta,proto3,oneof" json:"meta,omitempty"`
+	Requestid     *string                       `protobuf:"bytes,376827552,opt,name=requestid,proto3,oneof" json:"requestid,omitempty"`
+	Result        *string                       `protobuf:"bytes,171406885,opt,name=result,proto3,oneof" json:"result,omitempty"`
 	Status        *GremlinQueryStatusAttributes `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2643,22 +2643,22 @@ func (*ExecuteGremlinQueryOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecuteGremlinQueryOutput) GetMeta() string {
-	if x != nil {
-		return x.Meta
+	if x != nil && x.Meta != nil {
+		return *x.Meta
 	}
 	return ""
 }
 
 func (x *ExecuteGremlinQueryOutput) GetRequestid() string {
-	if x != nil {
-		return x.Requestid
+	if x != nil && x.Requestid != nil {
+		return *x.Requestid
 	}
 	return ""
 }
 
 func (x *ExecuteGremlinQueryOutput) GetResult() string {
-	if x != nil {
-		return x.Result
+	if x != nil && x.Result != nil {
+		return *x.Result
 	}
 	return ""
 }
@@ -2674,7 +2674,7 @@ type ExecuteOpenCypherExplainQueryInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Explainmode     OpenCypherExplainMode  `protobuf:"varint,259893600,opt,name=explainmode,proto3,enum=neptunedata.OpenCypherExplainMode" json:"explainmode,omitempty"`
 	Opencypherquery string                 `protobuf:"bytes,215647419,opt,name=opencypherquery,proto3" json:"opencypherquery,omitempty"`
-	Parameters      string                 `protobuf:"bytes,145043162,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	Parameters      *string                `protobuf:"bytes,145043162,opt,name=parameters,proto3,oneof" json:"parameters,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2724,8 +2724,8 @@ func (x *ExecuteOpenCypherExplainQueryInput) GetOpencypherquery() string {
 }
 
 func (x *ExecuteOpenCypherExplainQueryInput) GetParameters() string {
-	if x != nil {
-		return x.Parameters
+	if x != nil && x.Parameters != nil {
+		return *x.Parameters
 	}
 	return ""
 }
@@ -2777,7 +2777,7 @@ func (x *ExecuteOpenCypherExplainQueryOutput) GetResults() string {
 type ExecuteOpenCypherQueryInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Opencypherquery string                 `protobuf:"bytes,215647419,opt,name=opencypherquery,proto3" json:"opencypherquery,omitempty"`
-	Parameters      string                 `protobuf:"bytes,145043162,opt,name=parameters,proto3" json:"parameters,omitempty"`
+	Parameters      *string                `protobuf:"bytes,145043162,opt,name=parameters,proto3,oneof" json:"parameters,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2820,8 +2820,8 @@ func (x *ExecuteOpenCypherQueryInput) GetOpencypherquery() string {
 }
 
 func (x *ExecuteOpenCypherQueryInput) GetParameters() string {
-	if x != nil {
-		return x.Parameters
+	if x != nil && x.Parameters != nil {
+		return *x.Parameters
 	}
 	return ""
 }
@@ -2992,7 +2992,7 @@ func (x *FailureByQueryException) GetRequestid() string {
 
 type FastResetToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,343534131,opt,name=token,proto3" json:"token,omitempty"`
+	Token         *string                `protobuf:"bytes,343534131,opt,name=token,proto3,oneof" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3028,27 +3028,27 @@ func (*FastResetToken) Descriptor() ([]byte, []int) {
 }
 
 func (x *FastResetToken) GetToken() string {
-	if x != nil {
-		return x.Token
+	if x != nil && x.Token != nil {
+		return *x.Token
 	}
 	return ""
 }
 
 type GetEngineStatusOutput struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
-	Dbengineversion                 string                 `protobuf:"bytes,310214672,opt,name=dbengineversion,proto3" json:"dbengineversion,omitempty"`
-	Dfequeryengine                  string                 `protobuf:"bytes,340687513,opt,name=dfequeryengine,proto3" json:"dfequeryengine,omitempty"`
+	Dbengineversion                 *string                `protobuf:"bytes,310214672,opt,name=dbengineversion,proto3,oneof" json:"dbengineversion,omitempty"`
+	Dfequeryengine                  *string                `protobuf:"bytes,340687513,opt,name=dfequeryengine,proto3,oneof" json:"dfequeryengine,omitempty"`
 	Features                        map[string]string      `protobuf:"bytes,528712651,rep,name=features,proto3" json:"features,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Gremlin                         *QueryLanguageVersion  `protobuf:"bytes,403063254,opt,name=gremlin,proto3" json:"gremlin,omitempty"`
 	Labmode                         map[string]string      `protobuf:"bytes,102681112,rep,name=labmode,proto3" json:"labmode,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Opencypher                      *QueryLanguageVersion  `protobuf:"bytes,408485239,opt,name=opencypher,proto3" json:"opencypher,omitempty"`
-	Role                            string                 `protobuf:"bytes,268382746,opt,name=role,proto3" json:"role,omitempty"`
-	Rollingbacktrxcount             string                 `protobuf:"bytes,256527229,opt,name=rollingbacktrxcount,proto3" json:"rollingbacktrxcount,omitempty"`
-	Rollingbacktrxearlieststarttime string                 `protobuf:"bytes,244401018,opt,name=rollingbacktrxearlieststarttime,proto3" json:"rollingbacktrxearlieststarttime,omitempty"`
+	Role                            *string                `protobuf:"bytes,268382746,opt,name=role,proto3,oneof" json:"role,omitempty"`
+	Rollingbacktrxcount             *string                `protobuf:"bytes,256527229,opt,name=rollingbacktrxcount,proto3,oneof" json:"rollingbacktrxcount,omitempty"`
+	Rollingbacktrxearlieststarttime *string                `protobuf:"bytes,244401018,opt,name=rollingbacktrxearlieststarttime,proto3,oneof" json:"rollingbacktrxearlieststarttime,omitempty"`
 	Settings                        map[string]string      `protobuf:"bytes,134642441,rep,name=settings,proto3" json:"settings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Sparql                          *QueryLanguageVersion  `protobuf:"bytes,423637777,opt,name=sparql,proto3" json:"sparql,omitempty"`
-	Starttime                       string                 `protobuf:"bytes,178154767,opt,name=starttime,proto3" json:"starttime,omitempty"`
-	Status                          string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Starttime                       *string                `protobuf:"bytes,178154767,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Status                          *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -3084,15 +3084,15 @@ func (*GetEngineStatusOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetEngineStatusOutput) GetDbengineversion() string {
-	if x != nil {
-		return x.Dbengineversion
+	if x != nil && x.Dbengineversion != nil {
+		return *x.Dbengineversion
 	}
 	return ""
 }
 
 func (x *GetEngineStatusOutput) GetDfequeryengine() string {
-	if x != nil {
-		return x.Dfequeryengine
+	if x != nil && x.Dfequeryengine != nil {
+		return *x.Dfequeryengine
 	}
 	return ""
 }
@@ -3126,22 +3126,22 @@ func (x *GetEngineStatusOutput) GetOpencypher() *QueryLanguageVersion {
 }
 
 func (x *GetEngineStatusOutput) GetRole() string {
-	if x != nil {
-		return x.Role
+	if x != nil && x.Role != nil {
+		return *x.Role
 	}
 	return ""
 }
 
 func (x *GetEngineStatusOutput) GetRollingbacktrxcount() string {
-	if x != nil {
-		return x.Rollingbacktrxcount
+	if x != nil && x.Rollingbacktrxcount != nil {
+		return *x.Rollingbacktrxcount
 	}
 	return ""
 }
 
 func (x *GetEngineStatusOutput) GetRollingbacktrxearlieststarttime() string {
-	if x != nil {
-		return x.Rollingbacktrxearlieststarttime
+	if x != nil && x.Rollingbacktrxearlieststarttime != nil {
+		return *x.Rollingbacktrxearlieststarttime
 	}
 	return ""
 }
@@ -3161,15 +3161,15 @@ func (x *GetEngineStatusOutput) GetSparql() *QueryLanguageVersion {
 }
 
 func (x *GetEngineStatusOutput) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
 
 func (x *GetEngineStatusOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3221,8 +3221,8 @@ func (x *GetGremlinQueryStatusInput) GetQueryid() string {
 type GetGremlinQueryStatusOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Queryevalstats *QueryEvalStats        `protobuf:"bytes,497260753,opt,name=queryevalstats,proto3" json:"queryevalstats,omitempty"`
-	Queryid        string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
-	Querystring    string                 `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
+	Queryid        *string                `protobuf:"bytes,336975759,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
+	Querystring    *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -3265,23 +3265,23 @@ func (x *GetGremlinQueryStatusOutput) GetQueryevalstats() *QueryEvalStats {
 }
 
 func (x *GetGremlinQueryStatusOutput) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
 
 func (x *GetGremlinQueryStatusOutput) GetQuerystring() string {
-	if x != nil {
-		return x.Querystring
+	if x != nil && x.Querystring != nil {
+		return *x.Querystring
 	}
 	return ""
 }
 
 type GetLoaderJobStatusInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Details       string                 `protobuf:"bytes,426242982,opt,name=details,proto3" json:"details,omitempty"`
-	Errors        string                 `protobuf:"bytes,437762695,opt,name=errors,proto3" json:"errors,omitempty"`
+	Details       *string                `protobuf:"bytes,426242982,opt,name=details,proto3,oneof" json:"details,omitempty"`
+	Errors        *string                `protobuf:"bytes,437762695,opt,name=errors,proto3,oneof" json:"errors,omitempty"`
 	Errorsperpage *int32                 `protobuf:"varint,97137031,opt,name=errorsperpage,proto3,oneof" json:"errorsperpage,omitempty"`
 	Loadid        string                 `protobuf:"bytes,284783053,opt,name=loadid,proto3" json:"loadid,omitempty"`
 	Page          *int32                 `protobuf:"varint,22936183,opt,name=page,proto3,oneof" json:"page,omitempty"`
@@ -3320,15 +3320,15 @@ func (*GetLoaderJobStatusInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetLoaderJobStatusInput) GetDetails() string {
-	if x != nil {
-		return x.Details
+	if x != nil && x.Details != nil {
+		return *x.Details
 	}
 	return ""
 }
 
 func (x *GetLoaderJobStatusInput) GetErrors() string {
-	if x != nil {
-		return x.Errors
+	if x != nil && x.Errors != nil {
+		return *x.Errors
 	}
 	return ""
 }
@@ -3409,7 +3409,7 @@ func (x *GetLoaderJobStatusOutput) GetStatus() string {
 type GetMLDataProcessingJobInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3452,17 +3452,17 @@ func (x *GetMLDataProcessingJobInput) GetId() string {
 }
 
 func (x *GetMLDataProcessingJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 type GetMLDataProcessingJobOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Processingjob *MlResourceDefinition  `protobuf:"bytes,41967690,opt,name=processingjob,proto3" json:"processingjob,omitempty"`
-	Status        string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status        *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3498,8 +3498,8 @@ func (*GetMLDataProcessingJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetMLDataProcessingJobOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -3512,8 +3512,8 @@ func (x *GetMLDataProcessingJobOutput) GetProcessingjob() *MlResourceDefinition 
 }
 
 func (x *GetMLDataProcessingJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3521,7 +3521,7 @@ func (x *GetMLDataProcessingJobOutput) GetStatus() string {
 type GetMLEndpointInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3564,8 +3564,8 @@ func (x *GetMLEndpointInput) GetId() string {
 }
 
 func (x *GetMLEndpointInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -3574,8 +3574,8 @@ type GetMLEndpointOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Endpoint       *MlResourceDefinition  `protobuf:"bytes,414707837,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
 	Endpointconfig *MlConfigDefinition    `protobuf:"bytes,312791147,opt,name=endpointconfig,proto3" json:"endpointconfig,omitempty"`
-	Id             string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Status         string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Id             *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Status         *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -3625,15 +3625,15 @@ func (x *GetMLEndpointOutput) GetEndpointconfig() *MlConfigDefinition {
 }
 
 func (x *GetMLEndpointOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *GetMLEndpointOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3641,7 +3641,7 @@ func (x *GetMLEndpointOutput) GetStatus() string {
 type GetMLModelTrainingJobInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3684,8 +3684,8 @@ func (x *GetMLModelTrainingJobInput) GetId() string {
 }
 
 func (x *GetMLModelTrainingJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -3693,11 +3693,11 @@ func (x *GetMLModelTrainingJobInput) GetNeptuneiamrolearn() string {
 type GetMLModelTrainingJobOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Hpojob            *MlResourceDefinition  `protobuf:"bytes,164785778,opt,name=hpojob,proto3" json:"hpojob,omitempty"`
-	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Id                *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Mlmodels          []*MlConfigDefinition  `protobuf:"bytes,97520431,rep,name=mlmodels,proto3" json:"mlmodels,omitempty"`
 	Modeltransformjob *MlResourceDefinition  `protobuf:"bytes,163202870,opt,name=modeltransformjob,proto3" json:"modeltransformjob,omitempty"`
 	Processingjob     *MlResourceDefinition  `protobuf:"bytes,41967690,opt,name=processingjob,proto3" json:"processingjob,omitempty"`
-	Status            string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status            *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3740,8 +3740,8 @@ func (x *GetMLModelTrainingJobOutput) GetHpojob() *MlResourceDefinition {
 }
 
 func (x *GetMLModelTrainingJobOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -3768,8 +3768,8 @@ func (x *GetMLModelTrainingJobOutput) GetProcessingjob() *MlResourceDefinition {
 }
 
 func (x *GetMLModelTrainingJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3777,7 +3777,7 @@ func (x *GetMLModelTrainingJobOutput) GetStatus() string {
 type GetMLModelTransformJobInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Id                string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3820,8 +3820,8 @@ func (x *GetMLModelTransformJobInput) GetId() string {
 }
 
 func (x *GetMLModelTransformJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -3829,10 +3829,10 @@ func (x *GetMLModelTransformJobInput) GetNeptuneiamrolearn() string {
 type GetMLModelTransformJobOutput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Baseprocessingjob       *MlResourceDefinition  `protobuf:"bytes,188425699,opt,name=baseprocessingjob,proto3" json:"baseprocessingjob,omitempty"`
-	Id                      string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Id                      *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Models                  []*MlConfigDefinition  `protobuf:"bytes,343003788,rep,name=models,proto3" json:"models,omitempty"`
 	Remotemodeltransformjob *MlResourceDefinition  `protobuf:"bytes,473238320,opt,name=remotemodeltransformjob,proto3" json:"remotemodeltransformjob,omitempty"`
-	Status                  string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Status                  *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -3875,8 +3875,8 @@ func (x *GetMLModelTransformJobOutput) GetBaseprocessingjob() *MlResourceDefinit
 }
 
 func (x *GetMLModelTransformJobOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -3896,8 +3896,8 @@ func (x *GetMLModelTransformJobOutput) GetRemotemodeltransformjob() *MlResourceD
 }
 
 func (x *GetMLModelTransformJobOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3949,8 +3949,8 @@ func (x *GetOpenCypherQueryStatusInput) GetQueryid() string {
 type GetOpenCypherQueryStatusOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Queryevalstats *QueryEvalStats        `protobuf:"bytes,497260753,opt,name=queryevalstats,proto3" json:"queryevalstats,omitempty"`
-	Queryid        string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
-	Querystring    string                 `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
+	Queryid        *string                `protobuf:"bytes,336975759,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
+	Querystring    *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -3993,15 +3993,15 @@ func (x *GetOpenCypherQueryStatusOutput) GetQueryevalstats() *QueryEvalStats {
 }
 
 func (x *GetOpenCypherQueryStatusOutput) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
 
 func (x *GetOpenCypherQueryStatusOutput) GetQuerystring() string {
-	if x != nil {
-		return x.Querystring
+	if x != nil && x.Querystring != nil {
+		return *x.Querystring
 	}
 	return ""
 }
@@ -4060,11 +4060,11 @@ func (x *GetPropertygraphStatisticsOutput) GetStatus() string {
 
 type GetPropertygraphStreamInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Commitnum     string                 `protobuf:"bytes,254685821,opt,name=commitnum,proto3" json:"commitnum,omitempty"`
+	Commitnum     *string                `protobuf:"bytes,254685821,opt,name=commitnum,proto3,oneof" json:"commitnum,omitempty"`
 	Encoding      Encoding               `protobuf:"varint,519819761,opt,name=encoding,proto3,enum=neptunedata.Encoding" json:"encoding,omitempty"`
 	Iteratortype  IteratorType           `protobuf:"varint,141085528,opt,name=iteratortype,proto3,enum=neptunedata.IteratorType" json:"iteratortype,omitempty"`
-	Limit         string                 `protobuf:"bytes,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
-	Opnum         string                 `protobuf:"bytes,347515011,opt,name=opnum,proto3" json:"opnum,omitempty"`
+	Limit         *string                `protobuf:"bytes,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
+	Opnum         *string                `protobuf:"bytes,347515011,opt,name=opnum,proto3,oneof" json:"opnum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4100,8 +4100,8 @@ func (*GetPropertygraphStreamInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPropertygraphStreamInput) GetCommitnum() string {
-	if x != nil {
-		return x.Commitnum
+	if x != nil && x.Commitnum != nil {
+		return *x.Commitnum
 	}
 	return ""
 }
@@ -4121,15 +4121,15 @@ func (x *GetPropertygraphStreamInput) GetIteratortype() IteratorType {
 }
 
 func (x *GetPropertygraphStreamInput) GetLimit() string {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return ""
 }
 
 func (x *GetPropertygraphStreamInput) GetOpnum() string {
-	if x != nil {
-		return x.Opnum
+	if x != nil && x.Opnum != nil {
+		return *x.Opnum
 	}
 	return ""
 }
@@ -4257,7 +4257,7 @@ func (x *GetPropertygraphSummaryInput) GetMode() GraphSummaryType {
 type GetPropertygraphSummaryOutput struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
 	Payload       *PropertygraphSummaryValueMap `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
-	Statuscode    string                        `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode    *string                       `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4300,8 +4300,8 @@ func (x *GetPropertygraphSummaryOutput) GetPayload() *PropertygraphSummaryValueM
 }
 
 func (x *GetPropertygraphSummaryOutput) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -4353,7 +4353,7 @@ func (x *GetRDFGraphSummaryInput) GetMode() GraphSummaryType {
 type GetRDFGraphSummaryOutput struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
 	Payload       *RDFGraphSummaryValueMap `protobuf:"bytes,319780774,opt,name=payload,proto3" json:"payload,omitempty"`
-	Statuscode    string                   `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode    *string                  `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4396,8 +4396,8 @@ func (x *GetRDFGraphSummaryOutput) GetPayload() *RDFGraphSummaryValueMap {
 }
 
 func (x *GetRDFGraphSummaryOutput) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -4456,11 +4456,11 @@ func (x *GetSparqlStatisticsOutput) GetStatus() string {
 
 type GetSparqlStreamInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Commitnum     string                 `protobuf:"bytes,254685821,opt,name=commitnum,proto3" json:"commitnum,omitempty"`
+	Commitnum     *string                `protobuf:"bytes,254685821,opt,name=commitnum,proto3,oneof" json:"commitnum,omitempty"`
 	Encoding      Encoding               `protobuf:"varint,519819761,opt,name=encoding,proto3,enum=neptunedata.Encoding" json:"encoding,omitempty"`
 	Iteratortype  IteratorType           `protobuf:"varint,141085528,opt,name=iteratortype,proto3,enum=neptunedata.IteratorType" json:"iteratortype,omitempty"`
-	Limit         string                 `protobuf:"bytes,316332341,opt,name=limit,proto3" json:"limit,omitempty"`
-	Opnum         string                 `protobuf:"bytes,347515011,opt,name=opnum,proto3" json:"opnum,omitempty"`
+	Limit         *string                `protobuf:"bytes,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
+	Opnum         *string                `protobuf:"bytes,347515011,opt,name=opnum,proto3,oneof" json:"opnum,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4496,8 +4496,8 @@ func (*GetSparqlStreamInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetSparqlStreamInput) GetCommitnum() string {
-	if x != nil {
-		return x.Commitnum
+	if x != nil && x.Commitnum != nil {
+		return *x.Commitnum
 	}
 	return ""
 }
@@ -4517,15 +4517,15 @@ func (x *GetSparqlStreamInput) GetIteratortype() IteratorType {
 }
 
 func (x *GetSparqlStreamInput) GetLimit() string {
-	if x != nil {
-		return x.Limit
+	if x != nil && x.Limit != nil {
+		return *x.Limit
 	}
 	return ""
 }
 
 func (x *GetSparqlStreamInput) GetOpnum() string {
-	if x != nil {
-		return x.Opnum
+	if x != nil && x.Opnum != nil {
+		return *x.Opnum
 	}
 	return ""
 }
@@ -4609,8 +4609,8 @@ func (x *GetSparqlStreamOutput) GetTotalrecords() string {
 type GremlinQueryStatus struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Queryevalstats *QueryEvalStats        `protobuf:"bytes,497260753,opt,name=queryevalstats,proto3" json:"queryevalstats,omitempty"`
-	Queryid        string                 `protobuf:"bytes,336975759,opt,name=queryid,proto3" json:"queryid,omitempty"`
-	Querystring    string                 `protobuf:"bytes,520568967,opt,name=querystring,proto3" json:"querystring,omitempty"`
+	Queryid        *string                `protobuf:"bytes,336975759,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
+	Querystring    *string                `protobuf:"bytes,520568967,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4653,24 +4653,24 @@ func (x *GremlinQueryStatus) GetQueryevalstats() *QueryEvalStats {
 }
 
 func (x *GremlinQueryStatus) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
 
 func (x *GremlinQueryStatus) GetQuerystring() string {
-	if x != nil {
-		return x.Querystring
+	if x != nil && x.Querystring != nil {
+		return *x.Querystring
 	}
 	return ""
 }
 
 type GremlinQueryStatusAttributes struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Attributes    string                 `protobuf:"bytes,33545109,opt,name=attributes,proto3" json:"attributes,omitempty"`
-	Code          string                 `protobuf:"bytes,422669557,opt,name=code,proto3" json:"code,omitempty"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Attributes    *string                `protobuf:"bytes,33545109,opt,name=attributes,proto3,oneof" json:"attributes,omitempty"`
+	Code          *string                `protobuf:"bytes,422669557,opt,name=code,proto3,oneof" json:"code,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4706,22 +4706,22 @@ func (*GremlinQueryStatusAttributes) Descriptor() ([]byte, []int) {
 }
 
 func (x *GremlinQueryStatusAttributes) GetAttributes() string {
-	if x != nil {
-		return x.Attributes
+	if x != nil && x.Attributes != nil {
+		return *x.Attributes
 	}
 	return ""
 }
 
 func (x *GremlinQueryStatusAttributes) GetCode() string {
-	if x != nil {
-		return x.Code
+	if x != nil && x.Code != nil {
+		return *x.Code
 	}
 	return ""
 }
 
 func (x *GremlinQueryStatusAttributes) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5028,7 +5028,7 @@ func (x *InvalidParameterException) GetRequestid() string {
 
 type ListGremlinQueriesInput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Includewaiting string                 `protobuf:"bytes,295559763,opt,name=includewaiting,proto3" json:"includewaiting,omitempty"`
+	Includewaiting *string                `protobuf:"bytes,295559763,opt,name=includewaiting,proto3,oneof" json:"includewaiting,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5064,17 +5064,17 @@ func (*ListGremlinQueriesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListGremlinQueriesInput) GetIncludewaiting() string {
-	if x != nil {
-		return x.Includewaiting
+	if x != nil && x.Includewaiting != nil {
+		return *x.Includewaiting
 	}
 	return ""
 }
 
 type ListGremlinQueriesOutput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Acceptedquerycount string                 `protobuf:"bytes,328121052,opt,name=acceptedquerycount,proto3" json:"acceptedquerycount,omitempty"`
+	Acceptedquerycount *string                `protobuf:"bytes,328121052,opt,name=acceptedquerycount,proto3,oneof" json:"acceptedquerycount,omitempty"`
 	Queries            []*GremlinQueryStatus  `protobuf:"bytes,26054724,rep,name=queries,proto3" json:"queries,omitempty"`
-	Runningquerycount  string                 `protobuf:"bytes,451774504,opt,name=runningquerycount,proto3" json:"runningquerycount,omitempty"`
+	Runningquerycount  *string                `protobuf:"bytes,451774504,opt,name=runningquerycount,proto3,oneof" json:"runningquerycount,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -5110,8 +5110,8 @@ func (*ListGremlinQueriesOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListGremlinQueriesOutput) GetAcceptedquerycount() string {
-	if x != nil {
-		return x.Acceptedquerycount
+	if x != nil && x.Acceptedquerycount != nil {
+		return *x.Acceptedquerycount
 	}
 	return ""
 }
@@ -5124,15 +5124,15 @@ func (x *ListGremlinQueriesOutput) GetQueries() []*GremlinQueryStatus {
 }
 
 func (x *ListGremlinQueriesOutput) GetRunningquerycount() string {
-	if x != nil {
-		return x.Runningquerycount
+	if x != nil && x.Runningquerycount != nil {
+		return *x.Runningquerycount
 	}
 	return ""
 }
 
 type ListLoaderJobsInput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Includequeuedloads string                 `protobuf:"bytes,224102040,opt,name=includequeuedloads,proto3" json:"includequeuedloads,omitempty"`
+	Includequeuedloads *string                `protobuf:"bytes,224102040,opt,name=includequeuedloads,proto3,oneof" json:"includequeuedloads,omitempty"`
 	Limit              *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -5169,8 +5169,8 @@ func (*ListLoaderJobsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListLoaderJobsInput) GetIncludequeuedloads() string {
-	if x != nil {
-		return x.Includequeuedloads
+	if x != nil && x.Includequeuedloads != nil {
+		return *x.Includequeuedloads
 	}
 	return ""
 }
@@ -5237,7 +5237,7 @@ func (x *ListLoaderJobsOutput) GetStatus() string {
 type ListMLDataProcessingJobsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5280,8 +5280,8 @@ func (x *ListMLDataProcessingJobsInput) GetMaxitems() int32 {
 }
 
 func (x *ListMLDataProcessingJobsInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -5333,7 +5333,7 @@ func (x *ListMLDataProcessingJobsOutput) GetIds() []string {
 type ListMLEndpointsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5376,8 +5376,8 @@ func (x *ListMLEndpointsInput) GetMaxitems() int32 {
 }
 
 func (x *ListMLEndpointsInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -5429,7 +5429,7 @@ func (x *ListMLEndpointsOutput) GetIds() []string {
 type ListMLModelTrainingJobsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5472,8 +5472,8 @@ func (x *ListMLModelTrainingJobsInput) GetMaxitems() int32 {
 }
 
 func (x *ListMLModelTrainingJobsInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -5525,7 +5525,7 @@ func (x *ListMLModelTrainingJobsOutput) GetIds() []string {
 type ListMLModelTransformJobsInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Maxitems          *int32                 `protobuf:"varint,486225716,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Neptuneiamrolearn string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
+	Neptuneiamrolearn *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5568,8 +5568,8 @@ func (x *ListMLModelTransformJobsInput) GetMaxitems() int32 {
 }
 
 func (x *ListMLModelTransformJobsInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
@@ -5620,7 +5620,7 @@ func (x *ListMLModelTransformJobsOutput) GetIds() []string {
 
 type ListOpenCypherQueriesInput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Includewaiting string                 `protobuf:"bytes,295559763,opt,name=includewaiting,proto3" json:"includewaiting,omitempty"`
+	Includewaiting *string                `protobuf:"bytes,295559763,opt,name=includewaiting,proto3,oneof" json:"includewaiting,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5656,17 +5656,17 @@ func (*ListOpenCypherQueriesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListOpenCypherQueriesInput) GetIncludewaiting() string {
-	if x != nil {
-		return x.Includewaiting
+	if x != nil && x.Includewaiting != nil {
+		return *x.Includewaiting
 	}
 	return ""
 }
 
 type ListOpenCypherQueriesOutput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Acceptedquerycount string                 `protobuf:"bytes,328121052,opt,name=acceptedquerycount,proto3" json:"acceptedquerycount,omitempty"`
+	Acceptedquerycount *string                `protobuf:"bytes,328121052,opt,name=acceptedquerycount,proto3,oneof" json:"acceptedquerycount,omitempty"`
 	Queries            []*GremlinQueryStatus  `protobuf:"bytes,26054724,rep,name=queries,proto3" json:"queries,omitempty"`
-	Runningquerycount  string                 `protobuf:"bytes,451774504,opt,name=runningquerycount,proto3" json:"runningquerycount,omitempty"`
+	Runningquerycount  *string                `protobuf:"bytes,451774504,opt,name=runningquerycount,proto3,oneof" json:"runningquerycount,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -5702,8 +5702,8 @@ func (*ListOpenCypherQueriesOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListOpenCypherQueriesOutput) GetAcceptedquerycount() string {
-	if x != nil {
-		return x.Acceptedquerycount
+	if x != nil && x.Acceptedquerycount != nil {
+		return *x.Acceptedquerycount
 	}
 	return ""
 }
@@ -5716,8 +5716,8 @@ func (x *ListOpenCypherQueriesOutput) GetQueries() []*GremlinQueryStatus {
 }
 
 func (x *ListOpenCypherQueriesOutput) GetRunningquerycount() string {
-	if x != nil {
-		return x.Runningquerycount
+	if x != nil && x.Runningquerycount != nil {
+		return *x.Runningquerycount
 	}
 	return ""
 }
@@ -6320,8 +6320,8 @@ func (x *MissingParameterException) GetRequestid() string {
 
 type MlConfigDefinition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6357,27 +6357,27 @@ func (*MlConfigDefinition) Descriptor() ([]byte, []int) {
 }
 
 func (x *MlConfigDefinition) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *MlConfigDefinition) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type MlResourceDefinition struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Arn              string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Cloudwatchlogurl string                 `protobuf:"bytes,289985995,opt,name=cloudwatchlogurl,proto3" json:"cloudwatchlogurl,omitempty"`
-	Failurereason    string                 `protobuf:"bytes,174266494,opt,name=failurereason,proto3" json:"failurereason,omitempty"`
-	Name             string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Outputlocation   string                 `protobuf:"bytes,366063380,opt,name=outputlocation,proto3" json:"outputlocation,omitempty"`
-	Status           string                 `protobuf:"bytes,441153520,opt,name=status,proto3" json:"status,omitempty"`
+	Arn              *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Cloudwatchlogurl *string                `protobuf:"bytes,289985995,opt,name=cloudwatchlogurl,proto3,oneof" json:"cloudwatchlogurl,omitempty"`
+	Failurereason    *string                `protobuf:"bytes,174266494,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
+	Name             *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Outputlocation   *string                `protobuf:"bytes,366063380,opt,name=outputlocation,proto3,oneof" json:"outputlocation,omitempty"`
+	Status           *string                `protobuf:"bytes,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -6413,50 +6413,50 @@ func (*MlResourceDefinition) Descriptor() ([]byte, []int) {
 }
 
 func (x *MlResourceDefinition) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *MlResourceDefinition) GetCloudwatchlogurl() string {
-	if x != nil {
-		return x.Cloudwatchlogurl
+	if x != nil && x.Cloudwatchlogurl != nil {
+		return *x.Cloudwatchlogurl
 	}
 	return ""
 }
 
 func (x *MlResourceDefinition) GetFailurereason() string {
-	if x != nil {
-		return x.Failurereason
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
 	}
 	return ""
 }
 
 func (x *MlResourceDefinition) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *MlResourceDefinition) GetOutputlocation() string {
-	if x != nil {
-		return x.Outputlocation
+	if x != nil && x.Outputlocation != nil {
+		return *x.Outputlocation
 	}
 	return ""
 }
 
 func (x *MlResourceDefinition) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type NodeStructure struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Count                      string                 `protobuf:"bytes,431087093,opt,name=count,proto3" json:"count,omitempty"`
+	Count                      *string                `protobuf:"bytes,431087093,opt,name=count,proto3,oneof" json:"count,omitempty"`
 	Distinctoutgoingedgelabels []string               `protobuf:"bytes,231680758,rep,name=distinctoutgoingedgelabels,proto3" json:"distinctoutgoingedgelabels,omitempty"`
 	Nodeproperties             []string               `protobuf:"bytes,322037957,rep,name=nodeproperties,proto3" json:"nodeproperties,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -6494,8 +6494,8 @@ func (*NodeStructure) Descriptor() ([]byte, []int) {
 }
 
 func (x *NodeStructure) GetCount() string {
-	if x != nil {
-		return x.Count
+	if x != nil && x.Count != nil {
+		return *x.Count
 	}
 	return ""
 }
@@ -6636,10 +6636,10 @@ func (x *PreconditionsFailedException) GetRequestid() string {
 
 type PropertygraphData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	From          string                 `protobuf:"bytes,365789302,opt,name=from,proto3" json:"from,omitempty"`
+	From          *string                `protobuf:"bytes,365789302,opt,name=from,proto3,oneof" json:"from,omitempty"`
 	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
 	Key           string                 `protobuf:"bytes,135645293,opt,name=key,proto3" json:"key,omitempty"`
-	To            string                 `protobuf:"bytes,38094885,opt,name=to,proto3" json:"to,omitempty"`
+	To            *string                `protobuf:"bytes,38094885,opt,name=to,proto3,oneof" json:"to,omitempty"`
 	Type          string                 `protobuf:"bytes,287830350,opt,name=type,proto3" json:"type,omitempty"`
 	Value         string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -6677,8 +6677,8 @@ func (*PropertygraphData) Descriptor() ([]byte, []int) {
 }
 
 func (x *PropertygraphData) GetFrom() string {
-	if x != nil {
-		return x.From
+	if x != nil && x.From != nil {
+		return *x.From
 	}
 	return ""
 }
@@ -6698,8 +6698,8 @@ func (x *PropertygraphData) GetKey() string {
 }
 
 func (x *PropertygraphData) GetTo() string {
-	if x != nil {
-		return x.To
+	if x != nil && x.To != nil {
+		return *x.To
 	}
 	return ""
 }
@@ -6723,7 +6723,7 @@ type PropertygraphRecord struct {
 	Committimestampinmillis string                 `protobuf:"bytes,386624522,opt,name=committimestampinmillis,proto3" json:"committimestampinmillis,omitempty"`
 	Data                    *PropertygraphData     `protobuf:"bytes,410182310,opt,name=data,proto3" json:"data,omitempty"`
 	Eventid                 map[string]string      `protobuf:"bytes,255267571,rep,name=eventid,proto3" json:"eventid,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Islastop                string                 `protobuf:"bytes,175475367,opt,name=islastop,proto3" json:"islastop,omitempty"`
+	Islastop                *string                `protobuf:"bytes,175475367,opt,name=islastop,proto3,oneof" json:"islastop,omitempty"`
 	Op                      string                 `protobuf:"bytes,523513003,opt,name=op,proto3" json:"op,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -6781,8 +6781,8 @@ func (x *PropertygraphRecord) GetEventid() map[string]string {
 }
 
 func (x *PropertygraphRecord) GetIslastop() string {
-	if x != nil {
-		return x.Islastop
+	if x != nil && x.Islastop != nil {
+		return *x.Islastop
 	}
 	return ""
 }
@@ -6802,14 +6802,14 @@ type PropertygraphSummary struct {
 	Nodelabels              []string                  `protobuf:"bytes,46136147,rep,name=nodelabels,proto3" json:"nodelabels,omitempty"`
 	Nodeproperties          []*LongValuedMapListEntry `protobuf:"bytes,322037957,rep,name=nodeproperties,proto3" json:"nodeproperties,omitempty"`
 	Nodestructures          []*NodeStructure          `protobuf:"bytes,29611672,rep,name=nodestructures,proto3" json:"nodestructures,omitempty"`
-	Numedgelabels           string                    `protobuf:"bytes,363556966,opt,name=numedgelabels,proto3" json:"numedgelabels,omitempty"`
-	Numedgeproperties       string                    `protobuf:"bytes,330298668,opt,name=numedgeproperties,proto3" json:"numedgeproperties,omitempty"`
-	Numedges                string                    `protobuf:"bytes,330523448,opt,name=numedges,proto3" json:"numedges,omitempty"`
-	Numnodelabels           string                    `protobuf:"bytes,494223753,opt,name=numnodelabels,proto3" json:"numnodelabels,omitempty"`
-	Numnodeproperties       string                    `protobuf:"bytes,504428443,opt,name=numnodeproperties,proto3" json:"numnodeproperties,omitempty"`
-	Numnodes                string                    `protobuf:"bytes,47949361,opt,name=numnodes,proto3" json:"numnodes,omitempty"`
-	Totaledgepropertyvalues string                    `protobuf:"bytes,124421148,opt,name=totaledgepropertyvalues,proto3" json:"totaledgepropertyvalues,omitempty"`
-	Totalnodepropertyvalues string                    `protobuf:"bytes,14636383,opt,name=totalnodepropertyvalues,proto3" json:"totalnodepropertyvalues,omitempty"`
+	Numedgelabels           *string                   `protobuf:"bytes,363556966,opt,name=numedgelabels,proto3,oneof" json:"numedgelabels,omitempty"`
+	Numedgeproperties       *string                   `protobuf:"bytes,330298668,opt,name=numedgeproperties,proto3,oneof" json:"numedgeproperties,omitempty"`
+	Numedges                *string                   `protobuf:"bytes,330523448,opt,name=numedges,proto3,oneof" json:"numedges,omitempty"`
+	Numnodelabels           *string                   `protobuf:"bytes,494223753,opt,name=numnodelabels,proto3,oneof" json:"numnodelabels,omitempty"`
+	Numnodeproperties       *string                   `protobuf:"bytes,504428443,opt,name=numnodeproperties,proto3,oneof" json:"numnodeproperties,omitempty"`
+	Numnodes                *string                   `protobuf:"bytes,47949361,opt,name=numnodes,proto3,oneof" json:"numnodes,omitempty"`
+	Totaledgepropertyvalues *string                   `protobuf:"bytes,124421148,opt,name=totaledgepropertyvalues,proto3,oneof" json:"totaledgepropertyvalues,omitempty"`
+	Totalnodepropertyvalues *string                   `protobuf:"bytes,14636383,opt,name=totalnodepropertyvalues,proto3,oneof" json:"totalnodepropertyvalues,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -6887,57 +6887,57 @@ func (x *PropertygraphSummary) GetNodestructures() []*NodeStructure {
 }
 
 func (x *PropertygraphSummary) GetNumedgelabels() string {
-	if x != nil {
-		return x.Numedgelabels
+	if x != nil && x.Numedgelabels != nil {
+		return *x.Numedgelabels
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetNumedgeproperties() string {
-	if x != nil {
-		return x.Numedgeproperties
+	if x != nil && x.Numedgeproperties != nil {
+		return *x.Numedgeproperties
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetNumedges() string {
-	if x != nil {
-		return x.Numedges
+	if x != nil && x.Numedges != nil {
+		return *x.Numedges
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetNumnodelabels() string {
-	if x != nil {
-		return x.Numnodelabels
+	if x != nil && x.Numnodelabels != nil {
+		return *x.Numnodelabels
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetNumnodeproperties() string {
-	if x != nil {
-		return x.Numnodeproperties
+	if x != nil && x.Numnodeproperties != nil {
+		return *x.Numnodeproperties
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetNumnodes() string {
-	if x != nil {
-		return x.Numnodes
+	if x != nil && x.Numnodes != nil {
+		return *x.Numnodes
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetTotaledgepropertyvalues() string {
-	if x != nil {
-		return x.Totaledgepropertyvalues
+	if x != nil && x.Totaledgepropertyvalues != nil {
+		return *x.Totaledgepropertyvalues
 	}
 	return ""
 }
 
 func (x *PropertygraphSummary) GetTotalnodepropertyvalues() string {
-	if x != nil {
-		return x.Totalnodepropertyvalues
+	if x != nil && x.Totalnodepropertyvalues != nil {
+		return *x.Totalnodepropertyvalues
 	}
 	return ""
 }
@@ -6945,8 +6945,8 @@ func (x *PropertygraphSummary) GetTotalnodepropertyvalues() string {
 type PropertygraphSummaryValueMap struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Graphsummary                  *PropertygraphSummary  `protobuf:"bytes,503671010,opt,name=graphsummary,proto3" json:"graphsummary,omitempty"`
-	Laststatisticscomputationtime string                 `protobuf:"bytes,71169761,opt,name=laststatisticscomputationtime,proto3" json:"laststatisticscomputationtime,omitempty"`
-	Version                       string                 `protobuf:"bytes,108113560,opt,name=version,proto3" json:"version,omitempty"`
+	Laststatisticscomputationtime *string                `protobuf:"bytes,71169761,opt,name=laststatisticscomputationtime,proto3,oneof" json:"laststatisticscomputationtime,omitempty"`
+	Version                       *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -6989,25 +6989,25 @@ func (x *PropertygraphSummaryValueMap) GetGraphsummary() *PropertygraphSummary {
 }
 
 func (x *PropertygraphSummaryValueMap) GetLaststatisticscomputationtime() string {
-	if x != nil {
-		return x.Laststatisticscomputationtime
+	if x != nil && x.Laststatisticscomputationtime != nil {
+		return *x.Laststatisticscomputationtime
 	}
 	return ""
 }
 
 func (x *PropertygraphSummaryValueMap) GetVersion() string {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return ""
 }
 
 type QueryEvalStats struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cancelled     string                 `protobuf:"bytes,73267229,opt,name=cancelled,proto3" json:"cancelled,omitempty"`
-	Elapsed       string                 `protobuf:"bytes,506590108,opt,name=elapsed,proto3" json:"elapsed,omitempty"`
-	Subqueries    string                 `protobuf:"bytes,514603700,opt,name=subqueries,proto3" json:"subqueries,omitempty"`
-	Waited        string                 `protobuf:"bytes,136179618,opt,name=waited,proto3" json:"waited,omitempty"`
+	Cancelled     *string                `protobuf:"bytes,73267229,opt,name=cancelled,proto3,oneof" json:"cancelled,omitempty"`
+	Elapsed       *string                `protobuf:"bytes,506590108,opt,name=elapsed,proto3,oneof" json:"elapsed,omitempty"`
+	Subqueries    *string                `protobuf:"bytes,514603700,opt,name=subqueries,proto3,oneof" json:"subqueries,omitempty"`
+	Waited        *string                `protobuf:"bytes,136179618,opt,name=waited,proto3,oneof" json:"waited,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7043,29 +7043,29 @@ func (*QueryEvalStats) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryEvalStats) GetCancelled() string {
-	if x != nil {
-		return x.Cancelled
+	if x != nil && x.Cancelled != nil {
+		return *x.Cancelled
 	}
 	return ""
 }
 
 func (x *QueryEvalStats) GetElapsed() string {
-	if x != nil {
-		return x.Elapsed
+	if x != nil && x.Elapsed != nil {
+		return *x.Elapsed
 	}
 	return ""
 }
 
 func (x *QueryEvalStats) GetSubqueries() string {
-	if x != nil {
-		return x.Subqueries
+	if x != nil && x.Subqueries != nil {
+		return *x.Subqueries
 	}
 	return ""
 }
 
 func (x *QueryEvalStats) GetWaited() string {
-	if x != nil {
-		return x.Waited
+	if x != nil && x.Waited != nil {
+		return *x.Waited
 	}
 	return ""
 }
@@ -7297,10 +7297,10 @@ func (x *QueryTooLargeException) GetRequestid() string {
 type RDFGraphSummary struct {
 	state                 protoimpl.MessageState    `protogen:"open.v1"`
 	Classes               []string                  `protobuf:"bytes,271427240,rep,name=classes,proto3" json:"classes,omitempty"`
-	Numclasses            string                    `protobuf:"bytes,140728298,opt,name=numclasses,proto3" json:"numclasses,omitempty"`
-	Numdistinctpredicates string                    `protobuf:"bytes,163279342,opt,name=numdistinctpredicates,proto3" json:"numdistinctpredicates,omitempty"`
-	Numdistinctsubjects   string                    `protobuf:"bytes,145663843,opt,name=numdistinctsubjects,proto3" json:"numdistinctsubjects,omitempty"`
-	Numquads              string                    `protobuf:"bytes,514583334,opt,name=numquads,proto3" json:"numquads,omitempty"`
+	Numclasses            *string                   `protobuf:"bytes,140728298,opt,name=numclasses,proto3,oneof" json:"numclasses,omitempty"`
+	Numdistinctpredicates *string                   `protobuf:"bytes,163279342,opt,name=numdistinctpredicates,proto3,oneof" json:"numdistinctpredicates,omitempty"`
+	Numdistinctsubjects   *string                   `protobuf:"bytes,145663843,opt,name=numdistinctsubjects,proto3,oneof" json:"numdistinctsubjects,omitempty"`
+	Numquads              *string                   `protobuf:"bytes,514583334,opt,name=numquads,proto3,oneof" json:"numquads,omitempty"`
 	Predicates            []*LongValuedMapListEntry `protobuf:"bytes,171361944,rep,name=predicates,proto3" json:"predicates,omitempty"`
 	Subjectstructures     []*SubjectStructure       `protobuf:"bytes,355907126,rep,name=subjectstructures,proto3" json:"subjectstructures,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -7345,29 +7345,29 @@ func (x *RDFGraphSummary) GetClasses() []string {
 }
 
 func (x *RDFGraphSummary) GetNumclasses() string {
-	if x != nil {
-		return x.Numclasses
+	if x != nil && x.Numclasses != nil {
+		return *x.Numclasses
 	}
 	return ""
 }
 
 func (x *RDFGraphSummary) GetNumdistinctpredicates() string {
-	if x != nil {
-		return x.Numdistinctpredicates
+	if x != nil && x.Numdistinctpredicates != nil {
+		return *x.Numdistinctpredicates
 	}
 	return ""
 }
 
 func (x *RDFGraphSummary) GetNumdistinctsubjects() string {
-	if x != nil {
-		return x.Numdistinctsubjects
+	if x != nil && x.Numdistinctsubjects != nil {
+		return *x.Numdistinctsubjects
 	}
 	return ""
 }
 
 func (x *RDFGraphSummary) GetNumquads() string {
-	if x != nil {
-		return x.Numquads
+	if x != nil && x.Numquads != nil {
+		return *x.Numquads
 	}
 	return ""
 }
@@ -7389,8 +7389,8 @@ func (x *RDFGraphSummary) GetSubjectstructures() []*SubjectStructure {
 type RDFGraphSummaryValueMap struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
 	Graphsummary                  *RDFGraphSummary       `protobuf:"bytes,503671010,opt,name=graphsummary,proto3" json:"graphsummary,omitempty"`
-	Laststatisticscomputationtime string                 `protobuf:"bytes,71169761,opt,name=laststatisticscomputationtime,proto3" json:"laststatisticscomputationtime,omitempty"`
-	Version                       string                 `protobuf:"bytes,108113560,opt,name=version,proto3" json:"version,omitempty"`
+	Laststatisticscomputationtime *string                `protobuf:"bytes,71169761,opt,name=laststatisticscomputationtime,proto3,oneof" json:"laststatisticscomputationtime,omitempty"`
+	Version                       *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -7433,15 +7433,15 @@ func (x *RDFGraphSummaryValueMap) GetGraphsummary() *RDFGraphSummary {
 }
 
 func (x *RDFGraphSummaryValueMap) GetLaststatisticscomputationtime() string {
-	if x != nil {
-		return x.Laststatisticscomputationtime
+	if x != nil && x.Laststatisticscomputationtime != nil {
+		return *x.Laststatisticscomputationtime
 	}
 	return ""
 }
 
 func (x *RDFGraphSummaryValueMap) GetVersion() string {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return ""
 }
@@ -7508,7 +7508,7 @@ func (x *ReadOnlyViolationException) GetRequestid() string {
 
 type RefreshStatisticsIdMap struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Statisticsid  string                 `protobuf:"bytes,38716584,opt,name=statisticsid,proto3" json:"statisticsid,omitempty"`
+	Statisticsid  *string                `protobuf:"bytes,38716584,opt,name=statisticsid,proto3,oneof" json:"statisticsid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7544,8 +7544,8 @@ func (*RefreshStatisticsIdMap) Descriptor() ([]byte, []int) {
 }
 
 func (x *RefreshStatisticsIdMap) GetStatisticsid() string {
-	if x != nil {
-		return x.Statisticsid
+	if x != nil && x.Statisticsid != nil {
+		return *x.Statisticsid
 	}
 	return ""
 }
@@ -7719,7 +7719,7 @@ type SparqlRecord struct {
 	Committimestampinmillis string                 `protobuf:"bytes,386624522,opt,name=committimestampinmillis,proto3" json:"committimestampinmillis,omitempty"`
 	Data                    *SparqlData            `protobuf:"bytes,410182310,opt,name=data,proto3" json:"data,omitempty"`
 	Eventid                 map[string]string      `protobuf:"bytes,255267571,rep,name=eventid,proto3" json:"eventid,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Islastop                string                 `protobuf:"bytes,175475367,opt,name=islastop,proto3" json:"islastop,omitempty"`
+	Islastop                *string                `protobuf:"bytes,175475367,opt,name=islastop,proto3,oneof" json:"islastop,omitempty"`
 	Op                      string                 `protobuf:"bytes,523513003,opt,name=op,proto3" json:"op,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -7777,8 +7777,8 @@ func (x *SparqlRecord) GetEventid() map[string]string {
 }
 
 func (x *SparqlRecord) GetIslastop() string {
-	if x != nil {
-		return x.Islastop
+	if x != nil && x.Islastop != nil {
+		return *x.Islastop
 	}
 	return ""
 }
@@ -7793,18 +7793,18 @@ func (x *SparqlRecord) GetOp() string {
 type StartLoaderJobInput struct {
 	state                             protoimpl.MessageState `protogen:"open.v1"`
 	Dependencies                      []string               `protobuf:"bytes,87924065,rep,name=dependencies,proto3" json:"dependencies,omitempty"`
-	Edgeonlyload                      string                 `protobuf:"bytes,38819031,opt,name=edgeonlyload,proto3" json:"edgeonlyload,omitempty"`
-	Failonerror                       string                 `protobuf:"bytes,437165343,opt,name=failonerror,proto3" json:"failonerror,omitempty"`
+	Edgeonlyload                      *string                `protobuf:"bytes,38819031,opt,name=edgeonlyload,proto3,oneof" json:"edgeonlyload,omitempty"`
+	Failonerror                       *string                `protobuf:"bytes,437165343,opt,name=failonerror,proto3,oneof" json:"failonerror,omitempty"`
 	Format                            Format                 `protobuf:"varint,429753683,opt,name=format,proto3,enum=neptunedata.Format" json:"format,omitempty"`
 	Iamrolearn                        string                 `protobuf:"bytes,316257434,opt,name=iamrolearn,proto3" json:"iamrolearn,omitempty"`
 	Mode                              Mode                   `protobuf:"varint,208592915,opt,name=mode,proto3,enum=neptunedata.Mode" json:"mode,omitempty"`
 	Parallelism                       Parallelism            `protobuf:"varint,150642114,opt,name=parallelism,proto3,enum=neptunedata.Parallelism" json:"parallelism,omitempty"`
 	Parserconfiguration               map[string]string      `protobuf:"bytes,258205897,rep,name=parserconfiguration,proto3" json:"parserconfiguration,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Queuerequest                      string                 `protobuf:"bytes,126330314,opt,name=queuerequest,proto3" json:"queuerequest,omitempty"`
+	Queuerequest                      *string                `protobuf:"bytes,126330314,opt,name=queuerequest,proto3,oneof" json:"queuerequest,omitempty"`
 	S3Bucketregion                    S3BucketRegion         `protobuf:"varint,163436306,opt,name=s3bucketregion,proto3,enum=neptunedata.S3BucketRegion" json:"s3bucketregion,omitempty"`
 	Source                            string                 `protobuf:"bytes,466561497,opt,name=source,proto3" json:"source,omitempty"`
-	Updatesinglecardinalityproperties string                 `protobuf:"bytes,111732278,opt,name=updatesinglecardinalityproperties,proto3" json:"updatesinglecardinalityproperties,omitempty"`
-	Userprovidededgeids               string                 `protobuf:"bytes,12979099,opt,name=userprovidededgeids,proto3" json:"userprovidededgeids,omitempty"`
+	Updatesinglecardinalityproperties *string                `protobuf:"bytes,111732278,opt,name=updatesinglecardinalityproperties,proto3,oneof" json:"updatesinglecardinalityproperties,omitempty"`
+	Userprovidededgeids               *string                `protobuf:"bytes,12979099,opt,name=userprovidededgeids,proto3,oneof" json:"userprovidededgeids,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
 }
@@ -7847,15 +7847,15 @@ func (x *StartLoaderJobInput) GetDependencies() []string {
 }
 
 func (x *StartLoaderJobInput) GetEdgeonlyload() string {
-	if x != nil {
-		return x.Edgeonlyload
+	if x != nil && x.Edgeonlyload != nil {
+		return *x.Edgeonlyload
 	}
 	return ""
 }
 
 func (x *StartLoaderJobInput) GetFailonerror() string {
-	if x != nil {
-		return x.Failonerror
+	if x != nil && x.Failonerror != nil {
+		return *x.Failonerror
 	}
 	return ""
 }
@@ -7896,8 +7896,8 @@ func (x *StartLoaderJobInput) GetParserconfiguration() map[string]string {
 }
 
 func (x *StartLoaderJobInput) GetQueuerequest() string {
-	if x != nil {
-		return x.Queuerequest
+	if x != nil && x.Queuerequest != nil {
+		return *x.Queuerequest
 	}
 	return ""
 }
@@ -7917,15 +7917,15 @@ func (x *StartLoaderJobInput) GetSource() string {
 }
 
 func (x *StartLoaderJobInput) GetUpdatesinglecardinalityproperties() string {
-	if x != nil {
-		return x.Updatesinglecardinalityproperties
+	if x != nil && x.Updatesinglecardinalityproperties != nil {
+		return *x.Updatesinglecardinalityproperties
 	}
 	return ""
 }
 
 func (x *StartLoaderJobInput) GetUserprovidededgeids() string {
-	if x != nil {
-		return x.Userprovidededgeids
+	if x != nil && x.Userprovidededgeids != nil {
+		return *x.Userprovidededgeids
 	}
 	return ""
 }
@@ -7984,21 +7984,21 @@ func (x *StartLoaderJobOutput) GetStatus() string {
 
 type StartMLDataProcessingJobInput struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
-	Configfilename                   string                 `protobuf:"bytes,97127379,opt,name=configfilename,proto3" json:"configfilename,omitempty"`
-	Id                               string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Configfilename                   *string                `protobuf:"bytes,97127379,opt,name=configfilename,proto3,oneof" json:"configfilename,omitempty"`
+	Id                               *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Inputdatas3Location              string                 `protobuf:"bytes,292562595,opt,name=inputdatas3location,proto3" json:"inputdatas3location,omitempty"`
-	Modeltype                        string                 `protobuf:"bytes,41664059,opt,name=modeltype,proto3" json:"modeltype,omitempty"`
-	Neptuneiamrolearn                string                 `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
-	Previousdataprocessingjobid      string                 `protobuf:"bytes,333826008,opt,name=previousdataprocessingjobid,proto3" json:"previousdataprocessingjobid,omitempty"`
+	Modeltype                        *string                `protobuf:"bytes,41664059,opt,name=modeltype,proto3,oneof" json:"modeltype,omitempty"`
+	Neptuneiamrolearn                *string                `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
+	Previousdataprocessingjobid      *string                `protobuf:"bytes,333826008,opt,name=previousdataprocessingjobid,proto3,oneof" json:"previousdataprocessingjobid,omitempty"`
 	Processeddatas3Location          string                 `protobuf:"bytes,86470899,opt,name=processeddatas3location,proto3" json:"processeddatas3location,omitempty"`
-	Processinginstancetype           string                 `protobuf:"bytes,258662378,opt,name=processinginstancetype,proto3" json:"processinginstancetype,omitempty"`
-	Processinginstancevolumesizeingb string                 `protobuf:"bytes,141136797,opt,name=processinginstancevolumesizeingb,proto3" json:"processinginstancevolumesizeingb,omitempty"`
-	Processingtimeoutinseconds       string                 `protobuf:"bytes,111414680,opt,name=processingtimeoutinseconds,proto3" json:"processingtimeoutinseconds,omitempty"`
-	S3Outputencryptionkmskey         string                 `protobuf:"bytes,416713092,opt,name=s3outputencryptionkmskey,proto3" json:"s3outputencryptionkmskey,omitempty"`
-	Sagemakeriamrolearn              string                 `protobuf:"bytes,158477212,opt,name=sagemakeriamrolearn,proto3" json:"sagemakeriamrolearn,omitempty"`
+	Processinginstancetype           *string                `protobuf:"bytes,258662378,opt,name=processinginstancetype,proto3,oneof" json:"processinginstancetype,omitempty"`
+	Processinginstancevolumesizeingb *string                `protobuf:"bytes,141136797,opt,name=processinginstancevolumesizeingb,proto3,oneof" json:"processinginstancevolumesizeingb,omitempty"`
+	Processingtimeoutinseconds       *string                `protobuf:"bytes,111414680,opt,name=processingtimeoutinseconds,proto3,oneof" json:"processingtimeoutinseconds,omitempty"`
+	S3Outputencryptionkmskey         *string                `protobuf:"bytes,416713092,opt,name=s3outputencryptionkmskey,proto3,oneof" json:"s3outputencryptionkmskey,omitempty"`
+	Sagemakeriamrolearn              *string                `protobuf:"bytes,158477212,opt,name=sagemakeriamrolearn,proto3,oneof" json:"sagemakeriamrolearn,omitempty"`
 	Securitygroupids                 []string               `protobuf:"bytes,389524965,rep,name=securitygroupids,proto3" json:"securitygroupids,omitempty"`
 	Subnets                          []string               `protobuf:"bytes,135316610,rep,name=subnets,proto3" json:"subnets,omitempty"`
-	Volumeencryptionkmskey           string                 `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3" json:"volumeencryptionkmskey,omitempty"`
+	Volumeencryptionkmskey           *string                `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3,oneof" json:"volumeencryptionkmskey,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -8034,15 +8034,15 @@ func (*StartMLDataProcessingJobInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMLDataProcessingJobInput) GetConfigfilename() string {
-	if x != nil {
-		return x.Configfilename
+	if x != nil && x.Configfilename != nil {
+		return *x.Configfilename
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -8055,22 +8055,22 @@ func (x *StartMLDataProcessingJobInput) GetInputdatas3Location() string {
 }
 
 func (x *StartMLDataProcessingJobInput) GetModeltype() string {
-	if x != nil {
-		return x.Modeltype
+	if x != nil && x.Modeltype != nil {
+		return *x.Modeltype
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetPreviousdataprocessingjobid() string {
-	if x != nil {
-		return x.Previousdataprocessingjobid
+	if x != nil && x.Previousdataprocessingjobid != nil {
+		return *x.Previousdataprocessingjobid
 	}
 	return ""
 }
@@ -8083,36 +8083,36 @@ func (x *StartMLDataProcessingJobInput) GetProcesseddatas3Location() string {
 }
 
 func (x *StartMLDataProcessingJobInput) GetProcessinginstancetype() string {
-	if x != nil {
-		return x.Processinginstancetype
+	if x != nil && x.Processinginstancetype != nil {
+		return *x.Processinginstancetype
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetProcessinginstancevolumesizeingb() string {
-	if x != nil {
-		return x.Processinginstancevolumesizeingb
+	if x != nil && x.Processinginstancevolumesizeingb != nil {
+		return *x.Processinginstancevolumesizeingb
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetProcessingtimeoutinseconds() string {
-	if x != nil {
-		return x.Processingtimeoutinseconds
+	if x != nil && x.Processingtimeoutinseconds != nil {
+		return *x.Processingtimeoutinseconds
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetS3Outputencryptionkmskey() string {
-	if x != nil {
-		return x.S3Outputencryptionkmskey
+	if x != nil && x.S3Outputencryptionkmskey != nil {
+		return *x.S3Outputencryptionkmskey
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobInput) GetSagemakeriamrolearn() string {
-	if x != nil {
-		return x.Sagemakeriamrolearn
+	if x != nil && x.Sagemakeriamrolearn != nil {
+		return *x.Sagemakeriamrolearn
 	}
 	return ""
 }
@@ -8132,17 +8132,17 @@ func (x *StartMLDataProcessingJobInput) GetSubnets() []string {
 }
 
 func (x *StartMLDataProcessingJobInput) GetVolumeencryptionkmskey() string {
-	if x != nil {
-		return x.Volumeencryptionkmskey
+	if x != nil && x.Volumeencryptionkmskey != nil {
+		return *x.Volumeencryptionkmskey
 	}
 	return ""
 }
 
 type StartMLDataProcessingJobOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtimeinmillis string                 `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3" json:"creationtimeinmillis,omitempty"`
-	Id                   string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Arn                  *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationtimeinmillis *string                `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3,oneof" json:"creationtimeinmillis,omitempty"`
+	Id                   *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -8178,46 +8178,46 @@ func (*StartMLDataProcessingJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMLDataProcessingJobOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobOutput) GetCreationtimeinmillis() string {
-	if x != nil {
-		return x.Creationtimeinmillis
+	if x != nil && x.Creationtimeinmillis != nil {
+		return *x.Creationtimeinmillis
 	}
 	return ""
 }
 
 func (x *StartMLDataProcessingJobOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 type StartMLModelTrainingJobInput struct {
 	state                          protoimpl.MessageState         `protogen:"open.v1"`
-	Baseprocessinginstancetype     string                         `protobuf:"bytes,202965553,opt,name=baseprocessinginstancetype,proto3" json:"baseprocessinginstancetype,omitempty"`
+	Baseprocessinginstancetype     *string                        `protobuf:"bytes,202965553,opt,name=baseprocessinginstancetype,proto3,oneof" json:"baseprocessinginstancetype,omitempty"`
 	Custommodeltrainingparameters  *CustomModelTrainingParameters `protobuf:"bytes,113624210,opt,name=custommodeltrainingparameters,proto3" json:"custommodeltrainingparameters,omitempty"`
 	Dataprocessingjobid            string                         `protobuf:"bytes,395025197,opt,name=dataprocessingjobid,proto3" json:"dataprocessingjobid,omitempty"`
-	Enablemanagedspottraining      string                         `protobuf:"bytes,73065830,opt,name=enablemanagedspottraining,proto3" json:"enablemanagedspottraining,omitempty"`
-	Id                             string                         `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Maxhponumberoftrainingjobs     string                         `protobuf:"bytes,137333529,opt,name=maxhponumberoftrainingjobs,proto3" json:"maxhponumberoftrainingjobs,omitempty"`
-	Maxhpoparalleltrainingjobs     string                         `protobuf:"bytes,417828992,opt,name=maxhpoparalleltrainingjobs,proto3" json:"maxhpoparalleltrainingjobs,omitempty"`
-	Neptuneiamrolearn              string                         `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
-	Previousmodeltrainingjobid     string                         `protobuf:"bytes,90674916,opt,name=previousmodeltrainingjobid,proto3" json:"previousmodeltrainingjobid,omitempty"`
-	S3Outputencryptionkmskey       string                         `protobuf:"bytes,416713092,opt,name=s3outputencryptionkmskey,proto3" json:"s3outputencryptionkmskey,omitempty"`
-	Sagemakeriamrolearn            string                         `protobuf:"bytes,158477212,opt,name=sagemakeriamrolearn,proto3" json:"sagemakeriamrolearn,omitempty"`
+	Enablemanagedspottraining      *string                        `protobuf:"bytes,73065830,opt,name=enablemanagedspottraining,proto3,oneof" json:"enablemanagedspottraining,omitempty"`
+	Id                             *string                        `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Maxhponumberoftrainingjobs     *string                        `protobuf:"bytes,137333529,opt,name=maxhponumberoftrainingjobs,proto3,oneof" json:"maxhponumberoftrainingjobs,omitempty"`
+	Maxhpoparalleltrainingjobs     *string                        `protobuf:"bytes,417828992,opt,name=maxhpoparalleltrainingjobs,proto3,oneof" json:"maxhpoparalleltrainingjobs,omitempty"`
+	Neptuneiamrolearn              *string                        `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
+	Previousmodeltrainingjobid     *string                        `protobuf:"bytes,90674916,opt,name=previousmodeltrainingjobid,proto3,oneof" json:"previousmodeltrainingjobid,omitempty"`
+	S3Outputencryptionkmskey       *string                        `protobuf:"bytes,416713092,opt,name=s3outputencryptionkmskey,proto3,oneof" json:"s3outputencryptionkmskey,omitempty"`
+	Sagemakeriamrolearn            *string                        `protobuf:"bytes,158477212,opt,name=sagemakeriamrolearn,proto3,oneof" json:"sagemakeriamrolearn,omitempty"`
 	Securitygroupids               []string                       `protobuf:"bytes,389524965,rep,name=securitygroupids,proto3" json:"securitygroupids,omitempty"`
 	Subnets                        []string                       `protobuf:"bytes,135316610,rep,name=subnets,proto3" json:"subnets,omitempty"`
 	Trainmodels3Location           string                         `protobuf:"bytes,410061388,opt,name=trainmodels3location,proto3" json:"trainmodels3location,omitempty"`
-	Traininginstancetype           string                         `protobuf:"bytes,240653837,opt,name=traininginstancetype,proto3" json:"traininginstancetype,omitempty"`
-	Traininginstancevolumesizeingb string                         `protobuf:"bytes,461044986,opt,name=traininginstancevolumesizeingb,proto3" json:"traininginstancevolumesizeingb,omitempty"`
-	Trainingtimeoutinseconds       string                         `protobuf:"bytes,382081371,opt,name=trainingtimeoutinseconds,proto3" json:"trainingtimeoutinseconds,omitempty"`
-	Volumeencryptionkmskey         string                         `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3" json:"volumeencryptionkmskey,omitempty"`
+	Traininginstancetype           *string                        `protobuf:"bytes,240653837,opt,name=traininginstancetype,proto3,oneof" json:"traininginstancetype,omitempty"`
+	Traininginstancevolumesizeingb *string                        `protobuf:"bytes,461044986,opt,name=traininginstancevolumesizeingb,proto3,oneof" json:"traininginstancevolumesizeingb,omitempty"`
+	Trainingtimeoutinseconds       *string                        `protobuf:"bytes,382081371,opt,name=trainingtimeoutinseconds,proto3,oneof" json:"trainingtimeoutinseconds,omitempty"`
+	Volumeencryptionkmskey         *string                        `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3,oneof" json:"volumeencryptionkmskey,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -8253,8 +8253,8 @@ func (*StartMLModelTrainingJobInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMLModelTrainingJobInput) GetBaseprocessinginstancetype() string {
-	if x != nil {
-		return x.Baseprocessinginstancetype
+	if x != nil && x.Baseprocessinginstancetype != nil {
+		return *x.Baseprocessinginstancetype
 	}
 	return ""
 }
@@ -8274,57 +8274,57 @@ func (x *StartMLModelTrainingJobInput) GetDataprocessingjobid() string {
 }
 
 func (x *StartMLModelTrainingJobInput) GetEnablemanagedspottraining() string {
-	if x != nil {
-		return x.Enablemanagedspottraining
+	if x != nil && x.Enablemanagedspottraining != nil {
+		return *x.Enablemanagedspottraining
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetMaxhponumberoftrainingjobs() string {
-	if x != nil {
-		return x.Maxhponumberoftrainingjobs
+	if x != nil && x.Maxhponumberoftrainingjobs != nil {
+		return *x.Maxhponumberoftrainingjobs
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetMaxhpoparalleltrainingjobs() string {
-	if x != nil {
-		return x.Maxhpoparalleltrainingjobs
+	if x != nil && x.Maxhpoparalleltrainingjobs != nil {
+		return *x.Maxhpoparalleltrainingjobs
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetPreviousmodeltrainingjobid() string {
-	if x != nil {
-		return x.Previousmodeltrainingjobid
+	if x != nil && x.Previousmodeltrainingjobid != nil {
+		return *x.Previousmodeltrainingjobid
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetS3Outputencryptionkmskey() string {
-	if x != nil {
-		return x.S3Outputencryptionkmskey
+	if x != nil && x.S3Outputencryptionkmskey != nil {
+		return *x.S3Outputencryptionkmskey
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetSagemakeriamrolearn() string {
-	if x != nil {
-		return x.Sagemakeriamrolearn
+	if x != nil && x.Sagemakeriamrolearn != nil {
+		return *x.Sagemakeriamrolearn
 	}
 	return ""
 }
@@ -8351,38 +8351,38 @@ func (x *StartMLModelTrainingJobInput) GetTrainmodels3Location() string {
 }
 
 func (x *StartMLModelTrainingJobInput) GetTraininginstancetype() string {
-	if x != nil {
-		return x.Traininginstancetype
+	if x != nil && x.Traininginstancetype != nil {
+		return *x.Traininginstancetype
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetTraininginstancevolumesizeingb() string {
-	if x != nil {
-		return x.Traininginstancevolumesizeingb
+	if x != nil && x.Traininginstancevolumesizeingb != nil {
+		return *x.Traininginstancevolumesizeingb
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetTrainingtimeoutinseconds() string {
-	if x != nil {
-		return x.Trainingtimeoutinseconds
+	if x != nil && x.Trainingtimeoutinseconds != nil {
+		return *x.Trainingtimeoutinseconds
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobInput) GetVolumeencryptionkmskey() string {
-	if x != nil {
-		return x.Volumeencryptionkmskey
+	if x != nil && x.Volumeencryptionkmskey != nil {
+		return *x.Volumeencryptionkmskey
 	}
 	return ""
 }
 
 type StartMLModelTrainingJobOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtimeinmillis string                 `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3" json:"creationtimeinmillis,omitempty"`
-	Id                   string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Arn                  *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationtimeinmillis *string                `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3,oneof" json:"creationtimeinmillis,omitempty"`
+	Id                   *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -8418,42 +8418,42 @@ func (*StartMLModelTrainingJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMLModelTrainingJobOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobOutput) GetCreationtimeinmillis() string {
-	if x != nil {
-		return x.Creationtimeinmillis
+	if x != nil && x.Creationtimeinmillis != nil {
+		return *x.Creationtimeinmillis
 	}
 	return ""
 }
 
 func (x *StartMLModelTrainingJobOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 type StartMLModelTransformJobInput struct {
 	state                                protoimpl.MessageState          `protogen:"open.v1"`
-	Baseprocessinginstancetype           string                          `protobuf:"bytes,202965553,opt,name=baseprocessinginstancetype,proto3" json:"baseprocessinginstancetype,omitempty"`
-	Baseprocessinginstancevolumesizeingb string                          `protobuf:"bytes,520248246,opt,name=baseprocessinginstancevolumesizeingb,proto3" json:"baseprocessinginstancevolumesizeingb,omitempty"`
+	Baseprocessinginstancetype           *string                         `protobuf:"bytes,202965553,opt,name=baseprocessinginstancetype,proto3,oneof" json:"baseprocessinginstancetype,omitempty"`
+	Baseprocessinginstancevolumesizeingb *string                         `protobuf:"bytes,520248246,opt,name=baseprocessinginstancevolumesizeingb,proto3,oneof" json:"baseprocessinginstancevolumesizeingb,omitempty"`
 	Custommodeltransformparameters       *CustomModelTransformParameters `protobuf:"bytes,224137842,opt,name=custommodeltransformparameters,proto3" json:"custommodeltransformparameters,omitempty"`
-	Dataprocessingjobid                  string                          `protobuf:"bytes,395025197,opt,name=dataprocessingjobid,proto3" json:"dataprocessingjobid,omitempty"`
-	Id                                   string                          `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Mlmodeltrainingjobid                 string                          `protobuf:"bytes,429530992,opt,name=mlmodeltrainingjobid,proto3" json:"mlmodeltrainingjobid,omitempty"`
+	Dataprocessingjobid                  *string                         `protobuf:"bytes,395025197,opt,name=dataprocessingjobid,proto3,oneof" json:"dataprocessingjobid,omitempty"`
+	Id                                   *string                         `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Mlmodeltrainingjobid                 *string                         `protobuf:"bytes,429530992,opt,name=mlmodeltrainingjobid,proto3,oneof" json:"mlmodeltrainingjobid,omitempty"`
 	Modeltransformoutputs3Location       string                          `protobuf:"bytes,469633283,opt,name=modeltransformoutputs3location,proto3" json:"modeltransformoutputs3location,omitempty"`
-	Neptuneiamrolearn                    string                          `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3" json:"neptuneiamrolearn,omitempty"`
-	S3Outputencryptionkmskey             string                          `protobuf:"bytes,416713092,opt,name=s3outputencryptionkmskey,proto3" json:"s3outputencryptionkmskey,omitempty"`
-	Sagemakeriamrolearn                  string                          `protobuf:"bytes,158477212,opt,name=sagemakeriamrolearn,proto3" json:"sagemakeriamrolearn,omitempty"`
+	Neptuneiamrolearn                    *string                         `protobuf:"bytes,306145623,opt,name=neptuneiamrolearn,proto3,oneof" json:"neptuneiamrolearn,omitempty"`
+	S3Outputencryptionkmskey             *string                         `protobuf:"bytes,416713092,opt,name=s3outputencryptionkmskey,proto3,oneof" json:"s3outputencryptionkmskey,omitempty"`
+	Sagemakeriamrolearn                  *string                         `protobuf:"bytes,158477212,opt,name=sagemakeriamrolearn,proto3,oneof" json:"sagemakeriamrolearn,omitempty"`
 	Securitygroupids                     []string                        `protobuf:"bytes,389524965,rep,name=securitygroupids,proto3" json:"securitygroupids,omitempty"`
 	Subnets                              []string                        `protobuf:"bytes,135316610,rep,name=subnets,proto3" json:"subnets,omitempty"`
-	Trainingjobname                      string                          `protobuf:"bytes,65339694,opt,name=trainingjobname,proto3" json:"trainingjobname,omitempty"`
-	Volumeencryptionkmskey               string                          `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3" json:"volumeencryptionkmskey,omitempty"`
+	Trainingjobname                      *string                         `protobuf:"bytes,65339694,opt,name=trainingjobname,proto3,oneof" json:"trainingjobname,omitempty"`
+	Volumeencryptionkmskey               *string                         `protobuf:"bytes,478185323,opt,name=volumeencryptionkmskey,proto3,oneof" json:"volumeencryptionkmskey,omitempty"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
@@ -8489,15 +8489,15 @@ func (*StartMLModelTransformJobInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMLModelTransformJobInput) GetBaseprocessinginstancetype() string {
-	if x != nil {
-		return x.Baseprocessinginstancetype
+	if x != nil && x.Baseprocessinginstancetype != nil {
+		return *x.Baseprocessinginstancetype
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobInput) GetBaseprocessinginstancevolumesizeingb() string {
-	if x != nil {
-		return x.Baseprocessinginstancevolumesizeingb
+	if x != nil && x.Baseprocessinginstancevolumesizeingb != nil {
+		return *x.Baseprocessinginstancevolumesizeingb
 	}
 	return ""
 }
@@ -8510,22 +8510,22 @@ func (x *StartMLModelTransformJobInput) GetCustommodeltransformparameters() *Cus
 }
 
 func (x *StartMLModelTransformJobInput) GetDataprocessingjobid() string {
-	if x != nil {
-		return x.Dataprocessingjobid
+	if x != nil && x.Dataprocessingjobid != nil {
+		return *x.Dataprocessingjobid
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobInput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobInput) GetMlmodeltrainingjobid() string {
-	if x != nil {
-		return x.Mlmodeltrainingjobid
+	if x != nil && x.Mlmodeltrainingjobid != nil {
+		return *x.Mlmodeltrainingjobid
 	}
 	return ""
 }
@@ -8538,22 +8538,22 @@ func (x *StartMLModelTransformJobInput) GetModeltransformoutputs3Location() stri
 }
 
 func (x *StartMLModelTransformJobInput) GetNeptuneiamrolearn() string {
-	if x != nil {
-		return x.Neptuneiamrolearn
+	if x != nil && x.Neptuneiamrolearn != nil {
+		return *x.Neptuneiamrolearn
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobInput) GetS3Outputencryptionkmskey() string {
-	if x != nil {
-		return x.S3Outputencryptionkmskey
+	if x != nil && x.S3Outputencryptionkmskey != nil {
+		return *x.S3Outputencryptionkmskey
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobInput) GetSagemakeriamrolearn() string {
-	if x != nil {
-		return x.Sagemakeriamrolearn
+	if x != nil && x.Sagemakeriamrolearn != nil {
+		return *x.Sagemakeriamrolearn
 	}
 	return ""
 }
@@ -8573,24 +8573,24 @@ func (x *StartMLModelTransformJobInput) GetSubnets() []string {
 }
 
 func (x *StartMLModelTransformJobInput) GetTrainingjobname() string {
-	if x != nil {
-		return x.Trainingjobname
+	if x != nil && x.Trainingjobname != nil {
+		return *x.Trainingjobname
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobInput) GetVolumeencryptionkmskey() string {
-	if x != nil {
-		return x.Volumeencryptionkmskey
+	if x != nil && x.Volumeencryptionkmskey != nil {
+		return *x.Volumeencryptionkmskey
 	}
 	return ""
 }
 
 type StartMLModelTransformJobOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtimeinmillis string                 `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3" json:"creationtimeinmillis,omitempty"`
-	Id                   string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Arn                  *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationtimeinmillis *string                `protobuf:"bytes,296469681,opt,name=creationtimeinmillis,proto3,oneof" json:"creationtimeinmillis,omitempty"`
+	Id                   *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -8626,34 +8626,34 @@ func (*StartMLModelTransformJobOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMLModelTransformJobOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobOutput) GetCreationtimeinmillis() string {
-	if x != nil {
-		return x.Creationtimeinmillis
+	if x != nil && x.Creationtimeinmillis != nil {
+		return *x.Creationtimeinmillis
 	}
 	return ""
 }
 
 func (x *StartMLModelTransformJobOutput) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 type Statistics struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Active        string                 `protobuf:"bytes,427137328,opt,name=active,proto3" json:"active,omitempty"`
-	Autocompute   string                 `protobuf:"bytes,480173932,opt,name=autocompute,proto3" json:"autocompute,omitempty"`
-	Date          string                 `protobuf:"bytes,343071834,opt,name=date,proto3" json:"date,omitempty"`
-	Note          string                 `protobuf:"bytes,295308350,opt,name=note,proto3" json:"note,omitempty"`
+	Active        *string                `protobuf:"bytes,427137328,opt,name=active,proto3,oneof" json:"active,omitempty"`
+	Autocompute   *string                `protobuf:"bytes,480173932,opt,name=autocompute,proto3,oneof" json:"autocompute,omitempty"`
+	Date          *string                `protobuf:"bytes,343071834,opt,name=date,proto3,oneof" json:"date,omitempty"`
+	Note          *string                `protobuf:"bytes,295308350,opt,name=note,proto3,oneof" json:"note,omitempty"`
 	Signatureinfo *StatisticsSummary     `protobuf:"bytes,222898366,opt,name=signatureinfo,proto3" json:"signatureinfo,omitempty"`
-	Statisticsid  string                 `protobuf:"bytes,38716584,opt,name=statisticsid,proto3" json:"statisticsid,omitempty"`
+	Statisticsid  *string                `protobuf:"bytes,38716584,opt,name=statisticsid,proto3,oneof" json:"statisticsid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8689,29 +8689,29 @@ func (*Statistics) Descriptor() ([]byte, []int) {
 }
 
 func (x *Statistics) GetActive() string {
-	if x != nil {
-		return x.Active
+	if x != nil && x.Active != nil {
+		return *x.Active
 	}
 	return ""
 }
 
 func (x *Statistics) GetAutocompute() string {
-	if x != nil {
-		return x.Autocompute
+	if x != nil && x.Autocompute != nil {
+		return *x.Autocompute
 	}
 	return ""
 }
 
 func (x *Statistics) GetDate() string {
-	if x != nil {
-		return x.Date
+	if x != nil && x.Date != nil {
+		return *x.Date
 	}
 	return ""
 }
 
 func (x *Statistics) GetNote() string {
-	if x != nil {
-		return x.Note
+	if x != nil && x.Note != nil {
+		return *x.Note
 	}
 	return ""
 }
@@ -8724,8 +8724,8 @@ func (x *Statistics) GetSignatureinfo() *StatisticsSummary {
 }
 
 func (x *Statistics) GetStatisticsid() string {
-	if x != nil {
-		return x.Statisticsid
+	if x != nil && x.Statisticsid != nil {
+		return *x.Statisticsid
 	}
 	return ""
 }
@@ -8792,9 +8792,9 @@ func (x *StatisticsNotAvailableException) GetRequestid() string {
 
 type StatisticsSummary struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Instancecount  string                 `protobuf:"bytes,486686778,opt,name=instancecount,proto3" json:"instancecount,omitempty"`
-	Predicatecount string                 `protobuf:"bytes,321007518,opt,name=predicatecount,proto3" json:"predicatecount,omitempty"`
-	Signaturecount string                 `protobuf:"bytes,340906029,opt,name=signaturecount,proto3" json:"signaturecount,omitempty"`
+	Instancecount  *string                `protobuf:"bytes,486686778,opt,name=instancecount,proto3,oneof" json:"instancecount,omitempty"`
+	Predicatecount *string                `protobuf:"bytes,321007518,opt,name=predicatecount,proto3,oneof" json:"predicatecount,omitempty"`
+	Signaturecount *string                `protobuf:"bytes,340906029,opt,name=signaturecount,proto3,oneof" json:"signaturecount,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -8830,22 +8830,22 @@ func (*StatisticsSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *StatisticsSummary) GetInstancecount() string {
-	if x != nil {
-		return x.Instancecount
+	if x != nil && x.Instancecount != nil {
+		return *x.Instancecount
 	}
 	return ""
 }
 
 func (x *StatisticsSummary) GetPredicatecount() string {
-	if x != nil {
-		return x.Predicatecount
+	if x != nil && x.Predicatecount != nil {
+		return *x.Predicatecount
 	}
 	return ""
 }
 
 func (x *StatisticsSummary) GetSignaturecount() string {
-	if x != nil {
-		return x.Signaturecount
+	if x != nil && x.Signaturecount != nil {
+		return *x.Signaturecount
 	}
 	return ""
 }
@@ -8912,7 +8912,7 @@ func (x *StreamRecordsNotFoundException) GetRequestid() string {
 
 type SubjectStructure struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Count         string                 `protobuf:"bytes,431087093,opt,name=count,proto3" json:"count,omitempty"`
+	Count         *string                `protobuf:"bytes,431087093,opt,name=count,proto3,oneof" json:"count,omitempty"`
 	Predicates    []string               `protobuf:"bytes,171361944,rep,name=predicates,proto3" json:"predicates,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8949,8 +8949,8 @@ func (*SubjectStructure) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubjectStructure) GetCount() string {
-	if x != nil {
-		return x.Count
+	if x != nil && x.Count != nil {
+		return *x.Count
 	}
 	return ""
 }
@@ -9264,37 +9264,52 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
 	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"7\n" +
 	"\x17CancelGremlinQueryInput\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"6\n" +
-	"\x18CancelGremlinQueryOutput\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"2\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"F\n" +
+	"\x18CancelGremlinQueryOutput\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"2\n" +
 	"\x14CancelLoaderJobInput\x12\x1a\n" +
-	"\x06loadid\x18\xcd\xe3\xe5\x87\x01 \x01(\tR\x06loadid\"3\n" +
-	"\x15CancelLoaderJobOutput\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x80\x01\n" +
-	"\x1eCancelMLDataProcessingJobInput\x12\x18\n" +
-	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tR\x05clean\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"=\n" +
-	"\x1fCancelMLDataProcessingJobOutput\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x7f\n" +
-	"\x1dCancelMLModelTrainingJobInput\x12\x18\n" +
-	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tR\x05clean\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"<\n" +
-	"\x1eCancelMLModelTrainingJobOutput\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x80\x01\n" +
-	"\x1eCancelMLModelTransformJobInput\x12\x18\n" +
-	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tR\x05clean\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"=\n" +
-	"\x1fCancelMLModelTransformJobOutput\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"U\n" +
+	"\x06loadid\x18\xcd\xe3\xe5\x87\x01 \x01(\tR\x06loadid\"C\n" +
+	"\x15CancelLoaderJobOutput\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xaa\x01\n" +
+	"\x1eCancelMLDataProcessingJobInput\x12\x1d\n" +
+	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tH\x00R\x05clean\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\b\n" +
+	"\x06_cleanB\x14\n" +
+	"\x12_neptuneiamrolearn\"M\n" +
+	"\x1fCancelMLDataProcessingJobOutput\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xa9\x01\n" +
+	"\x1dCancelMLModelTrainingJobInput\x12\x1d\n" +
+	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tH\x00R\x05clean\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\b\n" +
+	"\x06_cleanB\x14\n" +
+	"\x12_neptuneiamrolearn\"L\n" +
+	"\x1eCancelMLModelTrainingJobOutput\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xaa\x01\n" +
+	"\x1eCancelMLModelTransformJobInput\x12\x1d\n" +
+	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tH\x00R\x05clean\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\b\n" +
+	"\x06_cleanB\x14\n" +
+	"\x12_neptuneiamrolearn\"M\n" +
+	"\x1fCancelMLModelTransformJobOutput\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"e\n" +
 	"\x1aCancelOpenCypherQueryInput\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12\x19\n" +
-	"\x06silent\x18\x85\xf0\xc8\x1f \x01(\tR\x06silent\"W\n" +
-	"\x1bCancelOpenCypherQueryOutput\x12\x1c\n" +
-	"\apayload\x18\xa6ｘ\x01 \x01(\tR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x82\x01\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12\x1e\n" +
+	"\x06silent\x18\x85\xf0\xc8\x1f \x01(\tH\x00R\x06silent\x88\x01\x01B\t\n" +
+	"\a_silent\"x\n" +
+	"\x1bCancelOpenCypherQueryOutput\x12!\n" +
+	"\apayload\x18\xa6ｘ\x01 \x01(\tH\x00R\apayload\x88\x01\x01\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x01R\x06status\x88\x01\x01B\n" +
+	"\n" +
+	"\b_payloadB\t\n" +
+	"\a_status\"\x82\x01\n" +
 	"\x18CancelledByUserException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
@@ -9310,95 +9325,136 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x1cConstraintViolationException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\x98\x03\n" +
-	"\x15CreateMLEndpointInput\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12(\n" +
-	"\rinstancecount\x18\xba\x80\x89\xe8\x01 \x01(\tR\rinstancecount\x12%\n" +
-	"\finstancetype\x18\xe3ԈO \x01(\tR\finstancetype\x126\n" +
-	"\x14mlmodeltrainingjobid\x18\xf0\xbe\xe8\xcc\x01 \x01(\tR\x14mlmodeltrainingjobid\x128\n" +
-	"\x15mlmodeltransformjobid\x18̘\x82\xd4\x01 \x01(\tR\x15mlmodeltransformjobid\x12\x1f\n" +
-	"\tmodelname\x18\x82\x96\xa9T \x01(\tR\tmodelname\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\x12\x19\n" +
-	"\x06update\x18\xf5\xa8\xbe@ \x01(\tR\x06update\x12:\n" +
-	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tR\x16volumeencryptionkmskey\"z\n" +
-	"\x16CreateMLEndpointOutput\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x126\n" +
-	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tR\x14creationtimeinmillis\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"\xd9\x01\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\xec\x04\n" +
+	"\x15CreateMLEndpointInput\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12-\n" +
+	"\rinstancecount\x18\xba\x80\x89\xe8\x01 \x01(\tH\x01R\rinstancecount\x88\x01\x01\x12*\n" +
+	"\finstancetype\x18\xe3ԈO \x01(\tH\x02R\finstancetype\x88\x01\x01\x12;\n" +
+	"\x14mlmodeltrainingjobid\x18\xf0\xbe\xe8\xcc\x01 \x01(\tH\x03R\x14mlmodeltrainingjobid\x88\x01\x01\x12=\n" +
+	"\x15mlmodeltransformjobid\x18̘\x82\xd4\x01 \x01(\tH\x04R\x15mlmodeltransformjobid\x88\x01\x01\x12$\n" +
+	"\tmodelname\x18\x82\x96\xa9T \x01(\tH\x05R\tmodelname\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x06R\x11neptuneiamrolearn\x88\x01\x01\x12\x1e\n" +
+	"\x06update\x18\xf5\xa8\xbe@ \x01(\tH\aR\x06update\x88\x01\x01\x12?\n" +
+	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tH\bR\x16volumeencryptionkmskey\x88\x01\x01B\x05\n" +
+	"\x03_idB\x10\n" +
+	"\x0e_instancecountB\x0f\n" +
+	"\r_instancetypeB\x17\n" +
+	"\x15_mlmodeltrainingjobidB\x18\n" +
+	"\x16_mlmodeltransformjobidB\f\n" +
+	"\n" +
+	"_modelnameB\x14\n" +
+	"\x12_neptuneiamrolearnB\t\n" +
+	"\a_updateB\x19\n" +
+	"\x17_volumeencryptionkmskey\"\xb1\x01\n" +
+	"\x16CreateMLEndpointOutput\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12;\n" +
+	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tH\x01R\x14creationtimeinmillis\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x17\n" +
+	"\x15_creationtimeinmillisB\x05\n" +
+	"\x03_id\"\x9e\x02\n" +
 	"\x1dCustomModelTrainingParameters\x128\n" +
-	"\x15sources3directorypath\x18\x8f\xdfť\x01 \x01(\tR\x15sources3directorypath\x12=\n" +
-	"\x18trainingentrypointscript\x18ä\xd25 \x01(\tR\x18trainingentrypointscript\x12?\n" +
-	"\x19transformentrypointscript\x18\x9f\x90\x95? \x01(\tR\x19transformentrypointscript\"\x9b\x01\n" +
+	"\x15sources3directorypath\x18\x8f\xdfť\x01 \x01(\tR\x15sources3directorypath\x12B\n" +
+	"\x18trainingentrypointscript\x18ä\xd25 \x01(\tH\x00R\x18trainingentrypointscript\x88\x01\x01\x12D\n" +
+	"\x19transformentrypointscript\x18\x9f\x90\x95? \x01(\tH\x01R\x19transformentrypointscript\x88\x01\x01B\x1b\n" +
+	"\x19_trainingentrypointscriptB\x1c\n" +
+	"\x1a_transformentrypointscript\"\xbe\x01\n" +
 	"\x1eCustomModelTransformParameters\x128\n" +
-	"\x15sources3directorypath\x18\x8f\xdfť\x01 \x01(\tR\x15sources3directorypath\x12?\n" +
-	"\x19transformentrypointscript\x18\x9f\x90\x95? \x01(\tR\x19transformentrypointscript\"w\n" +
-	"\x15DeleteMLEndpointInput\x12\x18\n" +
-	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tR\x05clean\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"4\n" +
-	"\x16DeleteMLEndpointOutput\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\xaa\x01\n" +
+	"\x15sources3directorypath\x18\x8f\xdfť\x01 \x01(\tR\x15sources3directorypath\x12D\n" +
+	"\x19transformentrypointscript\x18\x9f\x90\x95? \x01(\tH\x00R\x19transformentrypointscript\x88\x01\x01B\x1c\n" +
+	"\x1a_transformentrypointscript\"\xa1\x01\n" +
+	"\x15DeleteMLEndpointInput\x12\x1d\n" +
+	"\x05clean\x18\xbf\xfe\xb7\x83\x01 \x01(\tH\x00R\x05clean\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\b\n" +
+	"\x06_cleanB\x14\n" +
+	"\x12_neptuneiamrolearn\"D\n" +
+	"\x16DeleteMLEndpointOutput\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01B\t\n" +
+	"\a_status\"\xce\x01\n" +
 	"#DeletePropertygraphStatisticsOutput\x12C\n" +
-	"\apayload\x18\xa6ｘ\x01 \x01(\v2%.neptunedata.DeleteStatisticsValueMapR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\x12\"\n" +
+	"\apayload\x18\xa6ｘ\x01 \x01(\v2%.neptunedata.DeleteStatisticsValueMapR\apayload\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\"\xa3\x01\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x01R\n" +
+	"statuscode\x88\x01\x01B\t\n" +
+	"\a_statusB\r\n" +
+	"\v_statuscode\"\xc7\x01\n" +
 	"\x1cDeleteSparqlStatisticsOutput\x12C\n" +
-	"\apayload\x18\xa6ｘ\x01 \x01(\v2%.neptunedata.DeleteStatisticsValueMapR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\x12\"\n" +
+	"\apayload\x18\xa6ｘ\x01 \x01(\v2%.neptunedata.DeleteStatisticsValueMapR\apayload\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x00R\x06status\x88\x01\x01\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\"]\n" +
-	"\x18DeleteStatisticsValueMap\x12\x1a\n" +
-	"\x06active\x18\xb0\xb2\xd6\xcb\x01 \x01(\tR\x06active\x12%\n" +
-	"\fstatisticsid\x18\xa8\x89\xbb\x12 \x01(\tR\fstatisticsid\"U\n" +
-	"\rEdgeStructure\x12\x18\n" +
-	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tR\x05count\x12*\n" +
-	"\x0eedgeproperties\x18\u0096Ω\x01 \x03(\tR\x0eedgeproperties\"a\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x01R\n" +
+	"statuscode\x88\x01\x01B\t\n" +
+	"\a_statusB\r\n" +
+	"\v_statuscode\"\x83\x01\n" +
+	"\x18DeleteStatisticsValueMap\x12\x1f\n" +
+	"\x06active\x18\xb0\xb2\xd6\xcb\x01 \x01(\tH\x00R\x06active\x88\x01\x01\x12*\n" +
+	"\fstatisticsid\x18\xa8\x89\xbb\x12 \x01(\tH\x01R\fstatisticsid\x88\x01\x01B\t\n" +
+	"\a_activeB\x0f\n" +
+	"\r_statisticsid\"d\n" +
+	"\rEdgeStructure\x12\x1d\n" +
+	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tH\x00R\x05count\x88\x01\x01\x12*\n" +
+	"\x0eedgeproperties\x18\u0096Ω\x01 \x03(\tR\x0eedgepropertiesB\b\n" +
+	"\x06_count\"p\n" +
 	"\x15ExecuteFastResetInput\x12.\n" +
-	"\x06action\x18\x80ސ# \x01(\x0e2\x13.neptunedata.ActionR\x06action\x12\x18\n" +
-	"\x05token\x18\xb3\xd4\xe7\xa3\x01 \x01(\tR\x05token\"o\n" +
+	"\x06action\x18\x80ސ# \x01(\x0e2\x13.neptunedata.ActionR\x06action\x12\x1d\n" +
+	"\x05token\x18\xb3\xd4\xe7\xa3\x01 \x01(\tH\x00R\x05token\x88\x01\x01B\b\n" +
+	"\x06_token\"o\n" +
 	"\x16ExecuteFastResetOutput\x129\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x1b.neptunedata.FastResetTokenR\apayload\x12\x1a\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"H\n" +
 	"\x1fExecuteGremlinExplainQueryInput\x12%\n" +
-	"\fgremlinquery\x18\xb4\x91\xcd\x01 \x01(\tR\fgremlinquery\"D\n" +
-	" ExecuteGremlinExplainQueryOutput\x12 \n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x06output\"\xc0\x01\n" +
-	"\x1fExecuteGremlinProfileQueryInput\x12\x16\n" +
-	"\x04chop\x18\xba\x9c\xa5\x91\x01 \x01(\tR\x04chop\x12%\n" +
-	"\fgremlinquery\x18\xb4\x91\xcd\x01 \x01(\tR\fgremlinquery\x12\x1d\n" +
-	"\bindexops\x18\xa6\xe7\xf1? \x01(\tR\bindexops\x12\x1b\n" +
-	"\aresults\x18\xf6\x95\xbdb \x01(\tR\aresults\x12\"\n" +
-	"\n" +
-	"serializer\x18\x8a\xc1\xec\xfa\x01 \x01(\tR\n" +
-	"serializer\"D\n" +
-	" ExecuteGremlinProfileQueryOutput\x12 \n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x06output\"e\n" +
-	"\x18ExecuteGremlinQueryInput\x12%\n" +
+	"\fgremlinquery\x18\xb4\x91\xcd\x01 \x01(\tR\fgremlinquery\"T\n" +
+	" ExecuteGremlinExplainQueryOutput\x12%\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x06output\x88\x01\x01B\t\n" +
+	"\a_output\"\x85\x02\n" +
+	"\x1fExecuteGremlinProfileQueryInput\x12\x1b\n" +
+	"\x04chop\x18\xba\x9c\xa5\x91\x01 \x01(\tH\x00R\x04chop\x88\x01\x01\x12%\n" +
 	"\fgremlinquery\x18\xb4\x91\xcd\x01 \x01(\tR\fgremlinquery\x12\"\n" +
+	"\bindexops\x18\xa6\xe7\xf1? \x01(\tH\x01R\bindexops\x88\x01\x01\x12 \n" +
+	"\aresults\x18\xf6\x95\xbdb \x01(\tH\x02R\aresults\x88\x01\x01\x12'\n" +
 	"\n" +
-	"serializer\x18\x8a\xc1\xec\xfa\x01 \x01(\tR\n" +
-	"serializer\"\xb6\x01\n" +
-	"\x19ExecuteGremlinQueryOutput\x12\x15\n" +
-	"\x04meta\x18ٞ\xf9\x0f \x01(\tR\x04meta\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\x12\x19\n" +
-	"\x06result\x18\xa5\xec\xddQ \x01(\tR\x06result\x12E\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\v2).neptunedata.GremlinQueryStatusAttributesR\x06status\"\xbd\x01\n" +
+	"serializer\x18\x8a\xc1\xec\xfa\x01 \x01(\tH\x03R\n" +
+	"serializer\x88\x01\x01B\a\n" +
+	"\x05_chopB\v\n" +
+	"\t_indexopsB\n" +
+	"\n" +
+	"\b_resultsB\r\n" +
+	"\v_serializer\"T\n" +
+	" ExecuteGremlinProfileQueryOutput\x12%\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x06output\x88\x01\x01B\t\n" +
+	"\a_output\"y\n" +
+	"\x18ExecuteGremlinQueryInput\x12%\n" +
+	"\fgremlinquery\x18\xb4\x91\xcd\x01 \x01(\tR\fgremlinquery\x12'\n" +
+	"\n" +
+	"serializer\x18\x8a\xc1\xec\xfa\x01 \x01(\tH\x00R\n" +
+	"serializer\x88\x01\x01B\r\n" +
+	"\v_serializer\"\xe7\x01\n" +
+	"\x19ExecuteGremlinQueryOutput\x12\x1a\n" +
+	"\x04meta\x18ٞ\xf9\x0f \x01(\tH\x00R\x04meta\x88\x01\x01\x12%\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tH\x01R\trequestid\x88\x01\x01\x12\x1e\n" +
+	"\x06result\x18\xa5\xec\xddQ \x01(\tH\x02R\x06result\x88\x01\x01\x12E\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\v2).neptunedata.GremlinQueryStatusAttributesR\x06statusB\a\n" +
+	"\x05_metaB\f\n" +
+	"\n" +
+	"_requestidB\t\n" +
+	"\a_result\"\xd1\x01\n" +
 	"\"ExecuteOpenCypherExplainQueryInput\x12G\n" +
 	"\vexplainmode\x18\xe0\xd2\xf6{ \x01(\x0e2\".neptunedata.OpenCypherExplainModeR\vexplainmode\x12+\n" +
-	"\x0fopencypherquery\x18\xbb\x89\xeaf \x01(\tR\x0fopencypherquery\x12!\n" +
+	"\x0fopencypherquery\x18\xbb\x89\xeaf \x01(\tR\x0fopencypherquery\x12&\n" +
 	"\n" +
-	"parameters\x18\xdaݔE \x01(\tR\n" +
-	"parameters\"H\n" +
+	"parameters\x18\xdaݔE \x01(\tH\x00R\n" +
+	"parameters\x88\x01\x01B\r\n" +
+	"\v_parameters\"H\n" +
 	"#ExecuteOpenCypherExplainQueryOutput\x12!\n" +
-	"\aresults\x18\xf6\x95\xbdb \x01(\tB\x04\x88\xb5\x18\x01R\aresults\"m\n" +
+	"\aresults\x18\xf6\x95\xbdb \x01(\tB\x04\x88\xb5\x18\x01R\aresults\"\x81\x01\n" +
 	"\x1bExecuteOpenCypherQueryInput\x12+\n" +
-	"\x0fopencypherquery\x18\xbb\x89\xeaf \x01(\tR\x0fopencypherquery\x12!\n" +
+	"\x0fopencypherquery\x18\xbb\x89\xeaf \x01(\tR\x0fopencypherquery\x12&\n" +
 	"\n" +
-	"parameters\x18\xdaݔE \x01(\tR\n" +
-	"parameters\";\n" +
+	"parameters\x18\xdaݔE \x01(\tH\x00R\n" +
+	"parameters\x88\x01\x01B\r\n" +
+	"\v_parameters\";\n" +
 	"\x1cExecuteOpenCypherQueryOutput\x12\x1b\n" +
 	"\aresults\x18\xf6\x95\xbdb \x01(\tR\aresults\"\x80\x01\n" +
 	"\x16ExpiredStreamException\x12\x16\n" +
@@ -9408,25 +9464,26 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x17FailureByQueryException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"*\n" +
-	"\x0eFastResetToken\x12\x18\n" +
-	"\x05token\x18\xb3\xd4\xe7\xa3\x01 \x01(\tR\x05token\"\xb5\a\n" +
-	"\x15GetEngineStatusOutput\x12,\n" +
-	"\x0fdbengineversion\x18\x90\x80\xf6\x93\x01 \x01(\tR\x0fdbengineversion\x12*\n" +
-	"\x0edfequeryengine\x18\x99\xf5\xb9\xa2\x01 \x01(\tR\x0edfequeryengine\x12P\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"9\n" +
+	"\x0eFastResetToken\x12\x1d\n" +
+	"\x05token\x18\xb3\xd4\xe7\xa3\x01 \x01(\tH\x00R\x05token\x88\x01\x01B\b\n" +
+	"\x06_token\"\xdd\b\n" +
+	"\x15GetEngineStatusOutput\x121\n" +
+	"\x0fdbengineversion\x18\x90\x80\xf6\x93\x01 \x01(\tH\x00R\x0fdbengineversion\x88\x01\x01\x12/\n" +
+	"\x0edfequeryengine\x18\x99\xf5\xb9\xa2\x01 \x01(\tH\x01R\x0edfequeryengine\x88\x01\x01\x12P\n" +
 	"\bfeatures\x18ˇ\x8e\xfc\x01 \x03(\v20.neptunedata.GetEngineStatusOutput.FeaturesEntryR\bfeatures\x12?\n" +
 	"\agremlin\x18փ\x99\xc0\x01 \x01(\v2!.neptunedata.QueryLanguageVersionR\agremlin\x12L\n" +
 	"\alabmode\x18\x98\x94\xfb0 \x03(\v2/.neptunedata.GetEngineStatusOutput.LabmodeEntryR\alabmode\x12E\n" +
 	"\n" +
 	"opencypher\x18\xf7\xfa\xe3\xc2\x01 \x01(\v2!.neptunedata.QueryLanguageVersionR\n" +
-	"opencypher\x12\x15\n" +
-	"\x04role\x18\x9a\xe4\xfc\x7f \x01(\tR\x04role\x123\n" +
-	"\x13rollingbacktrxcount\x18\xfd\x96\xa9z \x01(\tR\x13rollingbacktrxcount\x12K\n" +
-	"\x1frollingbacktrxearlieststarttime\x18\xfa\x86\xc5t \x01(\tR\x1frollingbacktrxearlieststarttime\x12O\n" +
+	"opencypher\x12\x1a\n" +
+	"\x04role\x18\x9a\xe4\xfc\x7f \x01(\tH\x02R\x04role\x88\x01\x01\x128\n" +
+	"\x13rollingbacktrxcount\x18\xfd\x96\xa9z \x01(\tH\x03R\x13rollingbacktrxcount\x88\x01\x01\x12P\n" +
+	"\x1frollingbacktrxearlieststarttime\x18\xfa\x86\xc5t \x01(\tH\x04R\x1frollingbacktrxearlieststarttime\x88\x01\x01\x12O\n" +
 	"\bsettings\x18\x89\xf6\x99@ \x03(\v20.neptunedata.GetEngineStatusOutput.SettingsEntryR\bsettings\x12=\n" +
-	"\x06sparql\x18\x91\xe6\x80\xca\x01 \x01(\v2!.neptunedata.QueryLanguageVersionR\x06sparql\x12\x1f\n" +
-	"\tstarttime\x18\x8f\xda\xf9T \x01(\tR\tstarttime\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\x1a;\n" +
+	"\x06sparql\x18\x91\xe6\x80\xca\x01 \x01(\v2!.neptunedata.QueryLanguageVersionR\x06sparql\x12$\n" +
+	"\tstarttime\x18\x8f\xda\xf9T \x01(\tH\x05R\tstarttime\x88\x01\x01\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x06R\x06status\x88\x01\x01\x1a;\n" +
 	"\rFeaturesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a:\n" +
@@ -9435,74 +9492,107 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a;\n" +
 	"\rSettingsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\":\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
+	"\x10_dbengineversionB\x11\n" +
+	"\x0f_dfequeryengineB\a\n" +
+	"\x05_roleB\x16\n" +
+	"\x14_rollingbacktrxcountB\"\n" +
+	" _rollingbacktrxearlieststarttimeB\f\n" +
+	"\n" +
+	"_starttimeB\t\n" +
+	"\a_status\":\n" +
 	"\x1aGetGremlinQueryStatusInput\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\xaa\x01\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\xd0\x01\n" +
 	"\x1bGetGremlinQueryStatusOutput\x12G\n" +
-	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\"\xd4\x01\n" +
-	"\x17GetLoaderJobStatusInput\x12\x1c\n" +
-	"\adetails\x18\xa6\xe7\x9f\xcb\x01 \x01(\tR\adetails\x12\x1a\n" +
-	"\x06errors\x18\x87\xf5\xde\xd0\x01 \x01(\tR\x06errors\x12,\n" +
-	"\rerrorsperpage\x18\x87\xe3\xa8. \x01(\x05H\x00R\rerrorsperpage\x88\x01\x01\x12\x1a\n" +
+	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12!\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tH\x00R\aqueryid\x88\x01\x01\x12)\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x01R\vquerystring\x88\x01\x01B\n" +
+	"\n" +
+	"\b_queryidB\x0e\n" +
+	"\f_querystring\"\xf5\x01\n" +
+	"\x17GetLoaderJobStatusInput\x12!\n" +
+	"\adetails\x18\xa6\xe7\x9f\xcb\x01 \x01(\tH\x00R\adetails\x88\x01\x01\x12\x1f\n" +
+	"\x06errors\x18\x87\xf5\xde\xd0\x01 \x01(\tH\x01R\x06errors\x88\x01\x01\x12,\n" +
+	"\rerrorsperpage\x18\x87\xe3\xa8. \x01(\x05H\x02R\rerrorsperpage\x88\x01\x01\x12\x1a\n" +
 	"\x06loadid\x18\xcd\xe3\xe5\x87\x01 \x01(\tR\x06loadid\x12\x1a\n" +
 	"\x04page\x18\xf7\xf4\xf7\n" +
-	" \x01(\x05H\x01R\x04page\x88\x01\x01B\x10\n" +
+	" \x01(\x05H\x03R\x04page\x88\x01\x01B\n" +
+	"\n" +
+	"\b_detailsB\t\n" +
+	"\a_errorsB\x10\n" +
 	"\x0e_errorsperpageB\a\n" +
 	"\x05_page\"T\n" +
 	"\x18GetLoaderJobStatusOutput\x12\x1c\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\tR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"c\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"~\n" +
 	"\x1bGetMLDataProcessingJobInput\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"\x9a\x01\n" +
-	"\x1cGetMLDataProcessingJobOutput\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12J\n" +
-	"\rprocessingjob\x18\xca\xc0\x81\x14 \x01(\v2!.neptunedata.MlResourceDefinitionR\rprocessingjob\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"Z\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x00R\x11neptuneiamrolearn\x88\x01\x01B\x14\n" +
+	"\x12_neptuneiamrolearn\"\xb6\x01\n" +
+	"\x1cGetMLDataProcessingJobOutput\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12J\n" +
+	"\rprocessingjob\x18\xca\xc0\x81\x14 \x01(\v2!.neptunedata.MlResourceDefinitionR\rprocessingjob\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x01R\x06status\x88\x01\x01B\x05\n" +
+	"\x03_idB\t\n" +
+	"\a_status\"u\n" +
 	"\x12GetMLEndpointInput\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"\xd5\x01\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x00R\x11neptuneiamrolearn\x88\x01\x01B\x14\n" +
+	"\x12_neptuneiamrolearn\"\xf1\x01\n" +
 	"\x13GetMLEndpointOutput\x12A\n" +
 	"\bendpoint\x18\xfd\xe0\xdf\xc5\x01 \x01(\v2!.neptunedata.MlResourceDefinitionR\bendpoint\x12K\n" +
-	"\x0eendpointconfig\x18렓\x95\x01 \x01(\v2\x1f.neptunedata.MlConfigDefinitionR\x0eendpointconfig\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"b\n" +
+	"\x0eendpointconfig\x18렓\x95\x01 \x01(\v2\x1f.neptunedata.MlConfigDefinitionR\x0eendpointconfig\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x01R\x06status\x88\x01\x01B\x05\n" +
+	"\x03_idB\t\n" +
+	"\a_status\"}\n" +
 	"\x1aGetMLModelTrainingJobInput\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"\xeb\x02\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x00R\x11neptuneiamrolearn\x88\x01\x01B\x14\n" +
+	"\x12_neptuneiamrolearn\"\x87\x03\n" +
 	"\x1bGetMLModelTrainingJobOutput\x12<\n" +
-	"\x06hpojob\x18\xf2\xdc\xc9N \x01(\v2!.neptunedata.MlResourceDefinitionR\x06hpojob\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12>\n" +
+	"\x06hpojob\x18\xf2\xdc\xc9N \x01(\v2!.neptunedata.MlResourceDefinitionR\x06hpojob\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12>\n" +
 	"\bmlmodels\x18\xaf\x96\xc0. \x03(\v2\x1f.neptunedata.MlConfigDefinitionR\bmlmodels\x12R\n" +
 	"\x11modeltransformjob\x18\xb6\x8e\xe9M \x01(\v2!.neptunedata.MlResourceDefinitionR\x11modeltransformjob\x12J\n" +
-	"\rprocessingjob\x18\xca\xc0\x81\x14 \x01(\v2!.neptunedata.MlResourceDefinitionR\rprocessingjob\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"c\n" +
+	"\rprocessingjob\x18\xca\xc0\x81\x14 \x01(\v2!.neptunedata.MlResourceDefinitionR\rprocessingjob\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x01R\x06status\x88\x01\x01B\x05\n" +
+	"\x03_idB\t\n" +
+	"\a_status\"~\n" +
 	"\x1bGetMLModelTransformJobInput\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\"\xc0\x02\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x00R\x11neptuneiamrolearn\x88\x01\x01B\x14\n" +
+	"\x12_neptuneiamrolearn\"\xdc\x02\n" +
 	"\x1cGetMLModelTransformJobOutput\x12R\n" +
-	"\x11baseprocessingjob\x18\xe3\xcb\xecY \x01(\v2!.neptunedata.MlResourceDefinitionR\x11baseprocessingjob\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12;\n" +
+	"\x11baseprocessingjob\x18\xe3\xcb\xecY \x01(\v2!.neptunedata.MlResourceDefinitionR\x11baseprocessingjob\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12;\n" +
 	"\x06models\x18\x8c\xa5ǣ\x01 \x03(\v2\x1f.neptunedata.MlConfigDefinitionR\x06models\x12_\n" +
-	"\x17remotemodeltransformjob\x18\xb0\x96\xd4\xe1\x01 \x01(\v2!.neptunedata.MlResourceDefinitionR\x17remotemodeltransformjob\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"=\n" +
+	"\x17remotemodeltransformjob\x18\xb0\x96\xd4\xe1\x01 \x01(\v2!.neptunedata.MlResourceDefinitionR\x17remotemodeltransformjob\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x01R\x06status\x88\x01\x01B\x05\n" +
+	"\x03_idB\t\n" +
+	"\a_status\"=\n" +
 	"\x1dGetOpenCypherQueryStatusInput\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\xad\x01\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\"\xd3\x01\n" +
 	"\x1eGetOpenCypherQueryStatusOutput\x12G\n" +
-	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\"u\n" +
+	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12!\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tH\x00R\aqueryid\x88\x01\x01\x12)\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x01R\vquerystring\x88\x01\x01B\n" +
+	"\n" +
+	"\b_queryidB\x0e\n" +
+	"\f_querystring\"u\n" +
 	" GetPropertygraphStatisticsOutput\x125\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x17.neptunedata.StatisticsR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\xeb\x01\n" +
-	"\x1bGetPropertygraphStreamInput\x12\x1f\n" +
-	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tR\tcommitnum\x125\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x9c\x02\n" +
+	"\x1bGetPropertygraphStreamInput\x12$\n" +
+	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tH\x00R\tcommitnum\x88\x01\x01\x125\n" +
 	"\bencoding\x18\xf1\xa3\xef\xf7\x01 \x01(\x0e2\x15.neptunedata.EncodingR\bencoding\x12@\n" +
-	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeR\fiteratortype\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tR\x05limit\x12\x18\n" +
-	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tR\x05opnum\"\x82\x03\n" +
+	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeR\fiteratortype\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tH\x01R\x05limit\x88\x01\x01\x12\x1d\n" +
+	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tH\x02R\x05opnum\x88\x01\x01B\f\n" +
+	"\n" +
+	"_commitnumB\b\n" +
+	"\x06_limitB\b\n" +
+	"\x06_opnum\"\x82\x03\n" +
 	"\x1cGetPropertygraphStreamOutput\x12\x1a\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\tR\x06format\x12_\n" +
 	"\vlasteventid\x18\xdf\xe6\x90p \x03(\v2:.neptunedata.GetPropertygraphStreamOutput.LasteventidEntryR\vlasteventid\x12>\n" +
@@ -9513,28 +9603,34 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"T\n" +
 	"\x1cGetPropertygraphSummaryInput\x124\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeR\x04mode\"\x8c\x01\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeR\x04mode\"\xa0\x01\n" +
 	"\x1dGetPropertygraphSummaryOutput\x12G\n" +
-	"\apayload\x18\xa6ｘ\x01 \x01(\v2).neptunedata.PropertygraphSummaryValueMapR\apayload\x12\"\n" +
+	"\apayload\x18\xa6ｘ\x01 \x01(\v2).neptunedata.PropertygraphSummaryValueMapR\apayload\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\"O\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x00R\n" +
+	"statuscode\x88\x01\x01B\r\n" +
+	"\v_statuscode\"O\n" +
 	"\x17GetRDFGraphSummaryInput\x124\n" +
-	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeR\x04mode\"\x82\x01\n" +
+	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x1d.neptunedata.GraphSummaryTypeR\x04mode\"\x96\x01\n" +
 	"\x18GetRDFGraphSummaryOutput\x12B\n" +
-	"\apayload\x18\xa6ｘ\x01 \x01(\v2$.neptunedata.RDFGraphSummaryValueMapR\apayload\x12\"\n" +
+	"\apayload\x18\xa6ｘ\x01 \x01(\v2$.neptunedata.RDFGraphSummaryValueMapR\apayload\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\"n\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x00R\n" +
+	"statuscode\x88\x01\x01B\r\n" +
+	"\v_statuscode\"n\n" +
 	"\x19GetSparqlStatisticsOutput\x125\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x17.neptunedata.StatisticsR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\xe4\x01\n" +
-	"\x14GetSparqlStreamInput\x12\x1f\n" +
-	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tR\tcommitnum\x125\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x95\x02\n" +
+	"\x14GetSparqlStreamInput\x12$\n" +
+	"\tcommitnum\x18\xfd\xe4\xb8y \x01(\tH\x00R\tcommitnum\x88\x01\x01\x125\n" +
 	"\bencoding\x18\xf1\xa3\xef\xf7\x01 \x01(\x0e2\x15.neptunedata.EncodingR\bencoding\x12@\n" +
-	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeR\fiteratortype\x12\x18\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tR\x05limit\x12\x18\n" +
-	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tR\x05opnum\"\xed\x02\n" +
+	"\fiteratortype\x18ؖ\xa3C \x01(\x0e2\x19.neptunedata.IteratorTypeR\fiteratortype\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\tH\x01R\x05limit\x88\x01\x01\x12\x1d\n" +
+	"\x05opnum\x18\x83\xd1ڥ\x01 \x01(\tH\x02R\x05opnum\x88\x01\x01B\f\n" +
+	"\n" +
+	"_commitnumB\b\n" +
+	"\x06_limitB\b\n" +
+	"\x06_opnum\"\xed\x02\n" +
 	"\x15GetSparqlStreamOutput\x12\x1a\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\tR\x06format\x12X\n" +
 	"\vlasteventid\x18\xdf\xe6\x90p \x03(\v23.neptunedata.GetSparqlStreamOutput.LasteventidEntryR\vlasteventid\x12>\n" +
@@ -9543,17 +9639,24 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\ftotalrecords\x18\xc6\xd9\xdb\xfb\x01 \x01(\tR\ftotalrecords\x1a>\n" +
 	"\x10LasteventidEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa1\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc7\x01\n" +
 	"\x12GremlinQueryStatus\x12G\n" +
-	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12\x1c\n" +
-	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tR\aqueryid\x12$\n" +
-	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tR\vquerystring\"v\n" +
-	"\x1cGremlinQueryStatusAttributes\x12!\n" +
+	"\x0equeryevalstats\x18ѱ\x8e\xed\x01 \x01(\v2\x1b.neptunedata.QueryEvalStatsR\x0equeryevalstats\x12!\n" +
+	"\aqueryid\x18\x8f\xafנ\x01 \x01(\tH\x00R\aqueryid\x88\x01\x01\x12)\n" +
+	"\vquerystring\x18\x87\x81\x9d\xf8\x01 \x01(\tH\x01R\vquerystring\x88\x01\x01B\n" +
 	"\n" +
-	"attributes\x18\x95\xb7\xff\x0f \x01(\tR\n" +
-	"attributes\x12\x16\n" +
-	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x82\x01\n" +
+	"\b_queryidB\x0e\n" +
+	"\f_querystring\"\xa9\x01\n" +
+	"\x1cGremlinQueryStatusAttributes\x12&\n" +
+	"\n" +
+	"attributes\x18\x95\xb7\xff\x0f \x01(\tH\x00R\n" +
+	"attributes\x88\x01\x01\x12\x1b\n" +
+	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tH\x01R\x04code\x88\x01\x01\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x02R\amessage\x88\x01\x01B\r\n" +
+	"\v_attributesB\a\n" +
+	"\x05_codeB\n" +
+	"\n" +
+	"\b_message\"\x82\x01\n" +
 	"\x18IllegalArgumentException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
@@ -9573,50 +9676,61 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x19InvalidParameterException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"E\n" +
-	"\x17ListGremlinQueriesInput\x12*\n" +
-	"\x0eincludewaiting\x18\xd3\xc4\xf7\x8c\x01 \x01(\tR\x0eincludewaiting\"\xbe\x01\n" +
-	"\x18ListGremlinQueriesOutput\x122\n" +
-	"\x12acceptedquerycount\x18\xdc\xf5\xba\x9c\x01 \x01(\tR\x12acceptedquerycount\x12<\n" +
-	"\aqueries\x18Ġ\xb6\f \x03(\v2\x1f.neptunedata.GremlinQueryStatusR\aqueries\x120\n" +
-	"\x11runningquerycount\x18\xa8\x90\xb6\xd7\x01 \x01(\tR\x11runningquerycount\"q\n" +
-	"\x13ListLoaderJobsInput\x121\n" +
-	"\x12includequeuedloads\x18\x98\x8d\xeej \x01(\tR\x12includequeuedloads\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01B\b\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"]\n" +
+	"\x17ListGremlinQueriesInput\x12/\n" +
+	"\x0eincludewaiting\x18\xd3\xc4\xf7\x8c\x01 \x01(\tH\x00R\x0eincludewaiting\x88\x01\x01B\x11\n" +
+	"\x0f_includewaiting\"\xf5\x01\n" +
+	"\x18ListGremlinQueriesOutput\x127\n" +
+	"\x12acceptedquerycount\x18\xdc\xf5\xba\x9c\x01 \x01(\tH\x00R\x12acceptedquerycount\x88\x01\x01\x12<\n" +
+	"\aqueries\x18Ġ\xb6\f \x03(\v2\x1f.neptunedata.GremlinQueryStatusR\aqueries\x125\n" +
+	"\x11runningquerycount\x18\xa8\x90\xb6\xd7\x01 \x01(\tH\x01R\x11runningquerycount\x88\x01\x01B\x15\n" +
+	"\x13_acceptedquerycountB\x14\n" +
+	"\x12_runningquerycount\"\x8d\x01\n" +
+	"\x13ListLoaderJobsInput\x126\n" +
+	"\x12includequeuedloads\x18\x98\x8d\xeej \x01(\tH\x00R\x12includequeuedloads\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01B\x15\n" +
+	"\x13_includequeuedloadsB\b\n" +
 	"\x06_limit\"m\n" +
 	"\x14ListLoaderJobsOutput\x129\n" +
 	"\apayload\x18\xa6ｘ\x01 \x01(\v2\x1b.neptunedata.LoaderIdResultR\apayload\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x83\x01\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x9e\x01\n" +
 	"\x1dListMLDataProcessingJobsInput\x12#\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
-	"\t_maxitems\"5\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x14\n" +
+	"\x12_neptuneiamrolearn\"5\n" +
 	"\x1eListMLDataProcessingJobsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"z\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x95\x01\n" +
 	"\x14ListMLEndpointsInput\x12#\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
-	"\t_maxitems\",\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x14\n" +
+	"\x12_neptuneiamrolearn\",\n" +
 	"\x15ListMLEndpointsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x82\x01\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x9d\x01\n" +
 	"\x1cListMLModelTrainingJobsInput\x12#\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
-	"\t_maxitems\"4\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x14\n" +
+	"\x12_neptuneiamrolearn\"4\n" +
 	"\x1dListMLModelTrainingJobsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x83\x01\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"\x9e\x01\n" +
 	"\x1dListMLModelTransformJobsInput\x12#\n" +
-	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearnB\v\n" +
-	"\t_maxitems\"5\n" +
+	"\bmaxitems\x18\xb4\xee\xec\xe7\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x01R\x11neptuneiamrolearn\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\x14\n" +
+	"\x12_neptuneiamrolearn\"5\n" +
 	"\x1eListMLModelTransformJobsOutput\x12\x13\n" +
-	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"H\n" +
-	"\x1aListOpenCypherQueriesInput\x12*\n" +
-	"\x0eincludewaiting\x18\xd3\xc4\xf7\x8c\x01 \x01(\tR\x0eincludewaiting\"\xc1\x01\n" +
-	"\x1bListOpenCypherQueriesOutput\x122\n" +
-	"\x12acceptedquerycount\x18\xdc\xf5\xba\x9c\x01 \x01(\tR\x12acceptedquerycount\x12<\n" +
-	"\aqueries\x18Ġ\xb6\f \x03(\v2\x1f.neptunedata.GremlinQueryStatusR\aqueries\x120\n" +
-	"\x11runningquerycount\x18\xa8\x90\xb6\xd7\x01 \x01(\tR\x11runningquerycount\"\x86\x01\n" +
+	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\"`\n" +
+	"\x1aListOpenCypherQueriesInput\x12/\n" +
+	"\x0eincludewaiting\x18\xd3\xc4\xf7\x8c\x01 \x01(\tH\x00R\x0eincludewaiting\x88\x01\x01B\x11\n" +
+	"\x0f_includewaiting\"\xf8\x01\n" +
+	"\x1bListOpenCypherQueriesOutput\x127\n" +
+	"\x12acceptedquerycount\x18\xdc\xf5\xba\x9c\x01 \x01(\tH\x00R\x12acceptedquerycount\x88\x01\x01\x12<\n" +
+	"\aqueries\x18Ġ\xb6\f \x03(\v2\x1f.neptunedata.GremlinQueryStatusR\aqueries\x125\n" +
+	"\x11runningquerycount\x18\xa8\x90\xb6\xd7\x01 \x01(\tH\x01R\x11runningquerycount\x88\x01\x01B\x15\n" +
+	"\x13_acceptedquerycountB\x14\n" +
+	"\x12_runningquerycount\"\x86\x01\n" +
 	"\x1cLoadUrlAccessDeniedException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
@@ -9652,21 +9766,30 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x19MissingParameterException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"A\n" +
-	"\x12MlConfigDefinition\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"\xe4\x01\n" +
-	"\x14MlResourceDefinition\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x12.\n" +
-	"\x10cloudwatchlogurl\x18˫\xa3\x8a\x01 \x01(\tR\x10cloudwatchlogurl\x12'\n" +
-	"\rfailurereason\x18\xfe\xb0\x8cS \x01(\tR\rfailurereason\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12*\n" +
-	"\x0eoutputlocation\x18\x94\xdeƮ\x01 \x01(\tR\x0eoutputlocation\x12\x1a\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\"\x98\x01\n" +
-	"\rNodeStructure\x12\x18\n" +
-	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tR\x05count\x12A\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\\\n" +
+	"\x12MlConfigDefinition\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_name\"\xd8\x02\n" +
+	"\x14MlResourceDefinition\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x123\n" +
+	"\x10cloudwatchlogurl\x18˫\xa3\x8a\x01 \x01(\tH\x01R\x10cloudwatchlogurl\x88\x01\x01\x12,\n" +
+	"\rfailurereason\x18\xfe\xb0\x8cS \x01(\tH\x02R\rfailurereason\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12/\n" +
+	"\x0eoutputlocation\x18\x94\xdeƮ\x01 \x01(\tH\x04R\x0eoutputlocation\x88\x01\x01\x12\x1f\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tH\x05R\x06status\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x13\n" +
+	"\x11_cloudwatchlogurlB\x10\n" +
+	"\x0e_failurereasonB\a\n" +
+	"\x05_nameB\x11\n" +
+	"\x0f_outputlocationB\t\n" +
+	"\a_status\"\xa7\x01\n" +
+	"\rNodeStructure\x12\x1d\n" +
+	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tH\x00R\x05count\x88\x01\x01\x12A\n" +
 	"\x1adistinctoutgoingedgelabels\x18\xf6ռn \x03(\tR\x1adistinctoutgoingedgelabels\x12*\n" +
-	"\x0enodeproperties\x18\xc5\xd1Ǚ\x01 \x03(\tR\x0enodeproperties\"z\n" +
+	"\x0enodeproperties\x18\xc5\xd1Ǚ\x01 \x03(\tR\x0enodepropertiesB\b\n" +
+	"\x06_count\"z\n" +
 	"\x10ParsingException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
@@ -9674,23 +9797,26 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x1cPreconditionsFailedException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\x98\x01\n" +
-	"\x11PropertygraphData\x12\x16\n" +
-	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tR\x04from\x12\x12\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\xb2\x01\n" +
+	"\x11PropertygraphData\x12\x1b\n" +
+	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tH\x00R\x04from\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x13\n" +
-	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x12\x11\n" +
-	"\x02to\x18\xa5\x90\x95\x12 \x01(\tR\x02to\x12\x16\n" +
+	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x12\x16\n" +
+	"\x02to\x18\xa5\x90\x95\x12 \x01(\tH\x01R\x02to\x88\x01\x01\x12\x16\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\tR\x04type\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xc6\x02\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tR\x05valueB\a\n" +
+	"\x05_fromB\x05\n" +
+	"\x03_to\"\xd8\x02\n" +
 	"\x13PropertygraphRecord\x12<\n" +
 	"\x17committimestampinmillis\x18\x8aح\xb8\x01 \x01(\tR\x17committimestampinmillis\x126\n" +
 	"\x04data\x18\xa6\xc5\xcb\xc3\x01 \x01(\v2\x1e.neptunedata.PropertygraphDataR\x04data\x12J\n" +
-	"\aeventid\x18\xf3\xa5\xdcy \x03(\v2-.neptunedata.PropertygraphRecord.EventidEntryR\aeventid\x12\x1d\n" +
-	"\bislastop\x18\xa7\x95\xd6S \x01(\tR\bislastop\x12\x12\n" +
+	"\aeventid\x18\xf3\xa5\xdcy \x03(\v2-.neptunedata.PropertygraphRecord.EventidEntryR\aeventid\x12\"\n" +
+	"\bislastop\x18\xa7\x95\xd6S \x01(\tH\x00R\bislastop\x88\x01\x01\x12\x12\n" +
 	"\x02op\x18\xab\xd9\xd0\xf9\x01 \x01(\tR\x02op\x1a:\n" +
 	"\fEventidEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfe\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
+	"\t_islastop\"\xc8\a\n" +
 	"\x14PropertygraphSummary\x12!\n" +
 	"\n" +
 	"edgelabels\x18\x9c\xce\xcfg \x03(\tR\n" +
@@ -9701,26 +9827,43 @@ const file_neptunedata_proto_rawDesc = "" +
 	"nodelabels\x18\xd3\xf6\xff\x15 \x03(\tR\n" +
 	"nodelabels\x12O\n" +
 	"\x0enodeproperties\x18\xc5\xd1Ǚ\x01 \x03(\v2#.neptunedata.LongValuedMapListEntryR\x0enodeproperties\x12E\n" +
-	"\x0enodestructures\x18\x98\xad\x8f\x0e \x03(\v2\x1a.neptunedata.NodeStructureR\x0enodestructures\x12(\n" +
-	"\rnumedgelabels\x18\xe6୭\x01 \x01(\tR\rnumedgelabels\x120\n" +
-	"\x11numedgeproperties\x18\xac꿝\x01 \x01(\tR\x11numedgeproperties\x12\x1e\n" +
-	"\bnumedges\x18\xb8\xc6͝\x01 \x01(\tR\bnumedges\x12(\n" +
-	"\rnumnodelabels\x18\x89\x83\xd5\xeb\x01 \x01(\tR\rnumnodelabels\x120\n" +
-	"\x11numnodeproperties\x18\x9b\xef\xc3\xf0\x01 \x01(\tR\x11numnodeproperties\x12\x1d\n" +
-	"\bnumnodes\x18\xb1\xcc\xee\x16 \x01(\tR\bnumnodes\x12;\n" +
-	"\x17totaledgepropertyvalues\x18\x9c\x88\xaa; \x01(\tR\x17totaledgepropertyvalues\x12;\n" +
-	"\x17totalnodepropertyvalues\x18ߪ\xfd\x06 \x01(\tR\x17totalnodepropertyvalues\"\xcf\x01\n" +
+	"\x0enodestructures\x18\x98\xad\x8f\x0e \x03(\v2\x1a.neptunedata.NodeStructureR\x0enodestructures\x12-\n" +
+	"\rnumedgelabels\x18\xe6୭\x01 \x01(\tH\x00R\rnumedgelabels\x88\x01\x01\x125\n" +
+	"\x11numedgeproperties\x18\xac꿝\x01 \x01(\tH\x01R\x11numedgeproperties\x88\x01\x01\x12#\n" +
+	"\bnumedges\x18\xb8\xc6͝\x01 \x01(\tH\x02R\bnumedges\x88\x01\x01\x12-\n" +
+	"\rnumnodelabels\x18\x89\x83\xd5\xeb\x01 \x01(\tH\x03R\rnumnodelabels\x88\x01\x01\x125\n" +
+	"\x11numnodeproperties\x18\x9b\xef\xc3\xf0\x01 \x01(\tH\x04R\x11numnodeproperties\x88\x01\x01\x12\"\n" +
+	"\bnumnodes\x18\xb1\xcc\xee\x16 \x01(\tH\x05R\bnumnodes\x88\x01\x01\x12@\n" +
+	"\x17totaledgepropertyvalues\x18\x9c\x88\xaa; \x01(\tH\x06R\x17totaledgepropertyvalues\x88\x01\x01\x12@\n" +
+	"\x17totalnodepropertyvalues\x18ߪ\xfd\x06 \x01(\tH\aR\x17totalnodepropertyvalues\x88\x01\x01B\x10\n" +
+	"\x0e_numedgelabelsB\x14\n" +
+	"\x12_numedgepropertiesB\v\n" +
+	"\t_numedgesB\x10\n" +
+	"\x0e_numnodelabelsB\x14\n" +
+	"\x12_numnodepropertiesB\v\n" +
+	"\t_numnodesB\x1a\n" +
+	"\x18_totaledgepropertyvaluesB\x1a\n" +
+	"\x18_totalnodepropertyvalues\"\x87\x02\n" +
 	"\x1cPropertygraphSummaryValueMap\x12I\n" +
-	"\fgraphsummary\x18\xe2ѕ\xf0\x01 \x01(\v2!.neptunedata.PropertygraphSummaryR\fgraphsummary\x12G\n" +
-	"\x1dlaststatisticscomputationtime\x18\xe1\xed\xf7! \x01(\tR\x1dlaststatisticscomputationtime\x12\x1b\n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tR\aversion\"\x8e\x01\n" +
-	"\x0eQueryEvalStats\x12\x1f\n" +
-	"\tcancelled\x18\x9d\xf0\xf7\" \x01(\tR\tcancelled\x12\x1c\n" +
-	"\aelapsed\x18\x9c\xe7\xc7\xf1\x01 \x01(\tR\aelapsed\x12\"\n" +
+	"\fgraphsummary\x18\xe2ѕ\xf0\x01 \x01(\v2!.neptunedata.PropertygraphSummaryR\fgraphsummary\x12L\n" +
+	"\x1dlaststatisticscomputationtime\x18\xe1\xed\xf7! \x01(\tH\x00R\x1dlaststatisticscomputationtime\x88\x01\x01\x12 \n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\x01R\aversion\x88\x01\x01B \n" +
+	"\x1e_laststatisticscomputationtimeB\n" +
 	"\n" +
-	"subqueries\x18\xb4\xf5\xb0\xf5\x01 \x01(\tR\n" +
-	"subqueries\x12\x19\n" +
-	"\x06waited\x18\xa2\xdf\xf7@ \x01(\tR\x06waited\"3\n" +
+	"\b_version\"\xd6\x01\n" +
+	"\x0eQueryEvalStats\x12$\n" +
+	"\tcancelled\x18\x9d\xf0\xf7\" \x01(\tH\x00R\tcancelled\x88\x01\x01\x12!\n" +
+	"\aelapsed\x18\x9c\xe7\xc7\xf1\x01 \x01(\tH\x01R\aelapsed\x88\x01\x01\x12'\n" +
+	"\n" +
+	"subqueries\x18\xb4\xf5\xb0\xf5\x01 \x01(\tH\x02R\n" +
+	"subqueries\x88\x01\x01\x12\x1e\n" +
+	"\x06waited\x18\xa2\xdf\xf7@ \x01(\tH\x03R\x06waited\x88\x01\x01B\f\n" +
+	"\n" +
+	"_cancelledB\n" +
+	"\n" +
+	"\b_elapsedB\r\n" +
+	"\v_subqueriesB\t\n" +
+	"\a_waited\"3\n" +
 	"\x14QueryLanguageVersion\x12\x1b\n" +
 	"\aversion\x18\x98\xdd\xc63 \x01(\tR\aversion\"\x85\x01\n" +
 	"\x1bQueryLimitExceededException\x12\x16\n" +
@@ -9734,29 +9877,37 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\x16QueryTooLargeException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\xf9\x02\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\xdb\x03\n" +
 	"\x0fRDFGraphSummary\x12\x1c\n" +
-	"\aclasses\x18\xa8Ͷ\x81\x01 \x03(\tR\aclasses\x12!\n" +
+	"\aclasses\x18\xa8Ͷ\x81\x01 \x03(\tR\aclasses\x12&\n" +
 	"\n" +
-	"numclasses\x18ꯍC \x01(\tR\n" +
-	"numclasses\x127\n" +
-	"\x15numdistinctpredicates\x18\xee\xe3\xedM \x01(\tR\x15numdistinctpredicates\x123\n" +
-	"\x13numdistinctsubjects\x18\xe3κE \x01(\tR\x13numdistinctsubjects\x12\x1e\n" +
-	"\bnumquads\x18\xa6֯\xf5\x01 \x01(\tR\bnumquads\x12F\n" +
+	"numclasses\x18ꯍC \x01(\tH\x00R\n" +
+	"numclasses\x88\x01\x01\x12<\n" +
+	"\x15numdistinctpredicates\x18\xee\xe3\xedM \x01(\tH\x01R\x15numdistinctpredicates\x88\x01\x01\x128\n" +
+	"\x13numdistinctsubjects\x18\xe3κE \x01(\tH\x02R\x13numdistinctsubjects\x88\x01\x01\x12#\n" +
+	"\bnumquads\x18\xa6֯\xf5\x01 \x01(\tH\x03R\bnumquads\x88\x01\x01\x12F\n" +
 	"\n" +
 	"predicates\x18\x98\x8d\xdbQ \x03(\v2#.neptunedata.LongValuedMapListEntryR\n" +
 	"predicates\x12O\n" +
-	"\x11subjectstructures\x18\xb6\xecک\x01 \x03(\v2\x1d.neptunedata.SubjectStructureR\x11subjectstructures\"\xc5\x01\n" +
+	"\x11subjectstructures\x18\xb6\xecک\x01 \x03(\v2\x1d.neptunedata.SubjectStructureR\x11subjectstructuresB\r\n" +
+	"\v_numclassesB\x18\n" +
+	"\x16_numdistinctpredicatesB\x16\n" +
+	"\x14_numdistinctsubjectsB\v\n" +
+	"\t_numquads\"\xfd\x01\n" +
 	"\x17RDFGraphSummaryValueMap\x12D\n" +
-	"\fgraphsummary\x18\xe2ѕ\xf0\x01 \x01(\v2\x1c.neptunedata.RDFGraphSummaryR\fgraphsummary\x12G\n" +
-	"\x1dlaststatisticscomputationtime\x18\xe1\xed\xf7! \x01(\tR\x1dlaststatisticscomputationtime\x12\x1b\n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tR\aversion\"\x84\x01\n" +
+	"\fgraphsummary\x18\xe2ѕ\xf0\x01 \x01(\v2\x1c.neptunedata.RDFGraphSummaryR\fgraphsummary\x12L\n" +
+	"\x1dlaststatisticscomputationtime\x18\xe1\xed\xf7! \x01(\tH\x00R\x1dlaststatisticscomputationtime\x88\x01\x01\x12 \n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\x01R\aversion\x88\x01\x01B \n" +
+	"\x1e_laststatisticscomputationtimeB\n" +
+	"\n" +
+	"\b_version\"\x84\x01\n" +
 	"\x1aReadOnlyViolationException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"?\n" +
-	"\x16RefreshStatisticsIdMap\x12%\n" +
-	"\fstatisticsid\x18\xa8\x89\xbb\x12 \x01(\tR\fstatisticsid\"u\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"U\n" +
+	"\x16RefreshStatisticsIdMap\x12*\n" +
+	"\fstatisticsid\x18\xa8\x89\xbb\x12 \x01(\tH\x00R\fstatisticsid\x88\x01\x01B\x0f\n" +
+	"\r_statisticsid\"u\n" +
 	"\vS3Exception\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
@@ -9767,128 +9918,189 @@ const file_neptunedata_proto_rawDesc = "" +
 	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"$\n" +
 	"\n" +
 	"SparqlData\x12\x16\n" +
-	"\x04stmt\x18\xac\xe9ޚ\x01 \x01(\tR\x04stmt\"\xb1\x02\n" +
+	"\x04stmt\x18\xac\xe9ޚ\x01 \x01(\tR\x04stmt\"\xc3\x02\n" +
 	"\fSparqlRecord\x12<\n" +
 	"\x17committimestampinmillis\x18\x8aح\xb8\x01 \x01(\tR\x17committimestampinmillis\x12/\n" +
 	"\x04data\x18\xa6\xc5\xcb\xc3\x01 \x01(\v2\x17.neptunedata.SparqlDataR\x04data\x12C\n" +
-	"\aeventid\x18\xf3\xa5\xdcy \x03(\v2&.neptunedata.SparqlRecord.EventidEntryR\aeventid\x12\x1d\n" +
-	"\bislastop\x18\xa7\x95\xd6S \x01(\tR\bislastop\x12\x12\n" +
+	"\aeventid\x18\xf3\xa5\xdcy \x03(\v2&.neptunedata.SparqlRecord.EventidEntryR\aeventid\x12\"\n" +
+	"\bislastop\x18\xa7\x95\xd6S \x01(\tH\x00R\bislastop\x88\x01\x01\x12\x12\n" +
 	"\x02op\x18\xab\xd9\xd0\xf9\x01 \x01(\tR\x02op\x1a:\n" +
 	"\fEventidEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
+	"\t_islastop\"\x99\a\n" +
 	"\x13StartLoaderJobInput\x12%\n" +
-	"\fdependencies\x18\xe1\xba\xf6) \x03(\tR\fdependencies\x12%\n" +
-	"\fedgeonlyload\x18ש\xc1\x12 \x01(\tR\fedgeonlyload\x12$\n" +
-	"\vfailonerror\x18\x9f\xba\xba\xd0\x01 \x01(\tR\vfailonerror\x12/\n" +
+	"\fdependencies\x18\xe1\xba\xf6) \x03(\tR\fdependencies\x12*\n" +
+	"\fedgeonlyload\x18ש\xc1\x12 \x01(\tH\x00R\fedgeonlyload\x88\x01\x01\x12)\n" +
+	"\vfailonerror\x18\x9f\xba\xba\xd0\x01 \x01(\tH\x01R\vfailonerror\x88\x01\x01\x12/\n" +
 	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\x0e2\x13.neptunedata.FormatR\x06format\x12\"\n" +
 	"\n" +
 	"iamrolearn\x18\x9a\xe9\xe6\x96\x01 \x01(\tR\n" +
 	"iamrolearn\x12(\n" +
 	"\x04mode\x18\x93\xc0\xbbc \x01(\x0e2\x11.neptunedata.ModeR\x04mode\x12=\n" +
 	"\vparallelism\x18»\xeaG \x01(\x0e2\x18.neptunedata.ParallelismR\vparallelism\x12n\n" +
-	"\x13parserconfiguration\x18\xc9я{ \x03(\v29.neptunedata.StartLoaderJobInput.ParserconfigurationEntryR\x13parserconfiguration\x12%\n" +
-	"\fqueuerequest\x18\xca˞< \x01(\tR\fqueuerequest\x12F\n" +
+	"\x13parserconfiguration\x18\xc9я{ \x03(\v29.neptunedata.StartLoaderJobInput.ParserconfigurationEntryR\x13parserconfiguration\x12*\n" +
+	"\fqueuerequest\x18\xca˞< \x01(\tH\x02R\fqueuerequest\x88\x01\x01\x12F\n" +
 	"\x0es3bucketregion\x18\x92\xae\xf7M \x01(\x0e2\x1b.neptunedata.S3BucketRegionR\x0es3bucketregion\x12\x1a\n" +
-	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12O\n" +
-	"!updatesinglecardinalityproperties\x18\xb6̣5 \x01(\tR!updatesinglecardinalityproperties\x123\n" +
-	"\x13userprovidededgeids\x18\x9b\x97\x98\x06 \x01(\tR\x13userprovidededgeids\x1aF\n" +
+	"\x06source\x18\xd9Ӽ\xde\x01 \x01(\tR\x06source\x12T\n" +
+	"!updatesinglecardinalityproperties\x18\xb6̣5 \x01(\tH\x03R!updatesinglecardinalityproperties\x88\x01\x01\x128\n" +
+	"\x13userprovidededgeids\x18\x9b\x97\x98\x06 \x01(\tH\x04R\x13userprovidededgeids\x88\x01\x01\x1aF\n" +
 	"\x18ParserconfigurationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbc\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_edgeonlyloadB\x0e\n" +
+	"\f_failonerrorB\x0f\n" +
+	"\r_queuerequestB$\n" +
+	"\"_updatesinglecardinalitypropertiesB\x16\n" +
+	"\x14_userprovidededgeids\"\xbc\x01\n" +
 	"\x14StartLoaderJobOutput\x12L\n" +
 	"\apayload\x18\xa6ｘ\x01 \x03(\v2..neptunedata.StartLoaderJobOutput.PayloadEntryR\apayload\x12\x1a\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\tR\x06status\x1a:\n" +
 	"\fPayloadEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\x06\n" +
-	"\x1dStartMLDataProcessingJobInput\x12)\n" +
-	"\x0econfigfilename\x18ӗ\xa8. \x01(\tR\x0econfigfilename\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x124\n" +
-	"\x13inputdatas3location\x18\xa3\xcd\xc0\x8b\x01 \x01(\tR\x13inputdatas3location\x12\x1f\n" +
-	"\tmodeltype\x18\xbb\xfc\xee\x13 \x01(\tR\tmodeltype\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\x12D\n" +
-	"\x1bpreviousdataprocessingjobid\x18؏\x97\x9f\x01 \x01(\tR\x1bpreviousdataprocessingjobid\x12;\n" +
-	"\x17processeddatas3location\x18\xf3\xe1\x9d) \x01(\tR\x17processeddatas3location\x129\n" +
-	"\x16processinginstancetype\x18꿫{ \x01(\tR\x16processinginstancetype\x12M\n" +
-	" processinginstancevolumesizeingb\x18\x9d\xa7\xa6C \x01(\tR processinginstancevolumesizeingb\x12A\n" +
-	"\x1aprocessingtimeoutinseconds\x18\x98\x9b\x905 \x01(\tR\x1aprocessingtimeoutinseconds\x12>\n" +
-	"\x18s3outputencryptionkmskey\x18\x84\x93\xda\xc6\x01 \x01(\tR\x18s3outputencryptionkmskey\x123\n" +
-	"\x13sagemakeriamrolearn\x18\x9c\xd7\xc8K \x01(\tR\x13sagemakeriamrolearn\x12.\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf9\b\n" +
+	"\x1dStartMLDataProcessingJobInput\x12.\n" +
+	"\x0econfigfilename\x18ӗ\xa8. \x01(\tH\x00R\x0econfigfilename\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x124\n" +
+	"\x13inputdatas3location\x18\xa3\xcd\xc0\x8b\x01 \x01(\tR\x13inputdatas3location\x12$\n" +
+	"\tmodeltype\x18\xbb\xfc\xee\x13 \x01(\tH\x02R\tmodeltype\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x03R\x11neptuneiamrolearn\x88\x01\x01\x12I\n" +
+	"\x1bpreviousdataprocessingjobid\x18؏\x97\x9f\x01 \x01(\tH\x04R\x1bpreviousdataprocessingjobid\x88\x01\x01\x12;\n" +
+	"\x17processeddatas3location\x18\xf3\xe1\x9d) \x01(\tR\x17processeddatas3location\x12>\n" +
+	"\x16processinginstancetype\x18꿫{ \x01(\tH\x05R\x16processinginstancetype\x88\x01\x01\x12R\n" +
+	" processinginstancevolumesizeingb\x18\x9d\xa7\xa6C \x01(\tH\x06R processinginstancevolumesizeingb\x88\x01\x01\x12F\n" +
+	"\x1aprocessingtimeoutinseconds\x18\x98\x9b\x905 \x01(\tH\aR\x1aprocessingtimeoutinseconds\x88\x01\x01\x12C\n" +
+	"\x18s3outputencryptionkmskey\x18\x84\x93\xda\xc6\x01 \x01(\tH\bR\x18s3outputencryptionkmskey\x88\x01\x01\x128\n" +
+	"\x13sagemakeriamrolearn\x18\x9c\xd7\xc8K \x01(\tH\tR\x13sagemakeriamrolearn\x88\x01\x01\x12.\n" +
 	"\x10securitygroupids\x18\xe5\xdb\u07b9\x01 \x03(\tR\x10securitygroupids\x12\x1b\n" +
-	"\asubnets\x18\x82\x89\xc3@ \x03(\tR\asubnets\x12:\n" +
-	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tR\x16volumeencryptionkmskey\"\x82\x01\n" +
-	"\x1eStartMLDataProcessingJobOutput\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x126\n" +
-	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tR\x14creationtimeinmillis\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"\xd6\b\n" +
-	"\x1cStartMLModelTrainingJobInput\x12A\n" +
-	"\x1abaseprocessinginstancetype\x18\xb1\x84\xe4` \x01(\tR\x1abaseprocessinginstancetype\x12s\n" +
+	"\asubnets\x18\x82\x89\xc3@ \x03(\tR\asubnets\x12?\n" +
+	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tH\n" +
+	"R\x16volumeencryptionkmskey\x88\x01\x01B\x11\n" +
+	"\x0f_configfilenameB\x05\n" +
+	"\x03_idB\f\n" +
+	"\n" +
+	"_modeltypeB\x14\n" +
+	"\x12_neptuneiamrolearnB\x1e\n" +
+	"\x1c_previousdataprocessingjobidB\x19\n" +
+	"\x17_processinginstancetypeB#\n" +
+	"!_processinginstancevolumesizeingbB\x1d\n" +
+	"\x1b_processingtimeoutinsecondsB\x1b\n" +
+	"\x19_s3outputencryptionkmskeyB\x16\n" +
+	"\x14_sagemakeriamrolearnB\x19\n" +
+	"\x17_volumeencryptionkmskey\"\xb9\x01\n" +
+	"\x1eStartMLDataProcessingJobOutput\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12;\n" +
+	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tH\x01R\x14creationtimeinmillis\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x17\n" +
+	"\x15_creationtimeinmillisB\x05\n" +
+	"\x03_id\"\xf7\v\n" +
+	"\x1cStartMLModelTrainingJobInput\x12F\n" +
+	"\x1abaseprocessinginstancetype\x18\xb1\x84\xe4` \x01(\tH\x00R\x1abaseprocessinginstancetype\x88\x01\x01\x12s\n" +
 	"\x1dcustommodeltrainingparameters\x18\x92\x89\x976 \x01(\v2*.neptunedata.CustomModelTrainingParametersR\x1dcustommodeltrainingparameters\x124\n" +
-	"\x13dataprocessingjobid\x18\xad\xb6\xae\xbc\x01 \x01(\tR\x13dataprocessingjobid\x12?\n" +
-	"\x19enablemanagedspottraining\x18\xe6\xca\xeb\" \x01(\tR\x19enablemanagedspottraining\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12A\n" +
-	"\x1amaxhponumberoftrainingjobs\x18\x99\x96\xbeA \x01(\tR\x1amaxhponumberoftrainingjobs\x12B\n" +
-	"\x1amaxhpoparalleltrainingjobs\x18\x80\xa1\x9e\xc7\x01 \x01(\tR\x1amaxhpoparalleltrainingjobs\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\x12A\n" +
-	"\x1apreviousmodeltrainingjobid\x18䭞+ \x01(\tR\x1apreviousmodeltrainingjobid\x12>\n" +
-	"\x18s3outputencryptionkmskey\x18\x84\x93\xda\xc6\x01 \x01(\tR\x18s3outputencryptionkmskey\x123\n" +
-	"\x13sagemakeriamrolearn\x18\x9c\xd7\xc8K \x01(\tR\x13sagemakeriamrolearn\x12.\n" +
+	"\x13dataprocessingjobid\x18\xad\xb6\xae\xbc\x01 \x01(\tR\x13dataprocessingjobid\x12D\n" +
+	"\x19enablemanagedspottraining\x18\xe6\xca\xeb\" \x01(\tH\x01R\x19enablemanagedspottraining\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12F\n" +
+	"\x1amaxhponumberoftrainingjobs\x18\x99\x96\xbeA \x01(\tH\x03R\x1amaxhponumberoftrainingjobs\x88\x01\x01\x12G\n" +
+	"\x1amaxhpoparalleltrainingjobs\x18\x80\xa1\x9e\xc7\x01 \x01(\tH\x04R\x1amaxhpoparalleltrainingjobs\x88\x01\x01\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x05R\x11neptuneiamrolearn\x88\x01\x01\x12F\n" +
+	"\x1apreviousmodeltrainingjobid\x18䭞+ \x01(\tH\x06R\x1apreviousmodeltrainingjobid\x88\x01\x01\x12C\n" +
+	"\x18s3outputencryptionkmskey\x18\x84\x93\xda\xc6\x01 \x01(\tH\aR\x18s3outputencryptionkmskey\x88\x01\x01\x128\n" +
+	"\x13sagemakeriamrolearn\x18\x9c\xd7\xc8K \x01(\tH\bR\x13sagemakeriamrolearn\x88\x01\x01\x12.\n" +
 	"\x10securitygroupids\x18\xe5\xdb\u07b9\x01 \x03(\tR\x10securitygroupids\x12\x1b\n" +
 	"\asubnets\x18\x82\x89\xc3@ \x03(\tR\asubnets\x126\n" +
-	"\x14trainmodels3location\x18̔\xc4\xc3\x01 \x01(\tR\x14trainmodels3location\x125\n" +
-	"\x14traininginstancetype\x18\x8d\xac\xe0r \x01(\tR\x14traininginstancetype\x12J\n" +
-	"\x1etraininginstancevolumesizeingb\x18\xfa\xf9\xeb\xdb\x01 \x01(\tR\x1etraininginstancevolumesizeingb\x12>\n" +
-	"\x18trainingtimeoutinseconds\x18۲\x98\xb6\x01 \x01(\tR\x18trainingtimeoutinseconds\x12:\n" +
-	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tR\x16volumeencryptionkmskey\"\x81\x01\n" +
-	"\x1dStartMLModelTrainingJobOutput\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x126\n" +
-	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tR\x14creationtimeinmillis\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"\xdd\x06\n" +
-	"\x1dStartMLModelTransformJobInput\x12A\n" +
-	"\x1abaseprocessinginstancetype\x18\xb1\x84\xe4` \x01(\tR\x1abaseprocessinginstancetype\x12V\n" +
-	"$baseprocessinginstancevolumesizeingb\x18\xb6\xb7\x89\xf8\x01 \x01(\tR$baseprocessinginstancevolumesizeingb\x12v\n" +
-	"\x1ecustommodeltransformparameters\x18\xf2\xa4\xf0j \x01(\v2+.neptunedata.CustomModelTransformParametersR\x1ecustommodeltransformparameters\x124\n" +
-	"\x13dataprocessingjobid\x18\xad\xb6\xae\xbc\x01 \x01(\tR\x13dataprocessingjobid\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x126\n" +
-	"\x14mlmodeltrainingjobid\x18\xf0\xbe\xe8\xcc\x01 \x01(\tR\x14mlmodeltrainingjobid\x12J\n" +
-	"\x1emodeltransformoutputs3location\x18\x83\x92\xf8\xdf\x01 \x01(\tR\x1emodeltransformoutputs3location\x120\n" +
-	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tR\x11neptuneiamrolearn\x12>\n" +
-	"\x18s3outputencryptionkmskey\x18\x84\x93\xda\xc6\x01 \x01(\tR\x18s3outputencryptionkmskey\x123\n" +
-	"\x13sagemakeriamrolearn\x18\x9c\xd7\xc8K \x01(\tR\x13sagemakeriamrolearn\x12.\n" +
+	"\x14trainmodels3location\x18̔\xc4\xc3\x01 \x01(\tR\x14trainmodels3location\x12:\n" +
+	"\x14traininginstancetype\x18\x8d\xac\xe0r \x01(\tH\tR\x14traininginstancetype\x88\x01\x01\x12O\n" +
+	"\x1etraininginstancevolumesizeingb\x18\xfa\xf9\xeb\xdb\x01 \x01(\tH\n" +
+	"R\x1etraininginstancevolumesizeingb\x88\x01\x01\x12C\n" +
+	"\x18trainingtimeoutinseconds\x18۲\x98\xb6\x01 \x01(\tH\vR\x18trainingtimeoutinseconds\x88\x01\x01\x12?\n" +
+	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tH\fR\x16volumeencryptionkmskey\x88\x01\x01B\x1d\n" +
+	"\x1b_baseprocessinginstancetypeB\x1c\n" +
+	"\x1a_enablemanagedspottrainingB\x05\n" +
+	"\x03_idB\x1d\n" +
+	"\x1b_maxhponumberoftrainingjobsB\x1d\n" +
+	"\x1b_maxhpoparalleltrainingjobsB\x14\n" +
+	"\x12_neptuneiamrolearnB\x1d\n" +
+	"\x1b_previousmodeltrainingjobidB\x1b\n" +
+	"\x19_s3outputencryptionkmskeyB\x16\n" +
+	"\x14_sagemakeriamrolearnB\x17\n" +
+	"\x15_traininginstancetypeB!\n" +
+	"\x1f_traininginstancevolumesizeingbB\x1b\n" +
+	"\x19_trainingtimeoutinsecondsB\x19\n" +
+	"\x17_volumeencryptionkmskey\"\xb8\x01\n" +
+	"\x1dStartMLModelTrainingJobOutput\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12;\n" +
+	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tH\x01R\x14creationtimeinmillis\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x17\n" +
+	"\x15_creationtimeinmillisB\x05\n" +
+	"\x03_id\"\x89\t\n" +
+	"\x1dStartMLModelTransformJobInput\x12F\n" +
+	"\x1abaseprocessinginstancetype\x18\xb1\x84\xe4` \x01(\tH\x00R\x1abaseprocessinginstancetype\x88\x01\x01\x12[\n" +
+	"$baseprocessinginstancevolumesizeingb\x18\xb6\xb7\x89\xf8\x01 \x01(\tH\x01R$baseprocessinginstancevolumesizeingb\x88\x01\x01\x12v\n" +
+	"\x1ecustommodeltransformparameters\x18\xf2\xa4\xf0j \x01(\v2+.neptunedata.CustomModelTransformParametersR\x1ecustommodeltransformparameters\x129\n" +
+	"\x13dataprocessingjobid\x18\xad\xb6\xae\xbc\x01 \x01(\tH\x02R\x13dataprocessingjobid\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x03R\x02id\x88\x01\x01\x12;\n" +
+	"\x14mlmodeltrainingjobid\x18\xf0\xbe\xe8\xcc\x01 \x01(\tH\x04R\x14mlmodeltrainingjobid\x88\x01\x01\x12J\n" +
+	"\x1emodeltransformoutputs3location\x18\x83\x92\xf8\xdf\x01 \x01(\tR\x1emodeltransformoutputs3location\x125\n" +
+	"\x11neptuneiamrolearn\x18\xd7\xd2\xfd\x91\x01 \x01(\tH\x05R\x11neptuneiamrolearn\x88\x01\x01\x12C\n" +
+	"\x18s3outputencryptionkmskey\x18\x84\x93\xda\xc6\x01 \x01(\tH\x06R\x18s3outputencryptionkmskey\x88\x01\x01\x128\n" +
+	"\x13sagemakeriamrolearn\x18\x9c\xd7\xc8K \x01(\tH\aR\x13sagemakeriamrolearn\x88\x01\x01\x12.\n" +
 	"\x10securitygroupids\x18\xe5\xdb\u07b9\x01 \x03(\tR\x10securitygroupids\x12\x1b\n" +
-	"\asubnets\x18\x82\x89\xc3@ \x03(\tR\asubnets\x12+\n" +
-	"\x0ftrainingjobname\x18\xae\x82\x94\x1f \x01(\tR\x0ftrainingjobname\x12:\n" +
-	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tR\x16volumeencryptionkmskey\"\x82\x01\n" +
-	"\x1eStartMLModelTransformJobOutput\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\x126\n" +
-	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tR\x14creationtimeinmillis\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"\xee\x01\n" +
+	"\asubnets\x18\x82\x89\xc3@ \x03(\tR\asubnets\x120\n" +
+	"\x0ftrainingjobname\x18\xae\x82\x94\x1f \x01(\tH\bR\x0ftrainingjobname\x88\x01\x01\x12?\n" +
+	"\x16volumeencryptionkmskey\x18뎂\xe4\x01 \x01(\tH\tR\x16volumeencryptionkmskey\x88\x01\x01B\x1d\n" +
+	"\x1b_baseprocessinginstancetypeB'\n" +
+	"%_baseprocessinginstancevolumesizeingbB\x16\n" +
+	"\x14_dataprocessingjobidB\x05\n" +
+	"\x03_idB\x17\n" +
+	"\x15_mlmodeltrainingjobidB\x14\n" +
+	"\x12_neptuneiamrolearnB\x1b\n" +
+	"\x19_s3outputencryptionkmskeyB\x16\n" +
+	"\x14_sagemakeriamrolearnB\x12\n" +
+	"\x10_trainingjobnameB\x19\n" +
+	"\x17_volumeencryptionkmskey\"\xb9\x01\n" +
+	"\x1eStartMLModelTransformJobOutput\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12;\n" +
+	"\x14creationtimeinmillis\x18\xb1\x89\xaf\x8d\x01 \x01(\tH\x01R\x14creationtimeinmillis\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x17\n" +
+	"\x15_creationtimeinmillisB\x05\n" +
+	"\x03_id\"\xc5\x02\n" +
 	"\n" +
-	"Statistics\x12\x1a\n" +
-	"\x06active\x18\xb0\xb2\xd6\xcb\x01 \x01(\tR\x06active\x12$\n" +
-	"\vautocompute\x18\xec\xbe\xfb\xe4\x01 \x01(\tR\vautocompute\x12\x16\n" +
-	"\x04date\x18ڸˣ\x01 \x01(\tR\x04date\x12\x16\n" +
-	"\x04note\x18\xbe\x98\xe8\x8c\x01 \x01(\tR\x04note\x12G\n" +
-	"\rsignatureinfo\x18\xbeѤj \x01(\v2\x1e.neptunedata.StatisticsSummaryR\rsignatureinfo\x12%\n" +
-	"\fstatisticsid\x18\xa8\x89\xbb\x12 \x01(\tR\fstatisticsid\"\x89\x01\n" +
+	"Statistics\x12\x1f\n" +
+	"\x06active\x18\xb0\xb2\xd6\xcb\x01 \x01(\tH\x00R\x06active\x88\x01\x01\x12)\n" +
+	"\vautocompute\x18\xec\xbe\xfb\xe4\x01 \x01(\tH\x01R\vautocompute\x88\x01\x01\x12\x1b\n" +
+	"\x04date\x18ڸˣ\x01 \x01(\tH\x02R\x04date\x88\x01\x01\x12\x1b\n" +
+	"\x04note\x18\xbe\x98\xe8\x8c\x01 \x01(\tH\x03R\x04note\x88\x01\x01\x12G\n" +
+	"\rsignatureinfo\x18\xbeѤj \x01(\v2\x1e.neptunedata.StatisticsSummaryR\rsignatureinfo\x12*\n" +
+	"\fstatisticsid\x18\xa8\x89\xbb\x12 \x01(\tH\x04R\fstatisticsid\x88\x01\x01B\t\n" +
+	"\a_activeB\x0e\n" +
+	"\f_autocomputeB\a\n" +
+	"\x05_dateB\a\n" +
+	"\x05_noteB\x0f\n" +
+	"\r_statisticsid\"\x89\x01\n" +
 	"\x1fStatisticsNotAvailableException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\x95\x01\n" +
-	"\x11StatisticsSummary\x12(\n" +
-	"\rinstancecount\x18\xba\x80\x89\xe8\x01 \x01(\tR\rinstancecount\x12*\n" +
-	"\x0epredicatecount\x18\x9e߈\x99\x01 \x01(\tR\x0epredicatecount\x12*\n" +
-	"\x0esignaturecount\x18\xad\xa0Ǣ\x01 \x01(\tR\x0esignaturecount\"\x88\x01\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"\xdc\x01\n" +
+	"\x11StatisticsSummary\x12-\n" +
+	"\rinstancecount\x18\xba\x80\x89\xe8\x01 \x01(\tH\x00R\rinstancecount\x88\x01\x01\x12/\n" +
+	"\x0epredicatecount\x18\x9e߈\x99\x01 \x01(\tH\x01R\x0epredicatecount\x88\x01\x01\x12/\n" +
+	"\x0esignaturecount\x18\xad\xa0Ǣ\x01 \x01(\tH\x02R\x0esignaturecount\x88\x01\x01B\x10\n" +
+	"\x0e_instancecountB\x11\n" +
+	"\x0f_predicatecountB\x11\n" +
+	"\x0f_signaturecount\"\x88\x01\n" +
 	"\x1eStreamRecordsNotFoundException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
-	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"O\n" +
-	"\x10SubjectStructure\x12\x18\n" +
-	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tR\x05count\x12!\n" +
+	"\trequestid\x18\xa0\xdd׳\x01 \x01(\tR\trequestid\"^\n" +
+	"\x10SubjectStructure\x12\x1d\n" +
+	"\x05count\x18\xf5\xbb\xc7\xcd\x01 \x01(\tH\x00R\x05count\x88\x01\x01\x12!\n" +
 	"\n" +
 	"predicates\x18\x98\x8d\xdbQ \x03(\tR\n" +
-	"predicates\"}\n" +
+	"predicatesB\b\n" +
+	"\x06_count\"}\n" +
 	"\x13ThrottlingException\x12\x16\n" +
 	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12,\n" +
 	"\x0fdetailedmessage\x18\xc5ٓ\xed\x01 \x01(\tR\x0fdetailedmessage\x12 \n" +
@@ -10377,12 +10589,84 @@ func file_neptunedata_proto_init() {
 	if File_neptunedata_proto != nil {
 		return
 	}
+	file_neptunedata_proto_msgTypes[4].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[6].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[7].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[8].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[9].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[10].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[11].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[12].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[13].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[14].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[19].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[20].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[21].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[22].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[23].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[24].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[25].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[26].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[27].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[28].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[29].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[32].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[33].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[34].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[35].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[36].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[37].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[39].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[43].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[44].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[46].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[47].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[49].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[50].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[51].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[52].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[53].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[54].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[55].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[56].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[58].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[60].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[63].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[65].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[67].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[69].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[70].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[76].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[77].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[78].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[80].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[82].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[84].OneofWrappers = []any{}
 	file_neptunedata_proto_msgTypes[86].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[88].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[89].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[101].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[102].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[103].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[106].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[107].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[108].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[109].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[110].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[115].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[116].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[118].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[122].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[123].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[125].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[126].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[127].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[128].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[129].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[130].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[131].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[133].OneofWrappers = []any{}
+	file_neptunedata_proto_msgTypes[135].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

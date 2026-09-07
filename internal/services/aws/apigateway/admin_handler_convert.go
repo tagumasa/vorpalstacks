@@ -13,8 +13,8 @@ import (
 // the console can set it too. Bounds validation lives in the Core.
 func apiStageInputFromPb(as *pb.ApiStage) ApiStageInput {
 	in := ApiStageInput{
-		ApiId: as.Apiid,
-		Stage: as.Stage,
+		ApiId: as.GetApiid(),
+		Stage: as.GetStage(),
 	}
 	for method, ts := range as.Throttle {
 		if ts == nil {
@@ -25,7 +25,7 @@ func apiStageInputFromPb(as *pb.ApiStage) ApiStageInput {
 		}
 		in.Throttle[method] = &apigatewaystore.Throttle{
 			BurstLimit: int64(ts.GetBurstlimit()),
-			RateLimit:  ts.Ratelimit,
+			RateLimit:  ts.GetRatelimit(),
 		}
 	}
 	return in
@@ -33,21 +33,21 @@ func apiStageInputFromPb(as *pb.ApiStage) ApiStageInput {
 
 func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 	pbApi := &pb.RestApi{
-		Id:                     api.Id,
-		Name:                   api.Name,
-		Description:            api.Description,
-		Version:                api.Version,
+		Id:                     proto.String(api.Id),
+		Name:                   proto.String(api.Name),
+		Description:            proto.String(api.Description),
+		Version:                proto.String(api.Version),
 		Warnings:               api.Warnings,
-		Createddate:            api.CreatedDate.Format(timeutils.ISO8601UTCFormat),
+		Createddate:            proto.String(api.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
 		Binarymediatypes:       api.BinaryMediaTypes,
 		Minimumcompressionsize: api.MinimumCompressionSize,
 		Apikeysource:           toPbApiKeySourceType(api.ApiKeySource),
-		Policy:                 api.Policy,
+		Policy:                 proto.String(api.Policy),
 		Tags:                   tagsToPbMap(api.Tags),
 		Securitypolicy:         toPbSecurityPolicy(api.SecurityPolicy),
 		Endpointaccessmode:     toPbEndpointAccessMode(api.EndpointAccessMode),
 		Apistatus:              toPbApiStatus(api.ApiStatus),
-		Apistatusmessage:       api.ApiStatusMessage,
+		Apistatusmessage:       proto.String(api.ApiStatusMessage),
 	}
 	if api.DisableExecuteApiEndpoint {
 		pbApi.Disableexecuteapiendpoint = proto.Bool(api.DisableExecuteApiEndpoint)
@@ -71,10 +71,10 @@ func toPbRestApi(api *apigatewaystore.RestApi) *pb.RestApi {
 
 func toPbResource(r *apigatewaystore.Resource) *pb.Resource {
 	pbR := &pb.Resource{
-		Id:       r.Id,
-		Parentid: r.ParentId,
-		Path:     r.Path,
-		Pathpart: r.PathPart,
+		Id:       proto.String(r.Id),
+		Parentid: proto.String(r.ParentId),
+		Path:     proto.String(r.Path),
+		Pathpart: proto.String(r.PathPart),
 	}
 	if len(r.ResourceMethods) > 0 {
 		pbR.Resourcemethods = make(map[string]*pb.Method)
@@ -87,12 +87,12 @@ func toPbResource(r *apigatewaystore.Resource) *pb.Resource {
 
 func toPbMethod(m *apigatewaystore.Method) *pb.Method {
 	pbM := &pb.Method{
-		Httpmethod:         m.HttpMethod,
-		Authorizationtype:  m.AuthorizationType,
+		Httpmethod:         proto.String(m.HttpMethod),
+		Authorizationtype:  proto.String(m.AuthorizationType),
 		Apikeyrequired:     proto.Bool(m.ApiKeyRequired),
-		Authorizerid:       m.AuthorizerId,
-		Requestvalidatorid: m.RequestValidatorId,
-		Operationname:      m.OperationName,
+		Authorizerid:       proto.String(m.AuthorizerId),
+		Requestvalidatorid: proto.String(m.RequestValidatorId),
+		Operationname:      proto.String(m.OperationName),
 		Requestparameters:  m.RequestParameters,
 		Requestmodels:      m.RequestModels,
 	}
@@ -111,13 +111,13 @@ func toPbMethod(m *apigatewaystore.Method) *pb.Method {
 func toPbIntegration(i *apigatewaystore.Integration) *pb.Integration {
 	pbI := &pb.Integration{
 		Type:                toPbIntegrationType(i.Type),
-		Httpmethod:          i.IntegrationHttpMethod,
-		Uri:                 i.Uri,
-		Credentials:         i.Credentials,
-		Passthroughbehavior: i.PassthroughBehavior,
-		Cachenamespace:      i.CacheNamespace,
+		Httpmethod:          proto.String(i.IntegrationHttpMethod),
+		Uri:                 proto.String(i.Uri),
+		Credentials:         proto.String(i.Credentials),
+		Passthroughbehavior: proto.String(i.PassthroughBehavior),
+		Cachenamespace:      proto.String(i.CacheNamespace),
 		Connectiontype:      toPbConnectionType(i.ConnectionType),
-		Connectionid:        i.ConnectionId,
+		Connectionid:        proto.String(i.ConnectionId),
 		Requestparameters:   i.RequestParameters,
 		Requesttemplates:    i.RequestTemplates,
 		Cachekeyparameters:  i.CacheKeyParameters,
@@ -139,8 +139,8 @@ func toPbIntegration(i *apigatewaystore.Integration) *pb.Integration {
 
 func toPbIntegrationResponse(r *apigatewaystore.IntegrationResponse) *pb.IntegrationResponse {
 	pbR := &pb.IntegrationResponse{
-		Statuscode:       r.StatusCode,
-		Selectionpattern: r.SelectionPattern,
+		Statuscode:       proto.String(r.StatusCode),
+		Selectionpattern: proto.String(r.SelectionPattern),
 	}
 	if r.ContentHandling != "" {
 		pbR.Contenthandling = toPbContentHandling(r.ContentHandling)
@@ -156,7 +156,7 @@ func toPbIntegrationResponse(r *apigatewaystore.IntegrationResponse) *pb.Integra
 
 func toPbMethodResponse(r *apigatewaystore.MethodResponse) *pb.MethodResponse {
 	return &pb.MethodResponse{
-		Statuscode:         r.StatusCode,
+		Statuscode:         proto.String(r.StatusCode),
 		Responseparameters: r.ResponseParameters,
 		Responsemodels:     r.ResponseModels,
 	}
@@ -253,23 +253,23 @@ func toPbContentHandling(ch string) pb.ContentHandlingStrategy {
 
 func toPbDeployment(d *apigatewaystore.Deployment) *pb.Deployment {
 	return &pb.Deployment{
-		Id:          d.Id,
-		Description: d.Description,
-		Createddate: d.CreatedDate.Format(timeutils.ISO8601UTCFormat),
+		Id:          proto.String(d.Id),
+		Description: proto.String(d.Description),
+		Createddate: proto.String(d.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
 	}
 }
 
 func toPbStage(s *apigatewaystore.Stage) *pb.Stage {
 	pbS := &pb.Stage{
-		Stagename:            s.StageName,
-		Deploymentid:         s.DeploymentId,
-		Description:          s.Description,
+		Stagename:            proto.String(s.StageName),
+		Deploymentid:         proto.String(s.DeploymentId),
+		Description:          proto.String(s.Description),
 		Cacheclusterenabled:  proto.Bool(s.CacheClusterEnabled),
 		Tracingenabled:       proto.Bool(s.TracingEnabled),
-		Createddate:          s.CreatedDate.Format(timeutils.ISO8601UTCFormat),
-		Lastupdateddate:      s.LastUpdatedDate.Format(timeutils.ISO8601UTCFormat),
-		Documentationversion: s.DocumentationVersion,
-		Webaclarn:            s.WebAclArn,
+		Createddate:          proto.String(s.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
+		Lastupdateddate:      proto.String(s.LastUpdatedDate.Format(timeutils.ISO8601UTCFormat)),
+		Documentationversion: proto.String(s.DocumentationVersion),
+		Webaclarn:            proto.String(s.WebAclArn),
 		Tags:                 tagsToPbMap(s.Tags),
 	}
 	if s.CacheClusterSize != "" {
@@ -283,14 +283,14 @@ func toPbStage(s *apigatewaystore.Stage) *pb.Stage {
 	}
 	if s.AccessLogSettings != nil {
 		pbS.Accesslogsettings = &pb.AccessLogSettings{
-			Destinationarn: s.AccessLogSettings.DestinationArn,
-			Format:         s.AccessLogSettings.Format,
+			Destinationarn: proto.String(s.AccessLogSettings.DestinationArn),
+			Format:         proto.String(s.AccessLogSettings.Format),
 		}
 	}
 	if s.CanarySettings != nil {
 		pbS.Canarysettings = &pb.CanarySettings{
-			Percenttraffic:         s.CanarySettings.PercentTraffic,
-			Deploymentid:           s.CanarySettings.DeploymentId,
+			Percenttraffic:         proto.Float64(s.CanarySettings.PercentTraffic),
+			Deploymentid:           proto.String(s.CanarySettings.DeploymentId),
 			Stagevariableoverrides: s.CanarySettings.StageVariableOverrides,
 			Usestagecache:          proto.Bool(s.CanarySettings.UseStageCache),
 		}
@@ -306,41 +306,41 @@ func toPbStage(s *apigatewaystore.Stage) *pb.Stage {
 
 func toPbApiKey(k *apigatewaystore.ApiKey, includeValue bool) *pb.ApiKey {
 	pbK := &pb.ApiKey{
-		Id:              k.Id,
-		Name:            k.Name,
+		Id:              proto.String(k.Id),
+		Name:            proto.String(k.Name),
 		Enabled:         proto.Bool(k.Enabled),
-		Createddate:     k.CreatedDate.Format(timeutils.ISO8601UTCFormat),
-		Lastupdateddate: k.LastUpdatedDate.Format(timeutils.ISO8601UTCFormat),
-		Description:     k.Description,
-		Customerid:      k.CustomerId,
+		Createddate:     proto.String(k.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
+		Lastupdateddate: proto.String(k.LastUpdatedDate.Format(timeutils.ISO8601UTCFormat)),
+		Description:     proto.String(k.Description),
+		Customerid:      proto.String(k.CustomerId),
 		Stagekeys:       k.StageKeys,
 		Tags:            tagsToPbMap(k.Tags),
 	}
 	if includeValue && k.Value != "" {
-		pbK.Value = k.Value
+		pbK.Value = proto.String(k.Value)
 	}
 	return pbK
 }
 
 func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 	pbP := &pb.UsagePlan{
-		Id:          p.Id,
-		Name:        p.Name,
-		Description: p.Description,
-		Productcode: p.ProductCode,
+		Id:          proto.String(p.Id),
+		Name:        proto.String(p.Name),
+		Description: proto.String(p.Description),
+		Productcode: proto.String(p.ProductCode),
 		Tags:        tagsToPbMap(p.Tags),
 	}
 	for _, as := range p.ApiStages {
 		pbStage := &pb.ApiStage{
-			Apiid: as.ApiId,
-			Stage: as.Stage,
+			Apiid: proto.String(as.ApiId),
+			Stage: proto.String(as.Stage),
 		}
 		if len(as.Throttle) > 0 {
 			pbStage.Throttle = make(map[string]*pb.ThrottleSettings)
 			for k, v := range as.Throttle {
 				pbStage.Throttle[k] = &pb.ThrottleSettings{
 					Burstlimit: proto.Int32(int32(v.BurstLimit)),
-					Ratelimit:  v.RateLimit,
+					Ratelimit:  proto.Float64(v.RateLimit),
 				}
 			}
 		}
@@ -356,7 +356,7 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 	if p.Throttle != nil {
 		pbP.Throttle = &pb.ThrottleSettings{
 			Burstlimit: proto.Int32(int32(p.Throttle.BurstLimit)),
-			Ratelimit:  p.Throttle.RateLimit,
+			Ratelimit:  proto.Float64(p.Throttle.RateLimit),
 		}
 	}
 	return pbP
@@ -364,23 +364,23 @@ func toPbUsagePlan(p *apigatewaystore.UsagePlan) *pb.UsagePlan {
 
 func toPbUsagePlanKey(k *apigatewaystore.UsagePlanKey) *pb.UsagePlanKey {
 	return &pb.UsagePlanKey{
-		Id:    k.Id,
-		Type:  k.Type,
-		Value: k.Value,
-		Name:  k.Name,
+		Id:    proto.String(k.Id),
+		Type:  proto.String(k.Type),
+		Value: proto.String(k.Value),
+		Name:  proto.String(k.Name),
 	}
 }
 
 func toPbAuthorizer(a *apigatewaystore.Authorizer) *pb.Authorizer {
 	return &pb.Authorizer{
-		Id:                           a.Id,
-		Name:                         a.Name,
+		Id:                           proto.String(a.Id),
+		Name:                         proto.String(a.Name),
 		Type:                         toPbAuthorizerType(a.Type),
-		Authtype:                     a.AuthType,
-		Authorizeruri:                a.AuthorizerUri,
-		Authorizercredentials:        a.AuthorizerCredentials,
-		Identitysource:               a.IdentitySource,
-		Identityvalidationexpression: a.IdentityValidationExpression,
+		Authtype:                     proto.String(a.AuthType),
+		Authorizeruri:                proto.String(a.AuthorizerUri),
+		Authorizercredentials:        proto.String(a.AuthorizerCredentials),
+		Identitysource:               proto.String(a.IdentitySource),
+		Identityvalidationexpression: proto.String(a.IdentityValidationExpression),
 		Authorizerresultttlinseconds: proto.Int32(a.AuthorizerResultTtlInSeconds),
 		Providerarns:                 a.ProviderArns,
 	}
@@ -495,10 +495,10 @@ func toPbMethodSetting(ms *apigatewaystore.MethodSetting) *pb.MethodSetting {
 	}
 	return &pb.MethodSetting{
 		Metricsenabled:                      proto.Bool(ms.MetricsEnabled),
-		Logginglevel:                        ms.LoggingLevel,
+		Logginglevel:                        proto.String(ms.LoggingLevel),
 		Datatraceenabled:                    proto.Bool(ms.DataTraceEnabled),
 		Throttlingburstlimit:                proto.Int32(ms.ThrottlingBurstLimit),
-		Throttlingratelimit:                 ms.ThrottlingRateLimit,
+		Throttlingratelimit:                 proto.Float64(ms.ThrottlingRateLimit),
 		Cachingenabled:                      proto.Bool(ms.CachingEnabled),
 		Cachettlinseconds:                   proto.Int32(ms.CacheTtlInSeconds),
 		Cachedataencrypted:                  proto.Bool(ms.CacheDataEncrypted),

@@ -26,6 +26,11 @@ func ExportDescriptionToProto(e *ExportDescription) *pb.ExportDescription {
 		S3Prefix:          e.S3Prefix,
 		FailureCode:       e.FailureCode,
 		FailureMessage:    e.FailureMessage,
+		ClientToken:       e.ClientToken,
+		S3BucketOwner:     e.S3BucketOwner,
+		S3SseKmsKeyId:     e.S3SseKmsKeyId,
+		ExportManifest:    e.ExportManifest,
+		ExportType:        e.ExportType,
 	}
 }
 
@@ -50,6 +55,11 @@ func ProtoToExportDescription(p *pb.ExportDescription) *ExportDescription {
 		S3Prefix:          p.S3Prefix,
 		FailureCode:       p.FailureCode,
 		FailureMessage:    p.FailureMessage,
+		ClientToken:       p.ClientToken,
+		S3BucketOwner:     p.S3BucketOwner,
+		S3SseKmsKeyId:     p.S3SseKmsKeyId,
+		ExportManifest:    p.ExportManifest,
+		ExportType:        p.ExportType,
 	}
 }
 
@@ -59,18 +69,22 @@ func ImportTableDescriptionToProto(i *ImportTableDescription) *pb.ImportTableDes
 		return nil
 	}
 	return &pb.ImportTableDescription{
-		ImportArn:          i.ImportArn,
-		ImportStatus:       i.ImportStatus,
-		TableArn:           i.TableArn,
-		TableId:            i.TableId,
-		StartTime:          timestamppb.New(i.StartTime),
-		EndTime:            timestamppb.New(i.EndTime),
-		ProcessedItemCount: i.ProcessedItemCount,
-		ProcessedSizeBytes: i.ProcessedSizeBytes,
-		InputFormat:        i.InputFormat,
-		S3BucketSource:     s3BucketSourceToProto(i.S3BucketSource),
-		FailureCode:        i.FailureCode,
-		FailureMessage:     i.FailureMessage,
+		ImportArn:            i.ImportArn,
+		ImportStatus:         i.ImportStatus,
+		TableArn:             i.TableArn,
+		TableId:              i.TableId,
+		StartTime:            timestamppb.New(i.StartTime),
+		EndTime:              timestamppb.New(i.EndTime),
+		ProcessedItemCount:   i.ProcessedItemCount,
+		ProcessedSizeBytes:   i.ProcessedSizeBytes,
+		ImportedItemCount:    i.ImportedItemCount,
+		ErrorCount:           i.ErrorCount,
+		InputFormat:          i.InputFormat,
+		S3BucketSource:       s3BucketSourceToProto(i.S3BucketSource),
+		FailureCode:          i.FailureCode,
+		FailureMessage:       i.FailureMessage,
+		ClientToken:          i.ClientToken,
+		InputCompressionType: i.InputCompressionType,
 	}
 }
 
@@ -80,18 +94,22 @@ func ProtoToImportTableDescription(p *pb.ImportTableDescription) *ImportTableDes
 		return nil
 	}
 	return &ImportTableDescription{
-		ImportArn:          p.ImportArn,
-		ImportStatus:       p.ImportStatus,
-		TableArn:           p.TableArn,
-		TableId:            p.TableId,
-		StartTime:          p.StartTime.AsTime(),
-		EndTime:            p.EndTime.AsTime(),
-		ProcessedItemCount: p.ProcessedItemCount,
-		ProcessedSizeBytes: p.ProcessedSizeBytes,
-		InputFormat:        p.InputFormat,
-		S3BucketSource:     protoToS3BucketSource(p.S3BucketSource),
-		FailureCode:        p.FailureCode,
-		FailureMessage:     p.FailureMessage,
+		ImportArn:            p.ImportArn,
+		ImportStatus:         p.ImportStatus,
+		TableArn:             p.TableArn,
+		TableId:              p.TableId,
+		StartTime:            p.StartTime.AsTime(),
+		EndTime:              p.EndTime.AsTime(),
+		ProcessedItemCount:   p.ProcessedItemCount,
+		ProcessedSizeBytes:   p.ProcessedSizeBytes,
+		ImportedItemCount:    p.ImportedItemCount,
+		ErrorCount:           p.ErrorCount,
+		InputFormat:          p.InputFormat,
+		S3BucketSource:       protoToS3BucketSource(p.S3BucketSource),
+		FailureCode:          p.FailureCode,
+		FailureMessage:       p.FailureMessage,
+		ClientToken:          p.ClientToken,
+		InputCompressionType: p.InputCompressionType,
 	}
 }
 

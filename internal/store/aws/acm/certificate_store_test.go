@@ -21,6 +21,9 @@ func (b *fakeBucket) ForEach(fn func(k, v []byte) error) error {
 	panic("unreachable")
 }
 func (b *fakeBucket) ScanPrefix(prefix []byte) storage.Iterator { panic("unreachable") }
+func (b *fakeBucket) ScanPrefixReverse(prefix, before []byte) storage.Iterator {
+	panic("unreachable")
+}
 func (b *fakeBucket) ScanRange(start, end []byte) storage.Iterator {
 	panic("unreachable")
 }

@@ -20,20 +20,20 @@ func toPbMetricAlarm(alarm *cloudwatchstore.Alarm) *pb.MetricAlarm {
 	}
 
 	return &pb.MetricAlarm{
-		Alarmname:                          alarm.Name,
-		Alarmarn:                           alarm.ARN,
-		Namespace:                          alarm.Namespace,
-		Metricname:                         alarm.MetricName,
+		Alarmname:                          proto.String(alarm.Name),
+		Alarmarn:                           proto.String(alarm.ARN),
+		Namespace:                          proto.String(alarm.Namespace),
+		Metricname:                         proto.String(alarm.MetricName),
 		Dimensions:                         pbDims,
 		Comparisonoperator:                 toPbComparisonOperator(alarm.ComparisonOperator),
-		Threshold:                          alarm.Threshold,
+		Threshold:                          proto.Float64(alarm.Threshold),
 		Evaluationperiods:                  proto.Int32(alarm.EvaluationPeriods),
 		Period:                             proto.Int32(alarm.Period),
 		Statistic:                          toPbStatistic(alarm.Statistic),
-		Treatmissingdata:                   alarm.TreatMissingData,
+		Treatmissingdata:                   proto.String(alarm.TreatMissingData),
 		Statevalue:                         toPbStateValue(alarm.State),
-		Stateupdatedtimestamp:              alarm.StateUpdatedTimestamp.Format(timeutils.ISO8601UTCFormat),
-		Alarmconfigurationupdatedtimestamp: alarm.CreatedAt.Format(timeutils.ISO8601UTCFormat),
+		Stateupdatedtimestamp:              proto.String(alarm.StateUpdatedTimestamp.Format(timeutils.ISO8601UTCFormat)),
+		Alarmconfigurationupdatedtimestamp: proto.String(alarm.CreatedAt.Format(timeutils.ISO8601UTCFormat)),
 	}
 }
 
@@ -130,7 +130,7 @@ func fromPbStatistic(stat pb.Statistic) string {
 func dimensionsToStore(pbDims []*pb.Dimension) []cloudwatchstore.Dimension {
 	dims := make([]cloudwatchstore.Dimension, len(pbDims))
 	for i, d := range pbDims {
-		dims[i] = cloudwatchstore.Dimension{Name: d.Name, Value: d.Value}
+		dims[i] = cloudwatchstore.Dimension{Name: d.Name, Value: d.GetValue()}
 	}
 	return dims
 }
@@ -140,7 +140,7 @@ func dimensionsToStore(pbDims []*pb.Dimension) []cloudwatchstore.Dimension {
 func dimensionFiltersToStore(pbDims []*pb.DimensionFilter) []cloudwatchstore.Dimension {
 	dims := make([]cloudwatchstore.Dimension, len(pbDims))
 	for i, d := range pbDims {
-		dims[i] = cloudwatchstore.Dimension{Name: d.Name, Value: d.Value}
+		dims[i] = cloudwatchstore.Dimension{Name: d.Name, Value: d.GetValue()}
 	}
 	return dims
 }
@@ -157,8 +157,8 @@ func metricsToPb(metrics []cloudwatchstore.MetricDatum) []*pb.Metric {
 			}
 		}
 		pbMetrics[i] = &pb.Metric{
-			Namespace:  m.Namespace,
-			Metricname: m.MetricName,
+			Namespace:  proto.String(m.Namespace),
+			Metricname: proto.String(m.MetricName),
 			Dimensions: pbDims,
 		}
 	}

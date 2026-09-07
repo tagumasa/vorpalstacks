@@ -164,7 +164,7 @@ func newRequestMetricsAggregator(svc *S3Service) *requestMetricsAggregator {
 	// inventory cadence uses.
 	window := 60 * time.Second
 	if os.Getenv("TEST_MODE") == "true" {
-		window = 2 * time.Second
+		window = 1 * time.Second
 	}
 	return &requestMetricsAggregator{
 		svc:      svc,

@@ -1,7 +1,6 @@
 package dynamodb
 
 import (
-	"encoding/base64"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,29 +20,35 @@ func TestExtractPrimaryKeyCondition_BinaryKey(t *testing.T) {
 		":v": {B: rawBytes},
 	}
 
-	// Binary partition keys must be base64-encoded so that the resulting
-	// lookup string is comparable across API and storage layers.
-	t.Run("binary key encoded as base64", func(t *testing.T) {
+	// The returned hash value is the storage partition prefix, so it must be
+	// the store's key encoding — the same rendering the item and index keys
+	// are built with. Any other rendering (raw number text, base64 of the
+	// binary) matches no stored key of that type.
+	t.Run("binary key uses the store key encoding", func(t *testing.T) {
 		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, values)
-		expected := base64.StdEncoding.EncodeToString(rawBytes)
+		expected := dbstore.EncodeKeyValue(&dbstore.AttributeValue{B: rawBytes})
+		assert.NotEmpty(t, expected)
 		assert.Equal(t, expected, hashKey,
-			"binary key should be base64-encoded, not raw string()")
+			"binary key must render as the store key encoding, not raw string()")
 	})
 
-	t.Run("string key unchanged", func(t *testing.T) {
+	t.Run("string key uses the store key encoding", func(t *testing.T) {
 		strValues := map[string]*dbstore.AttributeValue{
 			":v": {S: ptrStr("my-key")},
 		}
 		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, strValues)
-		assert.Equal(t, "my-key", hashKey)
+		assert.Equal(t, dbstore.EncodeKeyValue(&dbstore.AttributeValue{S: ptrStr("my-key")}), hashKey)
 	})
 
-	t.Run("numeric key", func(t *testing.T) {
+	t.Run("numeric key uses the store key encoding", func(t *testing.T) {
 		numValues := map[string]*dbstore.AttributeValue{
 			":v": {N: ptrStr("42")},
 		}
 		hashKey, _, _ := extractPrimaryKeyCondition(table, "id = :v", nil, numValues)
-		assert.Equal(t, "42", hashKey)
+		expected := dbstore.EncodeKeyValue(&dbstore.AttributeValue{N: ptrStr("42")})
+		assert.NotEqual(t, "42", expected,
+			"a raw number string cannot match the encoded storage prefix")
+		assert.Equal(t, expected, hashKey)
 	})
 }
 
@@ -63,7 +68,7 @@ func TestExtractPrimaryKeyCondition_WithSortKey(t *testing.T) {
 
 	t.Run("hash + sort key condition", func(t *testing.T) {
 		hashKey, _, sortCond := extractPrimaryKeyCondition(table, "pk = :pk AND sk = :sk", nil, values)
-		assert.Equal(t, "user1", hashKey)
+		assert.Equal(t, dbstore.EncodeKeyValue(values[":pk"]), hashKey)
 		assert.NotNil(t, sortCond)
 		assert.Equal(t, "=", sortCond.op)
 	})

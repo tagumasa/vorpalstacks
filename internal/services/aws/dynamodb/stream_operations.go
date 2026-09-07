@@ -2,10 +2,6 @@ package dynamodb
 
 import (
 	"context"
-	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
 	"vorpalstacks/internal/common/request"
 )
@@ -15,17 +11,12 @@ import (
 // AWS API: DynamoDB Streams — DescribeStream
 // Protocol: JSON (X-Amz-Target: DynamoDBStreams_20120810.DescribeStream)
 func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if streamArn == "" {
-		return nil, ErrInvalidParameter
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := s.describeStreamCore(store, streamArn)
+	result, err := s.describeStreamCore(store, request.GetStringParam(req.Parameters, "StreamArn"))
 	if err != nil {
 		return nil, err
 	}
@@ -63,26 +54,16 @@ func (s *DynamoDBService) DescribeStream(ctx context.Context, reqCtx *request.Re
 //
 // AWS API: DynamoDB Streams — GetShardIterator
 func (s *DynamoDBService) GetShardIterator(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	streamArn := request.GetStringParam(req.Parameters, "StreamArn")
-	if streamArn == "" {
-		return nil, ErrInvalidParameter
-	}
-	shardId := request.GetStringParam(req.Parameters, "ShardId")
-	if shardId == "" {
-		return nil, ErrInvalidParameter
-	}
-	iteratorType := request.GetStringParam(req.Parameters, "ShardIteratorType")
-	if iteratorType == "" {
-		return nil, ErrInvalidParameter
-	}
-	sequenceNumber := request.GetStringParam(req.Parameters, "SequenceNumber")
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := s.getShardIteratorCore(store, streamArn, iteratorType, sequenceNumber)
+	result, err := s.getShardIteratorCore(store,
+		request.GetStringParam(req.Parameters, "StreamArn"),
+		request.GetStringParam(req.Parameters, "ShardId"),
+		request.GetStringParam(req.Parameters, "ShardIteratorType"),
+		request.GetStringParam(req.Parameters, "SequenceNumber"))
 	if err != nil {
 		return nil, err
 	}
@@ -97,12 +78,8 @@ func (s *DynamoDBService) GetShardIterator(ctx context.Context, reqCtx *request.
 //
 // AWS API: DynamoDB Streams — GetRecords
 func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	iterator := request.GetStringParam(req.Parameters, "ShardIterator")
-	if iterator == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	limit := getRecordsDefaultLimit
+	limit := 0
+	limitSet := false
 	if limitVal, ok := req.Parameters["Limit"]; ok {
 		switch v := limitVal.(type) {
 		case float64:
@@ -112,17 +89,7 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 		default:
 			return nil, ErrInvalidParameter
 		}
-	}
-	if limit < 0 || limit > getRecordsMaxLimit {
-		return nil, ErrInvalidParameter
-	}
-
-	tableName, fromSeq, issuedAt, err := decodeShardIterator(iterator)
-	if err != nil {
-		return nil, ErrInvalidParameter
-	}
-	if shardIteratorExpired(issuedAt, streamTimeNow()) {
-		return nil, ErrExpiredIterator
+		limitSet = true
 	}
 
 	store, err := s.store(reqCtx)
@@ -130,7 +97,7 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	result, err := s.getRecordsCore(store, tableName, fromSeq, limit)
+	result, err := s.getRecordsCore(store, request.GetStringParam(req.Parameters, "ShardIterator"), limit, limitSet)
 	if err != nil {
 		return nil, err
 	}
@@ -146,80 +113,20 @@ func (s *DynamoDBService) GetRecords(ctx context.Context, reqCtx *request.Reques
 	}, nil
 }
 
-// extractTableNameFromStreamArn parses a DynamoDB stream ARN to extract
-// the table name.
-func extractTableNameFromStreamArn(streamArn string) string {
-	idx := strings.Index(streamArn, "table/")
-	if idx < 0 {
-		return ""
-	}
-	rest := streamArn[idx+6:]
-	slashIdx := strings.Index(rest, "/")
-	if slashIdx < 0 {
-		return rest
-	}
-	return rest[:slashIdx]
-}
-
-// encodeShardIterator creates an opaque iterator string from the table
-// name and sequence number. Format: "tableName|seqNum".
-// shardIteratorTTL is the documented shard iterator lifetime: a shard
-// iterator expires fifteen minutes after it was issued.
-const shardIteratorTTL = 15 * time.Minute
-
-func encodeShardIterator(tableName string, seq int64) string {
-	return fmt.Sprintf("%s|%d|%d", tableName, seq, streamTimeNow().Unix())
-}
-
-// decodeShardIterator parses an iterator string back into table name and
-// sequence number.
-func decodeShardIterator(iterator string) (string, int64, int64, error) {
-	parts := strings.Split(iterator, "|")
-	if len(parts) != 3 {
-		return "", 0, 0, fmt.Errorf("invalid iterator format")
-	}
-	tableName := parts[0]
-	seq, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil {
-		return "", 0, 0, err
-	}
-	issuedAt, err := strconv.ParseInt(parts[2], 10, 64)
-	if err != nil {
-		return "", 0, 0, err
-	}
-	return tableName, seq, issuedAt, nil
-}
-
-// shardIteratorExpired reports whether an iterator issued at the given
-// unix time has passed the documented fifteen-minute lifetime.
-func shardIteratorExpired(issuedAtUnix int64, now time.Time) bool {
-	return now.Unix()-issuedAtUnix >= int64(shardIteratorTTL/time.Second)
-}
-
-// streamTimeNow returns the current time. Extracted for potential testing.
-var streamTimeNow = func() time.Time { return time.Now().UTC() }
-
 // ListStreams returns stream ARNs associated with the current account and
 // endpoint.
 //
 // AWS API: DynamoDB Streams — ListStreams
 func (s *DynamoDBService) ListStreams(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	tableNameFilter := request.GetStringParam(req.Parameters, "TableName")
-	exclusiveStartStreamArn := request.GetStringParam(req.Parameters, "ExclusiveStartStreamArn")
-	limit := request.GetIntParam(req.Parameters, "Limit")
-	if limit == 0 {
-		limit = listStreamsDefaultLimit
-	}
-	if limit > listStreamsMaxLimit {
-		limit = listStreamsMaxLimit
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := s.listStreamsCore(store, tableNameFilter, exclusiveStartStreamArn, limit)
+	result, err := s.listStreamsCore(store,
+		request.GetStringParam(req.Parameters, "TableName"),
+		request.GetStringParam(req.Parameters, "ExclusiveStartStreamArn"),
+		request.GetIntParam(req.Parameters, "Limit"))
 	if err != nil {
 		return nil, err
 	}

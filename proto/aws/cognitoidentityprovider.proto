@@ -38,6 +38,11 @@ service CognitoIdentityProviderService {
   // Protocol: awsJson1_1
   rpc AdminCreateUser(AdminCreateUserRequest) returns (AdminCreateUserResponse);
 
+  // Deletes a user's registered time-based one-time password (TOTP) multi-factor authentication (MFA) factor, also known as a software token. After this operation, the user can no longer sign in with T...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc AdminDeleteSoftwareToken(AdminDeleteSoftwareTokenRequest) returns (AdminDeleteSoftwareTokenResponse);
+
   // Deletes a user profile in your user pool. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you must use IAM credentials...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -77,6 +82,11 @@ service CognitoIdentityProviderService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc AdminGetUser(AdminGetUserRequest) returns (AdminGetUserResponse);
+
+  // Lists the authentication options for a user in a user pool. Returns the following: The user's multi-factor authentication (MFA) preferences. The user's options for choice-based authentication with ...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc AdminGetUserAuthFactors(AdminGetUserAuthFactorsRequest) returns (AdminGetUserAuthFactorsResponse);
 
   // Starts sign-in for applications with a server-side component, for example a traditional web application. This operation specifies the authentication flow that you'd like to begin. The authenticatio...
   // HTTP:  
@@ -328,6 +338,11 @@ service CognitoIdentityProviderService {
   // Protocol: awsJson1_1
   rpc DescribeTerms(DescribeTermsRequest) returns (DescribeTermsResponse);
 
+  // Returns details for the terms documents that are associated with an app client, identified by the app client ID, user pool ID, and terms name. For more information, see Terms documents. To call Des...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DescribeTermsByClient(DescribeTermsByClientRequest) returns (DescribeTermsByClientResponse);
+
   // Describes a user import job. For more information about user CSV import, see Importing users from a CSV file.
   // HTTP:  
   // Protocol: awsJson1_1
@@ -343,7 +358,7 @@ service CognitoIdentityProviderService {
   // Protocol: awsJson1_1
   rpc DescribeUserPoolClient(DescribeUserPoolClientRequest) returns (DescribeUserPoolClientResponse);
 
-  // Given a user pool domain name, returns information about the domain configuration. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For thi...
+  // Given a user pool domain name, returns information about the domain configuration. This operation doesn't return results when you query a prefix domain in a secondary Region. Prefix domains are Reg...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DescribeUserPoolDomain(DescribeUserPoolDomainRequest) returns (DescribeUserPoolDomainResponse);
@@ -357,6 +372,11 @@ service CognitoIdentityProviderService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc ForgotPassword(ForgotPasswordRequest) returns (ForgotPasswordResponse);
+
+  // Issues an access token for machine-to-machine (M2M) authorization. Your app client provides its client ID and secret, and receives an access token that authorizes requests to your resource servers....
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc GetClientToken(GetClientTokenRequest) returns (GetClientTokenResponse);
 
   // Given a user pool ID, generates a comma-separated value (CSV) list populated with available user attributes in the user pool. This list is the header for the CSV file that determines the users in a...
   // HTTP:  
@@ -382,6 +402,11 @@ service CognitoIdentityProviderService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc GetLogDeliveryConfiguration(GetLogDeliveryConfigurationRequest) returns (GetLogDeliveryConfigurationResponse);
+
+  // Returns the current provisioned limit for a specific API category. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc GetProvisionedLimit(GetProvisionedLimitRequest) returns (GetProvisionedLimitResponse);
 
   // Given a user pool ID, returns the signing certificate for SAML 2.0 federation. Issued certificates are valid for 10 years from the date of issue. Amazon Cognito issues and assigns a new signing cer...
   // HTTP:  
@@ -598,6 +623,11 @@ service CognitoIdentityProviderService {
   // Protocol: awsJson1_1
   rpc UpdateManagedLoginBranding(UpdateManagedLoginBrandingRequest) returns (UpdateManagedLoginBrandingResponse);
 
+  // Sets the provisioned limit for a specific API category. The value must be between the default limit and your account-level maximum limit in Service Quotas. Managed login user pools don't support ad...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc UpdateProvisionedLimit(UpdateProvisionedLimitRequest) returns (UpdateProvisionedLimitResponse);
+
   // Updates the name and scopes of a resource server. All other fields are read-only. For more information about resource servers, see Access control with resource servers. If you don't provide a value...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -651,7 +681,7 @@ service CognitoIdentityProviderService {
 
 message AccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -745,7 +775,7 @@ message AddUserPoolClientSecretRequest {
 
   string clientid = 448902180;
 
-  string clientsecret = 500734711;
+  optional string clientsecret = 500734711;
 
   string userpoolid = 329442174;
 
@@ -823,7 +853,7 @@ message AdminCreateUserRequest {
 
   MessageActionType messageaction = 233944615;
 
-  string temporarypassword = 274827278;
+  optional string temporarypassword = 274827278;
 
   repeated AttributeType userattributes = 194667064;
 
@@ -842,6 +872,22 @@ message AdminCreateUserRequest {
 message AdminCreateUserResponse {
 
   UserType user = 10894867;
+
+}
+
+
+
+message AdminDeleteSoftwareTokenRequest {
+
+  string userpoolid = 329442174;
+
+  string username = 470340826;
+
+}
+
+
+
+message AdminDeleteSoftwareTokenResponse {
 
 }
 
@@ -975,6 +1021,30 @@ message AdminGetDeviceResponse {
 
 
 
+message AdminGetUserAuthFactorsRequest {
+
+  string userpoolid = 329442174;
+
+  string username = 470340826;
+
+}
+
+
+
+message AdminGetUserAuthFactorsResponse {
+
+  repeated AuthFactorType configureduserauthfactors = 207621521;
+
+  optional string preferredmfasetting = 111271921;
+
+  repeated string usermfasettinglist = 230885;
+
+  string username = 470340826;
+
+}
+
+
+
 // Represents the request to get the specified user as an administrator.
 
 message AdminGetUserRequest {
@@ -995,13 +1065,13 @@ message AdminGetUserResponse {
 
   repeated MFAOptionType mfaoptions = 501540826;
 
-  string preferredmfasetting = 111271921;
+  optional string preferredmfasetting = 111271921;
 
   repeated AttributeType userattributes = 194667064;
 
-  string usercreatedate = 73013267;
+  optional string usercreatedate = 73013267;
 
-  string userlastmodifieddate = 80916802;
+  optional string userlastmodifieddate = 80916802;
 
   repeated string usermfasettinglist = 230885;
 
@@ -1029,7 +1099,7 @@ message AdminInitiateAuthRequest {
 
   ContextDataType contextdata = 235700261;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   string userpoolid = 329442174;
 
@@ -1049,7 +1119,7 @@ message AdminInitiateAuthResponse {
 
   map<string, string> challengeparameters = 79757023;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -1079,7 +1149,7 @@ message AdminListDevicesRequest {
 
   optional int32 limit = 412502741;
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
   string userpoolid = 329442174;
 
@@ -1095,7 +1165,7 @@ message AdminListDevicesResponse {
 
   repeated DeviceType devices = 128774945;
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
 }
 
@@ -1105,7 +1175,7 @@ message AdminListGroupsForUserRequest {
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -1119,7 +1189,7 @@ message AdminListGroupsForUserResponse {
 
   repeated GroupType groups = 360662414;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1129,7 +1199,7 @@ message AdminListUserAuthEventsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -1143,7 +1213,7 @@ message AdminListUserAuthEventsResponse {
 
   repeated AuthEventType authevents = 470980699;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1199,7 +1269,7 @@ message AdminRespondToAuthChallengeRequest {
 
   ContextDataType contextdata = 235700261;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   string userpoolid = 329442174;
 
@@ -1217,7 +1287,7 @@ message AdminRespondToAuthChallengeResponse {
 
   map<string, string> challengeparameters = 79757023;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -1425,7 +1495,7 @@ enum AliasAttributeType {
 
 message AliasExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1435,13 +1505,13 @@ message AliasExistsException {
 
 message AnalyticsConfigurationType {
 
-  string applicationarn = 524185341;
+  optional string applicationarn = 524185341;
 
-  string applicationid = 132869857;
+  optional string applicationid = 132869857;
 
-  string externalid = 271401992;
+  optional string externalid = 271401992;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
   optional bool userdatashared = 370377352;
 
@@ -1453,7 +1523,7 @@ message AnalyticsConfigurationType {
 
 message AnalyticsMetadataType {
 
-  string analyticsendpointid = 341236308;
+  optional string analyticsendpointid = 341236308;
 
 }
 
@@ -1515,7 +1585,7 @@ enum AssetExtensionType {
 
 message AssetType {
 
-  bytes bytes = 397169317;
+  optional bytes bytes = 397169317;
 
   AssetCategoryType category = 263447954;
 
@@ -1523,7 +1593,7 @@ message AssetType {
 
   AssetExtensionType extension = 381907515;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
 }
 
@@ -1531,9 +1601,9 @@ message AssetType {
 
 message AssociateSoftwareTokenRequest {
 
-  string accesstoken = 147070473;
+  optional string accesstoken = 147070473;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -1541,9 +1611,9 @@ message AssociateSoftwareTokenRequest {
 
 message AssociateSoftwareTokenResponse {
 
-  string secretcode = 252366169;
+  optional string secretcode = 252366169;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -1569,7 +1639,7 @@ message AttributeType {
 
   string name = 266367751;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -1581,13 +1651,13 @@ message AuthEventType {
 
   repeated ChallengeResponseType challengeresponses = 60230615;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
   EventContextDataType eventcontextdata = 432307527;
 
   EventFeedbackType eventfeedback = 156992389;
 
-  string eventid = 376916819;
+  optional string eventid = 376916819;
 
   EventResponseType eventresponse = 198651437;
 
@@ -1605,9 +1675,11 @@ enum AuthFactorType {
 
   AUTH_FACTOR_TYPE_SMS_OTP = 1;
 
-  AUTH_FACTOR_TYPE_WEB_AUTHN = 2;
+  AUTH_FACTOR_TYPE_SOFTWARE_TOKEN = 2;
 
-  AUTH_FACTOR_TYPE_PASSWORD = 3;
+  AUTH_FACTOR_TYPE_WEB_AUTHN = 3;
+
+  AUTH_FACTOR_TYPE_PASSWORD = 4;
 
 }
 
@@ -1639,17 +1711,17 @@ enum AuthFlowType {
 
 message AuthenticationResultType {
 
-  string accesstoken = 147070473;
+  optional string accesstoken = 147070473;
 
   optional int32 expiresin = 69497873;
 
-  string idtoken = 228470;
+  optional string idtoken = 228470;
 
   NewDeviceMetadataType newdevicemetadata = 383914787;
 
-  string refreshtoken = 253777778;
+  optional string refreshtoken = 253777778;
 
-  string tokentype = 231695523;
+  optional string tokentype = 231695523;
 
 }
 
@@ -1731,7 +1803,7 @@ message ChangePasswordRequest {
 
   string accesstoken = 147070473;
 
-  string previouspassword = 303785026;
+  optional string previouspassword = 303785026;
 
   string proposedpassword = 234890803;
 
@@ -1747,15 +1819,29 @@ message ChangePasswordResponse {
 
 
 
+// The access token and its metadata from a machine-to-machine (M2M) client credentials grant.
+
+message ClientAuthenticationResultType {
+
+  optional string accesstoken = 147070473;
+
+  optional int32 expiresin = 69497873;
+
+  optional string tokentype = 231695523;
+
+}
+
+
+
 // Contains information about a client secret, including its unique identifier, value, and creation timestamp.
 
 message ClientSecretDescriptorType {
 
-  string clientsecretcreatedate = 345458871;
+  optional string clientsecretcreatedate = 345458871;
 
-  string clientsecretid = 51685996;
+  optional string clientsecretid = 51685996;
 
-  string clientsecretvalue = 475370712;
+  optional string clientsecretvalue = 475370712;
 
 }
 
@@ -1765,7 +1851,7 @@ message ClientSecretDescriptorType {
 
 message CloudWatchLogsConfigurationType {
 
-  string loggrouparn = 220362512;
+  optional string loggrouparn = 220362512;
 
 }
 
@@ -1775,11 +1861,11 @@ message CloudWatchLogsConfigurationType {
 
 message CodeDeliveryDetailsType {
 
-  string attributename = 352717485;
+  optional string attributename = 352717485;
 
   DeliveryMediumType deliverymedium = 140498471;
 
-  string destination = 457443680;
+  optional string destination = 457443680;
 
 }
 
@@ -1789,7 +1875,7 @@ message CodeDeliveryDetailsType {
 
 message CodeDeliveryFailureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1799,7 +1885,7 @@ message CodeDeliveryFailureException {
 
 message CodeMismatchException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1869,7 +1955,7 @@ message CompromisedCredentialsRiskConfigurationType {
 
 message ConcurrentModificationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1883,7 +1969,7 @@ message ConfirmDeviceRequest {
 
   string devicekey = 382874155;
 
-  string devicename = 514720633;
+  optional string devicename = 514720633;
 
   DeviceSecretVerifierConfigType devicesecretverifierconfig = 310432876;
 
@@ -1915,7 +2001,7 @@ message ConfirmForgotPasswordRequest {
 
   string password = 214108217;
 
-  string secrethash = 321025630;
+  optional string secrethash = 321025630;
 
   UserContextDataType usercontextdata = 169951134;
 
@@ -1947,9 +2033,9 @@ message ConfirmSignUpRequest {
 
   optional bool forcealiascreation = 449762314;
 
-  string secrethash = 321025630;
+  optional string secrethash = 321025630;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   UserContextDataType usercontextdata = 169951134;
 
@@ -1963,7 +2049,7 @@ message ConfirmSignUpRequest {
 
 message ConfirmSignUpResponse {
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -1973,7 +2059,7 @@ message ConfirmSignUpResponse {
 
 message ContextDataType {
 
-  string encodeddata = 153276170;
+  optional string encodeddata = 153276170;
 
   repeated HttpHeader httpheaders = 214337162;
 
@@ -1989,13 +2075,13 @@ message ContextDataType {
 
 message CreateGroupRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string groupname = 357049672;
 
   optional int32 precedence = 206704142;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
   string userpoolid = 329442174;
 
@@ -2043,7 +2129,7 @@ message CreateManagedLoginBrandingRequest {
 
   string clientid = 448902180;
 
-  string settings = 184911657;
+  optional string settings = 184911657;
 
   optional bool usecognitoprovidedvalues = 408662835;
 
@@ -2117,6 +2203,8 @@ message CreateUserImportJobRequest {
 
   string jobname = 498531160;
 
+  PasswordHashingAlgorithmType passwordhashingalgorithm = 269273694;
+
   string userpoolid = 329442174;
 
 }
@@ -2153,9 +2241,9 @@ message CreateUserPoolClientRequest {
 
   string clientname = 340245630;
 
-  string clientsecret = 500734711;
+  optional string clientsecret = 500734711;
 
-  string defaultredirecturi = 311293253;
+  optional string defaultredirecturi = 311293253;
 
   optional bool enablepropagateadditionalusercontextdata = 201651031;
 
@@ -2217,7 +2305,7 @@ message CreateUserPoolDomainRequest {
 
 message CreateUserPoolDomainResponse {
 
-  string cloudfrontdomain = 436051942;
+  optional string cloudfrontdomain = 436051942;
 
   optional int32 managedloginversion = 479901038;
 
@@ -2265,9 +2353,9 @@ message CreateUserPoolRequest {
 
   EmailConfigurationType emailconfiguration = 528317976;
 
-  string emailverificationmessage = 172634664;
+  optional string emailverificationmessage = 172634664;
 
-  string emailverificationsubject = 224298169;
+  optional string emailverificationsubject = 224298169;
 
   IssuerConfigurationType issuerconfiguration = 86290461;
 
@@ -2283,11 +2371,11 @@ message CreateUserPoolRequest {
 
   repeated SchemaAttributeType schema = 412122455;
 
-  string smsauthenticationmessage = 356104990;
+  optional string smsauthenticationmessage = 356104990;
 
   SmsConfigurationType smsconfiguration = 10321849;
 
-  string smsverificationmessage = 497665917;
+  optional string smsverificationmessage = 497665917;
 
   UserAttributeUpdateSettingsType userattributeupdatesettings = 319670235;
 
@@ -2651,7 +2739,7 @@ message DescribeResourceServerResponse {
 
 message DescribeRiskConfigurationRequest {
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
   string userpoolid = 329442174;
 
@@ -2662,6 +2750,26 @@ message DescribeRiskConfigurationRequest {
 message DescribeRiskConfigurationResponse {
 
   RiskConfigurationType riskconfiguration = 374237465;
+
+}
+
+
+
+message DescribeTermsByClientRequest {
+
+  string clientid = 448902180;
+
+  string termsname = 303051560;
+
+  string userpoolid = 329442174;
+
+}
+
+
+
+message DescribeTermsByClientResponse {
+
+  TermsType terms = 339062221;
 
 }
 
@@ -2781,7 +2889,7 @@ message DeviceConfigurationType {
 
 message DeviceKeyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2801,9 +2909,9 @@ enum DeviceRememberedStatusType {
 
 message DeviceSecretVerifierConfigType {
 
-  string passwordverifier = 5891351;
+  optional string passwordverifier = 5891351;
 
-  string salt = 37508770;
+  optional string salt = 37508770;
 
 }
 
@@ -2815,13 +2923,13 @@ message DeviceType {
 
   repeated AttributeType deviceattributes = 204381535;
 
-  string devicecreatedate = 489197016;
+  optional string devicecreatedate = 489197016;
 
-  string devicekey = 382874155;
+  optional string devicekey = 382874155;
 
-  string devicelastauthenticateddate = 63931991;
+  optional string devicelastauthenticateddate = 63931991;
 
-  string devicelastmodifieddate = 508534725;
+  optional string devicelastmodifieddate = 508534725;
 
 }
 
@@ -2831,25 +2939,25 @@ message DeviceType {
 
 message DomainDescriptionType {
 
-  string awsaccountid = 370093421;
+  optional string awsaccountid = 370093421;
 
-  string cloudfrontdistribution = 171268400;
+  optional string cloudfrontdistribution = 171268400;
 
   CustomDomainConfigType customdomainconfig = 472479421;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
   optional int32 managedloginversion = 479901038;
 
   RoutingType routing = 237056778;
 
-  string s3bucket = 114031434;
+  optional string s3bucket = 114031434;
 
   DomainStatusType status = 6222352;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -2875,7 +2983,7 @@ enum DomainStatusType {
 
 message DuplicateProviderException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2885,15 +2993,15 @@ message DuplicateProviderException {
 
 message EmailConfigurationType {
 
-  string configurationset = 42178544;
+  optional string configurationset = 42178544;
 
   EmailSendingAccountType emailsendingaccount = 284286811;
 
-  string from = 410269078;
+  optional string from = 410269078;
 
-  string replytoemailaddress = 166144599;
+  optional string replytoemailaddress = 166144599;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
 }
 
@@ -2903,9 +3011,9 @@ message EmailConfigurationType {
 
 message EmailMfaConfigType {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
 }
 
@@ -2937,7 +3045,7 @@ enum EmailSendingAccountType {
 
 message EnableSoftwareTokenMFAException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2953,19 +3061,41 @@ enum EncryptionKeyType {
 
 
 
+// The configuration that Amazon Cognito uses to send SMS messages through Amazon Web Services End User Messaging SMS. Provide this structure in the EumsSms member of SmsConfigurationType to use Amazo...
+
+message EumsSmsConfigurationType {
+
+  string callerarn = 249627822;
+
+  optional string configurationsetname = 403457485;
+
+  optional string externalid = 271401992;
+
+  optional string inentityid = 97048265;
+
+  optional string intemplateid = 450428398;
+
+  optional string originationidentity = 206093423;
+
+  optional string region = 154040478;
+
+}
+
+
+
 // The context data that your application submitted in an authentication request with threat protection, as displayed in an AdminListUserAuthEvents response.
 
 message EventContextDataType {
 
-  string city = 275461731;
+  optional string city = 275461731;
 
-  string country = 83164786;
+  optional string country = 83164786;
 
-  string devicename = 514720633;
+  optional string devicename = 514720633;
 
-  string ipaddress = 1800397;
+  optional string ipaddress = 1800397;
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
 
 }
 
@@ -2975,7 +3105,7 @@ message EventContextDataType {
 
 message EventFeedbackType {
 
-  string feedbackdate = 39988103;
+  optional string feedbackdate = 39988103;
 
   FeedbackValueType feedbackvalue = 259452876;
 
@@ -3053,7 +3183,7 @@ enum EventType {
 
 message ExpiredCodeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3109,7 +3239,7 @@ enum FeatureType {
 
 message FeatureUnavailableInTierException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3129,7 +3259,7 @@ enum FeedbackValueType {
 
 message FirehoseConfigurationType {
 
-  string streamarn = 513423709;
+  optional string streamarn = 513423709;
 
 }
 
@@ -3139,7 +3269,7 @@ message FirehoseConfigurationType {
 
 message ForbiddenException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3149,7 +3279,7 @@ message ForbiddenException {
 
 message ForgetDeviceRequest {
 
-  string accesstoken = 147070473;
+  optional string accesstoken = 147070473;
 
   string devicekey = 382874155;
 
@@ -3167,7 +3297,7 @@ message ForgotPasswordRequest {
 
   map<string, string> clientmetadata = 205510604;
 
-  string secrethash = 321025630;
+  optional string secrethash = 321025630;
 
   UserContextDataType usercontextdata = 169951134;
 
@@ -3203,7 +3333,29 @@ message GetCSVHeaderResponse {
 
   repeated string csvheader = 294305815;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
+
+}
+
+
+
+message GetClientTokenRequest {
+
+  string clientid = 448902180;
+
+  map<string, string> clientmetadata = 205510604;
+
+  repeated string scopes = 464684393;
+
+  string secret = 210756402;
+
+}
+
+
+
+message GetClientTokenResponse {
+
+  ClientAuthenticationResultType clientauthenticationresult = 318596748;
 
 }
 
@@ -3213,7 +3365,7 @@ message GetCSVHeaderResponse {
 
 message GetDeviceRequest {
 
-  string accesstoken = 147070473;
+  optional string accesstoken = 147070473;
 
   string devicekey = 382874155;
 
@@ -3283,6 +3435,22 @@ message GetLogDeliveryConfigurationResponse {
 
 
 
+message GetProvisionedLimitRequest {
+
+  LimitDefinitionType limitdefinition = 126217726;
+
+}
+
+
+
+message GetProvisionedLimitResponse {
+
+  LimitType limit = 412502741;
+
+}
+
+
+
 // Request to get a signing certificate from Amazon Cognito.
 
 message GetSigningCertificateRequest {
@@ -3297,7 +3465,7 @@ message GetSigningCertificateRequest {
 
 message GetSigningCertificateResponse {
 
-  string certificate = 198060817;
+  optional string certificate = 198060817;
 
 }
 
@@ -3309,9 +3477,9 @@ message GetTokensFromRefreshTokenRequest {
 
   map<string, string> clientmetadata = 205510604;
 
-  string clientsecret = 500734711;
+  optional string clientsecret = 500734711;
 
-  string devicekey = 382874155;
+  optional string devicekey = 382874155;
 
   string refreshtoken = 253777778;
 
@@ -3329,7 +3497,7 @@ message GetTokensFromRefreshTokenResponse {
 
 message GetUICustomizationRequest {
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
   string userpoolid = 329442174;
 
@@ -3381,7 +3549,7 @@ message GetUserAuthFactorsResponse {
 
   repeated AuthFactorType configureduserauthfactors = 207621521;
 
-  string preferredmfasetting = 111271921;
+  optional string preferredmfasetting = 111271921;
 
   repeated string usermfasettinglist = 230885;
 
@@ -3431,7 +3599,7 @@ message GetUserResponse {
 
   repeated MFAOptionType mfaoptions = 501540826;
 
-  string preferredmfasetting = 111271921;
+  optional string preferredmfasetting = 111271921;
 
   repeated AttributeType userattributes = 194667064;
 
@@ -3465,7 +3633,7 @@ message GlobalSignOutResponse {
 
 message GroupExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3475,19 +3643,19 @@ message GroupExistsException {
 
 message GroupType {
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
   optional int32 precedence = 206704142;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -3497,9 +3665,9 @@ message GroupType {
 
 message HttpHeader {
 
-  string headername = 409221572;
+  optional string headername = 409221572;
 
-  string headervalue = 13503826;
+  optional string headervalue = 13503826;
 
 }
 
@@ -3511,19 +3679,19 @@ message IdentityProviderType {
 
   map<string, string> attributemapping = 116923092;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
   repeated string idpidentifiers = 205051409;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
   map<string, string> providerdetails = 476397115;
 
-  string providername = 485101816;
+  optional string providername = 485101816;
 
   IdentityProviderTypeType providertype = 337296789;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -3581,7 +3749,7 @@ message InitiateAuthRequest {
 
   map<string, string> clientmetadata = 205510604;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   UserContextDataType usercontextdata = 169951134;
 
@@ -3601,7 +3769,7 @@ message InitiateAuthResponse {
 
   map<string, string> challengeparameters = 79757023;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -3611,7 +3779,7 @@ message InitiateAuthResponse {
 
 message InternalErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3621,7 +3789,7 @@ message InternalErrorException {
 
 message InternalServerException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3631,7 +3799,7 @@ message InternalServerException {
 
 message InvalidEmailRoleAccessPolicyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3641,7 +3809,7 @@ message InvalidEmailRoleAccessPolicyException {
 
 message InvalidLambdaResponseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3651,7 +3819,7 @@ message InvalidLambdaResponseException {
 
 message InvalidOAuthFlowException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3661,9 +3829,9 @@ message InvalidOAuthFlowException {
 
 message InvalidParameterException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string reasoncode = 207873105;
+  optional string reasoncode = 207873105;
 
 }
 
@@ -3673,7 +3841,7 @@ message InvalidParameterException {
 
 message InvalidPasswordException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3683,7 +3851,7 @@ message InvalidPasswordException {
 
 message InvalidSmsRoleAccessPolicyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3693,7 +3861,7 @@ message InvalidSmsRoleAccessPolicyException {
 
 message InvalidSmsRoleTrustRelationshipException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3703,7 +3871,7 @@ message InvalidSmsRoleTrustRelationshipException {
 
 message InvalidUserPoolConfigurationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3735,7 +3903,7 @@ message KeyConfigurationType {
 
   EncryptionKeyType keytype = 5029221;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
 }
 
@@ -3745,35 +3913,55 @@ message KeyConfigurationType {
 
 message LambdaConfigType {
 
-  string createauthchallenge = 254734041;
+  optional string createauthchallenge = 254734041;
 
   CustomEmailLambdaVersionConfigType customemailsender = 319793392;
 
-  string custommessage = 184293966;
+  optional string custommessage = 184293966;
 
   CustomSMSLambdaVersionConfigType customsmssender = 394119899;
 
-  string defineauthchallenge = 220544290;
+  optional string defineauthchallenge = 220544290;
 
   InboundFederationLambdaType inboundfederation = 87415260;
 
-  string kmskeyid = 13250477;
+  optional string kmskeyid = 13250477;
 
-  string postauthentication = 199890284;
+  optional string postauthentication = 199890284;
 
-  string postconfirmation = 178069195;
+  optional string postconfirmation = 178069195;
 
-  string preauthentication = 374491163;
+  optional string preauthentication = 374491163;
 
-  string presignup = 249108711;
+  optional string presignup = 249108711;
 
-  string pretokengeneration = 285445042;
+  optional string pretokengeneration = 285445042;
 
   PreTokenGenerationVersionConfigType pretokengenerationconfig = 197795476;
 
-  string usermigration = 31196067;
+  optional string usermigration = 31196067;
 
-  string verifyauthchallengeresponse = 152402305;
+  optional string verifyauthchallengeresponse = 152402305;
+
+}
+
+
+
+enum LimitClass {
+
+  LIMIT_CLASS_API_CATEGORY = 0;
+
+}
+
+
+
+// The class and attributes that identify a specific limit at the account level.
+
+message LimitDefinitionType {
+
+  map<string, string> attributes = 209638581;
+
+  LimitClass limitclass = 26480349;
 
 }
 
@@ -3783,7 +3971,21 @@ message LambdaConfigType {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// The limit definition and current limit values for a provisioned limit.
+
+message LimitType {
+
+  int32 freelimitvalue = 50249000;
+
+  LimitDefinitionType limitdefinition = 126217726;
+
+  int32 provisionedlimitvalue = 181005490;
 
 }
 
@@ -3797,7 +3999,7 @@ message ListDevicesRequest {
 
   optional int32 limit = 412502741;
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
 }
 
@@ -3809,7 +4011,7 @@ message ListDevicesResponse {
 
   repeated DeviceType devices = 128774945;
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
 }
 
@@ -3819,7 +4021,7 @@ message ListGroupsRequest {
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -3831,7 +4033,7 @@ message ListGroupsResponse {
 
   repeated GroupType groups = 360662414;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3841,7 +4043,7 @@ message ListIdentityProvidersRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -3851,7 +4053,7 @@ message ListIdentityProvidersRequest {
 
 message ListIdentityProvidersResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ProviderDescription providers = 122628990;
 
@@ -3863,7 +4065,7 @@ message ListResourceServersRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -3873,7 +4075,7 @@ message ListResourceServersRequest {
 
 message ListResourceServersResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ResourceServerType resourceservers = 305925412;
 
@@ -3901,7 +4103,7 @@ message ListTermsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -3911,7 +4113,7 @@ message ListTermsRequest {
 
 message ListTermsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated TermsDescriptionType terms = 339062221;
 
@@ -3925,7 +4127,7 @@ message ListUserImportJobsRequest {
 
   int32 maxresults = 275174450;
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
   string userpoolid = 329442174;
 
@@ -3937,7 +4139,7 @@ message ListUserImportJobsRequest {
 
 message ListUserImportJobsResponse {
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
   repeated UserImportJobType userimportjobs = 388966560;
 
@@ -3951,7 +4153,7 @@ message ListUserPoolClientSecretsRequest {
 
   string clientid = 448902180;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -3965,7 +4167,7 @@ message ListUserPoolClientSecretsResponse {
 
   repeated ClientSecretDescriptorType clientsecrets = 16465760;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3977,7 +4179,7 @@ message ListUserPoolClientsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -3989,7 +4191,7 @@ message ListUserPoolClientsRequest {
 
 message ListUserPoolClientsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated UserPoolClientDescription userpoolclients = 449808661;
 
@@ -3999,7 +4201,7 @@ message ListUserPoolClientsResponse {
 
 message ListUserPoolReplicasRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -4009,7 +4211,7 @@ message ListUserPoolReplicasRequest {
 
 message ListUserPoolReplicasResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated UserPoolReplicaType userpoolreplicas = 422620830;
 
@@ -4023,7 +4225,7 @@ message ListUserPoolsRequest {
 
   int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -4033,7 +4235,7 @@ message ListUserPoolsRequest {
 
 message ListUserPoolsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated UserPoolDescriptionType userpools = 322489898;
 
@@ -4047,7 +4249,7 @@ message ListUsersInGroupRequest {
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string userpoolid = 329442174;
 
@@ -4057,7 +4259,7 @@ message ListUsersInGroupRequest {
 
 message ListUsersInGroupResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated UserType users = 112472756;
 
@@ -4071,11 +4273,11 @@ message ListUsersRequest {
 
   repeated string attributestoget = 311382592;
 
-  string filter = 346669208;
+  optional string filter = 346669208;
 
   optional int32 limit = 412502741;
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
   string userpoolid = 329442174;
 
@@ -4087,7 +4289,7 @@ message ListUsersRequest {
 
 message ListUsersResponse {
 
-  string paginationtoken = 363857279;
+  optional string paginationtoken = 363857279;
 
   repeated UserType users = 112472756;
 
@@ -4101,7 +4303,7 @@ message ListWebAuthnCredentialsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -4111,7 +4313,7 @@ message ListWebAuthnCredentialsResponse {
 
   repeated WebAuthnCredentialDescription credentials = 381914482;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -4161,7 +4363,7 @@ enum LogLevel {
 
 message MFAMethodNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4171,7 +4373,7 @@ message MFAMethodNotFoundException {
 
 message MFAOptionType {
 
-  string attributename = 352717485;
+  optional string attributename = 352717485;
 
   DeliveryMediumType deliverymedium = 140498471;
 
@@ -4183,7 +4385,7 @@ message MFAOptionType {
 
 message ManagedLoginBrandingExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4195,17 +4397,17 @@ message ManagedLoginBrandingType {
 
   repeated AssetType assets = 141150041;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string managedloginbrandingid = 57829482;
+  optional string managedloginbrandingid = 57829482;
 
-  string settings = 184911657;
+  optional string settings = 184911657;
 
   optional bool usecognitoprovidedvalues = 408662835;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -4225,11 +4427,11 @@ enum MessageActionType {
 
 message MessageTemplateType {
 
-  string emailmessage = 247992871;
+  optional string emailmessage = 247992871;
 
-  string emailsubject = 215040870;
+  optional string emailsubject = 215040870;
 
-  string smsmessage = 441530194;
+  optional string smsmessage = 441530194;
 
 }
 
@@ -4239,9 +4441,9 @@ message MessageTemplateType {
 
 message NewDeviceMetadataType {
 
-  string devicegroupkey = 11731234;
+  optional string devicegroupkey = 11731234;
 
-  string devicekey = 382874155;
+  optional string devicekey = 382874155;
 
 }
 
@@ -4251,7 +4453,7 @@ message NewDeviceMetadataType {
 
 message NotAuthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4263,13 +4465,13 @@ message NotifyConfigurationType {
 
   NotifyEmailType blockemail = 413505327;
 
-  string from = 410269078;
+  optional string from = 410269078;
 
   NotifyEmailType mfaemail = 330686644;
 
   NotifyEmailType noactionemail = 203016289;
 
-  string replyto = 82405747;
+  optional string replyto = 82405747;
 
   string sourcearn = 439903072;
 
@@ -4281,11 +4483,11 @@ message NotifyConfigurationType {
 
 message NotifyEmailType {
 
-  string htmlbody = 148096253;
+  optional string htmlbody = 148096253;
 
   string subject = 7939312;
 
-  string textbody = 91008147;
+  optional string textbody = 91008147;
 
 }
 
@@ -4295,9 +4497,9 @@ message NotifyEmailType {
 
 message NumberAttributeConstraintsType {
 
-  string maxvalue = 480618407;
+  optional string maxvalue = 480618407;
 
-  string minvalue = 454592205;
+  optional string minvalue = 454592205;
 
 }
 
@@ -4319,7 +4521,21 @@ enum OAuthFlowType {
 
 message OperationNotEnabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+enum PasswordHashingAlgorithmType {
+
+  PASSWORD_HASHING_ALGORITHM_TYPE_SCRYPT = 0;
+
+  PASSWORD_HASHING_ALGORITHM_TYPE_BCRYPT = 1;
+
+  PASSWORD_HASHING_ALGORITHM_TYPE_PBKDF2_SHA256 = 2;
+
+  PASSWORD_HASHING_ALGORITHM_TYPE_ARGON2ID = 3;
 
 }
 
@@ -4329,7 +4545,7 @@ message OperationNotEnabledException {
 
 message PasswordHistoryPolicyViolationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4361,7 +4577,7 @@ message PasswordPolicyType {
 
 message PasswordResetRequiredException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4395,7 +4611,7 @@ message PreTokenGenerationVersionConfigType {
 
 message PreconditionNotMetException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4415,11 +4631,11 @@ enum PreventUserExistenceErrorTypes {
 
 message ProviderDescription {
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string providername = 485101816;
+  optional string providername = 485101816;
 
   IdentityProviderTypeType providertype = 337296789;
 
@@ -4431,11 +4647,11 @@ message ProviderDescription {
 
 message ProviderUserIdentifierType {
 
-  string providerattributename = 17050040;
+  optional string providerattributename = 17050040;
 
-  string providerattributevalue = 37044150;
+  optional string providerattributevalue = 37044150;
 
-  string providername = 485101816;
+  optional string providername = 485101816;
 
 }
 
@@ -4469,7 +4685,7 @@ message RecoveryOptionType {
 
 message RefreshTokenReuseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4521,7 +4737,7 @@ message ResendConfirmationCodeRequest {
 
   map<string, string> clientmetadata = 205510604;
 
-  string secrethash = 321025630;
+  optional string secrethash = 321025630;
 
   UserContextDataType usercontextdata = 169951134;
 
@@ -4545,7 +4761,7 @@ message ResendConfirmationCodeResponse {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4567,13 +4783,13 @@ message ResourceServerScopeType {
 
 message ResourceServerType {
 
-  string identifier = 41865311;
+  optional string identifier = 41865311;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated ResourceServerScopeType scopes = 464684393;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -4593,7 +4809,7 @@ message RespondToAuthChallengeRequest {
 
   map<string, string> clientmetadata = 205510604;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   UserContextDataType usercontextdata = 169951134;
 
@@ -4611,7 +4827,7 @@ message RespondToAuthChallengeResponse {
 
   map<string, string> challengeparameters = 79757023;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
 }
 
@@ -4621,7 +4837,7 @@ message RevokeTokenRequest {
 
   string clientid = 448902180;
 
-  string clientsecret = 500734711;
+  optional string clientsecret = 500734711;
 
   string token = 439704531;
 
@@ -4641,15 +4857,15 @@ message RiskConfigurationType {
 
   AccountTakeoverRiskConfigurationType accounttakeoverriskconfiguration = 184926217;
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
   CompromisedCredentialsRiskConfigurationType compromisedcredentialsriskconfiguration = 85540233;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
   RiskExceptionConfigurationType riskexceptionconfiguration = 2938748;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -4705,7 +4921,7 @@ message RoutingType {
 
 message S3ConfigurationType {
 
-  string bucketarn = 255683899;
+  optional string bucketarn = 255683899;
 
 }
 
@@ -4733,7 +4949,7 @@ message SchemaAttributeType {
 
   optional bool mutable = 149670730;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   NumberAttributeConstraintsType numberattributeconstraints = 381084525;
 
@@ -4749,7 +4965,7 @@ message SchemaAttributeType {
 
 message ScopeDoesNotExistException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4762,6 +4978,16 @@ enum SecurityPolicyType {
   SECURITY_POLICY_TYPE_TLS_V1_3_2025 = 1;
 
   SECURITY_POLICY_TYPE_TLS_V1 = 2;
+
+}
+
+
+
+// The request exceeded your account's service quota. To increase your limit, use or submit a Service Quotas increase request.
+
+message ServiceQuotaExceededException {
+
+  optional string message = 82970853;
 
 }
 
@@ -4789,7 +5015,7 @@ message SetRiskConfigurationRequest {
 
   AccountTakeoverRiskConfigurationType accounttakeoverriskconfiguration = 184926217;
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
   CompromisedCredentialsRiskConfigurationType compromisedcredentialsriskconfiguration = 85540233;
 
@@ -4811,11 +5037,11 @@ message SetRiskConfigurationResponse {
 
 message SetUICustomizationRequest {
 
-  string css = 371300961;
+  optional string css = 371300961;
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
-  bytes imagefile = 372468861;
+  optional bytes imagefile = 372468861;
 
   string userpoolid = 329442174;
 
@@ -4927,9 +5153,9 @@ message SignUpRequest {
 
   map<string, string> clientmetadata = 205510604;
 
-  string password = 214108217;
+  optional string password = 214108217;
 
-  string secrethash = 321025630;
+  optional string secrethash = 321025630;
 
   repeated AttributeType userattributes = 194667064;
 
@@ -4949,7 +5175,7 @@ message SignUpResponse {
 
   CodeDeliveryDetailsType codedeliverydetails = 423272803;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   optional bool userconfirmed = 200708940;
 
@@ -4963,11 +5189,13 @@ message SignUpResponse {
 
 message SmsConfigurationType {
 
-  string externalid = 271401992;
+  EumsSmsConfigurationType eumssms = 352205145;
 
-  string snscallerarn = 128123070;
+  optional string externalid = 271401992;
 
-  string snsregion = 413686894;
+  optional string snscallerarn = 128123070;
+
+  optional string snsregion = 413686894;
 
 }
 
@@ -4977,7 +5205,7 @@ message SmsConfigurationType {
 
 message SmsMfaConfigType {
 
-  string smsauthenticationmessage = 356104990;
+  optional string smsauthenticationmessage = 356104990;
 
   SmsConfigurationType smsconfiguration = 10321849;
 
@@ -4989,7 +5217,7 @@ message SmsMfaConfigType {
 
 message SoftwareTokenMFANotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5091,9 +5319,9 @@ message StopUserImportJobResponse {
 
 message StringAttributeConstraintsType {
 
-  string maxlength = 490672418;
+  optional string maxlength = 490672418;
 
-  string minlength = 46267224;
+  optional string minlength = 46267224;
 
 }
 
@@ -5145,7 +5373,7 @@ enum TermsEnforcementType {
 
 message TermsExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5189,7 +5417,7 @@ message TermsType {
 
 message TierChangeNotAllowedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5227,7 +5455,7 @@ message TokenValidityUnitsType {
 
 message TooManyFailedAttemptsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5237,7 +5465,7 @@ message TooManyFailedAttemptsException {
 
 message TooManyRequestsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5247,19 +5475,19 @@ message TooManyRequestsException {
 
 message UICustomizationType {
 
-  string css = 371300961;
+  optional string css = 371300961;
 
-  string cssversion = 307918093;
+  optional string cssversion = 307918093;
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string imageurl = 361905604;
+  optional string imageurl = 361905604;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -5269,7 +5497,7 @@ message UICustomizationType {
 
 message UnauthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5279,7 +5507,7 @@ message UnauthorizedException {
 
 message UnexpectedLambdaException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5289,7 +5517,7 @@ message UnexpectedLambdaException {
 
 message UnsupportedIdentityProviderException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5299,7 +5527,7 @@ message UnsupportedIdentityProviderException {
 
 message UnsupportedOperationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5309,7 +5537,7 @@ message UnsupportedOperationException {
 
 message UnsupportedTokenTypeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5319,7 +5547,7 @@ message UnsupportedTokenTypeException {
 
 message UnsupportedUserStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5387,13 +5615,13 @@ message UpdateDeviceStatusResponse {
 
 message UpdateGroupRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string groupname = 357049672;
 
   optional int32 precedence = 206704142;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
   string userpoolid = 329442174;
 
@@ -5437,13 +5665,13 @@ message UpdateManagedLoginBrandingRequest {
 
   repeated AssetType assets = 141150041;
 
-  string managedloginbrandingid = 57829482;
+  optional string managedloginbrandingid = 57829482;
 
-  string settings = 184911657;
+  optional string settings = 184911657;
 
   optional bool usecognitoprovidedvalues = 408662835;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -5452,6 +5680,24 @@ message UpdateManagedLoginBrandingRequest {
 message UpdateManagedLoginBrandingResponse {
 
   ManagedLoginBrandingType managedloginbranding = 338791109;
+
+}
+
+
+
+message UpdateProvisionedLimitRequest {
+
+  LimitDefinitionType limitdefinition = 126217726;
+
+  int32 requestedlimitvalue = 521546944;
+
+}
+
+
+
+message UpdateProvisionedLimitResponse {
+
+  LimitType limit = 412502741;
 
 }
 
@@ -5497,7 +5743,7 @@ message UpdateTermsRequest {
 
   string termsid = 331306210;
 
-  string termsname = 303051560;
+  optional string termsname = 303051560;
 
   TermsSourceType termssource = 122689594;
 
@@ -5559,9 +5805,9 @@ message UpdateUserPoolClientRequest {
 
   string clientid = 448902180;
 
-  string clientname = 340245630;
+  optional string clientname = 340245630;
 
-  string defaultredirecturi = 311293253;
+  optional string defaultredirecturi = 311293253;
 
   optional bool enablepropagateadditionalusercontextdata = 201651031;
 
@@ -5625,7 +5871,7 @@ message UpdateUserPoolDomainRequest {
 
 message UpdateUserPoolDomainResponse {
 
-  string cloudfrontdomain = 436051942;
+  optional string cloudfrontdomain = 436051942;
 
   optional int32 managedloginversion = 479901038;
 
@@ -5671,9 +5917,9 @@ message UpdateUserPoolRequest {
 
   EmailConfigurationType emailconfiguration = 528317976;
 
-  string emailverificationmessage = 172634664;
+  optional string emailverificationmessage = 172634664;
 
-  string emailverificationsubject = 224298169;
+  optional string emailverificationsubject = 224298169;
 
   IssuerConfigurationType issuerconfiguration = 86290461;
 
@@ -5685,13 +5931,13 @@ message UpdateUserPoolRequest {
 
   UserPoolPolicyType policies = 40015384;
 
-  string poolname = 81872585;
+  optional string poolname = 81872585;
 
-  string smsauthenticationmessage = 356104990;
+  optional string smsauthenticationmessage = 356104990;
 
   SmsConfigurationType smsconfiguration = 10321849;
 
-  string smsverificationmessage = 497665917;
+  optional string smsverificationmessage = 497665917;
 
   UserAttributeUpdateSettingsType userattributeupdatesettings = 319670235;
 
@@ -5731,9 +5977,9 @@ message UserAttributeUpdateSettingsType {
 
 message UserContextDataType {
 
-  string encodeddata = 153276170;
+  optional string encodeddata = 153276170;
 
-  string ipaddress = 1800397;
+  optional string ipaddress = 1800397;
 
 }
 
@@ -5743,7 +5989,7 @@ message UserContextDataType {
 
 message UserImportInProgressException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5775,31 +6021,33 @@ enum UserImportJobStatusType {
 
 message UserImportJobType {
 
-  string cloudwatchlogsrolearn = 55454690;
+  optional string cloudwatchlogsrolearn = 55454690;
 
-  string completiondate = 130397444;
+  optional string completiondate = 130397444;
 
-  string completionmessage = 254331463;
+  optional string completionmessage = 254331463;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
   optional int64 failedusers = 109599085;
 
   optional int64 importedusers = 165762452;
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
-  string jobname = 498531160;
+  optional string jobname = 498531160;
 
-  string presignedurl = 334334652;
+  PasswordHashingAlgorithmType passwordhashingalgorithm = 269273694;
+
+  optional string presignedurl = 334334652;
 
   optional int64 skippedusers = 31320534;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   UserImportJobStatusType status = 6222352;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -5809,7 +6057,7 @@ message UserImportJobType {
 
 message UserLambdaValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5819,7 +6067,7 @@ message UserLambdaValidationException {
 
 message UserNotConfirmedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5829,7 +6077,7 @@ message UserNotConfirmedException {
 
 message UserNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5839,7 +6087,7 @@ message UserNotFoundException {
 
 message UserPoolAddOnNotEnabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5861,11 +6109,11 @@ message UserPoolAddOnsType {
 
 message UserPoolClientDescription {
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
-  string clientname = 340245630;
+  optional string clientname = 340245630;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
 }
 
@@ -5889,15 +6137,15 @@ message UserPoolClientType {
 
   repeated string callbackurls = 227703885;
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
-  string clientname = 340245630;
+  optional string clientname = 340245630;
 
-  string clientsecret = 500734711;
+  optional string clientsecret = 500734711;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string defaultredirecturi = 311293253;
+  optional string defaultredirecturi = 311293253;
 
   optional bool enablepropagateadditionalusercontextdata = 201651031;
 
@@ -5907,7 +6155,7 @@ message UserPoolClientType {
 
   optional int32 idtokenvalidity = 312934952;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
   repeated string logouturls = 468187518;
 
@@ -5923,7 +6171,7 @@ message UserPoolClientType {
 
   TokenValidityUnitsType tokenvalidityunits = 2056664;
 
-  string userpoolid = 329442174;
+  optional string userpoolid = 329442174;
 
   repeated string writeattributes = 440236318;
 
@@ -5935,15 +6183,15 @@ message UserPoolClientType {
 
 message UserPoolDescriptionType {
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   LambdaConfigType lambdaconfig = 291837797;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated string replicaregions = 13243573;
 
@@ -5981,13 +6229,13 @@ message UserPoolPolicyType {
 
 message UserPoolReplicaType {
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
   ReplicaRoleType role = 271285818;
 
   ReplicaStatusType status = 6222352;
 
-  string userpoolarn = 362706440;
+  optional string userpoolarn = 362706440;
 
 }
 
@@ -5997,7 +6245,7 @@ message UserPoolReplicaType {
 
 message UserPoolTaggingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6025,31 +6273,31 @@ message UserPoolType {
 
   repeated AliasAttributeType aliasattributes = 189876251;
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
   repeated VerifiedAttributeType autoverifiedattributes = 467729812;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string customdomain = 459317555;
+  optional string customdomain = 459317555;
 
   DeletionProtectionType deletionprotection = 504781905;
 
   DeviceConfigurationType deviceconfiguration = 512944140;
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
   EmailConfigurationType emailconfiguration = 528317976;
 
-  string emailconfigurationfailure = 518209776;
+  optional string emailconfigurationfailure = 518209776;
 
-  string emailverificationmessage = 172634664;
+  optional string emailverificationmessage = 172634664;
 
-  string emailverificationsubject = 224298169;
+  optional string emailverificationsubject = 224298169;
 
   optional int32 estimatednumberofusers = 20814484;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   IssuerConfigurationType issuerconfiguration = 86290461;
 
@@ -6057,23 +6305,23 @@ message UserPoolType {
 
   LambdaConfigType lambdaconfig = 291837797;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
   UserPoolMfaType mfaconfiguration = 259020766;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   UserPoolPolicyType policies = 40015384;
 
   repeated SchemaAttributeType schemaattributes = 417986564;
 
-  string smsauthenticationmessage = 356104990;
+  optional string smsauthenticationmessage = 356104990;
 
   SmsConfigurationType smsconfiguration = 10321849;
 
-  string smsconfigurationfailure = 525270907;
+  optional string smsconfigurationfailure = 525270907;
 
-  string smsverificationmessage = 497665917;
+  optional string smsverificationmessage = 497665917;
 
   StatusType status = 6222352;
 
@@ -6127,13 +6375,13 @@ message UserType {
 
   repeated MFAOptionType mfaoptions = 501540826;
 
-  string usercreatedate = 73013267;
+  optional string usercreatedate = 73013267;
 
-  string userlastmodifieddate = 80916802;
+  optional string userlastmodifieddate = 80916802;
 
   UserStatusType userstatus = 189848701;
 
-  string username = 470340826;
+  optional string username = 470340826;
 
 }
 
@@ -6173,7 +6421,7 @@ message UsernameConfigurationType {
 
 message UsernameExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6185,15 +6433,15 @@ message VerificationMessageTemplateType {
 
   DefaultEmailOptionType defaultemailoption = 2801728;
 
-  string emailmessage = 247992871;
+  optional string emailmessage = 247992871;
 
-  string emailmessagebylink = 444701508;
+  optional string emailmessagebylink = 444701508;
 
-  string emailsubject = 215040870;
+  optional string emailsubject = 215040870;
 
-  string emailsubjectbylink = 351344357;
+  optional string emailsubjectbylink = 351344357;
 
-  string smsmessage = 359006226;
+  optional string smsmessage = 359006226;
 
 }
 
@@ -6211,11 +6459,11 @@ enum VerifiedAttributeType {
 
 message VerifySoftwareTokenRequest {
 
-  string accesstoken = 147070473;
+  optional string accesstoken = 147070473;
 
-  string friendlydevicename = 89691332;
+  optional string friendlydevicename = 89691332;
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   string usercode = 349164576;
 
@@ -6225,7 +6473,7 @@ message VerifySoftwareTokenRequest {
 
 message VerifySoftwareTokenResponse {
 
-  string session = 4770968;
+  optional string session = 4770968;
 
   VerifySoftwareTokenResponseType status = 6222352;
 
@@ -6269,7 +6517,7 @@ message VerifyUserAttributeResponse {
 
 message WebAuthnChallengeNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6279,7 +6527,7 @@ message WebAuthnChallengeNotFoundException {
 
 message WebAuthnClientMismatchException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6289,7 +6537,7 @@ message WebAuthnClientMismatchException {
 
 message WebAuthnConfigurationMissingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6301,7 +6549,7 @@ message WebAuthnConfigurationType {
 
   WebAuthnFactorConfigurationType factorconfiguration = 179685965;
 
-  string relyingpartyid = 211618527;
+  optional string relyingpartyid = 211618527;
 
   UserVerificationType userverification = 263409814;
 
@@ -6313,7 +6561,7 @@ message WebAuthnConfigurationType {
 
 message WebAuthnCredentialDescription {
 
-  string authenticatorattachment = 61147702;
+  optional string authenticatorattachment = 61147702;
 
   repeated string authenticatortransports = 152292059;
 
@@ -6333,7 +6581,7 @@ message WebAuthnCredentialDescription {
 
 message WebAuthnCredentialNotSupportedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6363,7 +6611,7 @@ message WebAuthnMfaSettingsType {
 
 message WebAuthnNotEnabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6373,7 +6621,7 @@ message WebAuthnNotEnabledException {
 
 message WebAuthnOriginNotAllowedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6383,7 +6631,7 @@ message WebAuthnOriginNotAllowedException {
 
 message WebAuthnRelyingPartyMismatchException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

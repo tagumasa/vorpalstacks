@@ -2,6 +2,7 @@ package cloudwatchlogs
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -39,8 +40,8 @@ func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[p
 	}
 
 	input := ListLogGroupsInput{
-		LogGroupNamePrefix: req.Msg.Loggroupnamepattern,
-		NextToken:          req.Msg.Nexttoken,
+		LogGroupNamePrefix: req.Msg.GetLoggroupnamepattern(),
+		NextToken:          req.Msg.GetNexttoken(),
 		Limit:              limit,
 		Region:             region,
 	}
@@ -57,7 +58,7 @@ func (h *AdminHandler) ListLogGroups(ctx context.Context, req *connect.Request[p
 
 	return connect.NewResponse(&pb.ListLogGroupsResponse{
 		Loggroups: summaries,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -66,9 +67,9 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := DescribeLogStreamsInput{
-		LogGroupName:        req.Msg.Loggroupname,
-		LogStreamNamePrefix: req.Msg.Logstreamnameprefix,
-		NextToken:           req.Msg.Nexttoken,
+		LogGroupName:        req.Msg.GetLoggroupname(),
+		LogStreamNamePrefix: req.Msg.GetLogstreamnameprefix(),
+		NextToken:           req.Msg.GetNexttoken(),
 		Limit:               int32(req.Msg.GetLimit()),
 		Region:              region,
 	}
@@ -85,7 +86,7 @@ func (h *AdminHandler) DescribeLogStreams(ctx context.Context, req *connect.Requ
 
 	return connect.NewResponse(&pb.DescribeLogStreamsResponse{
 		Logstreams: pbStreams,
-		Nexttoken:  result.NextToken,
+		Nexttoken:  proto.String(result.NextToken),
 	}), nil
 }
 
@@ -94,7 +95,7 @@ func (h *AdminHandler) CreateLogGroup(ctx context.Context, req *connect.Request[
 	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := CreateLogGroupInput{
-		LogGroupName:              req.Msg.Loggroupname,
+		LogGroupName:              req.Msg.GetLoggroupname(),
 		LogGroupClass:             pbLogGroupClassToString(req.Msg.Loggroupclass),
 		Tags:                      req.Msg.Tags,
 		DeletionProtectionEnabled: req.Msg.GetDeletionprotectionenabled(),
@@ -113,7 +114,7 @@ func (h *AdminHandler) DeleteLogGroup(ctx context.Context, req *connect.Request[
 	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := DeleteLogGroupInput{
-		LogGroupName: req.Msg.Loggroupname,
+		LogGroupName: req.Msg.GetLoggroupname(),
 		Region:       region,
 	}
 

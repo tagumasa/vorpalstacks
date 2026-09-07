@@ -98,6 +98,10 @@ func (s *DynamoDBService) transactGetItemsCore(ctx context.Context, reqCtx *requ
 
 	var responses []map[string]interface{}
 	foundKeys := make(map[string][]map[string]*dbstore.AttributeValue)
+	// Every targeted item consumes read capacity of its own, charged to its
+	// table: the ConsumedCapacity response carries one entry per table
+	// addressed, reporting that table's units.
+	tableReadUnits := make(map[string]float64)
 
 	err = store.View(ctx, func(txn *dbstore.DynamoDBTxn) error {
 		for _, gi := range getItems {
@@ -106,9 +110,14 @@ func (s *DynamoDBService) transactGetItemsCore(ctx context.Context, reqCtx *requ
 				if !dbstore.IsItemNotFound(err) {
 					return fmt.Errorf("transact get item on %s: %w", gi.tableName, err)
 				}
+				tableReadUnits[gi.tableName] += transactItemReadUnits(0)
 				responses = append(responses, map[string]interface{}{"Item": nil})
 				continue
 			}
+
+			// The charge follows the item's full size as read, before any
+			// projection narrows the returned attributes.
+			tableReadUnits[gi.tableName] += transactItemReadUnits(dbstore.CalculateItemSize(dbItem.Attributes))
 
 			attrs := dbItem.Attributes
 			if gi.projection != nil {
@@ -140,16 +149,9 @@ func (s *DynamoDBService) transactGetItemsCore(ctx context.Context, reqCtx *requ
 
 	returnConsumedCapacity := getReturnConsumedCapacity(in.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		// TransactGetItems is always strongly consistent; AWS charges
-		// 2x RCU (1.0 per read item) compared to eventually consistent.
-		const rcuPerItem = 1.0
-		tableNames := make(map[string]bool)
-		for _, gi := range getItems {
-			tableNames[gi.tableName] = true
-		}
-		var consumedCapacities []map[string]interface{}
-		for tableName := range tableNames {
-			consumedCapacities = append(consumedCapacities, buildConsumedCapacityResponse(tableName, float64(len(responses))*rcuPerItem))
+		consumedCapacities := make([]map[string]interface{}, 0, len(tableReadUnits))
+		for tableName, units := range tableReadUnits {
+			consumedCapacities = append(consumedCapacities, buildReadConsumedCapacityResponse(tableName, units))
 		}
 		if len(consumedCapacities) > 0 {
 			resp["ConsumedCapacity"] = consumedCapacities
@@ -157,6 +159,19 @@ func (s *DynamoDBService) transactGetItemsCore(ctx context.Context, reqCtx *requ
 	}
 
 	return resp, nil
+}
+
+// transactItemReadUnits returns the read capacity a single targeted item
+// consumes in a transactional read: DynamoDB performs two underlying reads
+// per item — one to prepare the transaction, one to commit it — over the
+// item's size rounded up to 4 KB multiples, and consumes that capacity even
+// when the item turns out to be absent, because the two reads still happen.
+func transactItemReadUnits(itemSizeBytes int64) float64 {
+	units := (itemSizeBytes + dbstore.ReadCapacityUnitBytes - 1) / dbstore.ReadCapacityUnitBytes
+	if units < 1 {
+		units = 1
+	}
+	return float64(units * 2)
 }
 
 // transactWriteItemsInput carries the already-typed TransactItems member plus
@@ -205,7 +220,7 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 		// cannot both execute: the loser observes the in-progress record
 		// and fails with the documented in-progress error.
 		unlock := s.lockClientRequestToken(clientRequestToken)
-		recordedHash, state, found, lookupErr := store.Idempotency().Lookup(clientRequestToken)
+		recordedHash, state, recordedReadUnits, found, lookupErr := store.Idempotency().Lookup(clientRequestToken)
 		if lookupErr != nil {
 			unlock()
 			return nil, lookupErr
@@ -215,13 +230,12 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 			if recordedHash != requestHash {
 				return nil, ErrIdempotentParameterMismatch
 			}
-			// A record written before the state field existed was only
-			// stored after success, so an empty state counts as completed.
-			if state != dbstore.IdempotencyStateCompleted && state != "" {
+			if state != dbstore.IdempotencyStateCompleted {
 				return nil, ErrTransactionInProgress
 			}
-			// Replay: parse for the response shape only; no execution, no
-			// stream, replication, or capacity side effects.
+			// Replay: parse for the response shape only; no execution and
+			// no stream or replication side effects. The capacity report
+			// replays the read units recorded at completion.
 			replayReasons := make([]CancellationReason, len(transactItems))
 			for i := range replayReasons {
 				replayReasons[i] = CancellationReason{Code: "None"}
@@ -230,11 +244,11 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 			if replayErr != nil {
 				return nil, replayErr
 			}
-			return buildTransactWriteResponse(in.Parameters, replayOps, true), nil
+			return buildTransactWriteResponse(in.Parameters, replayOps, true, recordedReadUnits), nil
 		}
 		if claimErr := store.Idempotency().Record(clientRequestToken, requestHash,
 			dbstore.IdempotencyStateInProgress,
-			time.Now().Add(idempotencyWindowMinutes*time.Minute)); claimErr != nil {
+			time.Now().Add(idempotencyWindowMinutes*time.Minute), nil); claimErr != nil {
 			unlock()
 			return nil, claimErr
 		}
@@ -272,7 +286,8 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 	if claimedToken {
 		if recordErr := store.Idempotency().Record(clientRequestToken, requestHash,
 			dbstore.IdempotencyStateCompleted,
-			time.Now().Add(idempotencyWindowMinutes*time.Minute)); recordErr != nil {
+			time.Now().Add(idempotencyWindowMinutes*time.Minute),
+			transactReplayReadUnits(operations)); recordErr != nil {
 			return nil, recordErr
 		}
 	}
@@ -295,32 +310,28 @@ func (s *DynamoDBService) transactWriteItemsCore(ctx context.Context, reqCtx *re
 			tableCache[op.tableName] = table
 		}
 		metricsWrites = append(metricsWrites, itemCollectionWriteRef{tableName: op.tableName, table: table, key: op.key})
-		eventName := dbstore.StreamEventModify
-		if op.opType == "Delete" {
-			eventName = dbstore.StreamEventRemove
-		} else if op.streamWasNew {
-			eventName = dbstore.StreamEventInsert
-		}
-		s.sendToKinesisDestinations(table, eventName, op.key, op.streamNewImage, op.streamOldImage)
+		eventName := streamEventForWrite(op.opType == "Delete", op.streamWasNew)
 
 		// Committed transaction writes replicate to global table replica
 		// regions just like single-item writes do; Update replicates its
 		// committed post-image as a put.
+		var replicaOp func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error
 		switch op.opType {
 		case "Put":
 			if op.itemData != nil {
-				s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaPutOp(table, op.key, op.itemData))
+				replicaOp = s.replicaPutOp(table, op.key, op.itemData)
 			}
 		case "Update":
 			if op.streamNewImage != nil {
-				s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaPutOp(table, op.key, op.streamNewImage))
+				replicaOp = s.replicaPutOp(table, op.key, op.streamNewImage)
 			}
 		case "Delete":
-			s.replicateToGlobalTableReplicas(store, reqCtx.GetRegion(), op.tableName, replicaDeleteOp(table, op.key))
+			replicaOp = s.replicaDeleteOp(table, op.key)
 		}
+		s.emitChangePropagation(store, reqCtx.GetRegion(), table, eventName, op.key, op.streamNewImage, op.streamOldImage, replicaOp)
 	}
 
-	resp := buildTransactWriteResponse(in.Parameters, operations, false)
+	resp := buildTransactWriteResponse(in.Parameters, operations, false, nil)
 	// ReturnItemCollectionMetrics=SIZE asks for one entry per item
 	// collection the committed transaction wrote; the idempotent replay
 	// path answers with the response shape only, without re-deriving it.
@@ -349,6 +360,10 @@ type writeOperation struct {
 	streamOldImage map[string]*dbstore.AttributeValue
 	streamNewImage map[string]*dbstore.AttributeValue
 	streamWasNew   bool
+	// itemSize is the size of the targeted item as it stands before the
+	// operation, captured while validating the transaction — the charge
+	// basis for deletes (the deleted item's size) and condition checks.
+	itemSize int64
 }
 
 func parseTransactWriteItems(s *DynamoDBService, store dbstore.DynamoDBStoreInterface, transactItems []interface{}, cancellationReasons []CancellationReason) ([]writeOperation, error) {
@@ -392,8 +407,16 @@ func parseWriteOperation(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 			return nil, ErrInvalidParameter
 		}
 
-		if _, err := store.Tables().Get(tableName); err != nil {
+		// Every table a write transaction references must be ACTIVE: a table
+		// mid-restore (CREATING) must be neither mutated nor condition-checked
+		// against its partial data, so the whole request is rejected like a
+		// single-item write against the same table.
+		opTable, opTableErr := store.Tables().Get(tableName)
+		if opTableErr != nil {
 			return nil, ErrTableNotFound
+		}
+		if opTable.Status != dbstore.TableStatusActive {
+			return nil, ErrTableNotActive
 		}
 
 		key, err := extractOperationKey(s, store, opType, opMap, tableName)
@@ -513,18 +536,19 @@ func extractOperationKey(s *DynamoDBService, store dbstore.DynamoDBStoreInterfac
 func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store dbstore.DynamoDBStoreInterface, operations []writeOperation, cancellationReasons []CancellationReason) error {
 	twoPhase := store.Storage().TwoPhaseTransaction()
 
-	for _, op := range operations {
-		op := op
+	for i := range operations {
 		twoPhase.AddValidator(storage.ValidatorFunc(func(ctx context.Context, txn storage.Transaction) error {
-			return validateWriteOperation(ctx, txn, store.NewTxn(txn), op, cancellationReasons)
+			return validateWriteOperation(ctx, txn, store.NewTxn(txn), &operations[i], cancellationReasons)
 		}))
 	}
 
 	// Contributor write events queue on each executor's transaction wrapper
 	// and are applied to the access counters after the commit succeeds; the
-	// validators and executors run sequentially inside one storage
-	// transaction, so plain collection needs no lock.
+	// table metric deltas queue the same way and are applied to the table
+	// records. The validators and executors run sequentially inside one
+	// storage transaction, so plain collection needs no lock.
 	var contributorEvents []dbstore.ContributorWriteEvent
+	var metricDeltas map[string]dbstore.TableMetricDelta
 	for i := range operations {
 		opPtr := &operations[i]
 		twoPhase.AddExecutor(storage.ExecutorFunc(func(ctx context.Context, txn storage.Transaction) error {
@@ -533,6 +557,7 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 				return err
 			}
 			contributorEvents = append(contributorEvents, dbTxn.TakeContributorWrites()...)
+			metricDeltas = dbstore.MergeTableMetricDeltas(metricDeltas, dbTxn.TakeTableMetricDeltas())
 			return nil
 		}))
 	}
@@ -549,13 +574,7 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 			if tblErr != nil || table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
 				continue
 			}
-			eventName := dbstore.StreamEventModify
-			if op.opType == "Delete" {
-				eventName = dbstore.StreamEventRemove
-			} else if op.streamWasNew {
-				eventName = dbstore.StreamEventInsert
-			}
-			s.captureStreamChangeTxn(dbTxn, store, table, eventName, op.key, op.streamNewImage, op.streamOldImage)
+			s.captureStreamChangeTxn(dbTxn, store, table, streamEventForWrite(op.opType == "Delete", op.streamWasNew), op.key, op.streamNewImage, op.streamOldImage)
 		}
 		return nil
 	}))
@@ -572,11 +591,12 @@ func executeTransactWriteItems(ctx context.Context, s *DynamoDBService, store db
 	}
 
 	store.FlushContributorWrites(ctx, contributorEvents)
+	store.FlushTableMetrics(metricDeltas)
 
 	return nil
 }
 
-func validateWriteOperation(_ context.Context, txn storage.Transaction, dbTxn *dbstore.DynamoDBTxn, op writeOperation, cancellationReasons []CancellationReason) error {
+func validateWriteOperation(_ context.Context, txn storage.Transaction, dbTxn *dbstore.DynamoDBTxn, op *writeOperation, cancellationReasons []CancellationReason) error {
 
 	var item *dbstore.Item
 	itemExists := true
@@ -596,6 +616,11 @@ func validateWriteOperation(_ context.Context, txn storage.Transaction, dbTxn *d
 	} else {
 		item = existingItem
 	}
+
+	// The billed size of the targeted item as it stands before the
+	// operation; a stored item's Attributes carry the full item including
+	// its key attributes, and an absent item sizes to zero.
+	op.itemSize = dbstore.CalculateItemSize(item.Attributes)
 
 	if op.conditionExpr != "" {
 		conditionMet, err := evaluateConditionExpression(item, op.conditionExpr, op.exprAttrNames, op.exprAttrValues)
@@ -645,22 +670,11 @@ func executePutOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool) e
 			return fmt.Errorf("put get old item %s: %w", op.tableName, err)
 		}
 		if oldItem != nil {
-			oldItemSize = calculateItemSize(oldItem.Attributes)
-			if err := dbTxn.DeleteIndexEntries(op.tableName, oldItem); err != nil {
-				return fmt.Errorf("put delete index entries %s: %w", op.tableName, err)
-			}
+			oldItemSize = dbstore.CalculateItemSize(oldItem.Attributes)
 		}
 	}
-	if err := dbTxn.PutItem(op.tableName, op.key, op.itemData); err != nil {
-		return fmt.Errorf("put item %s: %w", op.tableName, err)
-	}
-	newItem := &dbstore.Item{
-		TableName:  op.tableName,
-		Key:        op.key,
-		Attributes: op.itemData,
-	}
-	if err := dbTxn.PutIndexEntries(op.tableName, newItem); err != nil {
-		return fmt.Errorf("put index entries %s: %w", op.tableName, err)
+	if err := dbTxn.StoreItemWrite(op.tableName, op.key, op.itemData, oldItem, exists, oldItemSize); err != nil {
+		return fmt.Errorf("put store item write %s: %w", op.tableName, err)
 	}
 	// Populate stream capture fields.
 	op.streamWasNew = !exists
@@ -668,7 +682,7 @@ func executePutOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool) e
 	if oldItem != nil {
 		op.streamOldImage = oldItem.Attributes
 	}
-	return updateTableMetrics(dbTxn, op.tableName, exists, oldItemSize, calculateItemSize(op.itemData))
+	return nil
 }
 
 func executeUpdateOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool) error {
@@ -681,7 +695,7 @@ func executeUpdateOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool
 			return fmt.Errorf("update get old item %s: %w", op.tableName, err)
 		}
 		if oldItem != nil {
-			oldItemSize = calculateItemSize(oldItem.Attributes)
+			oldItemSize = dbstore.CalculateItemSize(oldItem.Attributes)
 			if err := dbTxn.DeleteIndexEntries(op.tableName, oldItem); err != nil {
 				return fmt.Errorf("update delete index entries %s: %w", op.tableName, err)
 			}
@@ -700,28 +714,21 @@ func executeUpdateOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool
 	updateExpr := request.GetStringParam(op.updateReq, "UpdateExpression")
 	if updateExpr != "" {
 		table, tableErr := dbTxn.GetTable(op.tableName)
-		if tableErr == nil {
-			names := op.exprAttrNames
-			paths := extractUpdatedPaths(updateExpr, names)
-			if err := validateNotKeyAttributes(table, paths); err != nil {
-				return err
-			}
+		if tableErr != nil {
+			return fmt.Errorf("update get table %s: %w", op.tableName, tableErr)
+		}
+		names := op.exprAttrNames
+		paths := extractUpdatedPaths(updateExpr, names)
+		if err := validateNotKeyAttributes(table, paths); err != nil {
+			return err
 		}
 		if err := applyUpdateExpression(attrs, updateExpr, op.exprAttrNames, op.exprAttrValues); err != nil {
 			return fmt.Errorf("apply update expression %s: %w", op.tableName, err)
 		}
 	}
 
-	if err := dbTxn.PutItem(op.tableName, op.key, attrs); err != nil {
-		return fmt.Errorf("update put item %s: %w", op.tableName, err)
-	}
-	newItem := &dbstore.Item{
-		TableName:  op.tableName,
-		Key:        op.key,
-		Attributes: attrs,
-	}
-	if err := dbTxn.PutIndexEntries(op.tableName, newItem); err != nil {
-		return fmt.Errorf("update put index entries %s: %w", op.tableName, err)
+	if err := dbTxn.StoreItemWrite(op.tableName, op.key, attrs, nil, exists, oldItemSize); err != nil {
+		return fmt.Errorf("update store item write %s: %w", op.tableName, err)
 	}
 	// Populate stream capture fields.
 	op.streamWasNew = !exists
@@ -729,7 +736,7 @@ func executeUpdateOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool
 	if oldItem != nil {
 		op.streamOldImage = oldItem.Attributes
 	}
-	return updateTableMetrics(dbTxn, op.tableName, exists, oldItemSize, calculateItemSize(attrs))
+	return nil
 }
 
 func executeDeleteOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool) error {
@@ -742,24 +749,11 @@ func executeDeleteOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool
 			return fmt.Errorf("delete get old item %s: %w", op.tableName, err)
 		}
 		if oldItem != nil {
-			oldItemSize = calculateItemSize(oldItem.Attributes)
-			if err := dbTxn.DeleteIndexEntries(op.tableName, oldItem); err != nil {
-				return fmt.Errorf("delete index entries %s: %w", op.tableName, err)
-			}
+			oldItemSize = dbstore.CalculateItemSize(oldItem.Attributes)
 		}
 	}
-	if err := dbTxn.DeleteItem(op.tableName, op.key); err != nil {
-		return fmt.Errorf("delete item %s: %w", op.tableName, err)
-	}
-	if exists {
-		if err := dbTxn.UpdateItemCount(op.tableName, -1); err != nil {
-			return fmt.Errorf("delete decrement item count %s: %w", op.tableName, err)
-		}
-		if oldItemSize > 0 {
-			if err := dbTxn.UpdateTableSize(op.tableName, -oldItemSize); err != nil {
-				return fmt.Errorf("delete adjust table size %s: %w", op.tableName, err)
-			}
-		}
+	if err := dbTxn.DeleteItemWrite(op.tableName, op.key, oldItem, exists, oldItemSize); err != nil {
+		return fmt.Errorf("delete item write %s: %w", op.tableName, err)
 	}
 	// Populate stream capture fields.
 	if oldItem != nil {
@@ -768,50 +762,103 @@ func executeDeleteOp(dbTxn *dbstore.DynamoDBTxn, op *writeOperation, exists bool
 	return nil
 }
 
-func updateTableMetrics(dbTxn *dbstore.DynamoDBTxn, tableName string, existed bool, oldSize, newSize int64) error {
-	if !existed {
-		if err := dbTxn.UpdateItemCount(tableName, 1); err != nil {
-			return fmt.Errorf("increment item count %s: %w", tableName, err)
+// transactReplayReadUnits sizes the read capacity a client-token replay
+// reports for each table: the idempotency contract documents that a replay
+// returns the number of read capacity units consumed in reading the item,
+// and reading each item of a transaction costs two RCUs at 4 KB granularity
+// (one to prepare, one to commit). The basis is the item each operation
+// carried — the same size bases the write report uses — captured at
+// execution time, because a later replay cannot reconstruct pre-images: a
+// delete's item is already gone by then.
+func transactReplayReadUnits(operations []writeOperation) map[string]float64 {
+	readUnits := make(map[string]float64)
+	for _, op := range operations {
+		var size int64
+		switch op.opType {
+		case "Put":
+			size = dbstore.CalculateItemSize(op.itemData)
+		case "Update":
+			size = dbstore.CalculateItemSize(op.streamNewImage)
+		default: // Delete and ConditionCheck charge by the targeted item.
+			size = op.itemSize
 		}
-		if err := dbTxn.UpdateTableSize(tableName, newSize); err != nil {
-			return fmt.Errorf("update table size %s: %w", tableName, err)
-		}
-	} else if newSize != oldSize {
-		if err := dbTxn.UpdateTableSize(tableName, newSize-oldSize); err != nil {
-			return fmt.Errorf("adjust table size %s: %w", tableName, err)
-		}
+		readUnits[op.tableName] += transactItemReadUnits(size)
 	}
-	return nil
+	return readUnits
 }
 
-// transactCapacityUnitsPerTable is the flat per-table capacity charge of a
-// transactional write: transactional operations are charged at twice the
-// normal rate.
-const transactCapacityUnitsPerTable = 2.0
+// transactItemWriteUnits returns the write capacity a single written item
+// consumes in a transactional write: DynamoDB performs two underlying
+// writes per item — one to prepare the transaction, one to commit it —
+// over the item's size rounded up to 1 KB multiples, and consumes that
+// capacity even when the transaction does not succeed. A delete is charged
+// by the deleted item's size; an item that did not exist still costs the
+// minimum two units.
+func transactItemWriteUnits(itemSizeBytes int64) float64 {
+	units := (itemSizeBytes + dbstore.WriteCapacityUnitBytes - 1) / dbstore.WriteCapacityUnitBytes
+	if units < 1 {
+		units = 1
+	}
+	return float64(units * 2)
+}
 
 // buildTransactWriteResponse assembles the TransactWriteItems response. The
-// initial execution reports write capacity units; a replay with the same
-// client token reports read capacity units, as the idempotency contract
-// documents.
-func buildTransactWriteResponse(params map[string]interface{}, operations []writeOperation, replay bool) map[string]interface{} {
+// capacity report follows the transaction contract: every item costs two
+// underlying operations sized to the item it carries — writes (Put by the
+// new item, Update by the post-image, Delete by the pre-image) at 1 KB
+// granularity, condition checks as reads of the checked item at 4 KB
+// granularity — aggregated per table in TransactItems first-appearance
+// order, the ordering the API reference states for the ConsumedCapacity
+// list. A replay with the same client token reports the recorded per-table
+// read capacity units instead of the write units, per the idempotency
+// contract: the replay reads the items, it does not write them again.
+func buildTransactWriteResponse(params map[string]interface{}, operations []writeOperation, replay bool, replayReadUnits map[string]float64) map[string]interface{} {
 	resp := map[string]interface{}{}
 
 	returnConsumedCapacity := getReturnConsumedCapacity(params)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		tableNames := make(map[string]bool)
+		writeUnits := make(map[string]float64)
+		readUnits := make(map[string]float64)
+		var tableOrder []string
+		seenTables := make(map[string]bool)
 		for _, op := range operations {
-			tableNames[op.tableName] = true
+			if !seenTables[op.tableName] {
+				seenTables[op.tableName] = true
+				tableOrder = append(tableOrder, op.tableName)
+			}
+			switch op.opType {
+			case "Put":
+				writeUnits[op.tableName] += transactItemWriteUnits(dbstore.CalculateItemSize(op.itemData))
+			case "Update":
+				writeUnits[op.tableName] += transactItemWriteUnits(dbstore.CalculateItemSize(op.streamNewImage))
+			case "Delete":
+				writeUnits[op.tableName] += transactItemWriteUnits(op.itemSize)
+			case "ConditionCheck":
+				readUnits[op.tableName] += transactItemReadUnits(op.itemSize)
+			}
 		}
 		var consumedCapacities []map[string]interface{}
-		for tableName := range tableNames {
+		for _, tableName := range tableOrder {
+			if replay {
+				rcu := replayReadUnits[tableName]
+				consumedCapacities = append(consumedCapacities, map[string]interface{}{
+					"TableName":         tableName,
+					"CapacityUnits":     rcu,
+					"ReadCapacityUnits": rcu,
+				})
+				continue
+			}
+			reads := readUnits[tableName]
+			writes := writeUnits[tableName]
 			capacity := map[string]interface{}{
 				"TableName":     tableName,
-				"CapacityUnits": transactCapacityUnitsPerTable,
+				"CapacityUnits": reads + writes,
 			}
-			if replay {
-				capacity["ReadCapacityUnits"] = transactCapacityUnitsPerTable
-			} else {
-				capacity["WriteCapacityUnits"] = transactCapacityUnitsPerTable
+			if reads > 0 {
+				capacity["ReadCapacityUnits"] = reads
+			}
+			if writes > 0 {
+				capacity["WriteCapacityUnits"] = writes
 			}
 			consumedCapacities = append(consumedCapacities, capacity)
 		}

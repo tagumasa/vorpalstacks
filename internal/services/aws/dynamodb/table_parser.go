@@ -44,22 +44,20 @@ func parseAttributeDefinitions(params map[string]interface{}) []*dbstore.Attribu
 	return result
 }
 
+// parseProvisionedThroughput decodes the ProvisionedThroughput member
+// verbatim, returning nil only when the member is absent. Value bounds are
+// validated by the Core (validateProvisionedThroughputValues), so a present
+// member with out-of-range units still reaches the Core's rejection instead
+// of masquerading as an omitted one.
 func parseProvisionedThroughput(params map[string]interface{}) *dbstore.ProvisionedThroughput {
 	pt, ok := params["ProvisionedThroughput"].(map[string]interface{})
 	if !ok {
 		return nil
 	}
 
-	readUnits := request.GetInt64Param(pt, "ReadCapacityUnits")
-	writeUnits := request.GetInt64Param(pt, "WriteCapacityUnits")
-
-	if readUnits < 1 || writeUnits < 1 {
-		return nil
-	}
-
 	return &dbstore.ProvisionedThroughput{
-		ReadCapacityUnits:  readUnits,
-		WriteCapacityUnits: writeUnits,
+		ReadCapacityUnits:  request.GetInt64Param(pt, "ReadCapacityUnits"),
+		WriteCapacityUnits: request.GetInt64Param(pt, "WriteCapacityUnits"),
 	}
 }
 
@@ -76,7 +74,7 @@ func parseGlobalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Glob
 			if idxName == "" {
 				return nil, ErrInvalidParameter
 			}
-			if !validateIndexName(idxName) {
+			if !validateResourceName(idxName) {
 				return nil, ErrInvalidParameter
 			}
 			proj, err := parseProjection(gm)
@@ -112,7 +110,7 @@ func parseLocalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Local
 			if idxName == "" {
 				return nil, ErrInvalidParameter
 			}
-			if !validateIndexName(idxName) {
+			if !validateResourceName(idxName) {
 				return nil, ErrInvalidParameter
 			}
 			proj, err := parseProjection(lm)
@@ -129,6 +127,127 @@ func parseLocalSecondaryIndexes(params map[string]interface{}) ([]*dbstore.Local
 			}
 			result = append(result, idx)
 		}
+	}
+	return result, nil
+}
+
+// parseVectorIndexes parses the CreateTable VectorIndexes member. Absence of
+// the member yields nil (no vector indexes); field-level shape checks mirror
+// the GSI/LSI parsers, while cross-index rules (name uniqueness across index
+// families, shared-attribute dimension consistency) are enforced by the core.
+func parseVectorIndexes(params map[string]interface{}) ([]*dbstore.VectorIndex, error) {
+	rawList, ok := params["VectorIndexes"].([]interface{})
+	if !ok {
+		return nil, nil
+	}
+	result := make([]*dbstore.VectorIndex, 0, len(rawList))
+	for _, v := range rawList {
+		vm, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+		idx, err := parseVectorIndex(vm)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, idx)
+	}
+	return result, nil
+}
+
+// parseVectorIndex parses one VectorIndex definition — a CreateTable
+// VectorIndexes element or an UpdateTable VectorIndexUpdates Create action,
+// which carry identical members.
+func parseVectorIndex(vm map[string]interface{}) (*dbstore.VectorIndex, error) {
+	idxName := request.GetStringParam(vm, "IndexName")
+	if idxName == "" || !validateResourceName(idxName) {
+		return nil, ErrInvalidParameter
+	}
+	vecAttr, ok := vm["VectorAttribute"].(map[string]interface{})
+	if !ok {
+		return nil, ErrInvalidParameter
+	}
+	attrName := request.GetStringParam(vecAttr, "AttributeName")
+	if attrName == "" || len(attrName) > dbstore.VectorAttributeNameMax {
+		return nil, ErrInvalidParameter
+	}
+	dims := request.GetInt64Param(vm, "Dimensions")
+	if dims < dbstore.VectorDimensionsMin || dims > dbstore.VectorDimensionsMax {
+		return nil, ErrInvalidParameter
+	}
+	distanceFn := request.GetStringParam(vm, "DistanceFunction")
+	if !validateVectorDistanceFunction(distanceFn) {
+		return nil, ErrInvalidParameter
+	}
+	proj, err := parseProjection(vm)
+	if err != nil {
+		return nil, err
+	}
+	if !validateProjectionRequired(vm["Projection"].(map[string]interface{})) {
+		return nil, ErrInvalidParameter
+	}
+	searchSchema, err := parseSearchSchema(vm)
+	if err != nil {
+		return nil, err
+	}
+	return &dbstore.VectorIndex{
+		IndexName:           idxName,
+		VectorAttributeName: attrName,
+		Dimensions:          dims,
+		DistanceFunction:    distanceFn,
+		Projection:          proj,
+		SearchSchema:        searchSchema,
+		IndexStatus:         dbstore.IndexStatusActive,
+	}, nil
+}
+
+// parseSearchSchema parses the optional SearchSchema member: a non-empty
+// list of {AttributeName, SearchSchemaElementType} elements with at most one
+// HASH element and no duplicate attribute names.
+func parseSearchSchema(vm map[string]interface{}) ([]*dbstore.SearchSchemaElement, error) {
+	rawList, ok := vm["SearchSchema"].([]interface{})
+	if !ok {
+		return nil, nil
+	}
+	result := make([]*dbstore.SearchSchemaElement, 0, len(rawList))
+	seen := make(map[string]bool)
+	hasHash := false
+	inlineFilters := 0
+	for _, e := range rawList {
+		em, ok := e.(map[string]interface{})
+		if !ok {
+			return nil, ErrInvalidParameter
+		}
+		attrName := request.GetStringParam(em, "AttributeName")
+		if attrName == "" {
+			return nil, ErrInvalidParameter
+		}
+		elemType := request.GetStringParam(em, "SearchSchemaElementType")
+		if elemType != "HASH" && elemType != "INLINE_FILTER" {
+			return nil, ErrInvalidParameter
+		}
+		if seen[attrName] {
+			return nil, ErrInvalidParameter
+		}
+		seen[attrName] = true
+		if elemType == "HASH" {
+			if hasHash {
+				return nil, ErrInvalidParameter
+			}
+			hasHash = true
+		} else {
+			inlineFilters++
+			if inlineFilters > dbstore.VectorInlineFiltersMax {
+				return nil, ErrInvalidParameter
+			}
+		}
+		result = append(result, &dbstore.SearchSchemaElement{
+			AttributeName:           attrName,
+			SearchSchemaElementType: elemType,
+		})
+	}
+	if len(result) == 0 {
+		return nil, ErrInvalidParameter
 	}
 	return result, nil
 }

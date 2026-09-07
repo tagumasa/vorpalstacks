@@ -60,8 +60,8 @@ func (h *AdminHandler) ExecuteQuery(ctx context.Context, req *connect.Request[pb
 	if pc := planCacheInputPbToString(req.Msg.Plancache); pc != "" {
 		body["planCache"] = pc
 	}
-	if req.Msg.Querytimeoutmilliseconds != "" {
-		ms, err := strconv.Atoi(req.Msg.Querytimeoutmilliseconds)
+	if req.Msg.GetQuerytimeoutmilliseconds() != "" {
+		ms, err := strconv.Atoi(req.Msg.GetQuerytimeoutmilliseconds())
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("queryTimeoutMilliseconds must be an integer"))
 		}
@@ -74,7 +74,7 @@ func (h *AdminHandler) ExecuteQuery(ctx context.Context, req *connect.Request[pb
 
 	result, err := h.service.executeQueryCore(ctx, store, nil, &request.ParsedRequest{
 		Body:       raw,
-		Parameters: map[string]interface{}{"graphidentifier": req.Msg.Graphidentifier},
+		Parameters: map[string]interface{}{"graphidentifier": req.Msg.GetGraphidentifier()},
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -92,7 +92,7 @@ func (h *AdminHandler) CancelQuery(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	if _, err := h.service.cancelQueryCore(store, &CancelQueryInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		QueryID:         req.Msg.Queryid,
 	}); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -107,7 +107,7 @@ func (h *AdminHandler) GetQuery(ctx context.Context, req *connect.Request[pb.Get
 	}
 	query, err := h.service.getQueryCore(store, &GetQueryInput{
 		QueryID:         req.Msg.Queryid,
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -127,7 +127,7 @@ func (h *AdminHandler) ListQueries(ctx context.Context, req *connect.Request[pb.
 		}
 	}
 	queries, err := h.service.listQueriesCore(store, &ListQueriesInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		MaxResults:      maxResults,
 		State:           queryStateInputPbToString(req.Msg.State),
 	})
@@ -147,7 +147,7 @@ func (h *AdminHandler) GetGraphSummary(ctx context.Context, req *connect.Request
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.getGraphSummaryCore(store, &GetGraphSummaryInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		Mode:            graphSummaryModePbToString(req.Msg.Mode),
 	})
 	if err != nil {
@@ -164,9 +164,9 @@ func (h *AdminHandler) CreateGraph(ctx context.Context, req *connect.Request[pb.
 	in := &CreateGraphInput{
 		GraphName:          req.Msg.Graphname,
 		ProvisionedMemory:  int(req.Msg.Provisionedmemory),
-		KmsKeyIdentifier:   req.Msg.Kmskeyidentifier,
-		DeletionProtection: strToBool(req.Msg.Deletionprotection),
-		PublicConnectivity: strToBool(req.Msg.Publicconnectivity),
+		KmsKeyIdentifier:   req.Msg.GetKmskeyidentifier(),
+		DeletionProtection: strToBool(req.Msg.GetDeletionprotection()),
+		PublicConnectivity: strToBool(req.Msg.GetPublicconnectivity()),
 		Tags:               req.Msg.Tags,
 		Region:             defaults.GetRegionFromHeader(req.Header()),
 	}
@@ -190,7 +190,7 @@ func (h *AdminHandler) DeleteGraph(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	graph, err := h.service.deleteGraphCore(store, &DeleteGraphInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		HasSkipSnapshot: req.Msg.Skipsnapshot != "",
 		SkipSnapshot:    strToBool(req.Msg.Skipsnapshot),
 		Region:          defaults.GetRegionFromHeader(req.Header()),
@@ -202,7 +202,7 @@ func (h *AdminHandler) DeleteGraph(ctx context.Context, req *connect.Request[pb.
 }
 
 func (h *AdminHandler) GetGraph(ctx context.Context, req *connect.Request[pb.GetGraphInput]) (*connect.Response[pb.GetGraphOutput], error) {
-	output, err := h.getGraphPb(req.Header(), req.Msg.Graphidentifier)
+	output, err := h.getGraphPb(req.Header(), req.Msg.GetGraphidentifier())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -222,18 +222,18 @@ func (h *AdminHandler) UpdateGraph(ctx context.Context, req *connect.Request[pb.
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	in := &UpdateGraphInput{GraphIdentifier: req.Msg.Graphidentifier}
+	in := &UpdateGraphInput{GraphIdentifier: req.Msg.GetGraphidentifier()}
 	if req.Msg.Provisionedmemory != nil {
 		in.HasProvisionedMemory = true
 		in.ProvisionedMemory = int(*req.Msg.Provisionedmemory)
 	}
-	if req.Msg.Deletionprotection != "" {
+	if req.Msg.GetDeletionprotection() != "" {
 		in.HasDeletionProtection = true
-		in.DeletionProtection = strToBool(req.Msg.Deletionprotection)
+		in.DeletionProtection = strToBool(req.Msg.GetDeletionprotection())
 	}
-	if req.Msg.Publicconnectivity != "" {
+	if req.Msg.GetPublicconnectivity() != "" {
 		in.HasPublicConnectivity = true
-		in.PublicConnectivity = strToBool(req.Msg.Publicconnectivity)
+		in.PublicConnectivity = strToBool(req.Msg.GetPublicconnectivity())
 	}
 	graph, err := h.service.updateGraphCore(store, in)
 	if err != nil {
@@ -248,7 +248,7 @@ func (h *AdminHandler) StartGraph(ctx context.Context, req *connect.Request[pb.S
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	graph, err := h.service.startGraphCore(store, &StartGraphInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -262,7 +262,7 @@ func (h *AdminHandler) StopGraph(ctx context.Context, req *connect.Request[pb.St
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	graph, err := h.service.stopGraphCore(store, &StopGraphInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -276,7 +276,7 @@ func (h *AdminHandler) ResetGraph(ctx context.Context, req *connect.Request[pb.R
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	graph, err := h.service.resetGraphCore(store, &ResetGraphInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		HasSkipSnapshot: req.Msg.Skipsnapshot != "",
 		SkipSnapshot:    strToBool(req.Msg.Skipsnapshot),
 	})
@@ -294,8 +294,8 @@ func (h *AdminHandler) RestoreGraphFromSnapshot(ctx context.Context, req *connec
 	in := &RestoreGraphFromSnapshotInput{
 		SnapshotIdentifier: req.Msg.Snapshotidentifier,
 		GraphName:          req.Msg.Graphname,
-		DeletionProtection: strToBool(req.Msg.Deletionprotection),
-		PublicConnectivity: strToBool(req.Msg.Publicconnectivity),
+		DeletionProtection: strToBool(req.Msg.GetDeletionprotection()),
+		PublicConnectivity: strToBool(req.Msg.GetPublicconnectivity()),
 		Tags:               req.Msg.Tags,
 		Region:             defaults.GetRegionFromHeader(req.Header()),
 	}
@@ -320,7 +320,7 @@ func (h *AdminHandler) CreateGraphSnapshot(ctx context.Context, req *connect.Req
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	snapshot, err := h.service.createGraphSnapshotCore(store, &CreateGraphSnapshotInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
 		SnapshotName:    req.Msg.Snapshotname,
 		Region:          defaults.GetRegionFromHeader(req.Header()),
 	})
@@ -354,7 +354,7 @@ func (h *AdminHandler) GetGraphSnapshot(ctx context.Context, req *connect.Reques
 }
 
 func (h *AdminHandler) ListGraphSnapshots(ctx context.Context, req *connect.Request[pb.ListGraphSnapshotsInput]) (*connect.Response[pb.ListGraphSnapshotsOutput], error) {
-	summaries, err := h.listGraphSnapshotsPb(req.Header(), req.Msg.Graphidentifier)
+	summaries, err := h.listGraphSnapshotsPb(req.Header(), req.Msg.GetGraphidentifier())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -367,8 +367,8 @@ func (h *AdminHandler) CreatePrivateGraphEndpoint(ctx context.Context, req *conn
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	ep, err := h.service.createPrivateGraphEndpointCore(ctx, store, &CreatePrivateGraphEndpointInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
-		VpcId:           req.Msg.Vpcid,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
+		VpcId:           req.Msg.GetVpcid(),
 		SubnetIds:       req.Msg.Subnetids,
 		Region:          defaults.GetRegionFromHeader(req.Header()),
 	})
@@ -384,8 +384,8 @@ func (h *AdminHandler) DeletePrivateGraphEndpoint(ctx context.Context, req *conn
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	ep, err := h.service.deletePrivateGraphEndpointCore(store, &DeletePrivateGraphEndpointInput{
-		GraphIdentifier: req.Msg.Graphidentifier,
-		VpcId:           req.Msg.Vpcid,
+		GraphIdentifier: req.Msg.GetGraphidentifier(),
+		VpcId:           req.Msg.GetVpcid(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -394,7 +394,7 @@ func (h *AdminHandler) DeletePrivateGraphEndpoint(ctx context.Context, req *conn
 }
 
 func (h *AdminHandler) GetPrivateGraphEndpoint(ctx context.Context, req *connect.Request[pb.GetPrivateGraphEndpointInput]) (*connect.Response[pb.GetPrivateGraphEndpointOutput], error) {
-	output, err := h.getPrivateGraphEndpointPb(req.Header(), req.Msg.Graphidentifier, req.Msg.Vpcid)
+	output, err := h.getPrivateGraphEndpointPb(req.Header(), req.Msg.GetGraphidentifier(), req.Msg.GetVpcid())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -402,7 +402,7 @@ func (h *AdminHandler) GetPrivateGraphEndpoint(ctx context.Context, req *connect
 }
 
 func (h *AdminHandler) ListPrivateGraphEndpoints(ctx context.Context, req *connect.Request[pb.ListPrivateGraphEndpointsInput]) (*connect.Response[pb.ListPrivateGraphEndpointsOutput], error) {
-	summaries, err := h.listPrivateGraphEndpointsPb(req.Header(), req.Msg.Graphidentifier)
+	summaries, err := h.listPrivateGraphEndpointsPb(req.Header(), req.Msg.GetGraphidentifier())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -443,10 +443,10 @@ func (h *AdminHandler) CreateGraphUsingImportTask(ctx context.Context, req *conn
 		Format:             formatPbToString(req.Msg.Format),
 		ParquetType:        parquetTypePbToString(req.Msg.Parquettype),
 		BlankNodeHandling:  blankNodeHandlingPbToString(req.Msg.Blanknodehandling),
-		KmsKeyIdentifier:   req.Msg.Kmskeyidentifier,
-		DeletionProtection: strToBool(req.Msg.Deletionprotection),
-		PublicConnectivity: strToBool(req.Msg.Publicconnectivity),
-		FailOnError:        strToBool(req.Msg.Failonerror),
+		KmsKeyIdentifier:   req.Msg.GetKmskeyidentifier(),
+		DeletionProtection: strToBool(req.Msg.GetDeletionprotection()),
+		PublicConnectivity: strToBool(req.Msg.GetPublicconnectivity()),
+		FailOnError:        strToBool(req.Msg.GetFailonerror()),
 		Tags:               req.Msg.Tags,
 		Region:             defaults.GetRegionFromHeader(req.Header()),
 	}
@@ -512,13 +512,13 @@ func (h *AdminHandler) StartImportTask(ctx context.Context, req *connect.Request
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	in := &StartImportTaskInput{
-		GraphIdentifier:   req.Msg.Graphidentifier,
+		GraphIdentifier:   req.Msg.GetGraphidentifier(),
 		RoleArn:           req.Msg.Rolearn,
 		Source:            req.Msg.Source,
 		Format:            formatPbToString(req.Msg.Format),
 		ParquetType:       parquetTypePbToString(req.Msg.Parquettype),
 		BlankNodeHandling: blankNodeHandlingPbToString(req.Msg.Blanknodehandling),
-		FailOnError:       strToBool(req.Msg.Failonerror),
+		FailOnError:       strToBool(req.Msg.GetFailonerror()),
 	}
 	if req.Msg.Importoptions != nil {
 		in.HasImportOptions = true
@@ -537,10 +537,10 @@ func (h *AdminHandler) StartExportTask(ctx context.Context, req *connect.Request
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	in := &StartExportTaskInput{
-		GraphIdentifier:  req.Msg.Graphidentifier,
+		GraphIdentifier:  req.Msg.GetGraphidentifier(),
 		Format:           exportFormatPbToString(req.Msg.Format),
 		ParquetType:      parquetTypePbToString(req.Msg.Parquettype),
-		KmsKeyIdentifier: req.Msg.Kmskeyidentifier,
+		KmsKeyIdentifier: req.Msg.GetKmskeyidentifier(),
 		RoleArn:          req.Msg.Rolearn,
 		Destination:      req.Msg.Destination,
 	}
@@ -564,7 +564,7 @@ func (h *AdminHandler) GetExportTask(ctx context.Context, req *connect.Request[p
 }
 
 func (h *AdminHandler) ListExportTasks(ctx context.Context, req *connect.Request[pb.ListExportTasksInput]) (*connect.Response[pb.ListExportTasksOutput], error) {
-	summaries, err := h.listExportTasksPb(req.Header(), req.Msg.Graphidentifier)
+	summaries, err := h.listExportTasksPb(req.Header(), req.Msg.GetGraphidentifier())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

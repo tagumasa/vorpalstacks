@@ -16,6 +16,24 @@ import (
 // handler delegate to these methods to ensure identical behaviour.
 // ---------------------------------------------------------------------------
 
+// pitrEarliestRestorable returns the trailing edge of the restorable
+// window. Continuous backups maintain a recovery period of preceding days
+// (RecoveryPeriodInDays, default 35, range 1-35), so the earliest restorable
+// moment is the later of the recovery-enable time and now minus the
+// configured period — records older than the trailing edge can never be
+// replayed and the journal sweeper prunes them at this cutoff.
+func pitrEarliestRestorable(pitr *dbstore.PointInTimeRecoveryDescription, now time.Time) time.Time {
+	periodDays := pitrDefaultRecoveryPeriodDays
+	if pitr.RecoveryPeriodInDays > 0 {
+		periodDays = pitr.RecoveryPeriodInDays
+	}
+	trailingEdge := now.AddDate(0, 0, -periodDays)
+	if pitr.EarliestRestorableDateTime.After(trailingEdge) {
+		return pitr.EarliestRestorableDateTime
+	}
+	return trailingEdge
+}
+
 // describeContinuousBackupsInput carries the raw wire parameters for
 // DescribeContinuousBackups.
 type describeContinuousBackupsInput struct {
@@ -52,11 +70,12 @@ func (s *DynamoDBService) describeContinuousBackupsCore(ctx context.Context, req
 	if pitr != nil && pitr.Status == dbstore.PITRStatusEnabled {
 		pitrStatus = "ENABLED"
 		pitrDescription["PointInTimeRecoveryStatus"] = pitrStatus
-		// The restorable window reaches from the moment recovery was
-		// enabled (the journal starts there) to the present; mutations
-		// commit synchronously on this platform, so now is restorable.
-		pitrDescription["EarliestRestorableDateTime"] = pitr.EarliestRestorableDateTime.Unix()
-		pitrDescription["LatestRestorableDateTime"] = time.Now().Unix()
+		// The restorable window is the trailing recovery period ending at
+		// the present; mutations commit synchronously on this platform, so
+		// now is restorable.
+		now := time.Now()
+		pitrDescription["EarliestRestorableDateTime"] = pitrEarliestRestorable(pitr, now).Unix()
+		pitrDescription["LatestRestorableDateTime"] = now.Unix()
 		if pitr.RecoveryPeriodInDays > 0 {
 			recoveryPeriod = pitr.RecoveryPeriodInDays
 			pitrDescription["RecoveryPeriodInDays"] = recoveryPeriod
@@ -134,9 +153,12 @@ func (s *DynamoDBService) updateContinuousBackupsCore(ctx context.Context, reqCt
 		}
 	}
 
+	// Continuous backups are enabled on every table at creation, so the
+	// outer status is always ENABLED — matching the describe response; only
+	// the point-in-time recovery status depends on the table's settings.
 	return map[string]interface{}{
 		"ContinuousBackupsDescription": map[string]interface{}{
-			"ContinuousBackupsStatus": string(pitr.Status),
+			"ContinuousBackupsStatus": "ENABLED",
 			"PointInTimeRecoveryDescription": map[string]interface{}{
 				"PointInTimeRecoveryStatus": string(pitr.Status),
 			},

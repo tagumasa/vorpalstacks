@@ -1,6 +1,7 @@
 package sns
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -25,7 +26,7 @@ func (h *AdminHandler) getSNSStore(headers http.Header) (snsstore.SNSStoreInterf
 // response type.
 func toPbCreateTopicResponse(r *TopicResult) *pb.CreateTopicResponse {
 	return &pb.CreateTopicResponse{
-		Topicarn: r.Arn,
+		Topicarn: proto.String(r.Arn),
 	}
 }
 
@@ -34,10 +35,10 @@ func toPbCreateTopicResponse(r *TopicResult) *pb.CreateTopicResponse {
 func toPbListTopicsResponse(r *ListTopicsResult) *pb.ListTopicsResponse {
 	topics := make([]*pb.Topic, len(r.Topics))
 	for i, t := range r.Topics {
-		topics[i] = &pb.Topic{Topicarn: t.TopicArn}
+		topics[i] = &pb.Topic{Topicarn: proto.String(t.TopicArn)}
 	}
 	return &pb.ListTopicsResponse{
 		Topics:    topics,
-		Nexttoken: r.NextToken,
+		Nexttoken: proto.String(r.NextToken),
 	}
 }

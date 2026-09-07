@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	commonstore "vorpalstacks/internal/store/aws/common"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
@@ -142,7 +143,7 @@ type createGlobalTableInput struct {
 // table record over the qualifying replica tables.
 func (s *DynamoDBService) createGlobalTableCore(ctx context.Context, reqCtx *request.RequestContext, in createGlobalTableInput) (interface{}, error) {
 	globalTableName := request.GetStringParam(in.Parameters, "GlobalTableName")
-	if !validateGlobalTableName(globalTableName) {
+	if !validateResourceName(globalTableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -203,7 +204,7 @@ type describeGlobalTableInput struct {
 // table description.
 func (s *DynamoDBService) describeGlobalTableCore(ctx context.Context, reqCtx *request.RequestContext, in describeGlobalTableInput) (interface{}, error) {
 	globalTableName := request.GetStringParam(in.Parameters, "GlobalTableName")
-	if !validateGlobalTableName(globalTableName) {
+	if !validateResourceName(globalTableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -231,7 +232,7 @@ type describeGlobalTableSettingsInput struct {
 // settings of the global table.
 func (s *DynamoDBService) describeGlobalTableSettingsCore(ctx context.Context, reqCtx *request.RequestContext, in describeGlobalTableSettingsInput) (interface{}, error) {
 	globalTableName := request.GetStringParam(in.Parameters, "GlobalTableName")
-	if !validateGlobalTableName(globalTableName) {
+	if !validateResourceName(globalTableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -269,10 +270,10 @@ func buildGlobalTableReplicaSettings(globalTable *dbstore.GlobalTable) []map[str
 			}
 		}
 		if replica.ReadAutoScalingSettings != nil {
-			settings["ReplicaProvisionedReadCapacityAutoScalingSettings"] = replica.ReadAutoScalingSettings
+			settings["ReplicaProvisionedReadCapacityAutoScalingSettings"] = autoScalingSettingsToWire(replica.ReadAutoScalingSettings)
 		}
 		if globalTable.WriteAutoScalingSettings != nil {
-			settings["ReplicaProvisionedWriteCapacityAutoScalingSettings"] = globalTable.WriteAutoScalingSettings
+			settings["ReplicaProvisionedWriteCapacityAutoScalingSettings"] = autoScalingSettingsToWire(globalTable.WriteAutoScalingSettings)
 		}
 		if gsi := mergeGSISettings(globalTable, replica); len(gsi) > 0 {
 			settings["ReplicaGlobalSecondaryIndexSettings"] = gsi
@@ -293,7 +294,7 @@ func buildGlobalTableReplicaSettings(globalTable *dbstore.GlobalTable) []map[str
 // entries into the per-index write settings stored on the global table. The
 // model marks each entry's IndexName required and the capacity member a
 // positive long.
-func parseGlobalGSIWriteSettings(updates interface{}) ([]map[string]interface{}, error) {
+func parseGlobalGSIWriteSettings(updates interface{}) ([]dbstore.IndexAutoScalingSettings, error) {
 	gsiUpdates, ok := updates.([]interface{})
 	if !ok {
 		return nil, nil
@@ -302,7 +303,7 @@ func parseGlobalGSIWriteSettings(updates interface{}) ([]map[string]interface{},
 	if len(gsiUpdates) < 1 || len(gsiUpdates) > 20 {
 		return nil, ErrInvalidParameter
 	}
-	var result []map[string]interface{}
+	var result []dbstore.IndexAutoScalingSettings
 	for _, u := range gsiUpdates {
 		uMap, ok := u.(map[string]interface{})
 		if !ok {
@@ -312,20 +313,20 @@ func parseGlobalGSIWriteSettings(updates interface{}) ([]map[string]interface{},
 		if indexName == "" {
 			return nil, ErrInvalidParameter
 		}
-		entry := map[string]interface{}{"IndexName": indexName}
+		entry := dbstore.IndexAutoScalingSettings{IndexName: indexName}
 		if raw, present := uMap["ProvisionedWriteCapacityUnits"]; present {
-			units, ok := raw.(float64)
-			if !ok || units < 1 {
+			units, err := wirePositiveLong(raw)
+			if err != nil || *units < 1 {
 				return nil, ErrInvalidParameter
 			}
-			entry["ProvisionedWriteCapacityUnits"] = int64(units)
+			entry.ProvisionedWriteCapacityUnits = units
 		}
 		if writeAS, ok := uMap["ProvisionedWriteCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
 			settings, err := parseAutoScalingSettings(writeAS)
 			if err != nil {
 				return nil, err
 			}
-			entry["ProvisionedWriteCapacityAutoScalingSettings"] = settings
+			entry.Write = settings
 		}
 		result = append(result, entry)
 	}
@@ -336,7 +337,7 @@ func parseGlobalGSIWriteSettings(updates interface{}) ([]map[string]interface{},
 // entries into the per-index read settings stored on the replica. The model
 // marks each entry's IndexName required and the capacity member a positive
 // long.
-func parseReplicaGSIReadSettings(updates interface{}) ([]map[string]interface{}, error) {
+func parseReplicaGSIReadSettings(updates interface{}) ([]dbstore.IndexAutoScalingSettings, error) {
 	gsiUpdates, ok := updates.([]interface{})
 	if !ok {
 		return nil, nil
@@ -345,7 +346,7 @@ func parseReplicaGSIReadSettings(updates interface{}) ([]map[string]interface{},
 	if len(gsiUpdates) < 1 || len(gsiUpdates) > 20 {
 		return nil, ErrInvalidParameter
 	}
-	var result []map[string]interface{}
+	var result []dbstore.IndexAutoScalingSettings
 	for _, u := range gsiUpdates {
 		uMap, ok := u.(map[string]interface{})
 		if !ok {
@@ -355,20 +356,20 @@ func parseReplicaGSIReadSettings(updates interface{}) ([]map[string]interface{},
 		if indexName == "" {
 			return nil, ErrInvalidParameter
 		}
-		entry := map[string]interface{}{"IndexName": indexName}
+		entry := dbstore.IndexAutoScalingSettings{IndexName: indexName}
 		if raw, present := uMap["ProvisionedReadCapacityUnits"]; present {
-			units, ok := raw.(float64)
-			if !ok || units < 1 {
+			units, err := wirePositiveLong(raw)
+			if err != nil || *units < 1 {
 				return nil, ErrInvalidParameter
 			}
-			entry["ProvisionedReadCapacityUnits"] = int64(units)
+			entry.ProvisionedReadCapacityUnits = units
 		}
 		if readAS, ok := uMap["ProvisionedReadCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
 			settings, err := parseAutoScalingSettings(readAS)
 			if err != nil {
 				return nil, err
 			}
-			entry["ProvisionedReadCapacityAutoScalingSettings"] = settings
+			entry.Read = settings
 		}
 		result = append(result, entry)
 	}
@@ -378,14 +379,13 @@ func parseReplicaGSIReadSettings(updates interface{}) ([]map[string]interface{},
 // mergeIndexSettingsLists applies update semantics to a per-index settings
 // list: an update whose IndexName matches a stored entry replaces it, any
 // other update is appended.
-func mergeIndexSettingsLists(stored, updates []map[string]interface{}) []map[string]interface{} {
-	merged := make([]map[string]interface{}, len(stored))
+func mergeIndexSettingsLists(stored, updates []dbstore.IndexAutoScalingSettings) []dbstore.IndexAutoScalingSettings {
+	merged := make([]dbstore.IndexAutoScalingSettings, len(stored))
 	copy(merged, stored)
 	for _, update := range updates {
-		name, _ := update["IndexName"].(string)
 		replaced := false
 		for i, entry := range merged {
-			if existing, _ := entry["IndexName"].(string); existing == name {
+			if entry.IndexName == update.IndexName {
 				merged[i] = update
 				replaced = true
 				break
@@ -404,24 +404,29 @@ func mergeGSISettings(globalTable *dbstore.GlobalTable, replica *dbstore.Replica
 	if len(globalTable.GlobalSecondaryIndexWriteSettings) == 0 && len(replica.GlobalSecondaryIndexReadSettings) == 0 {
 		return nil
 	}
-	merged := make(map[string]map[string]interface{})
+	merged := make(map[string]*dbstore.IndexAutoScalingSettings)
 	var order []string
-	add := func(settings map[string]interface{}) {
-		name, ok := settings["IndexName"].(string)
-		if !ok {
+	add := func(s dbstore.IndexAutoScalingSettings) {
+		if s.IndexName == "" {
 			return
 		}
-		entry, exists := merged[name]
+		entry, exists := merged[s.IndexName]
 		if !exists {
-			entry = map[string]interface{}{"IndexName": name}
-			merged[name] = entry
-			order = append(order, name)
+			entry = &dbstore.IndexAutoScalingSettings{IndexName: s.IndexName}
+			merged[s.IndexName] = entry
+			order = append(order, s.IndexName)
 		}
-		for key, value := range settings {
-			if key == "IndexName" {
-				continue
-			}
-			entry[key] = value
+		if s.ProvisionedReadCapacityUnits != nil {
+			entry.ProvisionedReadCapacityUnits = s.ProvisionedReadCapacityUnits
+		}
+		if s.ProvisionedWriteCapacityUnits != nil {
+			entry.ProvisionedWriteCapacityUnits = s.ProvisionedWriteCapacityUnits
+		}
+		if s.Read != nil {
+			entry.Read = s.Read
+		}
+		if s.Write != nil {
+			entry.Write = s.Write
 		}
 	}
 	for _, settings := range globalTable.GlobalSecondaryIndexWriteSettings {
@@ -432,7 +437,7 @@ func mergeGSISettings(globalTable *dbstore.GlobalTable, replica *dbstore.Replica
 	}
 	result := make([]map[string]interface{}, 0, len(order))
 	for _, name := range order {
-		result = append(result, merged[name])
+		result = append(result, indexAutoScalingSettingsToWire(*merged[name]))
 	}
 	return result
 }
@@ -457,7 +462,7 @@ func (s *DynamoDBService) listGlobalTablesCore(ctx context.Context, reqCtx *requ
 	}
 	exclusiveStartGlobalTableName := request.GetStringParam(in.Parameters, "ExclusiveStartGlobalTableName")
 	if exclusiveStartGlobalTableName != "" {
-		if !validateGlobalTableName(exclusiveStartGlobalTableName) {
+		if !validateResourceName(exclusiveStartGlobalTableName) {
 			return nil, ErrInvalidParameter
 		}
 	}
@@ -538,7 +543,7 @@ type updateGlobalTableInput struct {
 // membership updates to the global table.
 func (s *DynamoDBService) updateGlobalTableCore(ctx context.Context, reqCtx *request.RequestContext, in updateGlobalTableInput) (interface{}, error) {
 	globalTableName := request.GetStringParam(in.Parameters, "GlobalTableName")
-	if !validateGlobalTableName(globalTableName) {
+	if !validateResourceName(globalTableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -546,65 +551,65 @@ func (s *DynamoDBService) updateGlobalTableCore(ctx context.Context, reqCtx *req
 	if err != nil {
 		return nil, err
 	}
-	globalTable, err := store.GlobalTables().Get(globalTableName)
-	if err != nil {
-		return nil, ErrGlobalTableNotFound
-	}
-
-	updates, ok := in.Parameters["ReplicaUpdates"].([]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-	// A joining replica must satisfy the same conditions as one named by
-	// CreateGlobalTable, compared against an existing replica's table.
-	reference := s.referenceReplicaTable(globalTableName, globalTable.ReplicationGroup)
-	for _, update := range updates {
-		updateMap, ok := update.(map[string]interface{})
+	globalTable, err := store.GlobalTables().Update(globalTableName, func(gt *dbstore.GlobalTable) error {
+		updates, ok := in.Parameters["ReplicaUpdates"].([]interface{})
 		if !ok {
-			return nil, ErrInvalidParameter
+			return ErrInvalidParameter
 		}
-
-		if createMap, ok := updateMap["Create"].(map[string]interface{}); ok {
-			regionName, _ := createMap["RegionName"].(string)
-			if regionName == "" {
-				return nil, ErrInvalidParameter
+		// A joining replica must satisfy the same conditions as one named by
+		// CreateGlobalTable, compared against an existing replica's table.
+		reference := s.referenceReplicaTable(globalTableName, gt.ReplicationGroup)
+		for _, update := range updates {
+			updateMap, ok := update.(map[string]interface{})
+			if !ok {
+				return ErrInvalidParameter
 			}
-			for _, r := range globalTable.ReplicationGroup {
-				if r.RegionName == regionName {
-					return nil, ErrReplicaAlreadyExists
+
+			if createMap, ok := updateMap["Create"].(map[string]interface{}); ok {
+				regionName, _ := createMap["RegionName"].(string)
+				if regionName == "" {
+					return ErrInvalidParameter
 				}
-			}
-			if err := s.validateGlobalTableReplica(globalTableName, regionName, reference); err != nil {
-				return nil, err
-			}
-			globalTable.ReplicationGroup = append(globalTable.ReplicationGroup, &dbstore.Replica{
-				RegionName:    regionName,
-				ReplicaStatus: "ACTIVE",
-			})
-		}
-
-		if deleteMap, ok := updateMap["Delete"].(map[string]interface{}); ok {
-			regionName, _ := deleteMap["RegionName"].(string)
-			if regionName == "" {
-				return nil, ErrInvalidParameter
-			}
-			found := false
-			var newReplicas []*dbstore.Replica
-			for _, r := range globalTable.ReplicationGroup {
-				if r.RegionName == regionName {
-					found = true
-					continue
+				for _, r := range gt.ReplicationGroup {
+					if r.RegionName == regionName {
+						return ErrReplicaAlreadyExists
+					}
 				}
-				newReplicas = append(newReplicas, r)
+				if err := s.validateGlobalTableReplica(globalTableName, regionName, reference); err != nil {
+					return err
+				}
+				gt.ReplicationGroup = append(gt.ReplicationGroup, &dbstore.Replica{
+					RegionName:    regionName,
+					ReplicaStatus: "ACTIVE",
+				})
 			}
-			if !found {
-				return nil, ErrReplicaNotFound
-			}
-			globalTable.ReplicationGroup = newReplicas
-		}
-	}
 
-	if err := store.GlobalTables().Put(globalTable); err != nil {
+			if deleteMap, ok := updateMap["Delete"].(map[string]interface{}); ok {
+				regionName, _ := deleteMap["RegionName"].(string)
+				if regionName == "" {
+					return ErrInvalidParameter
+				}
+				found := false
+				var newReplicas []*dbstore.Replica
+				for _, r := range gt.ReplicationGroup {
+					if r.RegionName == regionName {
+						found = true
+						continue
+					}
+					newReplicas = append(newReplicas, r)
+				}
+				if !found {
+					return ErrReplicaNotFound
+				}
+				gt.ReplicationGroup = newReplicas
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		if commonstore.IsNotFound(err) {
+			return nil, ErrGlobalTableNotFound
+		}
 		return nil, err
 	}
 
@@ -623,7 +628,7 @@ type updateGlobalTableSettingsInput struct {
 // replica settings updates to the global table.
 func (s *DynamoDBService) updateGlobalTableSettingsCore(ctx context.Context, reqCtx *request.RequestContext, in updateGlobalTableSettingsInput) (interface{}, error) {
 	globalTableName := request.GetStringParam(in.Parameters, "GlobalTableName")
-	if !validateGlobalTableName(globalTableName) {
+	if !validateResourceName(globalTableName) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -631,126 +636,119 @@ func (s *DynamoDBService) updateGlobalTableSettingsCore(ctx context.Context, req
 	if err != nil {
 		return nil, err
 	}
-	globalTable, err := store.GlobalTables().Get(globalTableName)
-	if err != nil {
-		return nil, ErrGlobalTableNotFound
-	}
-
-	// The billing mode and provisioned write capacity are global settings
-	// in the model — they apply to every replica of the global table, not
-	// to a per-replica member.
-	globalBillingMode := request.GetStringParam(in.Parameters, "GlobalTableBillingMode")
-	if globalBillingMode != "" &&
-		globalBillingMode != string(dbstore.BillingModeProvisioned) &&
-		globalBillingMode != string(dbstore.BillingModePayPerRequest) {
-		return nil, ErrInvalidParameter
-	}
-	globalWriteUnits := int64(0)
-	hasGlobalWriteUnits := false
-	if raw, present := in.Parameters["GlobalTableProvisionedWriteCapacityUnits"]; present {
-		units, ok := raw.(float64)
-		if !ok || units < 1 {
-			return nil, ErrInvalidParameter
+	globalTable, err := store.GlobalTables().Update(globalTableName, func(gt *dbstore.GlobalTable) error {
+		// The billing mode and provisioned write capacity are global settings
+		// in the model — they apply to every replica of the global table, not
+		// to a per-replica member.
+		globalBillingMode := request.GetStringParam(in.Parameters, "GlobalTableBillingMode")
+		if globalBillingMode != "" &&
+			globalBillingMode != string(dbstore.BillingModeProvisioned) &&
+			globalBillingMode != string(dbstore.BillingModePayPerRequest) {
+			return ErrInvalidParameter
 		}
-		globalWriteUnits = int64(units)
-		hasGlobalWriteUnits = true
-	}
-	globalWriteAS, err := parseOptionalAutoScalingSettings(in.Parameters, "GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate")
-	if err != nil {
-		return nil, err
-	}
-	globalGSIUpdates, err := parseGlobalGSIWriteSettings(in.Parameters["GlobalTableGlobalSecondaryIndexSettingsUpdate"])
-	if err != nil {
-		return nil, err
-	}
-
-	changed := false
-	if globalBillingMode != "" || hasGlobalWriteUnits {
-		for _, replica := range globalTable.ReplicationGroup {
-			if globalBillingMode != "" {
-				replica.BillingMode = globalBillingMode
+		globalWriteUnits := int64(0)
+		hasGlobalWriteUnits := false
+		if raw, present := in.Parameters["GlobalTableProvisionedWriteCapacityUnits"]; present {
+			units, ok := raw.(float64)
+			if !ok || units < 1 {
+				return ErrInvalidParameter
 			}
-			if hasGlobalWriteUnits {
-				replica.ProvisionedWriteCapacityUnits = globalWriteUnits
-			}
+			globalWriteUnits = int64(units)
+			hasGlobalWriteUnits = true
 		}
-		changed = true
-	}
-	if globalWriteAS != nil {
-		globalTable.WriteAutoScalingSettings = globalWriteAS
-		changed = true
-	}
-	if globalGSIUpdates != nil {
-		globalTable.GlobalSecondaryIndexWriteSettings = mergeIndexSettingsLists(globalTable.GlobalSecondaryIndexWriteSettings, globalGSIUpdates)
-		changed = true
-	}
-
-	replicaSettingsUpdates, ok := in.Parameters["ReplicaSettingsUpdate"].([]interface{})
-	if ok {
-		// The model bounds the replica settings update list at 1-50 entries.
-		if len(replicaSettingsUpdates) < 1 || len(replicaSettingsUpdates) > 50 {
-			return nil, ErrInvalidParameter
+		globalWriteAS, err := parseOptionalAutoScalingSettings(in.Parameters, "GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate")
+		if err != nil {
+			return err
 		}
-		for _, update := range replicaSettingsUpdates {
-			updateMap, ok := update.(map[string]interface{})
-			if !ok {
-				continue
-			}
+		globalGSIUpdates, err := parseGlobalGSIWriteSettings(in.Parameters["GlobalTableGlobalSecondaryIndexSettingsUpdate"])
+		if err != nil {
+			return err
+		}
 
-			regionName, _ := updateMap["RegionName"].(string)
-			if regionName == "" {
-				return nil, ErrInvalidParameter
-			}
-
-			// A settings update naming a region that is no longer part
-			// of the global table is the documented replica-not-found
-			// error rather than a silently ignored entry.
-			matched := false
-			for _, replica := range globalTable.ReplicationGroup {
-				if replica.RegionName == regionName {
-					matched = true
-					if readUnits, ok := updateMap["ReplicaProvisionedReadCapacityUnits"].(float64); ok {
-						if readUnits < 1 {
-							return nil, ErrInvalidParameter
-						}
-						replica.ProvisionedReadCapacityUnits = int64(readUnits)
-					}
-					if readAS, ok := updateMap["ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
-						settings, err := parseAutoScalingSettings(readAS)
-						if err != nil {
-							return nil, err
-						}
-						replica.ReadAutoScalingSettings = settings
-					}
-					gsiReadUpdates, err := parseReplicaGSIReadSettings(updateMap["ReplicaGlobalSecondaryIndexSettingsUpdate"])
-					if err != nil {
-						return nil, err
-					}
-					if gsiReadUpdates != nil {
-						replica.GlobalSecondaryIndexReadSettings = mergeIndexSettingsLists(replica.GlobalSecondaryIndexReadSettings, gsiReadUpdates)
-					}
-					if tableClass, ok := updateMap["ReplicaTableClass"].(string); ok && tableClass != "" {
-						if tableClass != dbstore.TableClassStandard && tableClass != dbstore.TableClassStandardInfrequentAccess {
-							return nil, ErrInvalidParameter
-						}
-						replica.TableClass = tableClass
-						now := time.Now()
-						replica.TableClassLastUpdated = &now
-					}
-					break
+		if globalBillingMode != "" || hasGlobalWriteUnits {
+			for _, replica := range gt.ReplicationGroup {
+				if globalBillingMode != "" {
+					replica.BillingMode = globalBillingMode
+				}
+				if hasGlobalWriteUnits {
+					replica.ProvisionedWriteCapacityUnits = globalWriteUnits
 				}
 			}
-			if !matched {
-				return nil, ErrReplicaNotFound
+		}
+		if globalWriteAS != nil {
+			gt.WriteAutoScalingSettings = globalWriteAS
+		}
+		if globalGSIUpdates != nil {
+			gt.GlobalSecondaryIndexWriteSettings = mergeIndexSettingsLists(gt.GlobalSecondaryIndexWriteSettings, globalGSIUpdates)
+		}
+
+		replicaSettingsUpdates, ok := in.Parameters["ReplicaSettingsUpdate"].([]interface{})
+		if ok {
+			// The model bounds the replica settings update list at 1-50 entries.
+			if len(replicaSettingsUpdates) < 1 || len(replicaSettingsUpdates) > 50 {
+				return ErrInvalidParameter
+			}
+			for _, update := range replicaSettingsUpdates {
+				updateMap, ok := update.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				regionName, _ := updateMap["RegionName"].(string)
+				if regionName == "" {
+					return ErrInvalidParameter
+				}
+
+				// A settings update naming a region that is no longer part
+				// of the global table is the documented replica-not-found
+				// error rather than a silently ignored entry.
+				matched := false
+				for _, replica := range gt.ReplicationGroup {
+					if replica.RegionName == regionName {
+						matched = true
+						if readUnits, ok := updateMap["ReplicaProvisionedReadCapacityUnits"].(float64); ok {
+							if readUnits < 1 {
+								return ErrInvalidParameter
+							}
+							replica.ProvisionedReadCapacityUnits = int64(readUnits)
+						}
+						if readAS, ok := updateMap["ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate"].(map[string]interface{}); ok {
+							settings, err := parseAutoScalingSettings(readAS)
+							if err != nil {
+								return err
+							}
+							replica.ReadAutoScalingSettings = settings
+						}
+						gsiReadUpdates, err := parseReplicaGSIReadSettings(updateMap["ReplicaGlobalSecondaryIndexSettingsUpdate"])
+						if err != nil {
+							return err
+						}
+						if gsiReadUpdates != nil {
+							replica.GlobalSecondaryIndexReadSettings = mergeIndexSettingsLists(replica.GlobalSecondaryIndexReadSettings, gsiReadUpdates)
+						}
+						if tableClass, ok := updateMap["ReplicaTableClass"].(string); ok && tableClass != "" {
+							if tableClass != dbstore.TableClassStandard && tableClass != dbstore.TableClassStandardInfrequentAccess {
+								return ErrInvalidParameter
+							}
+							replica.TableClass = tableClass
+							now := time.Now()
+							replica.TableClassLastUpdated = &now
+						}
+						break
+					}
+				}
+				if !matched {
+					return ErrReplicaNotFound
+				}
 			}
 		}
-		changed = true
-	}
-
-	if changed {
-		if err := store.GlobalTables().Put(globalTable); err != nil {
-			return nil, err
+		return nil
+	})
+	if err != nil {
+		if commonstore.IsNotFound(err) {
+			return nil, ErrGlobalTableNotFound
 		}
+		return nil, err
 	}
 
 	return map[string]interface{}{

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -17,8 +17,6 @@ import (
 )
 
 const KeySep = "\x00"
-
-const keySep = KeySep
 
 // Default throughput quotas per the DynamoDB quotas documentation, per
 // Region: a table may provision at most 40,000 read and 40,000 write
@@ -161,7 +159,8 @@ func (s *DynamoDBStore) View(ctx context.Context, fn func(txn *DynamoDBTxn) erro
 
 // Update executes a read-write transaction on the DynamoDB store. When the
 // transaction commits, the contributor events queued by its item writes are
-// applied to the access counters.
+// applied to the access counters, and the table metric deltas queued by its
+// counter calls are applied to the table records.
 func (s *DynamoDBStore) Update(ctx context.Context, fn func(txn *DynamoDBTxn) error) error {
 	var dtxn *DynamoDBTxn
 	err := s.storage.Update(ctx, func(txn storage.Transaction) error {
@@ -172,7 +171,37 @@ func (s *DynamoDBStore) Update(ctx context.Context, fn func(txn *DynamoDBTxn) er
 		return err
 	}
 	s.FlushContributorWrites(ctx, dtxn.TakeContributorWrites())
+	s.FlushTableMetrics(dtxn.TakeTableMetricDeltas())
 	return nil
+}
+
+// FlushTableMetrics applies queued per-table metric deltas to the table
+// records. Tables are visited in name order and each record is updated
+// under its key lock with an immediate read-modify-write, so concurrent
+// transactions and the locked TableStore methods cannot lose increments.
+// A flush failure is logged and never fails the observed operation — the
+// counters are documented approximate values that AWS itself refreshes
+// only periodically.
+//
+// Callers must not hold a table's record lock while queueing metric deltas
+// for that table: the flush takes the same lock. No path does — deltas are
+// queued exclusively from item-write transactions, which hold no table
+// record locks.
+func (s *DynamoDBStore) FlushTableMetrics(deltas map[string]TableMetricDelta) {
+	if len(deltas) == 0 {
+		return
+	}
+	names := make([]string, 0, len(deltas))
+	for name := range deltas {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		if err := s.tables.applyMetricDeltas(name, deltas[name].ItemCount, deltas[name].SizeBytes); err != nil {
+			logs.Warn("failed to apply table metric deltas",
+				logs.String("table", name), logs.Err(err))
+		}
+	}
 }
 
 // FlushContributorWrites applies queued contributor events to the access
@@ -214,6 +243,19 @@ type DynamoDBTxn struct {
 	// transaction; the store applies them to the access counters after the
 	// transaction commits.
 	contributorWrites []ContributorWriteEvent
+	// tableMetricDeltas accumulates the item-count and size changes queued
+	// by this transaction's counter calls, per table; the store applies
+	// them to the table records after the transaction commits.
+	tableMetricDeltas map[string]TableMetricDelta
+}
+
+// TableMetricDelta accumulates the item-count and size-bytes changes one
+// transaction observes for a table. The counters are fields of the whole
+// table record, so the deltas are aggregated during the transaction and
+// applied once, under the table's record lock, after it commits.
+type TableMetricDelta struct {
+	ItemCount int64
+	SizeBytes int64
 }
 
 func (t *DynamoDBTxn) region() string {
@@ -247,23 +289,13 @@ func (t *DynamoDBTxn) GetTable(name string) (*Table, error) {
 	return ProtoToTable(&pbTable), nil
 }
 
-// PutTable stores a table in the transaction.
-func (t *DynamoDBTxn) PutTable(table *Table) error {
-	bucket := t.txn.Bucket(tableBucketName(t.region()))
-	data, err := proto.Marshal(TableToProto(table))
-	if err != nil {
-		return fmt.Errorf("marshal table %s: %w", table.Name, err)
-	}
-	return bucket.Put([]byte(table.Name), data)
-}
-
 // GetItem retrieves an item from a table by its key.
 func (t *DynamoDBTxn) GetItem(tableName string, key map[string]*AttributeValue) (*Item, error) {
 	table, err := t.GetTable(tableName)
 	if err != nil {
 		return nil, fmt.Errorf("get table %s for GetItem: %w", tableName, err)
 	}
-	itemKey := buildItemKeyFromTable(tableName, key, table)
+	itemKey := EncodeItemKey(tableName, key, table)
 	if itemKey == "" {
 		return nil, ErrInvalidKey
 	}
@@ -279,11 +311,7 @@ func (t *DynamoDBTxn) GetItem(tableName string, key map[string]*AttributeValue) 
 	if err := proto.Unmarshal(data, &pbItem); err != nil {
 		return nil, fmt.Errorf("unmarshal item %s#%v: %w", tableName, key, err)
 	}
-	return &Item{
-		TableName:  pbItem.TableName,
-		Key:        protoToAttributeValueMapDirect(pbItem.Key),
-		Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-	}, nil
+	return itemFromProto(&pbItem), nil
 }
 
 // PutItem stores an item in a table.
@@ -306,7 +334,7 @@ func (t *DynamoDBTxn) PutItem(tableName string, key map[string]*AttributeValue, 
 		Key:        attributeValueMapToProtoDirect(key),
 		Attributes: attributeValueMapToProtoDirect(mergedAttrs),
 	}
-	itemKey := buildItemKeyFromTable(tableName, key, table)
+	itemKey := EncodeItemKey(tableName, key, table)
 	if itemKey == "" {
 		return ErrInvalidKey
 	}
@@ -529,7 +557,7 @@ func (t *DynamoDBTxn) DeleteItem(tableName string, key map[string]*AttributeValu
 	if err != nil {
 		return fmt.Errorf("get table %s for DeleteItem: %w", tableName, err)
 	}
-	itemKey := buildItemKeyFromTable(tableName, key, table)
+	itemKey := EncodeItemKey(tableName, key, table)
 	if itemKey == "" {
 		return ErrInvalidKey
 	}
@@ -550,7 +578,7 @@ func (t *DynamoDBTxn) ItemExists(tableName string, key map[string]*AttributeValu
 	if err != nil {
 		return false, fmt.Errorf("get table %s for ItemExists: %w", tableName, err)
 	}
-	itemKey := buildItemKeyFromTable(tableName, key, table)
+	itemKey := EncodeItemKey(tableName, key, table)
 	if itemKey == "" {
 		return false, ErrInvalidKey
 	}
@@ -558,155 +586,137 @@ func (t *DynamoDBTxn) ItemExists(tableName string, key map[string]*AttributeValu
 	return bucket.Has([]byte(itemKey)), nil
 }
 
-// UpdateItemCount increments or decrements the item count for a table within the current transaction.
+// UpdateItemCount queues an item-count change for a table. The counter is a
+// field of the whole table record and the storage layer is read-committed:
+// reading and rewriting the record inside the caller's transaction would
+// overwrite same-transaction and concurrent increments. The queued delta is
+// applied once, under the table's record lock, after the carrying
+// transaction commits. Table existence is guaranteed by the item write that
+// precedes every counter call on each path.
 func (t *DynamoDBTxn) UpdateItemCount(tableName string, delta int64) error {
-	table, err := t.GetTable(tableName)
-	if err != nil {
-		return fmt.Errorf("get table %s for UpdateItemCount: %w", tableName, err)
+	if t.tableMetricDeltas == nil {
+		t.tableMetricDeltas = make(map[string]TableMetricDelta)
 	}
-	table.ItemCount += delta
-	if table.ItemCount < 0 {
-		table.ItemCount = 0
-	}
-	return t.PutTable(table)
+	d := t.tableMetricDeltas[tableName]
+	d.ItemCount += delta
+	t.tableMetricDeltas[tableName] = d
+	return nil
 }
 
-// UpdateTableSize increments or decrements the table size in bytes within the current transaction.
+// UpdateTableSize queues a table-size change for a table, aggregated and
+// applied like UpdateItemCount after the carrying transaction commits.
 func (t *DynamoDBTxn) UpdateTableSize(tableName string, delta int64) error {
-	table, err := t.GetTable(tableName)
-	if err != nil {
-		return fmt.Errorf("get table %s for UpdateTableSize: %w", tableName, err)
+	if t.tableMetricDeltas == nil {
+		t.tableMetricDeltas = make(map[string]TableMetricDelta)
 	}
-	table.TableSizeBytes += delta
-	if table.TableSizeBytes < 0 {
-		table.TableSizeBytes = 0
-	}
-	return t.PutTable(table)
+	d := t.tableMetricDeltas[tableName]
+	d.SizeBytes += delta
+	t.tableMetricDeltas[tableName] = d
+	return nil
 }
 
-func buildItemKeyFromTable(tableName string, key map[string]*AttributeValue, table *Table) string {
-	pkName := ""
-	skName := ""
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == KeyTypeHash {
-			pkName = ks.AttributeName
-		} else if ks.KeyType == KeyTypeRange {
-			skName = ks.AttributeName
-		}
-	}
-
-	pkValue := attributeValueToString(key[pkName])
-	if pkValue == "" {
-		return ""
-	}
-
-	if skName != "" {
-		if key[skName] == nil {
-			return ""
-		}
-		skValue := attributeValueToString(key[skName])
-		if skValue == "" {
-			return ""
-		}
-		return tableName + keySep + pkValue + keySep + skValue
-	}
-
-	return tableName + keySep + pkValue
+// TakeTableMetricDeltas drains the metric deltas queued by this
+// transaction. The store applies them after the carrying transaction
+// commits.
+func (t *DynamoDBTxn) TakeTableMetricDeltas() map[string]TableMetricDelta {
+	deltas := t.tableMetricDeltas
+	t.tableMetricDeltas = nil
+	return deltas
 }
 
-func attributeValueToString(av *AttributeValue) string {
-	if av == nil {
-		return ""
+// MergeTableMetricDeltas folds every delta of src into dst and returns dst.
+// Two-phase transactions run one wrapper per operation; merging their
+// queued deltas keeps the post-commit flush one application per table.
+func MergeTableMetricDeltas(dst, src map[string]TableMetricDelta) map[string]TableMetricDelta {
+	if dst == nil {
+		dst = make(map[string]TableMetricDelta, len(src))
 	}
-	if av.S != nil {
-		return *av.S
+	for name, d := range src {
+		acc := dst[name]
+		acc.ItemCount += d.ItemCount
+		acc.SizeBytes += d.SizeBytes
+		dst[name] = acc
 	}
-	if av.N != nil {
-		return formatNumberForSort(*av.N)
-	}
-	if av.B != nil {
-		return string(av.B)
-	}
-	if av.BOOL != nil {
-		return ""
-	}
-	if av.NULL != nil && *av.NULL {
-		return ""
-	}
-	return ""
-}
-
-func formatNumberForSort(numStr string) string {
-	if numStr == "" {
-		return "1" + strings.Repeat("0", 80)
-	}
-	rat := new(big.Rat)
-	if _, ok := rat.SetString(numStr); !ok {
-		return "1" + numStr
-	}
-	sign := rat.Sign()
-	if sign == 0 {
-		return "1" + strings.Repeat("0", 80)
-	}
-
-	absRat := new(big.Rat).Abs(rat)
-	numerator := absRat.Num()
-	denominator := absRat.Denom()
-	floatVal := new(big.Float).SetRat(new(big.Rat).SetFrac(numerator, denominator))
-	floatStr := floatVal.Text('f', 38)
-	floatStr = strings.TrimRight(floatStr, "0")
-	if strings.HasSuffix(floatStr, ".") {
-		floatStr = floatStr[:len(floatStr)-1]
-	}
-
-	intPart, fracPart := floatStr, ""
-	if dotIdx := strings.Index(floatStr, "."); dotIdx >= 0 {
-		intPart = floatStr[:dotIdx]
-		fracPart = floatStr[dotIdx+1:]
-	}
-
-	intPadded := intPart
-	if len(intPadded) < 40 {
-		intPadded = strings.Repeat("0", 40-len(intPadded)) + intPadded
-	}
-	fracPadded := fracPart
-	if len(fracPadded) < 40 {
-		fracPadded = fracPadded + strings.Repeat("0", 40-len(fracPadded))
-	} else if len(fracPadded) > 40 {
-		fracPadded = fracPadded[:40]
-	}
-	digits := intPadded + fracPadded
-
-	if sign > 0 {
-		return "1" + digits
-	}
-
-	complemented := make([]byte, len(digits))
-	for i := 0; i < len(digits); i++ {
-		complemented[i] = '9' - digits[i] + '0'
-	}
-	return "0" + string(complemented)
+	return dst
 }
 
 // PutIndexEntries stores index entries for an item in the transaction.
-// Delegates to IndexStore for the actual key construction and bucket
-// operations.
+// Delegates to IndexStore for the GSI/LSI key construction and bucket
+// operations, and maintains the vector index entries the same way so every
+// item write path keeps all index families current.
 func (t *DynamoDBTxn) PutIndexEntries(tableName string, item *Item) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
 		return fmt.Errorf("get table %s for PutIndexEntries: %w", tableName, err)
 	}
+	if len(table.VectorIndexes) > 0 {
+		if err := putVectorEntries(t.txn, t.region(), table, item); err != nil {
+			return err
+		}
+	}
 	return t.indexStore.PutIndexEntries(t.txn, table, item)
 }
 
 // DeleteIndexEntries removes index entries for an item from the
-// transaction. Delegates to IndexStore.
+// transaction. Delegates to IndexStore for GSI/LSI entries and removes the
+// vector index entries alongside them.
 func (t *DynamoDBTxn) DeleteIndexEntries(tableName string, item *Item) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
 		return fmt.Errorf("get table %s for DeleteIndexEntries: %w", tableName, err)
 	}
+	if len(table.VectorIndexes) > 0 {
+		if err := deleteVectorEntries(t.txn, t.region(), table, item); err != nil {
+			return err
+		}
+	}
 	return t.indexStore.DeleteIndexEntries(t.txn, table, item)
+}
+
+// PutVectorEntriesForIndex stores only the named vector index's entry for an
+// item in the transaction, mirroring PutGSIEntriesForIndex for vector index
+// backfill.
+func (t *DynamoDBTxn) PutVectorEntriesForIndex(tableName, indexName string, item *Item) error {
+	table, err := t.GetTable(tableName)
+	if err != nil {
+		return fmt.Errorf("get table %s for PutVectorEntriesForIndex: %w", tableName, err)
+	}
+	return putVectorEntriesForIndex(t.txn, t.region(), table, indexName, item)
+}
+
+// DeleteVectorEntriesForIndex removes every entry of the named vector index
+// so a deleted index's data does not outlive the index, mirroring
+// DeleteIndexEntriesForIndex.
+func (t *DynamoDBTxn) DeleteVectorEntriesForIndex(tableName, indexName string) error {
+	return deleteVectorEntriesForIndex(t.txn, t.region(), tableName, indexName)
+}
+
+// VectorTopK performs a brute-force similarity search over the named vector
+// index within the transaction.
+func (t *DynamoDBTxn) VectorTopK(tableName, indexName string, query []float64, k int, filter func(*Item) bool) ([]VectorSearchHit, error) {
+	table, err := t.GetTable(tableName)
+	if err != nil {
+		return nil, fmt.Errorf("get table %s for VectorTopK: %w", tableName, err)
+	}
+	return vectorTopK(t.txn, t.region(), table, indexName, query, k, filter)
+}
+
+// PutGSIEntriesForIndex stores only the named GSI's index entry for an item
+// in the transaction. Used by GSI backfill so a newly added index is
+// populated without rewriting every other index's entries.
+func (t *DynamoDBTxn) PutGSIEntriesForIndex(tableName, indexName string, item *Item) error {
+	table, err := t.GetTable(tableName)
+	if err != nil {
+		return fmt.Errorf("get table %s for PutGSIEntriesForIndex: %w", tableName, err)
+	}
+	return t.indexStore.PutIndexEntriesForIndex(t.txn, table, indexName, item)
+}
+
+// DeleteIndexEntriesForIndex removes every index entry of the named GSI in
+// the transaction. Called when UpdateTable deletes the index so its entries
+// cannot outlive it. Delegates to IndexStore.
+func (t *DynamoDBTxn) DeleteIndexEntriesForIndex(tableName, indexName string) error {
+	return t.indexStore.DeleteIndexEntriesForIndex(t.txn, tableName, indexName)
 }
 
 // QueryByGSI queries a global secondary index for items matching the
@@ -729,15 +739,21 @@ func (t *DynamoDBTxn) QueryByLSI(tableName, indexName, hashKeyValue string, opts
 	return t.indexStore.QueryLSI(t.txn, tableName, indexName, hashKeyValue, opts)
 }
 
-// IndexQueryOptions defines options for querying indexes.
+// IndexQueryOptions defines options for querying indexes. Filter, when
+// non-nil, is applied to each resolved item during iteration — before the
+// Limit is counted — so a filtered query reads only as far as its page
+// requires. Marker resumes the walk strictly after (forward) or strictly
+// before (Reverse) the stored index key it names.
 type IndexQueryOptions struct {
 	Limit   int
 	Reverse bool
+	Marker  string
+	Filter  func(*Item) bool
 }
 
 // Scan scans all items in a table within the transaction.
 func (t *DynamoDBTxn) Scan(tableName string, fn func(item *Item) error) error {
-	prefix := tableName + keySep
+	prefix := tableName + KeySep
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
 	iter := bucket.ScanPrefix([]byte(prefix))
 	defer iter.Close()
@@ -747,11 +763,7 @@ func (t *DynamoDBTxn) Scan(tableName string, fn func(item *Item) error) error {
 		if err := proto.Unmarshal(iter.Value(), &pbItem); err != nil {
 			return fmt.Errorf("unmarshal item during scan: %w", err)
 		}
-		item := &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		}
+		item := itemFromProto(&pbItem)
 		if err := fn(item); err != nil {
 			return err
 		}
@@ -759,24 +771,18 @@ func (t *DynamoDBTxn) Scan(tableName string, fn func(item *Item) error) error {
 	return iter.Error()
 }
 
-// ScanByPartitionKey scans items with a specific partition key within the transaction.
+// ScanByPartitionKey scans items with a specific partition key within the
+// transaction. partitionKeyValue must already be an EncodeKeyValue rendering;
+// the encoded component is prefix-free, so the scan cannot cross into
+// another partition and no trailing separator is needed.
 func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn func(item *Item) error) error {
 	table, err := t.GetTable(tableName)
 	if err != nil {
 		return fmt.Errorf("get table %s for ScanByPartitionKey: %w", tableName, err)
 	}
 
-	prefix := tableName + keySep + partitionKeyValue
-	pkName := ""
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == KeyTypeRange {
-			prefix += keySep
-			break
-		}
-		if ks.KeyType == KeyTypeHash {
-			pkName = ks.AttributeName
-		}
-	}
+	prefix := tableName + KeySep + partitionKeyValue
+	pkName, _ := schemaKeyNames(table.KeySchema)
 
 	bucket := t.txn.Bucket(itemBucketName(t.region()))
 	iter := bucket.ScanPrefix([]byte(prefix))
@@ -787,12 +793,8 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 		if err := proto.Unmarshal(iter.Value(), &pbItem); err != nil {
 			return fmt.Errorf("unmarshal item during ScanByPartitionKey: %w", err)
 		}
-		item := &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		}
-		itemPkValue := attributeValueToString(item.Key[pkName])
+		item := itemFromProto(&pbItem)
+		itemPkValue := EncodeKeyValue(item.Key[pkName])
 		if itemPkValue != partitionKeyValue {
 			continue
 		}
@@ -808,27 +810,31 @@ func (t *DynamoDBTxn) ScanByPartitionKey(tableName, partitionKeyValue string, fn
 // exports, imports, tags, and global table entries.
 // It does NOT check DeletionProtectionEnabled — that is the caller's responsibility.
 func (t *DynamoDBTxn) DeleteTableCascade(name string) error {
-	if err := t.deleteAllByPrefix(itemBucketName(t.region()), name+keySep); err != nil {
+	if err := t.deleteAllByPrefix(itemBucketName(t.region()), name+KeySep); err != nil {
 		return fmt.Errorf("delete items for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(gsiIndexBucketName(t.region()), name+keySep); err != nil {
+	if err := t.deleteAllByPrefix(gsiIndexBucketName(t.region()), name+KeySep); err != nil {
 		return fmt.Errorf("delete GSI index entries for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(lsiIndexBucketName(t.region()), name+keySep); err != nil {
+	if err := t.deleteAllByPrefix(lsiIndexBucketName(t.region()), name+KeySep); err != nil {
 		return fmt.Errorf("delete LSI index entries for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(streamBucketName(t.region()), name+keySep); err != nil {
+	if err := t.deleteAllByPrefix(vectorIndexBucketName(t.region()), name+KeySep); err != nil {
+		return fmt.Errorf("delete vector index entries for table %s: %w", name, err)
+	}
+
+	if err := t.deleteAllByPrefix(streamBucketName(t.region()), name+KeySep); err != nil {
 		return fmt.Errorf("delete stream records for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(journalBucketName(t.region()), name+keySep); err != nil {
+	if err := t.deleteAllByPrefix(journalBucketName(t.region()), name+KeySep); err != nil {
 		return fmt.Errorf("delete journal records for table %s: %w", name, err)
 	}
 
-	if err := t.deleteAllByPrefix(contributorBucketName(t.region()), name+keySep); err != nil {
+	if err := t.deleteAllByPrefix(contributorBucketName(t.region()), name+KeySep); err != nil {
 		return fmt.Errorf("delete contributor counters for table %s: %w", name, err)
 	}
 
@@ -978,14 +984,83 @@ func (t *DynamoDBTxn) deleteImportsForTable(tableName string) error {
 	return nil
 }
 
-// deleteAllByPrefix deletes all keys with the given prefix from the specified bucket.
-func (t *DynamoDBTxn) deleteAllByPrefix(bucketName, prefix string) error {
-	bucket := t.txn.Bucket(bucketName)
+// StoreItemWrite stores attrs as the item under key inside the transaction,
+// retiring the replaced item's index entries and adjusting the table's item
+// count and size: a new item increments the count and adds its size, a
+// replacement keeps the count and adjusts the size by the delta. oldItem is
+// the item whose index entries the write retires (nil when the key was
+// vacant or the caller retired them itself); existed reports whether this
+// write replaces an item and oldSize that item's pre-write size — the metric
+// inputs may survive only as a size when the caller did not materialise an
+// old-image copy. Every item-mutating path — single items, transactions,
+// batches, PartiQL statements, imports — routes its write through here so
+// the index swap and the metric deltas cannot drift apart.
+func (t *DynamoDBTxn) StoreItemWrite(tableName string, key, attrs map[string]*AttributeValue, oldItem *Item, existed bool, oldSize int64) error {
+	if oldItem != nil {
+		if err := t.DeleteIndexEntries(tableName, oldItem); err != nil {
+			return err
+		}
+	}
+	if err := t.PutItem(tableName, key, attrs); err != nil {
+		return err
+	}
+	newItem := &Item{TableName: tableName, Key: key, Attributes: attrs}
+	if err := t.PutIndexEntries(tableName, newItem); err != nil {
+		return err
+	}
+	newSize := CalculateItemSize(attrs)
+	if !existed {
+		if err := t.UpdateItemCount(tableName, 1); err != nil {
+			return err
+		}
+		return t.UpdateTableSize(tableName, newSize)
+	}
+	if delta := newSize - oldSize; delta != 0 {
+		return t.UpdateTableSize(tableName, delta)
+	}
+	return nil
+}
+
+// DeleteItemWrite removes the item under key inside the transaction,
+// deleting its index entries and adjusting the table's item count and size
+// by the removed item's. existed reports whether an item was removed and
+// oldSize its pre-delete size; a delete of a vacant key still issues the
+// item delete (it succeeds silently) but adjusts no metrics. Callers whose
+// contract forbids touching a vacant key guard the call themselves.
+func (t *DynamoDBTxn) DeleteItemWrite(tableName string, key map[string]*AttributeValue, existing *Item, existed bool, oldSize int64) error {
+	if existing != nil {
+		if err := t.DeleteIndexEntries(tableName, existing); err != nil {
+			return err
+		}
+	}
+	if err := t.DeleteItem(tableName, key); err != nil {
+		return err
+	}
+	if !existed {
+		return nil
+	}
+	if err := t.UpdateItemCount(tableName, -1); err != nil {
+		return err
+	}
+	if oldSize > 0 {
+		return t.UpdateTableSize(tableName, -oldSize)
+	}
+	return nil
+}
+
+// prefixDeleteBatchSize bounds how many keys one batch of a prefix delete
+// holds before the deletes are issued, keeping a large sweep's pending set
+// bounded inside the transaction.
+const prefixDeleteBatchSize = 500
+
+// deletePrefixBatched deletes every key under prefix from the bucket,
+// collecting keys in bounded batches — the single implementation behind
+// table drops and per-index entry sweeps.
+func deletePrefixBatched(bucket storage.Bucket, prefix string) error {
 	if bucket == nil {
 		return nil
 	}
 
-	const batchSize = 500
 	var keysBatch []string
 
 	iter := bucket.ScanPrefix([]byte(prefix))
@@ -993,25 +1068,31 @@ func (t *DynamoDBTxn) deleteAllByPrefix(bucketName, prefix string) error {
 
 	for iter.Next() {
 		keysBatch = append(keysBatch, string(iter.Key()))
-		if len(keysBatch) >= batchSize {
-			for _, k := range keysBatch {
-				if err := bucket.Delete([]byte(k)); err != nil {
-					return err
-				}
-			}
-			keysBatch = keysBatch[:0]
+		if len(keysBatch) < prefixDeleteBatchSize {
+			continue
+		}
+		if err := flushPrefixDeletes(bucket, &keysBatch); err != nil {
+			return err
 		}
 	}
-
 	if err := iter.Error(); err != nil {
 		return err
 	}
+	return flushPrefixDeletes(bucket, &keysBatch)
+}
 
-	for _, k := range keysBatch {
+// flushPrefixDeletes issues one batch's deletes and resets the batch.
+func flushPrefixDeletes(bucket storage.Bucket, keysBatch *[]string) error {
+	for _, k := range *keysBatch {
 		if err := bucket.Delete([]byte(k)); err != nil {
 			return err
 		}
 	}
-
+	*keysBatch = (*keysBatch)[:0]
 	return nil
+}
+
+// deleteAllByPrefix deletes all keys with the given prefix from the specified bucket.
+func (t *DynamoDBTxn) deleteAllByPrefix(bucketName, prefix string) error {
+	return deletePrefixBatched(t.txn.Bucket(bucketName), prefix)
 }

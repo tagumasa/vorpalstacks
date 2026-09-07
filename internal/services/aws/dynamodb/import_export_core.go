@@ -3,9 +3,18 @@ package dynamodb
 import (
 	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/pagination"
@@ -140,6 +149,130 @@ type exportTableResult struct {
 	ExportTime time.Time
 }
 
+// clientTokenWindow is the documented idempotency window of an export or
+// import ClientToken: a token is valid for eight hours after the first
+// request that used it completed.
+const clientTokenWindow = 8 * time.Hour
+
+// clientTokenHash derives the idempotency payload hash of an export or
+// import request: the canonical JSON of the request parameters with the
+// ClientToken itself removed (map marshalling is key-sorted, so the hash is
+// stable across identical retries).
+func clientTokenHash(params map[string]interface{}) string {
+	filtered := make(map[string]interface{}, len(params))
+	for k, v := range params {
+		if k != "ClientToken" {
+			filtered[k] = v
+		}
+	}
+	encoded, err := json.Marshal(filtered)
+	if err != nil {
+		encoded = []byte(fmt.Sprintf("%v", filtered))
+	}
+	sum := sha256.Sum256(encoded)
+	return hex.EncodeToString(sum[:])
+}
+
+// findExportByClientToken returns the export a ClientToken created, or nil
+// when no export of the table carries the token.
+func findExportByClientToken(store dbstore.DynamoDBStoreInterface, tableArn, clientToken string) *dbstore.ExportDescription {
+	marker := ""
+	for {
+		exports, next, err := store.Exports().List(tableArn, marker, 100)
+		if err != nil {
+			return nil
+		}
+		for _, e := range exports {
+			if e.ClientToken == clientToken {
+				return e
+			}
+		}
+		if next == "" {
+			return nil
+		}
+		marker = next
+	}
+}
+
+// findImportByClientToken returns the import a ClientToken created, or nil
+// when no import of the table carries the token.
+func findImportByClientToken(store dbstore.DynamoDBStoreInterface, tableArn, clientToken string) *dbstore.ImportTableDescription {
+	marker := ""
+	for {
+		imports, next, err := store.Imports().List(tableArn, marker, 100)
+		if err != nil {
+			return nil
+		}
+		for _, i := range imports {
+			if i.ClientToken == clientToken {
+				return i
+			}
+		}
+		if next == "" {
+			return nil
+		}
+		marker = next
+	}
+}
+
+// exportManifestFileEntry is one JSON line of manifest-files.json: the
+// checksums and key of one exported data file.
+type exportManifestFileEntry struct {
+	ItemCount     int64  `json:"itemCount"`
+	Md5Checksum   string `json:"md5Checksum"`
+	Etag          string `json:"etag"`
+	DataFileS3Key string `json:"dataFileS3Key"`
+}
+
+// exportManifestSummary is the manifest-summary.json object of a completed
+// export (Developer Guide, DynamoDB table export output format).
+type exportManifestSummary struct {
+	Version            string  `json:"version"`
+	ExportArn          string  `json:"exportArn"`
+	StartTime          string  `json:"startTime"`
+	EndTime            string  `json:"endTime"`
+	TableArn           string  `json:"tableArn"`
+	TableId            string  `json:"tableId"`
+	ExportTime         string  `json:"exportTime"`
+	S3Bucket           string  `json:"s3Bucket"`
+	S3Prefix           string  `json:"s3Prefix"`
+	S3SseAlgorithm     string  `json:"s3SseAlgorithm"`
+	S3SseKmsKeyId      *string `json:"s3SseKmsKeyId"`
+	ManifestFilesS3Key string  `json:"manifestFilesS3Key"`
+	BilledSizeBytes    int64   `json:"billedSizeBytes"`
+	ItemCount          int64   `json:"itemCount"`
+	OutputFormat       string  `json:"outputFormat"`
+}
+
+// s3SseAlgorithmForManifest reports the SSE algorithm the export requested:
+// KMS when a customer key was supplied, the AES256 default otherwise. The
+// destination bucket's default-encryption policy governs what S3 applies at
+// rest.
+func s3SseAlgorithmForManifest(kmsKeyId string) string {
+	if kmsKeyId != "" {
+		return "KMS"
+	}
+	return "AES256"
+}
+
+// nilIfEmpty maps the empty string to a JSON null.
+func nilIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+// decompressImportObject gunzips one GZIP-compressed import source object.
+func decompressImportObject(data []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	return io.ReadAll(reader)
+}
+
 // ExportTableCoreInput is the service-layer DTO for the export job.
 type ExportTableCoreInput struct {
 	TableArn     string
@@ -215,7 +348,7 @@ func (s *DynamoDBService) exportTableCore(ctx context.Context, reqCtx *request.R
 	if !hasExportTime {
 		exportTime = now
 	}
-	if exportTime.Before(pitr.EarliestRestorableDateTime) || exportTime.After(now) {
+	if exportTime.Before(pitrEarliestRestorable(pitr, now)) || exportTime.After(now) {
 		return nil, ErrInvalidExportTime
 	}
 
@@ -242,14 +375,46 @@ func (s *DynamoDBService) exportTableCore(ctx context.Context, reqCtx *request.R
 		ExportTime:   exportTime,
 	}
 
+	// The ClientToken makes identical retries within the documented window
+	// return the original export; a retried token with a changed payload is
+	// the documented ExportConflictException.
+	idemKey := "export:" + clientToken
+	requestHash := clientTokenHash(in.Parameters)
+	if clientToken != "" {
+		recordedHash, _, _, found, lookupErr := store.Idempotency().Lookup(idemKey)
+		if lookupErr != nil {
+			return nil, lookupErr
+		}
+		if found {
+			if recordedHash != requestHash {
+				return nil, ErrExportConflict
+			}
+			if replay := findExportByClientToken(store, tableArn, clientToken); replay != nil {
+				return &exportTableResult{Export: replay, ExportTime: replay.ExportTime}, nil
+			}
+			// The token record outlived the export itself (the export was
+			// deleted); the call creates a replacement export.
+		}
+	}
+
 	export, err := store.Exports().Create(job.TableArn, job.TableName, job.ExportFormat)
 	if err != nil {
 		return nil, err
 	}
 	export.S3Bucket = job.S3Bucket
 	export.S3Prefix = job.S3Prefix
+	export.S3BucketOwner = s3BucketOwner
+	export.S3SseKmsKeyId = s3SseKmsKeyId
+	export.ClientToken = clientToken
+	export.ExportType = "FULL_EXPORT"
 	if err := store.Exports().Put(export); err != nil {
 		return nil, err
+	}
+	if clientToken != "" {
+		if err := store.Idempotency().Record(idemKey, requestHash, dbstore.IdempotencyStateCompleted, time.Now().Add(clientTokenWindow), nil); err != nil {
+			logs.Warn("failed to record export client token",
+				logs.String("exportArn", export.ExportArn), logs.Err(err))
+		}
 	}
 
 	s.bgWg.Add(1)
@@ -313,19 +478,97 @@ func (s *DynamoDBService) runExportJob(store dbstore.DynamoDBStoreInterface, in 
 	}
 
 	if s3 := s.s3invoker(); s3 != nil {
-		dataFileID := fmt.Sprintf("%d", time.Now().UnixNano())
-		objectKey := fmt.Sprintf("AWSDynamoDB/%s/data/%s.json", export.ExportArn, dataFileID)
+		// The S3 layout follows the documented export output format
+		// (Developer Guide): every object lives under
+		// <prefix>/AWSDynamoDB/<ExportId>/, whose ExportId is the export
+		// ARN's trailing segment. The data is gzip-compressed JSON lines;
+		// the manifests and their checksums describe it. Storage-side
+		// encryption follows the destination bucket's default-encryption
+		// policy; the manifest records the export's own SSE request.
+		exportID := export.ExportArn[strings.LastIndex(export.ExportArn, "/")+1:]
+		baseKey := "AWSDynamoDB/" + exportID
 		if in.S3Prefix != "" {
-			objectKey = in.S3Prefix + "/" + objectKey
+			baseKey = in.S3Prefix + "/" + baseKey
 		}
-		if putErr := s3.PutObject(s.bgCtx, in.Region, in.S3Bucket, objectKey, buf.Bytes(), "application/octet-stream"); putErr != nil {
-			logs.Error("Failed to write export to S3",
-				logs.Err(putErr),
-				logs.String("bucket", in.S3Bucket),
-				logs.String("key", objectKey))
+		putObject := func(key string, data []byte) error {
+			return s3.PutObject(s.bgCtx, in.Region, in.S3Bucket, key, data, "application/octet-stream")
+		}
+		if putErr := putObject(baseKey+"/_started", nil); putErr != nil {
 			failExport("S3AccessDenied", fmt.Sprintf("failed to write to S3: %v", putErr))
 			return
 		}
+
+		var compressed bytes.Buffer
+		gzWriter := gzip.NewWriter(&compressed)
+		if _, gzErr := gzWriter.Write(buf.Bytes()); gzErr != nil {
+			failExport("InternalFailure", fmt.Sprintf("failed to compress export data: %v", gzErr))
+			return
+		}
+		if gzErr := gzWriter.Close(); gzErr != nil {
+			failExport("InternalFailure", fmt.Sprintf("failed to compress export data: %v", gzErr))
+			return
+		}
+		dataKey := baseKey + "/data/" + fmt.Sprintf("%d.json.gz", time.Now().UnixNano())
+		if putErr := putObject(dataKey, compressed.Bytes()); putErr != nil {
+			failExport("S3AccessDenied", fmt.Sprintf("failed to write to S3: %v", putErr))
+			return
+		}
+
+		dataSum := md5.Sum(compressed.Bytes())
+		manifestEntry := exportManifestFileEntry{
+			ItemCount:     int64(len(items)),
+			Md5Checksum:   base64.StdEncoding.EncodeToString(dataSum[:]),
+			Etag:          hex.EncodeToString(dataSum[:]),
+			DataFileS3Key: dataKey,
+		}
+		manifestFiles, mErr := json.Marshal(manifestEntry)
+		if mErr != nil {
+			failExport("InternalFailure", fmt.Sprintf("failed to marshal files manifest: %v", mErr))
+			return
+		}
+		manifestFilesKey := baseKey + "/manifest-files.json"
+		if putErr := putObject(manifestFilesKey, append(manifestFiles, '\n')); putErr != nil {
+			failExport("S3AccessDenied", fmt.Sprintf("failed to write to S3: %v", putErr))
+			return
+		}
+		filesSum := md5.Sum(append(manifestFiles, '\n'))
+		if putErr := putObject(baseKey+"/manifest-files.checksum", []byte(base64.StdEncoding.EncodeToString(filesSum[:]))); putErr != nil {
+			failExport("S3AccessDenied", fmt.Sprintf("failed to write to S3: %v", putErr))
+			return
+		}
+
+		summary := exportManifestSummary{
+			Version:            "2020-06-30",
+			ExportArn:          export.ExportArn,
+			StartTime:          export.StartTime.UTC().Format("2006-01-02T15:04:05.000Z"),
+			EndTime:            time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+			TableArn:           export.TableArn,
+			TableId:            export.TableId,
+			ExportTime:         in.ExportTime.UTC().Format("2006-01-02T15:04:05.000Z"),
+			S3Bucket:           in.S3Bucket,
+			S3Prefix:           in.S3Prefix,
+			S3SseAlgorithm:     s3SseAlgorithmForManifest(export.S3SseKmsKeyId),
+			S3SseKmsKeyId:      nilIfEmpty(export.S3SseKmsKeyId),
+			ManifestFilesS3Key: manifestFilesKey,
+			BilledSizeBytes:    int64(buf.Len()),
+			ItemCount:          int64(len(items)),
+			OutputFormat:       export.ExportFormat,
+		}
+		summaryBytes, sumErr := json.Marshal(summary)
+		if sumErr != nil {
+			failExport("InternalFailure", fmt.Sprintf("failed to marshal summary manifest: %v", sumErr))
+			return
+		}
+		if putErr := putObject(baseKey+"/manifest-summary.json", summaryBytes); putErr != nil {
+			failExport("S3AccessDenied", fmt.Sprintf("failed to write to S3: %v", putErr))
+			return
+		}
+		summarySum := md5.Sum(summaryBytes)
+		if putErr := putObject(baseKey+"/manifest-summary.checksum", []byte(base64.StdEncoding.EncodeToString(summarySum[:]))); putErr != nil {
+			failExport("S3AccessDenied", fmt.Sprintf("failed to write to S3: %v", putErr))
+			return
+		}
+		export.ExportManifest = "s3://" + in.S3Bucket + "/" + manifestFilesKey
 	}
 
 	export.ExportStatus = "COMPLETED"
@@ -414,20 +657,21 @@ type importTableResult struct {
 // contains all parameters needed to create the target table and import
 // data from S3.
 type ImportTableCoreInput struct {
-	TableName      string
-	KeySchema      []*dbstore.KeySchemaElement
-	AttributeDefs  []*dbstore.AttributeDefinition
-	BillingMode    dbstore.BillingMode
-	ProvThroughput *dbstore.ProvisionedThroughput
-	GSI            []*dbstore.GlobalSecondaryIndex
-	LSI            []*dbstore.LocalSecondaryIndex
-	InputFormat    string
-	S3Bucket       string
-	S3Prefix       string
-	S3BucketOwner  string
-	ClientToken    string
-	CSVDelimiter   string
-	CSVHeaderList  []string
+	TableName            string
+	KeySchema            []*dbstore.KeySchemaElement
+	AttributeDefs        []*dbstore.AttributeDefinition
+	BillingMode          dbstore.BillingMode
+	ProvThroughput       *dbstore.ProvisionedThroughput
+	GSI                  []*dbstore.GlobalSecondaryIndex
+	LSI                  []*dbstore.LocalSecondaryIndex
+	InputFormat          string
+	InputCompressionType string
+	S3Bucket             string
+	S3Prefix             string
+	S3BucketOwner        string
+	ClientToken          string
+	CSVDelimiter         string
+	CSVHeaderList        []string
 }
 
 // importTableCore validates the request, then creates the import record in
@@ -445,6 +689,16 @@ func (s *DynamoDBService) importTableCore(ctx context.Context, reqCtx *request.R
 		"CSV":           true,
 	}
 	if !validFormats[inputFormat] {
+		return nil, ErrInvalidParameter
+	}
+
+	// InputCompressionType defaults to NONE; GZIP is the only other modelled
+	// value and decompresses each source object before parsing.
+	inputCompressionType := request.GetStringParam(in.Parameters, "InputCompressionType")
+	if inputCompressionType == "" {
+		inputCompressionType = "NONE"
+	}
+	if inputCompressionType != "NONE" && inputCompressionType != "GZIP" {
 		return nil, ErrInvalidParameter
 	}
 
@@ -566,26 +820,67 @@ func (s *DynamoDBService) importTableCore(ctx context.Context, reqCtx *request.R
 	}
 
 	job := ImportTableCoreInput{
-		TableName:      tableName,
-		KeySchema:      keySchema,
-		AttributeDefs:  attrDefs,
-		BillingMode:    billingMode,
-		ProvThroughput: provThroughput,
-		GSI:            importGSI,
-		LSI:            importLSI,
-		InputFormat:    inputFormat,
-		S3Bucket:       s3Bucket,
-		S3Prefix:       s3Prefix,
-		S3BucketOwner:  s3BucketOwner,
-		ClientToken:    clientToken,
-		CSVDelimiter:   csvDelimiter,
-		CSVHeaderList:  csvHeaderList,
+		TableName:            tableName,
+		KeySchema:            keySchema,
+		AttributeDefs:        attrDefs,
+		BillingMode:          billingMode,
+		ProvThroughput:       provThroughput,
+		GSI:                  importGSI,
+		LSI:                  importLSI,
+		InputFormat:          inputFormat,
+		InputCompressionType: inputCompressionType,
+		S3Bucket:             s3Bucket,
+		S3Prefix:             s3Prefix,
+		S3BucketOwner:        s3BucketOwner,
+		ClientToken:          clientToken,
+		CSVDelimiter:         csvDelimiter,
+		CSVHeaderList:        csvHeaderList,
 	}
 
 	tableArn := store.Tables().ARNBuilder().Table(job.TableName)
+
+	// The ClientToken makes identical retries within the documented window
+	// return the original import; a retried token with a changed payload is
+	// the documented IdempotentParameterMismatchException.
+	idemKey := "import:" + clientToken
+	requestHash := clientTokenHash(in.Parameters)
+	if clientToken != "" {
+		recordedHash, _, _, found, lookupErr := store.Idempotency().Lookup(idemKey)
+		if lookupErr != nil {
+			return nil, lookupErr
+		}
+		if found {
+			if recordedHash != requestHash {
+				return nil, ErrIdempotentParameterMismatch
+			}
+			if replay := findImportByClientToken(store, tableArn, clientToken); replay != nil {
+				result := &importTableResult{Import: replay}
+				if replay.S3BucketSource != nil {
+					result.S3Bucket = replay.S3BucketSource.S3Bucket
+					result.S3Prefix = replay.S3BucketSource.S3Prefix
+					result.S3BucketOwner = replay.S3BucketSource.S3BucketOwner
+				}
+				return result, nil
+			}
+			// The token record outlived the import itself (the import table
+			// was deleted); the call creates a replacement import.
+		}
+	}
+
 	imp, err := store.Imports().Create(tableArn, job.TableName)
 	if err != nil {
 		return nil, err
+	}
+	imp.ClientToken = clientToken
+	imp.InputCompressionType = inputCompressionType
+	if err := store.Imports().Put(imp); err != nil {
+		return nil, err
+	}
+	if clientToken != "" {
+		if err := store.Idempotency().Record(idemKey, requestHash, dbstore.IdempotencyStateCompleted, time.Now().Add(clientTokenWindow), nil); err != nil {
+			logs.Warn("failed to record import client token",
+				logs.String("importArn", imp.ImportArn), logs.Err(err))
+		}
 	}
 
 	s.bgWg.Add(1)
@@ -629,10 +924,15 @@ func (s *DynamoDBService) runImportJob(store dbstore.DynamoDBStoreInterface, reg
 		}
 	}
 
-	table, err := store.Tables().Create(
-		in.TableName, in.KeySchema, in.AttributeDefs, in.BillingMode,
-		in.ProvThroughput, in.GSI, in.LSI, nil, nil, false,
-	)
+	table, err := store.Tables().Create(dbstore.CreateTableParams{
+		Name:                   in.TableName,
+		KeySchema:              in.KeySchema,
+		AttributeDefinitions:   in.AttributeDefs,
+		BillingMode:            in.BillingMode,
+		ProvisionedThroughput:  in.ProvThroughput,
+		GlobalSecondaryIndexes: in.GSI,
+		LocalSecondaryIndexes:  in.LSI,
+	})
 	if err != nil {
 		failImport("TableAlreadyExists", fmt.Sprintf("failed to create target table: %v", err))
 		return
@@ -640,6 +940,8 @@ func (s *DynamoDBService) runImportJob(store dbstore.DynamoDBStoreInterface, reg
 	imp.TableArn = table.ARN
 
 	importedCount := int64(0)
+	processedCount := int64(0)
+	errorCount := int64(0)
 	processedSizeBytes := int64(0)
 
 	s3 := s.s3invoker()
@@ -674,17 +976,22 @@ func (s *DynamoDBService) runImportJob(store dbstore.DynamoDBStoreInterface, reg
 				failImport("S3AccessDenied", fmt.Sprintf("failed to read S3 object %s: %v", key, getErr))
 				return
 			}
+			if in.InputCompressionType == "GZIP" {
+				uncompressed, gzErr := decompressImportObject(data)
+				if gzErr != nil {
+					failImport("GZIPError", fmt.Sprintf("failed to decompress S3 object %s: %v", key, gzErr))
+					return
+				}
+				data = uncompressed
+			}
 			processedSizeBytes += int64(len(data))
-			var count int64
+			var counts importCounts
 			var parseErr error
 			switch in.InputFormat {
 			case "CSV":
-				count, parseErr = importCSVData(s.bgCtx, data, in.TableName, store, in.CSVDelimiter, in.CSVHeaderList)
-			case "ION":
-				failImport("UnsupportedFormat", "ION format parsing is not yet implemented")
-				return
+				counts, parseErr = importCSVData(s.bgCtx, data, in.TableName, store, in.CSVDelimiter, in.CSVHeaderList)
 			default:
-				count, parseErr = importDynamoDBJSONData(s.bgCtx, data, in.TableName, store)
+				counts, parseErr = importDynamoDBJSONData(s.bgCtx, data, in.TableName, store)
 			}
 			if parseErr != nil {
 				logs.Error("Failed to parse import data",
@@ -693,16 +1000,201 @@ func (s *DynamoDBService) runImportJob(store dbstore.DynamoDBStoreInterface, reg
 				failImport("DocumentAccessException", fmt.Sprintf("failed to parse data in %s: %v", key, parseErr))
 				return
 			}
-			importedCount += count
+			processedCount += counts.processed
+			importedCount += counts.imported
+			errorCount += counts.errors
 		}
 	}
 
-	imp.ImportStatus = "COMPLETED"
-	imp.ProcessedItemCount = importedCount
+	imp.ProcessedItemCount = processedCount
+	imp.ImportedItemCount = importedCount
+	imp.ErrorCount = errorCount
 	imp.ProcessedSizeBytes = processedSizeBytes
 	imp.EndTime = time.Now()
+	// Items that failed validation were skipped and counted as errors; the
+	// job reports the failure so the counts surface to the caller.
+	if errorCount > 0 {
+		imp.ImportStatus = "FAILED"
+		imp.FailureCode = "ItemValidationError"
+		imp.FailureMessage = "Some of the items failed validation checks and were not imported."
+	} else {
+		imp.ImportStatus = "COMPLETED"
+	}
 	if err := store.Imports().Put(imp); err != nil {
 		logs.Error("Failed to persist completed import",
 			logs.String("importArn", importArn), logs.Err(err))
 	}
+}
+
+// importWriteItem writes one imported item in a single transaction with
+// index entries and honest table metrics: an overwrite retires the replaced
+// item's index entries, adjusts the table size by the delta, and does not
+// increment the item count, so the table's reported counts match the
+// distinct items it holds.
+func importWriteItem(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, key, attrs map[string]*dbstore.AttributeValue) error {
+	return store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
+		existing, err := txn.GetItem(table.Name, key)
+		if err != nil && !errors.Is(err, dbstore.ErrItemNotFound) {
+			return err
+		}
+		var oldSize int64
+		if existing != nil {
+			oldSize = dbstore.CalculateItemSize(existing.Attributes)
+		}
+		return txn.StoreItemWrite(table.Name, key, attrs, existing, existing != nil, oldSize)
+	})
+}
+
+// buildDynamoDBJSONItem converts a store Item to the DynamoDB JSON format
+// used by import/export: {"Item": {"attr": {"S": "val"}, ...}}.
+func buildDynamoDBJSONItem(item *dbstore.Item) map[string]interface{} {
+	merged := make(map[string]interface{})
+	for k, v := range item.Key {
+		merged[k] = buildAttributeValueResponse(v)
+	}
+	for k, v := range item.Attributes {
+		merged[k] = buildAttributeValueResponse(v)
+	}
+	return map[string]interface{}{
+		"Item": merged,
+	}
+}
+
+// importLineItem validates one parsed source line against the table schema
+// and writes it. A line whose key attributes are incomplete or whose key
+// attribute types disagree with the attribute definitions, and a line whose
+// write fails, is counted as an item error and skipped — the import job
+// continues with the next item.
+func importLineItem(ctx context.Context, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, attrs map[string]*dbstore.AttributeValue, counts *importCounts) {
+	counts.processed++
+
+	key := make(map[string]*dbstore.AttributeValue, len(table.KeySchema))
+	for _, ks := range table.KeySchema {
+		if v, ok := attrs[ks.AttributeName]; ok {
+			key[ks.AttributeName] = v
+		}
+	}
+	if len(key) != len(table.KeySchema) || validateKeyTypes(table, key) != nil {
+		counts.errors++
+		return
+	}
+	if err := importWriteItem(ctx, store, table, key, attrs); err != nil {
+		counts.errors++
+		return
+	}
+	counts.imported++
+}
+
+// importCounts carries the outcome tallies of an import pass. The three
+// counts are separate members of the import description: processed counts
+// every item attempted from the source file (validation failures included),
+// imported counts items successfully loaded (duplicate keys overwrite and
+// count on every occurrence — an overwrite is not an error), and errors
+// count items that failed validation or loading. Lines that cannot be
+// parsed into an item at all never become processed items and count only
+// as errors.
+type importCounts struct {
+	processed int64
+	imported  int64
+	errors    int64
+}
+
+// importDynamoDBJSONData parses DYNAMODB_JSON data (newline-delimited
+// {"Item": {...}} objects) and writes each item to the store with proper
+// index entries and table metric updates.
+func importDynamoDBJSONData(ctx context.Context, data []byte, tableName string, store dbstore.DynamoDBStoreInterface) (importCounts, error) {
+	counts := importCounts{}
+
+	table, err := store.Tables().Get(tableName)
+	if err != nil {
+		return counts, fmt.Errorf("get table %s for import: %w", tableName, err)
+	}
+
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	// Allow lines up to 10MB per item.
+	scanner.Buffer(make([]byte, 0, 64*1024), 10*1024*1024)
+
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
+			continue
+		}
+
+		var itemWrapper map[string]json.RawMessage
+		if err := json.Unmarshal(line, &itemWrapper); err != nil {
+			counts.errors++
+			continue
+		}
+
+		itemRaw, ok := itemWrapper["Item"]
+		if !ok {
+			counts.errors++
+			continue
+		}
+
+		var itemMap map[string]interface{}
+		if err := json.Unmarshal(itemRaw, &itemMap); err != nil {
+			counts.errors++
+			continue
+		}
+
+		attrs, parseErr := parseAttributeValueMap(itemMap)
+		if parseErr != nil || len(attrs) == 0 {
+			counts.errors++
+			continue
+		}
+
+		importLineItem(ctx, store, table, attrs, &counts)
+	}
+	return counts, scanner.Err()
+}
+
+// importCSVData parses CSV-formatted data and imports rows as DynamoDB items.
+// Each column becomes a String attribute. If headerList is empty, the first
+// row is treated as the header. delimiter defaults to comma.
+func importCSVData(ctx context.Context, data []byte, tableName string, store dbstore.DynamoDBStoreInterface, delimiter string, headerList []string) (importCounts, error) {
+	counts := importCounts{}
+
+	table, err := store.Tables().Get(tableName)
+	if err != nil {
+		return counts, fmt.Errorf("get table %s for CSV import: %w", tableName, err)
+	}
+
+	if delimiter == "" {
+		delimiter = ","
+	}
+
+	reader := csv.NewReader(bytes.NewReader(data))
+	reader.Comma = rune(delimiter[0])
+
+	headers := headerList
+	if len(headers) == 0 {
+		headerRecord, err := reader.Read()
+		if err != nil {
+			return counts, fmt.Errorf("failed to read CSV header: %w", err)
+		}
+		headers = headerRecord
+	}
+
+	for {
+		record, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			counts.errors++
+			continue
+		}
+
+		attrs := make(map[string]*dbstore.AttributeValue)
+		for i, val := range record {
+			if i >= len(headers) {
+				break
+			}
+			attrs[headers[i]] = &dbstore.AttributeValue{S: &val}
+		}
+
+		importLineItem(ctx, store, table, attrs, &counts)
+	}
+	return counts, nil
 }

@@ -229,7 +229,7 @@ message CancelExportTaskOutput {
 
   ExportTaskStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   string taskid = 216769858;
 
@@ -249,7 +249,7 @@ message CancelImportTaskOutput {
 
   Format format = 429753683;
 
-  string graphid = 154780971;
+  optional string graphid = 154780971;
 
   ParquetType parquettype = 239821940;
 
@@ -297,15 +297,15 @@ enum ConflictExceptionReason {
 
 message CreateGraphInput {
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
   string graphname = 300324709;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
@@ -321,31 +321,31 @@ message CreateGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -371,13 +371,13 @@ message CreateGraphSnapshotOutput {
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
-  string snapshotcreatetime = 472700549;
+  optional string snapshotcreatetime = 472700549;
 
-  string sourcegraphid = 384181138;
+  optional string sourcegraphid = 384181138;
 
   SnapshotStatus status = 441153520;
 
@@ -389,9 +389,9 @@ message CreateGraphUsingImportTaskInput {
 
   BlankNodeHandling blanknodehandling = 96253201;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string failonerror = 437165343;
+  optional string failonerror = 437165343;
 
   Format format = 429753683;
 
@@ -399,7 +399,7 @@ message CreateGraphUsingImportTaskInput {
 
   ImportOptions importoptions = 42536491;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   optional int32 maxprovisionedmemory = 212406631;
 
@@ -407,7 +407,7 @@ message CreateGraphUsingImportTaskInput {
 
   ParquetType parquettype = 239821940;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
@@ -427,7 +427,7 @@ message CreateGraphUsingImportTaskOutput {
 
   Format format = 429753683;
 
-  string graphid = 154780971;
+  optional string graphid = 154780971;
 
   ImportOptions importoptions = 42536491;
 
@@ -451,7 +451,7 @@ message CreatePrivateGraphEndpointInput {
 
   repeated string subnetids = 487351219;
 
-  string vpcid = 305739798;
+  optional string vpcid = 305739798;
 
   repeated string vpcsecuritygroupids = 326816694;
 
@@ -465,7 +465,7 @@ message CreatePrivateGraphEndpointOutput {
 
   repeated string subnetids = 487351219;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
   string vpcid = 305739798;
 
@@ -487,31 +487,31 @@ message DeleteGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -533,13 +533,13 @@ message DeleteGraphSnapshotOutput {
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
-  string snapshotcreatetime = 472700549;
+  optional string snapshotcreatetime = 472700549;
 
-  string sourcegraphid = 384181138;
+  optional string sourcegraphid = 384181138;
 
   SnapshotStatus status = 441153520;
 
@@ -563,7 +563,7 @@ message DeletePrivateGraphEndpointOutput {
 
   repeated string subnetids = 487351219;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
   string vpcid = 305739798;
 
@@ -575,7 +575,7 @@ message DeletePrivateGraphEndpointOutput {
 
 message EdgeStructure {
 
-  string count = 431087093;
+  optional string count = 431087093;
 
   repeated string edgeproperties = 355699522;
 
@@ -597,7 +597,7 @@ message ExecuteQueryInput {
 
   string querystring = 520568967;
 
-  string querytimeoutmilliseconds = 331069401;
+  optional string querytimeoutmilliseconds = 331069401;
 
 }
 
@@ -649,9 +649,9 @@ message ExportFilterPropertyAttributes {
 
   MultiValueHandlingType multivaluehandling = 492198599;
 
-  string outputtype = 354916141;
+  optional string outputtype = 354916141;
 
-  string sourcepropertyname = 347182811;
+  optional string sourcepropertyname = 347182811;
 
 }
 
@@ -671,9 +671,9 @@ enum ExportFormat {
 
 message ExportTaskDetails {
 
-  string numedgeswritten = 196725075;
+  optional string numedgeswritten = 196725075;
 
-  string numverticeswritten = 377691516;
+  optional string numverticeswritten = 377691516;
 
   string progresspercentage = 102184935;
 
@@ -723,7 +723,7 @@ message ExportTaskSummary {
 
   ExportTaskStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   string taskid = 216769858;
 
@@ -773,7 +773,7 @@ message GetExportTaskOutput {
 
   ExportTaskStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   string taskid = 216769858;
 
@@ -793,31 +793,31 @@ message GetGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -839,13 +839,13 @@ message GetGraphSnapshotOutput {
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
-  string snapshotcreatetime = 472700549;
+  optional string snapshotcreatetime = 472700549;
 
-  string sourcegraphid = 384181138;
+  optional string sourcegraphid = 384181138;
 
   SnapshotStatus status = 441153520;
 
@@ -867,9 +867,9 @@ message GetGraphSummaryOutput {
 
   GraphDataSummary graphsummary = 503671010;
 
-  string laststatisticscomputationtime = 71169761;
+  optional string laststatisticscomputationtime = 71169761;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
 }
 
@@ -885,11 +885,11 @@ message GetImportTaskInput {
 
 message GetImportTaskOutput {
 
-  string attemptnumber = 466940700;
+  optional string attemptnumber = 466940700;
 
   Format format = 429753683;
 
-  string graphid = 154780971;
+  optional string graphid = 154780971;
 
   ImportOptions importoptions = 42536491;
 
@@ -903,7 +903,7 @@ message GetImportTaskOutput {
 
   ImportTaskStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   string taskid = 216769858;
 
@@ -927,7 +927,7 @@ message GetPrivateGraphEndpointOutput {
 
   repeated string subnetids = 487351219;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
   string vpcid = 305739798;
 
@@ -947,15 +947,15 @@ message GetQueryInput {
 
 message GetQueryOutput {
 
-  string elapsed = 506590108;
+  optional string elapsed = 506590108;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
   QueryState state = 405877495;
 
-  string waited = 136179618;
+  optional string waited = 136179618;
 
 }
 
@@ -977,21 +977,21 @@ message GraphDataSummary {
 
   repeated NodeStructure nodestructures = 29611672;
 
-  string numedgelabels = 363556966;
+  optional string numedgelabels = 363556966;
 
-  string numedgeproperties = 330298668;
+  optional string numedgeproperties = 330298668;
 
-  string numedges = 330523448;
+  optional string numedges = 330523448;
 
-  string numnodelabels = 494223753;
+  optional string numnodelabels = 494223753;
 
-  string numnodeproperties = 504428443;
+  optional string numnodeproperties = 504428443;
 
-  string numnodes = 47949361;
+  optional string numnodes = 47949361;
 
-  string totaledgepropertyvalues = 124421148;
+  optional string totaledgepropertyvalues = 124421148;
 
-  string totalnodepropertyvalues = 14636383;
+  optional string totalnodepropertyvalues = 14636383;
 
 }
 
@@ -1005,13 +1005,13 @@ message GraphSnapshotSummary {
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
-  string snapshotcreatetime = 472700549;
+  optional string snapshotcreatetime = 472700549;
 
-  string sourcegraphid = 384181138;
+  optional string sourcegraphid = 384181138;
 
   SnapshotStatus status = 441153520;
 
@@ -1053,19 +1053,19 @@ message GraphSummary {
 
   string arn = 359604989;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
@@ -1103,7 +1103,7 @@ message ImportTaskDetails {
 
   string errorcount = 348922889;
 
-  string errordetails = 192899050;
+  optional string errordetails = 192899050;
 
   string progresspercentage = 102184935;
 
@@ -1153,7 +1153,7 @@ message ImportTaskSummary {
 
   Format format = 429753683;
 
-  string graphid = 154780971;
+  optional string graphid = 154780971;
 
   ParquetType parquettype = 239821940;
 
@@ -1181,11 +1181,11 @@ message InternalServerException {
 
 message ListExportTasksInput {
 
-  string graphidentifier = 49625581;
+  optional string graphidentifier = 49625581;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1193,7 +1193,7 @@ message ListExportTasksInput {
 
 message ListExportTasksOutput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ExportTaskSummary tasks = 221137102;
 
@@ -1203,11 +1203,11 @@ message ListExportTasksOutput {
 
 message ListGraphSnapshotsInput {
 
-  string graphidentifier = 49625581;
+  optional string graphidentifier = 49625581;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1217,7 +1217,7 @@ message ListGraphSnapshotsOutput {
 
   repeated GraphSnapshotSummary graphsnapshots = 257320869;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1227,7 +1227,7 @@ message ListGraphsInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1237,7 +1237,7 @@ message ListGraphsOutput {
 
   repeated GraphSummary graphs = 200393693;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1247,7 +1247,7 @@ message ListImportTasksInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1255,7 +1255,7 @@ message ListImportTasksInput {
 
 message ListImportTasksOutput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ImportTaskSummary tasks = 221137102;
 
@@ -1269,7 +1269,7 @@ message ListPrivateGraphEndpointsInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1277,7 +1277,7 @@ message ListPrivateGraphEndpointsInput {
 
 message ListPrivateGraphEndpointsOutput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated PrivateGraphEndpointSummary privategraphendpoints = 65443943;
 
@@ -1335,9 +1335,9 @@ enum MultiValueHandlingType {
 
 message NeptuneImportOptions {
 
-  string preservedefaultvertexlabels = 290167392;
+  optional string preservedefaultvertexlabels = 290167392;
 
-  string preserveedgeids = 240248139;
+  optional string preserveedgeids = 240248139;
 
   string s3exportkmskeyid = 342201401;
 
@@ -1351,7 +1351,7 @@ message NeptuneImportOptions {
 
 message NodeStructure {
 
-  string count = 431087093;
+  optional string count = 431087093;
 
   repeated string distinctoutgoingedgelabels = 231680758;
 
@@ -1403,7 +1403,7 @@ message PrivateGraphEndpointSummary {
 
   repeated string subnetids = 487351219;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
   string vpcid = 305739798;
 
@@ -1449,15 +1449,15 @@ enum QueryStateInput {
 
 message QuerySummary {
 
-  string elapsed = 506590108;
+  optional string elapsed = 506590108;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
   QueryState state = 405877495;
 
-  string waited = 136179618;
+  optional string waited = 136179618;
 
 }
 
@@ -1477,31 +1477,31 @@ message ResetGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -1521,13 +1521,13 @@ message ResourceNotFoundException {
 
 message RestoreGraphFromSnapshotInput {
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
   string graphname = 300324709;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
@@ -1543,31 +1543,31 @@ message RestoreGraphFromSnapshotOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -1581,13 +1581,13 @@ message ServiceQuotaExceededException {
 
   string message = 82970853;
 
-  string quotacode = 445798643;
+  optional string quotacode = 445798643;
 
-  string resourceid = 318922417;
+  optional string resourceid = 318922417;
 
-  string resourcetype = 7604990;
+  optional string resourcetype = 7604990;
 
-  string servicecode = 75575058;
+  optional string servicecode = 75575058;
 
 }
 
@@ -1647,7 +1647,7 @@ message StartExportTaskOutput {
 
   ExportTaskStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   string taskid = 216769858;
 
@@ -1667,31 +1667,31 @@ message StartGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -1703,7 +1703,7 @@ message StartImportTaskInput {
 
   BlankNodeHandling blanknodehandling = 96253201;
 
-  string failonerror = 437165343;
+  optional string failonerror = 437165343;
 
   Format format = 429753683;
 
@@ -1725,7 +1725,7 @@ message StartImportTaskOutput {
 
   Format format = 429753683;
 
-  string graphid = 154780971;
+  optional string graphid = 154780971;
 
   ImportOptions importoptions = 42536491;
 
@@ -1755,31 +1755,31 @@ message StopGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 
@@ -1859,13 +1859,13 @@ message UntagResourceOutput {
 
 message UpdateGraphInput {
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
   string graphidentifier = 49625581;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
 }
 
@@ -1875,31 +1875,31 @@ message UpdateGraphOutput {
 
   string arn = 359604989;
 
-  string buildnumber = 202714595;
+  optional string buildnumber = 202714595;
 
-  string createtime = 297700189;
+  optional string createtime = 297700189;
 
-  string deletionprotection = 408487537;
+  optional string deletionprotection = 408487537;
 
-  string endpoint = 414707837;
+  optional string endpoint = 414707837;
 
   string id = 389573345;
 
-  string kmskeyidentifier = 271380819;
+  optional string kmskeyidentifier = 271380819;
 
   string name = 221887975;
 
   optional int32 provisionedmemory = 1604091;
 
-  string publicconnectivity = 454618760;
+  optional string publicconnectivity = 454618760;
 
   optional int32 replicacount = 508743359;
 
-  string sourcesnapshotid = 450029490;
+  optional string sourcesnapshotid = 450029490;
 
   GraphStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VectorSearchConfiguration vectorsearchconfiguration = 194373657;
 

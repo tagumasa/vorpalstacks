@@ -26,6 +26,315 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type AcmeAccountStatus int32
+
+const (
+	AcmeAccountStatus_ACME_ACCOUNT_STATUS_DEACTIVATED AcmeAccountStatus = 0
+	AcmeAccountStatus_ACME_ACCOUNT_STATUS_REVOKED     AcmeAccountStatus = 1
+	AcmeAccountStatus_ACME_ACCOUNT_STATUS_VALID       AcmeAccountStatus = 2
+)
+
+// Enum value maps for AcmeAccountStatus.
+var (
+	AcmeAccountStatus_name = map[int32]string{
+		0: "ACME_ACCOUNT_STATUS_DEACTIVATED",
+		1: "ACME_ACCOUNT_STATUS_REVOKED",
+		2: "ACME_ACCOUNT_STATUS_VALID",
+	}
+	AcmeAccountStatus_value = map[string]int32{
+		"ACME_ACCOUNT_STATUS_DEACTIVATED": 0,
+		"ACME_ACCOUNT_STATUS_REVOKED":     1,
+		"ACME_ACCOUNT_STATUS_VALID":       2,
+	}
+)
+
+func (x AcmeAccountStatus) Enum() *AcmeAccountStatus {
+	p := new(AcmeAccountStatus)
+	*p = x
+	return p
+}
+
+func (x AcmeAccountStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AcmeAccountStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[0].Descriptor()
+}
+
+func (AcmeAccountStatus) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[0]
+}
+
+func (x AcmeAccountStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AcmeAccountStatus.Descriptor instead.
+func (AcmeAccountStatus) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{0}
+}
+
+type AcmeAuthorizationBehavior int32
+
+const (
+	AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED AcmeAuthorizationBehavior = 0
+)
+
+// Enum value maps for AcmeAuthorizationBehavior.
+var (
+	AcmeAuthorizationBehavior_name = map[int32]string{
+		0: "ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED",
+	}
+	AcmeAuthorizationBehavior_value = map[string]int32{
+		"ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED": 0,
+	}
+)
+
+func (x AcmeAuthorizationBehavior) Enum() *AcmeAuthorizationBehavior {
+	p := new(AcmeAuthorizationBehavior)
+	*p = x
+	return p
+}
+
+func (x AcmeAuthorizationBehavior) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AcmeAuthorizationBehavior) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[1].Descriptor()
+}
+
+func (AcmeAuthorizationBehavior) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[1]
+}
+
+func (x AcmeAuthorizationBehavior) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AcmeAuthorizationBehavior.Descriptor instead.
+func (AcmeAuthorizationBehavior) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{1}
+}
+
+type AcmeContact int32
+
+const (
+	AcmeContact_ACME_CONTACT_REQUIRED     AcmeContact = 0
+	AcmeContact_ACME_CONTACT_NOT_REQUIRED AcmeContact = 1
+)
+
+// Enum value maps for AcmeContact.
+var (
+	AcmeContact_name = map[int32]string{
+		0: "ACME_CONTACT_REQUIRED",
+		1: "ACME_CONTACT_NOT_REQUIRED",
+	}
+	AcmeContact_value = map[string]int32{
+		"ACME_CONTACT_REQUIRED":     0,
+		"ACME_CONTACT_NOT_REQUIRED": 1,
+	}
+)
+
+func (x AcmeContact) Enum() *AcmeContact {
+	p := new(AcmeContact)
+	*p = x
+	return p
+}
+
+func (x AcmeContact) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AcmeContact) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[2].Descriptor()
+}
+
+func (AcmeContact) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[2]
+}
+
+func (x AcmeContact) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AcmeContact.Descriptor instead.
+func (AcmeContact) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{2}
+}
+
+type AcmeDomainValidationFailureReason int32
+
+const (
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE   AcmeDomainValidationFailureReason = 0
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_ACCESS_DENIED         AcmeDomainValidationFailureReason = 1
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_TIMED_OUT             AcmeDomainValidationFailureReason = 2
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_PUBLIC_DOMAIN AcmeDomainValidationFailureReason = 3
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_INTERNAL_FAILURE      AcmeDomainValidationFailureReason = 4
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_NOT_ALLOWED    AcmeDomainValidationFailureReason = 5
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_MISMATCH       AcmeDomainValidationFailureReason = 6
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_HOSTED_ZONE_NOT_FOUND AcmeDomainValidationFailureReason = 7
+	AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_CHANGE_BATCH  AcmeDomainValidationFailureReason = 8
+)
+
+// Enum value maps for AcmeDomainValidationFailureReason.
+var (
+	AcmeDomainValidationFailureReason_name = map[int32]string{
+		0: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE",
+		1: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_ACCESS_DENIED",
+		2: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_TIMED_OUT",
+		3: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_PUBLIC_DOMAIN",
+		4: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_INTERNAL_FAILURE",
+		5: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_NOT_ALLOWED",
+		6: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_MISMATCH",
+		7: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_HOSTED_ZONE_NOT_FOUND",
+		8: "ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_CHANGE_BATCH",
+	}
+	AcmeDomainValidationFailureReason_value = map[string]int32{
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE":   0,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_ACCESS_DENIED":         1,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_TIMED_OUT":             2,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_PUBLIC_DOMAIN": 3,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_INTERNAL_FAILURE":      4,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_NOT_ALLOWED":    5,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_MISMATCH":       6,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_HOSTED_ZONE_NOT_FOUND": 7,
+		"ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_CHANGE_BATCH":  8,
+	}
+)
+
+func (x AcmeDomainValidationFailureReason) Enum() *AcmeDomainValidationFailureReason {
+	p := new(AcmeDomainValidationFailureReason)
+	*p = x
+	return p
+}
+
+func (x AcmeDomainValidationFailureReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AcmeDomainValidationFailureReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[3].Descriptor()
+}
+
+func (AcmeDomainValidationFailureReason) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[3]
+}
+
+func (x AcmeDomainValidationFailureReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AcmeDomainValidationFailureReason.Descriptor instead.
+func (AcmeDomainValidationFailureReason) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{3}
+}
+
+type AcmeDomainValidationStatus int32
+
+const (
+	AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_VALIDATING AcmeDomainValidationStatus = 0
+	AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_INVALID    AcmeDomainValidationStatus = 1
+	AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_DELETING   AcmeDomainValidationStatus = 2
+	AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_VALID      AcmeDomainValidationStatus = 3
+)
+
+// Enum value maps for AcmeDomainValidationStatus.
+var (
+	AcmeDomainValidationStatus_name = map[int32]string{
+		0: "ACME_DOMAIN_VALIDATION_STATUS_VALIDATING",
+		1: "ACME_DOMAIN_VALIDATION_STATUS_INVALID",
+		2: "ACME_DOMAIN_VALIDATION_STATUS_DELETING",
+		3: "ACME_DOMAIN_VALIDATION_STATUS_VALID",
+	}
+	AcmeDomainValidationStatus_value = map[string]int32{
+		"ACME_DOMAIN_VALIDATION_STATUS_VALIDATING": 0,
+		"ACME_DOMAIN_VALIDATION_STATUS_INVALID":    1,
+		"ACME_DOMAIN_VALIDATION_STATUS_DELETING":   2,
+		"ACME_DOMAIN_VALIDATION_STATUS_VALID":      3,
+	}
+)
+
+func (x AcmeDomainValidationStatus) Enum() *AcmeDomainValidationStatus {
+	p := new(AcmeDomainValidationStatus)
+	*p = x
+	return p
+}
+
+func (x AcmeDomainValidationStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AcmeDomainValidationStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[4].Descriptor()
+}
+
+func (AcmeDomainValidationStatus) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[4]
+}
+
+func (x AcmeDomainValidationStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AcmeDomainValidationStatus.Descriptor instead.
+func (AcmeDomainValidationStatus) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{4}
+}
+
+type AcmeEndpointStatus int32
+
+const (
+	AcmeEndpointStatus_ACME_ENDPOINT_STATUS_ACTIVE   AcmeEndpointStatus = 0
+	AcmeEndpointStatus_ACME_ENDPOINT_STATUS_DELETING AcmeEndpointStatus = 1
+	AcmeEndpointStatus_ACME_ENDPOINT_STATUS_CREATING AcmeEndpointStatus = 2
+	AcmeEndpointStatus_ACME_ENDPOINT_STATUS_FAILED   AcmeEndpointStatus = 3
+)
+
+// Enum value maps for AcmeEndpointStatus.
+var (
+	AcmeEndpointStatus_name = map[int32]string{
+		0: "ACME_ENDPOINT_STATUS_ACTIVE",
+		1: "ACME_ENDPOINT_STATUS_DELETING",
+		2: "ACME_ENDPOINT_STATUS_CREATING",
+		3: "ACME_ENDPOINT_STATUS_FAILED",
+	}
+	AcmeEndpointStatus_value = map[string]int32{
+		"ACME_ENDPOINT_STATUS_ACTIVE":   0,
+		"ACME_ENDPOINT_STATUS_DELETING": 1,
+		"ACME_ENDPOINT_STATUS_CREATING": 2,
+		"ACME_ENDPOINT_STATUS_FAILED":   3,
+	}
+)
+
+func (x AcmeEndpointStatus) Enum() *AcmeEndpointStatus {
+	p := new(AcmeEndpointStatus)
+	*p = x
+	return p
+}
+
+func (x AcmeEndpointStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AcmeEndpointStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[5].Descriptor()
+}
+
+func (AcmeEndpointStatus) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[5]
+}
+
+func (x AcmeEndpointStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AcmeEndpointStatus.Descriptor instead.
+func (AcmeEndpointStatus) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{5}
+}
+
 type CertificateExport int32
 
 const (
@@ -56,11 +365,11 @@ func (x CertificateExport) String() string {
 }
 
 func (CertificateExport) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[0].Descriptor()
+	return file_acm_proto_enumTypes[6].Descriptor()
 }
 
 func (CertificateExport) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[0]
+	return &file_acm_proto_enumTypes[6]
 }
 
 func (x CertificateExport) Number() protoreflect.EnumNumber {
@@ -69,7 +378,56 @@ func (x CertificateExport) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CertificateExport.Descriptor instead.
 func (CertificateExport) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{0}
+	return file_acm_proto_rawDescGZIP(), []int{6}
+}
+
+type CertificateKeyPairOrigin int32
+
+const (
+	CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED       CertificateKeyPairOrigin = 0
+	CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_ACME              CertificateKeyPairOrigin = 1
+	CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_CUSTOMER_PROVIDED CertificateKeyPairOrigin = 2
+)
+
+// Enum value maps for CertificateKeyPairOrigin.
+var (
+	CertificateKeyPairOrigin_name = map[int32]string{
+		0: "CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED",
+		1: "CERTIFICATE_KEY_PAIR_ORIGIN_ACME",
+		2: "CERTIFICATE_KEY_PAIR_ORIGIN_CUSTOMER_PROVIDED",
+	}
+	CertificateKeyPairOrigin_value = map[string]int32{
+		"CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED":       0,
+		"CERTIFICATE_KEY_PAIR_ORIGIN_ACME":              1,
+		"CERTIFICATE_KEY_PAIR_ORIGIN_CUSTOMER_PROVIDED": 2,
+	}
+)
+
+func (x CertificateKeyPairOrigin) Enum() *CertificateKeyPairOrigin {
+	p := new(CertificateKeyPairOrigin)
+	*p = x
+	return p
+}
+
+func (x CertificateKeyPairOrigin) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CertificateKeyPairOrigin) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[7].Descriptor()
+}
+
+func (CertificateKeyPairOrigin) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[7]
+}
+
+func (x CertificateKeyPairOrigin) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CertificateKeyPairOrigin.Descriptor instead.
+func (CertificateKeyPairOrigin) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{7}
 }
 
 type CertificateManagedBy int32
@@ -99,11 +457,11 @@ func (x CertificateManagedBy) String() string {
 }
 
 func (CertificateManagedBy) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[1].Descriptor()
+	return file_acm_proto_enumTypes[8].Descriptor()
 }
 
 func (CertificateManagedBy) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[1]
+	return &file_acm_proto_enumTypes[8]
 }
 
 func (x CertificateManagedBy) Number() protoreflect.EnumNumber {
@@ -112,7 +470,7 @@ func (x CertificateManagedBy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CertificateManagedBy.Descriptor instead.
 func (CertificateManagedBy) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{1}
+	return file_acm_proto_rawDescGZIP(), []int{8}
 }
 
 type CertificateStatus int32
@@ -160,11 +518,11 @@ func (x CertificateStatus) String() string {
 }
 
 func (CertificateStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[2].Descriptor()
+	return file_acm_proto_enumTypes[9].Descriptor()
 }
 
 func (CertificateStatus) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[2]
+	return &file_acm_proto_enumTypes[9]
 }
 
 func (x CertificateStatus) Number() protoreflect.EnumNumber {
@@ -173,7 +531,7 @@ func (x CertificateStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CertificateStatus.Descriptor instead.
 func (CertificateStatus) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{2}
+	return file_acm_proto_rawDescGZIP(), []int{9}
 }
 
 type CertificateTransparencyLoggingPreference int32
@@ -206,11 +564,11 @@ func (x CertificateTransparencyLoggingPreference) String() string {
 }
 
 func (CertificateTransparencyLoggingPreference) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[3].Descriptor()
+	return file_acm_proto_enumTypes[10].Descriptor()
 }
 
 func (CertificateTransparencyLoggingPreference) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[3]
+	return &file_acm_proto_enumTypes[10]
 }
 
 func (x CertificateTransparencyLoggingPreference) Number() protoreflect.EnumNumber {
@@ -219,7 +577,7 @@ func (x CertificateTransparencyLoggingPreference) Number() protoreflect.EnumNumb
 
 // Deprecated: Use CertificateTransparencyLoggingPreference.Descriptor instead.
 func (CertificateTransparencyLoggingPreference) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{3}
+	return file_acm_proto_rawDescGZIP(), []int{10}
 }
 
 type CertificateType int32
@@ -255,11 +613,11 @@ func (x CertificateType) String() string {
 }
 
 func (CertificateType) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[4].Descriptor()
+	return file_acm_proto_enumTypes[11].Descriptor()
 }
 
 func (CertificateType) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[4]
+	return &file_acm_proto_enumTypes[11]
 }
 
 func (x CertificateType) Number() protoreflect.EnumNumber {
@@ -268,7 +626,7 @@ func (x CertificateType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use CertificateType.Descriptor instead.
 func (CertificateType) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{4}
+	return file_acm_proto_rawDescGZIP(), []int{11}
 }
 
 type ComparisonOperator int32
@@ -301,11 +659,11 @@ func (x ComparisonOperator) String() string {
 }
 
 func (ComparisonOperator) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[5].Descriptor()
+	return file_acm_proto_enumTypes[12].Descriptor()
 }
 
 func (ComparisonOperator) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[5]
+	return &file_acm_proto_enumTypes[12]
 }
 
 func (x ComparisonOperator) Number() protoreflect.EnumNumber {
@@ -314,7 +672,53 @@ func (x ComparisonOperator) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ComparisonOperator.Descriptor instead.
 func (ComparisonOperator) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{5}
+	return file_acm_proto_rawDescGZIP(), []int{12}
+}
+
+type DomainScopeOption int32
+
+const (
+	DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED DomainScopeOption = 0
+	DomainScopeOption_DOMAIN_SCOPE_OPTION_ENABLED  DomainScopeOption = 1
+)
+
+// Enum value maps for DomainScopeOption.
+var (
+	DomainScopeOption_name = map[int32]string{
+		0: "DOMAIN_SCOPE_OPTION_DISABLED",
+		1: "DOMAIN_SCOPE_OPTION_ENABLED",
+	}
+	DomainScopeOption_value = map[string]int32{
+		"DOMAIN_SCOPE_OPTION_DISABLED": 0,
+		"DOMAIN_SCOPE_OPTION_ENABLED":  1,
+	}
+)
+
+func (x DomainScopeOption) Enum() *DomainScopeOption {
+	p := new(DomainScopeOption)
+	*p = x
+	return p
+}
+
+func (x DomainScopeOption) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DomainScopeOption) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[13].Descriptor()
+}
+
+func (DomainScopeOption) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[13]
+}
+
+func (x DomainScopeOption) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DomainScopeOption.Descriptor instead.
+func (DomainScopeOption) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{13}
 }
 
 type DomainStatus int32
@@ -350,11 +754,11 @@ func (x DomainStatus) String() string {
 }
 
 func (DomainStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[6].Descriptor()
+	return file_acm_proto_enumTypes[14].Descriptor()
 }
 
 func (DomainStatus) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[6]
+	return &file_acm_proto_enumTypes[14]
 }
 
 func (x DomainStatus) Number() protoreflect.EnumNumber {
@@ -363,7 +767,7 @@ func (x DomainStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DomainStatus.Descriptor instead.
 func (DomainStatus) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{6}
+	return file_acm_proto_rawDescGZIP(), []int{14}
 }
 
 type ExtendedKeyUsageName int32
@@ -426,11 +830,11 @@ func (x ExtendedKeyUsageName) String() string {
 }
 
 func (ExtendedKeyUsageName) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[7].Descriptor()
+	return file_acm_proto_enumTypes[15].Descriptor()
 }
 
 func (ExtendedKeyUsageName) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[7]
+	return &file_acm_proto_enumTypes[15]
 }
 
 func (x ExtendedKeyUsageName) Number() protoreflect.EnumNumber {
@@ -439,7 +843,7 @@ func (x ExtendedKeyUsageName) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ExtendedKeyUsageName.Descriptor instead.
 func (ExtendedKeyUsageName) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{7}
+	return file_acm_proto_rawDescGZIP(), []int{15}
 }
 
 type FailureReason int32
@@ -517,11 +921,11 @@ func (x FailureReason) String() string {
 }
 
 func (FailureReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[8].Descriptor()
+	return file_acm_proto_enumTypes[16].Descriptor()
 }
 
 func (FailureReason) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[8]
+	return &file_acm_proto_enumTypes[16]
 }
 
 func (x FailureReason) Number() protoreflect.EnumNumber {
@@ -530,7 +934,7 @@ func (x FailureReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FailureReason.Descriptor instead.
 func (FailureReason) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{8}
+	return file_acm_proto_rawDescGZIP(), []int{16}
 }
 
 type KeyAlgorithm int32
@@ -578,11 +982,11 @@ func (x KeyAlgorithm) String() string {
 }
 
 func (KeyAlgorithm) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[9].Descriptor()
+	return file_acm_proto_enumTypes[17].Descriptor()
 }
 
 func (KeyAlgorithm) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[9]
+	return &file_acm_proto_enumTypes[17]
 }
 
 func (x KeyAlgorithm) Number() protoreflect.EnumNumber {
@@ -591,7 +995,7 @@ func (x KeyAlgorithm) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use KeyAlgorithm.Descriptor instead.
 func (KeyAlgorithm) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{9}
+	return file_acm_proto_rawDescGZIP(), []int{17}
 }
 
 type KeyUsageName int32
@@ -651,11 +1055,11 @@ func (x KeyUsageName) String() string {
 }
 
 func (KeyUsageName) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[10].Descriptor()
+	return file_acm_proto_enumTypes[18].Descriptor()
 }
 
 func (KeyUsageName) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[10]
+	return &file_acm_proto_enumTypes[18]
 }
 
 func (x KeyUsageName) Number() protoreflect.EnumNumber {
@@ -664,7 +1068,99 @@ func (x KeyUsageName) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use KeyUsageName.Descriptor instead.
 func (KeyUsageName) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{10}
+	return file_acm_proto_rawDescGZIP(), []int{18}
+}
+
+type PrevalidationType int32
+
+const (
+	PrevalidationType_PREVALIDATION_TYPE_DNS_PREVALIDATION PrevalidationType = 0
+)
+
+// Enum value maps for PrevalidationType.
+var (
+	PrevalidationType_name = map[int32]string{
+		0: "PREVALIDATION_TYPE_DNS_PREVALIDATION",
+	}
+	PrevalidationType_value = map[string]int32{
+		"PREVALIDATION_TYPE_DNS_PREVALIDATION": 0,
+	}
+)
+
+func (x PrevalidationType) Enum() *PrevalidationType {
+	p := new(PrevalidationType)
+	*p = x
+	return p
+}
+
+func (x PrevalidationType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PrevalidationType) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[19].Descriptor()
+}
+
+func (PrevalidationType) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[19]
+}
+
+func (x PrevalidationType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PrevalidationType.Descriptor instead.
+func (PrevalidationType) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{19}
+}
+
+type PublicKeyAlgorithm int32
+
+const (
+	PublicKeyAlgorithm_PUBLIC_KEY_ALGORITHM_EC_PRIME256_V1 PublicKeyAlgorithm = 0
+	PublicKeyAlgorithm_PUBLIC_KEY_ALGORITHM_RSA_2048       PublicKeyAlgorithm = 1
+	PublicKeyAlgorithm_PUBLIC_KEY_ALGORITHM_EC_SECP384_R1  PublicKeyAlgorithm = 2
+)
+
+// Enum value maps for PublicKeyAlgorithm.
+var (
+	PublicKeyAlgorithm_name = map[int32]string{
+		0: "PUBLIC_KEY_ALGORITHM_EC_PRIME256_V1",
+		1: "PUBLIC_KEY_ALGORITHM_RSA_2048",
+		2: "PUBLIC_KEY_ALGORITHM_EC_SECP384_R1",
+	}
+	PublicKeyAlgorithm_value = map[string]int32{
+		"PUBLIC_KEY_ALGORITHM_EC_PRIME256_V1": 0,
+		"PUBLIC_KEY_ALGORITHM_RSA_2048":       1,
+		"PUBLIC_KEY_ALGORITHM_EC_SECP384_R1":  2,
+	}
+)
+
+func (x PublicKeyAlgorithm) Enum() *PublicKeyAlgorithm {
+	p := new(PublicKeyAlgorithm)
+	*p = x
+	return p
+}
+
+func (x PublicKeyAlgorithm) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PublicKeyAlgorithm) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[20].Descriptor()
+}
+
+func (PublicKeyAlgorithm) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[20]
+}
+
+func (x PublicKeyAlgorithm) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PublicKeyAlgorithm.Descriptor instead.
+func (PublicKeyAlgorithm) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{20}
 }
 
 type RecordType int32
@@ -694,11 +1190,11 @@ func (x RecordType) String() string {
 }
 
 func (RecordType) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[11].Descriptor()
+	return file_acm_proto_enumTypes[21].Descriptor()
 }
 
 func (RecordType) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[11]
+	return &file_acm_proto_enumTypes[21]
 }
 
 func (x RecordType) Number() protoreflect.EnumNumber {
@@ -707,7 +1203,7 @@ func (x RecordType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RecordType.Descriptor instead.
 func (RecordType) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{11}
+	return file_acm_proto_rawDescGZIP(), []int{21}
 }
 
 type RenewalEligibility int32
@@ -740,11 +1236,11 @@ func (x RenewalEligibility) String() string {
 }
 
 func (RenewalEligibility) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[12].Descriptor()
+	return file_acm_proto_enumTypes[22].Descriptor()
 }
 
 func (RenewalEligibility) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[12]
+	return &file_acm_proto_enumTypes[22]
 }
 
 func (x RenewalEligibility) Number() protoreflect.EnumNumber {
@@ -753,7 +1249,7 @@ func (x RenewalEligibility) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RenewalEligibility.Descriptor instead.
 func (RenewalEligibility) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{12}
+	return file_acm_proto_rawDescGZIP(), []int{22}
 }
 
 type RenewalStatus int32
@@ -792,11 +1288,11 @@ func (x RenewalStatus) String() string {
 }
 
 func (RenewalStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[13].Descriptor()
+	return file_acm_proto_enumTypes[23].Descriptor()
 }
 
 func (RenewalStatus) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[13]
+	return &file_acm_proto_enumTypes[23]
 }
 
 func (x RenewalStatus) Number() protoreflect.EnumNumber {
@@ -805,7 +1301,7 @@ func (x RenewalStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RenewalStatus.Descriptor instead.
 func (RenewalStatus) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{13}
+	return file_acm_proto_rawDescGZIP(), []int{23}
 }
 
 type RevocationReason int32
@@ -865,11 +1361,11 @@ func (x RevocationReason) String() string {
 }
 
 func (RevocationReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[14].Descriptor()
+	return file_acm_proto_enumTypes[24].Descriptor()
 }
 
 func (RevocationReason) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[14]
+	return &file_acm_proto_enumTypes[24]
 }
 
 func (x RevocationReason) Number() protoreflect.EnumNumber {
@@ -878,30 +1374,33 @@ func (x RevocationReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RevocationReason.Descriptor instead.
 func (RevocationReason) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{14}
+	return file_acm_proto_rawDescGZIP(), []int{24}
 }
 
 type SearchCertificatesSortBy int32
 
 const (
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT           SearchCertificatesSortBy = 0
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT          SearchCertificatesSortBy = 1
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME         SearchCertificatesSortBy = 2
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY          SearchCertificatesSortBy = 3
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER           SearchCertificatesSortBy = 4
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD   SearchCertificatesSortBy = 5
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS      SearchCertificatesSortBy = 6
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_STATUS              SearchCertificatesSortBy = 7
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_EXPORTED            SearchCertificatesSortBy = 8
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE          SearchCertificatesSortBy = 9
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY SearchCertificatesSortBy = 10
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN     SearchCertificatesSortBy = 11
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_IN_USE              SearchCertificatesSortBy = 12
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM       SearchCertificatesSortBy = 13
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION       SearchCertificatesSortBy = 14
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT         SearchCertificatesSortBy = 15
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_TYPE                SearchCertificatesSortBy = 16
-	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_CREATED_AT          SearchCertificatesSortBy = 17
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT                   SearchCertificatesSortBy = 0
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT                  SearchCertificatesSortBy = 1
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_ACME_ENDPOINT_ARN           SearchCertificatesSortBy = 2
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME                 SearchCertificatesSortBy = 3
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY                  SearchCertificatesSortBy = 4
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER                   SearchCertificatesSortBy = 5
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD           SearchCertificatesSortBy = 6
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS              SearchCertificatesSortBy = 7
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_STATUS                      SearchCertificatesSortBy = 8
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_EXPORTED                    SearchCertificatesSortBy = 9
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE                  SearchCertificatesSortBy = 10
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY         SearchCertificatesSortBy = 11
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN             SearchCertificatesSortBy = 12
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_IN_USE                      SearchCertificatesSortBy = 13
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM               SearchCertificatesSortBy = 14
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION               SearchCertificatesSortBy = 15
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT                 SearchCertificatesSortBy = 16
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_TYPE                        SearchCertificatesSortBy = 17
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_ACME_ACCOUNT_ID             SearchCertificatesSortBy = 18
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_KEY_PAIR_ORIGIN SearchCertificatesSortBy = 19
+	SearchCertificatesSortBy_SEARCH_CERTIFICATES_SORT_BY_CREATED_AT                  SearchCertificatesSortBy = 20
 )
 
 // Enum value maps for SearchCertificatesSortBy.
@@ -909,42 +1408,48 @@ var (
 	SearchCertificatesSortBy_name = map[int32]string{
 		0:  "SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT",
 		1:  "SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT",
-		2:  "SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME",
-		3:  "SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY",
-		4:  "SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER",
-		5:  "SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD",
-		6:  "SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS",
-		7:  "SEARCH_CERTIFICATES_SORT_BY_STATUS",
-		8:  "SEARCH_CERTIFICATES_SORT_BY_EXPORTED",
-		9:  "SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE",
-		10: "SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY",
-		11: "SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN",
-		12: "SEARCH_CERTIFICATES_SORT_BY_IN_USE",
-		13: "SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM",
-		14: "SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION",
-		15: "SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT",
-		16: "SEARCH_CERTIFICATES_SORT_BY_TYPE",
-		17: "SEARCH_CERTIFICATES_SORT_BY_CREATED_AT",
+		2:  "SEARCH_CERTIFICATES_SORT_BY_ACME_ENDPOINT_ARN",
+		3:  "SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME",
+		4:  "SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY",
+		5:  "SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER",
+		6:  "SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD",
+		7:  "SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS",
+		8:  "SEARCH_CERTIFICATES_SORT_BY_STATUS",
+		9:  "SEARCH_CERTIFICATES_SORT_BY_EXPORTED",
+		10: "SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE",
+		11: "SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY",
+		12: "SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN",
+		13: "SEARCH_CERTIFICATES_SORT_BY_IN_USE",
+		14: "SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM",
+		15: "SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION",
+		16: "SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT",
+		17: "SEARCH_CERTIFICATES_SORT_BY_TYPE",
+		18: "SEARCH_CERTIFICATES_SORT_BY_ACME_ACCOUNT_ID",
+		19: "SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_KEY_PAIR_ORIGIN",
+		20: "SEARCH_CERTIFICATES_SORT_BY_CREATED_AT",
 	}
 	SearchCertificatesSortBy_value = map[string]int32{
-		"SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT":           0,
-		"SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT":          1,
-		"SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME":         2,
-		"SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY":          3,
-		"SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER":           4,
-		"SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD":   5,
-		"SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS":      6,
-		"SEARCH_CERTIFICATES_SORT_BY_STATUS":              7,
-		"SEARCH_CERTIFICATES_SORT_BY_EXPORTED":            8,
-		"SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE":          9,
-		"SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY": 10,
-		"SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN":     11,
-		"SEARCH_CERTIFICATES_SORT_BY_IN_USE":              12,
-		"SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM":       13,
-		"SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION":       14,
-		"SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT":         15,
-		"SEARCH_CERTIFICATES_SORT_BY_TYPE":                16,
-		"SEARCH_CERTIFICATES_SORT_BY_CREATED_AT":          17,
+		"SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT":                   0,
+		"SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT":                  1,
+		"SEARCH_CERTIFICATES_SORT_BY_ACME_ENDPOINT_ARN":           2,
+		"SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME":                 3,
+		"SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY":                  4,
+		"SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER":                   5,
+		"SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD":           6,
+		"SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS":              7,
+		"SEARCH_CERTIFICATES_SORT_BY_STATUS":                      8,
+		"SEARCH_CERTIFICATES_SORT_BY_EXPORTED":                    9,
+		"SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE":                  10,
+		"SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY":         11,
+		"SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN":             12,
+		"SEARCH_CERTIFICATES_SORT_BY_IN_USE":                      13,
+		"SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM":               14,
+		"SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION":               15,
+		"SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT":                 16,
+		"SEARCH_CERTIFICATES_SORT_BY_TYPE":                        17,
+		"SEARCH_CERTIFICATES_SORT_BY_ACME_ACCOUNT_ID":             18,
+		"SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_KEY_PAIR_ORIGIN": 19,
+		"SEARCH_CERTIFICATES_SORT_BY_CREATED_AT":                  20,
 	}
 )
 
@@ -959,11 +1464,11 @@ func (x SearchCertificatesSortBy) String() string {
 }
 
 func (SearchCertificatesSortBy) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[15].Descriptor()
+	return file_acm_proto_enumTypes[25].Descriptor()
 }
 
 func (SearchCertificatesSortBy) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[15]
+	return &file_acm_proto_enumTypes[25]
 }
 
 func (x SearchCertificatesSortBy) Number() protoreflect.EnumNumber {
@@ -972,7 +1477,7 @@ func (x SearchCertificatesSortBy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SearchCertificatesSortBy.Descriptor instead.
 func (SearchCertificatesSortBy) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{15}
+	return file_acm_proto_rawDescGZIP(), []int{25}
 }
 
 type SearchCertificatesSortOrder int32
@@ -1005,11 +1510,11 @@ func (x SearchCertificatesSortOrder) String() string {
 }
 
 func (SearchCertificatesSortOrder) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[16].Descriptor()
+	return file_acm_proto_enumTypes[26].Descriptor()
 }
 
 func (SearchCertificatesSortOrder) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[16]
+	return &file_acm_proto_enumTypes[26]
 }
 
 func (x SearchCertificatesSortOrder) Number() protoreflect.EnumNumber {
@@ -1018,7 +1523,7 @@ func (x SearchCertificatesSortOrder) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SearchCertificatesSortOrder.Descriptor instead.
 func (SearchCertificatesSortOrder) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{16}
+	return file_acm_proto_rawDescGZIP(), []int{26}
 }
 
 type SortBy int32
@@ -1048,11 +1553,11 @@ func (x SortBy) String() string {
 }
 
 func (SortBy) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[17].Descriptor()
+	return file_acm_proto_enumTypes[27].Descriptor()
 }
 
 func (SortBy) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[17]
+	return &file_acm_proto_enumTypes[27]
 }
 
 func (x SortBy) Number() protoreflect.EnumNumber {
@@ -1061,7 +1566,7 @@ func (x SortBy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SortBy.Descriptor instead.
 func (SortBy) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{17}
+	return file_acm_proto_rawDescGZIP(), []int{27}
 }
 
 type SortOrder int32
@@ -1094,11 +1599,11 @@ func (x SortOrder) String() string {
 }
 
 func (SortOrder) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[18].Descriptor()
+	return file_acm_proto_enumTypes[28].Descriptor()
 }
 
 func (SortOrder) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[18]
+	return &file_acm_proto_enumTypes[28]
 }
 
 func (x SortOrder) Number() protoreflect.EnumNumber {
@@ -1107,7 +1612,148 @@ func (x SortOrder) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SortOrder.Descriptor instead.
 func (SortOrder) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{18}
+	return file_acm_proto_rawDescGZIP(), []int{28}
+}
+
+type TimeType int32
+
+const (
+	TimeType_TIME_TYPE_MINUTES TimeType = 0
+	TimeType_TIME_TYPE_DAYS    TimeType = 1
+	TimeType_TIME_TYPE_HOURS   TimeType = 2
+)
+
+// Enum value maps for TimeType.
+var (
+	TimeType_name = map[int32]string{
+		0: "TIME_TYPE_MINUTES",
+		1: "TIME_TYPE_DAYS",
+		2: "TIME_TYPE_HOURS",
+	}
+	TimeType_value = map[string]int32{
+		"TIME_TYPE_MINUTES": 0,
+		"TIME_TYPE_DAYS":    1,
+		"TIME_TYPE_HOURS":   2,
+	}
+)
+
+func (x TimeType) Enum() *TimeType {
+	p := new(TimeType)
+	*p = x
+	return p
+}
+
+func (x TimeType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (TimeType) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[29].Descriptor()
+}
+
+func (TimeType) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[29]
+}
+
+func (x TimeType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use TimeType.Descriptor instead.
+func (TimeType) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{29}
+}
+
+type UpdateStatus int32
+
+const (
+	UpdateStatus_UPDATE_STATUS_SUCCESS                   UpdateStatus = 0
+	UpdateStatus_UPDATE_STATUS_PENDING_DOMAIN_VALIDATION UpdateStatus = 1
+	UpdateStatus_UPDATE_STATUS_FAILED                    UpdateStatus = 2
+)
+
+// Enum value maps for UpdateStatus.
+var (
+	UpdateStatus_name = map[int32]string{
+		0: "UPDATE_STATUS_SUCCESS",
+		1: "UPDATE_STATUS_PENDING_DOMAIN_VALIDATION",
+		2: "UPDATE_STATUS_FAILED",
+	}
+	UpdateStatus_value = map[string]int32{
+		"UPDATE_STATUS_SUCCESS":                   0,
+		"UPDATE_STATUS_PENDING_DOMAIN_VALIDATION": 1,
+		"UPDATE_STATUS_FAILED":                    2,
+	}
+)
+
+func (x UpdateStatus) Enum() *UpdateStatus {
+	p := new(UpdateStatus)
+	*p = x
+	return p
+}
+
+func (x UpdateStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UpdateStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[30].Descriptor()
+}
+
+func (UpdateStatus) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[30]
+}
+
+func (x UpdateStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UpdateStatus.Descriptor instead.
+func (UpdateStatus) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{30}
+}
+
+type UpdateType int32
+
+const (
+	UpdateType_UPDATE_TYPE_DOMAIN_VALIDATION_METHOD UpdateType = 0
+)
+
+// Enum value maps for UpdateType.
+var (
+	UpdateType_name = map[int32]string{
+		0: "UPDATE_TYPE_DOMAIN_VALIDATION_METHOD",
+	}
+	UpdateType_value = map[string]int32{
+		"UPDATE_TYPE_DOMAIN_VALIDATION_METHOD": 0,
+	}
+)
+
+func (x UpdateType) Enum() *UpdateType {
+	p := new(UpdateType)
+	*p = x
+	return p
+}
+
+func (x UpdateType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UpdateType) Descriptor() protoreflect.EnumDescriptor {
+	return file_acm_proto_enumTypes[31].Descriptor()
+}
+
+func (UpdateType) Type() protoreflect.EnumType {
+	return &file_acm_proto_enumTypes[31]
+}
+
+func (x UpdateType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UpdateType.Descriptor instead.
+func (UpdateType) EnumDescriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{31}
 }
 
 type ValidationMethod int32
@@ -1143,11 +1789,11 @@ func (x ValidationMethod) String() string {
 }
 
 func (ValidationMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_acm_proto_enumTypes[19].Descriptor()
+	return file_acm_proto_enumTypes[32].Descriptor()
 }
 
 func (ValidationMethod) Type() protoreflect.EnumType {
-	return &file_acm_proto_enumTypes[19]
+	return &file_acm_proto_enumTypes[32]
 }
 
 func (x ValidationMethod) Number() protoreflect.EnumNumber {
@@ -1156,12 +1802,12 @@ func (x ValidationMethod) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ValidationMethod.Descriptor instead.
 func (ValidationMethod) EnumDescriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{19}
+	return file_acm_proto_rawDescGZIP(), []int{32}
 }
 
 type AccessDeniedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1197,29 +1843,32 @@ func (*AccessDeniedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccessDeniedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type AcmCertificateMetadata struct {
-	state              protoimpl.MessageState `protogen:"open.v1"`
-	Createdat          string                 `protobuf:"bytes,258192751,opt,name=createdat,proto3" json:"createdat,omitempty"`
-	Exportoption       CertificateExport      `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
-	Exported           *bool                  `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
-	Importedat         string                 `protobuf:"bytes,348649225,opt,name=importedat,proto3" json:"importedat,omitempty"`
-	Inuse              *bool                  `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
-	Issuedat           string                 `protobuf:"bytes,17449786,opt,name=issuedat,proto3" json:"issuedat,omitempty"`
-	Managedby          CertificateManagedBy   `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Renewaleligibility RenewalEligibility     `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
-	Renewalstatus      RenewalStatus          `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
-	Revokedat          string                 `protobuf:"bytes,63251417,opt,name=revokedat,proto3" json:"revokedat,omitempty"`
-	Status             CertificateStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Type               CertificateType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
-	Validationmethod   ValidationMethod       `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	state                    protoimpl.MessageState   `protogen:"open.v1"`
+	Acmeaccountid            *string                  `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
+	Acmeendpointarn          *string                  `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Certificatekeypairorigin CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
+	Createdat                *string                  `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Exportoption             CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
+	Exported                 *bool                    `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
+	Importedat               *string                  `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
+	Inuse                    *bool                    `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
+	Issuedat                 *string                  `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
+	Managedby                CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
+	Renewaleligibility       RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
+	Renewalstatus            RenewalStatus            `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
+	Revokedat                *string                  `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Status                   CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
+	Type                     CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
+	Validationmethod         ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *AcmCertificateMetadata) Reset() {
@@ -1252,9 +1901,30 @@ func (*AcmCertificateMetadata) Descriptor() ([]byte, []int) {
 	return file_acm_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *AcmCertificateMetadata) GetCreatedat() string {
+func (x *AcmCertificateMetadata) GetAcmeaccountid() string {
+	if x != nil && x.Acmeaccountid != nil {
+		return *x.Acmeaccountid
+	}
+	return ""
+}
+
+func (x *AcmCertificateMetadata) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmCertificateMetadata) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
 	if x != nil {
-		return x.Createdat
+		return x.Certificatekeypairorigin
+	}
+	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
+}
+
+func (x *AcmCertificateMetadata) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
 	}
 	return ""
 }
@@ -1274,8 +1944,8 @@ func (x *AcmCertificateMetadata) GetExported() bool {
 }
 
 func (x *AcmCertificateMetadata) GetImportedat() string {
-	if x != nil {
-		return x.Importedat
+	if x != nil && x.Importedat != nil {
+		return *x.Importedat
 	}
 	return ""
 }
@@ -1288,8 +1958,8 @@ func (x *AcmCertificateMetadata) GetInuse() bool {
 }
 
 func (x *AcmCertificateMetadata) GetIssuedat() string {
-	if x != nil {
-		return x.Issuedat
+	if x != nil && x.Issuedat != nil {
+		return *x.Issuedat
 	}
 	return ""
 }
@@ -1316,8 +1986,8 @@ func (x *AcmCertificateMetadata) GetRenewalstatus() RenewalStatus {
 }
 
 func (x *AcmCertificateMetadata) GetRevokedat() string {
-	if x != nil {
-		return x.Revokedat
+	if x != nil && x.Revokedat != nil {
+		return *x.Revokedat
 	}
 	return ""
 }
@@ -1344,17 +2014,20 @@ func (x *AcmCertificateMetadata) GetValidationmethod() ValidationMethod {
 }
 
 type AcmCertificateMetadataFilter struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	Exportoption     CertificateExport      `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
-	Exported         *bool                  `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
-	Inuse            *bool                  `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
-	Managedby        CertificateManagedBy   `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Renewalstatus    RenewalStatus          `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
-	Status           CertificateStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Type             CertificateType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
-	Validationmethod ValidationMethod       `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                    protoimpl.MessageState   `protogen:"open.v1"`
+	Acmeaccountid            *string                  `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
+	Acmeendpointarn          *string                  `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Certificatekeypairorigin CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
+	Exportoption             CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
+	Exported                 *bool                    `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
+	Inuse                    *bool                    `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
+	Managedby                CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
+	Renewalstatus            RenewalStatus            `protobuf:"varint,277232086,opt,name=renewalstatus,proto3,enum=acm.RenewalStatus" json:"renewalstatus,omitempty"`
+	Status                   CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
+	Type                     CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
+	Validationmethod         ValidationMethod         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *AcmCertificateMetadataFilter) Reset() {
@@ -1385,6 +2058,27 @@ func (x *AcmCertificateMetadataFilter) ProtoReflect() protoreflect.Message {
 // Deprecated: Use AcmCertificateMetadataFilter.ProtoReflect.Descriptor instead.
 func (*AcmCertificateMetadataFilter) Descriptor() ([]byte, []int) {
 	return file_acm_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *AcmCertificateMetadataFilter) GetAcmeaccountid() string {
+	if x != nil && x.Acmeaccountid != nil {
+		return *x.Acmeaccountid
+	}
+	return ""
+}
+
+func (x *AcmCertificateMetadataFilter) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmCertificateMetadataFilter) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
+	if x != nil {
+		return x.Certificatekeypairorigin
+	}
+	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
 }
 
 func (x *AcmCertificateMetadataFilter) GetExportoption() CertificateExport {
@@ -1443,6 +2137,822 @@ func (x *AcmCertificateMetadataFilter) GetValidationmethod() ValidationMethod {
 	return ValidationMethod_VALIDATION_METHOD_HTTP
 }
 
+type AcmeAccount struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Accounturl                    *string                `protobuf:"bytes,410635830,opt,name=accounturl,proto3,oneof" json:"accounturl,omitempty"`
+	Acmeexternalaccountbindingarn *string                `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3,oneof" json:"acmeexternalaccountbindingarn,omitempty"`
+	Contacts                      []string               `protobuf:"bytes,145625361,rep,name=contacts,proto3" json:"contacts,omitempty"`
+	Createdat                     *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Publickeythumbprint           *string                `protobuf:"bytes,265215433,opt,name=publickeythumbprint,proto3,oneof" json:"publickeythumbprint,omitempty"`
+	Status                        AcmeAccountStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeAccountStatus" json:"status,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *AcmeAccount) Reset() {
+	*x = AcmeAccount{}
+	mi := &file_acm_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeAccount) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeAccount) ProtoMessage() {}
+
+func (x *AcmeAccount) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeAccount.ProtoReflect.Descriptor instead.
+func (*AcmeAccount) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *AcmeAccount) GetAccounturl() string {
+	if x != nil && x.Accounturl != nil {
+		return *x.Accounturl
+	}
+	return ""
+}
+
+func (x *AcmeAccount) GetAcmeexternalaccountbindingarn() string {
+	if x != nil && x.Acmeexternalaccountbindingarn != nil {
+		return *x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
+func (x *AcmeAccount) GetContacts() []string {
+	if x != nil {
+		return x.Contacts
+	}
+	return nil
+}
+
+func (x *AcmeAccount) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeAccount) GetPublickeythumbprint() string {
+	if x != nil && x.Publickeythumbprint != nil {
+		return *x.Publickeythumbprint
+	}
+	return ""
+}
+
+func (x *AcmeAccount) GetStatus() AcmeAccountStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AcmeAccountStatus_ACME_ACCOUNT_STATUS_DEACTIVATED
+}
+
+type AcmeAccountSummary struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Accounturl                    *string                `protobuf:"bytes,410635830,opt,name=accounturl,proto3,oneof" json:"accounturl,omitempty"`
+	Acmeexternalaccountbindingarn *string                `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3,oneof" json:"acmeexternalaccountbindingarn,omitempty"`
+	Contacts                      []string               `protobuf:"bytes,145625361,rep,name=contacts,proto3" json:"contacts,omitempty"`
+	Createdat                     *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Publickeythumbprint           *string                `protobuf:"bytes,265215433,opt,name=publickeythumbprint,proto3,oneof" json:"publickeythumbprint,omitempty"`
+	Status                        AcmeAccountStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeAccountStatus" json:"status,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *AcmeAccountSummary) Reset() {
+	*x = AcmeAccountSummary{}
+	mi := &file_acm_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeAccountSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeAccountSummary) ProtoMessage() {}
+
+func (x *AcmeAccountSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeAccountSummary.ProtoReflect.Descriptor instead.
+func (*AcmeAccountSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *AcmeAccountSummary) GetAccounturl() string {
+	if x != nil && x.Accounturl != nil {
+		return *x.Accounturl
+	}
+	return ""
+}
+
+func (x *AcmeAccountSummary) GetAcmeexternalaccountbindingarn() string {
+	if x != nil && x.Acmeexternalaccountbindingarn != nil {
+		return *x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
+func (x *AcmeAccountSummary) GetContacts() []string {
+	if x != nil {
+		return x.Contacts
+	}
+	return nil
+}
+
+func (x *AcmeAccountSummary) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeAccountSummary) GetPublickeythumbprint() string {
+	if x != nil && x.Publickeythumbprint != nil {
+		return *x.Publickeythumbprint
+	}
+	return ""
+}
+
+func (x *AcmeAccountSummary) GetStatus() AcmeAccountStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AcmeAccountStatus_ACME_ACCOUNT_STATUS_DEACTIVATED
+}
+
+type AcmeDomainValidation struct {
+	state                   protoimpl.MessageState     `protogen:"open.v1"`
+	Acmedomainvalidationarn *string                    `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3,oneof" json:"acmedomainvalidationarn,omitempty"`
+	Acmeendpointarn         *string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Createdat               *string                    `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname              *string                    `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Failuredetails          *FailureDetails            `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
+	Prevalidationdetails    *PrevalidationDetails      `protobuf:"bytes,84866774,opt,name=prevalidationdetails,proto3" json:"prevalidationdetails,omitempty"`
+	Prevalidationtype       PrevalidationType          `protobuf:"varint,170164414,opt,name=prevalidationtype,proto3,enum=acm.PrevalidationType" json:"prevalidationtype,omitempty"`
+	Status                  AcmeDomainValidationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeDomainValidationStatus" json:"status,omitempty"`
+	Updatedat               *string                    `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *AcmeDomainValidation) Reset() {
+	*x = AcmeDomainValidation{}
+	mi := &file_acm_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeDomainValidation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeDomainValidation) ProtoMessage() {}
+
+func (x *AcmeDomainValidation) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeDomainValidation.ProtoReflect.Descriptor instead.
+func (*AcmeDomainValidation) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *AcmeDomainValidation) GetAcmedomainvalidationarn() string {
+	if x != nil && x.Acmedomainvalidationarn != nil {
+		return *x.Acmedomainvalidationarn
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidation) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidation) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidation) GetDomainname() string {
+	if x != nil && x.Domainname != nil {
+		return *x.Domainname
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidation) GetFailuredetails() *FailureDetails {
+	if x != nil {
+		return x.Failuredetails
+	}
+	return nil
+}
+
+func (x *AcmeDomainValidation) GetPrevalidationdetails() *PrevalidationDetails {
+	if x != nil {
+		return x.Prevalidationdetails
+	}
+	return nil
+}
+
+func (x *AcmeDomainValidation) GetPrevalidationtype() PrevalidationType {
+	if x != nil {
+		return x.Prevalidationtype
+	}
+	return PrevalidationType_PREVALIDATION_TYPE_DNS_PREVALIDATION
+}
+
+func (x *AcmeDomainValidation) GetStatus() AcmeDomainValidationStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_VALIDATING
+}
+
+func (x *AcmeDomainValidation) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
+type AcmeDomainValidationSummary struct {
+	state                   protoimpl.MessageState     `protogen:"open.v1"`
+	Acmedomainvalidationarn *string                    `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3,oneof" json:"acmedomainvalidationarn,omitempty"`
+	Acmeendpointarn         *string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Createdat               *string                    `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname              *string                    `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Failuredetails          *FailureDetails            `protobuf:"bytes,409582698,opt,name=failuredetails,proto3" json:"failuredetails,omitempty"`
+	Prevalidationdetails    *PrevalidationDetails      `protobuf:"bytes,84866774,opt,name=prevalidationdetails,proto3" json:"prevalidationdetails,omitempty"`
+	Prevalidationtype       PrevalidationType          `protobuf:"varint,170164414,opt,name=prevalidationtype,proto3,enum=acm.PrevalidationType" json:"prevalidationtype,omitempty"`
+	Status                  AcmeDomainValidationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeDomainValidationStatus" json:"status,omitempty"`
+	Updatedat               *string                    `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *AcmeDomainValidationSummary) Reset() {
+	*x = AcmeDomainValidationSummary{}
+	mi := &file_acm_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeDomainValidationSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeDomainValidationSummary) ProtoMessage() {}
+
+func (x *AcmeDomainValidationSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeDomainValidationSummary.ProtoReflect.Descriptor instead.
+func (*AcmeDomainValidationSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *AcmeDomainValidationSummary) GetAcmedomainvalidationarn() string {
+	if x != nil && x.Acmedomainvalidationarn != nil {
+		return *x.Acmedomainvalidationarn
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidationSummary) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidationSummary) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidationSummary) GetDomainname() string {
+	if x != nil && x.Domainname != nil {
+		return *x.Domainname
+	}
+	return ""
+}
+
+func (x *AcmeDomainValidationSummary) GetFailuredetails() *FailureDetails {
+	if x != nil {
+		return x.Failuredetails
+	}
+	return nil
+}
+
+func (x *AcmeDomainValidationSummary) GetPrevalidationdetails() *PrevalidationDetails {
+	if x != nil {
+		return x.Prevalidationdetails
+	}
+	return nil
+}
+
+func (x *AcmeDomainValidationSummary) GetPrevalidationtype() PrevalidationType {
+	if x != nil {
+		return x.Prevalidationtype
+	}
+	return PrevalidationType_PREVALIDATION_TYPE_DNS_PREVALIDATION
+}
+
+func (x *AcmeDomainValidationSummary) GetStatus() AcmeDomainValidationStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AcmeDomainValidationStatus_ACME_DOMAIN_VALIDATION_STATUS_VALIDATING
+}
+
+func (x *AcmeDomainValidationSummary) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
+type AcmeEndpoint struct {
+	state                 protoimpl.MessageState    `protogen:"open.v1"`
+	Acmeendpointarn       *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Certificatetags       []*Tag                    `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
+	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
+	Createdat             *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Endpointurl           *string                   `protobuf:"bytes,31787414,opt,name=endpointurl,proto3,oneof" json:"endpointurl,omitempty"`
+	Failurereason         *string                   `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
+	Status                AcmeEndpointStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeEndpointStatus" json:"status,omitempty"`
+	Updatedat             *string                   `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *AcmeEndpoint) Reset() {
+	*x = AcmeEndpoint{}
+	mi := &file_acm_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeEndpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeEndpoint) ProtoMessage() {}
+
+func (x *AcmeEndpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeEndpoint.ProtoReflect.Descriptor instead.
+func (*AcmeEndpoint) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AcmeEndpoint) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmeEndpoint) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
+	if x != nil {
+		return x.Authorizationbehavior
+	}
+	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
+}
+
+func (x *AcmeEndpoint) GetCertificateauthority() *CertificateAuthority {
+	if x != nil {
+		return x.Certificateauthority
+	}
+	return nil
+}
+
+func (x *AcmeEndpoint) GetCertificatetags() []*Tag {
+	if x != nil {
+		return x.Certificatetags
+	}
+	return nil
+}
+
+func (x *AcmeEndpoint) GetContact() AcmeContact {
+	if x != nil {
+		return x.Contact
+	}
+	return AcmeContact_ACME_CONTACT_REQUIRED
+}
+
+func (x *AcmeEndpoint) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeEndpoint) GetEndpointurl() string {
+	if x != nil && x.Endpointurl != nil {
+		return *x.Endpointurl
+	}
+	return ""
+}
+
+func (x *AcmeEndpoint) GetFailurereason() string {
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
+	}
+	return ""
+}
+
+func (x *AcmeEndpoint) GetStatus() AcmeEndpointStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AcmeEndpointStatus_ACME_ENDPOINT_STATUS_ACTIVE
+}
+
+func (x *AcmeEndpoint) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
+type AcmeEndpointSummary struct {
+	state                 protoimpl.MessageState    `protogen:"open.v1"`
+	Acmeendpointarn       *string                   `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Certificatetags       []*Tag                    `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
+	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
+	Createdat             *string                   `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Endpointurl           *string                   `protobuf:"bytes,31787414,opt,name=endpointurl,proto3,oneof" json:"endpointurl,omitempty"`
+	Failurereason         *string                   `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
+	Status                AcmeEndpointStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.AcmeEndpointStatus" json:"status,omitempty"`
+	Updatedat             *string                   `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *AcmeEndpointSummary) Reset() {
+	*x = AcmeEndpointSummary{}
+	mi := &file_acm_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeEndpointSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeEndpointSummary) ProtoMessage() {}
+
+func (x *AcmeEndpointSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeEndpointSummary.ProtoReflect.Descriptor instead.
+func (*AcmeEndpointSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *AcmeEndpointSummary) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmeEndpointSummary) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
+	if x != nil {
+		return x.Authorizationbehavior
+	}
+	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
+}
+
+func (x *AcmeEndpointSummary) GetCertificateauthority() *CertificateAuthority {
+	if x != nil {
+		return x.Certificateauthority
+	}
+	return nil
+}
+
+func (x *AcmeEndpointSummary) GetCertificatetags() []*Tag {
+	if x != nil {
+		return x.Certificatetags
+	}
+	return nil
+}
+
+func (x *AcmeEndpointSummary) GetContact() AcmeContact {
+	if x != nil {
+		return x.Contact
+	}
+	return AcmeContact_ACME_CONTACT_REQUIRED
+}
+
+func (x *AcmeEndpointSummary) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeEndpointSummary) GetEndpointurl() string {
+	if x != nil && x.Endpointurl != nil {
+		return *x.Endpointurl
+	}
+	return ""
+}
+
+func (x *AcmeEndpointSummary) GetFailurereason() string {
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
+	}
+	return ""
+}
+
+func (x *AcmeEndpointSummary) GetStatus() AcmeEndpointStatus {
+	if x != nil {
+		return x.Status
+	}
+	return AcmeEndpointStatus_ACME_ENDPOINT_STATUS_ACTIVE
+}
+
+func (x *AcmeEndpointSummary) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
+type AcmeExternalAccountBinding struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn               *string                `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Acmeexternalaccountbindingarn *string                `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3,oneof" json:"acmeexternalaccountbindingarn,omitempty"`
+	Createdat                     *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Expiresat                     *string                `protobuf:"bytes,235981239,opt,name=expiresat,proto3,oneof" json:"expiresat,omitempty"`
+	Lastusedat                    *string                `protobuf:"bytes,171989482,opt,name=lastusedat,proto3,oneof" json:"lastusedat,omitempty"`
+	Revokedat                     *string                `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Rolearn                       *string                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
+	Updatedat                     *string                `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *AcmeExternalAccountBinding) Reset() {
+	*x = AcmeExternalAccountBinding{}
+	mi := &file_acm_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeExternalAccountBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeExternalAccountBinding) ProtoMessage() {}
+
+func (x *AcmeExternalAccountBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeExternalAccountBinding.ProtoReflect.Descriptor instead.
+func (*AcmeExternalAccountBinding) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *AcmeExternalAccountBinding) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetAcmeexternalaccountbindingarn() string {
+	if x != nil && x.Acmeexternalaccountbindingarn != nil {
+		return *x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetExpiresat() string {
+	if x != nil && x.Expiresat != nil {
+		return *x.Expiresat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetLastusedat() string {
+	if x != nil && x.Lastusedat != nil {
+		return *x.Lastusedat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetRevokedat() string {
+	if x != nil && x.Revokedat != nil {
+		return *x.Revokedat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetRolearn() string {
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBinding) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
+type AcmeExternalAccountBindingSummary struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn               *string                `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Acmeexternalaccountbindingarn *string                `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3,oneof" json:"acmeexternalaccountbindingarn,omitempty"`
+	Createdat                     *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Expiresat                     *string                `protobuf:"bytes,235981239,opt,name=expiresat,proto3,oneof" json:"expiresat,omitempty"`
+	Lastusedat                    *string                `protobuf:"bytes,171989482,opt,name=lastusedat,proto3,oneof" json:"lastusedat,omitempty"`
+	Revokedat                     *string                `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Rolearn                       *string                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
+	Updatedat                     *string                `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *AcmeExternalAccountBindingSummary) Reset() {
+	*x = AcmeExternalAccountBindingSummary{}
+	mi := &file_acm_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AcmeExternalAccountBindingSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AcmeExternalAccountBindingSummary) ProtoMessage() {}
+
+func (x *AcmeExternalAccountBindingSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AcmeExternalAccountBindingSummary.ProtoReflect.Descriptor instead.
+func (*AcmeExternalAccountBindingSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetAcmeexternalaccountbindingarn() string {
+	if x != nil && x.Acmeexternalaccountbindingarn != nil {
+		return *x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetExpiresat() string {
+	if x != nil && x.Expiresat != nil {
+		return *x.Expiresat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetLastusedat() string {
+	if x != nil && x.Lastusedat != nil {
+		return *x.Lastusedat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetRevokedat() string {
+	if x != nil && x.Revokedat != nil {
+		return *x.Revokedat
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetRolearn() string {
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
+	}
+	return ""
+}
+
+func (x *AcmeExternalAccountBindingSummary) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
 type AddTagsToCertificateRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Certificatearn string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
@@ -1453,7 +2963,7 @@ type AddTagsToCertificateRequest struct {
 
 func (x *AddTagsToCertificateRequest) Reset() {
 	*x = AddTagsToCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[3]
+	mi := &file_acm_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1465,7 +2975,7 @@ func (x *AddTagsToCertificateRequest) String() string {
 func (*AddTagsToCertificateRequest) ProtoMessage() {}
 
 func (x *AddTagsToCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[3]
+	mi := &file_acm_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1478,7 +2988,7 @@ func (x *AddTagsToCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AddTagsToCertificateRequest.ProtoReflect.Descriptor instead.
 func (*AddTagsToCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{3}
+	return file_acm_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AddTagsToCertificateRequest) GetCertificatearn() string {
@@ -1495,42 +3005,90 @@ func (x *AddTagsToCertificateRequest) GetTags() []*Tag {
 	return nil
 }
 
+type CertificateAuthority struct {
+	state                      protoimpl.MessageState      `protogen:"open.v1"`
+	Publiccertificateauthority *PublicCertificateAuthority `protobuf:"bytes,433196117,opt,name=publiccertificateauthority,proto3" json:"publiccertificateauthority,omitempty"`
+	unknownFields              protoimpl.UnknownFields
+	sizeCache                  protoimpl.SizeCache
+}
+
+func (x *CertificateAuthority) Reset() {
+	*x = CertificateAuthority{}
+	mi := &file_acm_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CertificateAuthority) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CertificateAuthority) ProtoMessage() {}
+
+func (x *CertificateAuthority) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CertificateAuthority.ProtoReflect.Descriptor instead.
+func (*CertificateAuthority) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *CertificateAuthority) GetPubliccertificateauthority() *PublicCertificateAuthority {
+	if x != nil {
+		return x.Publiccertificateauthority
+	}
+	return nil
+}
+
 type CertificateDetail struct {
-	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Certificatearn          string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
-	Certificateauthorityarn string                 `protobuf:"bytes,266069181,opt,name=certificateauthorityarn,proto3" json:"certificateauthorityarn,omitempty"`
-	Createdat               string                 `protobuf:"bytes,258192751,opt,name=createdat,proto3" json:"createdat,omitempty"`
-	Domainname              string                 `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainvalidationoptions []*DomainValidation    `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
-	Extendedkeyusages       []*ExtendedKeyUsage    `protobuf:"bytes,531267688,rep,name=extendedkeyusages,proto3" json:"extendedkeyusages,omitempty"`
-	Failurereason           FailureReason          `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=acm.FailureReason" json:"failurereason,omitempty"`
-	Importedat              string                 `protobuf:"bytes,348649225,opt,name=importedat,proto3" json:"importedat,omitempty"`
-	Inuseby                 []string               `protobuf:"bytes,330307273,rep,name=inuseby,proto3" json:"inuseby,omitempty"`
-	Issuedat                string                 `protobuf:"bytes,17449786,opt,name=issuedat,proto3" json:"issuedat,omitempty"`
-	Issuer                  string                 `protobuf:"bytes,528708823,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	Keyalgorithm            KeyAlgorithm           `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
-	Keyusages               []*KeyUsage            `protobuf:"bytes,345433681,rep,name=keyusages,proto3" json:"keyusages,omitempty"`
-	Managedby               CertificateManagedBy   `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Notafter                string                 `protobuf:"bytes,287678033,opt,name=notafter,proto3" json:"notafter,omitempty"`
-	Notbefore               string                 `protobuf:"bytes,459074038,opt,name=notbefore,proto3" json:"notbefore,omitempty"`
-	Options                 *CertificateOptions    `protobuf:"bytes,356388166,opt,name=options,proto3" json:"options,omitempty"`
-	Renewaleligibility      RenewalEligibility     `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
-	Renewalsummary          *RenewalSummary        `protobuf:"bytes,125255166,opt,name=renewalsummary,proto3" json:"renewalsummary,omitempty"`
-	Revocationreason        RevocationReason       `protobuf:"varint,331836358,opt,name=revocationreason,proto3,enum=acm.RevocationReason" json:"revocationreason,omitempty"`
-	Revokedat               string                 `protobuf:"bytes,63251417,opt,name=revokedat,proto3" json:"revokedat,omitempty"`
-	Serial                  string                 `protobuf:"bytes,143954586,opt,name=serial,proto3" json:"serial,omitempty"`
-	Signaturealgorithm      string                 `protobuf:"bytes,476410739,opt,name=signaturealgorithm,proto3" json:"signaturealgorithm,omitempty"`
-	Status                  CertificateStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Subject                 string                 `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
-	Subjectalternativenames []string               `protobuf:"bytes,109998119,rep,name=subjectalternativenames,proto3" json:"subjectalternativenames,omitempty"`
-	Type                    CertificateType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                    protoimpl.MessageState   `protogen:"open.v1"`
+	Acmeaccountid            *string                  `protobuf:"bytes,482433560,opt,name=acmeaccountid,proto3,oneof" json:"acmeaccountid,omitempty"`
+	Acmeendpointarn          *string                  `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	Certificatearn           *string                  `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificateauthorityarn  *string                  `protobuf:"bytes,266069181,opt,name=certificateauthorityarn,proto3,oneof" json:"certificateauthorityarn,omitempty"`
+	Certificatekeypairorigin CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
+	Createdat                *string                  `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname               *string                  `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Domainvalidationoptions  []*DomainValidation      `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
+	Extendedkeyusages        []*ExtendedKeyUsage      `protobuf:"bytes,531267688,rep,name=extendedkeyusages,proto3" json:"extendedkeyusages,omitempty"`
+	Failurereason            FailureReason            `protobuf:"varint,232322142,opt,name=failurereason,proto3,enum=acm.FailureReason" json:"failurereason,omitempty"`
+	Importedat               *string                  `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
+	Inuseby                  []string                 `protobuf:"bytes,330307273,rep,name=inuseby,proto3" json:"inuseby,omitempty"`
+	Issuedat                 *string                  `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
+	Issuer                   *string                  `protobuf:"bytes,528708823,opt,name=issuer,proto3,oneof" json:"issuer,omitempty"`
+	Keyalgorithm             KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
+	Keyusages                []*KeyUsage              `protobuf:"bytes,345433681,rep,name=keyusages,proto3" json:"keyusages,omitempty"`
+	Managedby                CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
+	Notafter                 *string                  `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
+	Notbefore                *string                  `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
+	Options                  *CertificateOptions      `protobuf:"bytes,356388166,opt,name=options,proto3" json:"options,omitempty"`
+	Renewaleligibility       RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
+	Renewalsummary           *RenewalSummary          `protobuf:"bytes,125255166,opt,name=renewalsummary,proto3" json:"renewalsummary,omitempty"`
+	Revocationreason         RevocationReason         `protobuf:"varint,331836358,opt,name=revocationreason,proto3,enum=acm.RevocationReason" json:"revocationreason,omitempty"`
+	Revokedat                *string                  `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Serial                   *string                  `protobuf:"bytes,143954586,opt,name=serial,proto3,oneof" json:"serial,omitempty"`
+	Signaturealgorithm       *string                  `protobuf:"bytes,476410739,opt,name=signaturealgorithm,proto3,oneof" json:"signaturealgorithm,omitempty"`
+	Status                   CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
+	Subject                  *string                  `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
+	Subjectalternativenames  []string                 `protobuf:"bytes,109998119,rep,name=subjectalternativenames,proto3" json:"subjectalternativenames,omitempty"`
+	Type                     CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
+	Updatesummary            *UpdateSummary           `protobuf:"bytes,512986845,opt,name=updatesummary,proto3" json:"updatesummary,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *CertificateDetail) Reset() {
 	*x = CertificateDetail{}
-	mi := &file_acm_proto_msgTypes[4]
+	mi := &file_acm_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1542,7 +3100,7 @@ func (x *CertificateDetail) String() string {
 func (*CertificateDetail) ProtoMessage() {}
 
 func (x *CertificateDetail) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[4]
+	mi := &file_acm_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1555,33 +3113,54 @@ func (x *CertificateDetail) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateDetail.ProtoReflect.Descriptor instead.
 func (*CertificateDetail) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{4}
+	return file_acm_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *CertificateDetail) GetAcmeaccountid() string {
+	if x != nil && x.Acmeaccountid != nil {
+		return *x.Acmeaccountid
+	}
+	return ""
+}
+
+func (x *CertificateDetail) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
 }
 
 func (x *CertificateDetail) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
 
 func (x *CertificateDetail) GetCertificateauthorityarn() string {
-	if x != nil {
-		return x.Certificateauthorityarn
+	if x != nil && x.Certificateauthorityarn != nil {
+		return *x.Certificateauthorityarn
 	}
 	return ""
 }
 
-func (x *CertificateDetail) GetCreatedat() string {
+func (x *CertificateDetail) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
 	if x != nil {
-		return x.Createdat
+		return x.Certificatekeypairorigin
+	}
+	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
+}
+
+func (x *CertificateDetail) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
 	}
 	return ""
 }
 
 func (x *CertificateDetail) GetDomainname() string {
-	if x != nil {
-		return x.Domainname
+	if x != nil && x.Domainname != nil {
+		return *x.Domainname
 	}
 	return ""
 }
@@ -1608,8 +3187,8 @@ func (x *CertificateDetail) GetFailurereason() FailureReason {
 }
 
 func (x *CertificateDetail) GetImportedat() string {
-	if x != nil {
-		return x.Importedat
+	if x != nil && x.Importedat != nil {
+		return *x.Importedat
 	}
 	return ""
 }
@@ -1622,15 +3201,15 @@ func (x *CertificateDetail) GetInuseby() []string {
 }
 
 func (x *CertificateDetail) GetIssuedat() string {
-	if x != nil {
-		return x.Issuedat
+	if x != nil && x.Issuedat != nil {
+		return *x.Issuedat
 	}
 	return ""
 }
 
 func (x *CertificateDetail) GetIssuer() string {
-	if x != nil {
-		return x.Issuer
+	if x != nil && x.Issuer != nil {
+		return *x.Issuer
 	}
 	return ""
 }
@@ -1657,15 +3236,15 @@ func (x *CertificateDetail) GetManagedby() CertificateManagedBy {
 }
 
 func (x *CertificateDetail) GetNotafter() string {
-	if x != nil {
-		return x.Notafter
+	if x != nil && x.Notafter != nil {
+		return *x.Notafter
 	}
 	return ""
 }
 
 func (x *CertificateDetail) GetNotbefore() string {
-	if x != nil {
-		return x.Notbefore
+	if x != nil && x.Notbefore != nil {
+		return *x.Notbefore
 	}
 	return ""
 }
@@ -1699,22 +3278,22 @@ func (x *CertificateDetail) GetRevocationreason() RevocationReason {
 }
 
 func (x *CertificateDetail) GetRevokedat() string {
-	if x != nil {
-		return x.Revokedat
+	if x != nil && x.Revokedat != nil {
+		return *x.Revokedat
 	}
 	return ""
 }
 
 func (x *CertificateDetail) GetSerial() string {
-	if x != nil {
-		return x.Serial
+	if x != nil && x.Serial != nil {
+		return *x.Serial
 	}
 	return ""
 }
 
 func (x *CertificateDetail) GetSignaturealgorithm() string {
-	if x != nil {
-		return x.Signaturealgorithm
+	if x != nil && x.Signaturealgorithm != nil {
+		return *x.Signaturealgorithm
 	}
 	return ""
 }
@@ -1727,8 +3306,8 @@ func (x *CertificateDetail) GetStatus() CertificateStatus {
 }
 
 func (x *CertificateDetail) GetSubject() string {
-	if x != nil {
-		return x.Subject
+	if x != nil && x.Subject != nil {
+		return *x.Subject
 	}
 	return ""
 }
@@ -1747,10 +3326,17 @@ func (x *CertificateDetail) GetType() CertificateType {
 	return CertificateType_CERTIFICATE_TYPE_IMPORTED
 }
 
+func (x *CertificateDetail) GetUpdatesummary() *UpdateSummary {
+	if x != nil {
+		return x.Updatesummary
+	}
+	return nil
+}
+
 type CertificateFilter struct {
 	state                        protoimpl.MessageState        `protogen:"open.v1"`
 	Acmcertificatemetadatafilter *AcmCertificateMetadataFilter `protobuf:"bytes,412384501,opt,name=acmcertificatemetadatafilter,proto3" json:"acmcertificatemetadatafilter,omitempty"`
-	Certificatearn               string                        `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
+	Certificatearn               *string                       `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	X509Attributefilter          *X509AttributeFilter          `protobuf:"bytes,113905206,opt,name=x509attributefilter,proto3" json:"x509attributefilter,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -1758,7 +3344,7 @@ type CertificateFilter struct {
 
 func (x *CertificateFilter) Reset() {
 	*x = CertificateFilter{}
-	mi := &file_acm_proto_msgTypes[5]
+	mi := &file_acm_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1770,7 +3356,7 @@ func (x *CertificateFilter) String() string {
 func (*CertificateFilter) ProtoMessage() {}
 
 func (x *CertificateFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[5]
+	mi := &file_acm_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1783,7 +3369,7 @@ func (x *CertificateFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateFilter.ProtoReflect.Descriptor instead.
 func (*CertificateFilter) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{5}
+	return file_acm_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *CertificateFilter) GetAcmcertificatemetadatafilter() *AcmCertificateMetadataFilter {
@@ -1794,8 +3380,8 @@ func (x *CertificateFilter) GetAcmcertificatemetadatafilter() *AcmCertificateMet
 }
 
 func (x *CertificateFilter) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
@@ -1819,7 +3405,7 @@ type CertificateFilterStatement struct {
 
 func (x *CertificateFilterStatement) Reset() {
 	*x = CertificateFilterStatement{}
-	mi := &file_acm_proto_msgTypes[6]
+	mi := &file_acm_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1831,7 +3417,7 @@ func (x *CertificateFilterStatement) String() string {
 func (*CertificateFilterStatement) ProtoMessage() {}
 
 func (x *CertificateFilterStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[6]
+	mi := &file_acm_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1844,7 +3430,7 @@ func (x *CertificateFilterStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateFilterStatement.ProtoReflect.Descriptor instead.
 func (*CertificateFilterStatement) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{6}
+	return file_acm_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CertificateFilterStatement) GetAnd() []*CertificateFilterStatement {
@@ -1884,7 +3470,7 @@ type CertificateMetadata struct {
 
 func (x *CertificateMetadata) Reset() {
 	*x = CertificateMetadata{}
-	mi := &file_acm_proto_msgTypes[7]
+	mi := &file_acm_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1896,7 +3482,7 @@ func (x *CertificateMetadata) String() string {
 func (*CertificateMetadata) ProtoMessage() {}
 
 func (x *CertificateMetadata) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[7]
+	mi := &file_acm_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1909,7 +3495,7 @@ func (x *CertificateMetadata) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateMetadata.ProtoReflect.Descriptor instead.
 func (*CertificateMetadata) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{7}
+	return file_acm_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *CertificateMetadata) GetAcmcertificatemetadata() *AcmCertificateMetadata {
@@ -1923,13 +3509,14 @@ type CertificateOptions struct {
 	state                                    protoimpl.MessageState                   `protogen:"open.v1"`
 	Certificatetransparencyloggingpreference CertificateTransparencyLoggingPreference `protobuf:"varint,414636075,opt,name=certificatetransparencyloggingpreference,proto3,enum=acm.CertificateTransparencyLoggingPreference" json:"certificatetransparencyloggingpreference,omitempty"`
 	Export                                   CertificateExport                        `protobuf:"varint,140724692,opt,name=export,proto3,enum=acm.CertificateExport" json:"export,omitempty"`
+	Validationmethod                         ValidationMethod                         `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
 	unknownFields                            protoimpl.UnknownFields
 	sizeCache                                protoimpl.SizeCache
 }
 
 func (x *CertificateOptions) Reset() {
 	*x = CertificateOptions{}
-	mi := &file_acm_proto_msgTypes[8]
+	mi := &file_acm_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1941,7 +3528,7 @@ func (x *CertificateOptions) String() string {
 func (*CertificateOptions) ProtoMessage() {}
 
 func (x *CertificateOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[8]
+	mi := &file_acm_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1954,7 +3541,7 @@ func (x *CertificateOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateOptions.ProtoReflect.Descriptor instead.
 func (*CertificateOptions) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{8}
+	return file_acm_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *CertificateOptions) GetCertificatetransparencyloggingpreference() CertificateTransparencyLoggingPreference {
@@ -1971,9 +3558,16 @@ func (x *CertificateOptions) GetExport() CertificateExport {
 	return CertificateExport_CERTIFICATE_EXPORT_DISABLED
 }
 
+func (x *CertificateOptions) GetValidationmethod() ValidationMethod {
+	if x != nil {
+		return x.Validationmethod
+	}
+	return ValidationMethod_VALIDATION_METHOD_HTTP
+}
+
 type CertificateSearchResult struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Certificatearn      string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
+	Certificatearn      *string                `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	Certificatemetadata *CertificateMetadata   `protobuf:"bytes,491370262,opt,name=certificatemetadata,proto3" json:"certificatemetadata,omitempty"`
 	X509Attributes      *X509Attributes        `protobuf:"bytes,275616905,opt,name=x509attributes,proto3" json:"x509attributes,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -1982,7 +3576,7 @@ type CertificateSearchResult struct {
 
 func (x *CertificateSearchResult) Reset() {
 	*x = CertificateSearchResult{}
-	mi := &file_acm_proto_msgTypes[9]
+	mi := &file_acm_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1994,7 +3588,7 @@ func (x *CertificateSearchResult) String() string {
 func (*CertificateSearchResult) ProtoMessage() {}
 
 func (x *CertificateSearchResult) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[9]
+	mi := &file_acm_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2007,12 +3601,12 @@ func (x *CertificateSearchResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateSearchResult.ProtoReflect.Descriptor instead.
 func (*CertificateSearchResult) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{9}
+	return file_acm_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *CertificateSearchResult) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
@@ -2032,34 +3626,35 @@ func (x *CertificateSearchResult) GetX509Attributes() *X509Attributes {
 }
 
 type CertificateSummary struct {
-	state                                protoimpl.MessageState `protogen:"open.v1"`
-	Certificatearn                       string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
-	Createdat                            string                 `protobuf:"bytes,258192751,opt,name=createdat,proto3" json:"createdat,omitempty"`
-	Domainname                           string                 `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Exportoption                         CertificateExport      `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
-	Exported                             *bool                  `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
-	Extendedkeyusages                    []ExtendedKeyUsageName `protobuf:"varint,531267688,rep,packed,name=extendedkeyusages,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusages,omitempty"`
-	Hasadditionalsubjectalternativenames *bool                  `protobuf:"varint,389669028,opt,name=hasadditionalsubjectalternativenames,proto3,oneof" json:"hasadditionalsubjectalternativenames,omitempty"`
-	Importedat                           string                 `protobuf:"bytes,348649225,opt,name=importedat,proto3" json:"importedat,omitempty"`
-	Inuse                                *bool                  `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
-	Issuedat                             string                 `protobuf:"bytes,17449786,opt,name=issuedat,proto3" json:"issuedat,omitempty"`
-	Keyalgorithm                         KeyAlgorithm           `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
-	Keyusages                            []KeyUsageName         `protobuf:"varint,345433681,rep,packed,name=keyusages,proto3,enum=acm.KeyUsageName" json:"keyusages,omitempty"`
-	Managedby                            CertificateManagedBy   `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
-	Notafter                             string                 `protobuf:"bytes,287678033,opt,name=notafter,proto3" json:"notafter,omitempty"`
-	Notbefore                            string                 `protobuf:"bytes,459074038,opt,name=notbefore,proto3" json:"notbefore,omitempty"`
-	Renewaleligibility                   RenewalEligibility     `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
-	Revokedat                            string                 `protobuf:"bytes,63251417,opt,name=revokedat,proto3" json:"revokedat,omitempty"`
-	Status                               CertificateStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
-	Subjectalternativenamesummaries      []string               `protobuf:"bytes,248841448,rep,name=subjectalternativenamesummaries,proto3" json:"subjectalternativenamesummaries,omitempty"`
-	Type                                 CertificateType        `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
+	state                                protoimpl.MessageState   `protogen:"open.v1"`
+	Certificatearn                       *string                  `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificatekeypairorigin             CertificateKeyPairOrigin `protobuf:"varint,301725618,opt,name=certificatekeypairorigin,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigin,omitempty"`
+	Createdat                            *string                  `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Domainname                           *string                  `protobuf:"bytes,194914027,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Exportoption                         CertificateExport        `protobuf:"varint,19500687,opt,name=exportoption,proto3,enum=acm.CertificateExport" json:"exportoption,omitempty"`
+	Exported                             *bool                    `protobuf:"varint,491164947,opt,name=exported,proto3,oneof" json:"exported,omitempty"`
+	Extendedkeyusages                    []ExtendedKeyUsageName   `protobuf:"varint,531267688,rep,packed,name=extendedkeyusages,proto3,enum=acm.ExtendedKeyUsageName" json:"extendedkeyusages,omitempty"`
+	Hasadditionalsubjectalternativenames *bool                    `protobuf:"varint,389669028,opt,name=hasadditionalsubjectalternativenames,proto3,oneof" json:"hasadditionalsubjectalternativenames,omitempty"`
+	Importedat                           *string                  `protobuf:"bytes,348649225,opt,name=importedat,proto3,oneof" json:"importedat,omitempty"`
+	Inuse                                *bool                    `protobuf:"varint,398346234,opt,name=inuse,proto3,oneof" json:"inuse,omitempty"`
+	Issuedat                             *string                  `protobuf:"bytes,17449786,opt,name=issuedat,proto3,oneof" json:"issuedat,omitempty"`
+	Keyalgorithm                         KeyAlgorithm             `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
+	Keyusages                            []KeyUsageName           `protobuf:"varint,345433681,rep,packed,name=keyusages,proto3,enum=acm.KeyUsageName" json:"keyusages,omitempty"`
+	Managedby                            CertificateManagedBy     `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
+	Notafter                             *string                  `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
+	Notbefore                            *string                  `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
+	Renewaleligibility                   RenewalEligibility       `protobuf:"varint,172871849,opt,name=renewaleligibility,proto3,enum=acm.RenewalEligibility" json:"renewaleligibility,omitempty"`
+	Revokedat                            *string                  `protobuf:"bytes,63251417,opt,name=revokedat,proto3,oneof" json:"revokedat,omitempty"`
+	Status                               CertificateStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.CertificateStatus" json:"status,omitempty"`
+	Subjectalternativenamesummaries      []string                 `protobuf:"bytes,248841448,rep,name=subjectalternativenamesummaries,proto3" json:"subjectalternativenamesummaries,omitempty"`
+	Type                                 CertificateType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.CertificateType" json:"type,omitempty"`
 	unknownFields                        protoimpl.UnknownFields
 	sizeCache                            protoimpl.SizeCache
 }
 
 func (x *CertificateSummary) Reset() {
 	*x = CertificateSummary{}
-	mi := &file_acm_proto_msgTypes[10]
+	mi := &file_acm_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2071,7 +3666,7 @@ func (x *CertificateSummary) String() string {
 func (*CertificateSummary) ProtoMessage() {}
 
 func (x *CertificateSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[10]
+	mi := &file_acm_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2084,26 +3679,33 @@ func (x *CertificateSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CertificateSummary.ProtoReflect.Descriptor instead.
 func (*CertificateSummary) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{10}
+	return file_acm_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *CertificateSummary) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
 
-func (x *CertificateSummary) GetCreatedat() string {
+func (x *CertificateSummary) GetCertificatekeypairorigin() CertificateKeyPairOrigin {
 	if x != nil {
-		return x.Createdat
+		return x.Certificatekeypairorigin
+	}
+	return CertificateKeyPairOrigin_CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED
+}
+
+func (x *CertificateSummary) GetCreatedat() string {
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
 	}
 	return ""
 }
 
 func (x *CertificateSummary) GetDomainname() string {
-	if x != nil {
-		return x.Domainname
+	if x != nil && x.Domainname != nil {
+		return *x.Domainname
 	}
 	return ""
 }
@@ -2137,8 +3739,8 @@ func (x *CertificateSummary) GetHasadditionalsubjectalternativenames() bool {
 }
 
 func (x *CertificateSummary) GetImportedat() string {
-	if x != nil {
-		return x.Importedat
+	if x != nil && x.Importedat != nil {
+		return *x.Importedat
 	}
 	return ""
 }
@@ -2151,8 +3753,8 @@ func (x *CertificateSummary) GetInuse() bool {
 }
 
 func (x *CertificateSummary) GetIssuedat() string {
-	if x != nil {
-		return x.Issuedat
+	if x != nil && x.Issuedat != nil {
+		return *x.Issuedat
 	}
 	return ""
 }
@@ -2179,15 +3781,15 @@ func (x *CertificateSummary) GetManagedby() CertificateManagedBy {
 }
 
 func (x *CertificateSummary) GetNotafter() string {
-	if x != nil {
-		return x.Notafter
+	if x != nil && x.Notafter != nil {
+		return *x.Notafter
 	}
 	return ""
 }
 
 func (x *CertificateSummary) GetNotbefore() string {
-	if x != nil {
-		return x.Notbefore
+	if x != nil && x.Notbefore != nil {
+		return *x.Notbefore
 	}
 	return ""
 }
@@ -2200,8 +3802,8 @@ func (x *CertificateSummary) GetRenewaleligibility() RenewalEligibility {
 }
 
 func (x *CertificateSummary) GetRevokedat() string {
-	if x != nil {
-		return x.Revokedat
+	if x != nil && x.Revokedat != nil {
+		return *x.Revokedat
 	}
 	return ""
 }
@@ -2237,7 +3839,7 @@ type CommonNameFilter struct {
 
 func (x *CommonNameFilter) Reset() {
 	*x = CommonNameFilter{}
-	mi := &file_acm_proto_msgTypes[11]
+	mi := &file_acm_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2249,7 +3851,7 @@ func (x *CommonNameFilter) String() string {
 func (*CommonNameFilter) ProtoMessage() {}
 
 func (x *CommonNameFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[11]
+	mi := &file_acm_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2262,7 +3864,7 @@ func (x *CommonNameFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommonNameFilter.ProtoReflect.Descriptor instead.
 func (*CommonNameFilter) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{11}
+	return file_acm_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *CommonNameFilter) GetComparisonoperator() ComparisonOperator {
@@ -2281,14 +3883,14 @@ func (x *CommonNameFilter) GetValue() string {
 
 type ConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ConflictException) Reset() {
 	*x = ConflictException{}
-	mi := &file_acm_proto_msgTypes[12]
+	mi := &file_acm_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2300,7 +3902,7 @@ func (x *ConflictException) String() string {
 func (*ConflictException) ProtoMessage() {}
 
 func (x *ConflictException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[12]
+	mi := &file_acm_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2313,27 +3915,395 @@ func (x *ConflictException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConflictException.ProtoReflect.Descriptor instead.
 func (*ConflictException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{12}
+	return file_acm_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *ConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
+type CreateAcmeDomainValidationRequest struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn      string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Domainname           string                 `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
+	Idempotencytoken     *string                `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3,oneof" json:"idempotencytoken,omitempty"`
+	Prevalidationoptions *PrevalidationOptions  `protobuf:"bytes,339127734,opt,name=prevalidationoptions,proto3" json:"prevalidationoptions,omitempty"`
+	Tags                 []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *CreateAcmeDomainValidationRequest) Reset() {
+	*x = CreateAcmeDomainValidationRequest{}
+	mi := &file_acm_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAcmeDomainValidationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAcmeDomainValidationRequest) ProtoMessage() {}
+
+func (x *CreateAcmeDomainValidationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAcmeDomainValidationRequest.ProtoReflect.Descriptor instead.
+func (*CreateAcmeDomainValidationRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *CreateAcmeDomainValidationRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *CreateAcmeDomainValidationRequest) GetDomainname() string {
+	if x != nil {
+		return x.Domainname
+	}
+	return ""
+}
+
+func (x *CreateAcmeDomainValidationRequest) GetIdempotencytoken() string {
+	if x != nil && x.Idempotencytoken != nil {
+		return *x.Idempotencytoken
+	}
+	return ""
+}
+
+func (x *CreateAcmeDomainValidationRequest) GetPrevalidationoptions() *PrevalidationOptions {
+	if x != nil {
+		return x.Prevalidationoptions
+	}
+	return nil
+}
+
+func (x *CreateAcmeDomainValidationRequest) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+type CreateAcmeDomainValidationResponse struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	Acmedomainvalidationarn string                 `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3" json:"acmedomainvalidationarn,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *CreateAcmeDomainValidationResponse) Reset() {
+	*x = CreateAcmeDomainValidationResponse{}
+	mi := &file_acm_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAcmeDomainValidationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAcmeDomainValidationResponse) ProtoMessage() {}
+
+func (x *CreateAcmeDomainValidationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAcmeDomainValidationResponse.ProtoReflect.Descriptor instead.
+func (*CreateAcmeDomainValidationResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *CreateAcmeDomainValidationResponse) GetAcmedomainvalidationarn() string {
+	if x != nil {
+		return x.Acmedomainvalidationarn
+	}
+	return ""
+}
+
+type CreateAcmeEndpointRequest struct {
+	state                 protoimpl.MessageState    `protogen:"open.v1"`
+	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Certificatetags       []*Tag                    `protobuf:"bytes,340578970,rep,name=certificatetags,proto3" json:"certificatetags,omitempty"`
+	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
+	Idempotencytoken      *string                   `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3,oneof" json:"idempotencytoken,omitempty"`
+	Tags                  []*Tag                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *CreateAcmeEndpointRequest) Reset() {
+	*x = CreateAcmeEndpointRequest{}
+	mi := &file_acm_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAcmeEndpointRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAcmeEndpointRequest) ProtoMessage() {}
+
+func (x *CreateAcmeEndpointRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAcmeEndpointRequest.ProtoReflect.Descriptor instead.
+func (*CreateAcmeEndpointRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *CreateAcmeEndpointRequest) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
+	if x != nil {
+		return x.Authorizationbehavior
+	}
+	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
+}
+
+func (x *CreateAcmeEndpointRequest) GetCertificateauthority() *CertificateAuthority {
+	if x != nil {
+		return x.Certificateauthority
+	}
+	return nil
+}
+
+func (x *CreateAcmeEndpointRequest) GetCertificatetags() []*Tag {
+	if x != nil {
+		return x.Certificatetags
+	}
+	return nil
+}
+
+func (x *CreateAcmeEndpointRequest) GetContact() AcmeContact {
+	if x != nil {
+		return x.Contact
+	}
+	return AcmeContact_ACME_CONTACT_REQUIRED
+}
+
+func (x *CreateAcmeEndpointRequest) GetIdempotencytoken() string {
+	if x != nil && x.Idempotencytoken != nil {
+		return *x.Idempotencytoken
+	}
+	return ""
+}
+
+func (x *CreateAcmeEndpointRequest) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+type CreateAcmeEndpointResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn *string                `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3,oneof" json:"acmeendpointarn,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CreateAcmeEndpointResponse) Reset() {
+	*x = CreateAcmeEndpointResponse{}
+	mi := &file_acm_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAcmeEndpointResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAcmeEndpointResponse) ProtoMessage() {}
+
+func (x *CreateAcmeEndpointResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAcmeEndpointResponse.ProtoReflect.Descriptor instead.
+func (*CreateAcmeEndpointResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *CreateAcmeEndpointResponse) GetAcmeendpointarn() string {
+	if x != nil && x.Acmeendpointarn != nil {
+		return *x.Acmeendpointarn
+	}
+	return ""
+}
+
+type CreateAcmeExternalAccountBindingRequest struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn  string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Expiration       *Expiration            `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
+	Idempotencytoken *string                `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3,oneof" json:"idempotencytoken,omitempty"`
+	Rolearn          string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
+	Tags             []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) Reset() {
+	*x = CreateAcmeExternalAccountBindingRequest{}
+	mi := &file_acm_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAcmeExternalAccountBindingRequest) ProtoMessage() {}
+
+func (x *CreateAcmeExternalAccountBindingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAcmeExternalAccountBindingRequest.ProtoReflect.Descriptor instead.
+func (*CreateAcmeExternalAccountBindingRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) GetExpiration() *Expiration {
+	if x != nil {
+		return x.Expiration
+	}
+	return nil
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) GetIdempotencytoken() string {
+	if x != nil && x.Idempotencytoken != nil {
+		return *x.Idempotencytoken
+	}
+	return ""
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) GetRolearn() string {
+	if x != nil {
+		return x.Rolearn
+	}
+	return ""
+}
+
+func (x *CreateAcmeExternalAccountBindingRequest) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+type CreateAcmeExternalAccountBindingResponse struct {
+	state                  protoimpl.MessageState      `protogen:"open.v1"`
+	Externalaccountbinding *AcmeExternalAccountBinding `protobuf:"bytes,30290275,opt,name=externalaccountbinding,proto3" json:"externalaccountbinding,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *CreateAcmeExternalAccountBindingResponse) Reset() {
+	*x = CreateAcmeExternalAccountBindingResponse{}
+	mi := &file_acm_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateAcmeExternalAccountBindingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateAcmeExternalAccountBindingResponse) ProtoMessage() {}
+
+func (x *CreateAcmeExternalAccountBindingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateAcmeExternalAccountBindingResponse.ProtoReflect.Descriptor instead.
+func (*CreateAcmeExternalAccountBindingResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *CreateAcmeExternalAccountBindingResponse) GetExternalaccountbinding() *AcmeExternalAccountBinding {
+	if x != nil {
+		return x.Externalaccountbinding
+	}
+	return nil
+}
+
 type CustomAttribute struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Objectidentifier string                 `protobuf:"bytes,389541722,opt,name=objectidentifier,proto3" json:"objectidentifier,omitempty"`
-	Value            string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Objectidentifier *string                `protobuf:"bytes,389541722,opt,name=objectidentifier,proto3,oneof" json:"objectidentifier,omitempty"`
+	Value            *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *CustomAttribute) Reset() {
 	*x = CustomAttribute{}
-	mi := &file_acm_proto_msgTypes[13]
+	mi := &file_acm_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2345,7 +4315,7 @@ func (x *CustomAttribute) String() string {
 func (*CustomAttribute) ProtoMessage() {}
 
 func (x *CustomAttribute) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[13]
+	mi := &file_acm_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2358,19 +4328,151 @@ func (x *CustomAttribute) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CustomAttribute.ProtoReflect.Descriptor instead.
 func (*CustomAttribute) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{13}
+	return file_acm_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *CustomAttribute) GetObjectidentifier() string {
-	if x != nil {
-		return x.Objectidentifier
+	if x != nil && x.Objectidentifier != nil {
+		return *x.Objectidentifier
 	}
 	return ""
 }
 
 func (x *CustomAttribute) GetValue() string {
+	if x != nil && x.Value != nil {
+		return *x.Value
+	}
+	return ""
+}
+
+type DeleteAcmeDomainValidationRequest struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	Acmedomainvalidationarn string                 `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3" json:"acmedomainvalidationarn,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *DeleteAcmeDomainValidationRequest) Reset() {
+	*x = DeleteAcmeDomainValidationRequest{}
+	mi := &file_acm_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAcmeDomainValidationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAcmeDomainValidationRequest) ProtoMessage() {}
+
+func (x *DeleteAcmeDomainValidationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[29]
 	if x != nil {
-		return x.Value
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAcmeDomainValidationRequest.ProtoReflect.Descriptor instead.
+func (*DeleteAcmeDomainValidationRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *DeleteAcmeDomainValidationRequest) GetAcmedomainvalidationarn() string {
+	if x != nil {
+		return x.Acmedomainvalidationarn
+	}
+	return ""
+}
+
+type DeleteAcmeEndpointRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DeleteAcmeEndpointRequest) Reset() {
+	*x = DeleteAcmeEndpointRequest{}
+	mi := &file_acm_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAcmeEndpointRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAcmeEndpointRequest) ProtoMessage() {}
+
+func (x *DeleteAcmeEndpointRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAcmeEndpointRequest.ProtoReflect.Descriptor instead.
+func (*DeleteAcmeEndpointRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *DeleteAcmeEndpointRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+type DeleteAcmeExternalAccountBindingRequest struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeexternalaccountbindingarn string                 `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3" json:"acmeexternalaccountbindingarn,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *DeleteAcmeExternalAccountBindingRequest) Reset() {
+	*x = DeleteAcmeExternalAccountBindingRequest{}
+	mi := &file_acm_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteAcmeExternalAccountBindingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteAcmeExternalAccountBindingRequest) ProtoMessage() {}
+
+func (x *DeleteAcmeExternalAccountBindingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteAcmeExternalAccountBindingRequest.ProtoReflect.Descriptor instead.
+func (*DeleteAcmeExternalAccountBindingRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *DeleteAcmeExternalAccountBindingRequest) GetAcmeexternalaccountbindingarn() string {
+	if x != nil {
+		return x.Acmeexternalaccountbindingarn
 	}
 	return ""
 }
@@ -2384,7 +4486,7 @@ type DeleteCertificateRequest struct {
 
 func (x *DeleteCertificateRequest) Reset() {
 	*x = DeleteCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[14]
+	mi := &file_acm_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2396,7 +4498,7 @@ func (x *DeleteCertificateRequest) String() string {
 func (*DeleteCertificateRequest) ProtoMessage() {}
 
 func (x *DeleteCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[14]
+	mi := &file_acm_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2409,7 +4511,7 @@ func (x *DeleteCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteCertificateRequest.ProtoReflect.Descriptor instead.
 func (*DeleteCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{14}
+	return file_acm_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *DeleteCertificateRequest) GetCertificatearn() string {
@@ -2417,6 +4519,366 @@ func (x *DeleteCertificateRequest) GetCertificatearn() string {
 		return x.Certificatearn
 	}
 	return ""
+}
+
+type DescribeAcmeAccountRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Accounturl      string                 `protobuf:"bytes,410635830,opt,name=accounturl,proto3" json:"accounturl,omitempty"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeAccountRequest) Reset() {
+	*x = DescribeAcmeAccountRequest{}
+	mi := &file_acm_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeAccountRequest) ProtoMessage() {}
+
+func (x *DescribeAcmeAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeAccountRequest.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeAccountRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *DescribeAcmeAccountRequest) GetAccounturl() string {
+	if x != nil {
+		return x.Accounturl
+	}
+	return ""
+}
+
+func (x *DescribeAcmeAccountRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+type DescribeAcmeAccountResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeaccount   *AcmeAccount           `protobuf:"bytes,154325947,opt,name=acmeaccount,proto3" json:"acmeaccount,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeAccountResponse) Reset() {
+	*x = DescribeAcmeAccountResponse{}
+	mi := &file_acm_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeAccountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeAccountResponse) ProtoMessage() {}
+
+func (x *DescribeAcmeAccountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeAccountResponse.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeAccountResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *DescribeAcmeAccountResponse) GetAcmeaccount() *AcmeAccount {
+	if x != nil {
+		return x.Acmeaccount
+	}
+	return nil
+}
+
+type DescribeAcmeDomainValidationRequest struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	Acmedomainvalidationarn string                 `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3" json:"acmedomainvalidationarn,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeDomainValidationRequest) Reset() {
+	*x = DescribeAcmeDomainValidationRequest{}
+	mi := &file_acm_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeDomainValidationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeDomainValidationRequest) ProtoMessage() {}
+
+func (x *DescribeAcmeDomainValidationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeDomainValidationRequest.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeDomainValidationRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *DescribeAcmeDomainValidationRequest) GetAcmedomainvalidationarn() string {
+	if x != nil {
+		return x.Acmedomainvalidationarn
+	}
+	return ""
+}
+
+type DescribeAcmeDomainValidationResponse struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Acmedomainvalidation *AcmeDomainValidation  `protobuf:"bytes,329588885,opt,name=acmedomainvalidation,proto3" json:"acmedomainvalidation,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeDomainValidationResponse) Reset() {
+	*x = DescribeAcmeDomainValidationResponse{}
+	mi := &file_acm_proto_msgTypes[36]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeDomainValidationResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeDomainValidationResponse) ProtoMessage() {}
+
+func (x *DescribeAcmeDomainValidationResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[36]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeDomainValidationResponse.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeDomainValidationResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{36}
+}
+
+func (x *DescribeAcmeDomainValidationResponse) GetAcmedomainvalidation() *AcmeDomainValidation {
+	if x != nil {
+		return x.Acmedomainvalidation
+	}
+	return nil
+}
+
+type DescribeAcmeEndpointRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeEndpointRequest) Reset() {
+	*x = DescribeAcmeEndpointRequest{}
+	mi := &file_acm_proto_msgTypes[37]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeEndpointRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeEndpointRequest) ProtoMessage() {}
+
+func (x *DescribeAcmeEndpointRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[37]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeEndpointRequest.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeEndpointRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{37}
+}
+
+func (x *DescribeAcmeEndpointRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+type DescribeAcmeEndpointResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpoint  *AcmeEndpoint          `protobuf:"bytes,374256691,opt,name=acmeendpoint,proto3" json:"acmeendpoint,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeEndpointResponse) Reset() {
+	*x = DescribeAcmeEndpointResponse{}
+	mi := &file_acm_proto_msgTypes[38]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeEndpointResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeEndpointResponse) ProtoMessage() {}
+
+func (x *DescribeAcmeEndpointResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[38]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeEndpointResponse.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeEndpointResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{38}
+}
+
+func (x *DescribeAcmeEndpointResponse) GetAcmeendpoint() *AcmeEndpoint {
+	if x != nil {
+		return x.Acmeendpoint
+	}
+	return nil
+}
+
+type DescribeAcmeExternalAccountBindingRequest struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeexternalaccountbindingarn string                 `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3" json:"acmeexternalaccountbindingarn,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeExternalAccountBindingRequest) Reset() {
+	*x = DescribeAcmeExternalAccountBindingRequest{}
+	mi := &file_acm_proto_msgTypes[39]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeExternalAccountBindingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeExternalAccountBindingRequest) ProtoMessage() {}
+
+func (x *DescribeAcmeExternalAccountBindingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[39]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeExternalAccountBindingRequest.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeExternalAccountBindingRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{39}
+}
+
+func (x *DescribeAcmeExternalAccountBindingRequest) GetAcmeexternalaccountbindingarn() string {
+	if x != nil {
+		return x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
+type DescribeAcmeExternalAccountBindingResponse struct {
+	state                  protoimpl.MessageState      `protogen:"open.v1"`
+	Externalaccountbinding *AcmeExternalAccountBinding `protobuf:"bytes,30290275,opt,name=externalaccountbinding,proto3" json:"externalaccountbinding,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
+}
+
+func (x *DescribeAcmeExternalAccountBindingResponse) Reset() {
+	*x = DescribeAcmeExternalAccountBindingResponse{}
+	mi := &file_acm_proto_msgTypes[40]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DescribeAcmeExternalAccountBindingResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DescribeAcmeExternalAccountBindingResponse) ProtoMessage() {}
+
+func (x *DescribeAcmeExternalAccountBindingResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[40]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DescribeAcmeExternalAccountBindingResponse.ProtoReflect.Descriptor instead.
+func (*DescribeAcmeExternalAccountBindingResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{40}
+}
+
+func (x *DescribeAcmeExternalAccountBindingResponse) GetExternalaccountbinding() *AcmeExternalAccountBinding {
+	if x != nil {
+		return x.Externalaccountbinding
+	}
+	return nil
 }
 
 type DescribeCertificateRequest struct {
@@ -2428,7 +4890,7 @@ type DescribeCertificateRequest struct {
 
 func (x *DescribeCertificateRequest) Reset() {
 	*x = DescribeCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[15]
+	mi := &file_acm_proto_msgTypes[41]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2440,7 +4902,7 @@ func (x *DescribeCertificateRequest) String() string {
 func (*DescribeCertificateRequest) ProtoMessage() {}
 
 func (x *DescribeCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[15]
+	mi := &file_acm_proto_msgTypes[41]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2453,7 +4915,7 @@ func (x *DescribeCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeCertificateRequest.ProtoReflect.Descriptor instead.
 func (*DescribeCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{15}
+	return file_acm_proto_rawDescGZIP(), []int{41}
 }
 
 func (x *DescribeCertificateRequest) GetCertificatearn() string {
@@ -2472,7 +4934,7 @@ type DescribeCertificateResponse struct {
 
 func (x *DescribeCertificateResponse) Reset() {
 	*x = DescribeCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[16]
+	mi := &file_acm_proto_msgTypes[42]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2484,7 +4946,7 @@ func (x *DescribeCertificateResponse) String() string {
 func (*DescribeCertificateResponse) ProtoMessage() {}
 
 func (x *DescribeCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[16]
+	mi := &file_acm_proto_msgTypes[42]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2497,7 +4959,7 @@ func (x *DescribeCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DescribeCertificateResponse.ProtoReflect.Descriptor instead.
 func (*DescribeCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{16}
+	return file_acm_proto_rawDescGZIP(), []int{42}
 }
 
 func (x *DescribeCertificateResponse) GetCertificate() *CertificateDetail {
@@ -2509,29 +4971,29 @@ func (x *DescribeCertificateResponse) GetCertificate() *CertificateDetail {
 
 type DistinguishedName struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Commonname                 string                 `protobuf:"bytes,458508720,opt,name=commonname,proto3" json:"commonname,omitempty"`
-	Country                    string                 `protobuf:"bytes,83164786,opt,name=country,proto3" json:"country,omitempty"`
+	Commonname                 *string                `protobuf:"bytes,458508720,opt,name=commonname,proto3,oneof" json:"commonname,omitempty"`
+	Country                    *string                `protobuf:"bytes,83164786,opt,name=country,proto3,oneof" json:"country,omitempty"`
 	Customattributes           []*CustomAttribute     `protobuf:"bytes,423725708,rep,name=customattributes,proto3" json:"customattributes,omitempty"`
-	Distinguishednamequalifier string                 `protobuf:"bytes,36440625,opt,name=distinguishednamequalifier,proto3" json:"distinguishednamequalifier,omitempty"`
+	Distinguishednamequalifier *string                `protobuf:"bytes,36440625,opt,name=distinguishednamequalifier,proto3,oneof" json:"distinguishednamequalifier,omitempty"`
 	Domaincomponents           []string               `protobuf:"bytes,165023822,rep,name=domaincomponents,proto3" json:"domaincomponents,omitempty"`
-	Generationqualifier        string                 `protobuf:"bytes,286484430,opt,name=generationqualifier,proto3" json:"generationqualifier,omitempty"`
-	Givenname                  string                 `protobuf:"bytes,140410262,opt,name=givenname,proto3" json:"givenname,omitempty"`
-	Initials                   string                 `protobuf:"bytes,137547985,opt,name=initials,proto3" json:"initials,omitempty"`
-	Locality                   string                 `protobuf:"bytes,120123285,opt,name=locality,proto3" json:"locality,omitempty"`
-	Organization               string                 `protobuf:"bytes,426894091,opt,name=organization,proto3" json:"organization,omitempty"`
-	Organizationalunit         string                 `protobuf:"bytes,397752454,opt,name=organizationalunit,proto3" json:"organizationalunit,omitempty"`
-	Pseudonym                  string                 `protobuf:"bytes,187082178,opt,name=pseudonym,proto3" json:"pseudonym,omitempty"`
-	Serialnumber               string                 `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
-	State                      string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
-	Surname                    string                 `protobuf:"bytes,303038887,opt,name=surname,proto3" json:"surname,omitempty"`
-	Title                      string                 `protobuf:"bytes,81031594,opt,name=title,proto3" json:"title,omitempty"`
+	Generationqualifier        *string                `protobuf:"bytes,286484430,opt,name=generationqualifier,proto3,oneof" json:"generationqualifier,omitempty"`
+	Givenname                  *string                `protobuf:"bytes,140410262,opt,name=givenname,proto3,oneof" json:"givenname,omitempty"`
+	Initials                   *string                `protobuf:"bytes,137547985,opt,name=initials,proto3,oneof" json:"initials,omitempty"`
+	Locality                   *string                `protobuf:"bytes,120123285,opt,name=locality,proto3,oneof" json:"locality,omitempty"`
+	Organization               *string                `protobuf:"bytes,426894091,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
+	Organizationalunit         *string                `protobuf:"bytes,397752454,opt,name=organizationalunit,proto3,oneof" json:"organizationalunit,omitempty"`
+	Pseudonym                  *string                `protobuf:"bytes,187082178,opt,name=pseudonym,proto3,oneof" json:"pseudonym,omitempty"`
+	Serialnumber               *string                `protobuf:"bytes,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
+	State                      *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
+	Surname                    *string                `protobuf:"bytes,303038887,opt,name=surname,proto3,oneof" json:"surname,omitempty"`
+	Title                      *string                `protobuf:"bytes,81031594,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
 
 func (x *DistinguishedName) Reset() {
 	*x = DistinguishedName{}
-	mi := &file_acm_proto_msgTypes[17]
+	mi := &file_acm_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2543,7 +5005,7 @@ func (x *DistinguishedName) String() string {
 func (*DistinguishedName) ProtoMessage() {}
 
 func (x *DistinguishedName) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[17]
+	mi := &file_acm_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2556,19 +5018,19 @@ func (x *DistinguishedName) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DistinguishedName.ProtoReflect.Descriptor instead.
 func (*DistinguishedName) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{17}
+	return file_acm_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *DistinguishedName) GetCommonname() string {
-	if x != nil {
-		return x.Commonname
+	if x != nil && x.Commonname != nil {
+		return *x.Commonname
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetCountry() string {
-	if x != nil {
-		return x.Country
+	if x != nil && x.Country != nil {
+		return *x.Country
 	}
 	return ""
 }
@@ -2581,8 +5043,8 @@ func (x *DistinguishedName) GetCustomattributes() []*CustomAttribute {
 }
 
 func (x *DistinguishedName) GetDistinguishednamequalifier() string {
-	if x != nil {
-		return x.Distinguishednamequalifier
+	if x != nil && x.Distinguishednamequalifier != nil {
+		return *x.Distinguishednamequalifier
 	}
 	return ""
 }
@@ -2595,78 +5057,78 @@ func (x *DistinguishedName) GetDomaincomponents() []string {
 }
 
 func (x *DistinguishedName) GetGenerationqualifier() string {
-	if x != nil {
-		return x.Generationqualifier
+	if x != nil && x.Generationqualifier != nil {
+		return *x.Generationqualifier
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetGivenname() string {
-	if x != nil {
-		return x.Givenname
+	if x != nil && x.Givenname != nil {
+		return *x.Givenname
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetInitials() string {
-	if x != nil {
-		return x.Initials
+	if x != nil && x.Initials != nil {
+		return *x.Initials
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetLocality() string {
-	if x != nil {
-		return x.Locality
+	if x != nil && x.Locality != nil {
+		return *x.Locality
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetOrganization() string {
-	if x != nil {
-		return x.Organization
+	if x != nil && x.Organization != nil {
+		return *x.Organization
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetOrganizationalunit() string {
-	if x != nil {
-		return x.Organizationalunit
+	if x != nil && x.Organizationalunit != nil {
+		return *x.Organizationalunit
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetPseudonym() string {
-	if x != nil {
-		return x.Pseudonym
+	if x != nil && x.Pseudonym != nil {
+		return *x.Pseudonym
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetSerialnumber() string {
-	if x != nil {
-		return x.Serialnumber
+	if x != nil && x.Serialnumber != nil {
+		return *x.Serialnumber
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetSurname() string {
-	if x != nil {
-		return x.Surname
+	if x != nil && x.Surname != nil {
+		return *x.Surname
 	}
 	return ""
 }
 
 func (x *DistinguishedName) GetTitle() string {
-	if x != nil {
-		return x.Title
+	if x != nil && x.Title != nil {
+		return *x.Title
 	}
 	return ""
 }
@@ -2681,7 +5143,7 @@ type DnsNameFilter struct {
 
 func (x *DnsNameFilter) Reset() {
 	*x = DnsNameFilter{}
-	mi := &file_acm_proto_msgTypes[18]
+	mi := &file_acm_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2693,7 +5155,7 @@ func (x *DnsNameFilter) String() string {
 func (*DnsNameFilter) ProtoMessage() {}
 
 func (x *DnsNameFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[18]
+	mi := &file_acm_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2706,7 +5168,7 @@ func (x *DnsNameFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DnsNameFilter.ProtoReflect.Descriptor instead.
 func (*DnsNameFilter) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{18}
+	return file_acm_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *DnsNameFilter) GetComparisonoperator() ComparisonOperator {
@@ -2723,12 +5185,228 @@ func (x *DnsNameFilter) GetValue() string {
 	return ""
 }
 
+type DnsPrevalidationDetails struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Domainscope    *DomainScope           `protobuf:"bytes,142837280,opt,name=domainscope,proto3" json:"domainscope,omitempty"`
+	Hostedzoneid   *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
+	Resourcerecord *ResourceRecord        `protobuf:"bytes,207153213,opt,name=resourcerecord,proto3" json:"resourcerecord,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *DnsPrevalidationDetails) Reset() {
+	*x = DnsPrevalidationDetails{}
+	mi := &file_acm_proto_msgTypes[45]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnsPrevalidationDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnsPrevalidationDetails) ProtoMessage() {}
+
+func (x *DnsPrevalidationDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[45]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DnsPrevalidationDetails.ProtoReflect.Descriptor instead.
+func (*DnsPrevalidationDetails) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{45}
+}
+
+func (x *DnsPrevalidationDetails) GetDomainscope() *DomainScope {
+	if x != nil {
+		return x.Domainscope
+	}
+	return nil
+}
+
+func (x *DnsPrevalidationDetails) GetHostedzoneid() string {
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
+	}
+	return ""
+}
+
+func (x *DnsPrevalidationDetails) GetResourcerecord() *ResourceRecord {
+	if x != nil {
+		return x.Resourcerecord
+	}
+	return nil
+}
+
+type DnsPrevalidationOptions struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Domainscope   *DomainScope           `protobuf:"bytes,142837280,opt,name=domainscope,proto3" json:"domainscope,omitempty"`
+	Hostedzoneid  *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DnsPrevalidationOptions) Reset() {
+	*x = DnsPrevalidationOptions{}
+	mi := &file_acm_proto_msgTypes[46]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnsPrevalidationOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnsPrevalidationOptions) ProtoMessage() {}
+
+func (x *DnsPrevalidationOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[46]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DnsPrevalidationOptions.ProtoReflect.Descriptor instead.
+func (*DnsPrevalidationOptions) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{46}
+}
+
+func (x *DnsPrevalidationOptions) GetDomainscope() *DomainScope {
+	if x != nil {
+		return x.Domainscope
+	}
+	return nil
+}
+
+func (x *DnsPrevalidationOptions) GetHostedzoneid() string {
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
+	}
+	return ""
+}
+
+type DnsValidationChallenge struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Resourcerecord *ResourceRecord        `protobuf:"bytes,207153213,opt,name=resourcerecord,proto3" json:"resourcerecord,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *DnsValidationChallenge) Reset() {
+	*x = DnsValidationChallenge{}
+	mi := &file_acm_proto_msgTypes[47]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DnsValidationChallenge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DnsValidationChallenge) ProtoMessage() {}
+
+func (x *DnsValidationChallenge) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[47]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DnsValidationChallenge.ProtoReflect.Descriptor instead.
+func (*DnsValidationChallenge) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{47}
+}
+
+func (x *DnsValidationChallenge) GetResourcerecord() *ResourceRecord {
+	if x != nil {
+		return x.Resourcerecord
+	}
+	return nil
+}
+
+type DomainScope struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Exactdomain   DomainScopeOption      `protobuf:"varint,75573201,opt,name=exactdomain,proto3,enum=acm.DomainScopeOption" json:"exactdomain,omitempty"`
+	Subdomains    DomainScopeOption      `protobuf:"varint,260450007,opt,name=subdomains,proto3,enum=acm.DomainScopeOption" json:"subdomains,omitempty"`
+	Wildcards     DomainScopeOption      `protobuf:"varint,452219829,opt,name=wildcards,proto3,enum=acm.DomainScopeOption" json:"wildcards,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DomainScope) Reset() {
+	*x = DomainScope{}
+	mi := &file_acm_proto_msgTypes[48]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DomainScope) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DomainScope) ProtoMessage() {}
+
+func (x *DomainScope) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[48]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DomainScope.ProtoReflect.Descriptor instead.
+func (*DomainScope) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{48}
+}
+
+func (x *DomainScope) GetExactdomain() DomainScopeOption {
+	if x != nil {
+		return x.Exactdomain
+	}
+	return DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED
+}
+
+func (x *DomainScope) GetSubdomains() DomainScopeOption {
+	if x != nil {
+		return x.Subdomains
+	}
+	return DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED
+}
+
+func (x *DomainScope) GetWildcards() DomainScopeOption {
+	if x != nil {
+		return x.Wildcards
+	}
+	return DomainScopeOption_DOMAIN_SCOPE_OPTION_DISABLED
+}
+
 type DomainValidation struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Domainname       string                 `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
 	Httpredirect     *HttpRedirect          `protobuf:"bytes,375515090,opt,name=httpredirect,proto3" json:"httpredirect,omitempty"`
 	Resourcerecord   *ResourceRecord        `protobuf:"bytes,207153213,opt,name=resourcerecord,proto3" json:"resourcerecord,omitempty"`
-	Validationdomain string                 `protobuf:"bytes,161300799,opt,name=validationdomain,proto3" json:"validationdomain,omitempty"`
+	Validationdomain *string                `protobuf:"bytes,161300799,opt,name=validationdomain,proto3,oneof" json:"validationdomain,omitempty"`
 	Validationemails []string               `protobuf:"bytes,375615664,rep,name=validationemails,proto3" json:"validationemails,omitempty"`
 	Validationmethod ValidationMethod       `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
 	Validationstatus DomainStatus           `protobuf:"varint,426907749,opt,name=validationstatus,proto3,enum=acm.DomainStatus" json:"validationstatus,omitempty"`
@@ -2738,7 +5416,7 @@ type DomainValidation struct {
 
 func (x *DomainValidation) Reset() {
 	*x = DomainValidation{}
-	mi := &file_acm_proto_msgTypes[19]
+	mi := &file_acm_proto_msgTypes[49]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2750,7 +5428,7 @@ func (x *DomainValidation) String() string {
 func (*DomainValidation) ProtoMessage() {}
 
 func (x *DomainValidation) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[19]
+	mi := &file_acm_proto_msgTypes[49]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2763,7 +5441,7 @@ func (x *DomainValidation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainValidation.ProtoReflect.Descriptor instead.
 func (*DomainValidation) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{19}
+	return file_acm_proto_rawDescGZIP(), []int{49}
 }
 
 func (x *DomainValidation) GetDomainname() string {
@@ -2788,8 +5466,8 @@ func (x *DomainValidation) GetResourcerecord() *ResourceRecord {
 }
 
 func (x *DomainValidation) GetValidationdomain() string {
-	if x != nil {
-		return x.Validationdomain
+	if x != nil && x.Validationdomain != nil {
+		return *x.Validationdomain
 	}
 	return ""
 }
@@ -2815,6 +5493,58 @@ func (x *DomainValidation) GetValidationstatus() DomainStatus {
 	return DomainStatus_DOMAIN_STATUS_PENDING_VALIDATION
 }
 
+type DomainValidationMethodUpdateSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	From          ValidationMethod       `protobuf:"varint,410269078,opt,name=from,proto3,enum=acm.ValidationMethod" json:"from,omitempty"`
+	To            ValidationMethod       `protobuf:"varint,32872005,opt,name=to,proto3,enum=acm.ValidationMethod" json:"to,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DomainValidationMethodUpdateSummary) Reset() {
+	*x = DomainValidationMethodUpdateSummary{}
+	mi := &file_acm_proto_msgTypes[50]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DomainValidationMethodUpdateSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DomainValidationMethodUpdateSummary) ProtoMessage() {}
+
+func (x *DomainValidationMethodUpdateSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[50]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DomainValidationMethodUpdateSummary.ProtoReflect.Descriptor instead.
+func (*DomainValidationMethodUpdateSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{50}
+}
+
+func (x *DomainValidationMethodUpdateSummary) GetFrom() ValidationMethod {
+	if x != nil {
+		return x.From
+	}
+	return ValidationMethod_VALIDATION_METHOD_HTTP
+}
+
+func (x *DomainValidationMethodUpdateSummary) GetTo() ValidationMethod {
+	if x != nil {
+		return x.To
+	}
+	return ValidationMethod_VALIDATION_METHOD_HTTP
+}
+
 type DomainValidationOption struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Domainname       string                 `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
@@ -2825,7 +5555,7 @@ type DomainValidationOption struct {
 
 func (x *DomainValidationOption) Reset() {
 	*x = DomainValidationOption{}
-	mi := &file_acm_proto_msgTypes[20]
+	mi := &file_acm_proto_msgTypes[51]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2837,7 +5567,7 @@ func (x *DomainValidationOption) String() string {
 func (*DomainValidationOption) ProtoMessage() {}
 
 func (x *DomainValidationOption) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[20]
+	mi := &file_acm_proto_msgTypes[51]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2850,7 +5580,7 @@ func (x *DomainValidationOption) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DomainValidationOption.ProtoReflect.Descriptor instead.
 func (*DomainValidationOption) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{20}
+	return file_acm_proto_rawDescGZIP(), []int{51}
 }
 
 func (x *DomainValidationOption) GetDomainname() string {
@@ -2867,6 +5597,170 @@ func (x *DomainValidationOption) GetValidationdomain() string {
 	return ""
 }
 
+type DomainValidationSummary struct {
+	state                            protoimpl.MessageState   `protogen:"open.v1"`
+	Activevalidationconfiguration    *ValidationConfiguration `protobuf:"bytes,339153251,opt,name=activevalidationconfiguration,proto3" json:"activevalidationconfiguration,omitempty"`
+	Domainname                       string                   `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
+	Requestedvalidationconfiguration *ValidationConfiguration `protobuf:"bytes,296954543,opt,name=requestedvalidationconfiguration,proto3" json:"requestedvalidationconfiguration,omitempty"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
+}
+
+func (x *DomainValidationSummary) Reset() {
+	*x = DomainValidationSummary{}
+	mi := &file_acm_proto_msgTypes[52]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DomainValidationSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DomainValidationSummary) ProtoMessage() {}
+
+func (x *DomainValidationSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[52]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DomainValidationSummary.ProtoReflect.Descriptor instead.
+func (*DomainValidationSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{52}
+}
+
+func (x *DomainValidationSummary) GetActivevalidationconfiguration() *ValidationConfiguration {
+	if x != nil {
+		return x.Activevalidationconfiguration
+	}
+	return nil
+}
+
+func (x *DomainValidationSummary) GetDomainname() string {
+	if x != nil {
+		return x.Domainname
+	}
+	return ""
+}
+
+func (x *DomainValidationSummary) GetRequestedvalidationconfiguration() *ValidationConfiguration {
+	if x != nil {
+		return x.Requestedvalidationconfiguration
+	}
+	return nil
+}
+
+type EmailValidationChallenge struct {
+	state            protoimpl.MessageState `protogen:"open.v1"`
+	Validationdomain *string                `protobuf:"bytes,161300799,opt,name=validationdomain,proto3,oneof" json:"validationdomain,omitempty"`
+	Validationemails []string               `protobuf:"bytes,375615664,rep,name=validationemails,proto3" json:"validationemails,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *EmailValidationChallenge) Reset() {
+	*x = EmailValidationChallenge{}
+	mi := &file_acm_proto_msgTypes[53]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EmailValidationChallenge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EmailValidationChallenge) ProtoMessage() {}
+
+func (x *EmailValidationChallenge) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[53]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EmailValidationChallenge.ProtoReflect.Descriptor instead.
+func (*EmailValidationChallenge) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{53}
+}
+
+func (x *EmailValidationChallenge) GetValidationdomain() string {
+	if x != nil && x.Validationdomain != nil {
+		return *x.Validationdomain
+	}
+	return ""
+}
+
+func (x *EmailValidationChallenge) GetValidationemails() []string {
+	if x != nil {
+		return x.Validationemails
+	}
+	return nil
+}
+
+type Expiration struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Type          TimeType               `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.TimeType" json:"type,omitempty"`
+	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Expiration) Reset() {
+	*x = Expiration{}
+	mi := &file_acm_proto_msgTypes[54]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Expiration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Expiration) ProtoMessage() {}
+
+func (x *Expiration) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[54]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Expiration.ProtoReflect.Descriptor instead.
+func (*Expiration) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{54}
+}
+
+func (x *Expiration) GetType() TimeType {
+	if x != nil {
+		return x.Type
+	}
+	return TimeType_TIME_TYPE_MINUTES
+}
+
+func (x *Expiration) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 type ExpiryEventsConfiguration struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Daysbeforeexpiry *int32                 `protobuf:"varint,292642703,opt,name=daysbeforeexpiry,proto3,oneof" json:"daysbeforeexpiry,omitempty"`
@@ -2876,7 +5770,7 @@ type ExpiryEventsConfiguration struct {
 
 func (x *ExpiryEventsConfiguration) Reset() {
 	*x = ExpiryEventsConfiguration{}
-	mi := &file_acm_proto_msgTypes[21]
+	mi := &file_acm_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2888,7 +5782,7 @@ func (x *ExpiryEventsConfiguration) String() string {
 func (*ExpiryEventsConfiguration) ProtoMessage() {}
 
 func (x *ExpiryEventsConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[21]
+	mi := &file_acm_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2901,7 +5795,7 @@ func (x *ExpiryEventsConfiguration) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExpiryEventsConfiguration.ProtoReflect.Descriptor instead.
 func (*ExpiryEventsConfiguration) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{21}
+	return file_acm_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *ExpiryEventsConfiguration) GetDaysbeforeexpiry() int32 {
@@ -2921,7 +5815,7 @@ type ExportCertificateRequest struct {
 
 func (x *ExportCertificateRequest) Reset() {
 	*x = ExportCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[22]
+	mi := &file_acm_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2933,7 +5827,7 @@ func (x *ExportCertificateRequest) String() string {
 func (*ExportCertificateRequest) ProtoMessage() {}
 
 func (x *ExportCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[22]
+	mi := &file_acm_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2946,7 +5840,7 @@ func (x *ExportCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportCertificateRequest.ProtoReflect.Descriptor instead.
 func (*ExportCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{22}
+	return file_acm_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *ExportCertificateRequest) GetCertificatearn() string {
@@ -2965,16 +5859,16 @@ func (x *ExportCertificateRequest) GetPassphrase() []byte {
 
 type ExportCertificateResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Certificate      string                 `protobuf:"bytes,198060817,opt,name=certificate,proto3" json:"certificate,omitempty"`
-	Certificatechain string                 `protobuf:"bytes,369292378,opt,name=certificatechain,proto3" json:"certificatechain,omitempty"`
-	Privatekey       string                 `protobuf:"bytes,173312700,opt,name=privatekey,proto3" json:"privatekey,omitempty"`
+	Certificate      *string                `protobuf:"bytes,198060817,opt,name=certificate,proto3,oneof" json:"certificate,omitempty"`
+	Certificatechain *string                `protobuf:"bytes,369292378,opt,name=certificatechain,proto3,oneof" json:"certificatechain,omitempty"`
+	Privatekey       *string                `protobuf:"bytes,173312700,opt,name=privatekey,proto3,oneof" json:"privatekey,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ExportCertificateResponse) Reset() {
 	*x = ExportCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[23]
+	mi := &file_acm_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2986,7 +5880,7 @@ func (x *ExportCertificateResponse) String() string {
 func (*ExportCertificateResponse) ProtoMessage() {}
 
 func (x *ExportCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[23]
+	mi := &file_acm_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2999,26 +5893,26 @@ func (x *ExportCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExportCertificateResponse.ProtoReflect.Descriptor instead.
 func (*ExportCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{23}
+	return file_acm_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *ExportCertificateResponse) GetCertificate() string {
-	if x != nil {
-		return x.Certificate
+	if x != nil && x.Certificate != nil {
+		return *x.Certificate
 	}
 	return ""
 }
 
 func (x *ExportCertificateResponse) GetCertificatechain() string {
-	if x != nil {
-		return x.Certificatechain
+	if x != nil && x.Certificatechain != nil {
+		return *x.Certificatechain
 	}
 	return ""
 }
 
 func (x *ExportCertificateResponse) GetPrivatekey() string {
-	if x != nil {
-		return x.Privatekey
+	if x != nil && x.Privatekey != nil {
+		return *x.Privatekey
 	}
 	return ""
 }
@@ -3026,14 +5920,14 @@ func (x *ExportCertificateResponse) GetPrivatekey() string {
 type ExtendedKeyUsage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          ExtendedKeyUsageName   `protobuf:"varint,266367751,opt,name=name,proto3,enum=acm.ExtendedKeyUsageName" json:"name,omitempty"`
-	Oid           string                 `protobuf:"bytes,504527812,opt,name=oid,proto3" json:"oid,omitempty"`
+	Oid           *string                `protobuf:"bytes,504527812,opt,name=oid,proto3,oneof" json:"oid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ExtendedKeyUsage) Reset() {
 	*x = ExtendedKeyUsage{}
-	mi := &file_acm_proto_msgTypes[24]
+	mi := &file_acm_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3045,7 +5939,7 @@ func (x *ExtendedKeyUsage) String() string {
 func (*ExtendedKeyUsage) ProtoMessage() {}
 
 func (x *ExtendedKeyUsage) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[24]
+	mi := &file_acm_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3058,7 +5952,7 @@ func (x *ExtendedKeyUsage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ExtendedKeyUsage.ProtoReflect.Descriptor instead.
 func (*ExtendedKeyUsage) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{24}
+	return file_acm_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *ExtendedKeyUsage) GetName() ExtendedKeyUsageName {
@@ -3069,10 +5963,62 @@ func (x *ExtendedKeyUsage) GetName() ExtendedKeyUsageName {
 }
 
 func (x *ExtendedKeyUsage) GetOid() string {
-	if x != nil {
-		return x.Oid
+	if x != nil && x.Oid != nil {
+		return *x.Oid
 	}
 	return ""
+}
+
+type FailureDetails struct {
+	state         protoimpl.MessageState            `protogen:"open.v1"`
+	Message       *string                           `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Reason        AcmeDomainValidationFailureReason `protobuf:"varint,20005178,opt,name=reason,proto3,enum=acm.AcmeDomainValidationFailureReason" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FailureDetails) Reset() {
+	*x = FailureDetails{}
+	mi := &file_acm_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FailureDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FailureDetails) ProtoMessage() {}
+
+func (x *FailureDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FailureDetails.ProtoReflect.Descriptor instead.
+func (*FailureDetails) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *FailureDetails) GetMessage() string {
+	if x != nil && x.Message != nil {
+		return *x.Message
+	}
+	return ""
+}
+
+func (x *FailureDetails) GetReason() AcmeDomainValidationFailureReason {
+	if x != nil {
+		return x.Reason
+	}
+	return AcmeDomainValidationFailureReason_ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE
 }
 
 type Filters struct {
@@ -3088,7 +6034,7 @@ type Filters struct {
 
 func (x *Filters) Reset() {
 	*x = Filters{}
-	mi := &file_acm_proto_msgTypes[25]
+	mi := &file_acm_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3100,7 +6046,7 @@ func (x *Filters) String() string {
 func (*Filters) ProtoMessage() {}
 
 func (x *Filters) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[25]
+	mi := &file_acm_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3113,7 +6059,7 @@ func (x *Filters) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Filters.ProtoReflect.Descriptor instead.
 func (*Filters) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{25}
+	return file_acm_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *Filters) GetExportoption() CertificateExport {
@@ -3154,19 +6100,19 @@ func (x *Filters) GetManagedby() CertificateManagedBy {
 type GeneralName struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Directoryname             *DistinguishedName     `protobuf:"bytes,223019436,opt,name=directoryname,proto3" json:"directoryname,omitempty"`
-	Dnsname                   string                 `protobuf:"bytes,166132088,opt,name=dnsname,proto3" json:"dnsname,omitempty"`
-	Ipaddress                 string                 `protobuf:"bytes,1800397,opt,name=ipaddress,proto3" json:"ipaddress,omitempty"`
+	Dnsname                   *string                `protobuf:"bytes,166132088,opt,name=dnsname,proto3,oneof" json:"dnsname,omitempty"`
+	Ipaddress                 *string                `protobuf:"bytes,1800397,opt,name=ipaddress,proto3,oneof" json:"ipaddress,omitempty"`
 	Othername                 *OtherName             `protobuf:"bytes,249067223,opt,name=othername,proto3" json:"othername,omitempty"`
-	Registeredid              string                 `protobuf:"bytes,457905173,opt,name=registeredid,proto3" json:"registeredid,omitempty"`
-	Rfc822Name                string                 `protobuf:"bytes,339698422,opt,name=rfc822name,proto3" json:"rfc822name,omitempty"`
-	Uniformresourceidentifier string                 `protobuf:"bytes,84673413,opt,name=uniformresourceidentifier,proto3" json:"uniformresourceidentifier,omitempty"`
+	Registeredid              *string                `protobuf:"bytes,457905173,opt,name=registeredid,proto3,oneof" json:"registeredid,omitempty"`
+	Rfc822Name                *string                `protobuf:"bytes,339698422,opt,name=rfc822name,proto3,oneof" json:"rfc822name,omitempty"`
+	Uniformresourceidentifier *string                `protobuf:"bytes,84673413,opt,name=uniformresourceidentifier,proto3,oneof" json:"uniformresourceidentifier,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *GeneralName) Reset() {
 	*x = GeneralName{}
-	mi := &file_acm_proto_msgTypes[26]
+	mi := &file_acm_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3178,7 +6124,7 @@ func (x *GeneralName) String() string {
 func (*GeneralName) ProtoMessage() {}
 
 func (x *GeneralName) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[26]
+	mi := &file_acm_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3191,7 +6137,7 @@ func (x *GeneralName) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GeneralName.ProtoReflect.Descriptor instead.
 func (*GeneralName) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{26}
+	return file_acm_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *GeneralName) GetDirectoryname() *DistinguishedName {
@@ -3202,15 +6148,15 @@ func (x *GeneralName) GetDirectoryname() *DistinguishedName {
 }
 
 func (x *GeneralName) GetDnsname() string {
-	if x != nil {
-		return x.Dnsname
+	if x != nil && x.Dnsname != nil {
+		return *x.Dnsname
 	}
 	return ""
 }
 
 func (x *GeneralName) GetIpaddress() string {
-	if x != nil {
-		return x.Ipaddress
+	if x != nil && x.Ipaddress != nil {
+		return *x.Ipaddress
 	}
 	return ""
 }
@@ -3223,22 +6169,22 @@ func (x *GeneralName) GetOthername() *OtherName {
 }
 
 func (x *GeneralName) GetRegisteredid() string {
-	if x != nil {
-		return x.Registeredid
+	if x != nil && x.Registeredid != nil {
+		return *x.Registeredid
 	}
 	return ""
 }
 
 func (x *GeneralName) GetRfc822Name() string {
-	if x != nil {
-		return x.Rfc822Name
+	if x != nil && x.Rfc822Name != nil {
+		return *x.Rfc822Name
 	}
 	return ""
 }
 
 func (x *GeneralName) GetUniformresourceidentifier() string {
-	if x != nil {
-		return x.Uniformresourceidentifier
+	if x != nil && x.Uniformresourceidentifier != nil {
+		return *x.Uniformresourceidentifier
 	}
 	return ""
 }
@@ -3252,7 +6198,7 @@ type GetAccountConfigurationResponse struct {
 
 func (x *GetAccountConfigurationResponse) Reset() {
 	*x = GetAccountConfigurationResponse{}
-	mi := &file_acm_proto_msgTypes[27]
+	mi := &file_acm_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3264,7 +6210,7 @@ func (x *GetAccountConfigurationResponse) String() string {
 func (*GetAccountConfigurationResponse) ProtoMessage() {}
 
 func (x *GetAccountConfigurationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[27]
+	mi := &file_acm_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3277,7 +6223,7 @@ func (x *GetAccountConfigurationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAccountConfigurationResponse.ProtoReflect.Descriptor instead.
 func (*GetAccountConfigurationResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{27}
+	return file_acm_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *GetAccountConfigurationResponse) GetExpiryevents() *ExpiryEventsConfiguration {
@@ -3285,6 +6231,102 @@ func (x *GetAccountConfigurationResponse) GetExpiryevents() *ExpiryEventsConfigu
 		return x.Expiryevents
 	}
 	return nil
+}
+
+type GetAcmeExternalAccountBindingCredentialsRequest struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeexternalaccountbindingarn string                 `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3" json:"acmeexternalaccountbindingarn,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsRequest) Reset() {
+	*x = GetAcmeExternalAccountBindingCredentialsRequest{}
+	mi := &file_acm_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAcmeExternalAccountBindingCredentialsRequest) ProtoMessage() {}
+
+func (x *GetAcmeExternalAccountBindingCredentialsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAcmeExternalAccountBindingCredentialsRequest.ProtoReflect.Descriptor instead.
+func (*GetAcmeExternalAccountBindingCredentialsRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsRequest) GetAcmeexternalaccountbindingarn() string {
+	if x != nil {
+		return x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
+type GetAcmeExternalAccountBindingCredentialsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Keyid         *string                `protobuf:"bytes,275906594,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
+	Mackey        *string                `protobuf:"bytes,443116120,opt,name=mackey,proto3,oneof" json:"mackey,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsResponse) Reset() {
+	*x = GetAcmeExternalAccountBindingCredentialsResponse{}
+	mi := &file_acm_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetAcmeExternalAccountBindingCredentialsResponse) ProtoMessage() {}
+
+func (x *GetAcmeExternalAccountBindingCredentialsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetAcmeExternalAccountBindingCredentialsResponse.ProtoReflect.Descriptor instead.
+func (*GetAcmeExternalAccountBindingCredentialsResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsResponse) GetKeyid() string {
+	if x != nil && x.Keyid != nil {
+		return *x.Keyid
+	}
+	return ""
+}
+
+func (x *GetAcmeExternalAccountBindingCredentialsResponse) GetMackey() string {
+	if x != nil && x.Mackey != nil {
+		return *x.Mackey
+	}
+	return ""
 }
 
 type GetCertificateRequest struct {
@@ -3296,7 +6338,7 @@ type GetCertificateRequest struct {
 
 func (x *GetCertificateRequest) Reset() {
 	*x = GetCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[28]
+	mi := &file_acm_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3308,7 +6350,7 @@ func (x *GetCertificateRequest) String() string {
 func (*GetCertificateRequest) ProtoMessage() {}
 
 func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[28]
+	mi := &file_acm_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3321,7 +6363,7 @@ func (x *GetCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCertificateRequest.ProtoReflect.Descriptor instead.
 func (*GetCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{28}
+	return file_acm_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetCertificateRequest) GetCertificatearn() string {
@@ -3333,15 +6375,15 @@ func (x *GetCertificateRequest) GetCertificatearn() string {
 
 type GetCertificateResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Certificate      string                 `protobuf:"bytes,198060817,opt,name=certificate,proto3" json:"certificate,omitempty"`
-	Certificatechain string                 `protobuf:"bytes,369292378,opt,name=certificatechain,proto3" json:"certificatechain,omitempty"`
+	Certificate      *string                `protobuf:"bytes,198060817,opt,name=certificate,proto3,oneof" json:"certificate,omitempty"`
+	Certificatechain *string                `protobuf:"bytes,369292378,opt,name=certificatechain,proto3,oneof" json:"certificatechain,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *GetCertificateResponse) Reset() {
 	*x = GetCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[29]
+	mi := &file_acm_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3353,7 +6395,7 @@ func (x *GetCertificateResponse) String() string {
 func (*GetCertificateResponse) ProtoMessage() {}
 
 func (x *GetCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[29]
+	mi := &file_acm_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3366,34 +6408,34 @@ func (x *GetCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetCertificateResponse.ProtoReflect.Descriptor instead.
 func (*GetCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{29}
+	return file_acm_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *GetCertificateResponse) GetCertificate() string {
-	if x != nil {
-		return x.Certificate
+	if x != nil && x.Certificate != nil {
+		return *x.Certificate
 	}
 	return ""
 }
 
 func (x *GetCertificateResponse) GetCertificatechain() string {
-	if x != nil {
-		return x.Certificatechain
+	if x != nil && x.Certificatechain != nil {
+		return *x.Certificatechain
 	}
 	return ""
 }
 
 type HttpRedirect struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Redirectfrom  string                 `protobuf:"bytes,52853514,opt,name=redirectfrom,proto3" json:"redirectfrom,omitempty"`
-	Redirectto    string                 `protobuf:"bytes,472243857,opt,name=redirectto,proto3" json:"redirectto,omitempty"`
+	Redirectfrom  *string                `protobuf:"bytes,52853514,opt,name=redirectfrom,proto3,oneof" json:"redirectfrom,omitempty"`
+	Redirectto    *string                `protobuf:"bytes,472243857,opt,name=redirectto,proto3,oneof" json:"redirectto,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *HttpRedirect) Reset() {
 	*x = HttpRedirect{}
-	mi := &file_acm_proto_msgTypes[30]
+	mi := &file_acm_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3405,7 +6447,7 @@ func (x *HttpRedirect) String() string {
 func (*HttpRedirect) ProtoMessage() {}
 
 func (x *HttpRedirect) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[30]
+	mi := &file_acm_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3418,19 +6460,19 @@ func (x *HttpRedirect) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HttpRedirect.ProtoReflect.Descriptor instead.
 func (*HttpRedirect) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{30}
+	return file_acm_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *HttpRedirect) GetRedirectfrom() string {
-	if x != nil {
-		return x.Redirectfrom
+	if x != nil && x.Redirectfrom != nil {
+		return *x.Redirectfrom
 	}
 	return ""
 }
 
 func (x *HttpRedirect) GetRedirectto() string {
-	if x != nil {
-		return x.Redirectto
+	if x != nil && x.Redirectto != nil {
+		return *x.Redirectto
 	}
 	return ""
 }
@@ -3438,8 +6480,8 @@ func (x *HttpRedirect) GetRedirectto() string {
 type ImportCertificateRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Certificate      []byte                 `protobuf:"bytes,198060817,opt,name=certificate,proto3" json:"certificate,omitempty"`
-	Certificatearn   string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
-	Certificatechain []byte                 `protobuf:"bytes,369292378,opt,name=certificatechain,proto3" json:"certificatechain,omitempty"`
+	Certificatearn   *string                `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificatechain []byte                 `protobuf:"bytes,369292378,opt,name=certificatechain,proto3,oneof" json:"certificatechain,omitempty"`
 	Privatekey       []byte                 `protobuf:"bytes,173312700,opt,name=privatekey,proto3" json:"privatekey,omitempty"`
 	Tags             []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -3448,7 +6490,7 @@ type ImportCertificateRequest struct {
 
 func (x *ImportCertificateRequest) Reset() {
 	*x = ImportCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[31]
+	mi := &file_acm_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3460,7 +6502,7 @@ func (x *ImportCertificateRequest) String() string {
 func (*ImportCertificateRequest) ProtoMessage() {}
 
 func (x *ImportCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[31]
+	mi := &file_acm_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3473,7 +6515,7 @@ func (x *ImportCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportCertificateRequest.ProtoReflect.Descriptor instead.
 func (*ImportCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{31}
+	return file_acm_proto_rawDescGZIP(), []int{68}
 }
 
 func (x *ImportCertificateRequest) GetCertificate() []byte {
@@ -3484,8 +6526,8 @@ func (x *ImportCertificateRequest) GetCertificate() []byte {
 }
 
 func (x *ImportCertificateRequest) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
@@ -3513,14 +6555,14 @@ func (x *ImportCertificateRequest) GetTags() []*Tag {
 
 type ImportCertificateResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Certificatearn string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
+	Certificatearn *string                `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ImportCertificateResponse) Reset() {
 	*x = ImportCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[32]
+	mi := &file_acm_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3532,7 +6574,7 @@ func (x *ImportCertificateResponse) String() string {
 func (*ImportCertificateResponse) ProtoMessage() {}
 
 func (x *ImportCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[32]
+	mi := &file_acm_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3545,26 +6587,70 @@ func (x *ImportCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ImportCertificateResponse.ProtoReflect.Descriptor instead.
 func (*ImportCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{32}
+	return file_acm_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *ImportCertificateResponse) GetCertificatearn() string {
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
+	}
+	return ""
+}
+
+type InternalServerException struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *InternalServerException) Reset() {
+	*x = InternalServerException{}
+	mi := &file_acm_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *InternalServerException) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*InternalServerException) ProtoMessage() {}
+
+func (x *InternalServerException) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[70]
 	if x != nil {
-		return x.Certificatearn
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use InternalServerException.ProtoReflect.Descriptor instead.
+func (*InternalServerException) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *InternalServerException) GetMessage() string {
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidArgsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidArgsException) Reset() {
 	*x = InvalidArgsException{}
-	mi := &file_acm_proto_msgTypes[33]
+	mi := &file_acm_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3576,7 +6662,7 @@ func (x *InvalidArgsException) String() string {
 func (*InvalidArgsException) ProtoMessage() {}
 
 func (x *InvalidArgsException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[33]
+	mi := &file_acm_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3589,26 +6675,26 @@ func (x *InvalidArgsException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidArgsException.ProtoReflect.Descriptor instead.
 func (*InvalidArgsException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{33}
+	return file_acm_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *InvalidArgsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidArnException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidArnException) Reset() {
 	*x = InvalidArnException{}
-	mi := &file_acm_proto_msgTypes[34]
+	mi := &file_acm_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3620,7 +6706,7 @@ func (x *InvalidArnException) String() string {
 func (*InvalidArnException) ProtoMessage() {}
 
 func (x *InvalidArnException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[34]
+	mi := &file_acm_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3633,26 +6719,26 @@ func (x *InvalidArnException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidArnException.ProtoReflect.Descriptor instead.
 func (*InvalidArnException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{34}
+	return file_acm_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *InvalidArnException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDomainValidationOptionsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidDomainValidationOptionsException) Reset() {
 	*x = InvalidDomainValidationOptionsException{}
-	mi := &file_acm_proto_msgTypes[35]
+	mi := &file_acm_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3664,7 +6750,7 @@ func (x *InvalidDomainValidationOptionsException) String() string {
 func (*InvalidDomainValidationOptionsException) ProtoMessage() {}
 
 func (x *InvalidDomainValidationOptionsException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[35]
+	mi := &file_acm_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3677,26 +6763,26 @@ func (x *InvalidDomainValidationOptionsException) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use InvalidDomainValidationOptionsException.ProtoReflect.Descriptor instead.
 func (*InvalidDomainValidationOptionsException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{35}
+	return file_acm_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *InvalidDomainValidationOptionsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidParameterException) Reset() {
 	*x = InvalidParameterException{}
-	mi := &file_acm_proto_msgTypes[36]
+	mi := &file_acm_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3708,7 +6794,7 @@ func (x *InvalidParameterException) String() string {
 func (*InvalidParameterException) ProtoMessage() {}
 
 func (x *InvalidParameterException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[36]
+	mi := &file_acm_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3721,26 +6807,26 @@ func (x *InvalidParameterException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidParameterException.ProtoReflect.Descriptor instead.
 func (*InvalidParameterException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{36}
+	return file_acm_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *InvalidParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidStateException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidStateException) Reset() {
 	*x = InvalidStateException{}
-	mi := &file_acm_proto_msgTypes[37]
+	mi := &file_acm_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3752,7 +6838,7 @@ func (x *InvalidStateException) String() string {
 func (*InvalidStateException) ProtoMessage() {}
 
 func (x *InvalidStateException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[37]
+	mi := &file_acm_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3765,26 +6851,26 @@ func (x *InvalidStateException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidStateException.ProtoReflect.Descriptor instead.
 func (*InvalidStateException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{37}
+	return file_acm_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *InvalidStateException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTagException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidTagException) Reset() {
 	*x = InvalidTagException{}
-	mi := &file_acm_proto_msgTypes[38]
+	mi := &file_acm_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3796,7 +6882,7 @@ func (x *InvalidTagException) String() string {
 func (*InvalidTagException) ProtoMessage() {}
 
 func (x *InvalidTagException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[38]
+	mi := &file_acm_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3809,12 +6895,12 @@ func (x *InvalidTagException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidTagException.ProtoReflect.Descriptor instead.
 func (*InvalidTagException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{38}
+	return file_acm_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *InvalidTagException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3828,7 +6914,7 @@ type KeyUsage struct {
 
 func (x *KeyUsage) Reset() {
 	*x = KeyUsage{}
-	mi := &file_acm_proto_msgTypes[39]
+	mi := &file_acm_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3840,7 +6926,7 @@ func (x *KeyUsage) String() string {
 func (*KeyUsage) ProtoMessage() {}
 
 func (x *KeyUsage) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[39]
+	mi := &file_acm_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3853,7 +6939,7 @@ func (x *KeyUsage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyUsage.ProtoReflect.Descriptor instead.
 func (*KeyUsage) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{39}
+	return file_acm_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *KeyUsage) GetName() KeyUsageName {
@@ -3865,14 +6951,14 @@ func (x *KeyUsage) GetName() KeyUsageName {
 
 type LimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LimitExceededException) Reset() {
 	*x = LimitExceededException{}
-	mi := &file_acm_proto_msgTypes[40]
+	mi := &file_acm_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3884,7 +6970,7 @@ func (x *LimitExceededException) String() string {
 func (*LimitExceededException) ProtoMessage() {}
 
 func (x *LimitExceededException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[40]
+	mi := &file_acm_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3897,31 +6983,584 @@ func (x *LimitExceededException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LimitExceededException.ProtoReflect.Descriptor instead.
 func (*LimitExceededException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{40}
+	return file_acm_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *LimitExceededException) GetMessage() string {
+	if x != nil && x.Message != nil {
+		return *x.Message
+	}
+	return ""
+}
+
+type ListAcmeAccountsRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Maxresults      *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ListAcmeAccountsRequest) Reset() {
+	*x = ListAcmeAccountsRequest{}
+	mi := &file_acm_proto_msgTypes[79]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeAccountsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeAccountsRequest) ProtoMessage() {}
+
+func (x *ListAcmeAccountsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[79]
 	if x != nil {
-		return x.Message
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeAccountsRequest.ProtoReflect.Descriptor instead.
+func (*ListAcmeAccountsRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{79}
+}
+
+func (x *ListAcmeAccountsRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *ListAcmeAccountsRequest) GetMaxresults() string {
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
+	}
+	return ""
+}
+
+func (x *ListAcmeAccountsRequest) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeAccountsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeaccounts  []*AcmeAccountSummary  `protobuf:"bytes,67331436,rep,name=acmeaccounts,proto3" json:"acmeaccounts,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAcmeAccountsResponse) Reset() {
+	*x = ListAcmeAccountsResponse{}
+	mi := &file_acm_proto_msgTypes[80]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeAccountsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeAccountsResponse) ProtoMessage() {}
+
+func (x *ListAcmeAccountsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[80]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeAccountsResponse.ProtoReflect.Descriptor instead.
+func (*ListAcmeAccountsResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{80}
+}
+
+func (x *ListAcmeAccountsResponse) GetAcmeaccounts() []*AcmeAccountSummary {
+	if x != nil {
+		return x.Acmeaccounts
+	}
+	return nil
+}
+
+func (x *ListAcmeAccountsResponse) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeDomainValidationsRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Maxresults      *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ListAcmeDomainValidationsRequest) Reset() {
+	*x = ListAcmeDomainValidationsRequest{}
+	mi := &file_acm_proto_msgTypes[81]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeDomainValidationsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeDomainValidationsRequest) ProtoMessage() {}
+
+func (x *ListAcmeDomainValidationsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[81]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeDomainValidationsRequest.ProtoReflect.Descriptor instead.
+func (*ListAcmeDomainValidationsRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{81}
+}
+
+func (x *ListAcmeDomainValidationsRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *ListAcmeDomainValidationsRequest) GetMaxresults() string {
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
+	}
+	return ""
+}
+
+func (x *ListAcmeDomainValidationsRequest) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeDomainValidationsResponse struct {
+	state                 protoimpl.MessageState         `protogen:"open.v1"`
+	Acmedomainvalidations []*AcmeDomainValidationSummary `protobuf:"bytes,334678950,rep,name=acmedomainvalidations,proto3" json:"acmedomainvalidations,omitempty"`
+	Nexttoken             *string                        `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *ListAcmeDomainValidationsResponse) Reset() {
+	*x = ListAcmeDomainValidationsResponse{}
+	mi := &file_acm_proto_msgTypes[82]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeDomainValidationsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeDomainValidationsResponse) ProtoMessage() {}
+
+func (x *ListAcmeDomainValidationsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[82]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeDomainValidationsResponse.ProtoReflect.Descriptor instead.
+func (*ListAcmeDomainValidationsResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{82}
+}
+
+func (x *ListAcmeDomainValidationsResponse) GetAcmedomainvalidations() []*AcmeDomainValidationSummary {
+	if x != nil {
+		return x.Acmedomainvalidations
+	}
+	return nil
+}
+
+func (x *ListAcmeDomainValidationsResponse) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeEndpointsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Maxresults    *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAcmeEndpointsRequest) Reset() {
+	*x = ListAcmeEndpointsRequest{}
+	mi := &file_acm_proto_msgTypes[83]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeEndpointsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeEndpointsRequest) ProtoMessage() {}
+
+func (x *ListAcmeEndpointsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[83]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeEndpointsRequest.ProtoReflect.Descriptor instead.
+func (*ListAcmeEndpointsRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{83}
+}
+
+func (x *ListAcmeEndpointsRequest) GetMaxresults() string {
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
+	}
+	return ""
+}
+
+func (x *ListAcmeEndpointsRequest) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeEndpointsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpoints []*AcmeEndpointSummary `protobuf:"bytes,518373972,rep,name=acmeendpoints,proto3" json:"acmeendpoints,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListAcmeEndpointsResponse) Reset() {
+	*x = ListAcmeEndpointsResponse{}
+	mi := &file_acm_proto_msgTypes[84]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeEndpointsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeEndpointsResponse) ProtoMessage() {}
+
+func (x *ListAcmeEndpointsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[84]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeEndpointsResponse.ProtoReflect.Descriptor instead.
+func (*ListAcmeEndpointsResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{84}
+}
+
+func (x *ListAcmeEndpointsResponse) GetAcmeendpoints() []*AcmeEndpointSummary {
+	if x != nil {
+		return x.Acmeendpoints
+	}
+	return nil
+}
+
+func (x *ListAcmeEndpointsResponse) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeExternalAccountBindingsRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Maxresults      *string                `protobuf:"bytes,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ListAcmeExternalAccountBindingsRequest) Reset() {
+	*x = ListAcmeExternalAccountBindingsRequest{}
+	mi := &file_acm_proto_msgTypes[85]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeExternalAccountBindingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeExternalAccountBindingsRequest) ProtoMessage() {}
+
+func (x *ListAcmeExternalAccountBindingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[85]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeExternalAccountBindingsRequest.ProtoReflect.Descriptor instead.
+func (*ListAcmeExternalAccountBindingsRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{85}
+}
+
+func (x *ListAcmeExternalAccountBindingsRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *ListAcmeExternalAccountBindingsRequest) GetMaxresults() string {
+	if x != nil && x.Maxresults != nil {
+		return *x.Maxresults
+	}
+	return ""
+}
+
+func (x *ListAcmeExternalAccountBindingsRequest) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListAcmeExternalAccountBindingsResponse struct {
+	state                   protoimpl.MessageState               `protogen:"open.v1"`
+	Externalaccountbindings []*AcmeExternalAccountBindingSummary `protobuf:"bytes,144129476,rep,name=externalaccountbindings,proto3" json:"externalaccountbindings,omitempty"`
+	Nexttoken               *string                              `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *ListAcmeExternalAccountBindingsResponse) Reset() {
+	*x = ListAcmeExternalAccountBindingsResponse{}
+	mi := &file_acm_proto_msgTypes[86]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListAcmeExternalAccountBindingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListAcmeExternalAccountBindingsResponse) ProtoMessage() {}
+
+func (x *ListAcmeExternalAccountBindingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[86]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListAcmeExternalAccountBindingsResponse.ProtoReflect.Descriptor instead.
+func (*ListAcmeExternalAccountBindingsResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{86}
+}
+
+func (x *ListAcmeExternalAccountBindingsResponse) GetExternalaccountbindings() []*AcmeExternalAccountBindingSummary {
+	if x != nil {
+		return x.Externalaccountbindings
+	}
+	return nil
+}
+
+func (x *ListAcmeExternalAccountBindingsResponse) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListCertificateDomainValidationsRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	Certificatearn string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
+	Maxitems       *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ListCertificateDomainValidationsRequest) Reset() {
+	*x = ListCertificateDomainValidationsRequest{}
+	mi := &file_acm_proto_msgTypes[87]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCertificateDomainValidationsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCertificateDomainValidationsRequest) ProtoMessage() {}
+
+func (x *ListCertificateDomainValidationsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[87]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCertificateDomainValidationsRequest.ProtoReflect.Descriptor instead.
+func (*ListCertificateDomainValidationsRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{87}
+}
+
+func (x *ListCertificateDomainValidationsRequest) GetCertificatearn() string {
+	if x != nil {
+		return x.Certificatearn
+	}
+	return ""
+}
+
+func (x *ListCertificateDomainValidationsRequest) GetMaxitems() int32 {
+	if x != nil && x.Maxitems != nil {
+		return *x.Maxitems
+	}
+	return 0
+}
+
+func (x *ListCertificateDomainValidationsRequest) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
+	}
+	return ""
+}
+
+type ListCertificateDomainValidationsResponse struct {
+	state                       protoimpl.MessageState     `protogen:"open.v1"`
+	Domainvalidationsummarylist []*DomainValidationSummary `protobuf:"bytes,105077567,rep,name=domainvalidationsummarylist,proto3" json:"domainvalidationsummarylist,omitempty"`
+	Nexttoken                   *string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *ListCertificateDomainValidationsResponse) Reset() {
+	*x = ListCertificateDomainValidationsResponse{}
+	mi := &file_acm_proto_msgTypes[88]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListCertificateDomainValidationsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListCertificateDomainValidationsResponse) ProtoMessage() {}
+
+func (x *ListCertificateDomainValidationsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[88]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListCertificateDomainValidationsResponse.ProtoReflect.Descriptor instead.
+func (*ListCertificateDomainValidationsResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{88}
+}
+
+func (x *ListCertificateDomainValidationsResponse) GetDomainvalidationsummarylist() []*DomainValidationSummary {
+	if x != nil {
+		return x.Domainvalidationsummarylist
+	}
+	return nil
+}
+
+func (x *ListCertificateDomainValidationsResponse) GetNexttoken() string {
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListCertificatesRequest struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Certificatestatuses []CertificateStatus    `protobuf:"varint,203375987,rep,packed,name=certificatestatuses,proto3,enum=acm.CertificateStatus" json:"certificatestatuses,omitempty"`
-	Includes            *Filters               `protobuf:"bytes,162404509,opt,name=includes,proto3" json:"includes,omitempty"`
-	Maxitems            *int32                 `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
-	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Sortby              SortBy                 `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SortBy" json:"sortby,omitempty"`
-	Sortorder           SortOrder              `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SortOrder" json:"sortorder,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                     protoimpl.MessageState     `protogen:"open.v1"`
+	Certificatekeypairorigins []CertificateKeyPairOrigin `protobuf:"varint,296158823,rep,packed,name=certificatekeypairorigins,proto3,enum=acm.CertificateKeyPairOrigin" json:"certificatekeypairorigins,omitempty"`
+	Certificatestatuses       []CertificateStatus        `protobuf:"varint,203375987,rep,packed,name=certificatestatuses,proto3,enum=acm.CertificateStatus" json:"certificatestatuses,omitempty"`
+	Includes                  *Filters                   `protobuf:"bytes,162404509,opt,name=includes,proto3" json:"includes,omitempty"`
+	Maxitems                  *int32                     `protobuf:"varint,506899220,opt,name=maxitems,proto3,oneof" json:"maxitems,omitempty"`
+	Nexttoken                 *string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Sortby                    SortBy                     `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SortBy" json:"sortby,omitempty"`
+	Sortorder                 SortOrder                  `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SortOrder" json:"sortorder,omitempty"`
+	unknownFields             protoimpl.UnknownFields
+	sizeCache                 protoimpl.SizeCache
 }
 
 func (x *ListCertificatesRequest) Reset() {
 	*x = ListCertificatesRequest{}
-	mi := &file_acm_proto_msgTypes[41]
+	mi := &file_acm_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3933,7 +7572,7 @@ func (x *ListCertificatesRequest) String() string {
 func (*ListCertificatesRequest) ProtoMessage() {}
 
 func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[41]
+	mi := &file_acm_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3946,7 +7585,14 @@ func (x *ListCertificatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCertificatesRequest.ProtoReflect.Descriptor instead.
 func (*ListCertificatesRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{41}
+	return file_acm_proto_rawDescGZIP(), []int{89}
+}
+
+func (x *ListCertificatesRequest) GetCertificatekeypairorigins() []CertificateKeyPairOrigin {
+	if x != nil {
+		return x.Certificatekeypairorigins
+	}
+	return nil
 }
 
 func (x *ListCertificatesRequest) GetCertificatestatuses() []CertificateStatus {
@@ -3971,8 +7617,8 @@ func (x *ListCertificatesRequest) GetMaxitems() int32 {
 }
 
 func (x *ListCertificatesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3994,14 +7640,14 @@ func (x *ListCertificatesRequest) GetSortorder() SortOrder {
 type ListCertificatesResponse struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Certificatesummarylist []*CertificateSummary  `protobuf:"bytes,487936529,rep,name=certificatesummarylist,proto3" json:"certificatesummarylist,omitempty"`
-	Nexttoken              string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken              *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
 func (x *ListCertificatesResponse) Reset() {
 	*x = ListCertificatesResponse{}
-	mi := &file_acm_proto_msgTypes[42]
+	mi := &file_acm_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4013,7 +7659,7 @@ func (x *ListCertificatesResponse) String() string {
 func (*ListCertificatesResponse) ProtoMessage() {}
 
 func (x *ListCertificatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[42]
+	mi := &file_acm_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4026,7 +7672,7 @@ func (x *ListCertificatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCertificatesResponse.ProtoReflect.Descriptor instead.
 func (*ListCertificatesResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{42}
+	return file_acm_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *ListCertificatesResponse) GetCertificatesummarylist() []*CertificateSummary {
@@ -4037,8 +7683,8 @@ func (x *ListCertificatesResponse) GetCertificatesummarylist() []*CertificateSum
 }
 
 func (x *ListCertificatesResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -4052,7 +7698,7 @@ type ListTagsForCertificateRequest struct {
 
 func (x *ListTagsForCertificateRequest) Reset() {
 	*x = ListTagsForCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[43]
+	mi := &file_acm_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4064,7 +7710,7 @@ func (x *ListTagsForCertificateRequest) String() string {
 func (*ListTagsForCertificateRequest) ProtoMessage() {}
 
 func (x *ListTagsForCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[43]
+	mi := &file_acm_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4077,7 +7723,7 @@ func (x *ListTagsForCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTagsForCertificateRequest.ProtoReflect.Descriptor instead.
 func (*ListTagsForCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{43}
+	return file_acm_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *ListTagsForCertificateRequest) GetCertificatearn() string {
@@ -4096,7 +7742,7 @@ type ListTagsForCertificateResponse struct {
 
 func (x *ListTagsForCertificateResponse) Reset() {
 	*x = ListTagsForCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[44]
+	mi := &file_acm_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4108,7 +7754,7 @@ func (x *ListTagsForCertificateResponse) String() string {
 func (*ListTagsForCertificateResponse) ProtoMessage() {}
 
 func (x *ListTagsForCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[44]
+	mi := &file_acm_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4121,7 +7767,7 @@ func (x *ListTagsForCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTagsForCertificateResponse.ProtoReflect.Descriptor instead.
 func (*ListTagsForCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{44}
+	return file_acm_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *ListTagsForCertificateResponse) GetTags() []*Tag {
@@ -4131,17 +7777,105 @@ func (x *ListTagsForCertificateResponse) GetTags() []*Tag {
 	return nil
 }
 
+type ListTagsForResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTagsForResourceRequest) Reset() {
+	*x = ListTagsForResourceRequest{}
+	mi := &file_acm_proto_msgTypes[93]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTagsForResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTagsForResourceRequest) ProtoMessage() {}
+
+func (x *ListTagsForResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[93]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTagsForResourceRequest.ProtoReflect.Descriptor instead.
+func (*ListTagsForResourceRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{93}
+}
+
+func (x *ListTagsForResourceRequest) GetResourcearn() string {
+	if x != nil {
+		return x.Resourcearn
+	}
+	return ""
+}
+
+type ListTagsForResourceResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListTagsForResourceResponse) Reset() {
+	*x = ListTagsForResourceResponse{}
+	mi := &file_acm_proto_msgTypes[94]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListTagsForResourceResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListTagsForResourceResponse) ProtoMessage() {}
+
+func (x *ListTagsForResourceResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[94]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListTagsForResourceResponse.ProtoReflect.Descriptor instead.
+func (*ListTagsForResourceResponse) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{94}
+}
+
+func (x *ListTagsForResourceResponse) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type OtherName struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Objectidentifier string                 `protobuf:"bytes,389541722,opt,name=objectidentifier,proto3" json:"objectidentifier,omitempty"`
-	Value            string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Objectidentifier *string                `protobuf:"bytes,389541722,opt,name=objectidentifier,proto3,oneof" json:"objectidentifier,omitempty"`
+	Value            *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *OtherName) Reset() {
 	*x = OtherName{}
-	mi := &file_acm_proto_msgTypes[45]
+	mi := &file_acm_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4153,7 +7887,7 @@ func (x *OtherName) String() string {
 func (*OtherName) ProtoMessage() {}
 
 func (x *OtherName) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[45]
+	mi := &file_acm_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4166,21 +7900,153 @@ func (x *OtherName) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use OtherName.ProtoReflect.Descriptor instead.
 func (*OtherName) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{45}
+	return file_acm_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *OtherName) GetObjectidentifier() string {
-	if x != nil {
-		return x.Objectidentifier
+	if x != nil && x.Objectidentifier != nil {
+		return *x.Objectidentifier
 	}
 	return ""
 }
 
 func (x *OtherName) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
+}
+
+type PrevalidationDetails struct {
+	state            protoimpl.MessageState   `protogen:"open.v1"`
+	Dnsprevalidation *DnsPrevalidationDetails `protobuf:"bytes,196969595,opt,name=dnsprevalidation,proto3" json:"dnsprevalidation,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PrevalidationDetails) Reset() {
+	*x = PrevalidationDetails{}
+	mi := &file_acm_proto_msgTypes[96]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrevalidationDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrevalidationDetails) ProtoMessage() {}
+
+func (x *PrevalidationDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[96]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrevalidationDetails.ProtoReflect.Descriptor instead.
+func (*PrevalidationDetails) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{96}
+}
+
+func (x *PrevalidationDetails) GetDnsprevalidation() *DnsPrevalidationDetails {
+	if x != nil {
+		return x.Dnsprevalidation
+	}
+	return nil
+}
+
+type PrevalidationOptions struct {
+	state            protoimpl.MessageState   `protogen:"open.v1"`
+	Dnsprevalidation *DnsPrevalidationOptions `protobuf:"bytes,196969595,opt,name=dnsprevalidation,proto3" json:"dnsprevalidation,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *PrevalidationOptions) Reset() {
+	*x = PrevalidationOptions{}
+	mi := &file_acm_proto_msgTypes[97]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PrevalidationOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PrevalidationOptions) ProtoMessage() {}
+
+func (x *PrevalidationOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[97]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PrevalidationOptions.ProtoReflect.Descriptor instead.
+func (*PrevalidationOptions) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{97}
+}
+
+func (x *PrevalidationOptions) GetDnsprevalidation() *DnsPrevalidationOptions {
+	if x != nil {
+		return x.Dnsprevalidation
+	}
+	return nil
+}
+
+type PublicCertificateAuthority struct {
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Allowedkeyalgorithms []PublicKeyAlgorithm   `protobuf:"varint,469856557,rep,packed,name=allowedkeyalgorithms,proto3,enum=acm.PublicKeyAlgorithm" json:"allowedkeyalgorithms,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *PublicCertificateAuthority) Reset() {
+	*x = PublicCertificateAuthority{}
+	mi := &file_acm_proto_msgTypes[98]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PublicCertificateAuthority) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PublicCertificateAuthority) ProtoMessage() {}
+
+func (x *PublicCertificateAuthority) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[98]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PublicCertificateAuthority.ProtoReflect.Descriptor instead.
+func (*PublicCertificateAuthority) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{98}
+}
+
+func (x *PublicCertificateAuthority) GetAllowedkeyalgorithms() []PublicKeyAlgorithm {
+	if x != nil {
+		return x.Allowedkeyalgorithms
+	}
+	return nil
 }
 
 type PutAccountConfigurationRequest struct {
@@ -4193,7 +8059,7 @@ type PutAccountConfigurationRequest struct {
 
 func (x *PutAccountConfigurationRequest) Reset() {
 	*x = PutAccountConfigurationRequest{}
-	mi := &file_acm_proto_msgTypes[46]
+	mi := &file_acm_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4205,7 +8071,7 @@ func (x *PutAccountConfigurationRequest) String() string {
 func (*PutAccountConfigurationRequest) ProtoMessage() {}
 
 func (x *PutAccountConfigurationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[46]
+	mi := &file_acm_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4218,7 +8084,7 @@ func (x *PutAccountConfigurationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutAccountConfigurationRequest.ProtoReflect.Descriptor instead.
 func (*PutAccountConfigurationRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{46}
+	return file_acm_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *PutAccountConfigurationRequest) GetExpiryevents() *ExpiryEventsConfiguration {
@@ -4245,7 +8111,7 @@ type RemoveTagsFromCertificateRequest struct {
 
 func (x *RemoveTagsFromCertificateRequest) Reset() {
 	*x = RemoveTagsFromCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[47]
+	mi := &file_acm_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4257,7 +8123,7 @@ func (x *RemoveTagsFromCertificateRequest) String() string {
 func (*RemoveTagsFromCertificateRequest) ProtoMessage() {}
 
 func (x *RemoveTagsFromCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[47]
+	mi := &file_acm_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4270,7 +8136,7 @@ func (x *RemoveTagsFromCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RemoveTagsFromCertificateRequest.ProtoReflect.Descriptor instead.
 func (*RemoveTagsFromCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{47}
+	return file_acm_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *RemoveTagsFromCertificateRequest) GetCertificatearn() string {
@@ -4296,7 +8162,7 @@ type RenewCertificateRequest struct {
 
 func (x *RenewCertificateRequest) Reset() {
 	*x = RenewCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[48]
+	mi := &file_acm_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4308,7 +8174,7 @@ func (x *RenewCertificateRequest) String() string {
 func (*RenewCertificateRequest) ProtoMessage() {}
 
 func (x *RenewCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[48]
+	mi := &file_acm_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4321,7 +8187,7 @@ func (x *RenewCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenewCertificateRequest.ProtoReflect.Descriptor instead.
 func (*RenewCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{48}
+	return file_acm_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *RenewCertificateRequest) GetCertificatearn() string {
@@ -4343,7 +8209,7 @@ type RenewalSummary struct {
 
 func (x *RenewalSummary) Reset() {
 	*x = RenewalSummary{}
-	mi := &file_acm_proto_msgTypes[49]
+	mi := &file_acm_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4355,7 +8221,7 @@ func (x *RenewalSummary) String() string {
 func (*RenewalSummary) ProtoMessage() {}
 
 func (x *RenewalSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[49]
+	mi := &file_acm_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4368,7 +8234,7 @@ func (x *RenewalSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RenewalSummary.ProtoReflect.Descriptor instead.
 func (*RenewalSummary) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{49}
+	return file_acm_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *RenewalSummary) GetDomainvalidationoptions() []*DomainValidation {
@@ -4401,10 +8267,10 @@ func (x *RenewalSummary) GetUpdatedat() string {
 
 type RequestCertificateRequest struct {
 	state                   protoimpl.MessageState    `protogen:"open.v1"`
-	Certificateauthorityarn string                    `protobuf:"bytes,266069181,opt,name=certificateauthorityarn,proto3" json:"certificateauthorityarn,omitempty"`
+	Certificateauthorityarn *string                   `protobuf:"bytes,266069181,opt,name=certificateauthorityarn,proto3,oneof" json:"certificateauthorityarn,omitempty"`
 	Domainname              string                    `protobuf:"bytes,194914027,opt,name=domainname,proto3" json:"domainname,omitempty"`
 	Domainvalidationoptions []*DomainValidationOption `protobuf:"bytes,335573705,rep,name=domainvalidationoptions,proto3" json:"domainvalidationoptions,omitempty"`
-	Idempotencytoken        string                    `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3" json:"idempotencytoken,omitempty"`
+	Idempotencytoken        *string                   `protobuf:"bytes,56833648,opt,name=idempotencytoken,proto3,oneof" json:"idempotencytoken,omitempty"`
 	Keyalgorithm            KeyAlgorithm              `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
 	Managedby               CertificateManagedBy      `protobuf:"varint,455511232,opt,name=managedby,proto3,enum=acm.CertificateManagedBy" json:"managedby,omitempty"`
 	Options                 *CertificateOptions       `protobuf:"bytes,356388166,opt,name=options,proto3" json:"options,omitempty"`
@@ -4417,7 +8283,7 @@ type RequestCertificateRequest struct {
 
 func (x *RequestCertificateRequest) Reset() {
 	*x = RequestCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[50]
+	mi := &file_acm_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4429,7 +8295,7 @@ func (x *RequestCertificateRequest) String() string {
 func (*RequestCertificateRequest) ProtoMessage() {}
 
 func (x *RequestCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[50]
+	mi := &file_acm_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4442,12 +8308,12 @@ func (x *RequestCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestCertificateRequest.ProtoReflect.Descriptor instead.
 func (*RequestCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{50}
+	return file_acm_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *RequestCertificateRequest) GetCertificateauthorityarn() string {
-	if x != nil {
-		return x.Certificateauthorityarn
+	if x != nil && x.Certificateauthorityarn != nil {
+		return *x.Certificateauthorityarn
 	}
 	return ""
 }
@@ -4467,8 +8333,8 @@ func (x *RequestCertificateRequest) GetDomainvalidationoptions() []*DomainValida
 }
 
 func (x *RequestCertificateRequest) GetIdempotencytoken() string {
-	if x != nil {
-		return x.Idempotencytoken
+	if x != nil && x.Idempotencytoken != nil {
+		return *x.Idempotencytoken
 	}
 	return ""
 }
@@ -4517,14 +8383,14 @@ func (x *RequestCertificateRequest) GetValidationmethod() ValidationMethod {
 
 type RequestCertificateResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Certificatearn string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
+	Certificatearn *string                `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RequestCertificateResponse) Reset() {
 	*x = RequestCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[51]
+	mi := &file_acm_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4536,7 +8402,7 @@ func (x *RequestCertificateResponse) String() string {
 func (*RequestCertificateResponse) ProtoMessage() {}
 
 func (x *RequestCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[51]
+	mi := &file_acm_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4549,26 +8415,26 @@ func (x *RequestCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestCertificateResponse.ProtoReflect.Descriptor instead.
 func (*RequestCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{51}
+	return file_acm_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *RequestCertificateResponse) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
 
 type RequestInProgressException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RequestInProgressException) Reset() {
 	*x = RequestInProgressException{}
-	mi := &file_acm_proto_msgTypes[52]
+	mi := &file_acm_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4580,7 +8446,7 @@ func (x *RequestInProgressException) String() string {
 func (*RequestInProgressException) ProtoMessage() {}
 
 func (x *RequestInProgressException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[52]
+	mi := &file_acm_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4593,12 +8459,12 @@ func (x *RequestInProgressException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestInProgressException.ProtoReflect.Descriptor instead.
 func (*RequestInProgressException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{52}
+	return file_acm_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *RequestInProgressException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4614,7 +8480,7 @@ type ResendValidationEmailRequest struct {
 
 func (x *ResendValidationEmailRequest) Reset() {
 	*x = ResendValidationEmailRequest{}
-	mi := &file_acm_proto_msgTypes[53]
+	mi := &file_acm_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4626,7 +8492,7 @@ func (x *ResendValidationEmailRequest) String() string {
 func (*ResendValidationEmailRequest) ProtoMessage() {}
 
 func (x *ResendValidationEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[53]
+	mi := &file_acm_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4639,7 +8505,7 @@ func (x *ResendValidationEmailRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResendValidationEmailRequest.ProtoReflect.Descriptor instead.
 func (*ResendValidationEmailRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{53}
+	return file_acm_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *ResendValidationEmailRequest) GetCertificatearn() string {
@@ -4665,14 +8531,14 @@ func (x *ResendValidationEmailRequest) GetValidationdomain() string {
 
 type ResourceInUseException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ResourceInUseException) Reset() {
 	*x = ResourceInUseException{}
-	mi := &file_acm_proto_msgTypes[54]
+	mi := &file_acm_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4684,7 +8550,7 @@ func (x *ResourceInUseException) String() string {
 func (*ResourceInUseException) ProtoMessage() {}
 
 func (x *ResourceInUseException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[54]
+	mi := &file_acm_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4697,26 +8563,26 @@ func (x *ResourceInUseException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceInUseException.ProtoReflect.Descriptor instead.
 func (*ResourceInUseException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{54}
+	return file_acm_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *ResourceInUseException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ResourceNotFoundException) Reset() {
 	*x = ResourceNotFoundException{}
-	mi := &file_acm_proto_msgTypes[55]
+	mi := &file_acm_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4728,7 +8594,7 @@ func (x *ResourceNotFoundException) String() string {
 func (*ResourceNotFoundException) ProtoMessage() {}
 
 func (x *ResourceNotFoundException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[55]
+	mi := &file_acm_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4741,12 +8607,12 @@ func (x *ResourceNotFoundException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceNotFoundException.ProtoReflect.Descriptor instead.
 func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{55}
+	return file_acm_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4762,7 +8628,7 @@ type ResourceRecord struct {
 
 func (x *ResourceRecord) Reset() {
 	*x = ResourceRecord{}
-	mi := &file_acm_proto_msgTypes[56]
+	mi := &file_acm_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4774,7 +8640,7 @@ func (x *ResourceRecord) String() string {
 func (*ResourceRecord) ProtoMessage() {}
 
 func (x *ResourceRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[56]
+	mi := &file_acm_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4787,7 +8653,7 @@ func (x *ResourceRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceRecord.ProtoReflect.Descriptor instead.
 func (*ResourceRecord) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{56}
+	return file_acm_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *ResourceRecord) GetName() string {
@@ -4811,6 +8677,102 @@ func (x *ResourceRecord) GetValue() string {
 	return ""
 }
 
+type RevokeAcmeAccountRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Accounturl      string                 `protobuf:"bytes,410635830,opt,name=accounturl,proto3" json:"accounturl,omitempty"`
+	Acmeendpointarn string                 `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *RevokeAcmeAccountRequest) Reset() {
+	*x = RevokeAcmeAccountRequest{}
+	mi := &file_acm_proto_msgTypes[110]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAcmeAccountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAcmeAccountRequest) ProtoMessage() {}
+
+func (x *RevokeAcmeAccountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[110]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAcmeAccountRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAcmeAccountRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{110}
+}
+
+func (x *RevokeAcmeAccountRequest) GetAccounturl() string {
+	if x != nil {
+		return x.Accounturl
+	}
+	return ""
+}
+
+func (x *RevokeAcmeAccountRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+type RevokeAcmeExternalAccountBindingRequest struct {
+	state                         protoimpl.MessageState `protogen:"open.v1"`
+	Acmeexternalaccountbindingarn string                 `protobuf:"bytes,521952268,opt,name=acmeexternalaccountbindingarn,proto3" json:"acmeexternalaccountbindingarn,omitempty"`
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
+}
+
+func (x *RevokeAcmeExternalAccountBindingRequest) Reset() {
+	*x = RevokeAcmeExternalAccountBindingRequest{}
+	mi := &file_acm_proto_msgTypes[111]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeAcmeExternalAccountBindingRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeAcmeExternalAccountBindingRequest) ProtoMessage() {}
+
+func (x *RevokeAcmeExternalAccountBindingRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[111]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeAcmeExternalAccountBindingRequest.ProtoReflect.Descriptor instead.
+func (*RevokeAcmeExternalAccountBindingRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{111}
+}
+
+func (x *RevokeAcmeExternalAccountBindingRequest) GetAcmeexternalaccountbindingarn() string {
+	if x != nil {
+		return x.Acmeexternalaccountbindingarn
+	}
+	return ""
+}
+
 type RevokeCertificateRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Certificatearn   string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
@@ -4821,7 +8783,7 @@ type RevokeCertificateRequest struct {
 
 func (x *RevokeCertificateRequest) Reset() {
 	*x = RevokeCertificateRequest{}
-	mi := &file_acm_proto_msgTypes[57]
+	mi := &file_acm_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4833,7 +8795,7 @@ func (x *RevokeCertificateRequest) String() string {
 func (*RevokeCertificateRequest) ProtoMessage() {}
 
 func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[57]
+	mi := &file_acm_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4846,7 +8808,7 @@ func (x *RevokeCertificateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCertificateRequest.ProtoReflect.Descriptor instead.
 func (*RevokeCertificateRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{57}
+	return file_acm_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *RevokeCertificateRequest) GetCertificatearn() string {
@@ -4865,14 +8827,14 @@ func (x *RevokeCertificateRequest) GetRevocationreason() RevocationReason {
 
 type RevokeCertificateResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Certificatearn string                 `protobuf:"bytes,92693880,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
+	Certificatearn *string                `protobuf:"bytes,92693880,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RevokeCertificateResponse) Reset() {
 	*x = RevokeCertificateResponse{}
-	mi := &file_acm_proto_msgTypes[58]
+	mi := &file_acm_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4884,7 +8846,7 @@ func (x *RevokeCertificateResponse) String() string {
 func (*RevokeCertificateResponse) ProtoMessage() {}
 
 func (x *RevokeCertificateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[58]
+	mi := &file_acm_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4897,12 +8859,12 @@ func (x *RevokeCertificateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevokeCertificateResponse.ProtoReflect.Descriptor instead.
 func (*RevokeCertificateResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{58}
+	return file_acm_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *RevokeCertificateResponse) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
@@ -4911,7 +8873,7 @@ type SearchCertificatesRequest struct {
 	state           protoimpl.MessageState      `protogen:"open.v1"`
 	Filterstatement *CertificateFilterStatement `protobuf:"bytes,530491181,opt,name=filterstatement,proto3" json:"filterstatement,omitempty"`
 	Maxresults      *int32                      `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       string                      `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                     `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Sortby          SearchCertificatesSortBy    `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=acm.SearchCertificatesSortBy" json:"sortby,omitempty"`
 	Sortorder       SearchCertificatesSortOrder `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=acm.SearchCertificatesSortOrder" json:"sortorder,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -4920,7 +8882,7 @@ type SearchCertificatesRequest struct {
 
 func (x *SearchCertificatesRequest) Reset() {
 	*x = SearchCertificatesRequest{}
-	mi := &file_acm_proto_msgTypes[59]
+	mi := &file_acm_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4932,7 +8894,7 @@ func (x *SearchCertificatesRequest) String() string {
 func (*SearchCertificatesRequest) ProtoMessage() {}
 
 func (x *SearchCertificatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[59]
+	mi := &file_acm_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4945,7 +8907,7 @@ func (x *SearchCertificatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchCertificatesRequest.ProtoReflect.Descriptor instead.
 func (*SearchCertificatesRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{59}
+	return file_acm_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *SearchCertificatesRequest) GetFilterstatement() *CertificateFilterStatement {
@@ -4963,8 +8925,8 @@ func (x *SearchCertificatesRequest) GetMaxresults() int32 {
 }
 
 func (x *SearchCertificatesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -4985,7 +8947,7 @@ func (x *SearchCertificatesRequest) GetSortorder() SearchCertificatesSortOrder {
 
 type SearchCertificatesResponse struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Nexttoken     string                     `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Results       []*CertificateSearchResult `protobuf:"bytes,486024854,rep,name=results,proto3" json:"results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4993,7 +8955,7 @@ type SearchCertificatesResponse struct {
 
 func (x *SearchCertificatesResponse) Reset() {
 	*x = SearchCertificatesResponse{}
-	mi := &file_acm_proto_msgTypes[60]
+	mi := &file_acm_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5005,7 +8967,7 @@ func (x *SearchCertificatesResponse) String() string {
 func (*SearchCertificatesResponse) ProtoMessage() {}
 
 func (x *SearchCertificatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[60]
+	mi := &file_acm_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5018,12 +8980,12 @@ func (x *SearchCertificatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SearchCertificatesResponse.ProtoReflect.Descriptor instead.
 func (*SearchCertificatesResponse) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{60}
+	return file_acm_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *SearchCertificatesResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -5035,6 +8997,50 @@ func (x *SearchCertificatesResponse) GetResults() []*CertificateSearchResult {
 	return nil
 }
 
+type ServiceQuotaExceededException struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServiceQuotaExceededException) Reset() {
+	*x = ServiceQuotaExceededException{}
+	mi := &file_acm_proto_msgTypes[116]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServiceQuotaExceededException) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServiceQuotaExceededException) ProtoMessage() {}
+
+func (x *ServiceQuotaExceededException) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[116]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServiceQuotaExceededException.ProtoReflect.Descriptor instead.
+func (*ServiceQuotaExceededException) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{116}
+}
+
+func (x *ServiceQuotaExceededException) GetMessage() string {
+	if x != nil && x.Message != nil {
+		return *x.Message
+	}
+	return ""
+}
+
 type SubjectAlternativeNameFilter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dnsname       *DnsNameFilter         `protobuf:"bytes,166132088,opt,name=dnsname,proto3" json:"dnsname,omitempty"`
@@ -5044,7 +9050,7 @@ type SubjectAlternativeNameFilter struct {
 
 func (x *SubjectAlternativeNameFilter) Reset() {
 	*x = SubjectAlternativeNameFilter{}
-	mi := &file_acm_proto_msgTypes[61]
+	mi := &file_acm_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5056,7 +9062,7 @@ func (x *SubjectAlternativeNameFilter) String() string {
 func (*SubjectAlternativeNameFilter) ProtoMessage() {}
 
 func (x *SubjectAlternativeNameFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[61]
+	mi := &file_acm_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5069,7 +9075,7 @@ func (x *SubjectAlternativeNameFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubjectAlternativeNameFilter.ProtoReflect.Descriptor instead.
 func (*SubjectAlternativeNameFilter) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{61}
+	return file_acm_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *SubjectAlternativeNameFilter) GetDnsname() *DnsNameFilter {
@@ -5088,7 +9094,7 @@ type SubjectFilter struct {
 
 func (x *SubjectFilter) Reset() {
 	*x = SubjectFilter{}
-	mi := &file_acm_proto_msgTypes[62]
+	mi := &file_acm_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5100,7 +9106,7 @@ func (x *SubjectFilter) String() string {
 func (*SubjectFilter) ProtoMessage() {}
 
 func (x *SubjectFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[62]
+	mi := &file_acm_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5113,7 +9119,7 @@ func (x *SubjectFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubjectFilter.ProtoReflect.Descriptor instead.
 func (*SubjectFilter) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{62}
+	return file_acm_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *SubjectFilter) GetCommonname() *CommonNameFilter {
@@ -5126,14 +9132,14 @@ func (x *SubjectFilter) GetCommonname() *CommonNameFilter {
 type Tag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_acm_proto_msgTypes[63]
+	mi := &file_acm_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5145,7 +9151,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[63]
+	mi := &file_acm_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5158,7 +9164,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{63}
+	return file_acm_proto_rawDescGZIP(), []int{119}
 }
 
 func (x *Tag) GetKey() string {
@@ -5169,22 +9175,22 @@ func (x *Tag) GetKey() string {
 }
 
 func (x *Tag) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
 
 type TagPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TagPolicyException) Reset() {
 	*x = TagPolicyException{}
-	mi := &file_acm_proto_msgTypes[64]
+	mi := &file_acm_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5196,7 +9202,7 @@ func (x *TagPolicyException) String() string {
 func (*TagPolicyException) ProtoMessage() {}
 
 func (x *TagPolicyException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[64]
+	mi := &file_acm_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5209,19 +9215,71 @@ func (x *TagPolicyException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagPolicyException.ProtoReflect.Descriptor instead.
 func (*TagPolicyException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{64}
+	return file_acm_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *TagPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
+type TagResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
+	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *TagResourceRequest) Reset() {
+	*x = TagResourceRequest{}
+	mi := &file_acm_proto_msgTypes[121]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *TagResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TagResourceRequest) ProtoMessage() {}
+
+func (x *TagResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[121]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TagResourceRequest.ProtoReflect.Descriptor instead.
+func (*TagResourceRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{121}
+}
+
+func (x *TagResourceRequest) GetResourcearn() string {
+	if x != nil {
+		return x.Resourcearn
+	}
+	return ""
+}
+
+func (x *TagResourceRequest) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 type ThrottlingException struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Message           string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message           *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Throttlingreasons []*ThrottlingReason    `protobuf:"bytes,170616084,rep,name=throttlingreasons,proto3" json:"throttlingreasons,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -5229,7 +9287,7 @@ type ThrottlingException struct {
 
 func (x *ThrottlingException) Reset() {
 	*x = ThrottlingException{}
-	mi := &file_acm_proto_msgTypes[65]
+	mi := &file_acm_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5241,7 +9299,7 @@ func (x *ThrottlingException) String() string {
 func (*ThrottlingException) ProtoMessage() {}
 
 func (x *ThrottlingException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[65]
+	mi := &file_acm_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5254,12 +9312,12 @@ func (x *ThrottlingException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ThrottlingException.ProtoReflect.Descriptor instead.
 func (*ThrottlingException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{65}
+	return file_acm_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *ThrottlingException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5273,15 +9331,15 @@ func (x *ThrottlingException) GetThrottlingreasons() []*ThrottlingReason {
 
 type ThrottlingReason struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Reason        string                 `protobuf:"bytes,413359642,opt,name=reason,proto3" json:"reason,omitempty"`
-	Resource      string                 `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
+	Reason        *string                `protobuf:"bytes,413359642,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
+	Resource      *string                `protobuf:"bytes,165642230,opt,name=resource,proto3,oneof" json:"resource,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ThrottlingReason) Reset() {
 	*x = ThrottlingReason{}
-	mi := &file_acm_proto_msgTypes[66]
+	mi := &file_acm_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5293,7 +9351,7 @@ func (x *ThrottlingReason) String() string {
 func (*ThrottlingReason) ProtoMessage() {}
 
 func (x *ThrottlingReason) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[66]
+	mi := &file_acm_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5306,34 +9364,34 @@ func (x *ThrottlingReason) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ThrottlingReason.ProtoReflect.Descriptor instead.
 func (*ThrottlingReason) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{66}
+	return file_acm_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *ThrottlingReason) GetReason() string {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ""
 }
 
 func (x *ThrottlingReason) GetResource() string {
-	if x != nil {
-		return x.Resource
+	if x != nil && x.Resource != nil {
+		return *x.Resource
 	}
 	return ""
 }
 
 type TimestampRange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	End           string                 `protobuf:"bytes,261322315,opt,name=end,proto3" json:"end,omitempty"`
-	Start         string                 `protobuf:"bytes,182978944,opt,name=start,proto3" json:"start,omitempty"`
+	End           *string                `protobuf:"bytes,261322315,opt,name=end,proto3,oneof" json:"end,omitempty"`
+	Start         *string                `protobuf:"bytes,182978944,opt,name=start,proto3,oneof" json:"start,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TimestampRange) Reset() {
 	*x = TimestampRange{}
-	mi := &file_acm_proto_msgTypes[67]
+	mi := &file_acm_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5345,7 +9403,7 @@ func (x *TimestampRange) String() string {
 func (*TimestampRange) ProtoMessage() {}
 
 func (x *TimestampRange) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[67]
+	mi := &file_acm_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5358,33 +9416,33 @@ func (x *TimestampRange) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimestampRange.ProtoReflect.Descriptor instead.
 func (*TimestampRange) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{67}
+	return file_acm_proto_rawDescGZIP(), []int{124}
 }
 
 func (x *TimestampRange) GetEnd() string {
-	if x != nil {
-		return x.End
+	if x != nil && x.End != nil {
+		return *x.End
 	}
 	return ""
 }
 
 func (x *TimestampRange) GetStart() string {
-	if x != nil {
-		return x.Start
+	if x != nil && x.Start != nil {
+		return *x.Start
 	}
 	return ""
 }
 
 type TooManyTagsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TooManyTagsException) Reset() {
 	*x = TooManyTagsException{}
-	mi := &file_acm_proto_msgTypes[68]
+	mi := &file_acm_proto_msgTypes[125]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5396,7 +9454,7 @@ func (x *TooManyTagsException) String() string {
 func (*TooManyTagsException) ProtoMessage() {}
 
 func (x *TooManyTagsException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[68]
+	mi := &file_acm_proto_msgTypes[125]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5409,14 +9467,186 @@ func (x *TooManyTagsException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TooManyTagsException.ProtoReflect.Descriptor instead.
 func (*TooManyTagsException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{68}
+	return file_acm_proto_rawDescGZIP(), []int{125}
 }
 
 func (x *TooManyTagsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
+}
+
+type UntagResourceRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Resourcearn   string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
+	Tagkeys       []string               `protobuf:"bytes,320659964,rep,name=tagkeys,proto3" json:"tagkeys,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UntagResourceRequest) Reset() {
+	*x = UntagResourceRequest{}
+	mi := &file_acm_proto_msgTypes[126]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UntagResourceRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UntagResourceRequest) ProtoMessage() {}
+
+func (x *UntagResourceRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[126]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UntagResourceRequest.ProtoReflect.Descriptor instead.
+func (*UntagResourceRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{126}
+}
+
+func (x *UntagResourceRequest) GetResourcearn() string {
+	if x != nil {
+		return x.Resourcearn
+	}
+	return ""
+}
+
+func (x *UntagResourceRequest) GetTagkeys() []string {
+	if x != nil {
+		return x.Tagkeys
+	}
+	return nil
+}
+
+type UpdateAcmeDomainValidationRequest struct {
+	state                   protoimpl.MessageState `protogen:"open.v1"`
+	Acmedomainvalidationarn string                 `protobuf:"bytes,42437708,opt,name=acmedomainvalidationarn,proto3" json:"acmedomainvalidationarn,omitempty"`
+	Prevalidationoptions    *PrevalidationOptions  `protobuf:"bytes,339127734,opt,name=prevalidationoptions,proto3" json:"prevalidationoptions,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *UpdateAcmeDomainValidationRequest) Reset() {
+	*x = UpdateAcmeDomainValidationRequest{}
+	mi := &file_acm_proto_msgTypes[127]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateAcmeDomainValidationRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateAcmeDomainValidationRequest) ProtoMessage() {}
+
+func (x *UpdateAcmeDomainValidationRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[127]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateAcmeDomainValidationRequest.ProtoReflect.Descriptor instead.
+func (*UpdateAcmeDomainValidationRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{127}
+}
+
+func (x *UpdateAcmeDomainValidationRequest) GetAcmedomainvalidationarn() string {
+	if x != nil {
+		return x.Acmedomainvalidationarn
+	}
+	return ""
+}
+
+func (x *UpdateAcmeDomainValidationRequest) GetPrevalidationoptions() *PrevalidationOptions {
+	if x != nil {
+		return x.Prevalidationoptions
+	}
+	return nil
+}
+
+type UpdateAcmeEndpointRequest struct {
+	state                 protoimpl.MessageState    `protogen:"open.v1"`
+	Acmeendpointarn       string                    `protobuf:"bytes,94900702,opt,name=acmeendpointarn,proto3" json:"acmeendpointarn,omitempty"`
+	Authorizationbehavior AcmeAuthorizationBehavior `protobuf:"varint,132109481,opt,name=authorizationbehavior,proto3,enum=acm.AcmeAuthorizationBehavior" json:"authorizationbehavior,omitempty"`
+	Certificateauthority  *CertificateAuthority     `protobuf:"bytes,310340518,opt,name=certificateauthority,proto3" json:"certificateauthority,omitempty"`
+	Contact               AcmeContact               `protobuf:"varint,330077380,opt,name=contact,proto3,enum=acm.AcmeContact" json:"contact,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *UpdateAcmeEndpointRequest) Reset() {
+	*x = UpdateAcmeEndpointRequest{}
+	mi := &file_acm_proto_msgTypes[128]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateAcmeEndpointRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateAcmeEndpointRequest) ProtoMessage() {}
+
+func (x *UpdateAcmeEndpointRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[128]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateAcmeEndpointRequest.ProtoReflect.Descriptor instead.
+func (*UpdateAcmeEndpointRequest) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{128}
+}
+
+func (x *UpdateAcmeEndpointRequest) GetAcmeendpointarn() string {
+	if x != nil {
+		return x.Acmeendpointarn
+	}
+	return ""
+}
+
+func (x *UpdateAcmeEndpointRequest) GetAuthorizationbehavior() AcmeAuthorizationBehavior {
+	if x != nil {
+		return x.Authorizationbehavior
+	}
+	return AcmeAuthorizationBehavior_ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED
+}
+
+func (x *UpdateAcmeEndpointRequest) GetCertificateauthority() *CertificateAuthority {
+	if x != nil {
+		return x.Certificateauthority
+	}
+	return nil
+}
+
+func (x *UpdateAcmeEndpointRequest) GetContact() AcmeContact {
+	if x != nil {
+		return x.Contact
+	}
+	return AcmeContact_ACME_CONTACT_REQUIRED
 }
 
 type UpdateCertificateOptionsRequest struct {
@@ -5429,7 +9659,7 @@ type UpdateCertificateOptionsRequest struct {
 
 func (x *UpdateCertificateOptionsRequest) Reset() {
 	*x = UpdateCertificateOptionsRequest{}
-	mi := &file_acm_proto_msgTypes[69]
+	mi := &file_acm_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5441,7 +9671,7 @@ func (x *UpdateCertificateOptionsRequest) String() string {
 func (*UpdateCertificateOptionsRequest) ProtoMessage() {}
 
 func (x *UpdateCertificateOptionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[69]
+	mi := &file_acm_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5454,7 +9684,7 @@ func (x *UpdateCertificateOptionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateCertificateOptionsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateCertificateOptionsRequest) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{69}
+	return file_acm_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *UpdateCertificateOptionsRequest) GetCertificatearn() string {
@@ -5471,16 +9701,204 @@ func (x *UpdateCertificateOptionsRequest) GetOptions() *CertificateOptions {
 	return nil
 }
 
+type UpdateSummary struct {
+	state                               protoimpl.MessageState               `protogen:"open.v1"`
+	Domainvalidationmethodupdatesummary *DomainValidationMethodUpdateSummary `protobuf:"bytes,520827415,opt,name=domainvalidationmethodupdatesummary,proto3" json:"domainvalidationmethodupdatesummary,omitempty"`
+	Requestedat                         *string                              `protobuf:"bytes,392290807,opt,name=requestedat,proto3,oneof" json:"requestedat,omitempty"`
+	Status                              UpdateStatus                         `protobuf:"varint,6222352,opt,name=status,proto3,enum=acm.UpdateStatus" json:"status,omitempty"`
+	Type                                UpdateType                           `protobuf:"varint,290836590,opt,name=type,proto3,enum=acm.UpdateType" json:"type,omitempty"`
+	Updatedat                           *string                              `protobuf:"bytes,213581206,opt,name=updatedat,proto3,oneof" json:"updatedat,omitempty"`
+	unknownFields                       protoimpl.UnknownFields
+	sizeCache                           protoimpl.SizeCache
+}
+
+func (x *UpdateSummary) Reset() {
+	*x = UpdateSummary{}
+	mi := &file_acm_proto_msgTypes[130]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateSummary) ProtoMessage() {}
+
+func (x *UpdateSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[130]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateSummary.ProtoReflect.Descriptor instead.
+func (*UpdateSummary) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{130}
+}
+
+func (x *UpdateSummary) GetDomainvalidationmethodupdatesummary() *DomainValidationMethodUpdateSummary {
+	if x != nil {
+		return x.Domainvalidationmethodupdatesummary
+	}
+	return nil
+}
+
+func (x *UpdateSummary) GetRequestedat() string {
+	if x != nil && x.Requestedat != nil {
+		return *x.Requestedat
+	}
+	return ""
+}
+
+func (x *UpdateSummary) GetStatus() UpdateStatus {
+	if x != nil {
+		return x.Status
+	}
+	return UpdateStatus_UPDATE_STATUS_SUCCESS
+}
+
+func (x *UpdateSummary) GetType() UpdateType {
+	if x != nil {
+		return x.Type
+	}
+	return UpdateType_UPDATE_TYPE_DOMAIN_VALIDATION_METHOD
+}
+
+func (x *UpdateSummary) GetUpdatedat() string {
+	if x != nil && x.Updatedat != nil {
+		return *x.Updatedat
+	}
+	return ""
+}
+
+type ValidationChallenge struct {
+	state                    protoimpl.MessageState    `protogen:"open.v1"`
+	Dnsvalidationchallenge   *DnsValidationChallenge   `protobuf:"bytes,536594241,opt,name=dnsvalidationchallenge,proto3" json:"dnsvalidationchallenge,omitempty"`
+	Emailvalidationchallenge *EmailValidationChallenge `protobuf:"bytes,495138466,opt,name=emailvalidationchallenge,proto3" json:"emailvalidationchallenge,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
+}
+
+func (x *ValidationChallenge) Reset() {
+	*x = ValidationChallenge{}
+	mi := &file_acm_proto_msgTypes[131]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidationChallenge) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidationChallenge) ProtoMessage() {}
+
+func (x *ValidationChallenge) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[131]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidationChallenge.ProtoReflect.Descriptor instead.
+func (*ValidationChallenge) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{131}
+}
+
+func (x *ValidationChallenge) GetDnsvalidationchallenge() *DnsValidationChallenge {
+	if x != nil {
+		return x.Dnsvalidationchallenge
+	}
+	return nil
+}
+
+func (x *ValidationChallenge) GetEmailvalidationchallenge() *EmailValidationChallenge {
+	if x != nil {
+		return x.Emailvalidationchallenge
+	}
+	return nil
+}
+
+type ValidationConfiguration struct {
+	state               protoimpl.MessageState `protogen:"open.v1"`
+	Validationchallenge *ValidationChallenge   `protobuf:"bytes,468787740,opt,name=validationchallenge,proto3" json:"validationchallenge,omitempty"`
+	Validationmethod    ValidationMethod       `protobuf:"varint,58092520,opt,name=validationmethod,proto3,enum=acm.ValidationMethod" json:"validationmethod,omitempty"`
+	Validationstatus    DomainStatus           `protobuf:"varint,426907749,opt,name=validationstatus,proto3,enum=acm.DomainStatus" json:"validationstatus,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *ValidationConfiguration) Reset() {
+	*x = ValidationConfiguration{}
+	mi := &file_acm_proto_msgTypes[132]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ValidationConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ValidationConfiguration) ProtoMessage() {}
+
+func (x *ValidationConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_acm_proto_msgTypes[132]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ValidationConfiguration.ProtoReflect.Descriptor instead.
+func (*ValidationConfiguration) Descriptor() ([]byte, []int) {
+	return file_acm_proto_rawDescGZIP(), []int{132}
+}
+
+func (x *ValidationConfiguration) GetValidationchallenge() *ValidationChallenge {
+	if x != nil {
+		return x.Validationchallenge
+	}
+	return nil
+}
+
+func (x *ValidationConfiguration) GetValidationmethod() ValidationMethod {
+	if x != nil {
+		return x.Validationmethod
+	}
+	return ValidationMethod_VALIDATION_METHOD_HTTP
+}
+
+func (x *ValidationConfiguration) GetValidationstatus() DomainStatus {
+	if x != nil {
+		return x.Validationstatus
+	}
+	return DomainStatus_DOMAIN_STATUS_PENDING_VALIDATION
+}
+
 type ValidationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ValidationException) Reset() {
 	*x = ValidationException{}
-	mi := &file_acm_proto_msgTypes[70]
+	mi := &file_acm_proto_msgTypes[133]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5492,7 +9910,7 @@ func (x *ValidationException) String() string {
 func (*ValidationException) ProtoMessage() {}
 
 func (x *ValidationException) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[70]
+	mi := &file_acm_proto_msgTypes[133]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5505,12 +9923,12 @@ func (x *ValidationException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidationException.ProtoReflect.Descriptor instead.
 func (*ValidationException) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{70}
+	return file_acm_proto_rawDescGZIP(), []int{133}
 }
 
 func (x *ValidationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5522,7 +9940,7 @@ type X509AttributeFilter struct {
 	Keyusage               KeyUsageName                  `protobuf:"varint,357216772,opt,name=keyusage,proto3,enum=acm.KeyUsageName" json:"keyusage,omitempty"`
 	Notafter               *TimestampRange               `protobuf:"bytes,287678033,opt,name=notafter,proto3" json:"notafter,omitempty"`
 	Notbefore              *TimestampRange               `protobuf:"bytes,459074038,opt,name=notbefore,proto3" json:"notbefore,omitempty"`
-	Serialnumber           string                        `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
+	Serialnumber           *string                       `protobuf:"bytes,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
 	Subject                *SubjectFilter                `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
 	Subjectalternativename *SubjectAlternativeNameFilter `protobuf:"bytes,53477234,opt,name=subjectalternativename,proto3" json:"subjectalternativename,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -5531,7 +9949,7 @@ type X509AttributeFilter struct {
 
 func (x *X509AttributeFilter) Reset() {
 	*x = X509AttributeFilter{}
-	mi := &file_acm_proto_msgTypes[71]
+	mi := &file_acm_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5543,7 +9961,7 @@ func (x *X509AttributeFilter) String() string {
 func (*X509AttributeFilter) ProtoMessage() {}
 
 func (x *X509AttributeFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[71]
+	mi := &file_acm_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5556,7 +9974,7 @@ func (x *X509AttributeFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use X509AttributeFilter.ProtoReflect.Descriptor instead.
 func (*X509AttributeFilter) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{71}
+	return file_acm_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *X509AttributeFilter) GetExtendedkeyusage() ExtendedKeyUsageName {
@@ -5595,8 +10013,8 @@ func (x *X509AttributeFilter) GetNotbefore() *TimestampRange {
 }
 
 func (x *X509AttributeFilter) GetSerialnumber() string {
-	if x != nil {
-		return x.Serialnumber
+	if x != nil && x.Serialnumber != nil {
+		return *x.Serialnumber
 	}
 	return ""
 }
@@ -5621,9 +10039,9 @@ type X509Attributes struct {
 	Issuer                  *DistinguishedName     `protobuf:"bytes,528708823,opt,name=issuer,proto3" json:"issuer,omitempty"`
 	Keyalgorithm            KeyAlgorithm           `protobuf:"varint,452317818,opt,name=keyalgorithm,proto3,enum=acm.KeyAlgorithm" json:"keyalgorithm,omitempty"`
 	Keyusages               []KeyUsageName         `protobuf:"varint,345433681,rep,packed,name=keyusages,proto3,enum=acm.KeyUsageName" json:"keyusages,omitempty"`
-	Notafter                string                 `protobuf:"bytes,287678033,opt,name=notafter,proto3" json:"notafter,omitempty"`
-	Notbefore               string                 `protobuf:"bytes,459074038,opt,name=notbefore,proto3" json:"notbefore,omitempty"`
-	Serialnumber            string                 `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
+	Notafter                *string                `protobuf:"bytes,287678033,opt,name=notafter,proto3,oneof" json:"notafter,omitempty"`
+	Notbefore               *string                `protobuf:"bytes,459074038,opt,name=notbefore,proto3,oneof" json:"notbefore,omitempty"`
+	Serialnumber            *string                `protobuf:"bytes,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
 	Subject                 *DistinguishedName     `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
 	Subjectalternativenames []*GeneralName         `protobuf:"bytes,109998119,rep,name=subjectalternativenames,proto3" json:"subjectalternativenames,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -5632,7 +10050,7 @@ type X509Attributes struct {
 
 func (x *X509Attributes) Reset() {
 	*x = X509Attributes{}
-	mi := &file_acm_proto_msgTypes[72]
+	mi := &file_acm_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5644,7 +10062,7 @@ func (x *X509Attributes) String() string {
 func (*X509Attributes) ProtoMessage() {}
 
 func (x *X509Attributes) ProtoReflect() protoreflect.Message {
-	mi := &file_acm_proto_msgTypes[72]
+	mi := &file_acm_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5657,7 +10075,7 @@ func (x *X509Attributes) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use X509Attributes.ProtoReflect.Descriptor instead.
 func (*X509Attributes) Descriptor() ([]byte, []int) {
-	return file_acm_proto_rawDescGZIP(), []int{72}
+	return file_acm_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *X509Attributes) GetExtendedkeyusages() []ExtendedKeyUsageName {
@@ -5689,22 +10107,22 @@ func (x *X509Attributes) GetKeyusages() []KeyUsageName {
 }
 
 func (x *X509Attributes) GetNotafter() string {
-	if x != nil {
-		return x.Notafter
+	if x != nil && x.Notafter != nil {
+		return *x.Notafter
 	}
 	return ""
 }
 
 func (x *X509Attributes) GetNotbefore() string {
-	if x != nil {
-		return x.Notbefore
+	if x != nil && x.Notbefore != nil {
+		return *x.Notbefore
 	}
 	return ""
 }
 
 func (x *X509Attributes) GetSerialnumber() string {
-	if x != nil {
-		return x.Serialnumber
+	if x != nil && x.Serialnumber != nil {
+		return *x.Serialnumber
 	}
 	return ""
 }
@@ -5727,171 +10145,497 @@ var File_acm_proto protoreflect.FileDescriptor
 
 const file_acm_proto_rawDesc = "" +
 	"\n" +
-	"\tacm.proto\x12\x03acm\x1a\fcommon.proto\x1a\taws.proto\"4\n" +
-	"\x15AccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xa5\x05\n" +
-	"\x16AcmCertificateMetadata\x12\x1f\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tR\tcreatedat\x12=\n" +
-	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
-	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x00R\bexported\x88\x01\x01\x12\"\n" +
+	"\tacm.proto\x12\x03acm\x1a\fcommon.proto\x1a\taws.proto\"E\n" +
+	"\x15AccessDeniedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"importedat\x18\x89\ue7e6\x01 \x01(\tR\n" +
-	"importedat\x12\x1d\n" +
-	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x01R\x05inuse\x88\x01\x01\x12\x1d\n" +
-	"\bissuedat\x18\xba\x86\xa9\b \x01(\tR\bissuedat\x12;\n" +
+	"\b_message\"\xd7\a\n" +
+	"\x16AcmCertificateMetadata\x12-\n" +
+	"\racmeaccountid\x18\x98\xb4\x85\xe6\x01 \x01(\tH\x00R\racmeaccountid\x88\x01\x01\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12]\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12=\n" +
+	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
+	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x03R\bexported\x88\x01\x01\x12'\n" +
+	"\n" +
+	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x04R\n" +
+	"importedat\x88\x01\x01\x12\x1d\n" +
+	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x05R\x05inuse\x88\x01\x01\x12\"\n" +
+	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\x06R\bissuedat\x88\x01\x01\x12;\n" +
 	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12J\n" +
 	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12<\n" +
-	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x12\x1f\n" +
-	"\trevokedat\x18\xd9ǔ\x1e \x01(\tR\trevokedat\x121\n" +
+	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\aR\trevokedat\x88\x01\x01\x121\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12,\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\v\n" +
-	"\t_exportedB\b\n" +
-	"\x06_inuse\"\xda\x03\n" +
-	"\x1cAcmCertificateMetadataFilter\x12=\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\x10\n" +
+	"\x0e_acmeaccountidB\x12\n" +
+	"\x10_acmeendpointarnB\f\n" +
+	"\n" +
+	"_createdatB\v\n" +
+	"\t_exportedB\r\n" +
+	"\v_importedatB\b\n" +
+	"\x06_inuseB\v\n" +
+	"\t_issuedatB\f\n" +
+	"\n" +
+	"_revokedat\"\xc0\x05\n" +
+	"\x1cAcmCertificateMetadataFilter\x12-\n" +
+	"\racmeaccountid\x18\x98\xb4\x85\xe6\x01 \x01(\tH\x00R\racmeaccountid\x88\x01\x01\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12]\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12=\n" +
 	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
-	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x00R\bexported\x88\x01\x01\x12\x1d\n" +
-	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x01R\x05inuse\x88\x01\x01\x12;\n" +
+	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x02R\bexported\x88\x01\x01\x12\x1d\n" +
+	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x03R\x05inuse\x88\x01\x01\x12;\n" +
 	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12<\n" +
 	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x121\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12,\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\v\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\x10\n" +
+	"\x0e_acmeaccountidB\x12\n" +
+	"\x10_acmeendpointarnB\v\n" +
 	"\t_exportedB\b\n" +
-	"\x06_inuse\"j\n" +
+	"\x06_inuse\"\x8e\x03\n" +
+	"\vAcmeAccount\x12'\n" +
+	"\n" +
+	"accounturl\x18\xb6\x9c\xe7\xc3\x01 \x01(\tH\x00R\n" +
+	"accounturl\x88\x01\x01\x12M\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tH\x01R\x1dacmeexternalaccountbindingarn\x88\x01\x01\x12\x1d\n" +
+	"\bcontacts\x18\x91\xa2\xb8E \x03(\tR\bcontacts\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x128\n" +
+	"\x13publickeythumbprint\x18ɻ\xbb~ \x01(\tH\x03R\x13publickeythumbprint\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.AcmeAccountStatusR\x06statusB\r\n" +
+	"\v_accounturlB \n" +
+	"\x1e_acmeexternalaccountbindingarnB\f\n" +
+	"\n" +
+	"_createdatB\x16\n" +
+	"\x14_publickeythumbprint\"\x95\x03\n" +
+	"\x12AcmeAccountSummary\x12'\n" +
+	"\n" +
+	"accounturl\x18\xb6\x9c\xe7\xc3\x01 \x01(\tH\x00R\n" +
+	"accounturl\x88\x01\x01\x12M\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tH\x01R\x1dacmeexternalaccountbindingarn\x88\x01\x01\x12\x1d\n" +
+	"\bcontacts\x18\x91\xa2\xb8E \x03(\tR\bcontacts\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x128\n" +
+	"\x13publickeythumbprint\x18ɻ\xbb~ \x01(\tH\x03R\x13publickeythumbprint\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.AcmeAccountStatusR\x06statusB\r\n" +
+	"\v_accounturlB \n" +
+	"\x1e_acmeexternalaccountbindingarnB\f\n" +
+	"\n" +
+	"_createdatB\x16\n" +
+	"\x14_publickeythumbprint\"\xf1\x04\n" +
+	"\x14AcmeDomainValidation\x12@\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tH\x00R\x17acmedomainvalidationarn\x88\x01\x01\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12&\n" +
+	"\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x03R\n" +
+	"domainname\x88\x01\x01\x12?\n" +
+	"\x0efailuredetails\x18\xea\xf8\xa6\xc3\x01 \x01(\v2\x13.acm.FailureDetailsR\x0efailuredetails\x12P\n" +
+	"\x14prevalidationdetails\x18\xd6\xed\xbb( \x01(\v2\x19.acm.PrevalidationDetailsR\x14prevalidationdetails\x12G\n" +
+	"\x11prevalidationtype\x18\xbe\x81\x92Q \x01(\x0e2\x16.acm.PrevalidationTypeR\x11prevalidationtype\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.acm.AcmeDomainValidationStatusR\x06status\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x1a\n" +
+	"\x18_acmedomainvalidationarnB\x12\n" +
+	"\x10_acmeendpointarnB\f\n" +
+	"\n" +
+	"_createdatB\r\n" +
+	"\v_domainnameB\f\n" +
+	"\n" +
+	"_updatedat\"\xf8\x04\n" +
+	"\x1bAcmeDomainValidationSummary\x12@\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tH\x00R\x17acmedomainvalidationarn\x88\x01\x01\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12&\n" +
+	"\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x03R\n" +
+	"domainname\x88\x01\x01\x12?\n" +
+	"\x0efailuredetails\x18\xea\xf8\xa6\xc3\x01 \x01(\v2\x13.acm.FailureDetailsR\x0efailuredetails\x12P\n" +
+	"\x14prevalidationdetails\x18\xd6\xed\xbb( \x01(\v2\x19.acm.PrevalidationDetailsR\x14prevalidationdetails\x12G\n" +
+	"\x11prevalidationtype\x18\xbe\x81\x92Q \x01(\x0e2\x16.acm.PrevalidationTypeR\x11prevalidationtype\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.acm.AcmeDomainValidationStatusR\x06status\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x1a\n" +
+	"\x18_acmedomainvalidationarnB\x12\n" +
+	"\x10_acmeendpointarnB\f\n" +
+	"\n" +
+	"_createdatB\r\n" +
+	"\v_domainnameB\f\n" +
+	"\n" +
+	"_updatedat\"\xfe\x04\n" +
+	"\fAcmeEndpoint\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12W\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
+	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x126\n" +
+	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x12.\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12(\n" +
+	"\vendpointurl\x18\x96\x93\x94\x0f \x01(\tH\x02R\vendpointurl\x88\x01\x01\x12,\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x03R\rfailurereason\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.acm.AcmeEndpointStatusR\x06status\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarnB\f\n" +
+	"\n" +
+	"_createdatB\x0e\n" +
+	"\f_endpointurlB\x10\n" +
+	"\x0e_failurereasonB\f\n" +
+	"\n" +
+	"_updatedat\"\x85\x05\n" +
+	"\x13AcmeEndpointSummary\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12W\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
+	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x126\n" +
+	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x12.\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12(\n" +
+	"\vendpointurl\x18\x96\x93\x94\x0f \x01(\tH\x02R\vendpointurl\x88\x01\x01\x12,\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x03R\rfailurereason\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.acm.AcmeEndpointStatusR\x06status\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x04R\tupdatedat\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarnB\f\n" +
+	"\n" +
+	"_createdatB\x0e\n" +
+	"\f_endpointurlB\x10\n" +
+	"\x0e_failurereasonB\f\n" +
+	"\n" +
+	"_updatedat\"\x89\x04\n" +
+	"\x1aAcmeExternalAccountBinding\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12M\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tH\x01R\x1dacmeexternalaccountbindingarn\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12$\n" +
+	"\texpiresat\x18\xb7\x93\xc3p \x01(\tH\x03R\texpiresat\x88\x01\x01\x12&\n" +
+	"\n" +
+	"lastusedat\x18곁R \x01(\tH\x04R\n" +
+	"lastusedat\x88\x01\x01\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\x05R\trevokedat\x88\x01\x01\x12!\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x06R\arolearn\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\aR\tupdatedat\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarnB \n" +
+	"\x1e_acmeexternalaccountbindingarnB\f\n" +
+	"\n" +
+	"_createdatB\f\n" +
+	"\n" +
+	"_expiresatB\r\n" +
+	"\v_lastusedatB\f\n" +
+	"\n" +
+	"_revokedatB\n" +
+	"\n" +
+	"\b_rolearnB\f\n" +
+	"\n" +
+	"_updatedat\"\x90\x04\n" +
+	"!AcmeExternalAccountBindingSummary\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01\x12M\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tH\x01R\x1dacmeexternalaccountbindingarn\x88\x01\x01\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x02R\tcreatedat\x88\x01\x01\x12$\n" +
+	"\texpiresat\x18\xb7\x93\xc3p \x01(\tH\x03R\texpiresat\x88\x01\x01\x12&\n" +
+	"\n" +
+	"lastusedat\x18곁R \x01(\tH\x04R\n" +
+	"lastusedat\x88\x01\x01\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\x05R\trevokedat\x88\x01\x01\x12!\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x06R\arolearn\x88\x01\x01\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\aR\tupdatedat\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarnB \n" +
+	"\x1e_acmeexternalaccountbindingarnB\f\n" +
+	"\n" +
+	"_createdatB\f\n" +
+	"\n" +
+	"_expiresatB\r\n" +
+	"\v_lastusedatB\f\n" +
+	"\n" +
+	"_revokedatB\n" +
+	"\n" +
+	"\b_rolearnB\f\n" +
+	"\n" +
+	"_updatedat\"j\n" +
 	"\x1bAddTagsToCertificateRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"\xb7\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"{\n" +
+	"\x14CertificateAuthority\x12c\n" +
+	"\x1apubliccertificateauthority\x18\u0558\xc8\xce\x01 \x01(\v2\x1f.acm.PublicCertificateAuthorityR\x1apubliccertificateauthority\"\xe6\x0e\n" +
+	"\x11CertificateDetail\x12-\n" +
+	"\racmeaccountid\x18\x98\xb4\x85\xe6\x01 \x01(\tH\x00R\racmeaccountid\x88\x01\x01\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x01R\x0facmeendpointarn\x88\x01\x01\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x02R\x0ecertificatearn\x88\x01\x01\x12@\n" +
+	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tH\x03R\x17certificateauthorityarn\x88\x01\x01\x12]\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x04R\tcreatedat\x88\x01\x01\x12&\n" +
 	"\n" +
-	"\x11CertificateDetail\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12;\n" +
-	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tR\x17certificateauthorityarn\x12\x1f\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tR\tcreatedat\x12!\n" +
-	"\n" +
-	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
-	"domainname\x12S\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x05R\n" +
+	"domainname\x88\x01\x01\x12S\n" +
 	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x15.acm.DomainValidationR\x17domainvalidationoptions\x12G\n" +
 	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\v2\x15.acm.ExtendedKeyUsageR\x11extendedkeyusages\x12;\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x12.acm.FailureReasonR\rfailurereason\x12\"\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\x0e2\x12.acm.FailureReasonR\rfailurereason\x12'\n" +
 	"\n" +
-	"importedat\x18\x89\ue7e6\x01 \x01(\tR\n" +
-	"importedat\x12\x1c\n" +
-	"\ainuseby\x18ɭ\xc0\x9d\x01 \x03(\tR\ainuseby\x12\x1d\n" +
-	"\bissuedat\x18\xba\x86\xa9\b \x01(\tR\bissuedat\x12\x1a\n" +
-	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tR\x06issuer\x129\n" +
+	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x06R\n" +
+	"importedat\x88\x01\x01\x12\x1c\n" +
+	"\ainuseby\x18ɭ\xc0\x9d\x01 \x03(\tR\ainuseby\x12\"\n" +
+	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\aR\bissuedat\x88\x01\x01\x12\x1f\n" +
+	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tH\bR\x06issuer\x88\x01\x01\x129\n" +
 	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x12/\n" +
 	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\v2\r.acm.KeyUsageR\tkeyusages\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12\x1e\n" +
-	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tR\bnotafter\x12 \n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tR\tnotbefore\x125\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12#\n" +
+	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\tR\bnotafter\x88\x01\x01\x12%\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\n" +
+	"R\tnotbefore\x88\x01\x01\x125\n" +
 	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\x12J\n" +
 	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12>\n" +
 	"\x0erenewalsummary\x18\xfe\xfb\xdc; \x01(\v2\x13.acm.RenewalSummaryR\x0erenewalsummary\x12E\n" +
-	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\x12\x1f\n" +
-	"\trevokedat\x18\xd9ǔ\x1e \x01(\tR\trevokedat\x12\x19\n" +
-	"\x06serial\x18\x9a\xa5\xd2D \x01(\tR\x06serial\x122\n" +
-	"\x12signaturealgorithm\x18\xf3\xe6\x95\xe3\x01 \x01(\tR\x12signaturealgorithm\x121\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\x12;\n" +
+	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\vR\trevokedat\x88\x01\x01\x12\x1e\n" +
+	"\x06serial\x18\x9a\xa5\xd2D \x01(\tH\fR\x06serial\x88\x01\x01\x127\n" +
+	"\x12signaturealgorithm\x18\xf3\xe6\x95\xe3\x01 \x01(\tH\rR\x12signaturealgorithm\x88\x01\x01\x121\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12 \n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x0eR\asubject\x88\x01\x01\x12;\n" +
 	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\tR\x17subjectalternativenames\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\"\xf8\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04type\x12<\n" +
+	"\rupdatesummary\x18ݝ\xce\xf4\x01 \x01(\v2\x12.acm.UpdateSummaryR\rupdatesummaryB\x10\n" +
+	"\x0e_acmeaccountidB\x12\n" +
+	"\x10_acmeendpointarnB\x11\n" +
+	"\x0f_certificatearnB\x1a\n" +
+	"\x18_certificateauthorityarnB\f\n" +
+	"\n" +
+	"_createdatB\r\n" +
+	"\v_domainnameB\r\n" +
+	"\v_importedatB\v\n" +
+	"\t_issuedatB\t\n" +
+	"\a_issuerB\v\n" +
+	"\t_notafterB\f\n" +
+	"\n" +
+	"_notbeforeB\f\n" +
+	"\n" +
+	"_revokedatB\t\n" +
+	"\a_serialB\x15\n" +
+	"\x13_signaturealgorithmB\n" +
+	"\n" +
+	"\b_subject\"\x90\x02\n" +
 	"\x11CertificateFilter\x12i\n" +
-	"\x1cacmcertificatemetadatafilter\x18\xf5\xf9\xd1\xc4\x01 \x01(\v2!.acm.AcmCertificateMetadataFilterR\x1cacmcertificatemetadatafilter\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12M\n" +
-	"\x13x509attributefilter\x18\xb6\x9c\xa86 \x01(\v2\x18.acm.X509AttributeFilterR\x13x509attributefilter\"\xf2\x01\n" +
+	"\x1cacmcertificatemetadatafilter\x18\xf5\xf9\xd1\xc4\x01 \x01(\v2!.acm.AcmCertificateMetadataFilterR\x1cacmcertificatemetadatafilter\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12M\n" +
+	"\x13x509attributefilter\x18\xb6\x9c\xa86 \x01(\v2\x18.acm.X509AttributeFilterR\x13x509attributefilterB\x11\n" +
+	"\x0f_certificatearn\"\xf2\x01\n" +
 	"\x1aCertificateFilterStatement\x125\n" +
 	"\x03and\x18\xc7\xda\u05cd\x01 \x03(\v2\x1f.acm.CertificateFilterStatementR\x03and\x122\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x16.acm.CertificateFilterR\x06filter\x124\n" +
 	"\x03not\x18\xab\x8e\xf7a \x01(\v2\x1f.acm.CertificateFilterStatementR\x03not\x123\n" +
 	"\x02or\x18\xa5\xef\x91\xe7\x01 \x03(\v2\x1f.acm.CertificateFilterStatementR\x02or\"m\n" +
 	"\x13CertificateMetadata\x12V\n" +
-	"\x16acmcertificatemetadata\x18\x9b\x89\xffA \x01(\v2\x1b.acm.AcmCertificateMetadataR\x16acmcertificatemetadata\"\xd7\x01\n" +
+	"\x16acmcertificatemetadata\x18\x9b\x89\xffA \x01(\v2\x1b.acm.AcmCertificateMetadataR\x16acmcertificatemetadata\"\x9d\x02\n" +
 	"\x12CertificateOptions\x12\x8d\x01\n" +
 	"(certificatetransparencyloggingpreference\x18\xab\xb0\xdb\xc5\x01 \x01(\x0e2-.acm.CertificateTransparencyLoggingPreferenceR(certificatetransparencyloggingpreference\x121\n" +
-	"\x06export\x18ԓ\x8dC \x01(\x0e2\x16.acm.CertificateExportR\x06export\"\xd5\x01\n" +
-	"\x17CertificateSearchResult\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12N\n" +
+	"\x06export\x18ԓ\x8dC \x01(\x0e2\x16.acm.CertificateExportR\x06export\x12D\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\"\xed\x01\n" +
+	"\x17CertificateSearchResult\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12N\n" +
 	"\x13certificatemetadata\x18\x96\xee\xa6\xea\x01 \x01(\v2\x18.acm.CertificateMetadataR\x13certificatemetadata\x12?\n" +
-	"\x0ex509attributes\x18\x89\xa9\xb6\x83\x01 \x01(\v2\x13.acm.X509AttributesR\x0ex509attributes\"\xbd\b\n" +
-	"\x12CertificateSummary\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12\x1f\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tR\tcreatedat\x12!\n" +
+	"\x0ex509attributes\x18\x89\xa9\xb6\x83\x01 \x01(\v2\x13.acm.X509AttributesR\x0ex509attributesB\x11\n" +
+	"\x0f_certificatearn\"\xb9\n" +
 	"\n" +
-	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
-	"domainname\x12=\n" +
+	"\x12CertificateSummary\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x12]\n" +
+	"\x18certificatekeypairorigin\x18\xb2\xef\xef\x8f\x01 \x01(\x0e2\x1d.acm.CertificateKeyPairOriginR\x18certificatekeypairorigin\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x01R\tcreatedat\x88\x01\x01\x12&\n" +
+	"\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tH\x02R\n" +
+	"domainname\x88\x01\x01\x12=\n" +
 	"\fexportoption\x18\x8f\x9d\xa6\t \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12#\n" +
-	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x00R\bexported\x88\x01\x01\x12K\n" +
+	"\bexported\x18\x93\xaa\x9a\xea\x01 \x01(\bH\x03R\bexported\x88\x01\x01\x12K\n" +
 	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\x0e2\x19.acm.ExtendedKeyUsageNameR\x11extendedkeyusages\x12[\n" +
-	"$hasadditionalsubjectalternativenames\x18\xa4\xc1\xe7\xb9\x01 \x01(\bH\x01R$hasadditionalsubjectalternativenames\x88\x01\x01\x12\"\n" +
+	"$hasadditionalsubjectalternativenames\x18\xa4\xc1\xe7\xb9\x01 \x01(\bH\x04R$hasadditionalsubjectalternativenames\x88\x01\x01\x12'\n" +
 	"\n" +
-	"importedat\x18\x89\ue7e6\x01 \x01(\tR\n" +
-	"importedat\x12\x1d\n" +
-	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x02R\x05inuse\x88\x01\x01\x12\x1d\n" +
-	"\bissuedat\x18\xba\x86\xa9\b \x01(\tR\bissuedat\x129\n" +
+	"importedat\x18\x89\ue7e6\x01 \x01(\tH\x05R\n" +
+	"importedat\x88\x01\x01\x12\x1d\n" +
+	"\x05inuse\x18\xfa\x8f\xf9\xbd\x01 \x01(\bH\x06R\x05inuse\x88\x01\x01\x12\"\n" +
+	"\bissuedat\x18\xba\x86\xa9\b \x01(\tH\aR\bissuedat\x88\x01\x01\x129\n" +
 	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x123\n" +
 	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\tkeyusages\x12;\n" +
-	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12\x1e\n" +
-	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tR\bnotafter\x12 \n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tR\tnotbefore\x12J\n" +
-	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12\x1f\n" +
-	"\trevokedat\x18\xd9ǔ\x1e \x01(\tR\trevokedat\x121\n" +
+	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x12#\n" +
+	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\bR\bnotafter\x88\x01\x01\x12%\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\tR\tnotbefore\x88\x01\x01\x12J\n" +
+	"\x12renewaleligibility\x18\xa9\xa1\xb7R \x01(\x0e2\x17.acm.RenewalEligibilityR\x12renewaleligibility\x12$\n" +
+	"\trevokedat\x18\xd9ǔ\x1e \x01(\tH\n" +
+	"R\trevokedat\x88\x01\x01\x121\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x16.acm.CertificateStatusR\x06status\x12K\n" +
 	"\x1fsubjectalternativenamesummaries\x18\xe8\x89\xd4v \x03(\tR\x1fsubjectalternativenamesummaries\x12,\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04typeB\v\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x14.acm.CertificateTypeR\x04typeB\x11\n" +
+	"\x0f_certificatearnB\f\n" +
+	"\n" +
+	"_createdatB\r\n" +
+	"\v_domainnameB\v\n" +
 	"\t_exportedB'\n" +
-	"%_hasadditionalsubjectalternativenamesB\b\n" +
-	"\x06_inuse\"x\n" +
+	"%_hasadditionalsubjectalternativenamesB\r\n" +
+	"\v_importedatB\b\n" +
+	"\x06_inuseB\v\n" +
+	"\t_issuedatB\v\n" +
+	"\t_notafterB\f\n" +
+	"\n" +
+	"_notbeforeB\f\n" +
+	"\n" +
+	"_revokedat\"x\n" +
 	"\x10CommonNameFilter\x12J\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x17.acm.ComparisonOperatorR\x12comparisonoperator\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"0\n" +
-	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"[\n" +
-	"\x0fCustomAttribute\x12.\n" +
-	"\x10objectidentifier\x18\xda\xde߹\x01 \x01(\tR\x10objectidentifier\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"E\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"A\n" +
+	"\x11ConflictException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb1\x02\n" +
+	"!CreateAcmeDomainValidationRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12!\n" +
+	"\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
+	"domainname\x122\n" +
+	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x00R\x10idempotencytoken\x88\x01\x01\x12Q\n" +
+	"\x14prevalidationoptions\x18\xb6\xdbڡ\x01 \x01(\v2\x19.acm.PrevalidationOptionsR\x14prevalidationoptions\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\x13\n" +
+	"\x11_idempotencytoken\"a\n" +
+	"\"CreateAcmeDomainValidationResponse\x12;\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\"\x9a\x03\n" +
+	"\x19CreateAcmeEndpointRequest\x12W\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
+	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x126\n" +
+	"\x0fcertificatetags\x18\x9a\xa5\xb3\xa2\x01 \x03(\v2\b.acm.TagR\x0fcertificatetags\x12.\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\x122\n" +
+	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x00R\x10idempotencytoken\x88\x01\x01\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\x13\n" +
+	"\x11_idempotencytoken\"b\n" +
+	"\x1aCreateAcmeEndpointResponse\x120\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tH\x00R\x0facmeendpointarn\x88\x01\x01B\x12\n" +
+	"\x10_acmeendpointarn\"\x93\x02\n" +
+	"'CreateAcmeExternalAccountBindingRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x122\n" +
+	"\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\v2\x0f.acm.ExpirationR\n" +
+	"expiration\x122\n" +
+	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x00R\x10idempotencytoken\x88\x01\x01\x12\x1c\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\x13\n" +
+	"\x11_idempotencytoken\"\x86\x01\n" +
+	"(CreateAcmeExternalAccountBindingResponse\x12Z\n" +
+	"\x16externalaccountbinding\x18\xe3\xe2\xb8\x0e \x01(\v2\x1f.acm.AcmeExternalAccountBindingR\x16externalaccountbinding\"\x84\x01\n" +
+	"\x0fCustomAttribute\x123\n" +
+	"\x10objectidentifier\x18\xda\xde߹\x01 \x01(\tH\x00R\x10objectidentifier\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x13\n" +
+	"\x11_objectidentifierB\b\n" +
+	"\x06_value\"`\n" +
+	"!DeleteAcmeDomainValidationRequest\x12;\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\"H\n" +
+	"\x19DeleteAcmeEndpointRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\"s\n" +
+	"'DeleteAcmeExternalAccountBindingRequest\x12H\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tR\x1dacmeexternalaccountbindingarn\"E\n" +
 	"\x18DeleteCertificateRequest\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"G\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"m\n" +
+	"\x1aDescribeAcmeAccountRequest\x12\"\n" +
+	"\n" +
+	"accounturl\x18\xb6\x9c\xe7\xc3\x01 \x01(\tR\n" +
+	"accounturl\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\"T\n" +
+	"\x1bDescribeAcmeAccountResponse\x125\n" +
+	"\vacmeaccount\x18\xbb\xa7\xcbI \x01(\v2\x10.acm.AcmeAccountR\vacmeaccount\"b\n" +
+	"#DescribeAcmeDomainValidationRequest\x12;\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\"y\n" +
+	"$DescribeAcmeDomainValidationResponse\x12Q\n" +
+	"\x14acmedomainvalidation\x18\x95\xc1\x94\x9d\x01 \x01(\v2\x19.acm.AcmeDomainValidationR\x14acmedomainvalidation\"J\n" +
+	"\x1bDescribeAcmeEndpointRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\"Y\n" +
+	"\x1cDescribeAcmeEndpointResponse\x129\n" +
+	"\facmeendpoint\x18\xb3躲\x01 \x01(\v2\x11.acm.AcmeEndpointR\facmeendpoint\"u\n" +
+	")DescribeAcmeExternalAccountBindingRequest\x12H\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tR\x1dacmeexternalaccountbindingarn\"\x88\x01\n" +
+	"*DescribeAcmeExternalAccountBindingResponse\x12Z\n" +
+	"\x16externalaccountbinding\x18\xe3\xe2\xb8\x0e \x01(\v2\x1f.acm.AcmeExternalAccountBindingR\x16externalaccountbinding\"G\n" +
 	"\x1aDescribeCertificateRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"Z\n" +
 	"\x1bDescribeCertificateResponse\x12;\n" +
-	"\vcertificate\x18\x91ָ^ \x01(\v2\x16.acm.CertificateDetailR\vcertificate\"\x97\x05\n" +
-	"\x11DistinguishedName\x12\"\n" +
+	"\vcertificate\x18\x91ָ^ \x01(\v2\x16.acm.CertificateDetailR\vcertificate\"\xbe\a\n" +
+	"\x11DistinguishedName\x12'\n" +
 	"\n" +
-	"commonname\x18\xb0\x93\xd1\xda\x01 \x01(\tR\n" +
-	"commonname\x12\x1b\n" +
-	"\acountry\x18\xf2\xfc\xd3' \x01(\tR\acountry\x12D\n" +
-	"\x10customattributes\x18\x8c\x95\x86\xca\x01 \x03(\v2\x14.acm.CustomAttributeR\x10customattributes\x12A\n" +
-	"\x1adistinguishednamequalifier\x18\xb1\x94\xb0\x11 \x01(\tR\x1adistinguishednamequalifier\x12-\n" +
-	"\x10domaincomponents\x18Π\xd8N \x03(\tR\x10domaincomponents\x124\n" +
-	"\x13generationqualifier\x18\xce\xcf͈\x01 \x01(\tR\x13generationqualifier\x12\x1f\n" +
-	"\tgivenname\x18\x96\xfb\xf9B \x01(\tR\tgivenname\x12\x1d\n" +
-	"\binitials\x18ѡ\xcbA \x01(\tR\binitials\x12\x1d\n" +
-	"\blocality\x18\x95ߣ9 \x01(\tR\blocality\x12&\n" +
-	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tR\forganization\x122\n" +
-	"\x12organizationalunit\x18\x86\xf1Խ\x01 \x01(\tR\x12organizationalunit\x12\x1f\n" +
-	"\tpseudonym\x18\xc2˚Y \x01(\tR\tpseudonym\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x12\x1c\n" +
-	"\asurname\x18\xa7\x83\xc0\x90\x01 \x01(\tR\asurname\x12\x17\n" +
-	"\x05title\x18\xaa\xe3\xd1& \x01(\tR\x05title\"u\n" +
+	"commonname\x18\xb0\x93\xd1\xda\x01 \x01(\tH\x00R\n" +
+	"commonname\x88\x01\x01\x12 \n" +
+	"\acountry\x18\xf2\xfc\xd3' \x01(\tH\x01R\acountry\x88\x01\x01\x12D\n" +
+	"\x10customattributes\x18\x8c\x95\x86\xca\x01 \x03(\v2\x14.acm.CustomAttributeR\x10customattributes\x12F\n" +
+	"\x1adistinguishednamequalifier\x18\xb1\x94\xb0\x11 \x01(\tH\x02R\x1adistinguishednamequalifier\x88\x01\x01\x12-\n" +
+	"\x10domaincomponents\x18Π\xd8N \x03(\tR\x10domaincomponents\x129\n" +
+	"\x13generationqualifier\x18\xce\xcf͈\x01 \x01(\tH\x03R\x13generationqualifier\x88\x01\x01\x12$\n" +
+	"\tgivenname\x18\x96\xfb\xf9B \x01(\tH\x04R\tgivenname\x88\x01\x01\x12\"\n" +
+	"\binitials\x18ѡ\xcbA \x01(\tH\x05R\binitials\x88\x01\x01\x12\"\n" +
+	"\blocality\x18\x95ߣ9 \x01(\tH\x06R\blocality\x88\x01\x01\x12+\n" +
+	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tH\aR\forganization\x88\x01\x01\x127\n" +
+	"\x12organizationalunit\x18\x86\xf1Խ\x01 \x01(\tH\bR\x12organizationalunit\x88\x01\x01\x12$\n" +
+	"\tpseudonym\x18\xc2˚Y \x01(\tH\tR\tpseudonym\x88\x01\x01\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\n" +
+	"R\fserialnumber\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\vR\x05state\x88\x01\x01\x12!\n" +
+	"\asurname\x18\xa7\x83\xc0\x90\x01 \x01(\tH\fR\asurname\x88\x01\x01\x12\x1c\n" +
+	"\x05title\x18\xaa\xe3\xd1& \x01(\tH\rR\x05title\x88\x01\x01B\r\n" +
+	"\v_commonnameB\n" +
+	"\n" +
+	"\b_countryB\x1d\n" +
+	"\x1b_distinguishednamequalifierB\x16\n" +
+	"\x14_generationqualifierB\f\n" +
+	"\n" +
+	"_givennameB\v\n" +
+	"\t_initialsB\v\n" +
+	"\t_localityB\x0f\n" +
+	"\r_organizationB\x15\n" +
+	"\x13_organizationalunitB\f\n" +
+	"\n" +
+	"_pseudonymB\x0f\n" +
+	"\r_serialnumberB\b\n" +
+	"\x06_stateB\n" +
+	"\n" +
+	"\b_surnameB\b\n" +
+	"\x06_title\"u\n" +
 	"\rDnsNameFilter\x12J\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x17.acm.ComparisonOperatorR\x12comparisonoperator\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x98\x03\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xce\x01\n" +
+	"\x17DnsPrevalidationDetails\x125\n" +
+	"\vdomainscope\x18\xa0\x8c\x8eD \x01(\v2\x10.acm.DomainScopeR\vdomainscope\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x00R\fhostedzoneid\x88\x01\x01\x12>\n" +
+	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecordB\x0f\n" +
+	"\r_hostedzoneid\"\x8e\x01\n" +
+	"\x17DnsPrevalidationOptions\x125\n" +
+	"\vdomainscope\x18\xa0\x8c\x8eD \x01(\v2\x10.acm.DomainScopeR\vdomainscope\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x00R\fhostedzoneid\x88\x01\x01B\x0f\n" +
+	"\r_hostedzoneid\"X\n" +
+	"\x16DnsValidationChallenge\x12>\n" +
+	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecord\"\xbf\x01\n" +
+	"\vDomainScope\x12;\n" +
+	"\vexactdomain\x18\xd1τ$ \x01(\x0e2\x16.acm.DomainScopeOptionR\vexactdomain\x129\n" +
+	"\n" +
+	"subdomains\x18\xd7͘| \x01(\x0e2\x16.acm.DomainScopeOptionR\n" +
+	"subdomains\x128\n" +
+	"\twildcards\x18\xb5\xa7\xd1\xd7\x01 \x01(\x0e2\x16.acm.DomainScopeOptionR\twildcards\"\xb2\x03\n" +
 	"\x10DomainValidation\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x129\n" +
 	"\fhttpredirect\x18\xd2χ\xb3\x01 \x01(\v2\x11.acm.HttpRedirectR\fhttpredirect\x12>\n" +
-	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecord\x12-\n" +
-	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\x12.\n" +
+	"\x0eresourcerecord\x18\xbd\xd0\xe3b \x01(\v2\x13.acm.ResourceRecordR\x0eresourcerecord\x122\n" +
+	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tH\x00R\x10validationdomain\x88\x01\x01\x12.\n" +
 	"\x10validationemails\x18\xb0፳\x01 \x03(\tR\x10validationemails\x12D\n" +
 	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\x12A\n" +
-	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusR\x10validationstatus\"j\n" +
+	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusR\x10validationstatusB\x13\n" +
+	"\x11_validationdomain\"~\n" +
+	"#DomainValidationMethodUpdateSummary\x12-\n" +
+	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x0e2\x15.acm.ValidationMethodR\x04from\x12(\n" +
+	"\x02to\x18Ŭ\xd6\x0f \x01(\x0e2\x15.acm.ValidationMethodR\x02to\"j\n" +
 	"\x16DomainValidationOption\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x12-\n" +
-	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\"e\n" +
+	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\"\x92\x02\n" +
+	"\x17DomainValidationSummary\x12f\n" +
+	"\x1dactivevalidationconfiguration\x18\xe3\xa2ܡ\x01 \x01(\v2\x1c.acm.ValidationConfigurationR\x1dactivevalidationconfiguration\x12!\n" +
+	"\n" +
+	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
+	"domainname\x12l\n" +
+	" requestedvalidationconfiguration\x18\xaf\xd5̍\x01 \x01(\v2\x1c.acm.ValidationConfigurationR requestedvalidationconfiguration\"\x93\x01\n" +
+	"\x18EmailValidationChallenge\x122\n" +
+	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tH\x00R\x10validationdomain\x88\x01\x01\x12.\n" +
+	"\x10validationemails\x18\xb0፳\x01 \x03(\tR\x10validationemailsB\x13\n" +
+	"\x11_validationdomain\"M\n" +
+	"\n" +
+	"Expiration\x12%\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\r.acm.TimeTypeR\x04type\x12\x18\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"e\n" +
 	"\x19ExpiryEventsConfiguration\x123\n" +
 	"\x10daysbeforeexpiry\x18\x8f\xbfŋ\x01 \x01(\x05H\x00R\x10daysbeforeexpiry\x88\x01\x01B\x13\n" +
 	"\x11_daysbeforeexpiry\"i\n" +
@@ -5899,88 +10643,220 @@ const file_acm_proto_rawDesc = "" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12\"\n" +
 	"\n" +
 	"passphrase\x18\xc6\xdb\xe8\xc8\x01 \x01(\fR\n" +
-	"passphrase\"\x93\x01\n" +
-	"\x19ExportCertificateResponse\x12#\n" +
-	"\vcertificate\x18\x91ָ^ \x01(\tR\vcertificate\x12.\n" +
-	"\x10certificatechain\x18\xda苰\x01 \x01(\tR\x10certificatechain\x12!\n" +
+	"passphrase\"\xd6\x01\n" +
+	"\x19ExportCertificateResponse\x12(\n" +
+	"\vcertificate\x18\x91ָ^ \x01(\tH\x00R\vcertificate\x88\x01\x01\x123\n" +
+	"\x10certificatechain\x18\xda苰\x01 \x01(\tH\x01R\x10certificatechain\x88\x01\x01\x12&\n" +
 	"\n" +
-	"privatekey\x18\xbc\x95\xd2R \x01(\tR\n" +
-	"privatekey\"Z\n" +
+	"privatekey\x18\xbc\x95\xd2R \x01(\tH\x02R\n" +
+	"privatekey\x88\x01\x01B\x0e\n" +
+	"\f_certificateB\x13\n" +
+	"\x11_certificatechainB\r\n" +
+	"\v_privatekey\"g\n" +
 	"\x10ExtendedKeyUsage\x120\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x19.acm.ExtendedKeyUsageNameR\x04name\x12\x14\n" +
-	"\x03oid\x18\xc4\xf7\xc9\xf0\x01 \x01(\tR\x03oid\"\xb6\x02\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x19.acm.ExtendedKeyUsageNameR\x04name\x12\x19\n" +
+	"\x03oid\x18\xc4\xf7\xc9\xf0\x01 \x01(\tH\x00R\x03oid\x88\x01\x01B\x06\n" +
+	"\x04_oid\"\x81\x01\n" +
+	"\x0eFailureDetails\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12A\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\x0e2&.acm.AcmeDomainValidationFailureReasonR\x06reasonB\n" +
+	"\n" +
+	"\b_message\"\xb6\x02\n" +
 	"\aFilters\x12>\n" +
 	"\fexportoption\x18\xaf\xd4\xe4\xd2\x01 \x01(\x0e2\x16.acm.CertificateExportR\fexportoption\x12I\n" +
 	"\x10extendedkeyusage\x18\x8f\xdc\xd2\xc8\x01 \x03(\x0e2\x19.acm.ExtendedKeyUsageNameR\x10extendedkeyusage\x120\n" +
 	"\bkeytypes\x18\xd6\xc1\x86\r \x03(\x0e2\x11.acm.KeyAlgorithmR\bkeytypes\x121\n" +
 	"\bkeyusage\x18\xa4\xc1\xbd\xef\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\bkeyusage\x12;\n" +
-	"\tmanagedby\x18\xe0ܽ\xbf\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\"\xc9\x02\n" +
+	"\tmanagedby\x18\xe0ܽ\xbf\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\"\xba\x03\n" +
 	"\vGeneralName\x12?\n" +
-	"\rdirectoryname\x18\xac\x83\xacj \x01(\v2\x16.acm.DistinguishedNameR\rdirectoryname\x12\x1b\n" +
-	"\adnsname\x18\xf8\xf2\x9bO \x01(\tR\adnsname\x12\x1e\n" +
-	"\tipaddress\x18\xcd\xf1m \x01(\tR\tipaddress\x12/\n" +
-	"\tothername\x18\xd7\xed\xe1v \x01(\v2\x0e.acm.OtherNameR\tothername\x12&\n" +
-	"\fregisteredid\x18\x95\xa8\xac\xda\x01 \x01(\tR\fregisteredid\x12\"\n" +
+	"\rdirectoryname\x18\xac\x83\xacj \x01(\v2\x16.acm.DistinguishedNameR\rdirectoryname\x12 \n" +
+	"\adnsname\x18\xf8\xf2\x9bO \x01(\tH\x00R\adnsname\x88\x01\x01\x12#\n" +
+	"\tipaddress\x18\xcd\xf1m \x01(\tH\x01R\tipaddress\x88\x01\x01\x12/\n" +
+	"\tothername\x18\xd7\xed\xe1v \x01(\v2\x0e.acm.OtherNameR\tothername\x12+\n" +
+	"\fregisteredid\x18\x95\xa8\xac\xda\x01 \x01(\tH\x02R\fregisteredid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"rfc822name\x18\xf6\xc5\xfd\xa1\x01 \x01(\tR\n" +
-	"rfc822name\x12?\n" +
-	"\x19uniformresourceidentifier\x18\x85\x87\xb0( \x01(\tR\x19uniformresourceidentifier\"i\n" +
+	"rfc822name\x18\xf6\xc5\xfd\xa1\x01 \x01(\tH\x03R\n" +
+	"rfc822name\x88\x01\x01\x12D\n" +
+	"\x19uniformresourceidentifier\x18\x85\x87\xb0( \x01(\tH\x04R\x19uniformresourceidentifier\x88\x01\x01B\n" +
+	"\n" +
+	"\b_dnsnameB\f\n" +
+	"\n" +
+	"_ipaddressB\x0f\n" +
+	"\r_registeredidB\r\n" +
+	"\v_rfc822nameB\x1c\n" +
+	"\x1a_uniformresourceidentifier\"i\n" +
 	"\x1fGetAccountConfigurationResponse\x12F\n" +
-	"\fexpiryevents\x18ܖ\x89\xab\x01 \x01(\v2\x1e.acm.ExpiryEventsConfigurationR\fexpiryevents\"B\n" +
+	"\fexpiryevents\x18ܖ\x89\xab\x01 \x01(\v2\x1e.acm.ExpiryEventsConfigurationR\fexpiryevents\"{\n" +
+	"/GetAcmeExternalAccountBindingCredentialsRequest\x12H\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tR\x1dacmeexternalaccountbindingarn\"\x87\x01\n" +
+	"0GetAcmeExternalAccountBindingCredentialsResponse\x12\x1d\n" +
+	"\x05keyid\x18\xa2\x80ȃ\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12\x1f\n" +
+	"\x06mackey\x18\xd8ԥ\xd3\x01 \x01(\tH\x01R\x06mackey\x88\x01\x01B\b\n" +
+	"\x06_keyidB\t\n" +
+	"\a_mackey\"B\n" +
 	"\x15GetCertificateRequest\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"m\n" +
-	"\x16GetCertificateResponse\x12#\n" +
-	"\vcertificate\x18\x91ָ^ \x01(\tR\vcertificate\x12.\n" +
-	"\x10certificatechain\x18\xda苰\x01 \x01(\tR\x10certificatechain\"Y\n" +
-	"\fHttpRedirect\x12%\n" +
-	"\fredirectfrom\x18\x8a\xf6\x99\x19 \x01(\tR\fredirectfrom\x12\"\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"\x9c\x01\n" +
+	"\x16GetCertificateResponse\x12(\n" +
+	"\vcertificate\x18\x91ָ^ \x01(\tH\x00R\vcertificate\x88\x01\x01\x123\n" +
+	"\x10certificatechain\x18\xda苰\x01 \x01(\tH\x01R\x10certificatechain\x88\x01\x01B\x0e\n" +
+	"\f_certificateB\x13\n" +
+	"\x11_certificatechain\"\x83\x01\n" +
+	"\fHttpRedirect\x12*\n" +
+	"\fredirectfrom\x18\x8a\xf6\x99\x19 \x01(\tH\x00R\fredirectfrom\x88\x01\x01\x12'\n" +
 	"\n" +
-	"redirectto\x18\x91\xbd\x97\xe1\x01 \x01(\tR\n" +
-	"redirectto\"\xdf\x01\n" +
+	"redirectto\x18\x91\xbd\x97\xe1\x01 \x01(\tH\x01R\n" +
+	"redirectto\x88\x01\x01B\x0f\n" +
+	"\r_redirectfromB\r\n" +
+	"\v_redirectto\"\x91\x02\n" +
 	"\x18ImportCertificateRequest\x12#\n" +
-	"\vcertificate\x18\x91ָ^ \x01(\fR\vcertificate\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12.\n" +
-	"\x10certificatechain\x18\xda苰\x01 \x01(\fR\x10certificatechain\x12!\n" +
+	"\vcertificate\x18\x91ָ^ \x01(\fR\vcertificate\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x123\n" +
+	"\x10certificatechain\x18\xda苰\x01 \x01(\fH\x01R\x10certificatechain\x88\x01\x01\x12!\n" +
 	"\n" +
 	"privatekey\x18\xbc\x95\xd2R \x01(\fR\n" +
 	"privatekey\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"F\n" +
-	"\x19ImportCertificateResponse\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"3\n" +
-	"\x14InvalidArgsException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13InvalidArnException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"F\n" +
-	"'InvalidDomainValidationOptionsException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19InvalidParameterException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15InvalidStateException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13InvalidTagException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tagsB\x11\n" +
+	"\x0f_certificatearnB\x13\n" +
+	"\x11_certificatechain\"^\n" +
+	"\x19ImportCertificateResponse\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01B\x11\n" +
+	"\x0f_certificatearn\"G\n" +
+	"\x17InternalServerException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14InvalidArgsException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13InvalidArnException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"W\n" +
+	"'InvalidDomainValidationOptionsException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidParameterException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15InvalidStateException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13InvalidTagException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"4\n" +
 	"\bKeyUsage\x12(\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x11.acm.KeyUsageNameR\x04name\"5\n" +
-	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc0\x02\n" +
-	"\x17ListCertificatesRequest\x12K\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x11.acm.KeyUsageNameR\x04name\"F\n" +
+	"\x16LimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb2\x01\n" +
+	"\x17ListAcmeAccountsRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8e\x01\n" +
+	"\x18ListAcmeAccountsResponse\x12>\n" +
+	"\facmeaccounts\x18\xecʍ  \x03(\v2\x17.acm.AcmeAccountSummaryR\facmeaccounts\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xbb\x01\n" +
+	" ListAcmeDomainValidationsRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xb3\x01\n" +
+	"!ListAcmeDomainValidationsResponse\x12Z\n" +
+	"\x15acmedomainvalidations\x18\xa6\x97˟\x01 \x03(\v2 .acm.AcmeDomainValidationSummaryR\x15acmedomainvalidations\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x86\x01\n" +
+	"\x18ListAcmeEndpointsRequest\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x93\x01\n" +
+	"\x19ListAcmeEndpointsResponse\x12B\n" +
+	"\racmeendpoints\x18Ԅ\x97\xf7\x01 \x03(\v2\x18.acm.AcmeEndpointSummaryR\racmeendpoints\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xc1\x01\n" +
+	"&ListAcmeExternalAccountBindingsRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\tH\x00R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xc2\x01\n" +
+	"'ListAcmeExternalAccountBindingsResponse\x12c\n" +
+	"\x17externalaccountbindings\x18\xc4\xfb\xdcD \x03(\v2&.acm.AcmeExternalAccountBindingSummaryR\x17externalaccountbindings\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xba\x01\n" +
+	"'ListCertificateDomainValidationsRequest\x12)\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12#\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\v\n" +
+	"\t_maxitemsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xc1\x01\n" +
+	"(ListCertificateDomainValidationsResponse\x12a\n" +
+	"\x1bdomainvalidationsummarylist\x18\xbf\xb6\x8d2 \x03(\v2\x1c.acm.DomainValidationSummaryR\x1bdomainvalidationsummarylist\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xb4\x03\n" +
+	"\x17ListCertificatesRequest\x12_\n" +
+	"\x19certificatekeypairorigins\x18猜\x8d\x01 \x03(\x0e2\x1d.acm.CertificateKeyPairOriginR\x19certificatekeypairorigins\x12K\n" +
 	"\x13certificatestatuses\x18\xf3\x8a\xfd` \x03(\x0e2\x16.acm.CertificateStatusR\x13certificatestatuses\x12+\n" +
 	"\bincludes\x18\x9d\xb1\xb8M \x01(\v2\f.acm.FiltersR\bincludes\x12#\n" +
-	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12&\n" +
+	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x05H\x00R\bmaxitems\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12&\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\v.acm.SortByR\x06sortby\x120\n" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x0e.acm.SortOrderR\tsortorderB\v\n" +
-	"\t_maxitems\"\x90\x01\n" +
+	"\t_maxitemsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa3\x01\n" +
 	"\x18ListCertificatesResponse\x12S\n" +
-	"\x16certificatesummarylist\x18\x91\xa4\xd5\xe8\x01 \x03(\v2\x17.acm.CertificateSummaryR\x16certificatesummarylist\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"J\n" +
+	"\x16certificatesummarylist\x18\x91\xa4\xd5\xe8\x01 \x03(\v2\x17.acm.CertificateSummaryR\x16certificatesummarylist\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"J\n" +
 	"\x1dListTagsForCertificateRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"B\n" +
 	"\x1eListTagsForCertificateResponse\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"U\n" +
-	"\tOtherName\x12.\n" +
-	"\x10objectidentifier\x18\xda\xde߹\x01 \x01(\tR\x10objectidentifier\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x97\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"B\n" +
+	"\x1aListTagsForResourceRequest\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"?\n" +
+	"\x1bListTagsForResourceResponse\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"~\n" +
+	"\tOtherName\x123\n" +
+	"\x10objectidentifier\x18\xda\xde߹\x01 \x01(\tH\x00R\x10objectidentifier\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x13\n" +
+	"\x11_objectidentifierB\b\n" +
+	"\x06_value\"c\n" +
+	"\x14PrevalidationDetails\x12K\n" +
+	"\x10dnsprevalidation\x18\xfb\x88\xf6] \x01(\v2\x1c.acm.DnsPrevalidationDetailsR\x10dnsprevalidation\"c\n" +
+	"\x14PrevalidationOptions\x12K\n" +
+	"\x10dnsprevalidation\x18\xfb\x88\xf6] \x01(\v2\x1c.acm.DnsPrevalidationOptionsR\x10dnsprevalidation\"m\n" +
+	"\x1aPublicCertificateAuthority\x12O\n" +
+	"\x14allowedkeyalgorithms\x18\xad\xe2\x85\xe0\x01 \x03(\x0e2\x17.acm.PublicKeyAlgorithmR\x14allowedkeyalgorithms\"\x97\x01\n" +
 	"\x1ePutAccountConfigurationRequest\x12F\n" +
 	"\fexpiryevents\x18ܖ\x89\xab\x01 \x01(\v2\x1e.acm.ExpiryEventsConfigurationR\fexpiryevents\x12-\n" +
 	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tR\x10idempotencytoken\"o\n" +
@@ -5993,102 +10869,208 @@ const file_acm_proto_rawDesc = "" +
 	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x15.acm.DomainValidationR\x17domainvalidationoptions\x12<\n" +
 	"\rrenewalstatus\x18\xd6\xf3\x98\x84\x01 \x01(\x0e2\x12.acm.RenewalStatusR\rrenewalstatus\x12G\n" +
 	"\x13renewalstatusreason\x18\x8aڻb \x01(\x0e2\x12.acm.FailureReasonR\x13renewalstatusreason\x12\x1f\n" +
-	"\tupdatedat\x18\x96\xfb\xebe \x01(\tR\tupdatedat\"\xd9\x04\n" +
-	"\x19RequestCertificateRequest\x12;\n" +
-	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tR\x17certificateauthorityarn\x12!\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tR\tupdatedat\"\x94\x05\n" +
+	"\x19RequestCertificateRequest\x12@\n" +
+	"\x17certificateauthorityarn\x18\xbd\xc9\xef~ \x01(\tH\x00R\x17certificateauthorityarn\x88\x01\x01\x12!\n" +
 	"\n" +
 	"domainname\x18\xeb\xcd\xf8\\ \x01(\tR\n" +
 	"domainname\x12Y\n" +
-	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x1b.acm.DomainValidationOptionR\x17domainvalidationoptions\x12-\n" +
-	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tR\x10idempotencytoken\x129\n" +
+	"\x17domainvalidationoptions\x18\xc9偠\x01 \x03(\v2\x1b.acm.DomainValidationOptionR\x17domainvalidationoptions\x122\n" +
+	"\x10idempotencytoken\x18\xf0\xec\x8c\x1b \x01(\tH\x01R\x10idempotencytoken\x88\x01\x01\x129\n" +
 	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x12;\n" +
 	"\tmanagedby\x18\xc0\x99\x9a\xd9\x01 \x01(\x0e2\x19.acm.CertificateManagedByR\tmanagedby\x125\n" +
 	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\x12;\n" +
 	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\tR\x17subjectalternativenames\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\x12D\n" +
-	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\"G\n" +
-	"\x1aRequestCertificateResponse\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"9\n" +
-	"\x1aRequestInProgressException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x94\x01\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethodB\x1a\n" +
+	"\x18_certificateauthorityarnB\x13\n" +
+	"\x11_idempotencytoken\"_\n" +
+	"\x1aRequestCertificateResponse\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01B\x11\n" +
+	"\x0f_certificatearn\"J\n" +
+	"\x1aRequestInProgressException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x94\x01\n" +
 	"\x1cResendValidationEmailRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12\x1a\n" +
 	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12-\n" +
-	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\"5\n" +
-	"\x16ResourceInUseException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"j\n" +
+	"\x10validationdomain\x18\xbf\x82\xf5L \x01(\tR\x10validationdomain\"F\n" +
+	"\x16ResourceInUseException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"j\n" +
 	"\x0eResourceRecord\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12'\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.acm.RecordTypeR\x04type\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x8c\x01\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"k\n" +
+	"\x18RevokeAcmeAccountRequest\x12\"\n" +
+	"\n" +
+	"accounturl\x18\xb6\x9c\xe7\xc3\x01 \x01(\tR\n" +
+	"accounturl\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\"s\n" +
+	"'RevokeAcmeExternalAccountBindingRequest\x12H\n" +
+	"\x1dacmeexternalaccountbindingarn\x18\x8c\xb8\xf1\xf8\x01 \x01(\tR\x1dacmeexternalaccountbindingarn\"\x8c\x01\n" +
 	"\x18RevokeCertificateRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x12E\n" +
-	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\"F\n" +
-	"\x19RevokeCertificateResponse\x12)\n" +
-	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\"\xc1\x02\n" +
+	"\x10revocationreason\x18\xc6ם\x9e\x01 \x01(\x0e2\x15.acm.RevocationReasonR\x10revocationreason\"^\n" +
+	"\x19RevokeCertificateResponse\x12.\n" +
+	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01B\x11\n" +
+	"\x0f_certificatearn\"\xd4\x02\n" +
 	"\x19SearchCertificatesRequest\x12M\n" +
 	"\x0ffilterstatement\x18\xad\xce\xfa\xfc\x01 \x01(\v2\x1f.acm.CertificateFilterStatementR\x0ffilterstatement\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x128\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x128\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1d.acm.SearchCertificatesSortByR\x06sortby\x12B\n" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2 .acm.SearchCertificatesSortOrderR\tsortorderB\r\n" +
-	"\v_maxresults\"y\n" +
-	"\x1aSearchCertificatesResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12:\n" +
-	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2\x1c.acm.CertificateSearchResultR\aresults\"O\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8c\x01\n" +
+	"\x1aSearchCertificatesResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12:\n" +
+	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2\x1c.acm.CertificateSearchResultR\aresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"M\n" +
+	"\x1dServiceQuotaExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
 	"\x1cSubjectAlternativeNameFilter\x12/\n" +
 	"\adnsname\x18\xf8\xf2\x9bO \x01(\v2\x12.acm.DnsNameFilterR\adnsname\"J\n" +
 	"\rSubjectFilter\x129\n" +
 	"\n" +
 	"commonname\x18\xb0\x93\xd1\xda\x01 \x01(\v2\x15.acm.CommonNameFilterR\n" +
-	"commonname\"4\n" +
+	"commonname\"C\n" +
 	"\x03Tag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"1\n" +
-	"\x12TagPolicyException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"z\n" +
-	"\x13ThrottlingException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12F\n" +
-	"\x11throttlingreasons\x18\x94ʭQ \x03(\v2\x15.acm.ThrottlingReasonR\x11throttlingreasons\"M\n" +
-	"\x10ThrottlingReason\x12\x1a\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\tR\x06reason\x12\x1d\n" +
-	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\">\n" +
-	"\x0eTimestampRange\x12\x13\n" +
-	"\x03end\x18\xcb\xec\xcd| \x01(\tR\x03end\x12\x17\n" +
-	"\x05start\x18\x80\x93\xa0W \x01(\tR\x05start\"3\n" +
-	"\x14TooManyTagsException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x83\x01\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"B\n" +
+	"\x12TagPolicyException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\\\n" +
+	"\x12TagResourceRequest\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.acm.TagR\x04tags\"\x8b\x01\n" +
+	"\x13ThrottlingException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12F\n" +
+	"\x11throttlingreasons\x18\x94ʭQ \x03(\v2\x15.acm.ThrottlingReasonR\x11throttlingreasonsB\n" +
+	"\n" +
+	"\b_message\"o\n" +
+	"\x10ThrottlingReason\x12\x1f\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\tH\x00R\x06reason\x88\x01\x01\x12\"\n" +
+	"\bresource\x18\xf6\xff\xfdN \x01(\tH\x01R\bresource\x88\x01\x01B\t\n" +
+	"\a_reasonB\v\n" +
+	"\t_resource\"Z\n" +
+	"\x0eTimestampRange\x12\x18\n" +
+	"\x03end\x18\xcb\xec\xcd| \x01(\tH\x00R\x03end\x88\x01\x01\x12\x1c\n" +
+	"\x05start\x18\x80\x93\xa0W \x01(\tH\x01R\x05start\x88\x01\x01B\x06\n" +
+	"\x04_endB\b\n" +
+	"\x06_start\"D\n" +
+	"\x14TooManyTagsException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Z\n" +
+	"\x14UntagResourceRequest\x12$\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
+	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\xb3\x01\n" +
+	"!UpdateAcmeDomainValidationRequest\x12;\n" +
+	"\x17acmedomainvalidationarn\x18̘\x9e\x14 \x01(\tR\x17acmedomainvalidationarn\x12Q\n" +
+	"\x14prevalidationoptions\x18\xb6\xdbڡ\x01 \x01(\v2\x19.acm.PrevalidationOptionsR\x14prevalidationoptions\"\xa4\x02\n" +
+	"\x19UpdateAcmeEndpointRequest\x12+\n" +
+	"\x0facmeendpointarn\x18ޣ\xa0- \x01(\tR\x0facmeendpointarn\x12W\n" +
+	"\x15authorizationbehavior\x18\xa9\xa9\xff> \x01(\x0e2\x1e.acm.AcmeAuthorizationBehaviorR\x15authorizationbehavior\x12Q\n" +
+	"\x14certificateauthority\x18\xa6\xd7\xfd\x93\x01 \x01(\v2\x19.acm.CertificateAuthorityR\x14certificateauthority\x12.\n" +
+	"\acontact\x18ĩ\xb2\x9d\x01 \x01(\x0e2\x10.acm.AcmeContactR\acontact\"\x83\x01\n" +
 	"\x1fUpdateCertificateOptionsRequest\x12)\n" +
 	"\x0ecertificatearn\x18\xf8ʙ, \x01(\tR\x0ecertificatearn\x125\n" +
-	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\"2\n" +
-	"\x13ValidationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xf0\x03\n" +
+	"\aoptions\x18ƚ\xf8\xa9\x01 \x01(\v2\x17.acm.CertificateOptionsR\aoptions\"\xd5\x02\n" +
+	"\rUpdateSummary\x12~\n" +
+	"#domainvalidationmethodupdatesummary\x18\x97\xe4\xac\xf8\x01 \x01(\v2(.acm.DomainValidationMethodUpdateSummaryR#domainvalidationmethodupdatesummary\x12)\n" +
+	"\vrequestedat\x18\xf7Ç\xbb\x01 \x01(\tH\x00R\vrequestedat\x88\x01\x01\x12,\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.acm.UpdateStatusR\x06status\x12'\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x0f.acm.UpdateTypeR\x04type\x12$\n" +
+	"\tupdatedat\x18\x96\xfb\xebe \x01(\tH\x01R\tupdatedat\x88\x01\x01B\x0e\n" +
+	"\f_requestedatB\f\n" +
+	"\n" +
+	"_updatedat\"\xcd\x01\n" +
+	"\x13ValidationChallenge\x12W\n" +
+	"\x16dnsvalidationchallenge\x18\xc1\x8e\xef\xff\x01 \x01(\v2\x1b.acm.DnsValidationChallengeR\x16dnsvalidationchallenge\x12]\n" +
+	"\x18emailvalidationchallenge\x18\xa2\xed\x8c\xec\x01 \x01(\v2\x1d.acm.EmailValidationChallengeR\x18emailvalidationchallenge\"\xf2\x01\n" +
+	"\x17ValidationConfiguration\x12N\n" +
+	"\x13validationchallenge\x18\x9c\xc4\xc4\xdf\x01 \x01(\v2\x18.acm.ValidationChallengeR\x13validationchallenge\x12D\n" +
+	"\x10validationmethod\x18\xe8\xd7\xd9\x1b \x01(\x0e2\x15.acm.ValidationMethodR\x10validationmethod\x12A\n" +
+	"\x10validationstatus\x18\xe5\xb0\xc8\xcb\x01 \x01(\x0e2\x11.acm.DomainStatusR\x10validationstatus\"C\n" +
+	"\x13ValidationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x86\x04\n" +
 	"\x13X509AttributeFilter\x12H\n" +
 	"\x10extendedkeyusage\x18\xaf\xb4\xec@ \x01(\x0e2\x19.acm.ExtendedKeyUsageNameR\x10extendedkeyusage\x129\n" +
 	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x121\n" +
 	"\bkeyusage\x18\x84䪪\x01 \x01(\x0e2\x11.acm.KeyUsageNameR\bkeyusage\x123\n" +
 	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\v2\x13.acm.TimestampRangeR\bnotafter\x125\n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\v2\x13.acm.TimestampRangeR\tnotbefore\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x12/\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\v2\x13.acm.TimestampRangeR\tnotbefore\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x00R\fserialnumber\x88\x01\x01\x12/\n" +
 	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\v2\x12.acm.SubjectFilterR\asubject\x12\\\n" +
-	"\x16subjectalternativename\x18\xf2\xfe\xbf\x19 \x01(\v2!.acm.SubjectAlternativeNameFilterR\x16subjectalternativename\"\xef\x03\n" +
+	"\x16subjectalternativename\x18\xf2\xfe\xbf\x19 \x01(\v2!.acm.SubjectAlternativeNameFilterR\x16subjectalternativenameB\x0f\n" +
+	"\r_serialnumber\"\xaa\x04\n" +
 	"\x0eX509Attributes\x12K\n" +
 	"\x11extendedkeyusages\x18耪\xfd\x01 \x03(\x0e2\x19.acm.ExtendedKeyUsageNameR\x11extendedkeyusages\x122\n" +
 	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\v2\x16.acm.DistinguishedNameR\x06issuer\x129\n" +
 	"\fkeyalgorithm\x18\xfa\xa4\xd7\xd7\x01 \x01(\x0e2\x11.acm.KeyAlgorithmR\fkeyalgorithm\x123\n" +
-	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\tkeyusages\x12\x1e\n" +
-	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tR\bnotafter\x12 \n" +
-	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tR\tnotbefore\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x123\n" +
+	"\tkeyusages\x18\xd1\xccۤ\x01 \x03(\x0e2\x11.acm.KeyUsageNameR\tkeyusages\x12#\n" +
+	"\bnotafter\x18Ѽ\x96\x89\x01 \x01(\tH\x00R\bnotafter\x88\x01\x01\x12%\n" +
+	"\tnotbefore\x18\xf6\xd3\xf3\xda\x01 \x01(\tH\x01R\tnotbefore\x88\x01\x01\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x02R\fserialnumber\x88\x01\x01\x123\n" +
 	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\v2\x16.acm.DistinguishedNameR\asubject\x12M\n" +
-	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\v2\x10.acm.GeneralNameR\x17subjectalternativenames*T\n" +
+	"\x17subjectalternativenames\x18\xa7\xe0\xb94 \x03(\v2\x10.acm.GeneralNameR\x17subjectalternativenamesB\v\n" +
+	"\t_notafterB\f\n" +
+	"\n" +
+	"_notbeforeB\x0f\n" +
+	"\r_serialnumber*x\n" +
+	"\x11AcmeAccountStatus\x12#\n" +
+	"\x1fACME_ACCOUNT_STATUS_DEACTIVATED\x10\x00\x12\x1f\n" +
+	"\x1bACME_ACCOUNT_STATUS_REVOKED\x10\x01\x12\x1d\n" +
+	"\x19ACME_ACCOUNT_STATUS_VALID\x10\x02*I\n" +
+	"\x19AcmeAuthorizationBehavior\x12,\n" +
+	"(ACME_AUTHORIZATION_BEHAVIOR_PRE_APPROVED\x10\x00*G\n" +
+	"\vAcmeContact\x12\x19\n" +
+	"\x15ACME_CONTACT_REQUIRED\x10\x00\x12\x1d\n" +
+	"\x19ACME_CONTACT_NOT_REQUIRED\x10\x01*\xc7\x04\n" +
+	"!AcmeDomainValidationFailureReason\x12=\n" +
+	"9ACME_DOMAIN_VALIDATION_FAILURE_REASON_ENDPOINT_NOT_ACTIVE\x10\x00\x127\n" +
+	"3ACME_DOMAIN_VALIDATION_FAILURE_REASON_ACCESS_DENIED\x10\x01\x123\n" +
+	"/ACME_DOMAIN_VALIDATION_FAILURE_REASON_TIMED_OUT\x10\x02\x12?\n" +
+	";ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_PUBLIC_DOMAIN\x10\x03\x12:\n" +
+	"6ACME_DOMAIN_VALIDATION_FAILURE_REASON_INTERNAL_FAILURE\x10\x04\x12<\n" +
+	"8ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_NOT_ALLOWED\x10\x05\x129\n" +
+	"5ACME_DOMAIN_VALIDATION_FAILURE_REASON_DOMAIN_MISMATCH\x10\x06\x12?\n" +
+	";ACME_DOMAIN_VALIDATION_FAILURE_REASON_HOSTED_ZONE_NOT_FOUND\x10\a\x12>\n" +
+	":ACME_DOMAIN_VALIDATION_FAILURE_REASON_INVALID_CHANGE_BATCH\x10\b*\xca\x01\n" +
+	"\x1aAcmeDomainValidationStatus\x12,\n" +
+	"(ACME_DOMAIN_VALIDATION_STATUS_VALIDATING\x10\x00\x12)\n" +
+	"%ACME_DOMAIN_VALIDATION_STATUS_INVALID\x10\x01\x12*\n" +
+	"&ACME_DOMAIN_VALIDATION_STATUS_DELETING\x10\x02\x12'\n" +
+	"#ACME_DOMAIN_VALIDATION_STATUS_VALID\x10\x03*\x9c\x01\n" +
+	"\x12AcmeEndpointStatus\x12\x1f\n" +
+	"\x1bACME_ENDPOINT_STATUS_ACTIVE\x10\x00\x12!\n" +
+	"\x1dACME_ENDPOINT_STATUS_DELETING\x10\x01\x12!\n" +
+	"\x1dACME_ENDPOINT_STATUS_CREATING\x10\x02\x12\x1f\n" +
+	"\x1bACME_ENDPOINT_STATUS_FAILED\x10\x03*T\n" +
 	"\x11CertificateExport\x12\x1f\n" +
 	"\x1bCERTIFICATE_EXPORT_DISABLED\x10\x00\x12\x1e\n" +
-	"\x1aCERTIFICATE_EXPORT_ENABLED\x10\x01*=\n" +
+	"\x1aCERTIFICATE_EXPORT_ENABLED\x10\x01*\xa0\x01\n" +
+	"\x18CertificateKeyPairOrigin\x12+\n" +
+	"'CERTIFICATE_KEY_PAIR_ORIGIN_AWS_MANAGED\x10\x00\x12$\n" +
+	" CERTIFICATE_KEY_PAIR_ORIGIN_ACME\x10\x01\x121\n" +
+	"-CERTIFICATE_KEY_PAIR_ORIGIN_CUSTOMER_PROVIDED\x10\x02*=\n" +
 	"\x14CertificateManagedBy\x12%\n" +
 	"!CERTIFICATE_MANAGED_BY_CLOUDFRONT\x10\x00*\x8a\x02\n" +
 	"\x11CertificateStatus\x12\x1e\n" +
@@ -6108,7 +11090,10 @@ const file_acm_proto_rawDesc = "" +
 	"\x1eCERTIFICATE_TYPE_AMAZON_ISSUED\x10\x02*V\n" +
 	"\x12ComparisonOperator\x12 \n" +
 	"\x1cCOMPARISON_OPERATOR_CONTAINS\x10\x00\x12\x1e\n" +
-	"\x1aCOMPARISON_OPERATOR_EQUALS\x10\x01*i\n" +
+	"\x1aCOMPARISON_OPERATOR_EQUALS\x10\x01*V\n" +
+	"\x11DomainScopeOption\x12 \n" +
+	"\x1cDOMAIN_SCOPE_OPTION_DISABLED\x10\x00\x12\x1f\n" +
+	"\x1bDOMAIN_SCOPE_OPTION_ENABLED\x10\x01*i\n" +
 	"\fDomainStatus\x12$\n" +
 	" DOMAIN_STATUS_PENDING_VALIDATION\x10\x00\x12\x19\n" +
 	"\x15DOMAIN_STATUS_SUCCESS\x10\x01\x12\x18\n" +
@@ -6166,7 +11151,13 @@ const file_acm_proto_rawDesc = "" +
 	"\x1dKEY_USAGE_NAME_NON_REPUDATION\x10\b\x12#\n" +
 	"\x1fKEY_USAGE_NAME_KEY_ENCIPHERMENT\x10\t\x12$\n" +
 	" KEY_USAGE_NAME_DIGITAL_SIGNATURE\x10\n" +
-	"*#\n" +
+	"*=\n" +
+	"\x11PrevalidationType\x12(\n" +
+	"$PREVALIDATION_TYPE_DNS_PREVALIDATION\x10\x00*\x88\x01\n" +
+	"\x12PublicKeyAlgorithm\x12'\n" +
+	"#PUBLIC_KEY_ALGORITHM_EC_PRIME256_V1\x10\x00\x12!\n" +
+	"\x1dPUBLIC_KEY_ALGORITHM_RSA_2048\x10\x01\x12&\n" +
+	"\"PUBLIC_KEY_ALGORITHM_EC_SECP384_R1\x10\x02*#\n" +
 	"\n" +
 	"RecordType\x12\x15\n" +
 	"\x11RECORD_TYPE_CNAME\x10\x00*Z\n" +
@@ -6190,27 +11181,30 @@ const file_acm_proto_rawDesc = "" +
 	"\x1cREVOCATION_REASON_SUPERSEDED\x10\b\x12#\n" +
 	"\x1fREVOCATION_REASON_CA_COMPROMISE\x10\t\x12$\n" +
 	" REVOCATION_REASON_KEY_COMPROMISE\x10\n" +
-	"*\xc1\x06\n" +
+	"*\xe2\a\n" +
 	"\x18SearchCertificatesSortBy\x12)\n" +
 	"%SEARCH_CERTIFICATES_SORT_BY_ISSUED_AT\x10\x00\x12*\n" +
-	"&SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT\x10\x01\x12+\n" +
-	"'SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME\x10\x02\x12*\n" +
-	"&SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY\x10\x03\x12)\n" +
-	"%SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER\x10\x04\x121\n" +
-	"-SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD\x10\x05\x12.\n" +
-	"*SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS\x10\x06\x12&\n" +
-	"\"SEARCH_CERTIFICATES_SORT_BY_STATUS\x10\a\x12(\n" +
-	"$SEARCH_CERTIFICATES_SORT_BY_EXPORTED\x10\b\x12*\n" +
-	"&SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE\x10\t\x123\n" +
-	"/SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY\x10\n" +
-	"\x12/\n" +
-	"+SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN\x10\v\x12&\n" +
-	"\"SEARCH_CERTIFICATES_SORT_BY_IN_USE\x10\f\x12-\n" +
-	")SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM\x10\r\x12-\n" +
-	")SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION\x10\x0e\x12+\n" +
-	"'SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT\x10\x0f\x12$\n" +
-	" SEARCH_CERTIFICATES_SORT_BY_TYPE\x10\x10\x12*\n" +
-	"&SEARCH_CERTIFICATES_SORT_BY_CREATED_AT\x10\x11*z\n" +
+	"&SEARCH_CERTIFICATES_SORT_BY_REVOKED_AT\x10\x01\x121\n" +
+	"-SEARCH_CERTIFICATES_SORT_BY_ACME_ENDPOINT_ARN\x10\x02\x12+\n" +
+	"'SEARCH_CERTIFICATES_SORT_BY_COMMON_NAME\x10\x03\x12*\n" +
+	"&SEARCH_CERTIFICATES_SORT_BY_MANAGED_BY\x10\x04\x12)\n" +
+	"%SEARCH_CERTIFICATES_SORT_BY_NOT_AFTER\x10\x05\x121\n" +
+	"-SEARCH_CERTIFICATES_SORT_BY_VALIDATION_METHOD\x10\x06\x12.\n" +
+	"*SEARCH_CERTIFICATES_SORT_BY_RENEWAL_STATUS\x10\a\x12&\n" +
+	"\"SEARCH_CERTIFICATES_SORT_BY_STATUS\x10\b\x12(\n" +
+	"$SEARCH_CERTIFICATES_SORT_BY_EXPORTED\x10\t\x12*\n" +
+	"&SEARCH_CERTIFICATES_SORT_BY_NOT_BEFORE\x10\n" +
+	"\x123\n" +
+	"/SEARCH_CERTIFICATES_SORT_BY_RENEWAL_ELIGIBILITY\x10\v\x12/\n" +
+	"+SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_ARN\x10\f\x12&\n" +
+	"\"SEARCH_CERTIFICATES_SORT_BY_IN_USE\x10\r\x12-\n" +
+	")SEARCH_CERTIFICATES_SORT_BY_KEY_ALGORITHM\x10\x0e\x12-\n" +
+	")SEARCH_CERTIFICATES_SORT_BY_EXPORT_OPTION\x10\x0f\x12+\n" +
+	"'SEARCH_CERTIFICATES_SORT_BY_IMPORTED_AT\x10\x10\x12$\n" +
+	" SEARCH_CERTIFICATES_SORT_BY_TYPE\x10\x11\x12/\n" +
+	"+SEARCH_CERTIFICATES_SORT_BY_ACME_ACCOUNT_ID\x10\x12\x12;\n" +
+	"7SEARCH_CERTIFICATES_SORT_BY_CERTIFICATE_KEY_PAIR_ORIGIN\x10\x13\x12*\n" +
+	"&SEARCH_CERTIFICATES_SORT_BY_CREATED_AT\x10\x14*z\n" +
 	"\x1bSearchCertificatesSortOrder\x12,\n" +
 	"(SEARCH_CERTIFICATES_SORT_ORDER_ASCENDING\x10\x00\x12-\n" +
 	")SEARCH_CERTIFICATES_SORT_ORDER_DESCENDING\x10\x01* \n" +
@@ -6218,30 +11212,63 @@ const file_acm_proto_rawDesc = "" +
 	"\x12SORT_BY_CREATED_AT\x10\x00*@\n" +
 	"\tSortOrder\x12\x18\n" +
 	"\x14SORT_ORDER_ASCENDING\x10\x00\x12\x19\n" +
-	"\x15SORT_ORDER_DESCENDING\x10\x01*f\n" +
+	"\x15SORT_ORDER_DESCENDING\x10\x01*J\n" +
+	"\bTimeType\x12\x15\n" +
+	"\x11TIME_TYPE_MINUTES\x10\x00\x12\x12\n" +
+	"\x0eTIME_TYPE_DAYS\x10\x01\x12\x13\n" +
+	"\x0fTIME_TYPE_HOURS\x10\x02*p\n" +
+	"\fUpdateStatus\x12\x19\n" +
+	"\x15UPDATE_STATUS_SUCCESS\x10\x00\x12+\n" +
+	"'UPDATE_STATUS_PENDING_DOMAIN_VALIDATION\x10\x01\x12\x18\n" +
+	"\x14UPDATE_STATUS_FAILED\x10\x02*6\n" +
+	"\n" +
+	"UpdateType\x12(\n" +
+	"$UPDATE_TYPE_DOMAIN_VALIDATION_METHOD\x10\x00*f\n" +
 	"\x10ValidationMethod\x12\x1a\n" +
 	"\x16VALIDATION_METHOD_HTTP\x10\x00\x12\x1b\n" +
 	"\x17VALIDATION_METHOD_EMAIL\x10\x01\x12\x19\n" +
-	"\x15VALIDATION_METHOD_DNS\x10\x022\xea\n" +
-	"\n" +
+	"\x15VALIDATION_METHOD_DNS\x10\x022\x94\x1c\n" +
 	"\n" +
 	"ACMService\x12G\n" +
-	"\x14AddTagsToCertificate\x12 .acm.AddTagsToCertificateRequest\x1a\r.common.Empty\x12A\n" +
+	"\x14AddTagsToCertificate\x12 .acm.AddTagsToCertificateRequest\x1a\r.common.Empty\x12m\n" +
+	"\x1aCreateAcmeDomainValidation\x12&.acm.CreateAcmeDomainValidationRequest\x1a'.acm.CreateAcmeDomainValidationResponse\x12U\n" +
+	"\x12CreateAcmeEndpoint\x12\x1e.acm.CreateAcmeEndpointRequest\x1a\x1f.acm.CreateAcmeEndpointResponse\x12\x7f\n" +
+	" CreateAcmeExternalAccountBinding\x12,.acm.CreateAcmeExternalAccountBindingRequest\x1a-.acm.CreateAcmeExternalAccountBindingResponse\x12S\n" +
+	"\x1aDeleteAcmeDomainValidation\x12&.acm.DeleteAcmeDomainValidationRequest\x1a\r.common.Empty\x12C\n" +
+	"\x12DeleteAcmeEndpoint\x12\x1e.acm.DeleteAcmeEndpointRequest\x1a\r.common.Empty\x12_\n" +
+	" DeleteAcmeExternalAccountBinding\x12,.acm.DeleteAcmeExternalAccountBindingRequest\x1a\r.common.Empty\x12A\n" +
 	"\x11DeleteCertificate\x12\x1d.acm.DeleteCertificateRequest\x1a\r.common.Empty\x12X\n" +
+	"\x13DescribeAcmeAccount\x12\x1f.acm.DescribeAcmeAccountRequest\x1a .acm.DescribeAcmeAccountResponse\x12s\n" +
+	"\x1cDescribeAcmeDomainValidation\x12(.acm.DescribeAcmeDomainValidationRequest\x1a).acm.DescribeAcmeDomainValidationResponse\x12[\n" +
+	"\x14DescribeAcmeEndpoint\x12 .acm.DescribeAcmeEndpointRequest\x1a!.acm.DescribeAcmeEndpointResponse\x12\x85\x01\n" +
+	"\"DescribeAcmeExternalAccountBinding\x12..acm.DescribeAcmeExternalAccountBindingRequest\x1a/.acm.DescribeAcmeExternalAccountBindingResponse\x12X\n" +
 	"\x13DescribeCertificate\x12\x1f.acm.DescribeCertificateRequest\x1a .acm.DescribeCertificateResponse\x12R\n" +
 	"\x11ExportCertificate\x12\x1d.acm.ExportCertificateRequest\x1a\x1e.acm.ExportCertificateResponse\x12N\n" +
-	"\x17GetAccountConfiguration\x12\r.common.Empty\x1a$.acm.GetAccountConfigurationResponse\x12I\n" +
+	"\x17GetAccountConfiguration\x12\r.common.Empty\x1a$.acm.GetAccountConfigurationResponse\x12\x97\x01\n" +
+	"(GetAcmeExternalAccountBindingCredentials\x124.acm.GetAcmeExternalAccountBindingCredentialsRequest\x1a5.acm.GetAcmeExternalAccountBindingCredentialsResponse\x12I\n" +
 	"\x0eGetCertificate\x12\x1a.acm.GetCertificateRequest\x1a\x1b.acm.GetCertificateResponse\x12R\n" +
 	"\x11ImportCertificate\x12\x1d.acm.ImportCertificateRequest\x1a\x1e.acm.ImportCertificateResponse\x12O\n" +
+	"\x10ListAcmeAccounts\x12\x1c.acm.ListAcmeAccountsRequest\x1a\x1d.acm.ListAcmeAccountsResponse\x12j\n" +
+	"\x19ListAcmeDomainValidations\x12%.acm.ListAcmeDomainValidationsRequest\x1a&.acm.ListAcmeDomainValidationsResponse\x12R\n" +
+	"\x11ListAcmeEndpoints\x12\x1d.acm.ListAcmeEndpointsRequest\x1a\x1e.acm.ListAcmeEndpointsResponse\x12|\n" +
+	"\x1fListAcmeExternalAccountBindings\x12+.acm.ListAcmeExternalAccountBindingsRequest\x1a,.acm.ListAcmeExternalAccountBindingsResponse\x12\x7f\n" +
+	" ListCertificateDomainValidations\x12,.acm.ListCertificateDomainValidationsRequest\x1a-.acm.ListCertificateDomainValidationsResponse\x12O\n" +
 	"\x10ListCertificates\x12\x1c.acm.ListCertificatesRequest\x1a\x1d.acm.ListCertificatesResponse\x12a\n" +
-	"\x16ListTagsForCertificate\x12\".acm.ListTagsForCertificateRequest\x1a#.acm.ListTagsForCertificateResponse\x12M\n" +
+	"\x16ListTagsForCertificate\x12\".acm.ListTagsForCertificateRequest\x1a#.acm.ListTagsForCertificateResponse\x12X\n" +
+	"\x13ListTagsForResource\x12\x1f.acm.ListTagsForResourceRequest\x1a .acm.ListTagsForResourceResponse\x12M\n" +
 	"\x17PutAccountConfiguration\x12#.acm.PutAccountConfigurationRequest\x1a\r.common.Empty\x12Q\n" +
 	"\x19RemoveTagsFromCertificate\x12%.acm.RemoveTagsFromCertificateRequest\x1a\r.common.Empty\x12?\n" +
 	"\x10RenewCertificate\x12\x1c.acm.RenewCertificateRequest\x1a\r.common.Empty\x12U\n" +
 	"\x12RequestCertificate\x12\x1e.acm.RequestCertificateRequest\x1a\x1f.acm.RequestCertificateResponse\x12I\n" +
-	"\x15ResendValidationEmail\x12!.acm.ResendValidationEmailRequest\x1a\r.common.Empty\x12R\n" +
+	"\x15ResendValidationEmail\x12!.acm.ResendValidationEmailRequest\x1a\r.common.Empty\x12A\n" +
+	"\x11RevokeAcmeAccount\x12\x1d.acm.RevokeAcmeAccountRequest\x1a\r.common.Empty\x12_\n" +
+	" RevokeAcmeExternalAccountBinding\x12,.acm.RevokeAcmeExternalAccountBindingRequest\x1a\r.common.Empty\x12R\n" +
 	"\x11RevokeCertificate\x12\x1d.acm.RevokeCertificateRequest\x1a\x1e.acm.RevokeCertificateResponse\x12U\n" +
-	"\x12SearchCertificates\x12\x1e.acm.SearchCertificatesRequest\x1a\x1f.acm.SearchCertificatesResponse\x12O\n" +
+	"\x12SearchCertificates\x12\x1e.acm.SearchCertificatesRequest\x1a\x1f.acm.SearchCertificatesResponse\x125\n" +
+	"\vTagResource\x12\x17.acm.TagResourceRequest\x1a\r.common.Empty\x129\n" +
+	"\rUntagResource\x12\x19.acm.UntagResourceRequest\x1a\r.common.Empty\x12S\n" +
+	"\x1aUpdateAcmeDomainValidation\x12&.acm.UpdateAcmeDomainValidationRequest\x1a\r.common.Empty\x12C\n" +
+	"\x12UpdateAcmeEndpoint\x12\x1e.acm.UpdateAcmeEndpointRequest\x1a\r.common.Empty\x12O\n" +
 	"\x18UpdateCertificateOptions\x12$.acm.UpdateCertificateOptionsRequest\x1a\r.common.EmptyB\"Z vorpalstacks/internal/pb/aws/acmb\x06proto3"
 
 var (
@@ -6256,248 +11283,447 @@ func file_acm_proto_rawDescGZIP() []byte {
 	return file_acm_proto_rawDescData
 }
 
-var file_acm_proto_enumTypes = make([]protoimpl.EnumInfo, 20)
-var file_acm_proto_msgTypes = make([]protoimpl.MessageInfo, 73)
+var file_acm_proto_enumTypes = make([]protoimpl.EnumInfo, 33)
+var file_acm_proto_msgTypes = make([]protoimpl.MessageInfo, 136)
 var file_acm_proto_goTypes = []any{
-	(CertificateExport)(0),                          // 0: acm.CertificateExport
-	(CertificateManagedBy)(0),                       // 1: acm.CertificateManagedBy
-	(CertificateStatus)(0),                          // 2: acm.CertificateStatus
-	(CertificateTransparencyLoggingPreference)(0),   // 3: acm.CertificateTransparencyLoggingPreference
-	(CertificateType)(0),                            // 4: acm.CertificateType
-	(ComparisonOperator)(0),                         // 5: acm.ComparisonOperator
-	(DomainStatus)(0),                               // 6: acm.DomainStatus
-	(ExtendedKeyUsageName)(0),                       // 7: acm.ExtendedKeyUsageName
-	(FailureReason)(0),                              // 8: acm.FailureReason
-	(KeyAlgorithm)(0),                               // 9: acm.KeyAlgorithm
-	(KeyUsageName)(0),                               // 10: acm.KeyUsageName
-	(RecordType)(0),                                 // 11: acm.RecordType
-	(RenewalEligibility)(0),                         // 12: acm.RenewalEligibility
-	(RenewalStatus)(0),                              // 13: acm.RenewalStatus
-	(RevocationReason)(0),                           // 14: acm.RevocationReason
-	(SearchCertificatesSortBy)(0),                   // 15: acm.SearchCertificatesSortBy
-	(SearchCertificatesSortOrder)(0),                // 16: acm.SearchCertificatesSortOrder
-	(SortBy)(0),                                     // 17: acm.SortBy
-	(SortOrder)(0),                                  // 18: acm.SortOrder
-	(ValidationMethod)(0),                           // 19: acm.ValidationMethod
-	(*AccessDeniedException)(nil),                   // 20: acm.AccessDeniedException
-	(*AcmCertificateMetadata)(nil),                  // 21: acm.AcmCertificateMetadata
-	(*AcmCertificateMetadataFilter)(nil),            // 22: acm.AcmCertificateMetadataFilter
-	(*AddTagsToCertificateRequest)(nil),             // 23: acm.AddTagsToCertificateRequest
-	(*CertificateDetail)(nil),                       // 24: acm.CertificateDetail
-	(*CertificateFilter)(nil),                       // 25: acm.CertificateFilter
-	(*CertificateFilterStatement)(nil),              // 26: acm.CertificateFilterStatement
-	(*CertificateMetadata)(nil),                     // 27: acm.CertificateMetadata
-	(*CertificateOptions)(nil),                      // 28: acm.CertificateOptions
-	(*CertificateSearchResult)(nil),                 // 29: acm.CertificateSearchResult
-	(*CertificateSummary)(nil),                      // 30: acm.CertificateSummary
-	(*CommonNameFilter)(nil),                        // 31: acm.CommonNameFilter
-	(*ConflictException)(nil),                       // 32: acm.ConflictException
-	(*CustomAttribute)(nil),                         // 33: acm.CustomAttribute
-	(*DeleteCertificateRequest)(nil),                // 34: acm.DeleteCertificateRequest
-	(*DescribeCertificateRequest)(nil),              // 35: acm.DescribeCertificateRequest
-	(*DescribeCertificateResponse)(nil),             // 36: acm.DescribeCertificateResponse
-	(*DistinguishedName)(nil),                       // 37: acm.DistinguishedName
-	(*DnsNameFilter)(nil),                           // 38: acm.DnsNameFilter
-	(*DomainValidation)(nil),                        // 39: acm.DomainValidation
-	(*DomainValidationOption)(nil),                  // 40: acm.DomainValidationOption
-	(*ExpiryEventsConfiguration)(nil),               // 41: acm.ExpiryEventsConfiguration
-	(*ExportCertificateRequest)(nil),                // 42: acm.ExportCertificateRequest
-	(*ExportCertificateResponse)(nil),               // 43: acm.ExportCertificateResponse
-	(*ExtendedKeyUsage)(nil),                        // 44: acm.ExtendedKeyUsage
-	(*Filters)(nil),                                 // 45: acm.Filters
-	(*GeneralName)(nil),                             // 46: acm.GeneralName
-	(*GetAccountConfigurationResponse)(nil),         // 47: acm.GetAccountConfigurationResponse
-	(*GetCertificateRequest)(nil),                   // 48: acm.GetCertificateRequest
-	(*GetCertificateResponse)(nil),                  // 49: acm.GetCertificateResponse
-	(*HttpRedirect)(nil),                            // 50: acm.HttpRedirect
-	(*ImportCertificateRequest)(nil),                // 51: acm.ImportCertificateRequest
-	(*ImportCertificateResponse)(nil),               // 52: acm.ImportCertificateResponse
-	(*InvalidArgsException)(nil),                    // 53: acm.InvalidArgsException
-	(*InvalidArnException)(nil),                     // 54: acm.InvalidArnException
-	(*InvalidDomainValidationOptionsException)(nil), // 55: acm.InvalidDomainValidationOptionsException
-	(*InvalidParameterException)(nil),               // 56: acm.InvalidParameterException
-	(*InvalidStateException)(nil),                   // 57: acm.InvalidStateException
-	(*InvalidTagException)(nil),                     // 58: acm.InvalidTagException
-	(*KeyUsage)(nil),                                // 59: acm.KeyUsage
-	(*LimitExceededException)(nil),                  // 60: acm.LimitExceededException
-	(*ListCertificatesRequest)(nil),                 // 61: acm.ListCertificatesRequest
-	(*ListCertificatesResponse)(nil),                // 62: acm.ListCertificatesResponse
-	(*ListTagsForCertificateRequest)(nil),           // 63: acm.ListTagsForCertificateRequest
-	(*ListTagsForCertificateResponse)(nil),          // 64: acm.ListTagsForCertificateResponse
-	(*OtherName)(nil),                               // 65: acm.OtherName
-	(*PutAccountConfigurationRequest)(nil),          // 66: acm.PutAccountConfigurationRequest
-	(*RemoveTagsFromCertificateRequest)(nil),        // 67: acm.RemoveTagsFromCertificateRequest
-	(*RenewCertificateRequest)(nil),                 // 68: acm.RenewCertificateRequest
-	(*RenewalSummary)(nil),                          // 69: acm.RenewalSummary
-	(*RequestCertificateRequest)(nil),               // 70: acm.RequestCertificateRequest
-	(*RequestCertificateResponse)(nil),              // 71: acm.RequestCertificateResponse
-	(*RequestInProgressException)(nil),              // 72: acm.RequestInProgressException
-	(*ResendValidationEmailRequest)(nil),            // 73: acm.ResendValidationEmailRequest
-	(*ResourceInUseException)(nil),                  // 74: acm.ResourceInUseException
-	(*ResourceNotFoundException)(nil),               // 75: acm.ResourceNotFoundException
-	(*ResourceRecord)(nil),                          // 76: acm.ResourceRecord
-	(*RevokeCertificateRequest)(nil),                // 77: acm.RevokeCertificateRequest
-	(*RevokeCertificateResponse)(nil),               // 78: acm.RevokeCertificateResponse
-	(*SearchCertificatesRequest)(nil),               // 79: acm.SearchCertificatesRequest
-	(*SearchCertificatesResponse)(nil),              // 80: acm.SearchCertificatesResponse
-	(*SubjectAlternativeNameFilter)(nil),            // 81: acm.SubjectAlternativeNameFilter
-	(*SubjectFilter)(nil),                           // 82: acm.SubjectFilter
-	(*Tag)(nil),                                     // 83: acm.Tag
-	(*TagPolicyException)(nil),                      // 84: acm.TagPolicyException
-	(*ThrottlingException)(nil),                     // 85: acm.ThrottlingException
-	(*ThrottlingReason)(nil),                        // 86: acm.ThrottlingReason
-	(*TimestampRange)(nil),                          // 87: acm.TimestampRange
-	(*TooManyTagsException)(nil),                    // 88: acm.TooManyTagsException
-	(*UpdateCertificateOptionsRequest)(nil),         // 89: acm.UpdateCertificateOptionsRequest
-	(*ValidationException)(nil),                     // 90: acm.ValidationException
-	(*X509AttributeFilter)(nil),                     // 91: acm.X509AttributeFilter
-	(*X509Attributes)(nil),                          // 92: acm.X509Attributes
-	(*common.Empty)(nil),                            // 93: common.Empty
+	(AcmeAccountStatus)(0),                                   // 0: acm.AcmeAccountStatus
+	(AcmeAuthorizationBehavior)(0),                           // 1: acm.AcmeAuthorizationBehavior
+	(AcmeContact)(0),                                         // 2: acm.AcmeContact
+	(AcmeDomainValidationFailureReason)(0),                   // 3: acm.AcmeDomainValidationFailureReason
+	(AcmeDomainValidationStatus)(0),                          // 4: acm.AcmeDomainValidationStatus
+	(AcmeEndpointStatus)(0),                                  // 5: acm.AcmeEndpointStatus
+	(CertificateExport)(0),                                   // 6: acm.CertificateExport
+	(CertificateKeyPairOrigin)(0),                            // 7: acm.CertificateKeyPairOrigin
+	(CertificateManagedBy)(0),                                // 8: acm.CertificateManagedBy
+	(CertificateStatus)(0),                                   // 9: acm.CertificateStatus
+	(CertificateTransparencyLoggingPreference)(0),            // 10: acm.CertificateTransparencyLoggingPreference
+	(CertificateType)(0),                                     // 11: acm.CertificateType
+	(ComparisonOperator)(0),                                  // 12: acm.ComparisonOperator
+	(DomainScopeOption)(0),                                   // 13: acm.DomainScopeOption
+	(DomainStatus)(0),                                        // 14: acm.DomainStatus
+	(ExtendedKeyUsageName)(0),                                // 15: acm.ExtendedKeyUsageName
+	(FailureReason)(0),                                       // 16: acm.FailureReason
+	(KeyAlgorithm)(0),                                        // 17: acm.KeyAlgorithm
+	(KeyUsageName)(0),                                        // 18: acm.KeyUsageName
+	(PrevalidationType)(0),                                   // 19: acm.PrevalidationType
+	(PublicKeyAlgorithm)(0),                                  // 20: acm.PublicKeyAlgorithm
+	(RecordType)(0),                                          // 21: acm.RecordType
+	(RenewalEligibility)(0),                                  // 22: acm.RenewalEligibility
+	(RenewalStatus)(0),                                       // 23: acm.RenewalStatus
+	(RevocationReason)(0),                                    // 24: acm.RevocationReason
+	(SearchCertificatesSortBy)(0),                            // 25: acm.SearchCertificatesSortBy
+	(SearchCertificatesSortOrder)(0),                         // 26: acm.SearchCertificatesSortOrder
+	(SortBy)(0),                                              // 27: acm.SortBy
+	(SortOrder)(0),                                           // 28: acm.SortOrder
+	(TimeType)(0),                                            // 29: acm.TimeType
+	(UpdateStatus)(0),                                        // 30: acm.UpdateStatus
+	(UpdateType)(0),                                          // 31: acm.UpdateType
+	(ValidationMethod)(0),                                    // 32: acm.ValidationMethod
+	(*AccessDeniedException)(nil),                            // 33: acm.AccessDeniedException
+	(*AcmCertificateMetadata)(nil),                           // 34: acm.AcmCertificateMetadata
+	(*AcmCertificateMetadataFilter)(nil),                     // 35: acm.AcmCertificateMetadataFilter
+	(*AcmeAccount)(nil),                                      // 36: acm.AcmeAccount
+	(*AcmeAccountSummary)(nil),                               // 37: acm.AcmeAccountSummary
+	(*AcmeDomainValidation)(nil),                             // 38: acm.AcmeDomainValidation
+	(*AcmeDomainValidationSummary)(nil),                      // 39: acm.AcmeDomainValidationSummary
+	(*AcmeEndpoint)(nil),                                     // 40: acm.AcmeEndpoint
+	(*AcmeEndpointSummary)(nil),                              // 41: acm.AcmeEndpointSummary
+	(*AcmeExternalAccountBinding)(nil),                       // 42: acm.AcmeExternalAccountBinding
+	(*AcmeExternalAccountBindingSummary)(nil),                // 43: acm.AcmeExternalAccountBindingSummary
+	(*AddTagsToCertificateRequest)(nil),                      // 44: acm.AddTagsToCertificateRequest
+	(*CertificateAuthority)(nil),                             // 45: acm.CertificateAuthority
+	(*CertificateDetail)(nil),                                // 46: acm.CertificateDetail
+	(*CertificateFilter)(nil),                                // 47: acm.CertificateFilter
+	(*CertificateFilterStatement)(nil),                       // 48: acm.CertificateFilterStatement
+	(*CertificateMetadata)(nil),                              // 49: acm.CertificateMetadata
+	(*CertificateOptions)(nil),                               // 50: acm.CertificateOptions
+	(*CertificateSearchResult)(nil),                          // 51: acm.CertificateSearchResult
+	(*CertificateSummary)(nil),                               // 52: acm.CertificateSummary
+	(*CommonNameFilter)(nil),                                 // 53: acm.CommonNameFilter
+	(*ConflictException)(nil),                                // 54: acm.ConflictException
+	(*CreateAcmeDomainValidationRequest)(nil),                // 55: acm.CreateAcmeDomainValidationRequest
+	(*CreateAcmeDomainValidationResponse)(nil),               // 56: acm.CreateAcmeDomainValidationResponse
+	(*CreateAcmeEndpointRequest)(nil),                        // 57: acm.CreateAcmeEndpointRequest
+	(*CreateAcmeEndpointResponse)(nil),                       // 58: acm.CreateAcmeEndpointResponse
+	(*CreateAcmeExternalAccountBindingRequest)(nil),          // 59: acm.CreateAcmeExternalAccountBindingRequest
+	(*CreateAcmeExternalAccountBindingResponse)(nil),         // 60: acm.CreateAcmeExternalAccountBindingResponse
+	(*CustomAttribute)(nil),                                  // 61: acm.CustomAttribute
+	(*DeleteAcmeDomainValidationRequest)(nil),                // 62: acm.DeleteAcmeDomainValidationRequest
+	(*DeleteAcmeEndpointRequest)(nil),                        // 63: acm.DeleteAcmeEndpointRequest
+	(*DeleteAcmeExternalAccountBindingRequest)(nil),          // 64: acm.DeleteAcmeExternalAccountBindingRequest
+	(*DeleteCertificateRequest)(nil),                         // 65: acm.DeleteCertificateRequest
+	(*DescribeAcmeAccountRequest)(nil),                       // 66: acm.DescribeAcmeAccountRequest
+	(*DescribeAcmeAccountResponse)(nil),                      // 67: acm.DescribeAcmeAccountResponse
+	(*DescribeAcmeDomainValidationRequest)(nil),              // 68: acm.DescribeAcmeDomainValidationRequest
+	(*DescribeAcmeDomainValidationResponse)(nil),             // 69: acm.DescribeAcmeDomainValidationResponse
+	(*DescribeAcmeEndpointRequest)(nil),                      // 70: acm.DescribeAcmeEndpointRequest
+	(*DescribeAcmeEndpointResponse)(nil),                     // 71: acm.DescribeAcmeEndpointResponse
+	(*DescribeAcmeExternalAccountBindingRequest)(nil),        // 72: acm.DescribeAcmeExternalAccountBindingRequest
+	(*DescribeAcmeExternalAccountBindingResponse)(nil),       // 73: acm.DescribeAcmeExternalAccountBindingResponse
+	(*DescribeCertificateRequest)(nil),                       // 74: acm.DescribeCertificateRequest
+	(*DescribeCertificateResponse)(nil),                      // 75: acm.DescribeCertificateResponse
+	(*DistinguishedName)(nil),                                // 76: acm.DistinguishedName
+	(*DnsNameFilter)(nil),                                    // 77: acm.DnsNameFilter
+	(*DnsPrevalidationDetails)(nil),                          // 78: acm.DnsPrevalidationDetails
+	(*DnsPrevalidationOptions)(nil),                          // 79: acm.DnsPrevalidationOptions
+	(*DnsValidationChallenge)(nil),                           // 80: acm.DnsValidationChallenge
+	(*DomainScope)(nil),                                      // 81: acm.DomainScope
+	(*DomainValidation)(nil),                                 // 82: acm.DomainValidation
+	(*DomainValidationMethodUpdateSummary)(nil),              // 83: acm.DomainValidationMethodUpdateSummary
+	(*DomainValidationOption)(nil),                           // 84: acm.DomainValidationOption
+	(*DomainValidationSummary)(nil),                          // 85: acm.DomainValidationSummary
+	(*EmailValidationChallenge)(nil),                         // 86: acm.EmailValidationChallenge
+	(*Expiration)(nil),                                       // 87: acm.Expiration
+	(*ExpiryEventsConfiguration)(nil),                        // 88: acm.ExpiryEventsConfiguration
+	(*ExportCertificateRequest)(nil),                         // 89: acm.ExportCertificateRequest
+	(*ExportCertificateResponse)(nil),                        // 90: acm.ExportCertificateResponse
+	(*ExtendedKeyUsage)(nil),                                 // 91: acm.ExtendedKeyUsage
+	(*FailureDetails)(nil),                                   // 92: acm.FailureDetails
+	(*Filters)(nil),                                          // 93: acm.Filters
+	(*GeneralName)(nil),                                      // 94: acm.GeneralName
+	(*GetAccountConfigurationResponse)(nil),                  // 95: acm.GetAccountConfigurationResponse
+	(*GetAcmeExternalAccountBindingCredentialsRequest)(nil),  // 96: acm.GetAcmeExternalAccountBindingCredentialsRequest
+	(*GetAcmeExternalAccountBindingCredentialsResponse)(nil), // 97: acm.GetAcmeExternalAccountBindingCredentialsResponse
+	(*GetCertificateRequest)(nil),                            // 98: acm.GetCertificateRequest
+	(*GetCertificateResponse)(nil),                           // 99: acm.GetCertificateResponse
+	(*HttpRedirect)(nil),                                     // 100: acm.HttpRedirect
+	(*ImportCertificateRequest)(nil),                         // 101: acm.ImportCertificateRequest
+	(*ImportCertificateResponse)(nil),                        // 102: acm.ImportCertificateResponse
+	(*InternalServerException)(nil),                          // 103: acm.InternalServerException
+	(*InvalidArgsException)(nil),                             // 104: acm.InvalidArgsException
+	(*InvalidArnException)(nil),                              // 105: acm.InvalidArnException
+	(*InvalidDomainValidationOptionsException)(nil),          // 106: acm.InvalidDomainValidationOptionsException
+	(*InvalidParameterException)(nil),                        // 107: acm.InvalidParameterException
+	(*InvalidStateException)(nil),                            // 108: acm.InvalidStateException
+	(*InvalidTagException)(nil),                              // 109: acm.InvalidTagException
+	(*KeyUsage)(nil),                                         // 110: acm.KeyUsage
+	(*LimitExceededException)(nil),                           // 111: acm.LimitExceededException
+	(*ListAcmeAccountsRequest)(nil),                          // 112: acm.ListAcmeAccountsRequest
+	(*ListAcmeAccountsResponse)(nil),                         // 113: acm.ListAcmeAccountsResponse
+	(*ListAcmeDomainValidationsRequest)(nil),                 // 114: acm.ListAcmeDomainValidationsRequest
+	(*ListAcmeDomainValidationsResponse)(nil),                // 115: acm.ListAcmeDomainValidationsResponse
+	(*ListAcmeEndpointsRequest)(nil),                         // 116: acm.ListAcmeEndpointsRequest
+	(*ListAcmeEndpointsResponse)(nil),                        // 117: acm.ListAcmeEndpointsResponse
+	(*ListAcmeExternalAccountBindingsRequest)(nil),           // 118: acm.ListAcmeExternalAccountBindingsRequest
+	(*ListAcmeExternalAccountBindingsResponse)(nil),          // 119: acm.ListAcmeExternalAccountBindingsResponse
+	(*ListCertificateDomainValidationsRequest)(nil),          // 120: acm.ListCertificateDomainValidationsRequest
+	(*ListCertificateDomainValidationsResponse)(nil),         // 121: acm.ListCertificateDomainValidationsResponse
+	(*ListCertificatesRequest)(nil),                          // 122: acm.ListCertificatesRequest
+	(*ListCertificatesResponse)(nil),                         // 123: acm.ListCertificatesResponse
+	(*ListTagsForCertificateRequest)(nil),                    // 124: acm.ListTagsForCertificateRequest
+	(*ListTagsForCertificateResponse)(nil),                   // 125: acm.ListTagsForCertificateResponse
+	(*ListTagsForResourceRequest)(nil),                       // 126: acm.ListTagsForResourceRequest
+	(*ListTagsForResourceResponse)(nil),                      // 127: acm.ListTagsForResourceResponse
+	(*OtherName)(nil),                                        // 128: acm.OtherName
+	(*PrevalidationDetails)(nil),                             // 129: acm.PrevalidationDetails
+	(*PrevalidationOptions)(nil),                             // 130: acm.PrevalidationOptions
+	(*PublicCertificateAuthority)(nil),                       // 131: acm.PublicCertificateAuthority
+	(*PutAccountConfigurationRequest)(nil),                   // 132: acm.PutAccountConfigurationRequest
+	(*RemoveTagsFromCertificateRequest)(nil),                 // 133: acm.RemoveTagsFromCertificateRequest
+	(*RenewCertificateRequest)(nil),                          // 134: acm.RenewCertificateRequest
+	(*RenewalSummary)(nil),                                   // 135: acm.RenewalSummary
+	(*RequestCertificateRequest)(nil),                        // 136: acm.RequestCertificateRequest
+	(*RequestCertificateResponse)(nil),                       // 137: acm.RequestCertificateResponse
+	(*RequestInProgressException)(nil),                       // 138: acm.RequestInProgressException
+	(*ResendValidationEmailRequest)(nil),                     // 139: acm.ResendValidationEmailRequest
+	(*ResourceInUseException)(nil),                           // 140: acm.ResourceInUseException
+	(*ResourceNotFoundException)(nil),                        // 141: acm.ResourceNotFoundException
+	(*ResourceRecord)(nil),                                   // 142: acm.ResourceRecord
+	(*RevokeAcmeAccountRequest)(nil),                         // 143: acm.RevokeAcmeAccountRequest
+	(*RevokeAcmeExternalAccountBindingRequest)(nil),          // 144: acm.RevokeAcmeExternalAccountBindingRequest
+	(*RevokeCertificateRequest)(nil),                         // 145: acm.RevokeCertificateRequest
+	(*RevokeCertificateResponse)(nil),                        // 146: acm.RevokeCertificateResponse
+	(*SearchCertificatesRequest)(nil),                        // 147: acm.SearchCertificatesRequest
+	(*SearchCertificatesResponse)(nil),                       // 148: acm.SearchCertificatesResponse
+	(*ServiceQuotaExceededException)(nil),                    // 149: acm.ServiceQuotaExceededException
+	(*SubjectAlternativeNameFilter)(nil),                     // 150: acm.SubjectAlternativeNameFilter
+	(*SubjectFilter)(nil),                                    // 151: acm.SubjectFilter
+	(*Tag)(nil),                                              // 152: acm.Tag
+	(*TagPolicyException)(nil),                               // 153: acm.TagPolicyException
+	(*TagResourceRequest)(nil),                               // 154: acm.TagResourceRequest
+	(*ThrottlingException)(nil),                              // 155: acm.ThrottlingException
+	(*ThrottlingReason)(nil),                                 // 156: acm.ThrottlingReason
+	(*TimestampRange)(nil),                                   // 157: acm.TimestampRange
+	(*TooManyTagsException)(nil),                             // 158: acm.TooManyTagsException
+	(*UntagResourceRequest)(nil),                             // 159: acm.UntagResourceRequest
+	(*UpdateAcmeDomainValidationRequest)(nil),                // 160: acm.UpdateAcmeDomainValidationRequest
+	(*UpdateAcmeEndpointRequest)(nil),                        // 161: acm.UpdateAcmeEndpointRequest
+	(*UpdateCertificateOptionsRequest)(nil),                  // 162: acm.UpdateCertificateOptionsRequest
+	(*UpdateSummary)(nil),                                    // 163: acm.UpdateSummary
+	(*ValidationChallenge)(nil),                              // 164: acm.ValidationChallenge
+	(*ValidationConfiguration)(nil),                          // 165: acm.ValidationConfiguration
+	(*ValidationException)(nil),                              // 166: acm.ValidationException
+	(*X509AttributeFilter)(nil),                              // 167: acm.X509AttributeFilter
+	(*X509Attributes)(nil),                                   // 168: acm.X509Attributes
+	(*common.Empty)(nil),                                     // 169: common.Empty
 }
 var file_acm_proto_depIdxs = []int32{
-	0,   // 0: acm.AcmCertificateMetadata.exportoption:type_name -> acm.CertificateExport
-	1,   // 1: acm.AcmCertificateMetadata.managedby:type_name -> acm.CertificateManagedBy
-	12,  // 2: acm.AcmCertificateMetadata.renewaleligibility:type_name -> acm.RenewalEligibility
-	13,  // 3: acm.AcmCertificateMetadata.renewalstatus:type_name -> acm.RenewalStatus
-	2,   // 4: acm.AcmCertificateMetadata.status:type_name -> acm.CertificateStatus
-	4,   // 5: acm.AcmCertificateMetadata.type:type_name -> acm.CertificateType
-	19,  // 6: acm.AcmCertificateMetadata.validationmethod:type_name -> acm.ValidationMethod
-	0,   // 7: acm.AcmCertificateMetadataFilter.exportoption:type_name -> acm.CertificateExport
-	1,   // 8: acm.AcmCertificateMetadataFilter.managedby:type_name -> acm.CertificateManagedBy
-	13,  // 9: acm.AcmCertificateMetadataFilter.renewalstatus:type_name -> acm.RenewalStatus
-	2,   // 10: acm.AcmCertificateMetadataFilter.status:type_name -> acm.CertificateStatus
-	4,   // 11: acm.AcmCertificateMetadataFilter.type:type_name -> acm.CertificateType
-	19,  // 12: acm.AcmCertificateMetadataFilter.validationmethod:type_name -> acm.ValidationMethod
-	83,  // 13: acm.AddTagsToCertificateRequest.tags:type_name -> acm.Tag
-	39,  // 14: acm.CertificateDetail.domainvalidationoptions:type_name -> acm.DomainValidation
-	44,  // 15: acm.CertificateDetail.extendedkeyusages:type_name -> acm.ExtendedKeyUsage
-	8,   // 16: acm.CertificateDetail.failurereason:type_name -> acm.FailureReason
-	9,   // 17: acm.CertificateDetail.keyalgorithm:type_name -> acm.KeyAlgorithm
-	59,  // 18: acm.CertificateDetail.keyusages:type_name -> acm.KeyUsage
-	1,   // 19: acm.CertificateDetail.managedby:type_name -> acm.CertificateManagedBy
-	28,  // 20: acm.CertificateDetail.options:type_name -> acm.CertificateOptions
-	12,  // 21: acm.CertificateDetail.renewaleligibility:type_name -> acm.RenewalEligibility
-	69,  // 22: acm.CertificateDetail.renewalsummary:type_name -> acm.RenewalSummary
-	14,  // 23: acm.CertificateDetail.revocationreason:type_name -> acm.RevocationReason
-	2,   // 24: acm.CertificateDetail.status:type_name -> acm.CertificateStatus
-	4,   // 25: acm.CertificateDetail.type:type_name -> acm.CertificateType
-	22,  // 26: acm.CertificateFilter.acmcertificatemetadatafilter:type_name -> acm.AcmCertificateMetadataFilter
-	91,  // 27: acm.CertificateFilter.x509attributefilter:type_name -> acm.X509AttributeFilter
-	26,  // 28: acm.CertificateFilterStatement.and:type_name -> acm.CertificateFilterStatement
-	25,  // 29: acm.CertificateFilterStatement.filter:type_name -> acm.CertificateFilter
-	26,  // 30: acm.CertificateFilterStatement.not:type_name -> acm.CertificateFilterStatement
-	26,  // 31: acm.CertificateFilterStatement.or:type_name -> acm.CertificateFilterStatement
-	21,  // 32: acm.CertificateMetadata.acmcertificatemetadata:type_name -> acm.AcmCertificateMetadata
-	3,   // 33: acm.CertificateOptions.certificatetransparencyloggingpreference:type_name -> acm.CertificateTransparencyLoggingPreference
-	0,   // 34: acm.CertificateOptions.export:type_name -> acm.CertificateExport
-	27,  // 35: acm.CertificateSearchResult.certificatemetadata:type_name -> acm.CertificateMetadata
-	92,  // 36: acm.CertificateSearchResult.x509attributes:type_name -> acm.X509Attributes
-	0,   // 37: acm.CertificateSummary.exportoption:type_name -> acm.CertificateExport
-	7,   // 38: acm.CertificateSummary.extendedkeyusages:type_name -> acm.ExtendedKeyUsageName
-	9,   // 39: acm.CertificateSummary.keyalgorithm:type_name -> acm.KeyAlgorithm
-	10,  // 40: acm.CertificateSummary.keyusages:type_name -> acm.KeyUsageName
-	1,   // 41: acm.CertificateSummary.managedby:type_name -> acm.CertificateManagedBy
-	12,  // 42: acm.CertificateSummary.renewaleligibility:type_name -> acm.RenewalEligibility
-	2,   // 43: acm.CertificateSummary.status:type_name -> acm.CertificateStatus
-	4,   // 44: acm.CertificateSummary.type:type_name -> acm.CertificateType
-	5,   // 45: acm.CommonNameFilter.comparisonoperator:type_name -> acm.ComparisonOperator
-	24,  // 46: acm.DescribeCertificateResponse.certificate:type_name -> acm.CertificateDetail
-	33,  // 47: acm.DistinguishedName.customattributes:type_name -> acm.CustomAttribute
-	5,   // 48: acm.DnsNameFilter.comparisonoperator:type_name -> acm.ComparisonOperator
-	50,  // 49: acm.DomainValidation.httpredirect:type_name -> acm.HttpRedirect
-	76,  // 50: acm.DomainValidation.resourcerecord:type_name -> acm.ResourceRecord
-	19,  // 51: acm.DomainValidation.validationmethod:type_name -> acm.ValidationMethod
-	6,   // 52: acm.DomainValidation.validationstatus:type_name -> acm.DomainStatus
-	7,   // 53: acm.ExtendedKeyUsage.name:type_name -> acm.ExtendedKeyUsageName
-	0,   // 54: acm.Filters.exportoption:type_name -> acm.CertificateExport
-	7,   // 55: acm.Filters.extendedkeyusage:type_name -> acm.ExtendedKeyUsageName
-	9,   // 56: acm.Filters.keytypes:type_name -> acm.KeyAlgorithm
-	10,  // 57: acm.Filters.keyusage:type_name -> acm.KeyUsageName
-	1,   // 58: acm.Filters.managedby:type_name -> acm.CertificateManagedBy
-	37,  // 59: acm.GeneralName.directoryname:type_name -> acm.DistinguishedName
-	65,  // 60: acm.GeneralName.othername:type_name -> acm.OtherName
-	41,  // 61: acm.GetAccountConfigurationResponse.expiryevents:type_name -> acm.ExpiryEventsConfiguration
-	83,  // 62: acm.ImportCertificateRequest.tags:type_name -> acm.Tag
-	10,  // 63: acm.KeyUsage.name:type_name -> acm.KeyUsageName
-	2,   // 64: acm.ListCertificatesRequest.certificatestatuses:type_name -> acm.CertificateStatus
-	45,  // 65: acm.ListCertificatesRequest.includes:type_name -> acm.Filters
-	17,  // 66: acm.ListCertificatesRequest.sortby:type_name -> acm.SortBy
-	18,  // 67: acm.ListCertificatesRequest.sortorder:type_name -> acm.SortOrder
-	30,  // 68: acm.ListCertificatesResponse.certificatesummarylist:type_name -> acm.CertificateSummary
-	83,  // 69: acm.ListTagsForCertificateResponse.tags:type_name -> acm.Tag
-	41,  // 70: acm.PutAccountConfigurationRequest.expiryevents:type_name -> acm.ExpiryEventsConfiguration
-	83,  // 71: acm.RemoveTagsFromCertificateRequest.tags:type_name -> acm.Tag
-	39,  // 72: acm.RenewalSummary.domainvalidationoptions:type_name -> acm.DomainValidation
-	13,  // 73: acm.RenewalSummary.renewalstatus:type_name -> acm.RenewalStatus
-	8,   // 74: acm.RenewalSummary.renewalstatusreason:type_name -> acm.FailureReason
-	40,  // 75: acm.RequestCertificateRequest.domainvalidationoptions:type_name -> acm.DomainValidationOption
-	9,   // 76: acm.RequestCertificateRequest.keyalgorithm:type_name -> acm.KeyAlgorithm
-	1,   // 77: acm.RequestCertificateRequest.managedby:type_name -> acm.CertificateManagedBy
-	28,  // 78: acm.RequestCertificateRequest.options:type_name -> acm.CertificateOptions
-	83,  // 79: acm.RequestCertificateRequest.tags:type_name -> acm.Tag
-	19,  // 80: acm.RequestCertificateRequest.validationmethod:type_name -> acm.ValidationMethod
-	11,  // 81: acm.ResourceRecord.type:type_name -> acm.RecordType
-	14,  // 82: acm.RevokeCertificateRequest.revocationreason:type_name -> acm.RevocationReason
-	26,  // 83: acm.SearchCertificatesRequest.filterstatement:type_name -> acm.CertificateFilterStatement
-	15,  // 84: acm.SearchCertificatesRequest.sortby:type_name -> acm.SearchCertificatesSortBy
-	16,  // 85: acm.SearchCertificatesRequest.sortorder:type_name -> acm.SearchCertificatesSortOrder
-	29,  // 86: acm.SearchCertificatesResponse.results:type_name -> acm.CertificateSearchResult
-	38,  // 87: acm.SubjectAlternativeNameFilter.dnsname:type_name -> acm.DnsNameFilter
-	31,  // 88: acm.SubjectFilter.commonname:type_name -> acm.CommonNameFilter
-	86,  // 89: acm.ThrottlingException.throttlingreasons:type_name -> acm.ThrottlingReason
-	28,  // 90: acm.UpdateCertificateOptionsRequest.options:type_name -> acm.CertificateOptions
-	7,   // 91: acm.X509AttributeFilter.extendedkeyusage:type_name -> acm.ExtendedKeyUsageName
-	9,   // 92: acm.X509AttributeFilter.keyalgorithm:type_name -> acm.KeyAlgorithm
-	10,  // 93: acm.X509AttributeFilter.keyusage:type_name -> acm.KeyUsageName
-	87,  // 94: acm.X509AttributeFilter.notafter:type_name -> acm.TimestampRange
-	87,  // 95: acm.X509AttributeFilter.notbefore:type_name -> acm.TimestampRange
-	82,  // 96: acm.X509AttributeFilter.subject:type_name -> acm.SubjectFilter
-	81,  // 97: acm.X509AttributeFilter.subjectalternativename:type_name -> acm.SubjectAlternativeNameFilter
-	7,   // 98: acm.X509Attributes.extendedkeyusages:type_name -> acm.ExtendedKeyUsageName
-	37,  // 99: acm.X509Attributes.issuer:type_name -> acm.DistinguishedName
-	9,   // 100: acm.X509Attributes.keyalgorithm:type_name -> acm.KeyAlgorithm
-	10,  // 101: acm.X509Attributes.keyusages:type_name -> acm.KeyUsageName
-	37,  // 102: acm.X509Attributes.subject:type_name -> acm.DistinguishedName
-	46,  // 103: acm.X509Attributes.subjectalternativenames:type_name -> acm.GeneralName
-	23,  // 104: acm.ACMService.AddTagsToCertificate:input_type -> acm.AddTagsToCertificateRequest
-	34,  // 105: acm.ACMService.DeleteCertificate:input_type -> acm.DeleteCertificateRequest
-	35,  // 106: acm.ACMService.DescribeCertificate:input_type -> acm.DescribeCertificateRequest
-	42,  // 107: acm.ACMService.ExportCertificate:input_type -> acm.ExportCertificateRequest
-	93,  // 108: acm.ACMService.GetAccountConfiguration:input_type -> common.Empty
-	48,  // 109: acm.ACMService.GetCertificate:input_type -> acm.GetCertificateRequest
-	51,  // 110: acm.ACMService.ImportCertificate:input_type -> acm.ImportCertificateRequest
-	61,  // 111: acm.ACMService.ListCertificates:input_type -> acm.ListCertificatesRequest
-	63,  // 112: acm.ACMService.ListTagsForCertificate:input_type -> acm.ListTagsForCertificateRequest
-	66,  // 113: acm.ACMService.PutAccountConfiguration:input_type -> acm.PutAccountConfigurationRequest
-	67,  // 114: acm.ACMService.RemoveTagsFromCertificate:input_type -> acm.RemoveTagsFromCertificateRequest
-	68,  // 115: acm.ACMService.RenewCertificate:input_type -> acm.RenewCertificateRequest
-	70,  // 116: acm.ACMService.RequestCertificate:input_type -> acm.RequestCertificateRequest
-	73,  // 117: acm.ACMService.ResendValidationEmail:input_type -> acm.ResendValidationEmailRequest
-	77,  // 118: acm.ACMService.RevokeCertificate:input_type -> acm.RevokeCertificateRequest
-	79,  // 119: acm.ACMService.SearchCertificates:input_type -> acm.SearchCertificatesRequest
-	89,  // 120: acm.ACMService.UpdateCertificateOptions:input_type -> acm.UpdateCertificateOptionsRequest
-	93,  // 121: acm.ACMService.AddTagsToCertificate:output_type -> common.Empty
-	93,  // 122: acm.ACMService.DeleteCertificate:output_type -> common.Empty
-	36,  // 123: acm.ACMService.DescribeCertificate:output_type -> acm.DescribeCertificateResponse
-	43,  // 124: acm.ACMService.ExportCertificate:output_type -> acm.ExportCertificateResponse
-	47,  // 125: acm.ACMService.GetAccountConfiguration:output_type -> acm.GetAccountConfigurationResponse
-	49,  // 126: acm.ACMService.GetCertificate:output_type -> acm.GetCertificateResponse
-	52,  // 127: acm.ACMService.ImportCertificate:output_type -> acm.ImportCertificateResponse
-	62,  // 128: acm.ACMService.ListCertificates:output_type -> acm.ListCertificatesResponse
-	64,  // 129: acm.ACMService.ListTagsForCertificate:output_type -> acm.ListTagsForCertificateResponse
-	93,  // 130: acm.ACMService.PutAccountConfiguration:output_type -> common.Empty
-	93,  // 131: acm.ACMService.RemoveTagsFromCertificate:output_type -> common.Empty
-	93,  // 132: acm.ACMService.RenewCertificate:output_type -> common.Empty
-	71,  // 133: acm.ACMService.RequestCertificate:output_type -> acm.RequestCertificateResponse
-	93,  // 134: acm.ACMService.ResendValidationEmail:output_type -> common.Empty
-	78,  // 135: acm.ACMService.RevokeCertificate:output_type -> acm.RevokeCertificateResponse
-	80,  // 136: acm.ACMService.SearchCertificates:output_type -> acm.SearchCertificatesResponse
-	93,  // 137: acm.ACMService.UpdateCertificateOptions:output_type -> common.Empty
-	121, // [121:138] is the sub-list for method output_type
-	104, // [104:121] is the sub-list for method input_type
-	104, // [104:104] is the sub-list for extension type_name
-	104, // [104:104] is the sub-list for extension extendee
-	0,   // [0:104] is the sub-list for field type_name
+	7,   // 0: acm.AcmCertificateMetadata.certificatekeypairorigin:type_name -> acm.CertificateKeyPairOrigin
+	6,   // 1: acm.AcmCertificateMetadata.exportoption:type_name -> acm.CertificateExport
+	8,   // 2: acm.AcmCertificateMetadata.managedby:type_name -> acm.CertificateManagedBy
+	22,  // 3: acm.AcmCertificateMetadata.renewaleligibility:type_name -> acm.RenewalEligibility
+	23,  // 4: acm.AcmCertificateMetadata.renewalstatus:type_name -> acm.RenewalStatus
+	9,   // 5: acm.AcmCertificateMetadata.status:type_name -> acm.CertificateStatus
+	11,  // 6: acm.AcmCertificateMetadata.type:type_name -> acm.CertificateType
+	32,  // 7: acm.AcmCertificateMetadata.validationmethod:type_name -> acm.ValidationMethod
+	7,   // 8: acm.AcmCertificateMetadataFilter.certificatekeypairorigin:type_name -> acm.CertificateKeyPairOrigin
+	6,   // 9: acm.AcmCertificateMetadataFilter.exportoption:type_name -> acm.CertificateExport
+	8,   // 10: acm.AcmCertificateMetadataFilter.managedby:type_name -> acm.CertificateManagedBy
+	23,  // 11: acm.AcmCertificateMetadataFilter.renewalstatus:type_name -> acm.RenewalStatus
+	9,   // 12: acm.AcmCertificateMetadataFilter.status:type_name -> acm.CertificateStatus
+	11,  // 13: acm.AcmCertificateMetadataFilter.type:type_name -> acm.CertificateType
+	32,  // 14: acm.AcmCertificateMetadataFilter.validationmethod:type_name -> acm.ValidationMethod
+	0,   // 15: acm.AcmeAccount.status:type_name -> acm.AcmeAccountStatus
+	0,   // 16: acm.AcmeAccountSummary.status:type_name -> acm.AcmeAccountStatus
+	92,  // 17: acm.AcmeDomainValidation.failuredetails:type_name -> acm.FailureDetails
+	129, // 18: acm.AcmeDomainValidation.prevalidationdetails:type_name -> acm.PrevalidationDetails
+	19,  // 19: acm.AcmeDomainValidation.prevalidationtype:type_name -> acm.PrevalidationType
+	4,   // 20: acm.AcmeDomainValidation.status:type_name -> acm.AcmeDomainValidationStatus
+	92,  // 21: acm.AcmeDomainValidationSummary.failuredetails:type_name -> acm.FailureDetails
+	129, // 22: acm.AcmeDomainValidationSummary.prevalidationdetails:type_name -> acm.PrevalidationDetails
+	19,  // 23: acm.AcmeDomainValidationSummary.prevalidationtype:type_name -> acm.PrevalidationType
+	4,   // 24: acm.AcmeDomainValidationSummary.status:type_name -> acm.AcmeDomainValidationStatus
+	1,   // 25: acm.AcmeEndpoint.authorizationbehavior:type_name -> acm.AcmeAuthorizationBehavior
+	45,  // 26: acm.AcmeEndpoint.certificateauthority:type_name -> acm.CertificateAuthority
+	152, // 27: acm.AcmeEndpoint.certificatetags:type_name -> acm.Tag
+	2,   // 28: acm.AcmeEndpoint.contact:type_name -> acm.AcmeContact
+	5,   // 29: acm.AcmeEndpoint.status:type_name -> acm.AcmeEndpointStatus
+	1,   // 30: acm.AcmeEndpointSummary.authorizationbehavior:type_name -> acm.AcmeAuthorizationBehavior
+	45,  // 31: acm.AcmeEndpointSummary.certificateauthority:type_name -> acm.CertificateAuthority
+	152, // 32: acm.AcmeEndpointSummary.certificatetags:type_name -> acm.Tag
+	2,   // 33: acm.AcmeEndpointSummary.contact:type_name -> acm.AcmeContact
+	5,   // 34: acm.AcmeEndpointSummary.status:type_name -> acm.AcmeEndpointStatus
+	152, // 35: acm.AddTagsToCertificateRequest.tags:type_name -> acm.Tag
+	131, // 36: acm.CertificateAuthority.publiccertificateauthority:type_name -> acm.PublicCertificateAuthority
+	7,   // 37: acm.CertificateDetail.certificatekeypairorigin:type_name -> acm.CertificateKeyPairOrigin
+	82,  // 38: acm.CertificateDetail.domainvalidationoptions:type_name -> acm.DomainValidation
+	91,  // 39: acm.CertificateDetail.extendedkeyusages:type_name -> acm.ExtendedKeyUsage
+	16,  // 40: acm.CertificateDetail.failurereason:type_name -> acm.FailureReason
+	17,  // 41: acm.CertificateDetail.keyalgorithm:type_name -> acm.KeyAlgorithm
+	110, // 42: acm.CertificateDetail.keyusages:type_name -> acm.KeyUsage
+	8,   // 43: acm.CertificateDetail.managedby:type_name -> acm.CertificateManagedBy
+	50,  // 44: acm.CertificateDetail.options:type_name -> acm.CertificateOptions
+	22,  // 45: acm.CertificateDetail.renewaleligibility:type_name -> acm.RenewalEligibility
+	135, // 46: acm.CertificateDetail.renewalsummary:type_name -> acm.RenewalSummary
+	24,  // 47: acm.CertificateDetail.revocationreason:type_name -> acm.RevocationReason
+	9,   // 48: acm.CertificateDetail.status:type_name -> acm.CertificateStatus
+	11,  // 49: acm.CertificateDetail.type:type_name -> acm.CertificateType
+	163, // 50: acm.CertificateDetail.updatesummary:type_name -> acm.UpdateSummary
+	35,  // 51: acm.CertificateFilter.acmcertificatemetadatafilter:type_name -> acm.AcmCertificateMetadataFilter
+	167, // 52: acm.CertificateFilter.x509attributefilter:type_name -> acm.X509AttributeFilter
+	48,  // 53: acm.CertificateFilterStatement.and:type_name -> acm.CertificateFilterStatement
+	47,  // 54: acm.CertificateFilterStatement.filter:type_name -> acm.CertificateFilter
+	48,  // 55: acm.CertificateFilterStatement.not:type_name -> acm.CertificateFilterStatement
+	48,  // 56: acm.CertificateFilterStatement.or:type_name -> acm.CertificateFilterStatement
+	34,  // 57: acm.CertificateMetadata.acmcertificatemetadata:type_name -> acm.AcmCertificateMetadata
+	10,  // 58: acm.CertificateOptions.certificatetransparencyloggingpreference:type_name -> acm.CertificateTransparencyLoggingPreference
+	6,   // 59: acm.CertificateOptions.export:type_name -> acm.CertificateExport
+	32,  // 60: acm.CertificateOptions.validationmethod:type_name -> acm.ValidationMethod
+	49,  // 61: acm.CertificateSearchResult.certificatemetadata:type_name -> acm.CertificateMetadata
+	168, // 62: acm.CertificateSearchResult.x509attributes:type_name -> acm.X509Attributes
+	7,   // 63: acm.CertificateSummary.certificatekeypairorigin:type_name -> acm.CertificateKeyPairOrigin
+	6,   // 64: acm.CertificateSummary.exportoption:type_name -> acm.CertificateExport
+	15,  // 65: acm.CertificateSummary.extendedkeyusages:type_name -> acm.ExtendedKeyUsageName
+	17,  // 66: acm.CertificateSummary.keyalgorithm:type_name -> acm.KeyAlgorithm
+	18,  // 67: acm.CertificateSummary.keyusages:type_name -> acm.KeyUsageName
+	8,   // 68: acm.CertificateSummary.managedby:type_name -> acm.CertificateManagedBy
+	22,  // 69: acm.CertificateSummary.renewaleligibility:type_name -> acm.RenewalEligibility
+	9,   // 70: acm.CertificateSummary.status:type_name -> acm.CertificateStatus
+	11,  // 71: acm.CertificateSummary.type:type_name -> acm.CertificateType
+	12,  // 72: acm.CommonNameFilter.comparisonoperator:type_name -> acm.ComparisonOperator
+	130, // 73: acm.CreateAcmeDomainValidationRequest.prevalidationoptions:type_name -> acm.PrevalidationOptions
+	152, // 74: acm.CreateAcmeDomainValidationRequest.tags:type_name -> acm.Tag
+	1,   // 75: acm.CreateAcmeEndpointRequest.authorizationbehavior:type_name -> acm.AcmeAuthorizationBehavior
+	45,  // 76: acm.CreateAcmeEndpointRequest.certificateauthority:type_name -> acm.CertificateAuthority
+	152, // 77: acm.CreateAcmeEndpointRequest.certificatetags:type_name -> acm.Tag
+	2,   // 78: acm.CreateAcmeEndpointRequest.contact:type_name -> acm.AcmeContact
+	152, // 79: acm.CreateAcmeEndpointRequest.tags:type_name -> acm.Tag
+	87,  // 80: acm.CreateAcmeExternalAccountBindingRequest.expiration:type_name -> acm.Expiration
+	152, // 81: acm.CreateAcmeExternalAccountBindingRequest.tags:type_name -> acm.Tag
+	42,  // 82: acm.CreateAcmeExternalAccountBindingResponse.externalaccountbinding:type_name -> acm.AcmeExternalAccountBinding
+	36,  // 83: acm.DescribeAcmeAccountResponse.acmeaccount:type_name -> acm.AcmeAccount
+	38,  // 84: acm.DescribeAcmeDomainValidationResponse.acmedomainvalidation:type_name -> acm.AcmeDomainValidation
+	40,  // 85: acm.DescribeAcmeEndpointResponse.acmeendpoint:type_name -> acm.AcmeEndpoint
+	42,  // 86: acm.DescribeAcmeExternalAccountBindingResponse.externalaccountbinding:type_name -> acm.AcmeExternalAccountBinding
+	46,  // 87: acm.DescribeCertificateResponse.certificate:type_name -> acm.CertificateDetail
+	61,  // 88: acm.DistinguishedName.customattributes:type_name -> acm.CustomAttribute
+	12,  // 89: acm.DnsNameFilter.comparisonoperator:type_name -> acm.ComparisonOperator
+	81,  // 90: acm.DnsPrevalidationDetails.domainscope:type_name -> acm.DomainScope
+	142, // 91: acm.DnsPrevalidationDetails.resourcerecord:type_name -> acm.ResourceRecord
+	81,  // 92: acm.DnsPrevalidationOptions.domainscope:type_name -> acm.DomainScope
+	142, // 93: acm.DnsValidationChallenge.resourcerecord:type_name -> acm.ResourceRecord
+	13,  // 94: acm.DomainScope.exactdomain:type_name -> acm.DomainScopeOption
+	13,  // 95: acm.DomainScope.subdomains:type_name -> acm.DomainScopeOption
+	13,  // 96: acm.DomainScope.wildcards:type_name -> acm.DomainScopeOption
+	100, // 97: acm.DomainValidation.httpredirect:type_name -> acm.HttpRedirect
+	142, // 98: acm.DomainValidation.resourcerecord:type_name -> acm.ResourceRecord
+	32,  // 99: acm.DomainValidation.validationmethod:type_name -> acm.ValidationMethod
+	14,  // 100: acm.DomainValidation.validationstatus:type_name -> acm.DomainStatus
+	32,  // 101: acm.DomainValidationMethodUpdateSummary.from:type_name -> acm.ValidationMethod
+	32,  // 102: acm.DomainValidationMethodUpdateSummary.to:type_name -> acm.ValidationMethod
+	165, // 103: acm.DomainValidationSummary.activevalidationconfiguration:type_name -> acm.ValidationConfiguration
+	165, // 104: acm.DomainValidationSummary.requestedvalidationconfiguration:type_name -> acm.ValidationConfiguration
+	29,  // 105: acm.Expiration.type:type_name -> acm.TimeType
+	15,  // 106: acm.ExtendedKeyUsage.name:type_name -> acm.ExtendedKeyUsageName
+	3,   // 107: acm.FailureDetails.reason:type_name -> acm.AcmeDomainValidationFailureReason
+	6,   // 108: acm.Filters.exportoption:type_name -> acm.CertificateExport
+	15,  // 109: acm.Filters.extendedkeyusage:type_name -> acm.ExtendedKeyUsageName
+	17,  // 110: acm.Filters.keytypes:type_name -> acm.KeyAlgorithm
+	18,  // 111: acm.Filters.keyusage:type_name -> acm.KeyUsageName
+	8,   // 112: acm.Filters.managedby:type_name -> acm.CertificateManagedBy
+	76,  // 113: acm.GeneralName.directoryname:type_name -> acm.DistinguishedName
+	128, // 114: acm.GeneralName.othername:type_name -> acm.OtherName
+	88,  // 115: acm.GetAccountConfigurationResponse.expiryevents:type_name -> acm.ExpiryEventsConfiguration
+	152, // 116: acm.ImportCertificateRequest.tags:type_name -> acm.Tag
+	18,  // 117: acm.KeyUsage.name:type_name -> acm.KeyUsageName
+	37,  // 118: acm.ListAcmeAccountsResponse.acmeaccounts:type_name -> acm.AcmeAccountSummary
+	39,  // 119: acm.ListAcmeDomainValidationsResponse.acmedomainvalidations:type_name -> acm.AcmeDomainValidationSummary
+	41,  // 120: acm.ListAcmeEndpointsResponse.acmeendpoints:type_name -> acm.AcmeEndpointSummary
+	43,  // 121: acm.ListAcmeExternalAccountBindingsResponse.externalaccountbindings:type_name -> acm.AcmeExternalAccountBindingSummary
+	85,  // 122: acm.ListCertificateDomainValidationsResponse.domainvalidationsummarylist:type_name -> acm.DomainValidationSummary
+	7,   // 123: acm.ListCertificatesRequest.certificatekeypairorigins:type_name -> acm.CertificateKeyPairOrigin
+	9,   // 124: acm.ListCertificatesRequest.certificatestatuses:type_name -> acm.CertificateStatus
+	93,  // 125: acm.ListCertificatesRequest.includes:type_name -> acm.Filters
+	27,  // 126: acm.ListCertificatesRequest.sortby:type_name -> acm.SortBy
+	28,  // 127: acm.ListCertificatesRequest.sortorder:type_name -> acm.SortOrder
+	52,  // 128: acm.ListCertificatesResponse.certificatesummarylist:type_name -> acm.CertificateSummary
+	152, // 129: acm.ListTagsForCertificateResponse.tags:type_name -> acm.Tag
+	152, // 130: acm.ListTagsForResourceResponse.tags:type_name -> acm.Tag
+	78,  // 131: acm.PrevalidationDetails.dnsprevalidation:type_name -> acm.DnsPrevalidationDetails
+	79,  // 132: acm.PrevalidationOptions.dnsprevalidation:type_name -> acm.DnsPrevalidationOptions
+	20,  // 133: acm.PublicCertificateAuthority.allowedkeyalgorithms:type_name -> acm.PublicKeyAlgorithm
+	88,  // 134: acm.PutAccountConfigurationRequest.expiryevents:type_name -> acm.ExpiryEventsConfiguration
+	152, // 135: acm.RemoveTagsFromCertificateRequest.tags:type_name -> acm.Tag
+	82,  // 136: acm.RenewalSummary.domainvalidationoptions:type_name -> acm.DomainValidation
+	23,  // 137: acm.RenewalSummary.renewalstatus:type_name -> acm.RenewalStatus
+	16,  // 138: acm.RenewalSummary.renewalstatusreason:type_name -> acm.FailureReason
+	84,  // 139: acm.RequestCertificateRequest.domainvalidationoptions:type_name -> acm.DomainValidationOption
+	17,  // 140: acm.RequestCertificateRequest.keyalgorithm:type_name -> acm.KeyAlgorithm
+	8,   // 141: acm.RequestCertificateRequest.managedby:type_name -> acm.CertificateManagedBy
+	50,  // 142: acm.RequestCertificateRequest.options:type_name -> acm.CertificateOptions
+	152, // 143: acm.RequestCertificateRequest.tags:type_name -> acm.Tag
+	32,  // 144: acm.RequestCertificateRequest.validationmethod:type_name -> acm.ValidationMethod
+	21,  // 145: acm.ResourceRecord.type:type_name -> acm.RecordType
+	24,  // 146: acm.RevokeCertificateRequest.revocationreason:type_name -> acm.RevocationReason
+	48,  // 147: acm.SearchCertificatesRequest.filterstatement:type_name -> acm.CertificateFilterStatement
+	25,  // 148: acm.SearchCertificatesRequest.sortby:type_name -> acm.SearchCertificatesSortBy
+	26,  // 149: acm.SearchCertificatesRequest.sortorder:type_name -> acm.SearchCertificatesSortOrder
+	51,  // 150: acm.SearchCertificatesResponse.results:type_name -> acm.CertificateSearchResult
+	77,  // 151: acm.SubjectAlternativeNameFilter.dnsname:type_name -> acm.DnsNameFilter
+	53,  // 152: acm.SubjectFilter.commonname:type_name -> acm.CommonNameFilter
+	152, // 153: acm.TagResourceRequest.tags:type_name -> acm.Tag
+	156, // 154: acm.ThrottlingException.throttlingreasons:type_name -> acm.ThrottlingReason
+	130, // 155: acm.UpdateAcmeDomainValidationRequest.prevalidationoptions:type_name -> acm.PrevalidationOptions
+	1,   // 156: acm.UpdateAcmeEndpointRequest.authorizationbehavior:type_name -> acm.AcmeAuthorizationBehavior
+	45,  // 157: acm.UpdateAcmeEndpointRequest.certificateauthority:type_name -> acm.CertificateAuthority
+	2,   // 158: acm.UpdateAcmeEndpointRequest.contact:type_name -> acm.AcmeContact
+	50,  // 159: acm.UpdateCertificateOptionsRequest.options:type_name -> acm.CertificateOptions
+	83,  // 160: acm.UpdateSummary.domainvalidationmethodupdatesummary:type_name -> acm.DomainValidationMethodUpdateSummary
+	30,  // 161: acm.UpdateSummary.status:type_name -> acm.UpdateStatus
+	31,  // 162: acm.UpdateSummary.type:type_name -> acm.UpdateType
+	80,  // 163: acm.ValidationChallenge.dnsvalidationchallenge:type_name -> acm.DnsValidationChallenge
+	86,  // 164: acm.ValidationChallenge.emailvalidationchallenge:type_name -> acm.EmailValidationChallenge
+	164, // 165: acm.ValidationConfiguration.validationchallenge:type_name -> acm.ValidationChallenge
+	32,  // 166: acm.ValidationConfiguration.validationmethod:type_name -> acm.ValidationMethod
+	14,  // 167: acm.ValidationConfiguration.validationstatus:type_name -> acm.DomainStatus
+	15,  // 168: acm.X509AttributeFilter.extendedkeyusage:type_name -> acm.ExtendedKeyUsageName
+	17,  // 169: acm.X509AttributeFilter.keyalgorithm:type_name -> acm.KeyAlgorithm
+	18,  // 170: acm.X509AttributeFilter.keyusage:type_name -> acm.KeyUsageName
+	157, // 171: acm.X509AttributeFilter.notafter:type_name -> acm.TimestampRange
+	157, // 172: acm.X509AttributeFilter.notbefore:type_name -> acm.TimestampRange
+	151, // 173: acm.X509AttributeFilter.subject:type_name -> acm.SubjectFilter
+	150, // 174: acm.X509AttributeFilter.subjectalternativename:type_name -> acm.SubjectAlternativeNameFilter
+	15,  // 175: acm.X509Attributes.extendedkeyusages:type_name -> acm.ExtendedKeyUsageName
+	76,  // 176: acm.X509Attributes.issuer:type_name -> acm.DistinguishedName
+	17,  // 177: acm.X509Attributes.keyalgorithm:type_name -> acm.KeyAlgorithm
+	18,  // 178: acm.X509Attributes.keyusages:type_name -> acm.KeyUsageName
+	76,  // 179: acm.X509Attributes.subject:type_name -> acm.DistinguishedName
+	94,  // 180: acm.X509Attributes.subjectalternativenames:type_name -> acm.GeneralName
+	44,  // 181: acm.ACMService.AddTagsToCertificate:input_type -> acm.AddTagsToCertificateRequest
+	55,  // 182: acm.ACMService.CreateAcmeDomainValidation:input_type -> acm.CreateAcmeDomainValidationRequest
+	57,  // 183: acm.ACMService.CreateAcmeEndpoint:input_type -> acm.CreateAcmeEndpointRequest
+	59,  // 184: acm.ACMService.CreateAcmeExternalAccountBinding:input_type -> acm.CreateAcmeExternalAccountBindingRequest
+	62,  // 185: acm.ACMService.DeleteAcmeDomainValidation:input_type -> acm.DeleteAcmeDomainValidationRequest
+	63,  // 186: acm.ACMService.DeleteAcmeEndpoint:input_type -> acm.DeleteAcmeEndpointRequest
+	64,  // 187: acm.ACMService.DeleteAcmeExternalAccountBinding:input_type -> acm.DeleteAcmeExternalAccountBindingRequest
+	65,  // 188: acm.ACMService.DeleteCertificate:input_type -> acm.DeleteCertificateRequest
+	66,  // 189: acm.ACMService.DescribeAcmeAccount:input_type -> acm.DescribeAcmeAccountRequest
+	68,  // 190: acm.ACMService.DescribeAcmeDomainValidation:input_type -> acm.DescribeAcmeDomainValidationRequest
+	70,  // 191: acm.ACMService.DescribeAcmeEndpoint:input_type -> acm.DescribeAcmeEndpointRequest
+	72,  // 192: acm.ACMService.DescribeAcmeExternalAccountBinding:input_type -> acm.DescribeAcmeExternalAccountBindingRequest
+	74,  // 193: acm.ACMService.DescribeCertificate:input_type -> acm.DescribeCertificateRequest
+	89,  // 194: acm.ACMService.ExportCertificate:input_type -> acm.ExportCertificateRequest
+	169, // 195: acm.ACMService.GetAccountConfiguration:input_type -> common.Empty
+	96,  // 196: acm.ACMService.GetAcmeExternalAccountBindingCredentials:input_type -> acm.GetAcmeExternalAccountBindingCredentialsRequest
+	98,  // 197: acm.ACMService.GetCertificate:input_type -> acm.GetCertificateRequest
+	101, // 198: acm.ACMService.ImportCertificate:input_type -> acm.ImportCertificateRequest
+	112, // 199: acm.ACMService.ListAcmeAccounts:input_type -> acm.ListAcmeAccountsRequest
+	114, // 200: acm.ACMService.ListAcmeDomainValidations:input_type -> acm.ListAcmeDomainValidationsRequest
+	116, // 201: acm.ACMService.ListAcmeEndpoints:input_type -> acm.ListAcmeEndpointsRequest
+	118, // 202: acm.ACMService.ListAcmeExternalAccountBindings:input_type -> acm.ListAcmeExternalAccountBindingsRequest
+	120, // 203: acm.ACMService.ListCertificateDomainValidations:input_type -> acm.ListCertificateDomainValidationsRequest
+	122, // 204: acm.ACMService.ListCertificates:input_type -> acm.ListCertificatesRequest
+	124, // 205: acm.ACMService.ListTagsForCertificate:input_type -> acm.ListTagsForCertificateRequest
+	126, // 206: acm.ACMService.ListTagsForResource:input_type -> acm.ListTagsForResourceRequest
+	132, // 207: acm.ACMService.PutAccountConfiguration:input_type -> acm.PutAccountConfigurationRequest
+	133, // 208: acm.ACMService.RemoveTagsFromCertificate:input_type -> acm.RemoveTagsFromCertificateRequest
+	134, // 209: acm.ACMService.RenewCertificate:input_type -> acm.RenewCertificateRequest
+	136, // 210: acm.ACMService.RequestCertificate:input_type -> acm.RequestCertificateRequest
+	139, // 211: acm.ACMService.ResendValidationEmail:input_type -> acm.ResendValidationEmailRequest
+	143, // 212: acm.ACMService.RevokeAcmeAccount:input_type -> acm.RevokeAcmeAccountRequest
+	144, // 213: acm.ACMService.RevokeAcmeExternalAccountBinding:input_type -> acm.RevokeAcmeExternalAccountBindingRequest
+	145, // 214: acm.ACMService.RevokeCertificate:input_type -> acm.RevokeCertificateRequest
+	147, // 215: acm.ACMService.SearchCertificates:input_type -> acm.SearchCertificatesRequest
+	154, // 216: acm.ACMService.TagResource:input_type -> acm.TagResourceRequest
+	159, // 217: acm.ACMService.UntagResource:input_type -> acm.UntagResourceRequest
+	160, // 218: acm.ACMService.UpdateAcmeDomainValidation:input_type -> acm.UpdateAcmeDomainValidationRequest
+	161, // 219: acm.ACMService.UpdateAcmeEndpoint:input_type -> acm.UpdateAcmeEndpointRequest
+	162, // 220: acm.ACMService.UpdateCertificateOptions:input_type -> acm.UpdateCertificateOptionsRequest
+	169, // 221: acm.ACMService.AddTagsToCertificate:output_type -> common.Empty
+	56,  // 222: acm.ACMService.CreateAcmeDomainValidation:output_type -> acm.CreateAcmeDomainValidationResponse
+	58,  // 223: acm.ACMService.CreateAcmeEndpoint:output_type -> acm.CreateAcmeEndpointResponse
+	60,  // 224: acm.ACMService.CreateAcmeExternalAccountBinding:output_type -> acm.CreateAcmeExternalAccountBindingResponse
+	169, // 225: acm.ACMService.DeleteAcmeDomainValidation:output_type -> common.Empty
+	169, // 226: acm.ACMService.DeleteAcmeEndpoint:output_type -> common.Empty
+	169, // 227: acm.ACMService.DeleteAcmeExternalAccountBinding:output_type -> common.Empty
+	169, // 228: acm.ACMService.DeleteCertificate:output_type -> common.Empty
+	67,  // 229: acm.ACMService.DescribeAcmeAccount:output_type -> acm.DescribeAcmeAccountResponse
+	69,  // 230: acm.ACMService.DescribeAcmeDomainValidation:output_type -> acm.DescribeAcmeDomainValidationResponse
+	71,  // 231: acm.ACMService.DescribeAcmeEndpoint:output_type -> acm.DescribeAcmeEndpointResponse
+	73,  // 232: acm.ACMService.DescribeAcmeExternalAccountBinding:output_type -> acm.DescribeAcmeExternalAccountBindingResponse
+	75,  // 233: acm.ACMService.DescribeCertificate:output_type -> acm.DescribeCertificateResponse
+	90,  // 234: acm.ACMService.ExportCertificate:output_type -> acm.ExportCertificateResponse
+	95,  // 235: acm.ACMService.GetAccountConfiguration:output_type -> acm.GetAccountConfigurationResponse
+	97,  // 236: acm.ACMService.GetAcmeExternalAccountBindingCredentials:output_type -> acm.GetAcmeExternalAccountBindingCredentialsResponse
+	99,  // 237: acm.ACMService.GetCertificate:output_type -> acm.GetCertificateResponse
+	102, // 238: acm.ACMService.ImportCertificate:output_type -> acm.ImportCertificateResponse
+	113, // 239: acm.ACMService.ListAcmeAccounts:output_type -> acm.ListAcmeAccountsResponse
+	115, // 240: acm.ACMService.ListAcmeDomainValidations:output_type -> acm.ListAcmeDomainValidationsResponse
+	117, // 241: acm.ACMService.ListAcmeEndpoints:output_type -> acm.ListAcmeEndpointsResponse
+	119, // 242: acm.ACMService.ListAcmeExternalAccountBindings:output_type -> acm.ListAcmeExternalAccountBindingsResponse
+	121, // 243: acm.ACMService.ListCertificateDomainValidations:output_type -> acm.ListCertificateDomainValidationsResponse
+	123, // 244: acm.ACMService.ListCertificates:output_type -> acm.ListCertificatesResponse
+	125, // 245: acm.ACMService.ListTagsForCertificate:output_type -> acm.ListTagsForCertificateResponse
+	127, // 246: acm.ACMService.ListTagsForResource:output_type -> acm.ListTagsForResourceResponse
+	169, // 247: acm.ACMService.PutAccountConfiguration:output_type -> common.Empty
+	169, // 248: acm.ACMService.RemoveTagsFromCertificate:output_type -> common.Empty
+	169, // 249: acm.ACMService.RenewCertificate:output_type -> common.Empty
+	137, // 250: acm.ACMService.RequestCertificate:output_type -> acm.RequestCertificateResponse
+	169, // 251: acm.ACMService.ResendValidationEmail:output_type -> common.Empty
+	169, // 252: acm.ACMService.RevokeAcmeAccount:output_type -> common.Empty
+	169, // 253: acm.ACMService.RevokeAcmeExternalAccountBinding:output_type -> common.Empty
+	146, // 254: acm.ACMService.RevokeCertificate:output_type -> acm.RevokeCertificateResponse
+	148, // 255: acm.ACMService.SearchCertificates:output_type -> acm.SearchCertificatesResponse
+	169, // 256: acm.ACMService.TagResource:output_type -> common.Empty
+	169, // 257: acm.ACMService.UntagResource:output_type -> common.Empty
+	169, // 258: acm.ACMService.UpdateAcmeDomainValidation:output_type -> common.Empty
+	169, // 259: acm.ACMService.UpdateAcmeEndpoint:output_type -> common.Empty
+	169, // 260: acm.ACMService.UpdateCertificateOptions:output_type -> common.Empty
+	221, // [221:261] is the sub-list for method output_type
+	181, // [181:221] is the sub-list for method input_type
+	181, // [181:181] is the sub-list for extension type_name
+	181, // [181:181] is the sub-list for extension extendee
+	0,   // [0:181] is the sub-list for field type_name
 }
 
 func init() { file_acm_proto_init() }
@@ -6505,19 +11731,89 @@ func file_acm_proto_init() {
 	if File_acm_proto != nil {
 		return
 	}
+	file_acm_proto_msgTypes[0].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[1].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[2].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[3].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[4].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[5].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[6].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[7].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[8].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[9].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[10].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[13].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[14].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[18].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[19].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[21].OneofWrappers = []any{}
-	file_acm_proto_msgTypes[41].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[22].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[24].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[25].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[26].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[28].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[43].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[45].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[46].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[49].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[53].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[55].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[57].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[58].OneofWrappers = []any{}
 	file_acm_proto_msgTypes[59].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[61].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[64].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[66].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[67].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[68].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[69].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[70].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[71].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[72].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[73].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[74].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[75].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[76].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[78].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[79].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[80].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[81].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[82].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[83].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[84].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[85].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[86].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[87].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[88].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[89].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[90].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[95].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[103].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[104].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[105].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[107].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[108].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[113].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[114].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[115].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[116].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[119].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[120].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[122].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[123].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[124].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[125].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[130].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[133].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[134].OneofWrappers = []any{}
+	file_acm_proto_msgTypes[135].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_acm_proto_rawDesc), len(file_acm_proto_rawDesc)),
-			NumEnums:      20,
-			NumMessages:   73,
+			NumEnums:      33,
+			NumMessages:   136,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

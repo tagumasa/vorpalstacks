@@ -81,7 +81,7 @@ service SchedulerService {
 
 message AwsVpcConfiguration {
 
-  string assignpublicip = 461653589;
+  optional string assignpublicip = 461653589;
 
   repeated string securitygroups = 515282516;
 
@@ -117,7 +117,7 @@ message ConflictException {
 
 message CreateScheduleGroupInput {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   string name = 266367751;
 
@@ -137,29 +137,29 @@ message CreateScheduleGroupOutput {
 
 message CreateScheduleInput {
 
-  string actionaftercompletion = 282350906;
+  optional string actionaftercompletion = 282350906;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
   FlexibleTimeWindow flexibletimewindow = 2518952;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
   string name = 266367751;
 
   string scheduleexpression = 446089471;
 
-  string scheduleexpressiontimezone = 400730326;
+  optional string scheduleexpressiontimezone = 400730326;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
   Target target = 191361385;
 
@@ -179,7 +179,7 @@ message CreateScheduleOutput {
 
 message DeadLetterConfig {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -187,7 +187,7 @@ message DeadLetterConfig {
 
 message DeleteScheduleGroupInput {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   string name = 266367751;
 
@@ -203,9 +203,9 @@ message DeleteScheduleGroupOutput {
 
 message DeleteScheduleInput {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
   string name = 266367751;
 
@@ -229,9 +229,9 @@ message EcsParameters {
 
   optional bool enableexecutecommand = 451374779;
 
-  string group = 91525165;
+  optional string group = 91525165;
 
-  string launchtype = 184333335;
+  optional string launchtype = 184333335;
 
   NetworkConfiguration networkconfiguration = 240088634;
 
@@ -239,11 +239,11 @@ message EcsParameters {
 
   repeated PlacementStrategy placementstrategy = 25036678;
 
-  string platformversion = 139924287;
+  optional string platformversion = 139924287;
 
-  string propagatetags = 405557622;
+  optional string propagatetags = 405557622;
 
-  string referenceid = 291739032;
+  optional string referenceid = 291739032;
 
   repeated TagsEntry tags = 381526209;
 
@@ -289,15 +289,15 @@ message GetScheduleGroupInput {
 
 message GetScheduleGroupOutput {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string lastmodificationdate = 4750358;
+  optional string lastmodificationdate = 4750358;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
 }
 
@@ -305,7 +305,7 @@ message GetScheduleGroupOutput {
 
 message GetScheduleInput {
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
   string name = 266367751;
 
@@ -315,33 +315,33 @@ message GetScheduleInput {
 
 message GetScheduleOutput {
 
-  string actionaftercompletion = 282350906;
+  optional string actionaftercompletion = 282350906;
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
   FlexibleTimeWindow flexibletimewindow = 2518952;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
-  string lastmodificationdate = 4750358;
+  optional string lastmodificationdate = 4750358;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
-  string scheduleexpressiontimezone = 400730326;
+  optional string scheduleexpressiontimezone = 400730326;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
   Target target = 191361385;
 
@@ -373,9 +373,9 @@ message ListScheduleGroupsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -383,7 +383,7 @@ message ListScheduleGroupsInput {
 
 message ListScheduleGroupsOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ScheduleGroupSummary schedulegroups = 136082885;
 
@@ -393,15 +393,15 @@ message ListScheduleGroupsOutput {
 
 message ListSchedulesInput {
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
   optional int32 maxresults = 275174450;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
 }
 
@@ -409,7 +409,7 @@ message ListSchedulesInput {
 
 message ListSchedulesOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ScheduleSummary schedules = 18925646;
 
@@ -447,9 +447,9 @@ message NetworkConfiguration {
 
 message PlacementConstraint {
 
-  string expression = 253079532;
+  optional string expression = 253079532;
 
-  string type = 287830350;
+  optional string type = 287830350;
 
 }
 
@@ -459,9 +459,9 @@ message PlacementConstraint {
 
 message PlacementStrategy {
 
-  string field = 125985384;
+  optional string field = 125985384;
 
-  string type = 287830350;
+  optional string type = 287830350;
 
 }
 
@@ -515,15 +515,15 @@ message SageMakerPipelineParameters {
 
 message ScheduleGroupSummary {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string lastmodificationdate = 4750358;
+  optional string lastmodificationdate = 4750358;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
 }
 
@@ -533,17 +533,17 @@ message ScheduleGroupSummary {
 
 message ScheduleSummary {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
-  string lastmodificationdate = 4750358;
+  optional string lastmodificationdate = 4750358;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
   TargetSummary target = 191361385;
 
@@ -565,7 +565,7 @@ message ServiceQuotaExceededException {
 
 message SqsParameters {
 
-  string messagegroupid = 419537435;
+  optional string messagegroupid = 419537435;
 
 }
 
@@ -611,7 +611,7 @@ message Target {
 
   EventBridgeParameters eventbridgeparameters = 285439471;
 
-  string input = 529785116;
+  optional string input = 529785116;
 
   KinesisParameters kinesisparameters = 70111902;
 
@@ -665,29 +665,29 @@ message UntagResourceOutput {
 
 message UpdateScheduleInput {
 
-  string actionaftercompletion = 282350906;
+  optional string actionaftercompletion = 282350906;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
   FlexibleTimeWindow flexibletimewindow = 2518952;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
   string name = 266367751;
 
   string scheduleexpression = 446089471;
 
-  string scheduleexpressiontimezone = 400730326;
+  optional string scheduleexpressiontimezone = 400730326;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
   Target target = 191361385;
 

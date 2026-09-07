@@ -32,12 +32,12 @@ func (h *AdminHandler) getStoreFromHeader(header http.Header) (*tsWriteStores, e
 // Database for gRPC-Web response marshalling.
 func toPbDatabase(db *DatabaseResult) *pb.Database {
 	pbDb := &pb.Database{
-		Arn:             db.ARN,
-		Databasename:    db.DatabaseName,
+		Arn:             proto.String(db.ARN),
+		Databasename:    proto.String(db.DatabaseName),
 		Tablecount:      proto.Int64(db.TableCount),
-		Kmskeyid:        db.KmsKeyId,
-		Creationtime:    db.CreationTime.Format(timeutils.ISO8601UTCFormat),
-		Lastupdatedtime: db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
+		Kmskeyid:        proto.String(db.KmsKeyId),
+		Creationtime:    proto.String(db.CreationTime.Format(timeutils.ISO8601UTCFormat)),
+		Lastupdatedtime: proto.String(db.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat)),
 	}
 	return pbDb
 }
@@ -46,11 +46,11 @@ func toPbDatabase(db *DatabaseResult) *pb.Database {
 // gRPC-Web response marshalling.
 func toPbTable(t *TableResult) *pb.Table {
 	table := &pb.Table{
-		Arn:             t.ARN,
-		Tablename:       t.TableName,
-		Databasename:    t.DatabaseName,
-		Creationtime:    t.CreationTime.Format(timeutils.ISO8601UTCFormat),
-		Lastupdatedtime: t.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat),
+		Arn:             proto.String(t.ARN),
+		Tablename:       proto.String(t.TableName),
+		Databasename:    proto.String(t.DatabaseName),
+		Creationtime:    proto.String(t.CreationTime.Format(timeutils.ISO8601UTCFormat)),
+		Lastupdatedtime: proto.String(t.LastUpdatedTime.Format(timeutils.ISO8601UTCFormat)),
 	}
 
 	switch t.TableStatus {
@@ -80,7 +80,7 @@ func toPbTable(t *TableResult) *pb.Table {
 				cpk.Type = pb.PartitionKeyType_PARTITION_KEY_TYPE_DIMENSION
 			}
 			if pk.Name != "" {
-				cpk.Name = pk.Name
+				cpk.Name = proto.String(pk.Name)
 			}
 			switch pk.EnforcementInRecord {
 			case tsstore.EnforcementInRecordRequired:

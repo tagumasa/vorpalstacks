@@ -57,6 +57,9 @@ const (
 	// SSMServiceCreateAssociationBatchProcedure is the fully-qualified name of the SSMService's
 	// CreateAssociationBatch RPC.
 	SSMServiceCreateAssociationBatchProcedure = "/ssm.SSMService/CreateAssociationBatch"
+	// SSMServiceCreateCloudConnectorProcedure is the fully-qualified name of the SSMService's
+	// CreateCloudConnector RPC.
+	SSMServiceCreateCloudConnectorProcedure = "/ssm.SSMService/CreateCloudConnector"
 	// SSMServiceCreateDocumentProcedure is the fully-qualified name of the SSMService's CreateDocument
 	// RPC.
 	SSMServiceCreateDocumentProcedure = "/ssm.SSMService/CreateDocument"
@@ -81,6 +84,9 @@ const (
 	// SSMServiceDeleteAssociationProcedure is the fully-qualified name of the SSMService's
 	// DeleteAssociation RPC.
 	SSMServiceDeleteAssociationProcedure = "/ssm.SSMService/DeleteAssociation"
+	// SSMServiceDeleteCloudConnectorProcedure is the fully-qualified name of the SSMService's
+	// DeleteCloudConnector RPC.
+	SSMServiceDeleteCloudConnectorProcedure = "/ssm.SSMService/DeleteCloudConnector"
 	// SSMServiceDeleteDocumentProcedure is the fully-qualified name of the SSMService's DeleteDocument
 	// RPC.
 	SSMServiceDeleteDocumentProcedure = "/ssm.SSMService/DeleteDocument"
@@ -234,6 +240,9 @@ const (
 	// SSMServiceGetCalendarStateProcedure is the fully-qualified name of the SSMService's
 	// GetCalendarState RPC.
 	SSMServiceGetCalendarStateProcedure = "/ssm.SSMService/GetCalendarState"
+	// SSMServiceGetCloudConnectorProcedure is the fully-qualified name of the SSMService's
+	// GetCloudConnector RPC.
+	SSMServiceGetCloudConnectorProcedure = "/ssm.SSMService/GetCloudConnector"
 	// SSMServiceGetCommandInvocationProcedure is the fully-qualified name of the SSMService's
 	// GetCommandInvocation RPC.
 	SSMServiceGetCommandInvocationProcedure = "/ssm.SSMService/GetCommandInvocation"
@@ -311,6 +320,9 @@ const (
 	// SSMServiceListAssociationVersionsProcedure is the fully-qualified name of the SSMService's
 	// ListAssociationVersions RPC.
 	SSMServiceListAssociationVersionsProcedure = "/ssm.SSMService/ListAssociationVersions"
+	// SSMServiceListCloudConnectorsProcedure is the fully-qualified name of the SSMService's
+	// ListCloudConnectors RPC.
+	SSMServiceListCloudConnectorsProcedure = "/ssm.SSMService/ListCloudConnectors"
 	// SSMServiceListCommandInvocationsProcedure is the fully-qualified name of the SSMService's
 	// ListCommandInvocations RPC.
 	SSMServiceListCommandInvocationsProcedure = "/ssm.SSMService/ListCommandInvocations"
@@ -428,6 +440,9 @@ const (
 	// SSMServiceUpdateAssociationStatusProcedure is the fully-qualified name of the SSMService's
 	// UpdateAssociationStatus RPC.
 	SSMServiceUpdateAssociationStatusProcedure = "/ssm.SSMService/UpdateAssociationStatus"
+	// SSMServiceUpdateCloudConnectorProcedure is the fully-qualified name of the SSMService's
+	// UpdateCloudConnector RPC.
+	SSMServiceUpdateCloudConnectorProcedure = "/ssm.SSMService/UpdateCloudConnector"
 	// SSMServiceUpdateDocumentProcedure is the fully-qualified name of the SSMService's UpdateDocument
 	// RPC.
 	SSMServiceUpdateDocumentProcedure = "/ssm.SSMService/UpdateDocument"
@@ -464,6 +479,9 @@ const (
 	// SSMServiceUpdateServiceSettingProcedure is the fully-qualified name of the SSMService's
 	// UpdateServiceSetting RPC.
 	SSMServiceUpdateServiceSettingProcedure = "/ssm.SSMService/UpdateServiceSetting"
+	// SSMServiceValidateCloudConnectorProcedure is the fully-qualified name of the SSMService's
+	// ValidateCloudConnector RPC.
+	SSMServiceValidateCloudConnectorProcedure = "/ssm.SSMService/ValidateCloudConnector"
 )
 
 // SSMServiceClient is a client for the ssm.SSMService service.
@@ -496,6 +514,10 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateAssociationBatch(context.Context, *connect.Request[ssm.CreateAssociationBatchRequest]) (*connect.Response[ssm.CreateAssociationBatchResult], error)
+	// Creates a cloud connector that establishes a connection between Systems Manager and a third-party cloud environment.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateCloudConnector(context.Context, *connect.Request[ssm.CreateCloudConnectorRequest]) (*connect.Response[ssm.CreateCloudConnectorResult], error)
 	// Creates a Amazon Web Services Systems Manager (SSM document). An SSM document defines the actions that Systems Manager performs on your managed nodes. For more information about SSM documents, incl...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -528,6 +550,10 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteAssociation(context.Context, *connect.Request[ssm.DeleteAssociationRequest]) (*connect.Response[ssm.DeleteAssociationResult], error)
+	// Deletes a cloud connector.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteCloudConnector(context.Context, *connect.Request[ssm.DeleteCloudConnectorRequest]) (*connect.Response[ssm.DeleteCloudConnectorResult], error)
 	// Deletes the Amazon Web Services Systems Manager document (SSM document) and all managed node associations to the document. Before you delete the document, we recommend that you use DeleteAssociatio...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -732,6 +758,10 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetCalendarState(context.Context, *connect.Request[ssm.GetCalendarStateRequest]) (*connect.Response[ssm.GetCalendarStateResponse], error)
+	// Returns detailed information about a cloud connector.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetCloudConnector(context.Context, *connect.Request[ssm.GetCloudConnectorRequest]) (*connect.Response[ssm.GetCloudConnectorResult], error)
 	// Returns detailed information about command execution for an invocation or plugin. The Run Command API follows an eventual consistency model, due to the distributed nature of the system supporting t...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -840,6 +870,10 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListAssociationVersions(context.Context, *connect.Request[ssm.ListAssociationVersionsRequest]) (*connect.Response[ssm.ListAssociationVersionsResult], error)
+	// Returns a list of cloud connectors in the current Amazon Web Services account and Amazon Web Services Region.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListCloudConnectors(context.Context, *connect.Request[ssm.ListCloudConnectorsRequest]) (*connect.Response[ssm.ListCloudConnectorsResult], error)
 	// An invocation is copy of a command sent to a specific managed node. A command can apply to one or more managed nodes. A command invocation applies to one managed node. For example, if a user runs S...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -916,7 +950,7 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	PutInventory(context.Context, *connect.Request[ssm.PutInventoryRequest]) (*connect.Response[ssm.PutInventoryResult], error)
-	// Create or update a parameter in Parameter Store.
+	// Create or update a parameter in Parameter Store. Parameter Store throughput defines the number of API transactions per second (TPS) that Systems Manager can process. This applies to GetParameter, G...
 	// HTTP:
 	// Protocol: awsJson1_1
 	PutParameter(context.Context, *connect.Request[ssm.PutParameterRequest]) (*connect.Response[ssm.PutParameterResult], error)
@@ -1004,6 +1038,10 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateAssociationStatus(context.Context, *connect.Request[ssm.UpdateAssociationStatusRequest]) (*connect.Response[ssm.UpdateAssociationStatusResult], error)
+	// Updates an existing cloud connector with new configuration details.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateCloudConnector(context.Context, *connect.Request[ssm.UpdateCloudConnectorRequest]) (*connect.Response[ssm.UpdateCloudConnectorResult], error)
 	// Updates one or more values for an SSM document.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -1052,6 +1090,10 @@ type SSMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateServiceSetting(context.Context, *connect.Request[ssm.UpdateServiceSettingRequest]) (*connect.Response[ssm.UpdateServiceSettingResult], error)
+	// Validates the configuration and connectivity of a cloud connector.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ValidateCloudConnector(context.Context, *connect.Request[ssm.ValidateCloudConnectorRequest]) (*connect.Response[ssm.ValidateCloudConnectorResult], error)
 }
 
 // NewSSMServiceClient constructs a client for the ssm.SSMService service. By default, it uses the
@@ -1107,6 +1149,12 @@ func NewSSMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sSMServiceMethods.ByName("CreateAssociationBatch")),
 			connect.WithClientOptions(opts...),
 		),
+		createCloudConnector: connect.NewClient[ssm.CreateCloudConnectorRequest, ssm.CreateCloudConnectorResult](
+			httpClient,
+			baseURL+SSMServiceCreateCloudConnectorProcedure,
+			connect.WithSchema(sSMServiceMethods.ByName("CreateCloudConnector")),
+			connect.WithClientOptions(opts...),
+		),
 		createDocument: connect.NewClient[ssm.CreateDocumentRequest, ssm.CreateDocumentResult](
 			httpClient,
 			baseURL+SSMServiceCreateDocumentProcedure,
@@ -1153,6 +1201,12 @@ func NewSSMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+SSMServiceDeleteAssociationProcedure,
 			connect.WithSchema(sSMServiceMethods.ByName("DeleteAssociation")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteCloudConnector: connect.NewClient[ssm.DeleteCloudConnectorRequest, ssm.DeleteCloudConnectorResult](
+			httpClient,
+			baseURL+SSMServiceDeleteCloudConnectorProcedure,
+			connect.WithSchema(sSMServiceMethods.ByName("DeleteCloudConnector")),
 			connect.WithClientOptions(opts...),
 		),
 		deleteDocument: connect.NewClient[ssm.DeleteDocumentRequest, ssm.DeleteDocumentResult](
@@ -1461,6 +1515,12 @@ func NewSSMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sSMServiceMethods.ByName("GetCalendarState")),
 			connect.WithClientOptions(opts...),
 		),
+		getCloudConnector: connect.NewClient[ssm.GetCloudConnectorRequest, ssm.GetCloudConnectorResult](
+			httpClient,
+			baseURL+SSMServiceGetCloudConnectorProcedure,
+			connect.WithSchema(sSMServiceMethods.ByName("GetCloudConnector")),
+			connect.WithClientOptions(opts...),
+		),
 		getCommandInvocation: connect.NewClient[ssm.GetCommandInvocationRequest, ssm.GetCommandInvocationResult](
 			httpClient,
 			baseURL+SSMServiceGetCommandInvocationProcedure,
@@ -1621,6 +1681,12 @@ func NewSSMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+SSMServiceListAssociationVersionsProcedure,
 			connect.WithSchema(sSMServiceMethods.ByName("ListAssociationVersions")),
+			connect.WithClientOptions(opts...),
+		),
+		listCloudConnectors: connect.NewClient[ssm.ListCloudConnectorsRequest, ssm.ListCloudConnectorsResult](
+			httpClient,
+			baseURL+SSMServiceListCloudConnectorsProcedure,
+			connect.WithSchema(sSMServiceMethods.ByName("ListCloudConnectors")),
 			connect.WithClientOptions(opts...),
 		),
 		listCommandInvocations: connect.NewClient[ssm.ListCommandInvocationsRequest, ssm.ListCommandInvocationsResult](
@@ -1869,6 +1935,12 @@ func NewSSMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sSMServiceMethods.ByName("UpdateAssociationStatus")),
 			connect.WithClientOptions(opts...),
 		),
+		updateCloudConnector: connect.NewClient[ssm.UpdateCloudConnectorRequest, ssm.UpdateCloudConnectorResult](
+			httpClient,
+			baseURL+SSMServiceUpdateCloudConnectorProcedure,
+			connect.WithSchema(sSMServiceMethods.ByName("UpdateCloudConnector")),
+			connect.WithClientOptions(opts...),
+		),
 		updateDocument: connect.NewClient[ssm.UpdateDocumentRequest, ssm.UpdateDocumentResult](
 			httpClient,
 			baseURL+SSMServiceUpdateDocumentProcedure,
@@ -1941,6 +2013,12 @@ func NewSSMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(sSMServiceMethods.ByName("UpdateServiceSetting")),
 			connect.WithClientOptions(opts...),
 		),
+		validateCloudConnector: connect.NewClient[ssm.ValidateCloudConnectorRequest, ssm.ValidateCloudConnectorResult](
+			httpClient,
+			baseURL+SSMServiceValidateCloudConnectorProcedure,
+			connect.WithSchema(sSMServiceMethods.ByName("ValidateCloudConnector")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -1953,6 +2031,7 @@ type sSMServiceClient struct {
 	createActivation                                  *connect.Client[ssm.CreateActivationRequest, ssm.CreateActivationResult]
 	createAssociation                                 *connect.Client[ssm.CreateAssociationRequest, ssm.CreateAssociationResult]
 	createAssociationBatch                            *connect.Client[ssm.CreateAssociationBatchRequest, ssm.CreateAssociationBatchResult]
+	createCloudConnector                              *connect.Client[ssm.CreateCloudConnectorRequest, ssm.CreateCloudConnectorResult]
 	createDocument                                    *connect.Client[ssm.CreateDocumentRequest, ssm.CreateDocumentResult]
 	createMaintenanceWindow                           *connect.Client[ssm.CreateMaintenanceWindowRequest, ssm.CreateMaintenanceWindowResult]
 	createOpsItem                                     *connect.Client[ssm.CreateOpsItemRequest, ssm.CreateOpsItemResponse]
@@ -1961,6 +2040,7 @@ type sSMServiceClient struct {
 	createResourceDataSync                            *connect.Client[ssm.CreateResourceDataSyncRequest, ssm.CreateResourceDataSyncResult]
 	deleteActivation                                  *connect.Client[ssm.DeleteActivationRequest, ssm.DeleteActivationResult]
 	deleteAssociation                                 *connect.Client[ssm.DeleteAssociationRequest, ssm.DeleteAssociationResult]
+	deleteCloudConnector                              *connect.Client[ssm.DeleteCloudConnectorRequest, ssm.DeleteCloudConnectorResult]
 	deleteDocument                                    *connect.Client[ssm.DeleteDocumentRequest, ssm.DeleteDocumentResult]
 	deleteInventory                                   *connect.Client[ssm.DeleteInventoryRequest, ssm.DeleteInventoryResult]
 	deleteMaintenanceWindow                           *connect.Client[ssm.DeleteMaintenanceWindowRequest, ssm.DeleteMaintenanceWindowResult]
@@ -2012,6 +2092,7 @@ type sSMServiceClient struct {
 	getAccessToken                                    *connect.Client[ssm.GetAccessTokenRequest, ssm.GetAccessTokenResponse]
 	getAutomationExecution                            *connect.Client[ssm.GetAutomationExecutionRequest, ssm.GetAutomationExecutionResult]
 	getCalendarState                                  *connect.Client[ssm.GetCalendarStateRequest, ssm.GetCalendarStateResponse]
+	getCloudConnector                                 *connect.Client[ssm.GetCloudConnectorRequest, ssm.GetCloudConnectorResult]
 	getCommandInvocation                              *connect.Client[ssm.GetCommandInvocationRequest, ssm.GetCommandInvocationResult]
 	getConnectionStatus                               *connect.Client[ssm.GetConnectionStatusRequest, ssm.GetConnectionStatusResponse]
 	getDefaultPatchBaseline                           *connect.Client[ssm.GetDefaultPatchBaselineRequest, ssm.GetDefaultPatchBaselineResult]
@@ -2039,6 +2120,7 @@ type sSMServiceClient struct {
 	labelParameterVersion                             *connect.Client[ssm.LabelParameterVersionRequest, ssm.LabelParameterVersionResult]
 	listAssociations                                  *connect.Client[ssm.ListAssociationsRequest, ssm.ListAssociationsResult]
 	listAssociationVersions                           *connect.Client[ssm.ListAssociationVersionsRequest, ssm.ListAssociationVersionsResult]
+	listCloudConnectors                               *connect.Client[ssm.ListCloudConnectorsRequest, ssm.ListCloudConnectorsResult]
 	listCommandInvocations                            *connect.Client[ssm.ListCommandInvocationsRequest, ssm.ListCommandInvocationsResult]
 	listCommands                                      *connect.Client[ssm.ListCommandsRequest, ssm.ListCommandsResult]
 	listComplianceItems                               *connect.Client[ssm.ListComplianceItemsRequest, ssm.ListComplianceItemsResult]
@@ -2080,6 +2162,7 @@ type sSMServiceClient struct {
 	unlabelParameterVersion                           *connect.Client[ssm.UnlabelParameterVersionRequest, ssm.UnlabelParameterVersionResult]
 	updateAssociation                                 *connect.Client[ssm.UpdateAssociationRequest, ssm.UpdateAssociationResult]
 	updateAssociationStatus                           *connect.Client[ssm.UpdateAssociationStatusRequest, ssm.UpdateAssociationStatusResult]
+	updateCloudConnector                              *connect.Client[ssm.UpdateCloudConnectorRequest, ssm.UpdateCloudConnectorResult]
 	updateDocument                                    *connect.Client[ssm.UpdateDocumentRequest, ssm.UpdateDocumentResult]
 	updateDocumentDefaultVersion                      *connect.Client[ssm.UpdateDocumentDefaultVersionRequest, ssm.UpdateDocumentDefaultVersionResult]
 	updateDocumentMetadata                            *connect.Client[ssm.UpdateDocumentMetadataRequest, ssm.UpdateDocumentMetadataResponse]
@@ -2092,6 +2175,7 @@ type sSMServiceClient struct {
 	updatePatchBaseline                               *connect.Client[ssm.UpdatePatchBaselineRequest, ssm.UpdatePatchBaselineResult]
 	updateResourceDataSync                            *connect.Client[ssm.UpdateResourceDataSyncRequest, ssm.UpdateResourceDataSyncResult]
 	updateServiceSetting                              *connect.Client[ssm.UpdateServiceSettingRequest, ssm.UpdateServiceSettingResult]
+	validateCloudConnector                            *connect.Client[ssm.ValidateCloudConnectorRequest, ssm.ValidateCloudConnectorResult]
 }
 
 // AddTagsToResource calls ssm.SSMService.AddTagsToResource.
@@ -2127,6 +2211,11 @@ func (c *sSMServiceClient) CreateAssociation(ctx context.Context, req *connect.R
 // CreateAssociationBatch calls ssm.SSMService.CreateAssociationBatch.
 func (c *sSMServiceClient) CreateAssociationBatch(ctx context.Context, req *connect.Request[ssm.CreateAssociationBatchRequest]) (*connect.Response[ssm.CreateAssociationBatchResult], error) {
 	return c.createAssociationBatch.CallUnary(ctx, req)
+}
+
+// CreateCloudConnector calls ssm.SSMService.CreateCloudConnector.
+func (c *sSMServiceClient) CreateCloudConnector(ctx context.Context, req *connect.Request[ssm.CreateCloudConnectorRequest]) (*connect.Response[ssm.CreateCloudConnectorResult], error) {
+	return c.createCloudConnector.CallUnary(ctx, req)
 }
 
 // CreateDocument calls ssm.SSMService.CreateDocument.
@@ -2167,6 +2256,11 @@ func (c *sSMServiceClient) DeleteActivation(ctx context.Context, req *connect.Re
 // DeleteAssociation calls ssm.SSMService.DeleteAssociation.
 func (c *sSMServiceClient) DeleteAssociation(ctx context.Context, req *connect.Request[ssm.DeleteAssociationRequest]) (*connect.Response[ssm.DeleteAssociationResult], error) {
 	return c.deleteAssociation.CallUnary(ctx, req)
+}
+
+// DeleteCloudConnector calls ssm.SSMService.DeleteCloudConnector.
+func (c *sSMServiceClient) DeleteCloudConnector(ctx context.Context, req *connect.Request[ssm.DeleteCloudConnectorRequest]) (*connect.Response[ssm.DeleteCloudConnectorResult], error) {
+	return c.deleteCloudConnector.CallUnary(ctx, req)
 }
 
 // DeleteDocument calls ssm.SSMService.DeleteDocument.
@@ -2428,6 +2522,11 @@ func (c *sSMServiceClient) GetCalendarState(ctx context.Context, req *connect.Re
 	return c.getCalendarState.CallUnary(ctx, req)
 }
 
+// GetCloudConnector calls ssm.SSMService.GetCloudConnector.
+func (c *sSMServiceClient) GetCloudConnector(ctx context.Context, req *connect.Request[ssm.GetCloudConnectorRequest]) (*connect.Response[ssm.GetCloudConnectorResult], error) {
+	return c.getCloudConnector.CallUnary(ctx, req)
+}
+
 // GetCommandInvocation calls ssm.SSMService.GetCommandInvocation.
 func (c *sSMServiceClient) GetCommandInvocation(ctx context.Context, req *connect.Request[ssm.GetCommandInvocationRequest]) (*connect.Response[ssm.GetCommandInvocationResult], error) {
 	return c.getCommandInvocation.CallUnary(ctx, req)
@@ -2562,6 +2661,11 @@ func (c *sSMServiceClient) ListAssociations(ctx context.Context, req *connect.Re
 // ListAssociationVersions calls ssm.SSMService.ListAssociationVersions.
 func (c *sSMServiceClient) ListAssociationVersions(ctx context.Context, req *connect.Request[ssm.ListAssociationVersionsRequest]) (*connect.Response[ssm.ListAssociationVersionsResult], error) {
 	return c.listAssociationVersions.CallUnary(ctx, req)
+}
+
+// ListCloudConnectors calls ssm.SSMService.ListCloudConnectors.
+func (c *sSMServiceClient) ListCloudConnectors(ctx context.Context, req *connect.Request[ssm.ListCloudConnectorsRequest]) (*connect.Response[ssm.ListCloudConnectorsResult], error) {
+	return c.listCloudConnectors.CallUnary(ctx, req)
 }
 
 // ListCommandInvocations calls ssm.SSMService.ListCommandInvocations.
@@ -2769,6 +2873,11 @@ func (c *sSMServiceClient) UpdateAssociationStatus(ctx context.Context, req *con
 	return c.updateAssociationStatus.CallUnary(ctx, req)
 }
 
+// UpdateCloudConnector calls ssm.SSMService.UpdateCloudConnector.
+func (c *sSMServiceClient) UpdateCloudConnector(ctx context.Context, req *connect.Request[ssm.UpdateCloudConnectorRequest]) (*connect.Response[ssm.UpdateCloudConnectorResult], error) {
+	return c.updateCloudConnector.CallUnary(ctx, req)
+}
+
 // UpdateDocument calls ssm.SSMService.UpdateDocument.
 func (c *sSMServiceClient) UpdateDocument(ctx context.Context, req *connect.Request[ssm.UpdateDocumentRequest]) (*connect.Response[ssm.UpdateDocumentResult], error) {
 	return c.updateDocument.CallUnary(ctx, req)
@@ -2829,6 +2938,11 @@ func (c *sSMServiceClient) UpdateServiceSetting(ctx context.Context, req *connec
 	return c.updateServiceSetting.CallUnary(ctx, req)
 }
 
+// ValidateCloudConnector calls ssm.SSMService.ValidateCloudConnector.
+func (c *sSMServiceClient) ValidateCloudConnector(ctx context.Context, req *connect.Request[ssm.ValidateCloudConnectorRequest]) (*connect.Response[ssm.ValidateCloudConnectorResult], error) {
+	return c.validateCloudConnector.CallUnary(ctx, req)
+}
+
 // SSMServiceHandler is an implementation of the ssm.SSMService service.
 type SSMServiceHandler interface {
 	// Adds or overwrites one or more tags for the specified resource. Tags are metadata that you can assign to your automations, documents, managed nodes, maintenance windows, Parameter Store parameters,...
@@ -2859,6 +2973,10 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateAssociationBatch(context.Context, *connect.Request[ssm.CreateAssociationBatchRequest]) (*connect.Response[ssm.CreateAssociationBatchResult], error)
+	// Creates a cloud connector that establishes a connection between Systems Manager and a third-party cloud environment.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateCloudConnector(context.Context, *connect.Request[ssm.CreateCloudConnectorRequest]) (*connect.Response[ssm.CreateCloudConnectorResult], error)
 	// Creates a Amazon Web Services Systems Manager (SSM document). An SSM document defines the actions that Systems Manager performs on your managed nodes. For more information about SSM documents, incl...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2891,6 +3009,10 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteAssociation(context.Context, *connect.Request[ssm.DeleteAssociationRequest]) (*connect.Response[ssm.DeleteAssociationResult], error)
+	// Deletes a cloud connector.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteCloudConnector(context.Context, *connect.Request[ssm.DeleteCloudConnectorRequest]) (*connect.Response[ssm.DeleteCloudConnectorResult], error)
 	// Deletes the Amazon Web Services Systems Manager document (SSM document) and all managed node associations to the document. Before you delete the document, we recommend that you use DeleteAssociatio...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -3095,6 +3217,10 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetCalendarState(context.Context, *connect.Request[ssm.GetCalendarStateRequest]) (*connect.Response[ssm.GetCalendarStateResponse], error)
+	// Returns detailed information about a cloud connector.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetCloudConnector(context.Context, *connect.Request[ssm.GetCloudConnectorRequest]) (*connect.Response[ssm.GetCloudConnectorResult], error)
 	// Returns detailed information about command execution for an invocation or plugin. The Run Command API follows an eventual consistency model, due to the distributed nature of the system supporting t...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -3203,6 +3329,10 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListAssociationVersions(context.Context, *connect.Request[ssm.ListAssociationVersionsRequest]) (*connect.Response[ssm.ListAssociationVersionsResult], error)
+	// Returns a list of cloud connectors in the current Amazon Web Services account and Amazon Web Services Region.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListCloudConnectors(context.Context, *connect.Request[ssm.ListCloudConnectorsRequest]) (*connect.Response[ssm.ListCloudConnectorsResult], error)
 	// An invocation is copy of a command sent to a specific managed node. A command can apply to one or more managed nodes. A command invocation applies to one managed node. For example, if a user runs S...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -3279,7 +3409,7 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	PutInventory(context.Context, *connect.Request[ssm.PutInventoryRequest]) (*connect.Response[ssm.PutInventoryResult], error)
-	// Create or update a parameter in Parameter Store.
+	// Create or update a parameter in Parameter Store. Parameter Store throughput defines the number of API transactions per second (TPS) that Systems Manager can process. This applies to GetParameter, G...
 	// HTTP:
 	// Protocol: awsJson1_1
 	PutParameter(context.Context, *connect.Request[ssm.PutParameterRequest]) (*connect.Response[ssm.PutParameterResult], error)
@@ -3367,6 +3497,10 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateAssociationStatus(context.Context, *connect.Request[ssm.UpdateAssociationStatusRequest]) (*connect.Response[ssm.UpdateAssociationStatusResult], error)
+	// Updates an existing cloud connector with new configuration details.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateCloudConnector(context.Context, *connect.Request[ssm.UpdateCloudConnectorRequest]) (*connect.Response[ssm.UpdateCloudConnectorResult], error)
 	// Updates one or more values for an SSM document.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -3415,6 +3549,10 @@ type SSMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateServiceSetting(context.Context, *connect.Request[ssm.UpdateServiceSettingRequest]) (*connect.Response[ssm.UpdateServiceSettingResult], error)
+	// Validates the configuration and connectivity of a cloud connector.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ValidateCloudConnector(context.Context, *connect.Request[ssm.ValidateCloudConnectorRequest]) (*connect.Response[ssm.ValidateCloudConnectorResult], error)
 }
 
 // NewSSMServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -3466,6 +3604,12 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sSMServiceMethods.ByName("CreateAssociationBatch")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sSMServiceCreateCloudConnectorHandler := connect.NewUnaryHandler(
+		SSMServiceCreateCloudConnectorProcedure,
+		svc.CreateCloudConnector,
+		connect.WithSchema(sSMServiceMethods.ByName("CreateCloudConnector")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sSMServiceCreateDocumentHandler := connect.NewUnaryHandler(
 		SSMServiceCreateDocumentProcedure,
 		svc.CreateDocument,
@@ -3512,6 +3656,12 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 		SSMServiceDeleteAssociationProcedure,
 		svc.DeleteAssociation,
 		connect.WithSchema(sSMServiceMethods.ByName("DeleteAssociation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sSMServiceDeleteCloudConnectorHandler := connect.NewUnaryHandler(
+		SSMServiceDeleteCloudConnectorProcedure,
+		svc.DeleteCloudConnector,
+		connect.WithSchema(sSMServiceMethods.ByName("DeleteCloudConnector")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sSMServiceDeleteDocumentHandler := connect.NewUnaryHandler(
@@ -3820,6 +3970,12 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sSMServiceMethods.ByName("GetCalendarState")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sSMServiceGetCloudConnectorHandler := connect.NewUnaryHandler(
+		SSMServiceGetCloudConnectorProcedure,
+		svc.GetCloudConnector,
+		connect.WithSchema(sSMServiceMethods.ByName("GetCloudConnector")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sSMServiceGetCommandInvocationHandler := connect.NewUnaryHandler(
 		SSMServiceGetCommandInvocationProcedure,
 		svc.GetCommandInvocation,
@@ -3980,6 +4136,12 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 		SSMServiceListAssociationVersionsProcedure,
 		svc.ListAssociationVersions,
 		connect.WithSchema(sSMServiceMethods.ByName("ListAssociationVersions")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sSMServiceListCloudConnectorsHandler := connect.NewUnaryHandler(
+		SSMServiceListCloudConnectorsProcedure,
+		svc.ListCloudConnectors,
+		connect.WithSchema(sSMServiceMethods.ByName("ListCloudConnectors")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sSMServiceListCommandInvocationsHandler := connect.NewUnaryHandler(
@@ -4228,6 +4390,12 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sSMServiceMethods.ByName("UpdateAssociationStatus")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sSMServiceUpdateCloudConnectorHandler := connect.NewUnaryHandler(
+		SSMServiceUpdateCloudConnectorProcedure,
+		svc.UpdateCloudConnector,
+		connect.WithSchema(sSMServiceMethods.ByName("UpdateCloudConnector")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sSMServiceUpdateDocumentHandler := connect.NewUnaryHandler(
 		SSMServiceUpdateDocumentProcedure,
 		svc.UpdateDocument,
@@ -4300,6 +4468,12 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(sSMServiceMethods.ByName("UpdateServiceSetting")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sSMServiceValidateCloudConnectorHandler := connect.NewUnaryHandler(
+		SSMServiceValidateCloudConnectorProcedure,
+		svc.ValidateCloudConnector,
+		connect.WithSchema(sSMServiceMethods.ByName("ValidateCloudConnector")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/ssm.SSMService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case SSMServiceAddTagsToResourceProcedure:
@@ -4316,6 +4490,8 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 			sSMServiceCreateAssociationHandler.ServeHTTP(w, r)
 		case SSMServiceCreateAssociationBatchProcedure:
 			sSMServiceCreateAssociationBatchHandler.ServeHTTP(w, r)
+		case SSMServiceCreateCloudConnectorProcedure:
+			sSMServiceCreateCloudConnectorHandler.ServeHTTP(w, r)
 		case SSMServiceCreateDocumentProcedure:
 			sSMServiceCreateDocumentHandler.ServeHTTP(w, r)
 		case SSMServiceCreateMaintenanceWindowProcedure:
@@ -4332,6 +4508,8 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 			sSMServiceDeleteActivationHandler.ServeHTTP(w, r)
 		case SSMServiceDeleteAssociationProcedure:
 			sSMServiceDeleteAssociationHandler.ServeHTTP(w, r)
+		case SSMServiceDeleteCloudConnectorProcedure:
+			sSMServiceDeleteCloudConnectorHandler.ServeHTTP(w, r)
 		case SSMServiceDeleteDocumentProcedure:
 			sSMServiceDeleteDocumentHandler.ServeHTTP(w, r)
 		case SSMServiceDeleteInventoryProcedure:
@@ -4434,6 +4612,8 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 			sSMServiceGetAutomationExecutionHandler.ServeHTTP(w, r)
 		case SSMServiceGetCalendarStateProcedure:
 			sSMServiceGetCalendarStateHandler.ServeHTTP(w, r)
+		case SSMServiceGetCloudConnectorProcedure:
+			sSMServiceGetCloudConnectorHandler.ServeHTTP(w, r)
 		case SSMServiceGetCommandInvocationProcedure:
 			sSMServiceGetCommandInvocationHandler.ServeHTTP(w, r)
 		case SSMServiceGetConnectionStatusProcedure:
@@ -4488,6 +4668,8 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 			sSMServiceListAssociationsHandler.ServeHTTP(w, r)
 		case SSMServiceListAssociationVersionsProcedure:
 			sSMServiceListAssociationVersionsHandler.ServeHTTP(w, r)
+		case SSMServiceListCloudConnectorsProcedure:
+			sSMServiceListCloudConnectorsHandler.ServeHTTP(w, r)
 		case SSMServiceListCommandInvocationsProcedure:
 			sSMServiceListCommandInvocationsHandler.ServeHTTP(w, r)
 		case SSMServiceListCommandsProcedure:
@@ -4570,6 +4752,8 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 			sSMServiceUpdateAssociationHandler.ServeHTTP(w, r)
 		case SSMServiceUpdateAssociationStatusProcedure:
 			sSMServiceUpdateAssociationStatusHandler.ServeHTTP(w, r)
+		case SSMServiceUpdateCloudConnectorProcedure:
+			sSMServiceUpdateCloudConnectorHandler.ServeHTTP(w, r)
 		case SSMServiceUpdateDocumentProcedure:
 			sSMServiceUpdateDocumentHandler.ServeHTTP(w, r)
 		case SSMServiceUpdateDocumentDefaultVersionProcedure:
@@ -4594,6 +4778,8 @@ func NewSSMServiceHandler(svc SSMServiceHandler, opts ...connect.HandlerOption) 
 			sSMServiceUpdateResourceDataSyncHandler.ServeHTTP(w, r)
 		case SSMServiceUpdateServiceSettingProcedure:
 			sSMServiceUpdateServiceSettingHandler.ServeHTTP(w, r)
+		case SSMServiceValidateCloudConnectorProcedure:
+			sSMServiceValidateCloudConnectorHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -4631,6 +4817,10 @@ func (UnimplementedSSMServiceHandler) CreateAssociationBatch(context.Context, *c
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.CreateAssociationBatch is not implemented"))
 }
 
+func (UnimplementedSSMServiceHandler) CreateCloudConnector(context.Context, *connect.Request[ssm.CreateCloudConnectorRequest]) (*connect.Response[ssm.CreateCloudConnectorResult], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.CreateCloudConnector is not implemented"))
+}
+
 func (UnimplementedSSMServiceHandler) CreateDocument(context.Context, *connect.Request[ssm.CreateDocumentRequest]) (*connect.Response[ssm.CreateDocumentResult], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.CreateDocument is not implemented"))
 }
@@ -4661,6 +4851,10 @@ func (UnimplementedSSMServiceHandler) DeleteActivation(context.Context, *connect
 
 func (UnimplementedSSMServiceHandler) DeleteAssociation(context.Context, *connect.Request[ssm.DeleteAssociationRequest]) (*connect.Response[ssm.DeleteAssociationResult], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.DeleteAssociation is not implemented"))
+}
+
+func (UnimplementedSSMServiceHandler) DeleteCloudConnector(context.Context, *connect.Request[ssm.DeleteCloudConnectorRequest]) (*connect.Response[ssm.DeleteCloudConnectorResult], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.DeleteCloudConnector is not implemented"))
 }
 
 func (UnimplementedSSMServiceHandler) DeleteDocument(context.Context, *connect.Request[ssm.DeleteDocumentRequest]) (*connect.Response[ssm.DeleteDocumentResult], error) {
@@ -4867,6 +5061,10 @@ func (UnimplementedSSMServiceHandler) GetCalendarState(context.Context, *connect
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.GetCalendarState is not implemented"))
 }
 
+func (UnimplementedSSMServiceHandler) GetCloudConnector(context.Context, *connect.Request[ssm.GetCloudConnectorRequest]) (*connect.Response[ssm.GetCloudConnectorResult], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.GetCloudConnector is not implemented"))
+}
+
 func (UnimplementedSSMServiceHandler) GetCommandInvocation(context.Context, *connect.Request[ssm.GetCommandInvocationRequest]) (*connect.Response[ssm.GetCommandInvocationResult], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.GetCommandInvocation is not implemented"))
 }
@@ -4973,6 +5171,10 @@ func (UnimplementedSSMServiceHandler) ListAssociations(context.Context, *connect
 
 func (UnimplementedSSMServiceHandler) ListAssociationVersions(context.Context, *connect.Request[ssm.ListAssociationVersionsRequest]) (*connect.Response[ssm.ListAssociationVersionsResult], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.ListAssociationVersions is not implemented"))
+}
+
+func (UnimplementedSSMServiceHandler) ListCloudConnectors(context.Context, *connect.Request[ssm.ListCloudConnectorsRequest]) (*connect.Response[ssm.ListCloudConnectorsResult], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.ListCloudConnectors is not implemented"))
 }
 
 func (UnimplementedSSMServiceHandler) ListCommandInvocations(context.Context, *connect.Request[ssm.ListCommandInvocationsRequest]) (*connect.Response[ssm.ListCommandInvocationsResult], error) {
@@ -5139,6 +5341,10 @@ func (UnimplementedSSMServiceHandler) UpdateAssociationStatus(context.Context, *
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.UpdateAssociationStatus is not implemented"))
 }
 
+func (UnimplementedSSMServiceHandler) UpdateCloudConnector(context.Context, *connect.Request[ssm.UpdateCloudConnectorRequest]) (*connect.Response[ssm.UpdateCloudConnectorResult], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.UpdateCloudConnector is not implemented"))
+}
+
 func (UnimplementedSSMServiceHandler) UpdateDocument(context.Context, *connect.Request[ssm.UpdateDocumentRequest]) (*connect.Response[ssm.UpdateDocumentResult], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.UpdateDocument is not implemented"))
 }
@@ -5185,4 +5391,8 @@ func (UnimplementedSSMServiceHandler) UpdateResourceDataSync(context.Context, *c
 
 func (UnimplementedSSMServiceHandler) UpdateServiceSetting(context.Context, *connect.Request[ssm.UpdateServiceSettingRequest]) (*connect.Response[ssm.UpdateServiceSettingResult], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.UpdateServiceSetting is not implemented"))
+}
+
+func (UnimplementedSSMServiceHandler) ValidateCloudConnector(context.Context, *connect.Request[ssm.ValidateCloudConnectorRequest]) (*connect.Response[ssm.ValidateCloudConnectorResult], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("ssm.SSMService.ValidateCloudConnector is not implemented"))
 }

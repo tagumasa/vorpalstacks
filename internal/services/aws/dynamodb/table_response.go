@@ -5,7 +5,10 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-func (s *DynamoDBService) buildTableDescription(table *dbstore.Table) map[string]interface{} {
+// buildTableDescription renders the TableDescription response member.
+// replicas carries the table's replication-group rendering; a standalone
+// table passes nil for the empty list.
+func (s *DynamoDBService) buildTableDescription(table *dbstore.Table, replicas []interface{}) map[string]interface{} {
 	desc := map[string]interface{}{
 		"TableName":                 table.Name,
 		"TableArn":                  table.ARN,
@@ -50,6 +53,10 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table) map[string
 		desc["LocalSecondaryIndexes"] = buildLSIsResponse(table.LocalSecondaryIndexes)
 	}
 
+	if len(table.VectorIndexes) > 0 {
+		desc["VectorIndexes"] = buildVectorIndexesResponse(table.VectorIndexes)
+	}
+
 	if table.StreamSpecification != nil {
 		desc["StreamSpecification"] = map[string]interface{}{
 			"StreamEnabled":  table.StreamSpecification.StreamEnabled,
@@ -70,6 +77,8 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table) map[string
 	}
 
 	if table.WarmThroughput != nil {
+		// Warm throughput applies synchronously on this single-store
+		// platform, so ACTIVE is the live state rather than a placeholder.
 		desc["WarmThroughput"] = map[string]interface{}{
 			"ReadUnitsPerSecond":  table.WarmThroughput.ReadUnitsPerSecond,
 			"WriteUnitsPerSecond": table.WarmThroughput.WriteUnitsPerSecond,
@@ -97,7 +106,10 @@ func (s *DynamoDBService) buildTableDescription(table *dbstore.Table) map[string
 		"TableClass": tableClass,
 	}
 
-	desc["Replicas"] = []interface{}{}
+	desc["Replicas"] = replicas
+	if desc["Replicas"] == nil {
+		desc["Replicas"] = []interface{}{}
+	}
 
 	return desc
 }
@@ -163,6 +175,38 @@ func buildLSIsResponse(lsis []*dbstore.LocalSecondaryIndex) []map[string]interfa
 		}
 		if l.IndexSizeBytes > 0 {
 			idx["IndexSizeBytes"] = l.IndexSizeBytes
+		}
+		result[i] = idx
+	}
+	return result
+}
+
+func buildVectorIndexesResponse(vis []*dbstore.VectorIndex) []map[string]interface{} {
+	result := make([]map[string]interface{}, len(vis))
+	for i, v := range vis {
+		idx := map[string]interface{}{
+			"IndexName":        v.IndexName,
+			"IndexArn":         v.IndexArn,
+			"VectorAttribute":  map[string]interface{}{"AttributeName": v.VectorAttributeName},
+			"Dimensions":       v.Dimensions,
+			"DistanceFunction": v.DistanceFunction,
+			"Projection":       buildProjectionResponse(v.Projection),
+			"IndexStatus":      string(v.IndexStatus),
+			"ItemCount":        v.ItemCount,
+			"IndexSizeBytes":   v.IndexSizeBytes,
+		}
+		if len(v.SearchSchema) > 0 {
+			schema := make([]map[string]interface{}, len(v.SearchSchema))
+			for j, e := range v.SearchSchema {
+				schema[j] = map[string]interface{}{
+					"AttributeName":           e.AttributeName,
+					"SearchSchemaElementType": e.SearchSchemaElementType,
+				}
+			}
+			idx["SearchSchema"] = schema
+		}
+		if v.Backfilling {
+			idx["Backfilling"] = true
 		}
 		result[i] = idx
 	}

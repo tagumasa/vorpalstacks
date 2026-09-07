@@ -5,6 +5,7 @@ package appsync
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -34,7 +35,7 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	entries, nextToken, err := h.service.listApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken)
+	entries, nextToken, err := h.service.listApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.GetNexttoken())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -46,7 +47,7 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 
 	return connect.NewResponse(&pb.ListApisResponse{
 		Apis:      pbApis,
-		Nexttoken: nextToken,
+		Nexttoken: proto.String(nextToken),
 	}), nil
 }
 
@@ -57,7 +58,7 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	entries, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.Nexttoken, "")
+	entries, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.GetNexttoken(), "")
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -69,7 +70,7 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 
 	return connect.NewResponse(&pb.ListGraphqlApisResponse{
 		Graphqlapis: pbApis,
-		Nexttoken:   nextToken,
+		Nexttoken:   proto.String(nextToken),
 	}), nil
 }
 

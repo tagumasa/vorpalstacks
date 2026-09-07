@@ -148,6 +148,15 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		if rs.RestoreInProgress == nil || *rs.RestoreInProgress {
 			return fmt.Errorf("expected RestoreInProgress=false, got %v", rs.RestoreInProgress)
 		}
+		// The chunked restore must aggregate its counter updates: one
+		// backed-up item lands exactly one ItemCount increment and a
+		// non-zero size on the restored table.
+		if aws.ToInt64(targetDesc.Table.ItemCount) != 1 {
+			return fmt.Errorf("restored ItemCount = %d, want 1", aws.ToInt64(targetDesc.Table.ItemCount))
+		}
+		if aws.ToInt64(targetDesc.Table.TableSizeBytes) == 0 {
+			return fmt.Errorf("restored TableSizeBytes = 0, want the backed-up item's size")
+		}
 		return nil
 	}))
 
@@ -188,6 +197,42 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		}
 		if aws.ToString(getResp.Policy) != policy {
 			return fmt.Errorf("policy round-trip mismatch: %v", getResp.Policy)
+		}
+
+		// A second put advances the revision, and the persisted revision
+		// drives ExpectedRevisionId optimistic locking: a stale revision is
+		// rejected with PolicyNotFoundException, the current one succeeds.
+		if aws.ToString(putResp.RevisionId) != "v1" {
+			return fmt.Errorf("first put RevisionId = %q, want v1", *putResp.RevisionId)
+		}
+		putResp2, err := client.PutResourcePolicy(ctx, &dynamodb.PutResourcePolicyInput{
+			ResourceArn: aws.String(tableArn),
+			Policy:      aws.String(policy),
+		})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(putResp2.RevisionId) != "v2" {
+			return fmt.Errorf("second put RevisionId = %q, want v2", *putResp2.RevisionId)
+		}
+		_, err = client.PutResourcePolicy(ctx, &dynamodb.PutResourcePolicyInput{
+			ResourceArn:        aws.String(tableArn),
+			Policy:             aws.String(policy),
+			ExpectedRevisionId: aws.String("v1"),
+		})
+		if err == nil {
+			return fmt.Errorf("expected stale ExpectedRevisionId to be rejected")
+		}
+		var notFound *dynamodbtypes.PolicyNotFoundException
+		if !errors.As(err, &notFound) {
+			return fmt.Errorf("expected PolicyNotFoundException for stale revision, got %v", err)
+		}
+		if _, err := client.PutResourcePolicy(ctx, &dynamodb.PutResourcePolicyInput{
+			ResourceArn:        aws.String(tableArn),
+			Policy:             aws.String(policy),
+			ExpectedRevisionId: aws.String("v2"),
+		}); err != nil {
+			return fmt.Errorf("put with current ExpectedRevisionId: %v", err)
 		}
 		return nil
 	}))
@@ -470,6 +515,38 @@ func (r *TestRunner) dynamoDBBaselineCoverageTests(ctx context.Context, client *
 		}
 		if !found {
 			return fmt.Errorf("replica %s not described: %+v", r.region, replicas)
+		}
+
+		// A table-level-only update (no ReplicaUpdates) modifies the write
+		// side and must not erase the stored per-region replica
+		// descriptions.
+		if _, err := client.UpdateTableReplicaAutoScaling(ctx, &dynamodb.UpdateTableReplicaAutoScalingInput{
+			TableName: aws.String(asTable),
+			ProvisionedWriteCapacityAutoScalingUpdate: &dynamodbtypes.AutoScalingSettingsUpdate{
+				MinimumUnits: aws.Int64(1),
+				MaximumUnits: aws.Int64(10),
+			},
+		}); err != nil {
+			return fmt.Errorf("table-level update without ReplicaUpdates: %w", err)
+		}
+		preserved, err := client.DescribeTableReplicaAutoScaling(ctx, &dynamodb.DescribeTableReplicaAutoScalingInput{
+			TableName: aws.String(asTable),
+		})
+		if err != nil {
+			return err
+		}
+		kept := false
+		for _, replica := range preserved.TableAutoScalingDescription.Replicas {
+			if aws.ToString(replica.RegionName) == r.region {
+				kept = true
+				if replica.ReplicaProvisionedReadCapacityAutoScalingSettings == nil {
+					return fmt.Errorf("replica read settings must survive a table-level-only update")
+				}
+				break
+			}
+		}
+		if !kept {
+			return fmt.Errorf("table-level-only update erased the replica descriptions: %+v", preserved.TableAutoScalingDescription.Replicas)
 		}
 		return nil
 	}))

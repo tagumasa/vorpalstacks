@@ -16,12 +16,12 @@ func TestRecordContributorQuerySingleEvent(t *testing.T) {
 	defer st.Close()
 
 	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
-	if _, err := store.Tables().Create(
-		"Tbl",
-		[]*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}, {AttributeName: "sk", KeyType: KeyTypeRange}},
-		[]*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}, {AttributeName: "sk", AttributeType: ScalarAttributeTypeS}},
-		BillingModePayPerRequest, nil, nil, nil, nil, nil, false,
-	); err != nil {
+	if _, err := store.Tables().Create(CreateTableParams{
+		Name:                 "Tbl",
+		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}, {AttributeName: "sk", KeyType: KeyTypeRange}},
+		AttributeDefinitions: []*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}, {AttributeName: "sk", AttributeType: ScalarAttributeTypeS}},
+		BillingMode:          BillingModePayPerRequest,
+	}); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	tbl, err := store.Tables().Get("Tbl")
@@ -67,12 +67,12 @@ func TestRecordContributorReadsAggregatesSameKey(t *testing.T) {
 	defer st.Close()
 
 	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
-	if _, err := store.Tables().Create(
-		"Tbl",
-		[]*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}, {AttributeName: "sk", KeyType: KeyTypeRange}},
-		[]*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}, {AttributeName: "sk", AttributeType: ScalarAttributeTypeS}},
-		BillingModePayPerRequest, nil, nil, nil, nil, nil, false,
-	); err != nil {
+	if _, err := store.Tables().Create(CreateTableParams{
+		Name:                 "Tbl",
+		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}, {AttributeName: "sk", KeyType: KeyTypeRange}},
+		AttributeDefinitions: []*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}, {AttributeName: "sk", AttributeType: ScalarAttributeTypeS}},
+		BillingMode:          BillingModePayPerRequest,
+	}); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	tbl, err := store.Tables().Get("Tbl")
@@ -113,12 +113,12 @@ func TestDeleteTableCascadeDropsContributorCounters(t *testing.T) {
 	defer st.Close()
 
 	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
-	if _, err := store.Tables().Create(
-		"DropTbl",
-		[]*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}},
-		[]*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}},
-		BillingModePayPerRequest, nil, nil, nil, nil, nil, false,
-	); err != nil {
+	if _, err := store.Tables().Create(CreateTableParams{
+		Name:                 "DropTbl",
+		KeySchema:            []*KeySchemaElement{{AttributeName: "pk", KeyType: KeyTypeHash}},
+		AttributeDefinitions: []*AttributeDefinition{{AttributeName: "pk", AttributeType: ScalarAttributeTypeS}},
+		BillingMode:          BillingModePayPerRequest,
+	}); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	tbl, err := store.Tables().Get("DropTbl")
@@ -168,12 +168,12 @@ func TestContributorWriteFlushAtomicity(t *testing.T) {
 	defer st.Close()
 
 	store := NewDynamoDBStore(st, "123456789012", "us-east-1")
-	if _, err := store.Tables().Create(
-		"Tbl",
-		[]*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},
-		[]*AttributeDefinition{{AttributeName: "id", AttributeType: ScalarAttributeTypeS}},
-		BillingModePayPerRequest, nil, nil, nil, nil, nil, false,
-	); err != nil {
+	if _, err := store.Tables().Create(CreateTableParams{
+		Name:                 "Tbl",
+		KeySchema:            []*KeySchemaElement{{AttributeName: "id", KeyType: KeyTypeHash}},
+		AttributeDefinitions: []*AttributeDefinition{{AttributeName: "id", AttributeType: ScalarAttributeTypeS}},
+		BillingMode:          BillingModePayPerRequest,
+	}); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	tbl, err := store.Tables().Get("Tbl")

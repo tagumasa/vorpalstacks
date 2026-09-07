@@ -2,6 +2,7 @@ package sts
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -37,9 +38,9 @@ func (h *AdminHandler) GetCallerIdentity(ctx context.Context, req *connect.Reque
 	}
 	account, arn, userid := consoleCallerIdentityCore(h.accountID, username, arnClaim)
 	return connect.NewResponse(&pb.GetCallerIdentityResponse{
-		Account: account,
-		Arn:     arn,
-		Userid:  userid,
+		Account: proto.String(account),
+		Arn:     proto.String(arn),
+		Userid:  proto.String(userid),
 	}), nil
 }
 

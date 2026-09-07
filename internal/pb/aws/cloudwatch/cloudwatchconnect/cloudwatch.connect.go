@@ -151,6 +151,9 @@ const (
 	// CloudWatchServicePutInsightRuleProcedure is the fully-qualified name of the CloudWatchService's
 	// PutInsightRule RPC.
 	CloudWatchServicePutInsightRuleProcedure = "/cloudwatch.CloudWatchService/PutInsightRule"
+	// CloudWatchServicePutLogAlarmProcedure is the fully-qualified name of the CloudWatchService's
+	// PutLogAlarm RPC.
+	CloudWatchServicePutLogAlarmProcedure = "/cloudwatch.CloudWatchService/PutLogAlarm"
 	// CloudWatchServicePutManagedInsightRulesProcedure is the fully-qualified name of the
 	// CloudWatchService's PutManagedInsightRules RPC.
 	CloudWatchServicePutManagedInsightRulesProcedure = "/cloudwatch.CloudWatchService/PutManagedInsightRules"
@@ -340,6 +343,10 @@ type CloudWatchServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	PutInsightRule(context.Context, *connect.Request[cloudwatch.PutInsightRuleInput]) (*connect.Response[cloudwatch.PutInsightRuleOutput], error)
+	// Creates or updates a log alarm. A log alarm evaluates the results of a CloudWatch Logs scheduled query against the configured threshold and comparison operator to determine its state. When you crea...
+	// HTTP:
+	// Protocol: awsJson1_0
+	PutLogAlarm(context.Context, *connect.Request[cloudwatch.PutLogAlarmInput]) (*connect.Response[common.Empty], error)
 	// Creates a managed Contributor Insights rule for a specified Amazon Web Services resource. When you enable a managed rule, you create a Contributor Insights rule that collects data from Amazon Web S...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -625,6 +632,12 @@ func NewCloudWatchServiceClient(httpClient connect.HTTPClient, baseURL string, o
 			connect.WithSchema(cloudWatchServiceMethods.ByName("PutInsightRule")),
 			connect.WithClientOptions(opts...),
 		),
+		putLogAlarm: connect.NewClient[cloudwatch.PutLogAlarmInput, common.Empty](
+			httpClient,
+			baseURL+CloudWatchServicePutLogAlarmProcedure,
+			connect.WithSchema(cloudWatchServiceMethods.ByName("PutLogAlarm")),
+			connect.WithClientOptions(opts...),
+		),
 		putManagedInsightRules: connect.NewClient[cloudwatch.PutManagedInsightRulesInput, cloudwatch.PutManagedInsightRulesOutput](
 			httpClient,
 			baseURL+CloudWatchServicePutManagedInsightRulesProcedure,
@@ -734,6 +747,7 @@ type cloudWatchServiceClient struct {
 	putCompositeAlarm         *connect.Client[cloudwatch.PutCompositeAlarmInput, common.Empty]
 	putDashboard              *connect.Client[cloudwatch.PutDashboardInput, cloudwatch.PutDashboardOutput]
 	putInsightRule            *connect.Client[cloudwatch.PutInsightRuleInput, cloudwatch.PutInsightRuleOutput]
+	putLogAlarm               *connect.Client[cloudwatch.PutLogAlarmInput, common.Empty]
 	putManagedInsightRules    *connect.Client[cloudwatch.PutManagedInsightRulesInput, cloudwatch.PutManagedInsightRulesOutput]
 	putMetricAlarm            *connect.Client[cloudwatch.PutMetricAlarmInput, common.Empty]
 	putMetricData             *connect.Client[cloudwatch.PutMetricDataInput, common.Empty]
@@ -935,6 +949,11 @@ func (c *cloudWatchServiceClient) PutDashboard(ctx context.Context, req *connect
 // PutInsightRule calls cloudwatch.CloudWatchService.PutInsightRule.
 func (c *cloudWatchServiceClient) PutInsightRule(ctx context.Context, req *connect.Request[cloudwatch.PutInsightRuleInput]) (*connect.Response[cloudwatch.PutInsightRuleOutput], error) {
 	return c.putInsightRule.CallUnary(ctx, req)
+}
+
+// PutLogAlarm calls cloudwatch.CloudWatchService.PutLogAlarm.
+func (c *cloudWatchServiceClient) PutLogAlarm(ctx context.Context, req *connect.Request[cloudwatch.PutLogAlarmInput]) (*connect.Response[common.Empty], error) {
+	return c.putLogAlarm.CallUnary(ctx, req)
 }
 
 // PutManagedInsightRules calls cloudwatch.CloudWatchService.PutManagedInsightRules.
@@ -1146,6 +1165,10 @@ type CloudWatchServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	PutInsightRule(context.Context, *connect.Request[cloudwatch.PutInsightRuleInput]) (*connect.Response[cloudwatch.PutInsightRuleOutput], error)
+	// Creates or updates a log alarm. A log alarm evaluates the results of a CloudWatch Logs scheduled query against the configured threshold and comparison operator to determine its state. When you crea...
+	// HTTP:
+	// Protocol: awsJson1_0
+	PutLogAlarm(context.Context, *connect.Request[cloudwatch.PutLogAlarmInput]) (*connect.Response[common.Empty], error)
 	// Creates a managed Contributor Insights rule for a specified Amazon Web Services resource. When you enable a managed rule, you create a Contributor Insights rule that collects data from Amazon Web S...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -1427,6 +1450,12 @@ func NewCloudWatchServiceHandler(svc CloudWatchServiceHandler, opts ...connect.H
 		connect.WithSchema(cloudWatchServiceMethods.ByName("PutInsightRule")),
 		connect.WithHandlerOptions(opts...),
 	)
+	cloudWatchServicePutLogAlarmHandler := connect.NewUnaryHandler(
+		CloudWatchServicePutLogAlarmProcedure,
+		svc.PutLogAlarm,
+		connect.WithSchema(cloudWatchServiceMethods.ByName("PutLogAlarm")),
+		connect.WithHandlerOptions(opts...),
+	)
 	cloudWatchServicePutManagedInsightRulesHandler := connect.NewUnaryHandler(
 		CloudWatchServicePutManagedInsightRulesProcedure,
 		svc.PutManagedInsightRules,
@@ -1571,6 +1600,8 @@ func NewCloudWatchServiceHandler(svc CloudWatchServiceHandler, opts ...connect.H
 			cloudWatchServicePutDashboardHandler.ServeHTTP(w, r)
 		case CloudWatchServicePutInsightRuleProcedure:
 			cloudWatchServicePutInsightRuleHandler.ServeHTTP(w, r)
+		case CloudWatchServicePutLogAlarmProcedure:
+			cloudWatchServicePutLogAlarmHandler.ServeHTTP(w, r)
 		case CloudWatchServicePutManagedInsightRulesProcedure:
 			cloudWatchServicePutManagedInsightRulesHandler.ServeHTTP(w, r)
 		case CloudWatchServicePutMetricAlarmProcedure:
@@ -1752,6 +1783,10 @@ func (UnimplementedCloudWatchServiceHandler) PutDashboard(context.Context, *conn
 
 func (UnimplementedCloudWatchServiceHandler) PutInsightRule(context.Context, *connect.Request[cloudwatch.PutInsightRuleInput]) (*connect.Response[cloudwatch.PutInsightRuleOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cloudwatch.CloudWatchService.PutInsightRule is not implemented"))
+}
+
+func (UnimplementedCloudWatchServiceHandler) PutLogAlarm(context.Context, *connect.Request[cloudwatch.PutLogAlarmInput]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cloudwatch.CloudWatchService.PutLogAlarm is not implemented"))
 }
 
 func (UnimplementedCloudWatchServiceHandler) PutManagedInsightRules(context.Context, *connect.Request[cloudwatch.PutManagedInsightRulesInput]) (*connect.Response[cloudwatch.PutManagedInsightRulesOutput], error) {

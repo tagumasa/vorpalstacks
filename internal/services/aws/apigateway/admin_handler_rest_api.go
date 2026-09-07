@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 
 	"connectrpc.com/connect"
 
@@ -19,7 +20,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	result, err := h.service.listRestApisCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
+	result, err := h.service.listRestApisCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -31,7 +32,7 @@ func (h *AdminHandler) GetRestApis(ctx context.Context, req *connect.Request[pb.
 
 	resp := &pb.RestApis{Items: items}
 	if result.NextMarker != "" {
-		resp.Position = result.NextMarker
+		resp.Position = proto.String(result.NextMarker)
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -58,14 +59,14 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 
 	input := CreateRestApiInput{
 		Name:               req.Msg.Name,
-		Description:        req.Msg.Description,
-		Version:            req.Msg.Version,
+		Description:        req.Msg.GetDescription(),
+		Version:            req.Msg.GetVersion(),
 		BinaryMediaTypes:   req.Msg.Binarymediatypes,
 		ApiKeySource:       apiKeySourceFromPb(req.Msg.Apikeysource),
-		Policy:             req.Msg.Policy,
+		Policy:             req.Msg.GetPolicy(),
 		SecurityPolicy:     securityPolicyFromPb(req.Msg.Securitypolicy),
 		EndpointAccessMode: endpointAccessModeFromPb(req.Msg.Endpointaccessmode),
-		CloneFrom:          req.Msg.Clonefrom,
+		CloneFrom:          req.Msg.GetClonefrom(),
 	}
 	if req.Msg.Disableexecuteapiendpoint != nil {
 		input.DisableExecuteApiEndpoint = *req.Msg.Disableexecuteapiendpoint
@@ -114,8 +115,8 @@ func (h *AdminHandler) UpdateRestApi(ctx context.Context, req *connect.Request[p
 	for _, po := range req.Msg.Patchoperations {
 		patches = append(patches, PatchOperation{
 			Op:    opFromPb(po.Op),
-			Path:  po.Path,
-			Value: po.Value,
+			Path:  po.GetPath(),
+			Value: po.GetValue(),
 		})
 	}
 

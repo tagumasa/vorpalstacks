@@ -25,9 +25,9 @@ func (h *AdminHandler) getStoreFromHeaders(headers http.Header) (iotstore.IotSto
 func toPbThingAttribute(t *iotstore.Thing) *iot.ThingAttribute {
 	ta := &iot.ThingAttribute{
 		Attributes:    t.Attributes,
-		Thingarn:      t.ThingARN,
-		Thingname:     t.ThingName,
-		Thingtypename: t.ThingTypeName,
+		Thingarn:      proto.String(t.ThingARN),
+		Thingname:     proto.String(t.ThingName),
+		Thingtypename: proto.String(t.ThingTypeName),
 	}
 	if t.Version != 0 {
 		v := t.Version
@@ -39,12 +39,12 @@ func toPbThingAttribute(t *iotstore.Thing) *iot.ThingAttribute {
 func toPbDescribeThingResponse(t *iotstore.Thing) *iot.DescribeThingResponse {
 	resp := &iot.DescribeThingResponse{
 		Attributes:       t.Attributes,
-		Thingarn:         t.ThingARN,
-		Thingid:          t.ThingID,
-		Thingname:        t.ThingName,
-		Thingtypename:    t.ThingTypeName,
-		Defaultclientid:  t.DefaultClientId,
-		Billinggroupname: t.BillingGroupName,
+		Thingarn:         proto.String(t.ThingARN),
+		Thingid:          proto.String(t.ThingID),
+		Thingname:        proto.String(t.ThingName),
+		Thingtypename:    proto.String(t.ThingTypeName),
+		Defaultclientid:  proto.String(t.DefaultClientId),
+		Billinggroupname: proto.String(t.BillingGroupName),
 	}
 	if t.Version != 0 {
 		v := t.Version
@@ -55,41 +55,41 @@ func toPbDescribeThingResponse(t *iotstore.Thing) *iot.DescribeThingResponse {
 
 func toPbCreateThingResponse(t *iotstore.Thing) *iot.CreateThingResponse {
 	return &iot.CreateThingResponse{
-		Thingname: t.ThingName,
-		Thingarn:  t.ThingARN,
-		Thingid:   t.ThingID,
+		Thingname: proto.String(t.ThingName),
+		Thingarn:  proto.String(t.ThingARN),
+		Thingid:   proto.String(t.ThingID),
 	}
 }
 
 func toPbPolicy(p *iotstore.Policy) *iot.Policy {
 	return &iot.Policy{
-		Policyname: p.PolicyName,
-		Policyarn:  p.PolicyARN,
+		Policyname: proto.String(p.PolicyName),
+		Policyarn:  proto.String(p.PolicyARN),
 	}
 }
 
 func toPbCreatePolicyResponse(p *iotstore.Policy) *iot.CreatePolicyResponse {
 	return &iot.CreatePolicyResponse{
-		Policyname:      p.PolicyName,
-		Policyarn:       p.PolicyARN,
-		Policydocument:  p.PolicyDocument,
-		Policyversionid: "1",
+		Policyname:      proto.String(p.PolicyName),
+		Policyarn:       proto.String(p.PolicyARN),
+		Policydocument:  proto.String(p.PolicyDocument),
+		Policyversionid: proto.String("1"),
 	}
 }
 
 func toPbGetPolicyResponse(p *iotstore.Policy) *iot.GetPolicyResponse {
 	resp := &iot.GetPolicyResponse{
-		Policyname:       p.PolicyName,
-		Policyarn:        p.PolicyARN,
-		Policydocument:   p.PolicyDocument,
-		Defaultversionid: "1",
-		Generationid:     "1",
+		Policyname:       proto.String(p.PolicyName),
+		Policyarn:        proto.String(p.PolicyARN),
+		Policydocument:   proto.String(p.PolicyDocument),
+		Defaultversionid: proto.String("1"),
+		Generationid:     proto.String("1"),
 	}
 	if !p.CreationDate.IsZero() {
-		resp.Creationdate = p.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		resp.Creationdate = proto.String(p.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !p.LastModifiedDate.IsZero() {
-		resp.Lastmodifieddate = p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		resp.Lastmodifieddate = proto.String(p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	return resp
 }
@@ -139,44 +139,44 @@ func certModeToProto(mode string) iot.CertificateMode {
 
 func toPbCertificate(c *iotstore.Certificate) *iot.Certificate {
 	cert := &iot.Certificate{
-		Certificatearn:  c.CertificateARN,
-		Certificateid:   c.CertificateID,
+		Certificatearn:  proto.String(c.CertificateARN),
+		Certificateid:   proto.String(c.CertificateID),
 		Certificatemode: certModeToProto(c.CertificateMode),
 		Status:          certStatusToProto(c.Status),
 	}
 	if !c.CreationDate.IsZero() {
-		cert.Creationdate = c.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		cert.Creationdate = proto.String(c.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	return cert
 }
 
 func toPbCertificateDescription(c *iotstore.Certificate) *iot.CertificateDescription {
 	desc := &iot.CertificateDescription{
-		Certificatearn:  c.CertificateARN,
-		Certificateid:   c.CertificateID,
-		Certificatepem:  c.CertificatePEM,
-		Cacertificateid: c.CaCertificateID,
+		Certificatearn:  proto.String(c.CertificateARN),
+		Certificateid:   proto.String(c.CertificateID),
+		Certificatepem:  proto.String(c.CertificatePEM),
+		Cacertificateid: proto.String(c.CaCertificateID),
 		Status:          certStatusToProto(c.Status),
 		Certificatemode: certModeToProto(c.CertificateMode),
-		Generationid:    "1",
+		Generationid:    proto.String("1"),
 	}
 	cv := int32(1)
 	desc.Customerversion = &cv
 	if !c.CreationDate.IsZero() {
-		desc.Creationdate = c.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		desc.Creationdate = proto.String(c.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !c.LastModifiedDate.IsZero() {
-		desc.Lastmodifieddate = c.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		desc.Lastmodifieddate = proto.String(c.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	return desc
 }
 
 func toPbTopicRuleListItem(r *iotstore.TopicRule) *iot.TopicRuleListItem {
 	item := &iot.TopicRuleListItem{
-		Rulearn:      r.ARN,
-		Rulename:     r.RuleName,
-		Topicpattern: r.TopicPattern,
-		Createdat:    r.CreatedAt,
+		Rulearn:      proto.String(r.ARN),
+		Rulename:     proto.String(r.RuleName),
+		Topicpattern: proto.String(r.TopicPattern),
+		Createdat:    proto.String(r.CreatedAt),
 	}
 	if r.RuleDisabled {
 		item.Ruledisabled = proto.Bool(true)

@@ -29,6 +29,7 @@ func BackupToProto(b *Backup) *pb.Backup {
 		ProvisionedThroughput:   provisionedThroughputToProto(b.ProvisionedThroughput),
 		GlobalSecondaryIndexes:  globalSecondaryIndexesToProto(b.GlobalSecondaryIndexes),
 		LocalSecondaryIndexes:   localSecondaryIndexesToProto(b.LocalSecondaryIndexes),
+		VectorIndexes:           vectorIndexesToProto(b.VectorIndexes),
 	}
 }
 
@@ -56,5 +57,35 @@ func ProtoToBackup(p *pb.Backup) *Backup {
 		ProvisionedThroughput:   protoToProvisionedThroughput(p.ProvisionedThroughput),
 		GlobalSecondaryIndexes:  protoToGlobalSecondaryIndexes(p.GlobalSecondaryIndexes),
 		LocalSecondaryIndexes:   protoToLocalSecondaryIndexes(p.LocalSecondaryIndexes),
+		VectorIndexes:           protoToVectorIndexes(p.VectorIndexes),
 	}
+}
+
+// backupSnapshotToProto converts a backup's item snapshot to its protobuf
+// form; the key map and the attribute map are both preserved per item.
+func backupSnapshotToProto(items []*Item) *pb.BackupSnapshot {
+	if items == nil {
+		return nil
+	}
+	pbItems := make([]*pb.Item, len(items))
+	for i, item := range items {
+		pbItems[i] = &pb.Item{
+			TableName:  item.TableName,
+			Key:        attributeValueMapToProtoDirect(item.Key),
+			Attributes: attributeValueMapToProtoDirect(item.Attributes),
+		}
+	}
+	return &pb.BackupSnapshot{Items: pbItems}
+}
+
+// protoToBackupSnapshot converts a protobuf item snapshot back to items.
+func protoToBackupSnapshot(p *pb.BackupSnapshot) []*Item {
+	if p == nil {
+		return nil
+	}
+	items := make([]*Item, len(p.Items))
+	for i := range p.Items {
+		items[i] = itemFromProto(p.Items[i])
+	}
+	return items
 }

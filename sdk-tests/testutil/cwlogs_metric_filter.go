@@ -232,8 +232,8 @@ func (tc *cwlogsTestCtx) metricFilterTests() []TestResult {
 		cwClient := cloudwatch.NewFromConfig(cwCfg)
 		start := time.Now().Add(-5 * time.Minute)
 		end := time.Now().Add(1 * time.Minute)
-		for i := 0; i < 10; i++ {
-			time.Sleep(1 * time.Second)
+		for i := 0; i < 40; i++ {
+			time.Sleep(250 * time.Millisecond)
 			out, err := cwClient.GetMetricStatistics(tc.ctx, &cloudwatch.GetMetricStatisticsInput{
 				Namespace:  aws.String("vorpalstacks/test"),
 				MetricName: aws.String(metricName),

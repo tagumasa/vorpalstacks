@@ -18,6 +18,7 @@ import (
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	"vorpalstacks/pkg/sqlparser"
 )
 
 func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams, consistentRead bool, limit int, nextToken string) (interface{}, error) {
@@ -65,6 +66,10 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 
 	var items []*dbstore.Item
 	scannedCount := 0
+	// sawMore records that a matching item was rejected because the window
+	// was full — the proof that a further page exists, which the early
+	// termination would otherwise discard along with the item.
+	sawMore := false
 
 	scanCallback := func(item *dbstore.Item) error {
 		scannedCount++
@@ -72,6 +77,7 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 			return nil
 		}
 		if needed > 0 && len(items) >= needed {
+			sawMore = true
 			return errScanSufficient
 		}
 		items = append(items, item)
@@ -90,10 +96,16 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 	if orderBy != nil {
 		items = sortItemsByOrderBy(items, orderBy)
 	}
-	items = items[startOffset:]
+	// A stale NextToken replayed against a shrunken result set carries an
+	// offset past the end; that is the last page, not an error.
+	if startOffset >= len(items) {
+		items = nil
+	} else {
+		items = items[startOffset:]
+	}
 
 	var newNextToken string
-	if limit > 0 && len(items) > limit {
+	if limit > 0 && (sawMore || len(items) > limit) {
 		items = items[:limit]
 		offsetBytes, _ := json.Marshal(startOffset + limit)
 		newNextToken = base64.StdEncoding.EncodeToString(offsetBytes)
@@ -128,9 +140,9 @@ func (s *DynamoDBService) executePartiQLSelectEnhanced(ctx context.Context, reqC
 }
 
 func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *request.RequestContext, statement string, params *partiQLParams) (interface{}, error) {
-	tableName, itemData := parseInsertStatementWithParams(statement, params)
-	if tableName == "" || itemData == nil {
-		return nil, ErrInvalidParameter
+	tableName, itemData, err := parseInsertStatementWithParams(statement, params)
+	if err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -145,6 +157,11 @@ func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *requ
 	table, err := store.Tables().Get(tableName)
 	if err != nil {
 		return nil, err
+	}
+	// A table mid-restore (CREATING) must not be mutated: a write statement
+	// follows the write-requires-ACTIVE rule of the single-item writes.
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
 	}
 
 	keyAttrs := buildKeyFromSchema(table.KeySchema, itemData)
@@ -182,7 +199,7 @@ func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *requ
 			if err := txn.UpdateItemCount(tableName, 1); err != nil {
 				return err
 			}
-			newItemSize := calculateItemSize(itemData)
+			newItemSize := dbstore.CalculateItemSize(itemData)
 			if err := txn.UpdateTableSize(tableName, newItemSize); err != nil {
 				return err
 			}
@@ -195,6 +212,8 @@ func (s *DynamoDBService) executePartiQLInsert(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
+
+	s.emitChangePropagation(store, reqCtx.GetRegion(), table, dbstore.StreamEventInsert, keyAttrs, itemData, nil, s.replicaPutOp(table, keyAttrs, itemData))
 
 	return response.EmptyResponse(), nil
 }
@@ -230,50 +249,29 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-
-	// AWS PartiQL requires UPDATE to target a single item via partition-key
-	// equality in the WHERE clause. Reject statements that lack this.
-	if whereExpr == nil {
-		return nil, ErrInvalidParameter
-	}
-	pkName := getHashKeyName(table)
-	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
-	if pkValue == "" {
-		return nil, ErrInvalidParameter
+	// A table mid-restore (CREATING) must not be mutated: a write statement
+	// follows the write-requires-ACTIVE rule of the single-item writes.
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
 	}
 
-	// Scan only items matching the partition key, then filter by the
-	// full WHERE clause in the callback. Collect at most 2 items to
-	// detect multi-item matches without loading the entire partition.
-	var items []*dbstore.Item
-	var preFilterItems []*dbstore.Item
-	scannedCount := 0
-	scanCallback := func(item *dbstore.Item) error {
-		scannedCount++
-		if !evaluateExpr(item.Attributes, whereExpr, params) {
-			if returnValuesOnConditionCheckFailure == "ALL_OLD" {
-				preFilterItems = append(preFilterItems, item)
-			}
-			return nil
-		}
-		items = append(items, item)
-		if len(items) >= 2 {
-			return errScanSufficient
-		}
-		return nil
-	}
-	err = store.Items().ScanByPartitionKey(tableName, pkValue, scanCallback)
-	if err != nil && !errors.Is(err, errScanSufficient) {
+	// The key attributes identify the item being updated; no UPDATE clause
+	// may write them.
+	if err := validateNotKeyAttributes(table, updateClauseTargetNames(clauses)); err != nil {
 		return nil, err
 	}
 
-	// AWS rejects UPDATE statements that match more than one item.
-	if len(items) > 1 {
-		return nil, NewAPIError("com.amazonaws.dynamodb.v20120810#ValidationException",
-			"UPDATE statement must match exactly one item", http.StatusBadRequest)
+	// The AWS single-item contract: the WHERE clause carries a partition-key
+	// equality and the statement matches at most one item.
+	item, preFilterItems, scannedCount, err := matchSingleTargetItem(
+		func(pkValue string, cb func(*dbstore.Item) error) error {
+			return store.Items().ScanByPartitionKey(tableName, pkValue, cb)
+		}, table, whereExpr, params, "UPDATE", returnValuesOnConditionCheckFailure == "ALL_OLD")
+	if err != nil {
+		return nil, err
 	}
 
-	if len(items) == 0 && len(preFilterItems) > 0 {
+	if item == nil && len(preFilterItems) > 0 {
 		oldItems := make([]map[string]interface{}, 0, len(preFilterItems))
 		for _, pi := range preFilterItems {
 			oldItems = append(oldItems, buildItemResponse(pi.Attributes))
@@ -286,8 +284,8 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 	}
 
 	updatedCount := 0
-	for _, item := range items {
-		oldSize := calculateItemSize(item.Attributes)
+	if item != nil {
+		oldSize := dbstore.CalculateItemSize(item.Attributes)
 
 		oldItem := &dbstore.Item{
 			TableName:  tableName,
@@ -295,7 +293,9 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 			Attributes: copyAttributes(item.Attributes),
 		}
 
-		applySetAssignments(item.Attributes, clauses.setAssignments, params)
+		if err := applySetAssignments(item.Attributes, clauses.setAssignments, params); err != nil {
+			return nil, err
+		}
 		applyRemoveAttrs(item.Attributes, clauses.removeAttrs)
 		if err := applyAddAssignments(item.Attributes, clauses.addAssignments, params); err != nil {
 			return nil, err
@@ -304,7 +304,7 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 			return nil, err
 		}
 
-		newSize := calculateItemSize(item.Attributes)
+		newSize := dbstore.CalculateItemSize(item.Attributes)
 		sizeDelta := newSize - oldSize
 
 		err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
@@ -338,7 +338,8 @@ func (s *DynamoDBService) executePartiQLUpdate(ctx context.Context, reqCtx *requ
 		if err != nil {
 			return nil, err
 		}
-		updatedCount++
+		s.emitChangePropagation(store, reqCtx.GetRegion(), table, dbstore.StreamEventModify, item.Key, item.Attributes, oldItem.Attributes, s.replicaPutOp(table, item.Key, item.Attributes))
+		updatedCount = 1
 	}
 
 	return map[string]interface{}{
@@ -373,50 +374,23 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 	if err != nil {
 		return nil, err
 	}
-
-	// AWS PartiQL requires DELETE to target a single item via partition-key
-	// equality in the WHERE clause. Reject statements that lack this.
-	if whereExpr == nil {
-		return nil, ErrInvalidParameter
-	}
-	pkName := getHashKeyName(table)
-	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
-	if pkValue == "" {
-		return nil, ErrInvalidParameter
+	// A table mid-restore (CREATING) must not be mutated: a write statement
+	// follows the write-requires-ACTIVE rule of the single-item writes.
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
 	}
 
-	// Scan only items matching the partition key, then filter by the
-	// full WHERE clause in the callback. Collect at most 2 items to
-	// detect multi-item matches without loading the entire partition.
-	var items []*dbstore.Item
-	var preFilterItems []*dbstore.Item
-	scannedCount := 0
-	scanCallback := func(item *dbstore.Item) error {
-		scannedCount++
-		if !evaluateExpr(item.Attributes, whereExpr, params) {
-			if returnValuesOnConditionCheckFailure == "ALL_OLD" {
-				preFilterItems = append(preFilterItems, item)
-			}
-			return nil
-		}
-		items = append(items, item)
-		if len(items) >= 2 {
-			return errScanSufficient
-		}
-		return nil
-	}
-	err = store.Items().ScanByPartitionKey(tableName, pkValue, scanCallback)
-	if err != nil && !errors.Is(err, errScanSufficient) {
+	// The AWS single-item contract: the WHERE clause carries a partition-key
+	// equality and the statement matches at most one item.
+	item, preFilterItems, scannedCount, err := matchSingleTargetItem(
+		func(pkValue string, cb func(*dbstore.Item) error) error {
+			return store.Items().ScanByPartitionKey(tableName, pkValue, cb)
+		}, table, whereExpr, params, "DELETE", returnValuesOnConditionCheckFailure == "ALL_OLD")
+	if err != nil {
 		return nil, err
 	}
 
-	// AWS rejects DELETE statements that match more than one item.
-	if len(items) > 1 {
-		return nil, NewAPIError("com.amazonaws.dynamodb.v20120810#ValidationException",
-			"DELETE statement must match exactly one item", http.StatusBadRequest)
-	}
-
-	if len(items) == 0 && len(preFilterItems) > 0 {
+	if item == nil && len(preFilterItems) > 0 {
 		oldItems := make([]map[string]interface{}, 0, len(preFilterItems))
 		for _, pi := range preFilterItems {
 			oldItems = append(oldItems, buildItemResponse(pi.Attributes))
@@ -429,8 +403,8 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 	}
 
 	deletedCount := 0
-	for _, item := range items {
-		itemSize := calculateItemSize(item.Attributes)
+	if item != nil {
+		itemSize := dbstore.CalculateItemSize(item.Attributes)
 		err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			if err := txn.DeleteIndexEntries(tableName, item); err != nil {
 				return err
@@ -455,7 +429,8 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 		if err != nil {
 			return nil, err
 		}
-		deletedCount++
+		s.emitChangePropagation(store, reqCtx.GetRegion(), table, dbstore.StreamEventRemove, item.Key, nil, item.Attributes, s.replicaDeleteOp(table, item.Key))
+		deletedCount = 1
 	}
 
 	return map[string]interface{}{
@@ -467,14 +442,14 @@ func (s *DynamoDBService) executePartiQLDelete(ctx context.Context, reqCtx *requ
 
 // applyAddAssignments performs DynamoDB ADD operations: if the attribute
 // is a number, add the value numerically; if it is a set, add elements.
-// Returns ErrInvalidParameter when the existing attribute and the ADD
-// value have incompatible types.
+// Returns ErrTypeMismatch when the existing attribute and the ADD value
+// have incompatible types.
 func applyAddAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
 	for _, asgn := range assignments {
 		existing := attrs[asgn.attrName]
-		addValue := exprToAttributeValueWithParams(asgn.value, params)
-		if addValue == nil {
-			continue
+		addValue, err := exprToAttributeValueWithParams(asgn.value, params)
+		if err != nil {
+			return err
 		}
 
 		if existing == nil {
@@ -544,20 +519,23 @@ func applyAddAssignments(attrs map[string]*dbstore.AttributeValue, assignments [
 		}
 
 		// No compatible type pair matched — type mismatch.
-		return ErrInvalidParameter
+		return ErrTypeMismatch
 	}
 	return nil
 }
 
 // applyDeleteAssignments performs DynamoDB DELETE operations: remove
 // elements from a set attribute (SS, NS, or BS). Returns
-// ErrInvalidParameter when the existing attribute and the DELETE value
+// ErrTypeMismatch when the existing attribute and the DELETE value
 // have incompatible types.
 func applyDeleteAssignments(attrs map[string]*dbstore.AttributeValue, assignments []setAssignment, params *partiQLParams) error {
 	for _, asgn := range assignments {
 		existing := attrs[asgn.attrName]
-		delValue := exprToAttributeValueWithParams(asgn.value, params)
-		if delValue == nil || existing == nil {
+		delValue, err := exprToAttributeValueWithParams(asgn.value, params)
+		if err != nil {
+			return err
+		}
+		if existing == nil {
 			continue
 		}
 
@@ -622,7 +600,61 @@ func applyDeleteAssignments(attrs map[string]*dbstore.AttributeValue, assignment
 		}
 
 		// No compatible type pair matched — type mismatch.
-		return ErrInvalidParameter
+		return ErrTypeMismatch
 	}
 	return nil
+}
+
+// matchSingleTargetItem enforces the AWS single-item contract shared by every
+// UPDATE and DELETE engine: the WHERE clause is required, must carry a
+// partition-key equality, and the statement must match exactly one item. The
+// scan collects at most two matches so a multi-item match is detected without
+// walking the whole partition. wantOldAll keeps the items the WHERE rejected,
+// for the zero-match response of statements that asked for ALL_OLD values.
+// The scan adapter runs a partition scan of the caller's choosing (store or
+// transaction) with the encoded partition value the matcher resolved.
+func matchSingleTargetItem(
+	scanByPartitionKey func(pkValue string, cb func(*dbstore.Item) error) error,
+	table *dbstore.Table,
+	whereExpr sqlparser.Expr,
+	params *partiQLParams,
+	stmtVerb string,
+	wantOldAll bool,
+) (item *dbstore.Item, preFilter []*dbstore.Item, scanned int, err error) {
+	if whereExpr == nil {
+		return nil, nil, 0, ErrInvalidParameter
+	}
+	pkValue := extractPartitionKeyFromWhere(whereExpr, getHashKeyName(table), params)
+	if pkValue == "" {
+		return nil, nil, 0, ErrInvalidParameter
+	}
+
+	var matches []*dbstore.Item
+	scanErr := scanByPartitionKey(pkValue, func(candidate *dbstore.Item) error {
+		scanned++
+		if !evaluateExpr(candidate.Attributes, whereExpr, params) {
+			if wantOldAll {
+				preFilter = append(preFilter, candidate)
+			}
+			return nil
+		}
+		matches = append(matches, candidate)
+		if len(matches) >= 2 {
+			return errScanSufficient
+		}
+		return nil
+	})
+	if scanErr != nil && !errors.Is(scanErr, errScanSufficient) {
+		return nil, nil, scanned, scanErr
+	}
+
+	// AWS rejects UPDATE/DELETE statements that match more than one item.
+	if len(matches) > 1 {
+		return nil, nil, scanned, NewAPIError("com.amazonaws.dynamodb.v20120810#ValidationException",
+			stmtVerb+" statement must match exactly one item", http.StatusBadRequest)
+	}
+	if len(matches) == 1 {
+		item = matches[0]
+	}
+	return item, preFilter, scanned, nil
 }

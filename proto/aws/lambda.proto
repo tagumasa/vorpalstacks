@@ -13,11 +13,6 @@ import "aws.proto";
 // LambdaService provides lambda API operations.
 service LambdaService {
 
-  // Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
-  // HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
-  // Protocol: restJson1
-  rpc CheckpointDurableExecution(CheckpointDurableExecutionRequest) returns (CheckpointDurableExecutionResponse);
-
   // Deletes a Lambda function. To delete a specific function version, use the Qualifier parameter. Otherwise, all versions and aliases are deleted. This doesn't require the user to have explicit permis...
   // HTTP: DELETE /2015-03-31/functions/{FunctionName}
   // Protocol: restJson1
@@ -28,35 +23,25 @@ service LambdaService {
   // Protocol: restJson1
   rpc DeleteFunctionEventInvokeConfig(DeleteFunctionEventInvokeConfigRequest) returns (common.Empty);
 
+  // Deletes a resource-based policy from a Lambda resource.
+  // HTTP: DELETE /2026-07-09/resource-policy/{ResourceArn}
+  // Protocol: restJson1
+  rpc DeleteResourcePolicy(DeleteResourcePolicyRequest) returns (common.Empty);
+
   // Retrieves details about your account's limits and usage in an Amazon Web Services Region.
   // HTTP: GET /2016-08-19/account-settings
   // Protocol: restJson1
   rpc GetAccountSettings(GetAccountSettingsRequest) returns (GetAccountSettingsResponse);
-
-  // Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
-  // HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
-  // Protocol: restJson1
-  rpc GetDurableExecution(GetDurableExecutionRequest) returns (GetDurableExecutionResponse);
-
-  // Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
-  // HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
-  // Protocol: restJson1
-  rpc GetDurableExecutionHistory(GetDurableExecutionHistoryRequest) returns (GetDurableExecutionHistoryResponse);
-
-  // Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
-  // HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
-  // Protocol: restJson1
-  rpc GetDurableExecutionState(GetDurableExecutionStateRequest) returns (GetDurableExecutionStateResponse);
 
   // Retrieves the configuration for asynchronous invocation for a function, version, or alias. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
   // HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config
   // Protocol: restJson1
   rpc GetFunctionEventInvokeConfig(GetFunctionEventInvokeConfigRequest) returns (FunctionEventInvokeConfig);
 
-  // Returns a list of durable executions for a specified Lambda function. You can filter the results by execution name, status, and start time range. This API supports pagination for large result sets.
-  // HTTP: GET /2025-12-01/functions/{FunctionName}/durable-executions
+  // Retrieves the resource-based policy attached to a Lambda resource.
+  // HTTP: GET /2026-07-09/resource-policy/{ResourceArn}
   // Protocol: restJson1
-  rpc ListDurableExecutionsByFunction(ListDurableExecutionsByFunctionRequest) returns (ListDurableExecutionsByFunctionResponse);
+  rpc GetResourcePolicy(GetResourcePolicyRequest) returns (GetResourcePolicyResponse);
 
   // Retrieves a list of configurations for asynchronous invocation for a function. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
   // HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config/list
@@ -73,6 +58,11 @@ service LambdaService {
   // Protocol: restJson1
   rpc PutFunctionEventInvokeConfig(PutFunctionEventInvokeConfigRequest) returns (FunctionEventInvokeConfig);
 
+  // Adds a resource-based policy to a Lambda resource. Resource-based policies grant access to other Amazon Web Services accounts, organizations, or services. Resource-based policies apply to a single ...
+  // HTTP: PUT /2026-07-09/resource-policy/{ResourceArn}
+  // Protocol: restJson1
+  rpc PutResourcePolicy(PutResourcePolicyRequest) returns (PutResourcePolicyResponse);
+
   // Sends a failure response for a callback operation in a durable execution. Use this API when an external system cannot complete a callback operation successfully.
   // HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/fail
   // Protocol: restJson1
@@ -87,11 +77,6 @@ service LambdaService {
   // HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/succeed
   // Protocol: restJson1
   rpc SendDurableExecutionCallbackSuccess(SendDurableExecutionCallbackSuccessRequest) returns (SendDurableExecutionCallbackSuccessResponse);
-
-  // Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
-  // HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
-  // Protocol: restJson1
-  rpc StopDurableExecution(StopDurableExecutionRequest) returns (StopDurableExecutionResponse);
 
   // Adds tags to a function, event source mapping, or code signing configuration.
   // HTTP: POST /2017-03-31/tags/{Resource}
@@ -147,6 +132,31 @@ service LambdaService {
   // HTTP: POST /2020-04-22/code-signing-configs
   // Protocol: restJson1
   rpc CreateCodeSigningConfig(CreateCodeSigningConfigRequest) returns (CreateCodeSigningConfigResponse);
+
+  // Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
+  // HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
+  // Protocol: restJson1
+  rpc GetDurableExecution(GetDurableExecutionRequest) returns (GetDurableExecutionResponse);
+
+  // Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
+  // HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
+  // Protocol: restJson1
+  rpc CheckpointDurableExecution(CheckpointDurableExecutionRequest) returns (CheckpointDurableExecutionResponse);
+
+  // Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
+  // HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
+  // Protocol: restJson1
+  rpc GetDurableExecutionHistory(GetDurableExecutionHistoryRequest) returns (GetDurableExecutionHistoryResponse);
+
+  // Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
+  // HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
+  // Protocol: restJson1
+  rpc GetDurableExecutionState(GetDurableExecutionStateRequest) returns (GetDurableExecutionStateResponse);
+
+  // Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
+  // HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
+  // Protocol: restJson1
+  rpc StopDurableExecution(StopDurableExecutionRequest) returns (StopDurableExecutionResponse);
 
   // Lists event source mappings. Specify an EventSourceArn to show only event source mappings for a single event source.
   // HTTP: GET /2015-03-31/event-source-mappings
@@ -308,11 +318,11 @@ message AddLayerVersionPermissionRequest {
 
   string layername = 497423638;
 
-  string organizationid = 311006120;
+  optional string organizationid = 311006120;
 
   string principal = 361640138;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
   string statementid = 169602348;
 
@@ -324,9 +334,9 @@ message AddLayerVersionPermissionRequest {
 
 message AddLayerVersionPermissionResponse {
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
-  string statement = 248790199;
+  optional string statement = 248790199;
 
 }
 
@@ -336,7 +346,7 @@ message AddPermissionRequest {
 
   string action = 175614240;
 
-  string eventsourcetoken = 178305168;
+  optional string eventsourcetoken = 178305168;
 
   string functionname = 468698147;
 
@@ -346,15 +356,15 @@ message AddPermissionRequest {
 
   string principal = 361640138;
 
-  string principalorgid = 133988161;
+  optional string principalorgid = 133988161;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
-  string sourceaccount = 118748296;
+  optional string sourceaccount = 118748296;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
   string statementid = 169602348;
 
@@ -364,7 +374,7 @@ message AddPermissionRequest {
 
 message AddPermissionResponse {
 
-  string statement = 248790199;
+  optional string statement = 248790199;
 
 }
 
@@ -374,15 +384,15 @@ message AddPermissionResponse {
 
 message AliasConfiguration {
 
-  string aliasarn = 461101595;
+  optional string aliasarn = 461101595;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string functionversion = 365780244;
+  optional string functionversion = 365780244;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
   AliasRoutingConfiguration routingconfig = 477346140;
 
@@ -394,9 +404,9 @@ message AliasConfiguration {
 
 message AliasLimitExceededException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -426,7 +436,7 @@ message AllowedPublishers {
 
 message AmazonManagedKafkaEventSourceConfig {
 
-  string consumergroupid = 222398686;
+  optional string consumergroupid = 222398686;
 
   KafkaSchemaRegistryConfig schemaregistryconfig = 482259768;
 
@@ -466,11 +476,11 @@ enum Architecture {
 
 message CallbackDetails {
 
-  string callbackid = 70101916;
+  optional string callbackid = 70101916;
 
   ErrorObject error = 328047858;
 
-  string result = 273346629;
+  optional string result = 273346629;
 
 }
 
@@ -536,9 +546,9 @@ message CallbackTimedOutDetails {
 
 message CallbackTimeoutException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -554,15 +564,17 @@ message CapacityProvider {
 
   InstanceRequirements instancerequirements = 520528435;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   CapacityProviderPermissionsConfig permissionsconfig = 249189794;
 
   PropagateTags propagatetags = 405557622;
 
   CapacityProviderState state = 502047895;
+
+  CapacityProviderTelemetryConfig telemetryconfig = 201326319;
 
   CapacityProviderVpcConfig vpcconfig = 194980743;
 
@@ -584,9 +596,21 @@ message CapacityProviderConfig {
 
 message CapacityProviderLimitExceededException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// The capacity provider's Amazon CloudWatch Logs configuration settings.
+
+message CapacityProviderLoggingConfig {
+
+  optional string loggroup = 148580073;
+
+  SystemLogLevel systemloglevel = 530478525;
 
 }
 
@@ -648,6 +672,16 @@ enum CapacityProviderState {
 
 
 
+// Configuration that specifies the telemetry collection for the capacity provider.
+
+message CapacityProviderTelemetryConfig {
+
+  CapacityProviderLoggingConfig loggingconfig = 424359625;
+
+}
+
+
+
 // VPC configuration that specifies the network settings for compute instances managed by the capacity provider.
 
 message CapacityProviderVpcConfig {
@@ -666,7 +700,7 @@ message ChainedInvokeDetails {
 
   ErrorObject error = 328047858;
 
-  string result = 273346629;
+  optional string result = 273346629;
 
 }
 
@@ -688,7 +722,7 @@ message ChainedInvokeOptions {
 
   string functionname = 468698147;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
 }
 
@@ -698,15 +732,15 @@ message ChainedInvokeOptions {
 
 message ChainedInvokeStartedDetails {
 
-  string durableexecutionarn = 269346442;
+  optional string durableexecutionarn = 269346442;
 
-  string executedversion = 457672809;
+  optional string executedversion = 457672809;
 
   string functionname = 468698147;
 
   EventInput input = 529785116;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
 }
 
@@ -746,7 +780,7 @@ message CheckpointDurableExecutionRequest {
 
   string checkpointtoken = 27028053;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   string durableexecutionarn = 269346442;
 
@@ -760,7 +794,7 @@ message CheckpointDurableExecutionRequest {
 
 message CheckpointDurableExecutionResponse {
 
-  string checkpointtoken = 27028053;
+  optional string checkpointtoken = 27028053;
 
   CheckpointUpdatedExecutionState newexecutionstate = 298388571;
 
@@ -772,7 +806,7 @@ message CheckpointDurableExecutionResponse {
 
 message CheckpointUpdatedExecutionState {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated Operation operations = 126776656;
 
@@ -784,9 +818,9 @@ message CheckpointUpdatedExecutionState {
 
 message CodeArtifactUserDeletedException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -796,9 +830,9 @@ message CodeArtifactUserDeletedException {
 
 message CodeArtifactUserFailedException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -808,9 +842,9 @@ message CodeArtifactUserFailedException {
 
 message CodeArtifactUserPendingException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -828,7 +862,7 @@ message CodeSigningConfig {
 
   CodeSigningPolicies codesigningpolicies = 254459202;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string lastmodified = 434048551;
 
@@ -840,9 +874,9 @@ message CodeSigningConfig {
 
 message CodeSigningConfigNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -872,9 +906,9 @@ enum CodeSigningPolicy {
 
 message CodeStorageExceededException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -884,9 +918,9 @@ message CodeStorageExceededException {
 
 message CodeVerificationFailedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -908,7 +942,7 @@ message ContextDetails {
 
   optional bool replaychildren = 146095102;
 
-  string result = 273346629;
+  optional string result = 273346629;
 
 }
 
@@ -974,7 +1008,7 @@ message Cors {
 
 message CreateAliasRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string functionname = 468698147;
 
@@ -996,13 +1030,15 @@ message CreateCapacityProviderRequest {
 
   InstanceRequirements instancerequirements = 520528435;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
   CapacityProviderPermissionsConfig permissionsconfig = 249189794;
 
   PropagateTags propagatetags = 405557622;
 
   map<string, string> tags = 381526209;
+
+  CapacityProviderTelemetryConfig telemetryconfig = 201326319;
 
   CapacityProviderVpcConfig vpcconfig = 194980743;
 
@@ -1024,7 +1060,7 @@ message CreateCodeSigningConfigRequest {
 
   CodeSigningPolicies codesigningpolicies = 254459202;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   map<string, string> tags = 381526209;
 
@@ -1054,7 +1090,7 @@ message CreateEventSourceMappingRequest {
 
   optional bool enabled = 478602303;
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
   FilterCriteria filtercriteria = 439219323;
 
@@ -1062,7 +1098,7 @@ message CreateEventSourceMappingRequest {
 
   repeated FunctionResponseType functionresponsetypes = 382292260;
 
-  string kmskeyarn = 117627377;
+  optional string kmskeyarn = 117627377;
 
   EventSourceMappingLoggingConfig loggingconfig = 424359625;
 
@@ -1090,7 +1126,7 @@ message CreateEventSourceMappingRequest {
 
   EventSourcePosition startingposition = 428771919;
 
-  string startingpositiontimestamp = 144323607;
+  optional string startingpositiontimestamp = 144323607;
 
   map<string, string> tags = 381526209;
 
@@ -1110,11 +1146,11 @@ message CreateFunctionRequest {
 
   FunctionCode code = 425572629;
 
-  string codesigningconfigarn = 505282113;
+  optional string codesigningconfigarn = 505282113;
 
   DeadLetterConfig deadletterconfig = 79786642;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   DurableConfig durableconfig = 206326279;
 
@@ -1126,11 +1162,11 @@ message CreateFunctionRequest {
 
   string functionname = 468698147;
 
-  string handler = 81160724;
+  optional string handler = 81160724;
 
   ImageConfig imageconfig = 281970485;
 
-  string kmskeyarn = 117627377;
+  optional string kmskeyarn = 117627377;
 
   repeated string layers = 478144896;
 
@@ -1174,7 +1210,7 @@ message CreateFunctionUrlConfigRequest {
 
   InvokeMode invokemode = 414956667;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -1202,7 +1238,7 @@ message CreateFunctionUrlConfigResponse {
 
 message DeadLetterConfig {
 
-  string targetarn = 217664144;
+  optional string targetarn = 217664144;
 
 }
 
@@ -1276,7 +1312,7 @@ message DeleteFunctionEventInvokeConfigRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -1286,7 +1322,7 @@ message DeleteFunctionRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -1304,7 +1340,7 @@ message DeleteFunctionUrlConfigRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -1330,6 +1366,16 @@ message DeleteProvisionedConcurrencyConfigRequest {
 
 
 
+message DeleteResourcePolicyRequest {
+
+  string resourcearn = 364280877;
+
+  optional string revisionid = 499618182;
+
+}
+
+
+
 // A configuration object that specifies the destination of an event after Lambda processes it. For more information, see Adding a destination.
 
 message DestinationConfig {
@@ -1342,13 +1388,25 @@ message DestinationConfig {
 
 
 
+enum DirectS3Read {
+
+  DIRECT_S3_READ_AUTO = 0;
+
+  DIRECT_S3_READ_DISABLED = 1;
+
+  DIRECT_S3_READ_ENABLED = 2;
+
+}
+
+
+
 // Specific configuration settings for a DocumentDB event source.
 
 message DocumentDBEventSourceConfig {
 
-  string collectionname = 350862923;
+  optional string collectionname = 350862923;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   FullDocument fulldocument = 450918030;
 
@@ -1356,11 +1414,13 @@ message DocumentDBEventSourceConfig {
 
 
 
-// Configuration settings for durable functions, including execution timeout and retention period for execution history.
+// Configuration settings for durable functions, including execution timeout, retention period for execution history, and an optional ARN of the Key Management Service (KMS) customer managed key that ...
 
 message DurableConfig {
 
   optional int32 executiontimeout = 502184601;
+
+  optional string kmskeyarn = 117627377;
 
   optional int32 retentionperiodindays = 324977873;
 
@@ -1372,9 +1432,9 @@ message DurableConfig {
 
 message DurableExecutionAlreadyStartedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1384,9 +1444,9 @@ message DurableExecutionAlreadyStartedException {
 
 message EC2AccessDeniedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1396,9 +1456,9 @@ message EC2AccessDeniedException {
 
 message EC2ThrottledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1408,11 +1468,11 @@ message EC2ThrottledException {
 
 message EC2UnexpectedException {
 
-  string ec2errorcode = 35455333;
+  optional string ec2errorcode = 35455333;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1422,9 +1482,9 @@ message EC2UnexpectedException {
 
 message EFSIOException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1434,9 +1494,9 @@ message EFSIOException {
 
 message EFSMountConnectivityException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1446,9 +1506,9 @@ message EFSMountConnectivityException {
 
 message EFSMountFailureException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1458,9 +1518,9 @@ message EFSMountFailureException {
 
 message EFSMountTimeoutException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1470,9 +1530,9 @@ message EFSMountTimeoutException {
 
 message ENILimitReachedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1482,9 +1542,9 @@ message ENILimitReachedException {
 
 message ENINotReadyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -1512,9 +1572,9 @@ message Environment {
 
 message EnvironmentError {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1546,11 +1606,11 @@ message EphemeralStorage {
 
 message ErrorObject {
 
-  string errordata = 164186722;
+  optional string errordata = 164186722;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string errortype = 398848954;
+  optional string errortype = 398848954;
 
   repeated string stacktrace = 306550173;
 
@@ -1588,7 +1648,7 @@ message Event {
 
   optional int32 eventid = 376916819;
 
-  string eventtimestamp = 184687758;
+  optional string eventtimestamp = 184687758;
 
   EventType eventtype = 468897896;
 
@@ -1602,13 +1662,13 @@ message Event {
 
   ExecutionTimedOutDetails executiontimedoutdetails = 364692067;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   InvocationCompletedDetails invocationcompleteddetails = 202146139;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string parentid = 182711433;
+  optional string parentid = 182711433;
 
   StepFailedDetails stepfaileddetails = 93829193;
 
@@ -1616,7 +1676,7 @@ message Event {
 
   StepSucceededDetails stepsucceededdetails = 171047003;
 
-  string subtype = 152988350;
+  optional string subtype = 152988350;
 
   WaitCancelledDetails waitcancelleddetails = 203669828;
 
@@ -1644,7 +1704,7 @@ message EventError {
 
 message EventInput {
 
-  string payload = 6526790;
+  optional string payload = 6526790;
 
   optional bool truncated = 152451018;
 
@@ -1656,7 +1716,7 @@ message EventInput {
 
 message EventResult {
 
-  string payload = 6526790;
+  optional string payload = 6526790;
 
   optional bool truncated = 152451018;
 
@@ -1678,23 +1738,23 @@ message EventSourceMappingConfiguration {
 
   DocumentDBEventSourceConfig documentdbeventsourceconfig = 173060622;
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
-  string eventsourcemappingarn = 176331828;
+  optional string eventsourcemappingarn = 176331828;
 
   FilterCriteria filtercriteria = 439219323;
 
   FilterCriteriaError filtercriteriaerror = 355388477;
 
-  string functionarn = 381920497;
+  optional string functionarn = 381920497;
 
   repeated FunctionResponseType functionresponsetypes = 382292260;
 
-  string kmskeyarn = 117627377;
+  optional string kmskeyarn = 117627377;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
-  string lastprocessingresult = 278539700;
+  optional string lastprocessingresult = 278539700;
 
   EventSourceMappingLoggingConfig loggingconfig = 424359625;
 
@@ -1722,17 +1782,17 @@ message EventSourceMappingConfiguration {
 
   EventSourcePosition startingposition = 428771919;
 
-  string startingpositiontimestamp = 144323607;
+  optional string startingpositiontimestamp = 144323607;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
-  string statetransitionreason = 79099714;
+  optional string statetransitionreason = 79099714;
 
   repeated string topics = 219850038;
 
   optional int32 tumblingwindowinseconds = 372493124;
 
-  string uuid = 91981875;
+  optional string uuid = 91981875;
 
 }
 
@@ -1856,9 +1916,11 @@ message Execution {
 
   string durableexecutionname = 251828526;
 
-  string endtimestamp = 340967267;
+  optional string endtimestamp = 340967267;
 
   string functionarn = 381920497;
+
+  optional string kmskeyarn = 117627377;
 
   string starttimestamp = 392954318;
 
@@ -1872,7 +1934,7 @@ message Execution {
 
 message ExecutionDetails {
 
-  string inputpayload = 228187532;
+  optional string inputpayload = 228187532;
 
 }
 
@@ -1946,13 +2008,15 @@ message ExecutionTimedOutDetails {
 
 
 
-// Details about the connection between a Lambda function and an Amazon EFS file system or an Amazon S3 Files file system.
+// Details about the connection between a Lambda function and an Amazon EFS file system or an Amazon S3 file system.
 
 message FileSystemConfig {
 
   string arn = 402345373;
 
   string localmountpath = 69699719;
+
+  S3FilesConfig s3filesconfig = 413846917;
 
 }
 
@@ -1962,7 +2026,7 @@ message FileSystemConfig {
 
 message Filter {
 
-  string pattern = 345055434;
+  optional string pattern = 345055434;
 
 }
 
@@ -1982,9 +2046,9 @@ message FilterCriteria {
 
 message FilterCriteriaError {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2004,17 +2068,19 @@ enum FullDocument {
 
 message FunctionCode {
 
-  string imageuri = 412238461;
+  optional string imageuri = 412238461;
 
-  string s3bucket = 114031434;
+  optional string s3bucket = 114031434;
 
-  string s3key = 490298907;
+  optional string s3key = 490298907;
 
-  string s3objectversion = 194809669;
+  S3ObjectStorageMode s3objectstoragemode = 83724023;
 
-  string sourcekmskeyarn = 203651164;
+  optional string s3objectversion = 194809669;
 
-  bytes zipfile = 2519299;
+  optional string sourcekmskeyarn = 203651164;
+
+  optional bytes zipfile = 2519299;
 
 }
 
@@ -2024,15 +2090,31 @@ message FunctionCode {
 
 message FunctionCodeLocation {
 
-  string imageuri = 412238461;
+  FunctionCodeLocationError error = 328047858;
 
-  string location = 465604039;
+  optional string imageuri = 412238461;
 
-  string repositorytype = 224453310;
+  optional string location = 465604039;
 
-  string resolvedimageuri = 456188253;
+  optional string repositorytype = 224453310;
 
-  string sourcekmskeyarn = 203651164;
+  optional string resolvedimageuri = 456188253;
+
+  ResolvedS3Object resolveds3object = 114140121;
+
+  optional string sourcekmskeyarn = 203651164;
+
+}
+
+
+
+// Contains details about an error that occurred when Lambda attempted to retrieve a function's deployment package.
+
+message FunctionCodeLocationError {
+
+  optional string errorcode = 34663193;
+
+  optional string message = 235854213;
 
 }
 
@@ -2046,15 +2128,15 @@ message FunctionConfiguration {
 
   CapacityProviderConfig capacityproviderconfig = 52030623;
 
-  string codesha256 = 46450860;
+  optional string codesha256 = 46450860;
 
   optional int64 codesize = 74450158;
 
-  string configsha256 = 145714121;
+  optional string configsha256 = 145714121;
 
   DeadLetterConfig deadletterconfig = 79786642;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   DurableConfig durableconfig = 206326279;
 
@@ -2064,21 +2146,21 @@ message FunctionConfiguration {
 
   repeated FileSystemConfig filesystemconfigs = 490453750;
 
-  string functionarn = 381920497;
+  optional string functionarn = 381920497;
 
-  string functionname = 468698147;
+  optional string functionname = 468698147;
 
-  string handler = 81160724;
+  optional string handler = 81160724;
 
   ImageConfigResponse imageconfigresponse = 319434068;
 
-  string kmskeyarn = 117627377;
+  optional string kmskeyarn = 117627377;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   LastUpdateStatus lastupdatestatus = 269946843;
 
-  string lastupdatestatusreason = 165558159;
+  optional string lastupdatestatusreason = 165558159;
 
   LastUpdateStatusReasonCode lastupdatestatusreasoncode = 275687348;
 
@@ -2086,29 +2168,29 @@ message FunctionConfiguration {
 
   LoggingConfig loggingconfig = 424359625;
 
-  string masterarn = 74605927;
+  optional string masterarn = 74605927;
 
   optional int32 memorysize = 55523120;
 
   PackageType packagetype = 517524132;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
-  string role = 271285818;
+  optional string role = 271285818;
 
   Runtime runtime = 359311308;
 
   RuntimeVersionConfig runtimeversionconfig = 486723720;
 
-  string signingjobarn = 343397691;
+  optional string signingjobarn = 343397691;
 
-  string signingprofileversionarn = 432885567;
+  optional string signingprofileversionarn = 432885567;
 
   SnapStartResponse snapstart = 283273032;
 
   State state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
   StateReasonCode statereasoncode = 319263936;
 
@@ -2118,7 +2200,7 @@ message FunctionConfiguration {
 
   TracingConfigResponse tracingconfig = 19554860;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
   VpcConfigResponse vpcconfig = 194980743;
 
@@ -2130,9 +2212,9 @@ message FunctionEventInvokeConfig {
 
   DestinationConfig destinationconfig = 184834158;
 
-  string functionarn = 381920497;
+  optional string functionarn = 381920497;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   optional int32 maximumeventageinseconds = 393041563;
 
@@ -2226,9 +2308,9 @@ message FunctionVersionsByCapacityProviderListItem {
 
 message FunctionVersionsPerCapacityProviderLimitExceededException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2298,7 +2380,7 @@ message GetDurableExecutionHistoryRequest {
 
   optional bool includeexecutiondata = 194359928;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2314,7 +2396,7 @@ message GetDurableExecutionHistoryResponse {
 
   repeated Event events = 3416229;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2324,6 +2406,8 @@ message GetDurableExecutionRequest {
 
   string durableexecutionarn = 269346442;
 
+  optional bool includeexecutiondata = 194359928;
+
 }
 
 
@@ -2332,19 +2416,23 @@ message GetDurableExecutionRequest {
 
 message GetDurableExecutionResponse {
 
+  DurableConfig durableconfig = 206326279;
+
   string durableexecutionarn = 269346442;
 
   string durableexecutionname = 251828526;
 
-  string endtimestamp = 340967267;
+  optional string endtimestamp = 340967267;
 
   ErrorObject error = 328047858;
 
+  optional bool executiondataincluded = 407998538;
+
   string functionarn = 381920497;
 
-  string inputpayload = 228187532;
+  optional string inputpayload = 228187532;
 
-  string result = 273346629;
+  optional string result = 273346629;
 
   string starttimestamp = 392954318;
 
@@ -2352,7 +2440,7 @@ message GetDurableExecutionResponse {
 
   TraceHeader traceheader = 303628800;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -2364,7 +2452,7 @@ message GetDurableExecutionStateRequest {
 
   string durableexecutionarn = 269346442;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2376,7 +2464,7 @@ message GetDurableExecutionStateRequest {
 
 message GetDurableExecutionStateResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated Operation operations = 126776656;
 
@@ -2430,7 +2518,7 @@ message GetFunctionConfigurationRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -2440,7 +2528,7 @@ message GetFunctionEventInvokeConfigRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -2466,7 +2554,7 @@ message GetFunctionRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -2502,7 +2590,7 @@ message GetFunctionScalingConfigResponse {
 
   FunctionScalingConfig appliedfunctionscalingconfig = 440367614;
 
-  string functionarn = 381920497;
+  optional string functionarn = 381920497;
 
   FunctionScalingConfig requestedfunctionscalingconfig = 190466507;
 
@@ -2514,7 +2602,7 @@ message GetFunctionUrlConfigRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -2560,9 +2648,9 @@ message GetLayerVersionPolicyRequest {
 
 message GetLayerVersionPolicyResponse {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
 }
 
@@ -2586,15 +2674,15 @@ message GetLayerVersionResponse {
 
   LayerVersionContentOutput content = 23568227;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string layerarn = 319652978;
+  optional string layerarn = 319652978;
 
-  string layerversionarn = 174478342;
+  optional string layerversionarn = 174478342;
 
-  string licenseinfo = 133903897;
+  optional string licenseinfo = 133903897;
 
   optional int64 version = 500028728;
 
@@ -2606,7 +2694,7 @@ message GetPolicyRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -2614,9 +2702,9 @@ message GetPolicyRequest {
 
 message GetPolicyResponse {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
 }
 
@@ -2638,13 +2726,31 @@ message GetProvisionedConcurrencyConfigResponse {
 
   optional int32 availableprovisionedconcurrentexecutions = 32168809;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
   ProvisionedConcurrencyStatusEnum status = 6222352;
 
-  string statusreason = 139234172;
+  optional string statusreason = 139234172;
+
+}
+
+
+
+message GetResourcePolicyRequest {
+
+  string resourcearn = 364280877;
+
+}
+
+
+
+message GetResourcePolicyResponse {
+
+  optional string policy = 471611296;
+
+  optional string revisionid = 499618182;
 
 }
 
@@ -2654,7 +2760,7 @@ message GetRuntimeManagementConfigRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -2662,9 +2768,9 @@ message GetRuntimeManagementConfigRequest {
 
 message GetRuntimeManagementConfigResponse {
 
-  string functionarn = 381920497;
+  optional string functionarn = 381920497;
 
-  string runtimeversionarn = 532500669;
+  optional string runtimeversionarn = 532500669;
 
   UpdateRuntimeOn updateruntimeon = 285197810;
 
@@ -2680,7 +2786,7 @@ message ImageConfig {
 
   repeated string entrypoint = 73718972;
 
-  string workingdirectory = 478970252;
+  optional string workingdirectory = 478970252;
 
 }
 
@@ -2690,9 +2796,9 @@ message ImageConfig {
 
 message ImageConfigError {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2728,9 +2834,9 @@ message InstanceRequirements {
 
 message InvalidCodeSignatureException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -2740,9 +2846,9 @@ message InvalidCodeSignatureException {
 
 message InvalidParameterValueException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2752,9 +2858,9 @@ message InvalidParameterValueException {
 
 message InvalidRequestContentException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2764,9 +2870,9 @@ message InvalidRequestContentException {
 
 message InvalidRuntimeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -2776,9 +2882,9 @@ message InvalidRuntimeException {
 
 message InvalidSecurityGroupIDException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -2788,9 +2894,9 @@ message InvalidSecurityGroupIDException {
 
 message InvalidSubnetIDException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -2800,9 +2906,9 @@ message InvalidSubnetIDException {
 
 message InvalidZipFileException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -2826,9 +2932,9 @@ message InvocationCompletedDetails {
 
 message InvocationRequest {
 
-  string clientcontext = 354405962;
+  optional string clientcontext = 354405962;
 
-  string durableexecutionname = 251828526;
+  optional string durableexecutionname = 251828526;
 
   string functionname = 468698147;
 
@@ -2836,11 +2942,11 @@ message InvocationRequest {
 
   LogType logtype = 116703930;
 
-  bytes payload = 6526790 [(aws.http_payload) = true];
+  optional bytes payload = 6526790 [(aws.http_payload) = true];
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
 }
 
@@ -2848,15 +2954,15 @@ message InvocationRequest {
 
 message InvocationResponse {
 
-  string durableexecutionarn = 269346442;
+  optional string durableexecutionarn = 269346442;
 
-  string executedversion = 457672809;
+  optional string executedversion = 457672809;
 
-  string functionerror = 246179982;
+  optional string functionerror = 246179982;
 
-  string logresult = 367982401;
+  optional string logresult = 367982401;
 
-  bytes payload = 6526790 [(aws.http_payload) = true];
+  optional bytes payload = 6526790 [(aws.http_payload) = true];
 
   optional int32 statuscode = 303830783;
 
@@ -2910,7 +3016,7 @@ enum InvokeMode {
 
 message InvokeResponseStreamUpdate {
 
-  bytes payload = 6526790;
+  optional bytes payload = 6526790;
 
 }
 
@@ -2920,11 +3026,11 @@ message InvokeResponseStreamUpdate {
 
 message InvokeWithResponseStreamCompleteEvent {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errordetails = 369268426;
+  optional string errordetails = 369268426;
 
-  string logresult = 367982401;
+  optional string logresult = 367982401;
 
 }
 
@@ -2932,7 +3038,7 @@ message InvokeWithResponseStreamCompleteEvent {
 
 message InvokeWithResponseStreamRequest {
 
-  string clientcontext = 354405962;
+  optional string clientcontext = 354405962;
 
   string functionname = 468698147;
 
@@ -2940,11 +3046,11 @@ message InvokeWithResponseStreamRequest {
 
   LogType logtype = 116703930;
 
-  bytes payload = 6526790 [(aws.http_payload) = true];
+  optional bytes payload = 6526790 [(aws.http_payload) = true];
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
 }
 
@@ -2954,9 +3060,9 @@ message InvokeWithResponseStreamResponse {
 
   InvokeWithResponseStreamResponseEvent eventstream = 26857888 [(aws.http_payload) = true];
 
-  string executedversion = 457672809;
+  optional string executedversion = 457672809;
 
-  string responsestreamcontenttype = 65265032;
+  optional string responsestreamcontenttype = 65265032;
 
   optional int32 statuscode = 303830783;
 
@@ -2980,9 +3086,9 @@ message InvokeWithResponseStreamResponseEvent {
 
 message KMSAccessDeniedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -2992,9 +3098,9 @@ message KMSAccessDeniedException {
 
 message KMSDisabledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -3004,9 +3110,9 @@ message KMSDisabledException {
 
 message KMSInvalidStateException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -3016,9 +3122,9 @@ message KMSInvalidStateException {
 
 message KMSNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -3030,7 +3136,7 @@ message KafkaSchemaRegistryAccessConfig {
 
   KafkaSchemaRegistryAuthType type = 290836590;
 
-  string uri = 443116318;
+  optional string uri = 443116318;
 
 }
 
@@ -3056,7 +3162,7 @@ message KafkaSchemaRegistryConfig {
 
   SchemaRegistryEventRecordFormat eventrecordformat = 212276390;
 
-  string schemaregistryuri = 227288142;
+  optional string schemaregistryuri = 227288142;
 
   repeated KafkaSchemaValidationConfig schemavalidationconfigs = 355660573;
 
@@ -3090,7 +3196,7 @@ message LambdaManagedInstancesCapacityProviderConfig {
 
   string capacityproviderarn = 109580344;
 
-  double executionenvironmentmemorygibpervcpu = 227590513;
+  optional double executionenvironmentmemorygibpervcpu = 227590513;
 
   optional int32 perexecutionenvironmentmaxconcurrency = 120967319;
 
@@ -3112,75 +3218,77 @@ enum LastUpdateStatus {
 
 enum LastUpdateStatusReasonCode {
 
-  LAST_UPDATE_STATUS_REASON_CODE_ENILIMITEXCEEDED = 0;
+  LAST_UPDATE_STATUS_REASON_CODE_DEPENDENCYERROR = 0;
 
-  LAST_UPDATE_STATUS_REASON_CODE_SUBNETOUTOFIPADDRESSES = 1;
+  LAST_UPDATE_STATUS_REASON_CODE_ENILIMITEXCEEDED = 1;
 
-  LAST_UPDATE_STATUS_REASON_CODE_KMSKEYNOTFOUND = 2;
+  LAST_UPDATE_STATUS_REASON_CODE_SUBNETOUTOFIPADDRESSES = 2;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINITTIMEOUT = 3;
+  LAST_UPDATE_STATUS_REASON_CODE_KMSKEYNOTFOUND = 3;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDZIPFILEEXCEPTION = 4;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINITTIMEOUT = 4;
 
-  LAST_UPDATE_STATUS_REASON_CODE_DISALLOWEDBYVPCENCRYPTIONCONTROL = 5;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDZIPFILEEXCEPTION = 5;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORRUNTIMEINITERROR = 6;
+  LAST_UPDATE_STATUS_REASON_CODE_DISALLOWEDBYVPCENCRYPTIONCONTROL = 6;
 
-  LAST_UPDATE_STATUS_REASON_CODE_EC2REQUESTLIMITEXCEEDED = 7;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORRUNTIMEINITERROR = 7;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDIMAGE = 8;
+  LAST_UPDATE_STATUS_REASON_CODE_EC2REQUESTLIMITEXCEEDED = 8;
 
-  LAST_UPDATE_STATUS_REASON_CODE_CAPACITYPROVIDERSCALINGLIMITEXCEEDED = 9;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDIMAGE = 9;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORPERMISSIONDENIED = 10;
+  LAST_UPDATE_STATUS_REASON_CODE_CAPACITYPROVIDERSCALINGLIMITEXCEEDED = 10;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDRUNTIME = 11;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORPERMISSIONDENIED = 11;
 
-  LAST_UPDATE_STATUS_REASON_CODE_DISABLEDKMSKEY = 12;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDRUNTIME = 12;
 
-  LAST_UPDATE_STATUS_REASON_CODE_VCPULIMITEXCEEDED = 13;
+  LAST_UPDATE_STATUS_REASON_CODE_DISABLEDKMSKEY = 13;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORTOOMANYEXTENSIONS = 14;
+  LAST_UPDATE_STATUS_REASON_CODE_VCPULIMITEXCEEDED = 14;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERROR = 15;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORTOOMANYEXTENSIONS = 15;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDCONFIGURATION = 16;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERROR = 16;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDSUBNET = 17;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDCONFIGURATION = 17;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDSTATEKMSKEY = 18;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDSUBNET = 18;
 
-  LAST_UPDATE_STATUS_REASON_CODE_IMAGEACCESSDENIED = 19;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDSTATEKMSKEY = 19;
 
-  LAST_UPDATE_STATUS_REASON_CODE_IMAGEDELETED = 20;
+  LAST_UPDATE_STATUS_REASON_CODE_IMAGEACCESSDENIED = 20;
 
-  LAST_UPDATE_STATUS_REASON_CODE_EFSMOUNTTIMEOUT = 21;
+  LAST_UPDATE_STATUS_REASON_CODE_IMAGEDELETED = 21;
 
-  LAST_UPDATE_STATUS_REASON_CODE_EFSMOUNTFAILURE = 22;
+  LAST_UPDATE_STATUS_REASON_CODE_EFSMOUNTTIMEOUT = 22;
 
-  LAST_UPDATE_STATUS_REASON_CODE_EFSIOERROR = 23;
+  LAST_UPDATE_STATUS_REASON_CODE_EFSMOUNTFAILURE = 23;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERROREXTENSIONINITERROR = 24;
+  LAST_UPDATE_STATUS_REASON_CODE_EFSIOERROR = 24;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INVALIDSECURITYGROUP = 25;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERROREXTENSIONINITERROR = 25;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINVALIDENTRYPOINT = 26;
+  LAST_UPDATE_STATUS_REASON_CODE_INVALIDSECURITYGROUP = 26;
 
-  LAST_UPDATE_STATUS_REASON_CODE_EFSMOUNTCONNECTIVITYERROR = 27;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINVALIDENTRYPOINT = 27;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINVALIDWORKINGDIRECTORY = 28;
+  LAST_UPDATE_STATUS_REASON_CODE_EFSMOUNTCONNECTIVITYERROR = 28;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INSUFFICIENTROLEPERMISSIONS = 29;
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINVALIDWORKINGDIRECTORY = 29;
 
-  LAST_UPDATE_STATUS_REASON_CODE_SERVICEQUOTAEXCEEDEDEXCEPTION = 30;
+  LAST_UPDATE_STATUS_REASON_CODE_INSUFFICIENTROLEPERMISSIONS = 30;
 
-  LAST_UPDATE_STATUS_REASON_CODE_KMSKEYACCESSDENIED = 31;
+  LAST_UPDATE_STATUS_REASON_CODE_SERVICEQUOTAEXCEEDEDEXCEPTION = 31;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INTERNALERROR = 32;
+  LAST_UPDATE_STATUS_REASON_CODE_KMSKEYACCESSDENIED = 32;
 
-  LAST_UPDATE_STATUS_REASON_CODE_INSUFFICIENTCAPACITY = 33;
+  LAST_UPDATE_STATUS_REASON_CODE_INTERNALERROR = 33;
 
-  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINITRESOURCEEXHAUSTED = 34;
+  LAST_UPDATE_STATUS_REASON_CODE_INSUFFICIENTCAPACITY = 34;
+
+  LAST_UPDATE_STATUS_REASON_CODE_FUNCTIONERRORINITRESOURCEEXHAUSTED = 35;
 
 }
 
@@ -3190,13 +3298,13 @@ enum LastUpdateStatusReasonCode {
 
 message Layer {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
   optional int64 codesize = 74450158;
 
-  string signingjobarn = 343397691;
+  optional string signingjobarn = 343397691;
 
-  string signingprofileversionarn = 432885567;
+  optional string signingprofileversionarn = 432885567;
 
 }
 
@@ -3206,13 +3314,15 @@ message Layer {
 
 message LayerVersionContentInput {
 
-  string s3bucket = 114031434;
+  optional string s3bucket = 114031434;
 
-  string s3key = 490298907;
+  optional string s3key = 490298907;
 
-  string s3objectversion = 194809669;
+  S3ObjectStorageMode s3objectstoragemode = 83724023;
 
-  bytes zipfile = 2519299;
+  optional string s3objectversion = 194809669;
+
+  optional bytes zipfile = 2519299;
 
 }
 
@@ -3222,15 +3332,17 @@ message LayerVersionContentInput {
 
 message LayerVersionContentOutput {
 
-  string codesha256 = 46450860;
+  optional string codesha256 = 46450860;
 
   optional int64 codesize = 74450158;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
-  string signingjobarn = 343397691;
+  ResolvedS3Object resolveds3object = 114140121;
 
-  string signingprofileversionarn = 432885567;
+  optional string signingjobarn = 343397691;
+
+  optional string signingprofileversionarn = 432885567;
 
 }
 
@@ -3244,13 +3356,13 @@ message LayerVersionsListItem {
 
   repeated Runtime compatibleruntimes = 300943187;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string layerversionarn = 174478342;
+  optional string layerversionarn = 174478342;
 
-  string licenseinfo = 133903897;
+  optional string licenseinfo = 133903897;
 
   optional int64 version = 500028728;
 
@@ -3264,9 +3376,9 @@ message LayersListItem {
 
   LayerVersionsListItem latestmatchingversion = 389365332;
 
-  string layerarn = 319652978;
+  optional string layerarn = 319652978;
 
-  string layername = 497423638;
+  optional string layername = 497423638;
 
 }
 
@@ -3276,9 +3388,9 @@ message ListAliasesRequest {
 
   string functionname = 468698147;
 
-  string functionversion = 365780244;
+  optional string functionversion = 365780244;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3290,7 +3402,7 @@ message ListAliasesResponse {
 
   repeated AliasConfiguration aliases = 476693696;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3298,7 +3410,7 @@ message ListAliasesResponse {
 
 message ListCapacityProvidersRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3312,7 +3424,7 @@ message ListCapacityProvidersResponse {
 
   repeated CapacityProvider capacityproviders = 235895962;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3320,7 +3432,7 @@ message ListCapacityProvidersResponse {
 
 message ListCodeSigningConfigsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3332,7 +3444,7 @@ message ListCodeSigningConfigsResponse {
 
   repeated CodeSigningConfig codesigningconfigs = 129149119;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3340,21 +3452,21 @@ message ListCodeSigningConfigsResponse {
 
 message ListDurableExecutionsByFunctionRequest {
 
-  string durableexecutionname = 251828526;
+  optional string durableexecutionname = 251828526;
 
   string functionname = 468698147;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
   optional bool reverseorder = 427445336;
 
-  string startedafter = 284744661;
+  optional string startedafter = 284744661;
 
-  string startedbefore = 145036858;
+  optional string startedbefore = 145036858;
 
   repeated ExecutionStatus statuses = 374056024;
 
@@ -3368,7 +3480,7 @@ message ListDurableExecutionsByFunctionResponse {
 
   repeated Execution durableexecutions = 65150760;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3376,11 +3488,11 @@ message ListDurableExecutionsByFunctionResponse {
 
 message ListEventSourceMappingsRequest {
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
-  string functionname = 468698147;
+  optional string functionname = 468698147;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3392,7 +3504,7 @@ message ListEventSourceMappingsResponse {
 
   repeated EventSourceMappingConfiguration eventsourcemappings = 349608254;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3402,7 +3514,7 @@ message ListFunctionEventInvokeConfigsRequest {
 
   string functionname = 468698147;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3414,7 +3526,7 @@ message ListFunctionEventInvokeConfigsResponse {
 
   repeated FunctionEventInvokeConfig functioneventinvokeconfigs = 154516615;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3424,7 +3536,7 @@ message ListFunctionUrlConfigsRequest {
 
   string functionname = 468698147;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3436,7 +3548,7 @@ message ListFunctionUrlConfigsResponse {
 
   repeated FunctionUrlConfig functionurlconfigs = 300063654;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3446,7 +3558,7 @@ message ListFunctionVersionsByCapacityProviderRequest {
 
   string capacityprovidername = 466230132;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3460,7 +3572,7 @@ message ListFunctionVersionsByCapacityProviderResponse {
 
   repeated FunctionVersionsByCapacityProviderListItem functionversions = 306839073;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3470,7 +3582,7 @@ message ListFunctionsByCodeSigningConfigRequest {
 
   string codesigningconfigarn = 505282113;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3482,7 +3594,7 @@ message ListFunctionsByCodeSigningConfigResponse {
 
   repeated string functionarns = 419166778;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3492,9 +3604,9 @@ message ListFunctionsRequest {
 
   FunctionVersion functionversion = 365780244;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
-  string masterregion = 114009692;
+  optional string masterregion = 114009692;
 
   optional int32 maxitems = 506899220;
 
@@ -3508,7 +3620,7 @@ message ListFunctionsResponse {
 
   repeated FunctionConfiguration functions = 165123823;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3522,7 +3634,7 @@ message ListLayerVersionsRequest {
 
   string layername = 497423638;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3534,7 +3646,7 @@ message ListLayerVersionsResponse {
 
   repeated LayerVersionsListItem layerversions = 409515564;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3546,7 +3658,7 @@ message ListLayersRequest {
 
   Runtime compatibleruntime = 238958294;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3558,7 +3670,7 @@ message ListLayersResponse {
 
   repeated LayersListItem layers = 478144896;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -3568,7 +3680,7 @@ message ListProvisionedConcurrencyConfigsRequest {
 
   string functionname = 468698147;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3578,7 +3690,7 @@ message ListProvisionedConcurrencyConfigsRequest {
 
 message ListProvisionedConcurrencyConfigsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated ProvisionedConcurrencyConfigListItem provisionedconcurrencyconfigs = 289785780;
 
@@ -3606,7 +3718,7 @@ message ListVersionsByFunctionRequest {
 
   string functionname = 468698147;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3616,7 +3728,7 @@ message ListVersionsByFunctionRequest {
 
 message ListVersionsByFunctionResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated FunctionConfiguration versions = 252099085;
 
@@ -3652,7 +3764,7 @@ message LoggingConfig {
 
   LogFormat logformat = 198463503;
 
-  string loggroup = 148580073;
+  optional string loggroup = 148580073;
 
   SystemLogLevel systemloglevel = 530478525;
 
@@ -3664,9 +3776,9 @@ message LoggingConfig {
 
 message ModeNotSupportedException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3676,9 +3788,9 @@ message ModeNotSupportedException {
 
 message NoPublishedVersionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -3688,7 +3800,7 @@ message NoPublishedVersionException {
 
 message OnFailure {
 
-  string destination = 457443680;
+  optional string destination = 457443680;
 
 }
 
@@ -3698,7 +3810,7 @@ message OnFailure {
 
 message OnSuccess {
 
-  string destination = 457443680;
+  optional string destination = 457443680;
 
 }
 
@@ -3714,15 +3826,15 @@ message Operation {
 
   ContextDetails contextdetails = 12172411;
 
-  string endtimestamp = 340967267;
+  optional string endtimestamp = 340967267;
 
   ExecutionDetails executiondetails = 308036630;
 
   string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string parentid = 182711433;
+  optional string parentid = 182711433;
 
   string starttimestamp = 392954318;
 
@@ -3730,7 +3842,7 @@ message Operation {
 
   StepDetails stepdetails = 448807816;
 
-  string subtype = 152988350;
+  optional string subtype = 152988350;
 
   OperationType type = 290836590;
 
@@ -3812,15 +3924,15 @@ message OperationUpdate {
 
   string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string parentid = 182711433;
+  optional string parentid = 182711433;
 
-  string payload = 6526790;
+  optional string payload = 6526790;
 
   StepOptions stepoptions = 160655340;
 
-  string subtype = 152988350;
+  optional string subtype = 152988350;
 
   OperationType type = 290836590;
 
@@ -3844,9 +3956,9 @@ enum PackageType {
 
 message PolicyLengthExceededException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3856,9 +3968,9 @@ message PolicyLengthExceededException {
 
 message PreconditionFailedException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3894,15 +4006,15 @@ message ProvisionedConcurrencyConfigListItem {
 
   optional int32 availableprovisionedconcurrentexecutions = 32168809;
 
-  string functionarn = 381920497;
+  optional string functionarn = 381920497;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
   ProvisionedConcurrencyStatusEnum status = 6222352;
 
-  string statusreason = 139234172;
+  optional string statusreason = 139234172;
 
 }
 
@@ -3912,9 +4024,9 @@ message ProvisionedConcurrencyConfigListItem {
 
 message ProvisionedConcurrencyConfigNotFoundException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3940,19 +4052,19 @@ message ProvisionedPollerConfig {
 
   optional int32 minimumpollers = 302938719;
 
-  string pollergroupname = 316867254;
+  optional string pollergroupname = 316867254;
 
 }
 
 
 
-// The resource-based policy you tried to add to the Lambda function would grant public access to it, and your account's BlockPublicAccess setting prevents public access. For more information about bl...
+// The resource-based policy you tried to add to the Lambda resource would grant public access to it, which isn't allowed.
 
 message PublicPolicyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -3966,11 +4078,11 @@ message PublishLayerVersionRequest {
 
   LayerVersionContentInput content = 23568227;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string layername = 497423638;
 
-  string licenseinfo = 133903897;
+  optional string licenseinfo = 133903897;
 
 }
 
@@ -3984,15 +4096,15 @@ message PublishLayerVersionResponse {
 
   LayerVersionContentOutput content = 23568227;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string layerarn = 319652978;
+  optional string layerarn = 319652978;
 
-  string layerversionarn = 174478342;
+  optional string layerversionarn = 174478342;
 
-  string licenseinfo = 133903897;
+  optional string licenseinfo = 133903897;
 
   optional int64 version = 500028728;
 
@@ -4002,15 +4114,15 @@ message PublishLayerVersionResponse {
 
 message PublishVersionRequest {
 
-  string codesha256 = 46450860;
+  optional string codesha256 = 46450860;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string functionname = 468698147;
 
   FunctionVersionLatestPublished publishto = 524127682;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
 }
 
@@ -4056,7 +4168,7 @@ message PutFunctionEventInvokeConfigRequest {
 
   optional int32 maximumretryattempts = 112088128;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -4118,13 +4230,35 @@ message PutProvisionedConcurrencyConfigResponse {
 
   optional int32 availableprovisionedconcurrentexecutions = 32168809;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   optional int32 requestedprovisionedconcurrentexecutions = 58431158;
 
   ProvisionedConcurrencyStatusEnum status = 6222352;
 
-  string statusreason = 139234172;
+  optional string statusreason = 139234172;
+
+}
+
+
+
+message PutResourcePolicyRequest {
+
+  string policy = 471611296;
+
+  string resourcearn = 364280877;
+
+  optional string revisionid = 499618182;
+
+}
+
+
+
+message PutResourcePolicyResponse {
+
+  optional string policy = 471611296;
+
+  optional string revisionid = 499618182;
 
 }
 
@@ -4134,9 +4268,9 @@ message PutRuntimeManagementConfigRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
-  string runtimeversionarn = 532500669;
+  optional string runtimeversionarn = 532500669;
 
   UpdateRuntimeOn updateruntimeon = 285197810;
 
@@ -4148,7 +4282,7 @@ message PutRuntimeManagementConfigResponse {
 
   string functionarn = 381920497;
 
-  string runtimeversionarn = 532500669;
+  optional string runtimeversionarn = 532500669;
 
   UpdateRuntimeOn updateruntimeon = 285197810;
 
@@ -4160,9 +4294,9 @@ message PutRuntimeManagementConfigResponse {
 
 message RecursiveInvocationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4182,7 +4316,7 @@ message RemoveLayerVersionPermissionRequest {
 
   string layername = 497423638;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
   string statementid = 169602348;
 
@@ -4196,9 +4330,9 @@ message RemovePermissionRequest {
 
   string functionname = 468698147;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
   string statementid = 169602348;
 
@@ -4210,9 +4344,23 @@ message RemovePermissionRequest {
 
 message RequestTooLargeException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// Details about the resolved Amazon S3 object that contains a function's deployment package.
+
+message ResolvedS3Object {
+
+  optional string s3bucket = 114031434;
+
+  optional string s3key = 490298907;
+
+  optional string s3objectversion = 194809669;
 
 }
 
@@ -4222,9 +4370,9 @@ message RequestTooLargeException {
 
 message ResourceConflictException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4234,9 +4382,9 @@ message ResourceConflictException {
 
 message ResourceInUseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4246,9 +4394,9 @@ message ResourceInUseException {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4258,9 +4406,9 @@ message ResourceNotFoundException {
 
 message ResourceNotReadyException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4320,67 +4468,77 @@ enum Runtime {
 
   RUNTIME_RUBY27 = 14;
 
-  RUNTIME_JAVA21 = 15;
+  RUNTIME_JAVA11AL2023 = 15;
 
-  RUNTIME_NODEJS14X = 16;
+  RUNTIME_JAVA21 = 16;
 
-  RUNTIME_PROVIDED = 17;
+  RUNTIME_NODEJS14X = 17;
 
-  RUNTIME_NODEJS610 = 18;
+  RUNTIME_PROVIDED = 18;
 
-  RUNTIME_PYTHON310 = 19;
+  RUNTIME_PYTHON315 = 19;
 
-  RUNTIME_PYTHON38 = 20;
+  RUNTIME_JAVA8AL2023 = 20;
 
-  RUNTIME_JAVA17 = 21;
+  RUNTIME_NODEJS610 = 21;
 
-  RUNTIME_NODEJS43 = 22;
+  RUNTIME_PYTHON310 = 22;
 
-  RUNTIME_NODEJS = 23;
+  RUNTIME_PYTHON38 = 23;
 
-  RUNTIME_NODEJS20X = 24;
+  RUNTIME_JAVA17 = 24;
 
-  RUNTIME_PYTHON313 = 25;
+  RUNTIME_NODEJS43 = 25;
 
-  RUNTIME_DOTNETCORE20 = 26;
+  RUNTIME_NODEJS = 26;
 
-  RUNTIME_NODEJS43EDGE = 27;
+  RUNTIME_NODEJS20X = 27;
 
-  RUNTIME_JAVA11 = 28;
+  RUNTIME_PYTHON313 = 28;
 
-  RUNTIME_NODEJS12X = 29;
+  RUNTIME_DOTNETCORE20 = 29;
 
-  RUNTIME_RUBY33 = 30;
+  RUNTIME_NODEJS43EDGE = 30;
 
-  RUNTIME_JAVA8 = 31;
+  RUNTIME_JAVA11 = 31;
 
-  RUNTIME_DOTNETCORE10 = 32;
+  RUNTIME_NODEJS12X = 32;
 
-  RUNTIME_PYTHON37 = 33;
+  RUNTIME_RUBY33 = 33;
 
-  RUNTIME_PYTHON311 = 34;
+  RUNTIME_JAVA8 = 34;
 
-  RUNTIME_JAVA8AL2 = 35;
+  RUNTIME_DOTNETCORE10 = 35;
 
-  RUNTIME_RUBY34 = 36;
+  RUNTIME_NODEJS26X = 36;
 
-  RUNTIME_PROVIDEDAL2 = 37;
+  RUNTIME_PYTHON37 = 37;
 
-  RUNTIME_NODEJS10X = 38;
+  RUNTIME_JAVA17AL2023 = 38;
 
-  RUNTIME_JAVA25 = 39;
+  RUNTIME_PYTHON311 = 39;
 
-  RUNTIME_PYTHON27 = 40;
+  RUNTIME_JAVA8AL2 = 40;
 
-  RUNTIME_DOTNET8 = 41;
+  RUNTIME_RUBY34 = 41;
 
-  RUNTIME_NODEJS18X = 42;
+  RUNTIME_PROVIDEDAL2 = 42;
 
-  RUNTIME_DOTNET10 = 43;
+  RUNTIME_NODEJS10X = 43;
 
-  RUNTIME_RUBY40 = 44;
+  RUNTIME_JAVA25 = 44;
 
-  RUNTIME_PYTHON314 = 45;
+  RUNTIME_PYTHON27 = 45;
+
+  RUNTIME_DOTNET8 = 46;
+
+  RUNTIME_NODEJS18X = 47;
+
+  RUNTIME_DOTNET10 = 48;
+
+  RUNTIME_RUBY40 = 49;
+
+  RUNTIME_PYTHON314 = 50;
 
 }
 
@@ -4392,7 +4550,7 @@ message RuntimeVersionConfig {
 
   RuntimeVersionError error = 328047858;
 
-  string runtimeversionarn = 532500669;
+  optional string runtimeversionarn = 532500669;
 
 }
 
@@ -4402,9 +4560,19 @@ message RuntimeVersionConfig {
 
 message RuntimeVersionError {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string message = 235854213;
+  optional string message = 235854213;
+
+}
+
+
+
+// Setting controls how your function accesses data from an Amazon S3 file system.
+
+message S3FilesConfig {
+
+  DirectS3Read directs3read = 155020371;
 
 }
 
@@ -4414,9 +4582,9 @@ message RuntimeVersionError {
 
 message S3FilesMountConnectivityException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4426,9 +4594,9 @@ message S3FilesMountConnectivityException {
 
 message S3FilesMountFailureException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4438,9 +4606,19 @@ message S3FilesMountFailureException {
 
 message S3FilesMountTimeoutException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
+
+}
+
+
+
+enum S3ObjectStorageMode {
+
+  S3_OBJECT_STORAGE_MODE_COPY = 0;
+
+  S3_OBJECT_STORAGE_MODE_REFERENCE = 1;
 
 }
 
@@ -4480,7 +4658,7 @@ message SelfManagedEventSource {
 
 message SelfManagedKafkaEventSourceConfig {
 
-  string consumergroupid = 222398686;
+  optional string consumergroupid = 222398686;
 
   KafkaSchemaRegistryConfig schemaregistryconfig = 482259768;
 
@@ -4522,7 +4700,7 @@ message SendDurableExecutionCallbackSuccessRequest {
 
   string callbackid = 70101916;
 
-  bytes result = 273346629 [(aws.http_payload) = true];
+  optional bytes result = 273346629 [(aws.http_payload) = true];
 
 }
 
@@ -4538,9 +4716,9 @@ message SendDurableExecutionCallbackSuccessResponse {
 
 message SerializedRequestEntityTooLargeException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4550,9 +4728,9 @@ message SerializedRequestEntityTooLargeException {
 
 message ServiceException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4562,9 +4740,9 @@ message ServiceException {
 
 message ServiceQuotaExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4594,9 +4772,9 @@ enum SnapStartApplyOn {
 
 message SnapStartException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4606,9 +4784,9 @@ message SnapStartException {
 
 message SnapStartNotReadyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4628,9 +4806,9 @@ enum SnapStartOptimizationStatus {
 
 message SnapStartRegenerationFailureException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4652,9 +4830,9 @@ message SnapStartResponse {
 
 message SnapStartTimeoutException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4666,7 +4844,7 @@ message SourceAccessConfiguration {
 
   SourceAccessType type = 290836590;
 
-  string uri = 443116318;
+  optional string uri = 443116318;
 
 }
 
@@ -4718,83 +4896,85 @@ enum State {
 
 enum StateReasonCode {
 
-  STATE_REASON_CODE_ENILIMITEXCEEDED = 0;
+  STATE_REASON_CODE_DEPENDENCYERROR = 0;
 
-  STATE_REASON_CODE_SUBNETOUTOFIPADDRESSES = 1;
+  STATE_REASON_CODE_ENILIMITEXCEEDED = 1;
 
-  STATE_REASON_CODE_IDLE = 2;
+  STATE_REASON_CODE_SUBNETOUTOFIPADDRESSES = 2;
 
-  STATE_REASON_CODE_KMSKEYNOTFOUND = 3;
+  STATE_REASON_CODE_IDLE = 3;
 
-  STATE_REASON_CODE_FUNCTIONERRORINITTIMEOUT = 4;
+  STATE_REASON_CODE_KMSKEYNOTFOUND = 4;
 
-  STATE_REASON_CODE_INVALIDZIPFILEEXCEPTION = 5;
+  STATE_REASON_CODE_FUNCTIONERRORINITTIMEOUT = 5;
 
-  STATE_REASON_CODE_DISALLOWEDBYVPCENCRYPTIONCONTROL = 6;
+  STATE_REASON_CODE_INVALIDZIPFILEEXCEPTION = 6;
 
-  STATE_REASON_CODE_FUNCTIONERRORRUNTIMEINITERROR = 7;
+  STATE_REASON_CODE_DISALLOWEDBYVPCENCRYPTIONCONTROL = 7;
 
-  STATE_REASON_CODE_RESTORING = 8;
+  STATE_REASON_CODE_FUNCTIONERRORRUNTIMEINITERROR = 8;
 
-  STATE_REASON_CODE_EC2REQUESTLIMITEXCEEDED = 9;
+  STATE_REASON_CODE_RESTORING = 9;
 
-  STATE_REASON_CODE_INVALIDIMAGE = 10;
+  STATE_REASON_CODE_EC2REQUESTLIMITEXCEEDED = 10;
 
-  STATE_REASON_CODE_CAPACITYPROVIDERSCALINGLIMITEXCEEDED = 11;
+  STATE_REASON_CODE_INVALIDIMAGE = 11;
 
-  STATE_REASON_CODE_FUNCTIONERRORPERMISSIONDENIED = 12;
+  STATE_REASON_CODE_CAPACITYPROVIDERSCALINGLIMITEXCEEDED = 12;
 
-  STATE_REASON_CODE_INVALIDRUNTIME = 13;
+  STATE_REASON_CODE_FUNCTIONERRORPERMISSIONDENIED = 13;
 
-  STATE_REASON_CODE_DISABLEDKMSKEY = 14;
+  STATE_REASON_CODE_INVALIDRUNTIME = 14;
 
-  STATE_REASON_CODE_VCPULIMITEXCEEDED = 15;
+  STATE_REASON_CODE_DISABLEDKMSKEY = 15;
 
-  STATE_REASON_CODE_FUNCTIONERRORTOOMANYEXTENSIONS = 16;
+  STATE_REASON_CODE_VCPULIMITEXCEEDED = 16;
 
-  STATE_REASON_CODE_FUNCTIONERROR = 17;
+  STATE_REASON_CODE_FUNCTIONERRORTOOMANYEXTENSIONS = 17;
 
-  STATE_REASON_CODE_INVALIDCONFIGURATION = 18;
+  STATE_REASON_CODE_FUNCTIONERROR = 18;
 
-  STATE_REASON_CODE_INVALIDSUBNET = 19;
+  STATE_REASON_CODE_INVALIDCONFIGURATION = 19;
 
-  STATE_REASON_CODE_INVALIDSTATEKMSKEY = 20;
+  STATE_REASON_CODE_INVALIDSUBNET = 20;
 
-  STATE_REASON_CODE_IMAGEACCESSDENIED = 21;
+  STATE_REASON_CODE_INVALIDSTATEKMSKEY = 21;
 
-  STATE_REASON_CODE_IMAGEDELETED = 22;
+  STATE_REASON_CODE_IMAGEACCESSDENIED = 22;
 
-  STATE_REASON_CODE_EFSMOUNTTIMEOUT = 23;
+  STATE_REASON_CODE_IMAGEDELETED = 23;
 
-  STATE_REASON_CODE_EFSMOUNTFAILURE = 24;
+  STATE_REASON_CODE_EFSMOUNTTIMEOUT = 24;
 
-  STATE_REASON_CODE_EFSIOERROR = 25;
+  STATE_REASON_CODE_EFSMOUNTFAILURE = 25;
 
-  STATE_REASON_CODE_FUNCTIONERROREXTENSIONINITERROR = 26;
+  STATE_REASON_CODE_EFSIOERROR = 26;
 
-  STATE_REASON_CODE_CREATING = 27;
+  STATE_REASON_CODE_FUNCTIONERROREXTENSIONINITERROR = 27;
 
-  STATE_REASON_CODE_INVALIDSECURITYGROUP = 28;
+  STATE_REASON_CODE_CREATING = 28;
 
-  STATE_REASON_CODE_DRAININGDURABLEEXECUTIONS = 29;
+  STATE_REASON_CODE_INVALIDSECURITYGROUP = 29;
 
-  STATE_REASON_CODE_FUNCTIONERRORINVALIDENTRYPOINT = 30;
+  STATE_REASON_CODE_DRAININGDURABLEEXECUTIONS = 30;
 
-  STATE_REASON_CODE_EFSMOUNTCONNECTIVITYERROR = 31;
+  STATE_REASON_CODE_FUNCTIONERRORINVALIDENTRYPOINT = 31;
 
-  STATE_REASON_CODE_FUNCTIONERRORINVALIDWORKINGDIRECTORY = 32;
+  STATE_REASON_CODE_EFSMOUNTCONNECTIVITYERROR = 32;
 
-  STATE_REASON_CODE_INSUFFICIENTROLEPERMISSIONS = 33;
+  STATE_REASON_CODE_FUNCTIONERRORINVALIDWORKINGDIRECTORY = 33;
 
-  STATE_REASON_CODE_SERVICEQUOTAEXCEEDEDEXCEPTION = 34;
+  STATE_REASON_CODE_INSUFFICIENTROLEPERMISSIONS = 34;
 
-  STATE_REASON_CODE_KMSKEYACCESSDENIED = 35;
+  STATE_REASON_CODE_SERVICEQUOTAEXCEEDEDEXCEPTION = 35;
 
-  STATE_REASON_CODE_INTERNALERROR = 36;
+  STATE_REASON_CODE_KMSKEYACCESSDENIED = 36;
 
-  STATE_REASON_CODE_INSUFFICIENTCAPACITY = 37;
+  STATE_REASON_CODE_INTERNALERROR = 37;
 
-  STATE_REASON_CODE_FUNCTIONERRORINITRESOURCEEXHAUSTED = 38;
+  STATE_REASON_CODE_INSUFFICIENTCAPACITY = 38;
+
+  STATE_REASON_CODE_FUNCTIONERRORINITRESOURCEEXHAUSTED = 39;
 
 }
 
@@ -4808,9 +4988,9 @@ message StepDetails {
 
   ErrorObject error = 328047858;
 
-  string nextattempttimestamp = 217497488;
+  optional string nextattempttimestamp = 217497488;
 
-  string result = 273346629;
+  optional string result = 273346629;
 
 }
 
@@ -4880,9 +5060,9 @@ message StopDurableExecutionResponse {
 
 message SubnetIPAddressLimitReachedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -4976,11 +5156,11 @@ message TooManyRequestsException {
 
   ThrottleReason reason = 20005178;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string retryafterseconds = 436039555;
+  optional string retryafterseconds = 436039555;
 
 }
 
@@ -4990,7 +5170,7 @@ message TooManyRequestsException {
 
 message TraceHeader {
 
-  string xamzntraceid = 182818336;
+  optional string xamzntraceid = 182818336;
 
 }
 
@@ -5030,9 +5210,9 @@ enum TracingMode {
 
 message UnsupportedMediaTypeException {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5050,15 +5230,15 @@ message UntagResourceRequest {
 
 message UpdateAliasRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string functionname = 468698147;
 
-  string functionversion = 365780244;
+  optional string functionversion = 365780244;
 
   string name = 266367751;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
   AliasRoutingConfiguration routingconfig = 477346140;
 
@@ -5073,6 +5253,8 @@ message UpdateCapacityProviderRequest {
   CapacityProviderScalingConfig capacityproviderscalingconfig = 499413336;
 
   PropagateTags propagatetags = 405557622;
+
+  CapacityProviderTelemetryConfig telemetryconfig = 201326319;
 
 }
 
@@ -5094,7 +5276,7 @@ message UpdateCodeSigningConfigRequest {
 
   CodeSigningPolicies codesigningpolicies = 254459202;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
 }
 
@@ -5124,11 +5306,11 @@ message UpdateEventSourceMappingRequest {
 
   FilterCriteria filtercriteria = 439219323;
 
-  string functionname = 468698147;
+  optional string functionname = 468698147;
 
   repeated FunctionResponseType functionresponsetypes = 382292260;
 
-  string kmskeyarn = 117627377;
+  optional string kmskeyarn = 117627377;
 
   EventSourceMappingLoggingConfig loggingconfig = 424359625;
 
@@ -5166,23 +5348,25 @@ message UpdateFunctionCodeRequest {
 
   string functionname = 468698147;
 
-  string imageuri = 412238461;
+  optional string imageuri = 412238461;
 
   optional bool publish = 207759785;
 
   FunctionVersionLatestPublished publishto = 524127682;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
-  string s3bucket = 114031434;
+  optional string s3bucket = 114031434;
 
-  string s3key = 490298907;
+  optional string s3key = 490298907;
 
-  string s3objectversion = 194809669;
+  S3ObjectStorageMode s3objectstoragemode = 83724023;
 
-  string sourcekmskeyarn = 203651164;
+  optional string s3objectversion = 194809669;
 
-  bytes zipfile = 2519299;
+  optional string sourcekmskeyarn = 203651164;
+
+  optional bytes zipfile = 2519299;
 
 }
 
@@ -5194,7 +5378,7 @@ message UpdateFunctionConfigurationRequest {
 
   DeadLetterConfig deadletterconfig = 79786642;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   DurableConfig durableconfig = 206326279;
 
@@ -5206,11 +5390,11 @@ message UpdateFunctionConfigurationRequest {
 
   string functionname = 468698147;
 
-  string handler = 81160724;
+  optional string handler = 81160724;
 
   ImageConfig imageconfig = 281970485;
 
-  string kmskeyarn = 117627377;
+  optional string kmskeyarn = 117627377;
 
   repeated string layers = 478144896;
 
@@ -5218,9 +5402,9 @@ message UpdateFunctionConfigurationRequest {
 
   optional int32 memorysize = 55523120;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
-  string role = 271285818;
+  optional string role = 271285818;
 
   Runtime runtime = 359311308;
 
@@ -5246,7 +5430,7 @@ message UpdateFunctionEventInvokeConfigRequest {
 
   optional int32 maximumretryattempts = 112088128;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -5262,7 +5446,7 @@ message UpdateFunctionUrlConfigRequest {
 
   InvokeMode invokemode = 414956667;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -5324,7 +5508,7 @@ message VpcConfigResponse {
 
   repeated string subnetids = 266219411;
 
-  string vpcid = 412355958;
+  optional string vpcid = 412355958;
 
 }
 
@@ -5344,7 +5528,7 @@ message WaitCancelledDetails {
 
 message WaitDetails {
 
-  string scheduledendtimestamp = 325003612;
+  optional string scheduledendtimestamp = 325003612;
 
 }
 

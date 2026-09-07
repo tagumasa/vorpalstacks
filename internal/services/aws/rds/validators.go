@@ -2,6 +2,7 @@ package rds
 
 import (
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"strings"
 
 	pb "vorpalstacks/internal/pb/aws/rds"
@@ -259,18 +260,18 @@ func allEngineVersions() []*pb.DBEngineVersion {
 	out := make([]*pb.DBEngineVersion, 0, len(supportedMysqlVersions)+len(supportedNeptuneVersions))
 	for _, v := range supportedNeptuneVersions {
 		out = append(out, &pb.DBEngineVersion{
-			Engine:                 "neptune",
-			Engineversion:          v.Version,
-			Dbparametergroupfamily: v.Family,
+			Engine:                 proto.String("neptune"),
+			Engineversion:          proto.String(v.Version),
+			Dbparametergroupfamily: proto.String(v.Family),
 		})
 	}
 	for _, v := range supportedMysqlVersions {
 		out = append(out, &pb.DBEngineVersion{
-			Engine:                     "mysql",
-			Engineversion:              v.Version,
-			Dbparametergroupfamily:     v.Family,
-			Dbenginedescription:        v.DescShort,
-			Dbengineversiondescription: v.DescShort,
+			Engine:                     proto.String("mysql"),
+			Engineversion:              proto.String(v.Version),
+			Dbparametergroupfamily:     proto.String(v.Family),
+			Dbenginedescription:        proto.String(v.DescShort),
+			Dbengineversiondescription: proto.String(v.DescShort),
 		})
 	}
 	return out

@@ -14,35 +14,7 @@ func (s *DynamoDBService) DescribeContributorInsights(ctx context.Context, reqCt
 		return nil, err
 	}
 
-	indexName := request.GetStringParam(req.Parameters, "IndexName")
-	if indexName != "" {
-		if !validateIndexName(indexName) {
-			return nil, ErrInvalidParameter
-		}
-	}
-
-	status := "DISABLED"
-	if table.ContributorInsightsEnabled {
-		status = "ENABLED"
-	}
-
-	result := map[string]interface{}{
-		"TableName":                 table.Name,
-		"ContributorInsightsStatus": status,
-	}
-	if ruleNames := ContributorInsightsRuleNames(table); len(ruleNames) > 0 {
-		result["ContributorInsightsRuleList"] = ruleNames
-	}
-	if !table.ContributorInsightsUpdatedAt.IsZero() {
-		result["LastUpdateDateTime"] = table.ContributorInsightsUpdatedAt.Unix()
-	}
-	if table.ContributorInsightsMode != "" {
-		result["ContributorInsightsMode"] = table.ContributorInsightsMode
-	}
-	if indexName != "" {
-		result["IndexName"] = indexName
-	}
-	return result, nil
+	return s.describeContributorInsightsCore(table, req.Parameters)
 }
 
 // ListContributorInsights lists the contributor insights summaries for tables.

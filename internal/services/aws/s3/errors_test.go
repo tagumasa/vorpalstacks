@@ -1,11 +1,14 @@
 package s3
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 func TestS3Errors(t *testing.T) {
@@ -116,4 +119,40 @@ func TestAdminObjectWriteCoresRejectEmptyMembers(t *testing.T) {
 		_, err = svc.copyObjectCore(nil, nil, nil, AdminCopyObjectInput{Bucket: "b", Key: "k"})
 		assertMsg(t, err, "copy source is required")
 	})
+}
+
+// versioningNotEnabledStore stubs the object store so DeleteWithVersion
+// reports a bucket without versioning; only the delete path is exercised.
+type versioningNotEnabledStore struct {
+	s3store.ObjectStoreInterface
+}
+
+func (s *versioningNotEnabledStore) DeleteWithVersion(ctx context.Context, bucket, key, versionId string) (*s3store.Object, error) {
+	return nil, s3store.ErrVersioningNotEnabled
+}
+
+// TestDeleteObjectCoreMapsVersioningNotEnabled pins the sentinel mapping: a
+// version-addressed delete against a bucket that never had versioning must
+// surface as the client error NoSuchVersion (404), never as an unmapped
+// store error that would leave the HTTP plane as a retryable 500.
+func TestDeleteObjectCoreMapsVersioningNotEnabled(t *testing.T) {
+	svc := &S3Service{}
+	store := &versioningNotEnabledStore{}
+
+	_, err := svc.deleteObjectCore(context.Background(), store, AdminDeleteObjectInput{
+		Bucket: "b", Key: "k", VersionID: "some-version",
+	})
+	assert.ErrorIs(t, err, ErrNoSuchVersion)
+	assert.Equal(t, http.StatusNotFound, ErrNoSuchVersion.GetHTTPStatusCode())
+
+	result, err := svc.deleteObjectsCore(context.Background(), store, AdminDeleteObjectsInput{
+		Bucket: "b",
+		Objects: []AdminObjectIdentifier{
+			{Key: "k", VersionID: "some-version"},
+		},
+	})
+	assert.NoError(t, err)
+	if assert.Len(t, result.Errors, 1) {
+		assert.Equal(t, "NoSuchVersion", result.Errors[0].Code)
+	}
 }

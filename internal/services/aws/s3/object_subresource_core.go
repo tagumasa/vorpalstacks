@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -245,9 +246,13 @@ func (s *S3Service) deleteObjectsOpCore(ctx context.Context, reqCtx *request.Req
 			VersionID: obj.VersionId,
 		})
 		if err != nil {
+			code := "InternalError"
+			if awsErr, ok := err.(*awserrors.AWSError); ok {
+				code = awsErr.Code
+			}
 			errors = append(errors, DeleteError{
 				Key:     obj.Key,
-				Code:    "InternalError",
+				Code:    code,
 				Message: err.Error(),
 			})
 		} else {

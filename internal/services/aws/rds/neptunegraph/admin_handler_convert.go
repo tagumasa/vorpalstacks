@@ -6,6 +6,7 @@ package neptunegraph
 // store types to proto types for response marshalling.
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"strconv"
 	"strings"
@@ -210,16 +211,16 @@ func graphToPb(g *ngstore.Graph) *pb.GetGraphOutput {
 		Name:               g.Name,
 		Arn:                g.Arn,
 		Status:             graphStatusToPb(g.Status),
-		Statusreason:       g.StatusReason,
+		Statusreason:       proto.String(g.StatusReason),
 		Provisionedmemory:  g.ProvisionedMemory,
 		Replicacount:       g.ReplicaCount,
-		Deletionprotection: boolToStr(g.DeletionProtection),
-		Publicconnectivity: boolToStr(g.PublicConnectivity),
-		Endpoint:           g.Endpoint,
-		Kmskeyidentifier:   g.KmsKeyIdentifier,
-		Buildnumber:        g.BuildNumber,
-		Createtime:         timePtrToStr(g.CreateTime),
-		Sourcesnapshotid:   g.SourceSnapshotId,
+		Deletionprotection: proto.String(boolToStr(g.DeletionProtection)),
+		Publicconnectivity: proto.String(boolToStr(g.PublicConnectivity)),
+		Endpoint:           proto.String(g.Endpoint),
+		Kmskeyidentifier:   proto.String(g.KmsKeyIdentifier),
+		Buildnumber:        proto.String(g.BuildNumber),
+		Createtime:         proto.String(timePtrToStr(g.CreateTime)),
+		Sourcesnapshotid:   proto.String(g.SourceSnapshotId),
 	}
 }
 
@@ -231,10 +232,10 @@ func graphSummaryToPb(g *ngstore.Graph) *pb.GraphSummary {
 		Status:             graphStatusToPb(g.Status),
 		Provisionedmemory:  g.ProvisionedMemory,
 		Replicacount:       g.ReplicaCount,
-		Deletionprotection: boolToStr(g.DeletionProtection),
-		Publicconnectivity: boolToStr(g.PublicConnectivity),
-		Endpoint:           g.Endpoint,
-		Kmskeyidentifier:   g.KmsKeyIdentifier,
+		Deletionprotection: proto.String(boolToStr(g.DeletionProtection)),
+		Publicconnectivity: proto.String(boolToStr(g.PublicConnectivity)),
+		Endpoint:           proto.String(g.Endpoint),
+		Kmskeyidentifier:   proto.String(g.KmsKeyIdentifier),
 	}
 }
 
@@ -243,10 +244,10 @@ func snapshotToPb(s *ngstore.GraphSnapshot) *pb.GetGraphSnapshotOutput {
 		Id:                 s.Id,
 		Name:               s.Name,
 		Arn:                s.Arn,
-		Sourcegraphid:      s.SourceGraphId,
+		Sourcegraphid:      proto.String(s.SourceGraphId),
 		Status:             snapshotStatusToPb(s.Status),
-		Kmskeyidentifier:   s.KmsKeyIdentifier,
-		Snapshotcreatetime: timePtrToStr(s.SnapshotCreateTime),
+		Kmskeyidentifier:   proto.String(s.KmsKeyIdentifier),
+		Snapshotcreatetime: proto.String(timePtrToStr(s.SnapshotCreateTime)),
 	}
 }
 
@@ -255,17 +256,17 @@ func snapshotSummaryToPb(s *ngstore.GraphSnapshot) *pb.GraphSnapshotSummary {
 		Id:                 s.Id,
 		Name:               s.Name,
 		Arn:                s.Arn,
-		Sourcegraphid:      s.SourceGraphId,
+		Sourcegraphid:      proto.String(s.SourceGraphId),
 		Status:             snapshotStatusToPb(s.Status),
-		Kmskeyidentifier:   s.KmsKeyIdentifier,
-		Snapshotcreatetime: timePtrToStr(s.SnapshotCreateTime),
+		Kmskeyidentifier:   proto.String(s.KmsKeyIdentifier),
+		Snapshotcreatetime: proto.String(timePtrToStr(s.SnapshotCreateTime)),
 	}
 }
 
 func endpointToPb(ep *ngstore.PrivateGraphEndpoint) *pb.GetPrivateGraphEndpointOutput {
 	return &pb.GetPrivateGraphEndpointOutput{
 		Vpcid:         ep.VpcId,
-		Vpcendpointid: ep.VpcEndpointId,
+		Vpcendpointid: proto.String(ep.VpcEndpointId),
 		Status:        endpointStatusToPb(ep.Status),
 		Subnetids:     ep.SubnetIds,
 	}
@@ -274,7 +275,7 @@ func endpointToPb(ep *ngstore.PrivateGraphEndpoint) *pb.GetPrivateGraphEndpointO
 func endpointSummaryToPb(ep *ngstore.PrivateGraphEndpoint) *pb.PrivateGraphEndpointSummary {
 	return &pb.PrivateGraphEndpointSummary{
 		Vpcid:         ep.VpcId,
-		Vpcendpointid: ep.VpcEndpointId,
+		Vpcendpointid: proto.String(ep.VpcEndpointId),
 		Status:        endpointStatusToPb(ep.Status),
 		Subnetids:     ep.SubnetIds,
 	}
@@ -283,14 +284,14 @@ func endpointSummaryToPb(ep *ngstore.PrivateGraphEndpoint) *pb.PrivateGraphEndpo
 func importTaskToPb(t *ngstore.ImportTask) *pb.GetImportTaskOutput {
 	return &pb.GetImportTaskOutput{
 		Taskid:            t.TaskId,
-		Graphid:           t.GraphId,
+		Graphid:           proto.String(t.GraphId),
 		Source:            t.Source,
 		Format:            formatToPb(t.Format),
 		Rolearn:           t.RoleArn,
 		Parquettype:       parquetTypeToPb(t.ParquetType),
 		Status:            importTaskStatusToPb(t.Status),
-		Statusreason:      t.StatusReason,
-		Attemptnumber:     int32ToStr(t.AttemptNumber),
+		Statusreason:      proto.String(t.StatusReason),
+		Attemptnumber:     proto.String(int32ToStr(t.AttemptNumber)),
 		Importoptions:     importOptionsToPb(t.ImportOptions),
 		Importtaskdetails: importTaskDetailsToPb(t.ImportTaskDetails),
 	}
@@ -299,7 +300,7 @@ func importTaskToPb(t *ngstore.ImportTask) *pb.GetImportTaskOutput {
 func importTaskSummaryToPb(t *ngstore.ImportTask) *pb.ImportTaskSummary {
 	return &pb.ImportTaskSummary{
 		Taskid:      t.TaskId,
-		Graphid:     t.GraphId,
+		Graphid:     proto.String(t.GraphId),
 		Source:      t.Source,
 		Format:      formatToPb(t.Format),
 		Rolearn:     t.RoleArn,
@@ -318,7 +319,7 @@ func exportTaskToPb(t *ngstore.ExportTask) *pb.GetExportTaskOutput {
 		Parquettype:      parquetTypeToPb(t.ParquetType),
 		Kmskeyidentifier: t.KmsKeyIdentifier,
 		Status:           exportTaskStatusToPb(t.Status),
-		Statusreason:     t.StatusReason,
+		Statusreason:     proto.String(t.StatusReason),
 		Exportfilter:     exportFilterToPb(t.ExportFilter),
 	}
 }
@@ -510,10 +511,10 @@ func importOptionsToPb(opts *ngstore.ImportOptions) *pb.ImportOptions {
 		S3Exportkmskeyid: n.S3ExportKmsKeyId,
 	}
 	if n.PreserveDefaultVertexLabels != nil {
-		pbNeptune.Preservedefaultvertexlabels = boolToStr(*n.PreserveDefaultVertexLabels)
+		pbNeptune.Preservedefaultvertexlabels = proto.String(boolToStr(*n.PreserveDefaultVertexLabels))
 	}
 	if n.PreserveEdgeIds != nil {
-		pbNeptune.Preserveedgeids = boolToStr(*n.PreserveEdgeIds)
+		pbNeptune.Preserveedgeids = proto.String(boolToStr(*n.PreserveEdgeIds))
 	}
 	return &pb.ImportOptions{Neptune: pbNeptune}
 }
@@ -529,7 +530,7 @@ func importTaskDetailsToPb(d *ngstore.ImportTaskDetails) *pb.ImportTaskDetails {
 		Statementcount:       int64ToStr(d.StatementCount),
 		Dictionaryentrycount: int64ToStr(d.DictionaryEntryCount),
 		Errorcount:           int32PtrToStr(d.ErrorCount),
-		Errordetails:         ptrutil.DerefOrZero(d.ErrorDetails),
+		Errordetails:         proto.String(ptrutil.DerefOrZero(d.ErrorDetails)),
 		Status:               ptrutil.DerefOrZero(d.Status),
 	}
 }
@@ -565,8 +566,8 @@ func exportFilterElementToPb(e ngstore.ExportFilterElement) *pb.ExportFilterElem
 		}
 		pbElem.Properties[k] = &pb.ExportFilterPropertyAttributes{
 			Multivaluehandling: mvh,
-			Outputtype:         ptrutil.DerefOrZero(v.OutputType),
-			Sourcepropertyname: ptrutil.DerefOrZero(v.SourcePropertyName),
+			Outputtype:         proto.String(ptrutil.DerefOrZero(v.OutputType)),
+			Sourcepropertyname: proto.String(ptrutil.DerefOrZero(v.SourcePropertyName)),
 		}
 	}
 	return pbElem
@@ -575,20 +576,20 @@ func exportFilterElementToPb(e ngstore.ExportFilterElement) *pb.ExportFilterElem
 // queryToGetPb renders a query record for the GetQuery admin response.
 func queryToGetPb(q *ngstore.QueryRecord) *pb.GetQueryOutput {
 	return &pb.GetQueryOutput{
-		Id:          q.Id,
-		Querystring: q.QueryString,
-		Elapsed:     strconv.Itoa(int(q.Elapsed)),
-		Waited:      strconv.Itoa(int(q.Waited)),
+		Id:          proto.String(q.Id),
+		Querystring: proto.String(q.QueryString),
+		Elapsed:     proto.String(strconv.Itoa(int(q.Elapsed))),
+		Waited:      proto.String(strconv.Itoa(int(q.Waited))),
 	}
 }
 
 // queryToSummaryPb renders a query record for the ListQueries summaries.
 func queryToSummaryPb(q *ngstore.QueryRecord) *pb.QuerySummary {
 	return &pb.QuerySummary{
-		Id:          q.Id,
-		Querystring: q.QueryString,
-		Elapsed:     strconv.Itoa(int(q.Elapsed)),
-		Waited:      strconv.Itoa(int(q.Waited)),
+		Id:          proto.String(q.Id),
+		Querystring: proto.String(q.QueryString),
+		Elapsed:     proto.String(strconv.Itoa(int(q.Elapsed))),
+		Waited:      proto.String(strconv.Itoa(int(q.Waited))),
 		State:       queryStateToPb(q.State),
 	}
 }
@@ -642,21 +643,21 @@ func longValuedMapListToPb(m map[string]int64) *pb.LongValuedMapListEntry {
 func graphSummaryOutputPb(result *GetGraphSummaryResult) *pb.GetGraphSummaryOutput {
 	s := result.Summary
 	out := &pb.GetGraphSummaryOutput{
-		Laststatisticscomputationtime: result.StatsTime.UTC().Format(timeutils.ISO8601UTCFormat),
-		Version:                       "v1",
+		Laststatisticscomputationtime: proto.String(result.StatsTime.UTC().Format(timeutils.ISO8601UTCFormat)),
+		Version:                       proto.String("v1"),
 	}
 	if s == nil {
 		return out
 	}
 	out.Graphsummary = &pb.GraphDataSummary{
-		Numnodes:                int64ToStr(s.NumNodes),
-		Numedges:                int64ToStr(s.NumEdges),
-		Numnodelabels:           int64ToStr(s.NumNodeLabels),
-		Numedgelabels:           int64ToStr(s.NumEdgeLabels),
-		Numnodeproperties:       int64ToStr(s.NumNodeProperties),
-		Numedgeproperties:       int64ToStr(s.NumEdgeProperties),
-		Totalnodepropertyvalues: int64ToStr(s.TotalNodePropertyValues),
-		Totaledgepropertyvalues: int64ToStr(s.TotalEdgePropertyValues),
+		Numnodes:                proto.String(int64ToStr(s.NumNodes)),
+		Numedges:                proto.String(int64ToStr(s.NumEdges)),
+		Numnodelabels:           proto.String(int64ToStr(s.NumNodeLabels)),
+		Numedgelabels:           proto.String(int64ToStr(s.NumEdgeLabels)),
+		Numnodeproperties:       proto.String(int64ToStr(s.NumNodeProperties)),
+		Numedgeproperties:       proto.String(int64ToStr(s.NumEdgeProperties)),
+		Totalnodepropertyvalues: proto.String(int64ToStr(s.TotalNodePropertyValues)),
+		Totaledgepropertyvalues: proto.String(int64ToStr(s.TotalEdgePropertyValues)),
 		Nodelabels:              s.NodeLabels,
 		Edgelabels:              s.EdgeLabels,
 	}
@@ -668,14 +669,14 @@ func graphSummaryOutputPb(result *GetGraphSummaryResult) *pb.GetGraphSummaryOutp
 	}
 	for _, ns := range s.NodeStructures {
 		out.Graphsummary.Nodestructures = append(out.Graphsummary.Nodestructures, &pb.NodeStructure{
-			Count:                      int64ToStr(ns.Count),
+			Count:                      proto.String(int64ToStr(ns.Count)),
 			Distinctoutgoingedgelabels: ns.DistinctOutgoingEdgeLabels,
 			Nodeproperties:             ns.NodeProperties,
 		})
 	}
 	for _, es := range s.EdgeStructures {
 		out.Graphsummary.Edgestructures = append(out.Graphsummary.Edgestructures, &pb.EdgeStructure{
-			Count:          int64ToStr(es.Count),
+			Count:          proto.String(int64ToStr(es.Count)),
 			Edgeproperties: es.EdgeProperties,
 		})
 	}
@@ -701,37 +702,37 @@ func graphFieldsPb(g *ngstore.Graph) (id, name, arn, statusReason, deletionProte
 
 func graphToCreateGraphPb(g *ngstore.Graph) *pb.CreateGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.CreateGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.CreateGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToUpdateGraphPb(g *ngstore.Graph) *pb.UpdateGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.UpdateGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.UpdateGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToDeleteGraphPb(g *ngstore.Graph) *pb.DeleteGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.DeleteGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.DeleteGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToResetGraphPb(g *ngstore.Graph) *pb.ResetGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.ResetGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.ResetGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToStartGraphPb(g *ngstore.Graph) *pb.StartGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.StartGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.StartGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToStopGraphPb(g *ngstore.Graph) *pb.StopGraphOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.StopGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.StopGraphOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 func graphToRestoreGraphFromSnapshotPb(g *ngstore.Graph) *pb.RestoreGraphFromSnapshotOutput {
 	id, name, arn, sreason, delprot, pubconn, ep, kms, build, ct, srcsnap, status, pm, rc, vsc := graphFieldsPb(g)
-	return &pb.RestoreGraphFromSnapshotOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: sreason, Provisionedmemory: pm, Replicacount: rc, Deletionprotection: delprot, Publicconnectivity: pubconn, Endpoint: ep, Kmskeyidentifier: kms, Buildnumber: build, Createtime: ct, Sourcesnapshotid: srcsnap, Vectorsearchconfiguration: vsc}
+	return &pb.RestoreGraphFromSnapshotOutput{Id: id, Name: name, Arn: arn, Status: status, Statusreason: proto.String(sreason), Provisionedmemory: pm, Replicacount: rc, Deletionprotection: proto.String(delprot), Publicconnectivity: proto.String(pubconn), Endpoint: proto.String(ep), Kmskeyidentifier: proto.String(kms), Buildnumber: proto.String(build), Createtime: proto.String(ct), Sourcesnapshotid: proto.String(srcsnap), Vectorsearchconfiguration: vsc}
 }
 
 // formatPbToString maps the console format enum onto the Core's wire string.
@@ -808,10 +809,10 @@ func importOptionsFromPb(in *pb.ImportOptions) *ngstore.ImportOptions {
 		S3ExportPath:     n.S3Exportpath,
 		S3ExportKmsKeyId: n.S3Exportkmskeyid,
 	}}
-	if v := strToBool(n.Preservedefaultvertexlabels); v {
+	if v := strToBool(n.GetPreservedefaultvertexlabels()); v {
 		opts.Neptune.PreserveDefaultVertexLabels = &v
 	}
-	if v := strToBool(n.Preserveedgeids); v {
+	if v := strToBool(n.GetPreserveedgeids()); v {
 		opts.Neptune.PreserveEdgeIds = &v
 	}
 	return opts
@@ -860,12 +861,12 @@ func snapshotFieldsPb(s *ngstore.GraphSnapshot) (id, name, arn, sourceGraphID, k
 
 func snapshotToCreateGraphSnapshotPb(s *ngstore.GraphSnapshot) *pb.CreateGraphSnapshotOutput {
 	id, name, arn, src, kms, ct, status := snapshotFieldsPb(s)
-	return &pb.CreateGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: src, Status: status, Kmskeyidentifier: kms, Snapshotcreatetime: ct}
+	return &pb.CreateGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: proto.String(src), Status: status, Kmskeyidentifier: proto.String(kms), Snapshotcreatetime: proto.String(ct)}
 }
 
 func snapshotToDeleteGraphSnapshotPb(s *ngstore.GraphSnapshot) *pb.DeleteGraphSnapshotOutput {
 	id, name, arn, src, kms, ct, status := snapshotFieldsPb(s)
-	return &pb.DeleteGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: src, Status: status, Kmskeyidentifier: kms, Snapshotcreatetime: ct}
+	return &pb.DeleteGraphSnapshotOutput{Id: id, Name: name, Arn: arn, Sourcegraphid: proto.String(src), Status: status, Kmskeyidentifier: proto.String(kms), Snapshotcreatetime: proto.String(ct)}
 }
 
 func endpointFieldsPb(ep *ngstore.PrivateGraphEndpoint) (vpcID, vpcEndpointID string, status pb.PrivateGraphEndpointStatus, subnetIDs []string) {
@@ -874,12 +875,12 @@ func endpointFieldsPb(ep *ngstore.PrivateGraphEndpoint) (vpcID, vpcEndpointID st
 
 func endpointToCreatePrivateGraphEndpointPb(ep *ngstore.PrivateGraphEndpoint) *pb.CreatePrivateGraphEndpointOutput {
 	vpcID, vpcEp, status, subnets := endpointFieldsPb(ep)
-	return &pb.CreatePrivateGraphEndpointOutput{Vpcid: vpcID, Vpcendpointid: vpcEp, Status: status, Subnetids: subnets}
+	return &pb.CreatePrivateGraphEndpointOutput{Vpcid: vpcID, Vpcendpointid: proto.String(vpcEp), Status: status, Subnetids: subnets}
 }
 
 func endpointToDeletePrivateGraphEndpointPb(ep *ngstore.PrivateGraphEndpoint) *pb.DeletePrivateGraphEndpointOutput {
 	vpcID, vpcEp, status, subnets := endpointFieldsPb(ep)
-	return &pb.DeletePrivateGraphEndpointOutput{Vpcid: vpcID, Vpcendpointid: vpcEp, Status: status, Subnetids: subnets}
+	return &pb.DeletePrivateGraphEndpointOutput{Vpcid: vpcID, Vpcendpointid: proto.String(vpcEp), Status: status, Subnetids: subnets}
 }
 
 func importTaskFieldsPb(t *ngstore.ImportTask) (taskID, graphID, source string, format pb.Format, roleArn string, parquetType pb.ParquetType, status pb.ImportTaskStatus, statusReason string) {
@@ -888,17 +889,17 @@ func importTaskFieldsPb(t *ngstore.ImportTask) (taskID, graphID, source string, 
 
 func importTaskToCreateGraphUsingImportTaskPb(t *ngstore.ImportTask) *pb.CreateGraphUsingImportTaskOutput {
 	taskID, graphID, source, format, roleArn, pt, status, _ := importTaskFieldsPb(t)
-	return &pb.CreateGraphUsingImportTaskOutput{Taskid: taskID, Graphid: graphID, Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
+	return &pb.CreateGraphUsingImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
 }
 
 func importTaskToStartImportTaskPb(t *ngstore.ImportTask) *pb.StartImportTaskOutput {
 	taskID, graphID, source, format, roleArn, pt, status, _ := importTaskFieldsPb(t)
-	return &pb.StartImportTaskOutput{Taskid: taskID, Graphid: graphID, Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
+	return &pb.StartImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
 }
 
 func importTaskToCancelImportTaskPb(t *ngstore.ImportTask) *pb.CancelImportTaskOutput {
 	taskID, graphID, source, format, roleArn, pt, status, _ := importTaskFieldsPb(t)
-	return &pb.CancelImportTaskOutput{Taskid: taskID, Graphid: graphID, Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
+	return &pb.CancelImportTaskOutput{Taskid: taskID, Graphid: proto.String(graphID), Source: source, Format: format, Rolearn: roleArn, Parquettype: pt, Status: status}
 }
 
 func exportTaskFieldsPb(t *ngstore.ExportTask) (taskID, graphID, destination string, format pb.ExportFormat, roleArn string, parquetType pb.ParquetType, kms, statusReason string, status pb.ExportTaskStatus, filter *pb.ExportFilter) {
@@ -907,10 +908,10 @@ func exportTaskFieldsPb(t *ngstore.ExportTask) (taskID, graphID, destination str
 
 func exportTaskToStartExportTaskPb(t *ngstore.ExportTask) *pb.StartExportTaskOutput {
 	taskID, graphID, dest, format, roleArn, pt, kms, sreason, status, filter := exportTaskFieldsPb(t)
-	return &pb.StartExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pt, Kmskeyidentifier: kms, Status: status, Statusreason: sreason, Exportfilter: filter}
+	return &pb.StartExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pt, Kmskeyidentifier: kms, Status: status, Statusreason: proto.String(sreason), Exportfilter: filter}
 }
 
 func exportTaskToCancelExportTaskPb(t *ngstore.ExportTask) *pb.CancelExportTaskOutput {
 	taskID, graphID, dest, format, roleArn, pt, kms, sreason, status, _ := exportTaskFieldsPb(t)
-	return &pb.CancelExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pt, Kmskeyidentifier: kms, Status: status, Statusreason: sreason}
+	return &pb.CancelExportTaskOutput{Taskid: taskID, Graphid: graphID, Destination: dest, Format: format, Rolearn: roleArn, Parquettype: pt, Kmskeyidentifier: kms, Status: status, Statusreason: proto.String(sreason)}
 }

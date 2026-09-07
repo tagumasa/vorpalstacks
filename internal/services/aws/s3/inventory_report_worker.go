@@ -32,7 +32,7 @@ import (
 // (Daily) or the next Sunday 00:00 UTC (Weekly) strictly after the
 // configuration's schedule anchor — its last delivery, or the configuration's
 // creation time before the first delivery. In TEST_MODE the cadence is
-// compressed (45s Daily / 90s Weekly) so end-to-end tests can observe a
+// compressed (5s Daily / 10s Weekly) so end-to-end tests can observe a
 // delivery within one poll window; the compression is a test-runner-only
 // mechanism.
 type InventoryReportWorker struct {
@@ -58,12 +58,12 @@ type deliveryFailure struct {
 }
 
 // NewInventoryReportWorker creates an InventoryReportWorker with a 5-minute
-// default interval, tightened to 10 seconds in TEST_MODE.
+// default interval, tightened to 1 second in TEST_MODE.
 func NewInventoryReportWorker(svc *S3Service) *InventoryReportWorker {
 	testMode := os.Getenv("TEST_MODE") == "true"
 	interval := 5 * time.Minute
 	if testMode {
-		interval = 10 * time.Second
+		interval = 1 * time.Second
 	}
 	return &InventoryReportWorker{
 		svc:      svc,
@@ -96,7 +96,13 @@ func (w *InventoryReportWorker) Close() {
 func (w *InventoryReportWorker) run() {
 	defer w.wg.Done()
 
-	timer := time.NewTimer(15 * time.Second)
+	// The initial delay lets the server settle before the first scan; the
+	// TEST_MODE branch shortens it alongside the tightened interval.
+	initial := 15 * time.Second
+	if w.testMode {
+		initial = 5 * time.Second
+	}
+	timer := time.NewTimer(initial)
 	defer timer.Stop()
 
 	for {
@@ -381,9 +387,9 @@ func inventoryReportDue(config *s3store.InventoryConfiguration, now time.Time, t
 	}
 	if testMode {
 		if config.Schedule.Frequency == "Weekly" {
-			return now.Sub(anchor) >= 90*time.Second
+			return now.Sub(anchor) >= 10*time.Second
 		}
-		return now.Sub(anchor) >= 45*time.Second
+		return now.Sub(anchor) >= 5*time.Second
 	}
 	return now.UTC().After(nextScheduleBoundary(anchor, config.Schedule.Frequency))
 }

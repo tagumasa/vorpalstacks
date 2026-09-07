@@ -236,9 +236,9 @@ func (StatusType) EnumDescriptor() ([]byte, []int) {
 
 type APIErrorType struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Errorcode     string                 `protobuf:"bytes,34663193,opt,name=errorcode,proto3" json:"errorcode,omitempty"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Secretid      string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
+	Errorcode     *string                `protobuf:"bytes,34663193,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Secretid      *string                `protobuf:"bytes,341502821,opt,name=secretid,proto3,oneof" json:"secretid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -274,22 +274,22 @@ func (*APIErrorType) Descriptor() ([]byte, []int) {
 }
 
 func (x *APIErrorType) GetErrorcode() string {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return ""
 }
 
 func (x *APIErrorType) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *APIErrorType) GetSecretid() string {
-	if x != nil {
-		return x.Secretid
+	if x != nil && x.Secretid != nil {
+		return *x.Secretid
 	}
 	return ""
 }
@@ -298,7 +298,7 @@ type BatchGetSecretValueRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filters       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Secretidlist  []string               `protobuf:"bytes,398967021,rep,name=secretidlist,proto3" json:"secretidlist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -349,8 +349,8 @@ func (x *BatchGetSecretValueRequest) GetMaxresults() int32 {
 }
 
 func (x *BatchGetSecretValueRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -365,7 +365,7 @@ func (x *BatchGetSecretValueRequest) GetSecretidlist() []string {
 type BatchGetSecretValueResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Errors        []*APIErrorType        `protobuf:"bytes,166551719,rep,name=errors,proto3" json:"errors,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Secretvalues  []*SecretValueEntry    `protobuf:"bytes,79551512,rep,name=secretvalues,proto3" json:"secretvalues,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -409,8 +409,8 @@ func (x *BatchGetSecretValueResponse) GetErrors() []*APIErrorType {
 }
 
 func (x *BatchGetSecretValueResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -468,9 +468,9 @@ func (x *CancelRotateSecretRequest) GetSecretid() string {
 
 type CancelRotateSecretResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -506,22 +506,22 @@ func (*CancelRotateSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelRotateSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *CancelRotateSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *CancelRotateSecretResponse) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -529,15 +529,15 @@ func (x *CancelRotateSecretResponse) GetVersionid() string {
 type CreateSecretRequest struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Addreplicaregions           []*ReplicaRegionType   `protobuf:"bytes,461171870,rep,name=addreplicaregions,proto3" json:"addreplicaregions,omitempty"`
-	Clientrequesttoken          string                 `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3" json:"clientrequesttoken,omitempty"`
-	Description                 string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Clientrequesttoken          *string                `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
+	Description                 *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Forceoverwritereplicasecret *bool                  `protobuf:"varint,247407324,opt,name=forceoverwritereplicasecret,proto3,oneof" json:"forceoverwritereplicasecret,omitempty"`
-	Kmskeyid                    string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                    *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Name                        string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Secretbinary                []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3" json:"secretbinary,omitempty"`
-	Secretstring                string                 `protobuf:"bytes,190782253,opt,name=secretstring,proto3" json:"secretstring,omitempty"`
+	Secretbinary                []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3,oneof" json:"secretbinary,omitempty"`
+	Secretstring                *string                `protobuf:"bytes,190782253,opt,name=secretstring,proto3,oneof" json:"secretstring,omitempty"`
 	Tags                        []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Type                        string                 `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
+	Type                        *string                `protobuf:"bytes,290836590,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -580,15 +580,15 @@ func (x *CreateSecretRequest) GetAddreplicaregions() []*ReplicaRegionType {
 }
 
 func (x *CreateSecretRequest) GetClientrequesttoken() string {
-	if x != nil {
-		return x.Clientrequesttoken
+	if x != nil && x.Clientrequesttoken != nil {
+		return *x.Clientrequesttoken
 	}
 	return ""
 }
 
 func (x *CreateSecretRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -601,8 +601,8 @@ func (x *CreateSecretRequest) GetForceoverwritereplicasecret() bool {
 }
 
 func (x *CreateSecretRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -622,8 +622,8 @@ func (x *CreateSecretRequest) GetSecretbinary() []byte {
 }
 
 func (x *CreateSecretRequest) GetSecretstring() string {
-	if x != nil {
-		return x.Secretstring
+	if x != nil && x.Secretstring != nil {
+		return *x.Secretstring
 	}
 	return ""
 }
@@ -636,18 +636,18 @@ func (x *CreateSecretRequest) GetTags() []*Tag {
 }
 
 func (x *CreateSecretRequest) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
 
 type CreateSecretResponse struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
-	Arn               string                   `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name              string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn               *string                  `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name              *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Replicationstatus []*ReplicationStatusType `protobuf:"bytes,529093900,rep,name=replicationstatus,proto3" json:"replicationstatus,omitempty"`
-	Versionid         string                   `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid         *string                  `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -683,15 +683,15 @@ func (*CreateSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *CreateSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -704,15 +704,15 @@ func (x *CreateSecretResponse) GetReplicationstatus() []*ReplicationStatusType {
 }
 
 func (x *CreateSecretResponse) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type DecryptionFailure struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -748,8 +748,8 @@ func (*DecryptionFailure) Descriptor() ([]byte, []int) {
 }
 
 func (x *DecryptionFailure) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -800,8 +800,8 @@ func (x *DeleteResourcePolicyRequest) GetSecretid() string {
 
 type DeleteResourcePolicyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -837,15 +837,15 @@ func (*DeleteResourcePolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteResourcePolicyResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *DeleteResourcePolicyResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -912,9 +912,9 @@ func (x *DeleteSecretRequest) GetSecretid() string {
 
 type DeleteSecretResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Deletiondate  string                 `protobuf:"bytes,347845564,opt,name=deletiondate,proto3" json:"deletiondate,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Deletiondate  *string                `protobuf:"bytes,347845564,opt,name=deletiondate,proto3,oneof" json:"deletiondate,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -950,22 +950,22 @@ func (*DeleteSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *DeleteSecretResponse) GetDeletiondate() string {
-	if x != nil {
-		return x.Deletiondate
+	if x != nil && x.Deletiondate != nil {
+		return *x.Deletiondate
 	}
 	return ""
 }
 
 func (x *DeleteSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -1016,26 +1016,26 @@ func (x *DescribeSecretRequest) GetSecretid() string {
 
 type DescribeSecretResponse struct {
 	state                          protoimpl.MessageState                `protogen:"open.v1"`
-	Arn                            string                                `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Createddate                    string                                `protobuf:"bytes,416929840,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Deleteddate                    string                                `protobuf:"bytes,516314255,opt,name=deleteddate,proto3" json:"deleteddate,omitempty"`
-	Description                    string                                `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Arn                            *string                               `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Createddate                    *string                               `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Deleteddate                    *string                               `protobuf:"bytes,516314255,opt,name=deleteddate,proto3,oneof" json:"deleteddate,omitempty"`
+	Description                    *string                               `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Externalsecretrotationmetadata []*ExternalSecretRotationMetadataItem `protobuf:"bytes,52900542,rep,name=externalsecretrotationmetadata,proto3" json:"externalsecretrotationmetadata,omitempty"`
-	Externalsecretrotationrolearn  string                                `protobuf:"bytes,470712576,opt,name=externalsecretrotationrolearn,proto3" json:"externalsecretrotationrolearn,omitempty"`
-	Kmskeyid                       string                                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastaccesseddate               string                                `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3" json:"lastaccesseddate,omitempty"`
-	Lastchangeddate                string                                `protobuf:"bytes,314015460,opt,name=lastchangeddate,proto3" json:"lastchangeddate,omitempty"`
-	Lastrotateddate                string                                `protobuf:"bytes,501475691,opt,name=lastrotateddate,proto3" json:"lastrotateddate,omitempty"`
-	Name                           string                                `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextrotationdate               string                                `protobuf:"bytes,192035355,opt,name=nextrotationdate,proto3" json:"nextrotationdate,omitempty"`
-	Owningservice                  string                                `protobuf:"bytes,462487817,opt,name=owningservice,proto3" json:"owningservice,omitempty"`
-	Primaryregion                  string                                `protobuf:"bytes,480901186,opt,name=primaryregion,proto3" json:"primaryregion,omitempty"`
+	Externalsecretrotationrolearn  *string                               `protobuf:"bytes,470712576,opt,name=externalsecretrotationrolearn,proto3,oneof" json:"externalsecretrotationrolearn,omitempty"`
+	Kmskeyid                       *string                               `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Lastaccesseddate               *string                               `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3,oneof" json:"lastaccesseddate,omitempty"`
+	Lastchangeddate                *string                               `protobuf:"bytes,314015460,opt,name=lastchangeddate,proto3,oneof" json:"lastchangeddate,omitempty"`
+	Lastrotateddate                *string                               `protobuf:"bytes,501475691,opt,name=lastrotateddate,proto3,oneof" json:"lastrotateddate,omitempty"`
+	Name                           *string                               `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Nextrotationdate               *string                               `protobuf:"bytes,192035355,opt,name=nextrotationdate,proto3,oneof" json:"nextrotationdate,omitempty"`
+	Owningservice                  *string                               `protobuf:"bytes,462487817,opt,name=owningservice,proto3,oneof" json:"owningservice,omitempty"`
+	Primaryregion                  *string                               `protobuf:"bytes,480901186,opt,name=primaryregion,proto3,oneof" json:"primaryregion,omitempty"`
 	Replicationstatus              []*ReplicationStatusType              `protobuf:"bytes,529093900,rep,name=replicationstatus,proto3" json:"replicationstatus,omitempty"`
 	Rotationenabled                *bool                                 `protobuf:"varint,209507301,opt,name=rotationenabled,proto3,oneof" json:"rotationenabled,omitempty"`
-	Rotationlambdaarn              string                                `protobuf:"bytes,335026080,opt,name=rotationlambdaarn,proto3" json:"rotationlambdaarn,omitempty"`
+	Rotationlambdaarn              *string                               `protobuf:"bytes,335026080,opt,name=rotationlambdaarn,proto3,oneof" json:"rotationlambdaarn,omitempty"`
 	Rotationrules                  *RotationRulesType                    `protobuf:"bytes,259458135,opt,name=rotationrules,proto3" json:"rotationrules,omitempty"`
 	Tags                           []*Tag                                `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Type                           string                                `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
+	Type                           *string                               `protobuf:"bytes,290836590,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	Versionidstostages             map[string]string                     `protobuf:"bytes,90698314,rep,name=versionidstostages,proto3" json:"versionidstostages,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
@@ -1072,29 +1072,29 @@ func (*DescribeSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetDeleteddate() string {
-	if x != nil {
-		return x.Deleteddate
+	if x != nil && x.Deleteddate != nil {
+		return *x.Deleteddate
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -1107,64 +1107,64 @@ func (x *DescribeSecretResponse) GetExternalsecretrotationmetadata() []*External
 }
 
 func (x *DescribeSecretResponse) GetExternalsecretrotationrolearn() string {
-	if x != nil {
-		return x.Externalsecretrotationrolearn
+	if x != nil && x.Externalsecretrotationrolearn != nil {
+		return *x.Externalsecretrotationrolearn
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetLastaccesseddate() string {
-	if x != nil {
-		return x.Lastaccesseddate
+	if x != nil && x.Lastaccesseddate != nil {
+		return *x.Lastaccesseddate
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetLastchangeddate() string {
-	if x != nil {
-		return x.Lastchangeddate
+	if x != nil && x.Lastchangeddate != nil {
+		return *x.Lastchangeddate
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetLastrotateddate() string {
-	if x != nil {
-		return x.Lastrotateddate
+	if x != nil && x.Lastrotateddate != nil {
+		return *x.Lastrotateddate
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetNextrotationdate() string {
-	if x != nil {
-		return x.Nextrotationdate
+	if x != nil && x.Nextrotationdate != nil {
+		return *x.Nextrotationdate
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetOwningservice() string {
-	if x != nil {
-		return x.Owningservice
+	if x != nil && x.Owningservice != nil {
+		return *x.Owningservice
 	}
 	return ""
 }
 
 func (x *DescribeSecretResponse) GetPrimaryregion() string {
-	if x != nil {
-		return x.Primaryregion
+	if x != nil && x.Primaryregion != nil {
+		return *x.Primaryregion
 	}
 	return ""
 }
@@ -1184,8 +1184,8 @@ func (x *DescribeSecretResponse) GetRotationenabled() bool {
 }
 
 func (x *DescribeSecretResponse) GetRotationlambdaarn() string {
-	if x != nil {
-		return x.Rotationlambdaarn
+	if x != nil && x.Rotationlambdaarn != nil {
+		return *x.Rotationlambdaarn
 	}
 	return ""
 }
@@ -1205,8 +1205,8 @@ func (x *DescribeSecretResponse) GetTags() []*Tag {
 }
 
 func (x *DescribeSecretResponse) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
@@ -1220,7 +1220,7 @@ func (x *DescribeSecretResponse) GetVersionidstostages() map[string]string {
 
 type EncryptionFailure struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1256,16 +1256,16 @@ func (*EncryptionFailure) Descriptor() ([]byte, []int) {
 }
 
 func (x *EncryptionFailure) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ExternalSecretRotationMetadataItem struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Key           *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1301,15 +1301,15 @@ func (*ExternalSecretRotationMetadataItem) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExternalSecretRotationMetadataItem) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *ExternalSecretRotationMetadataItem) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -1368,7 +1368,7 @@ func (x *Filter) GetValues() []string {
 
 type GetRandomPasswordRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Excludecharacters       string                 `protobuf:"bytes,335851390,opt,name=excludecharacters,proto3" json:"excludecharacters,omitempty"`
+	Excludecharacters       *string                `protobuf:"bytes,335851390,opt,name=excludecharacters,proto3,oneof" json:"excludecharacters,omitempty"`
 	Excludelowercase        *bool                  `protobuf:"varint,225858843,opt,name=excludelowercase,proto3,oneof" json:"excludelowercase,omitempty"`
 	Excludenumbers          *bool                  `protobuf:"varint,216382246,opt,name=excludenumbers,proto3,oneof" json:"excludenumbers,omitempty"`
 	Excludepunctuation      *bool                  `protobuf:"varint,78530732,opt,name=excludepunctuation,proto3,oneof" json:"excludepunctuation,omitempty"`
@@ -1411,8 +1411,8 @@ func (*GetRandomPasswordRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRandomPasswordRequest) GetExcludecharacters() string {
-	if x != nil {
-		return x.Excludecharacters
+	if x != nil && x.Excludecharacters != nil {
+		return *x.Excludecharacters
 	}
 	return ""
 }
@@ -1468,7 +1468,7 @@ func (x *GetRandomPasswordRequest) GetRequireeachincludedtype() bool {
 
 type GetRandomPasswordResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Randompassword string                 `protobuf:"bytes,477267856,opt,name=randompassword,proto3" json:"randompassword,omitempty"`
+	Randompassword *string                `protobuf:"bytes,477267856,opt,name=randompassword,proto3,oneof" json:"randompassword,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1504,8 +1504,8 @@ func (*GetRandomPasswordResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRandomPasswordResponse) GetRandompassword() string {
-	if x != nil {
-		return x.Randompassword
+	if x != nil && x.Randompassword != nil {
+		return *x.Randompassword
 	}
 	return ""
 }
@@ -1556,9 +1556,9 @@ func (x *GetResourcePolicyRequest) GetSecretid() string {
 
 type GetResourcePolicyResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Arn            string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Resourcepolicy string                 `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3" json:"resourcepolicy,omitempty"`
+	Arn            *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name           *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Resourcepolicy *string                `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3,oneof" json:"resourcepolicy,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1594,22 +1594,22 @@ func (*GetResourcePolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetResourcePolicyResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetResourcePolicyResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *GetResourcePolicyResponse) GetResourcepolicy() string {
-	if x != nil {
-		return x.Resourcepolicy
+	if x != nil && x.Resourcepolicy != nil {
+		return *x.Resourcepolicy
 	}
 	return ""
 }
@@ -1617,8 +1617,8 @@ func (x *GetResourcePolicyResponse) GetResourcepolicy() string {
 type GetSecretValueRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Secretid      string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
-	Versionstage  string                 `protobuf:"bytes,229692340,opt,name=versionstage,proto3" json:"versionstage,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
+	Versionstage  *string                `protobuf:"bytes,229692340,opt,name=versionstage,proto3,oneof" json:"versionstage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1661,27 +1661,27 @@ func (x *GetSecretValueRequest) GetSecretid() string {
 }
 
 func (x *GetSecretValueRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 func (x *GetSecretValueRequest) GetVersionstage() string {
-	if x != nil {
-		return x.Versionstage
+	if x != nil && x.Versionstage != nil {
+		return *x.Versionstage
 	}
 	return ""
 }
 
 type GetSecretValueResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Createddate   string                 `protobuf:"bytes,416929840,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Secretbinary  []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3" json:"secretbinary,omitempty"`
-	Secretstring  string                 `protobuf:"bytes,190782253,opt,name=secretstring,proto3" json:"secretstring,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Createddate   *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Secretbinary  []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3,oneof" json:"secretbinary,omitempty"`
+	Secretstring  *string                `protobuf:"bytes,190782253,opt,name=secretstring,proto3,oneof" json:"secretstring,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	Versionstages []string               `protobuf:"bytes,224220993,rep,name=versionstages,proto3" json:"versionstages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1718,22 +1718,22 @@ func (*GetSecretValueResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetSecretValueResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetSecretValueResponse) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *GetSecretValueResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -1746,15 +1746,15 @@ func (x *GetSecretValueResponse) GetSecretbinary() []byte {
 }
 
 func (x *GetSecretValueResponse) GetSecretstring() string {
-	if x != nil {
-		return x.Secretstring
+	if x != nil && x.Secretstring != nil {
+		return *x.Secretstring
 	}
 	return ""
 }
 
 func (x *GetSecretValueResponse) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -1768,7 +1768,7 @@ func (x *GetSecretValueResponse) GetVersionstages() []string {
 
 type InternalServiceError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1804,15 +1804,15 @@ func (*InternalServiceError) Descriptor() ([]byte, []int) {
 }
 
 func (x *InternalServiceError) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidNextTokenException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1848,15 +1848,15 @@ func (*InvalidNextTokenException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidNextTokenException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1892,15 +1892,15 @@ func (*InvalidParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidRequestException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1936,15 +1936,15 @@ func (*InvalidRequestException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidRequestException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1980,8 +1980,8 @@ func (*LimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *LimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1990,7 +1990,7 @@ type ListSecretVersionIdsRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Includedeprecated *bool                  `protobuf:"varint,299058751,opt,name=includedeprecated,proto3,oneof" json:"includedeprecated,omitempty"`
 	Maxresults        *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken         *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Secretid          string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -2041,8 +2041,8 @@ func (x *ListSecretVersionIdsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListSecretVersionIdsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2056,9 +2056,9 @@ func (x *ListSecretVersionIdsRequest) GetSecretid() string {
 
 type ListSecretVersionIdsResponse struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Arn           string                     `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                     `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nexttoken     string                     `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Arn           *string                    `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                    `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Nexttoken     *string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Versions      []*SecretVersionsListEntry `protobuf:"bytes,252099085,rep,name=versions,proto3" json:"versions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2095,22 +2095,22 @@ func (*ListSecretVersionIdsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSecretVersionIdsResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *ListSecretVersionIdsResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ListSecretVersionIdsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2127,7 +2127,7 @@ type ListSecretsRequest struct {
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Includeplanneddeletion *bool                  `protobuf:"varint,64231622,opt,name=includeplanneddeletion,proto3,oneof" json:"includeplanneddeletion,omitempty"`
 	Maxresults             *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken              string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken              *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Sortby                 SortByType             `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=secretsmanager.SortByType" json:"sortby,omitempty"`
 	Sortorder              SortOrderType          `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=secretsmanager.SortOrderType" json:"sortorder,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -2186,8 +2186,8 @@ func (x *ListSecretsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListSecretsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2208,7 +2208,7 @@ func (x *ListSecretsRequest) GetSortorder() SortOrderType {
 
 type ListSecretsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Secretlist    []*SecretListEntry     `protobuf:"bytes,280320894,rep,name=secretlist,proto3" json:"secretlist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2245,8 +2245,8 @@ func (*ListSecretsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSecretsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2260,7 +2260,7 @@ func (x *ListSecretsResponse) GetSecretlist() []*SecretListEntry {
 
 type MalformedPolicyDocumentException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2296,15 +2296,15 @@ func (*MalformedPolicyDocumentException) Descriptor() ([]byte, []int) {
 }
 
 func (x *MalformedPolicyDocumentException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PreconditionNotMetException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2340,15 +2340,15 @@ func (*PreconditionNotMetException) Descriptor() ([]byte, []int) {
 }
 
 func (x *PreconditionNotMetException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PublicPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2384,8 +2384,8 @@ func (*PublicPolicyException) Descriptor() ([]byte, []int) {
 }
 
 func (x *PublicPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2452,8 +2452,8 @@ func (x *PutResourcePolicyRequest) GetSecretid() string {
 
 type PutResourcePolicyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2489,26 +2489,26 @@ func (*PutResourcePolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutResourcePolicyResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *PutResourcePolicyResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type PutSecretValueRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Clientrequesttoken string                 `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3" json:"clientrequesttoken,omitempty"`
-	Rotationtoken      string                 `protobuf:"bytes,292175477,opt,name=rotationtoken,proto3" json:"rotationtoken,omitempty"`
-	Secretbinary       []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3" json:"secretbinary,omitempty"`
+	Clientrequesttoken *string                `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
+	Rotationtoken      *string                `protobuf:"bytes,292175477,opt,name=rotationtoken,proto3,oneof" json:"rotationtoken,omitempty"`
+	Secretbinary       []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3,oneof" json:"secretbinary,omitempty"`
 	Secretid           string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
-	Secretstring       string                 `protobuf:"bytes,190782253,opt,name=secretstring,proto3" json:"secretstring,omitempty"`
+	Secretstring       *string                `protobuf:"bytes,190782253,opt,name=secretstring,proto3,oneof" json:"secretstring,omitempty"`
 	Versionstages      []string               `protobuf:"bytes,224220993,rep,name=versionstages,proto3" json:"versionstages,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -2545,15 +2545,15 @@ func (*PutSecretValueRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutSecretValueRequest) GetClientrequesttoken() string {
-	if x != nil {
-		return x.Clientrequesttoken
+	if x != nil && x.Clientrequesttoken != nil {
+		return *x.Clientrequesttoken
 	}
 	return ""
 }
 
 func (x *PutSecretValueRequest) GetRotationtoken() string {
-	if x != nil {
-		return x.Rotationtoken
+	if x != nil && x.Rotationtoken != nil {
+		return *x.Rotationtoken
 	}
 	return ""
 }
@@ -2573,8 +2573,8 @@ func (x *PutSecretValueRequest) GetSecretid() string {
 }
 
 func (x *PutSecretValueRequest) GetSecretstring() string {
-	if x != nil {
-		return x.Secretstring
+	if x != nil && x.Secretstring != nil {
+		return *x.Secretstring
 	}
 	return ""
 }
@@ -2588,9 +2588,9 @@ func (x *PutSecretValueRequest) GetVersionstages() []string {
 
 type PutSecretValueResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	Versionstages []string               `protobuf:"bytes,224220993,rep,name=versionstages,proto3" json:"versionstages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2627,22 +2627,22 @@ func (*PutSecretValueResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutSecretValueResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *PutSecretValueResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *PutSecretValueResponse) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -2708,7 +2708,7 @@ func (x *RemoveRegionsFromReplicationRequest) GetSecretid() string {
 
 type RemoveRegionsFromReplicationResponse struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
-	Arn               string                   `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
+	Arn               *string                  `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	Replicationstatus []*ReplicationStatusType `protobuf:"bytes,529093900,rep,name=replicationstatus,proto3" json:"replicationstatus,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -2745,8 +2745,8 @@ func (*RemoveRegionsFromReplicationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *RemoveRegionsFromReplicationResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
@@ -2760,8 +2760,8 @@ func (x *RemoveRegionsFromReplicationResponse) GetReplicationstatus() []*Replica
 
 type ReplicaRegionType struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kmskeyid      string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Region        string                 `protobuf:"bytes,154040478,opt,name=region,proto3" json:"region,omitempty"`
+	Kmskeyid      *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Region        *string                `protobuf:"bytes,154040478,opt,name=region,proto3,oneof" json:"region,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2797,15 +2797,15 @@ func (*ReplicaRegionType) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReplicaRegionType) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *ReplicaRegionType) GetRegion() string {
-	if x != nil {
-		return x.Region
+	if x != nil && x.Region != nil {
+		return *x.Region
 	}
 	return ""
 }
@@ -2872,7 +2872,7 @@ func (x *ReplicateSecretToRegionsRequest) GetSecretid() string {
 
 type ReplicateSecretToRegionsResponse struct {
 	state             protoimpl.MessageState   `protogen:"open.v1"`
-	Arn               string                   `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
+	Arn               *string                  `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	Replicationstatus []*ReplicationStatusType `protobuf:"bytes,529093900,rep,name=replicationstatus,proto3" json:"replicationstatus,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -2909,8 +2909,8 @@ func (*ReplicateSecretToRegionsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReplicateSecretToRegionsResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
@@ -2924,11 +2924,11 @@ func (x *ReplicateSecretToRegionsResponse) GetReplicationstatus() []*Replication
 
 type ReplicationStatusType struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Kmskeyid         string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastaccesseddate string                 `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3" json:"lastaccesseddate,omitempty"`
-	Region           string                 `protobuf:"bytes,154040478,opt,name=region,proto3" json:"region,omitempty"`
+	Kmskeyid         *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Lastaccesseddate *string                `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3,oneof" json:"lastaccesseddate,omitempty"`
+	Region           *string                `protobuf:"bytes,154040478,opt,name=region,proto3,oneof" json:"region,omitempty"`
 	Status           StatusType             `protobuf:"varint,6222352,opt,name=status,proto3,enum=secretsmanager.StatusType" json:"status,omitempty"`
-	Statusmessage    string                 `protobuf:"bytes,72590095,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
+	Statusmessage    *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2964,22 +2964,22 @@ func (*ReplicationStatusType) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReplicationStatusType) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *ReplicationStatusType) GetLastaccesseddate() string {
-	if x != nil {
-		return x.Lastaccesseddate
+	if x != nil && x.Lastaccesseddate != nil {
+		return *x.Lastaccesseddate
 	}
 	return ""
 }
 
 func (x *ReplicationStatusType) GetRegion() string {
-	if x != nil {
-		return x.Region
+	if x != nil && x.Region != nil {
+		return *x.Region
 	}
 	return ""
 }
@@ -2992,15 +2992,15 @@ func (x *ReplicationStatusType) GetStatus() StatusType {
 }
 
 func (x *ReplicationStatusType) GetStatusmessage() string {
-	if x != nil {
-		return x.Statusmessage
+	if x != nil && x.Statusmessage != nil {
+		return *x.Statusmessage
 	}
 	return ""
 }
 
 type ResourceExistsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3036,15 +3036,15 @@ func (*ResourceExistsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceExistsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3080,8 +3080,8 @@ func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3132,8 +3132,8 @@ func (x *RestoreSecretRequest) GetSecretid() string {
 
 type RestoreSecretResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3169,26 +3169,26 @@ func (*RestoreSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *RestoreSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *RestoreSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type RotateSecretRequest struct {
 	state                          protoimpl.MessageState                `protogen:"open.v1"`
-	Clientrequesttoken             string                                `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3" json:"clientrequesttoken,omitempty"`
+	Clientrequesttoken             *string                               `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
 	Externalsecretrotationmetadata []*ExternalSecretRotationMetadataItem `protobuf:"bytes,52900542,rep,name=externalsecretrotationmetadata,proto3" json:"externalsecretrotationmetadata,omitempty"`
-	Externalsecretrotationrolearn  string                                `protobuf:"bytes,470712576,opt,name=externalsecretrotationrolearn,proto3" json:"externalsecretrotationrolearn,omitempty"`
+	Externalsecretrotationrolearn  *string                               `protobuf:"bytes,470712576,opt,name=externalsecretrotationrolearn,proto3,oneof" json:"externalsecretrotationrolearn,omitempty"`
 	Rotateimmediately              *bool                                 `protobuf:"varint,265384053,opt,name=rotateimmediately,proto3,oneof" json:"rotateimmediately,omitempty"`
-	Rotationlambdaarn              string                                `protobuf:"bytes,335026080,opt,name=rotationlambdaarn,proto3" json:"rotationlambdaarn,omitempty"`
+	Rotationlambdaarn              *string                               `protobuf:"bytes,335026080,opt,name=rotationlambdaarn,proto3,oneof" json:"rotationlambdaarn,omitempty"`
 	Rotationrules                  *RotationRulesType                    `protobuf:"bytes,259458135,opt,name=rotationrules,proto3" json:"rotationrules,omitempty"`
 	Secretid                       string                                `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
@@ -3226,8 +3226,8 @@ func (*RotateSecretRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *RotateSecretRequest) GetClientrequesttoken() string {
-	if x != nil {
-		return x.Clientrequesttoken
+	if x != nil && x.Clientrequesttoken != nil {
+		return *x.Clientrequesttoken
 	}
 	return ""
 }
@@ -3240,8 +3240,8 @@ func (x *RotateSecretRequest) GetExternalsecretrotationmetadata() []*ExternalSec
 }
 
 func (x *RotateSecretRequest) GetExternalsecretrotationrolearn() string {
-	if x != nil {
-		return x.Externalsecretrotationrolearn
+	if x != nil && x.Externalsecretrotationrolearn != nil {
+		return *x.Externalsecretrotationrolearn
 	}
 	return ""
 }
@@ -3254,8 +3254,8 @@ func (x *RotateSecretRequest) GetRotateimmediately() bool {
 }
 
 func (x *RotateSecretRequest) GetRotationlambdaarn() string {
-	if x != nil {
-		return x.Rotationlambdaarn
+	if x != nil && x.Rotationlambdaarn != nil {
+		return *x.Rotationlambdaarn
 	}
 	return ""
 }
@@ -3276,9 +3276,9 @@ func (x *RotateSecretRequest) GetSecretid() string {
 
 type RotateSecretResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3314,22 +3314,22 @@ func (*RotateSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *RotateSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *RotateSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *RotateSecretResponse) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -3337,8 +3337,8 @@ func (x *RotateSecretResponse) GetVersionid() string {
 type RotationRulesType struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Automaticallyafterdays *int64                 `protobuf:"varint,350893940,opt,name=automaticallyafterdays,proto3,oneof" json:"automaticallyafterdays,omitempty"`
-	Duration               string                 `protobuf:"bytes,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
-	Scheduleexpression     string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
+	Duration               *string                `protobuf:"bytes,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
+	Scheduleexpression     *string                `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3381,41 +3381,41 @@ func (x *RotationRulesType) GetAutomaticallyafterdays() int64 {
 }
 
 func (x *RotationRulesType) GetDuration() string {
-	if x != nil {
-		return x.Duration
+	if x != nil && x.Duration != nil {
+		return *x.Duration
 	}
 	return ""
 }
 
 func (x *RotationRulesType) GetScheduleexpression() string {
-	if x != nil {
-		return x.Scheduleexpression
+	if x != nil && x.Scheduleexpression != nil {
+		return *x.Scheduleexpression
 	}
 	return ""
 }
 
 type SecretListEntry struct {
 	state                          protoimpl.MessageState                `protogen:"open.v1"`
-	Arn                            string                                `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Createddate                    string                                `protobuf:"bytes,416929840,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Deleteddate                    string                                `protobuf:"bytes,516314255,opt,name=deleteddate,proto3" json:"deleteddate,omitempty"`
-	Description                    string                                `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Arn                            *string                               `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Createddate                    *string                               `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Deleteddate                    *string                               `protobuf:"bytes,516314255,opt,name=deleteddate,proto3,oneof" json:"deleteddate,omitempty"`
+	Description                    *string                               `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Externalsecretrotationmetadata []*ExternalSecretRotationMetadataItem `protobuf:"bytes,52900542,rep,name=externalsecretrotationmetadata,proto3" json:"externalsecretrotationmetadata,omitempty"`
-	Externalsecretrotationrolearn  string                                `protobuf:"bytes,470712576,opt,name=externalsecretrotationrolearn,proto3" json:"externalsecretrotationrolearn,omitempty"`
-	Kmskeyid                       string                                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Lastaccesseddate               string                                `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3" json:"lastaccesseddate,omitempty"`
-	Lastchangeddate                string                                `protobuf:"bytes,314015460,opt,name=lastchangeddate,proto3" json:"lastchangeddate,omitempty"`
-	Lastrotateddate                string                                `protobuf:"bytes,501475691,opt,name=lastrotateddate,proto3" json:"lastrotateddate,omitempty"`
-	Name                           string                                `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextrotationdate               string                                `protobuf:"bytes,192035355,opt,name=nextrotationdate,proto3" json:"nextrotationdate,omitempty"`
-	Owningservice                  string                                `protobuf:"bytes,462487817,opt,name=owningservice,proto3" json:"owningservice,omitempty"`
-	Primaryregion                  string                                `protobuf:"bytes,480901186,opt,name=primaryregion,proto3" json:"primaryregion,omitempty"`
+	Externalsecretrotationrolearn  *string                               `protobuf:"bytes,470712576,opt,name=externalsecretrotationrolearn,proto3,oneof" json:"externalsecretrotationrolearn,omitempty"`
+	Kmskeyid                       *string                               `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Lastaccesseddate               *string                               `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3,oneof" json:"lastaccesseddate,omitempty"`
+	Lastchangeddate                *string                               `protobuf:"bytes,314015460,opt,name=lastchangeddate,proto3,oneof" json:"lastchangeddate,omitempty"`
+	Lastrotateddate                *string                               `protobuf:"bytes,501475691,opt,name=lastrotateddate,proto3,oneof" json:"lastrotateddate,omitempty"`
+	Name                           *string                               `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Nextrotationdate               *string                               `protobuf:"bytes,192035355,opt,name=nextrotationdate,proto3,oneof" json:"nextrotationdate,omitempty"`
+	Owningservice                  *string                               `protobuf:"bytes,462487817,opt,name=owningservice,proto3,oneof" json:"owningservice,omitempty"`
+	Primaryregion                  *string                               `protobuf:"bytes,480901186,opt,name=primaryregion,proto3,oneof" json:"primaryregion,omitempty"`
 	Rotationenabled                *bool                                 `protobuf:"varint,209507301,opt,name=rotationenabled,proto3,oneof" json:"rotationenabled,omitempty"`
-	Rotationlambdaarn              string                                `protobuf:"bytes,335026080,opt,name=rotationlambdaarn,proto3" json:"rotationlambdaarn,omitempty"`
+	Rotationlambdaarn              *string                               `protobuf:"bytes,335026080,opt,name=rotationlambdaarn,proto3,oneof" json:"rotationlambdaarn,omitempty"`
 	Rotationrules                  *RotationRulesType                    `protobuf:"bytes,259458135,opt,name=rotationrules,proto3" json:"rotationrules,omitempty"`
 	Secretversionstostages         map[string]string                     `protobuf:"bytes,356331823,rep,name=secretversionstostages,proto3" json:"secretversionstostages,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Tags                           []*Tag                                `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Type                           string                                `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
+	Type                           *string                               `protobuf:"bytes,290836590,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -3451,29 +3451,29 @@ func (*SecretListEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *SecretListEntry) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetDeleteddate() string {
-	if x != nil {
-		return x.Deleteddate
+	if x != nil && x.Deleteddate != nil {
+		return *x.Deleteddate
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -3486,64 +3486,64 @@ func (x *SecretListEntry) GetExternalsecretrotationmetadata() []*ExternalSecretR
 }
 
 func (x *SecretListEntry) GetExternalsecretrotationrolearn() string {
-	if x != nil {
-		return x.Externalsecretrotationrolearn
+	if x != nil && x.Externalsecretrotationrolearn != nil {
+		return *x.Externalsecretrotationrolearn
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetLastaccesseddate() string {
-	if x != nil {
-		return x.Lastaccesseddate
+	if x != nil && x.Lastaccesseddate != nil {
+		return *x.Lastaccesseddate
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetLastchangeddate() string {
-	if x != nil {
-		return x.Lastchangeddate
+	if x != nil && x.Lastchangeddate != nil {
+		return *x.Lastchangeddate
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetLastrotateddate() string {
-	if x != nil {
-		return x.Lastrotateddate
+	if x != nil && x.Lastrotateddate != nil {
+		return *x.Lastrotateddate
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetNextrotationdate() string {
-	if x != nil {
-		return x.Nextrotationdate
+	if x != nil && x.Nextrotationdate != nil {
+		return *x.Nextrotationdate
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetOwningservice() string {
-	if x != nil {
-		return x.Owningservice
+	if x != nil && x.Owningservice != nil {
+		return *x.Owningservice
 	}
 	return ""
 }
 
 func (x *SecretListEntry) GetPrimaryregion() string {
-	if x != nil {
-		return x.Primaryregion
+	if x != nil && x.Primaryregion != nil {
+		return *x.Primaryregion
 	}
 	return ""
 }
@@ -3556,8 +3556,8 @@ func (x *SecretListEntry) GetRotationenabled() bool {
 }
 
 func (x *SecretListEntry) GetRotationlambdaarn() string {
-	if x != nil {
-		return x.Rotationlambdaarn
+	if x != nil && x.Rotationlambdaarn != nil {
+		return *x.Rotationlambdaarn
 	}
 	return ""
 }
@@ -3584,20 +3584,20 @@ func (x *SecretListEntry) GetTags() []*Tag {
 }
 
 func (x *SecretListEntry) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
 
 type SecretValueEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Createddate   string                 `protobuf:"bytes,416929840,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Secretbinary  []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3" json:"secretbinary,omitempty"`
-	Secretstring  string                 `protobuf:"bytes,190782253,opt,name=secretstring,proto3" json:"secretstring,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Createddate   *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Secretbinary  []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3,oneof" json:"secretbinary,omitempty"`
+	Secretstring  *string                `protobuf:"bytes,190782253,opt,name=secretstring,proto3,oneof" json:"secretstring,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	Versionstages []string               `protobuf:"bytes,224220993,rep,name=versionstages,proto3" json:"versionstages,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3634,22 +3634,22 @@ func (*SecretValueEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *SecretValueEntry) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *SecretValueEntry) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *SecretValueEntry) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -3662,15 +3662,15 @@ func (x *SecretValueEntry) GetSecretbinary() []byte {
 }
 
 func (x *SecretValueEntry) GetSecretstring() string {
-	if x != nil {
-		return x.Secretstring
+	if x != nil && x.Secretstring != nil {
+		return *x.Secretstring
 	}
 	return ""
 }
 
 func (x *SecretValueEntry) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -3684,10 +3684,10 @@ func (x *SecretValueEntry) GetVersionstages() []string {
 
 type SecretVersionsListEntry struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Createddate      string                 `protobuf:"bytes,416929840,opt,name=createddate,proto3" json:"createddate,omitempty"`
+	Createddate      *string                `protobuf:"bytes,416929840,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
 	Kmskeyids        []string               `protobuf:"bytes,478641518,rep,name=kmskeyids,proto3" json:"kmskeyids,omitempty"`
-	Lastaccesseddate string                 `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3" json:"lastaccesseddate,omitempty"`
-	Versionid        string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Lastaccesseddate *string                `protobuf:"bytes,194418963,opt,name=lastaccesseddate,proto3,oneof" json:"lastaccesseddate,omitempty"`
+	Versionid        *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	Versionstages    []string               `protobuf:"bytes,224220993,rep,name=versionstages,proto3" json:"versionstages,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -3724,8 +3724,8 @@ func (*SecretVersionsListEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *SecretVersionsListEntry) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
@@ -3738,15 +3738,15 @@ func (x *SecretVersionsListEntry) GetKmskeyids() []string {
 }
 
 func (x *SecretVersionsListEntry) GetLastaccesseddate() string {
-	if x != nil {
-		return x.Lastaccesseddate
+	if x != nil && x.Lastaccesseddate != nil {
+		return *x.Lastaccesseddate
 	}
 	return ""
 }
 
 func (x *SecretVersionsListEntry) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -3804,7 +3804,7 @@ func (x *StopReplicationToReplicaRequest) GetSecretid() string {
 
 type StopReplicationToReplicaResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3840,16 +3840,16 @@ func (*StopReplicationToReplicaResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StopReplicationToReplicaResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 type Tag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Key           *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3885,15 +3885,15 @@ func (*Tag) Descriptor() ([]byte, []int) {
 }
 
 func (x *Tag) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *Tag) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -4004,13 +4004,13 @@ func (x *UntagResourceRequest) GetTagkeys() []string {
 
 type UpdateSecretRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Clientrequesttoken string                 `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3" json:"clientrequesttoken,omitempty"`
-	Description        string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Kmskeyid           string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Secretbinary       []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3" json:"secretbinary,omitempty"`
+	Clientrequesttoken *string                `protobuf:"bytes,455653361,opt,name=clientrequesttoken,proto3,oneof" json:"clientrequesttoken,omitempty"`
+	Description        *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Kmskeyid           *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Secretbinary       []byte                 `protobuf:"bytes,94375681,opt,name=secretbinary,proto3,oneof" json:"secretbinary,omitempty"`
 	Secretid           string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
-	Secretstring       string                 `protobuf:"bytes,190782253,opt,name=secretstring,proto3" json:"secretstring,omitempty"`
-	Type               string                 `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
+	Secretstring       *string                `protobuf:"bytes,190782253,opt,name=secretstring,proto3,oneof" json:"secretstring,omitempty"`
+	Type               *string                `protobuf:"bytes,290836590,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4046,22 +4046,22 @@ func (*UpdateSecretRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateSecretRequest) GetClientrequesttoken() string {
-	if x != nil {
-		return x.Clientrequesttoken
+	if x != nil && x.Clientrequesttoken != nil {
+		return *x.Clientrequesttoken
 	}
 	return ""
 }
 
 func (x *UpdateSecretRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *UpdateSecretRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -4081,24 +4081,24 @@ func (x *UpdateSecretRequest) GetSecretid() string {
 }
 
 func (x *UpdateSecretRequest) GetSecretstring() string {
-	if x != nil {
-		return x.Secretstring
+	if x != nil && x.Secretstring != nil {
+		return *x.Secretstring
 	}
 	return ""
 }
 
 func (x *UpdateSecretRequest) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
 
 type UpdateSecretResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4134,30 +4134,30 @@ func (*UpdateSecretResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateSecretResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *UpdateSecretResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *UpdateSecretResponse) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type UpdateSecretVersionStageRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Movetoversionid     string                 `protobuf:"bytes,509017411,opt,name=movetoversionid,proto3" json:"movetoversionid,omitempty"`
-	Removefromversionid string                 `protobuf:"bytes,194704147,opt,name=removefromversionid,proto3" json:"removefromversionid,omitempty"`
+	Movetoversionid     *string                `protobuf:"bytes,509017411,opt,name=movetoversionid,proto3,oneof" json:"movetoversionid,omitempty"`
+	Removefromversionid *string                `protobuf:"bytes,194704147,opt,name=removefromversionid,proto3,oneof" json:"removefromversionid,omitempty"`
 	Secretid            string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
 	Versionstage        string                 `protobuf:"bytes,229692340,opt,name=versionstage,proto3" json:"versionstage,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -4195,15 +4195,15 @@ func (*UpdateSecretVersionStageRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateSecretVersionStageRequest) GetMovetoversionid() string {
-	if x != nil {
-		return x.Movetoversionid
+	if x != nil && x.Movetoversionid != nil {
+		return *x.Movetoversionid
 	}
 	return ""
 }
 
 func (x *UpdateSecretVersionStageRequest) GetRemovefromversionid() string {
-	if x != nil {
-		return x.Removefromversionid
+	if x != nil && x.Removefromversionid != nil {
+		return *x.Removefromversionid
 	}
 	return ""
 }
@@ -4224,8 +4224,8 @@ func (x *UpdateSecretVersionStageRequest) GetVersionstage() string {
 
 type UpdateSecretVersionStageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4261,15 +4261,15 @@ func (*UpdateSecretVersionStageResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateSecretVersionStageResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *UpdateSecretVersionStageResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -4277,7 +4277,7 @@ func (x *UpdateSecretVersionStageResponse) GetName() string {
 type ValidateResourcePolicyRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Resourcepolicy string                 `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3" json:"resourcepolicy,omitempty"`
-	Secretid       string                 `protobuf:"bytes,341502821,opt,name=secretid,proto3" json:"secretid,omitempty"`
+	Secretid       *string                `protobuf:"bytes,341502821,opt,name=secretid,proto3,oneof" json:"secretid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4320,8 +4320,8 @@ func (x *ValidateResourcePolicyRequest) GetResourcepolicy() string {
 }
 
 func (x *ValidateResourcePolicyRequest) GetSecretid() string {
-	if x != nil {
-		return x.Secretid
+	if x != nil && x.Secretid != nil {
+		return *x.Secretid
 	}
 	return ""
 }
@@ -4380,8 +4380,8 @@ func (x *ValidateResourcePolicyResponse) GetValidationerrors() []*ValidationErro
 
 type ValidationErrorsEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Checkname     string                 `protobuf:"bytes,68143813,opt,name=checkname,proto3" json:"checkname,omitempty"`
-	Errormessage  string                 `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
+	Checkname     *string                `protobuf:"bytes,68143813,opt,name=checkname,proto3,oneof" json:"checkname,omitempty"`
+	Errormessage  *string                `protobuf:"bytes,518702377,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4417,15 +4417,15 @@ func (*ValidationErrorsEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *ValidationErrorsEntry) GetCheckname() string {
-	if x != nil {
-		return x.Checkname
+	if x != nil && x.Checkname != nil {
+		return *x.Checkname
 	}
 	return ""
 }
 
 func (x *ValidationErrorsEntry) GetErrormessage() string {
-	if x != nil {
-		return x.Errormessage
+	if x != nil && x.Errormessage != nil {
+		return *x.Errormessage
 	}
 	return ""
 }
@@ -4434,333 +4434,505 @@ var File_secretsmanager_proto protoreflect.FileDescriptor
 
 const file_secretsmanager_proto_rawDesc = "" +
 	"\n" +
-	"\x14secretsmanager.proto\x12\x0esecretsmanager\x1a\fcommon.proto\x1a\taws.proto\"l\n" +
-	"\fAPIErrorType\x12\x1f\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xd2\x01\n" +
+	"\x14secretsmanager.proto\x12\x0esecretsmanager\x1a\fcommon.proto\x1a\taws.proto\"\xa2\x01\n" +
+	"\fAPIErrorType\x12$\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tH\x00R\terrorcode\x88\x01\x01\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01\x12#\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tH\x02R\bsecretid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_errorcodeB\n" +
+	"\n" +
+	"\b_messageB\v\n" +
+	"\t_secretid\"\xe5\x01\n" +
 	"\x1aBatchGetSecretValueRequest\x123\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x16.secretsmanager.FilterR\afilters\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12&\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12&\n" +
 	"\fsecretidlist\x18큟\xbe\x01 \x03(\tR\fsecretidlistB\r\n" +
-	"\v_maxresults\"\xc0\x01\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xd3\x01\n" +
 	"\x1bBatchGetSecretValueResponse\x127\n" +
-	"\x06errors\x18\xa7\xc1\xb5O \x03(\v2\x1c.secretsmanager.APIErrorTypeR\x06errors\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12G\n" +
-	"\fsecretvalues\x18\x98\xb8\xf7% \x03(\v2 .secretsmanager.SecretValueEntryR\fsecretvalues\";\n" +
+	"\x06errors\x18\xa7\xc1\xb5O \x03(\v2\x1c.secretsmanager.APIErrorTypeR\x06errors\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12G\n" +
+	"\fsecretvalues\x18\x98\xb8\xf7% \x03(\v2 .secretsmanager.SecretValueEntryR\fsecretvaluesB\f\n" +
+	"\n" +
+	"_nexttoken\";\n" +
 	"\x19CancelRotateSecretRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"k\n" +
-	"\x1aCancelRotateSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xf6\x03\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\x99\x01\n" +
+	"\x1aCancelRotateSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_versionid\"\xf3\x04\n" +
 	"\x13CreateSecretRequest\x12S\n" +
-	"\x11addreplicaregions\x18\x9e\xd9\xf3\xdb\x01 \x03(\v2!.secretsmanager.ReplicaRegionTypeR\x11addreplicaregions\x122\n" +
-	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tR\x12clientrequesttoken\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12H\n" +
-	"\x1bforceoverwritereplicasecret\x18\xdc\xc5\xfcu \x01(\bH\x00R\x1bforceoverwritereplicasecret\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fR\fsecretbinary\x12%\n" +
-	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tR\fsecretstring\x12+\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04typeB\x1e\n" +
-	"\x1c_forceoverwritereplicasecret\"\xbe\x01\n" +
-	"\x14CreateSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12W\n" +
-	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatus\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"0\n" +
-	"\x11DecryptionFailure\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
+	"\x11addreplicaregions\x18\x9e\xd9\xf3\xdb\x01 \x03(\v2!.secretsmanager.ReplicaRegionTypeR\x11addreplicaregions\x127\n" +
+	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12H\n" +
+	"\x1bforceoverwritereplicasecret\x18\xdc\xc5\xfcu \x01(\bH\x02R\x1bforceoverwritereplicasecret\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x03R\bkmskeyid\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12*\n" +
+	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fH\x04R\fsecretbinary\x88\x01\x01\x12*\n" +
+	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tH\x05R\fsecretstring\x88\x01\x01\x12+\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\x12\x1b\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tH\x06R\x04type\x88\x01\x01B\x15\n" +
+	"\x13_clientrequesttokenB\x0e\n" +
+	"\f_descriptionB\x1e\n" +
+	"\x1c_forceoverwritereplicasecretB\v\n" +
+	"\t_kmskeyidB\x0f\n" +
+	"\r_secretbinaryB\x0f\n" +
+	"\r_secretstringB\a\n" +
+	"\x05_type\"\xec\x01\n" +
+	"\x14CreateSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12W\n" +
+	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatus\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_versionid\"A\n" +
+	"\x11DecryptionFailure\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"=\n" +
 	"\x1bDeleteResourcePolicyRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"K\n" +
-	"\x1cDeleteResourcePolicyResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xf1\x01\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"f\n" +
+	"\x1cDeleteResourcePolicyResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_name\"\xf1\x01\n" +
 	"\x13DeleteSecretRequest\x12F\n" +
 	"\x1aforcedeletewithoutrecovery\x18˒\xe3U \x01(\bH\x00R\x1aforcedeletewithoutrecovery\x88\x01\x01\x12:\n" +
 	"\x14recoverywindowindays\x18˩\xb6C \x01(\x03H\x01R\x14recoverywindowindays\x88\x01\x01\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x1d\n" +
 	"\x1b_forcedeletewithoutrecoveryB\x17\n" +
-	"\x15_recoverywindowindays\"k\n" +
-	"\x14DeleteSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tR\fdeletiondate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"7\n" +
+	"\x15_recoverywindowindays\"\x9c\x01\n" +
+	"\x14DeleteSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12+\n" +
+	"\fdeletiondate\x18\xbc\xe7\xee\xa5\x01 \x01(\tH\x01R\fdeletiondate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_deletiondateB\a\n" +
+	"\x05_name\"7\n" +
 	"\x15DescribeSecretRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xc8\t\n" +
-	"\x16DescribeSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12$\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12$\n" +
-	"\vdeleteddate\x18\x8f\xa9\x99\xf6\x01 \x01(\tR\vdeleteddate\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12}\n" +
-	"\x1eexternalsecretrotationmetadata\x18\xbe\xe5\x9c\x19 \x03(\v22.secretsmanager.ExternalSecretRotationMetadataItemR\x1eexternalsecretrotationmetadata\x12H\n" +
-	"\x1dexternalsecretrotationrolearn\x18\x80\x82\xba\xe0\x01 \x01(\tR\x1dexternalsecretrotationrolearn\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12-\n" +
-	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tR\x10lastaccesseddate\x12,\n" +
-	"\x0flastchangeddate\x18\xe4\xfdݕ\x01 \x01(\tR\x0flastchangeddate\x12,\n" +
-	"\x0flastrotateddate\x18\xebҏ\xef\x01 \x01(\tR\x0flastrotateddate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12-\n" +
-	"\x10nextrotationdate\x18\x9b\xf4\xc8[ \x01(\tR\x10nextrotationdate\x12(\n" +
-	"\rowningservice\x18\x89\x82\xc4\xdc\x01 \x01(\tR\rowningservice\x12(\n" +
-	"\rprimaryregion\x18\xc2\xf0\xa7\xe5\x01 \x01(\tR\rprimaryregion\x12W\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\x98\f\n" +
+	"\x16DescribeSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdeleteddate\x18\x8f\xa9\x99\xf6\x01 \x01(\tH\x02R\vdeleteddate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12}\n" +
+	"\x1eexternalsecretrotationmetadata\x18\xbe\xe5\x9c\x19 \x03(\v22.secretsmanager.ExternalSecretRotationMetadataItemR\x1eexternalsecretrotationmetadata\x12M\n" +
+	"\x1dexternalsecretrotationrolearn\x18\x80\x82\xba\xe0\x01 \x01(\tH\x04R\x1dexternalsecretrotationrolearn\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x05R\bkmskeyid\x88\x01\x01\x122\n" +
+	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tH\x06R\x10lastaccesseddate\x88\x01\x01\x121\n" +
+	"\x0flastchangeddate\x18\xe4\xfdݕ\x01 \x01(\tH\aR\x0flastchangeddate\x88\x01\x01\x121\n" +
+	"\x0flastrotateddate\x18\xebҏ\xef\x01 \x01(\tH\bR\x0flastrotateddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\tR\x04name\x88\x01\x01\x122\n" +
+	"\x10nextrotationdate\x18\x9b\xf4\xc8[ \x01(\tH\n" +
+	"R\x10nextrotationdate\x88\x01\x01\x12-\n" +
+	"\rowningservice\x18\x89\x82\xc4\xdc\x01 \x01(\tH\vR\rowningservice\x88\x01\x01\x12-\n" +
+	"\rprimaryregion\x18\xc2\xf0\xa7\xe5\x01 \x01(\tH\fR\rprimaryregion\x88\x01\x01\x12W\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatus\x120\n" +
-	"\x0frotationenabled\x18\xe5\xa7\xf3c \x01(\bH\x00R\x0frotationenabled\x88\x01\x01\x120\n" +
-	"\x11rotationlambdaarn\x18\xa0\xaf\xe0\x9f\x01 \x01(\tR\x11rotationlambdaarn\x12J\n" +
+	"\x0frotationenabled\x18\xe5\xa7\xf3c \x01(\bH\rR\x0frotationenabled\x88\x01\x01\x125\n" +
+	"\x11rotationlambdaarn\x18\xa0\xaf\xe0\x9f\x01 \x01(\tH\x0eR\x11rotationlambdaarn\x88\x01\x01\x12J\n" +
 	"\rrotationrules\x18\u05c8\xdc{ \x01(\v2!.secretsmanager.RotationRulesTypeR\rrotationrules\x12+\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x12q\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\x12\x1b\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tH\x0fR\x04type\x88\x01\x01\x12q\n" +
 	"\x12versionidstostages\x18\xca\xe4\x9f+ \x03(\v2>.secretsmanager.DescribeSecretResponse.VersionidstostagesEntryR\x12versionidstostages\x1aE\n" +
 	"\x17VersionidstostagesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_rotationenabled\"0\n" +
-	"\x11EncryptionFailure\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"S\n" +
-	"\"ExternalSecretRotationMetadataItem\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"^\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_createddateB\x0e\n" +
+	"\f_deleteddateB\x0e\n" +
+	"\f_descriptionB \n" +
+	"\x1e_externalsecretrotationrolearnB\v\n" +
+	"\t_kmskeyidB\x13\n" +
+	"\x11_lastaccesseddateB\x12\n" +
+	"\x10_lastchangeddateB\x12\n" +
+	"\x10_lastrotateddateB\a\n" +
+	"\x05_nameB\x13\n" +
+	"\x11_nextrotationdateB\x10\n" +
+	"\x0e_owningserviceB\x10\n" +
+	"\x0e_primaryregionB\x12\n" +
+	"\x10_rotationenabledB\x14\n" +
+	"\x12_rotationlambdaarnB\a\n" +
+	"\x05_type\"A\n" +
+	"\x11EncryptionFailure\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"o\n" +
+	"\"ExternalSecretRotationMetadataItem\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x06\n" +
+	"\x04_keyB\b\n" +
+	"\x06_value\"^\n" +
 	"\x06Filter\x129\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\x0e2$.secretsmanager.FilterNameStringTypeR\x03key\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xcf\x04\n" +
-	"\x18GetRandomPasswordRequest\x120\n" +
-	"\x11excludecharacters\x18\xfeޒ\xa0\x01 \x01(\tR\x11excludecharacters\x122\n" +
-	"\x10excludelowercase\x18\x9b\xaa\xd9k \x01(\bH\x00R\x10excludelowercase\x88\x01\x01\x12.\n" +
-	"\x0eexcludenumbers\x18\xa6\xf6\x96g \x01(\bH\x01R\x0eexcludenumbers\x88\x01\x01\x126\n" +
-	"\x12excludepunctuation\x18\xac\x91\xb9% \x01(\bH\x02R\x12excludepunctuation\x88\x01\x01\x123\n" +
-	"\x10excludeuppercase\x18\xa0\xb2\xe5\xa4\x01 \x01(\bH\x03R\x10excludeuppercase\x88\x01\x01\x12*\n" +
-	"\fincludespace\x18\x84\x83\xb3g \x01(\bH\x04R\fincludespace\x88\x01\x01\x12.\n" +
-	"\x0epasswordlength\x18\xa5\xf4\xa4g \x01(\x03H\x05R\x0epasswordlength\x88\x01\x01\x12@\n" +
-	"\x17requireeachincludedtype\x18\xf2\xa9\x83T \x01(\bH\x06R\x17requireeachincludedtype\x88\x01\x01B\x13\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xea\x04\n" +
+	"\x18GetRandomPasswordRequest\x125\n" +
+	"\x11excludecharacters\x18\xfeޒ\xa0\x01 \x01(\tH\x00R\x11excludecharacters\x88\x01\x01\x122\n" +
+	"\x10excludelowercase\x18\x9b\xaa\xd9k \x01(\bH\x01R\x10excludelowercase\x88\x01\x01\x12.\n" +
+	"\x0eexcludenumbers\x18\xa6\xf6\x96g \x01(\bH\x02R\x0eexcludenumbers\x88\x01\x01\x126\n" +
+	"\x12excludepunctuation\x18\xac\x91\xb9% \x01(\bH\x03R\x12excludepunctuation\x88\x01\x01\x123\n" +
+	"\x10excludeuppercase\x18\xa0\xb2\xe5\xa4\x01 \x01(\bH\x04R\x10excludeuppercase\x88\x01\x01\x12*\n" +
+	"\fincludespace\x18\x84\x83\xb3g \x01(\bH\x05R\fincludespace\x88\x01\x01\x12.\n" +
+	"\x0epasswordlength\x18\xa5\xf4\xa4g \x01(\x03H\x06R\x0epasswordlength\x88\x01\x01\x12@\n" +
+	"\x17requireeachincludedtype\x18\xf2\xa9\x83T \x01(\bH\aR\x17requireeachincludedtype\x88\x01\x01B\x14\n" +
+	"\x12_excludecharactersB\x13\n" +
 	"\x11_excludelowercaseB\x11\n" +
 	"\x0f_excludenumbersB\x15\n" +
 	"\x13_excludepunctuationB\x13\n" +
 	"\x11_excludeuppercaseB\x0f\n" +
 	"\r_includespaceB\x11\n" +
 	"\x0f_passwordlengthB\x1a\n" +
-	"\x18_requireeachincludedtype\"G\n" +
-	"\x19GetRandomPasswordResponse\x12*\n" +
-	"\x0erandompassword\x18\x90\x8f\xca\xe3\x01 \x01(\tR\x0erandompassword\":\n" +
+	"\x18_requireeachincludedtype\"_\n" +
+	"\x19GetRandomPasswordResponse\x12/\n" +
+	"\x0erandompassword\x18\x90\x8f\xca\xe3\x01 \x01(\tH\x00R\x0erandompassword\x88\x01\x01B\x11\n" +
+	"\x0f_randompassword\":\n" +
 	"\x18GetResourcePolicyRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"s\n" +
-	"\x19GetResourcePolicyResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"\x80\x01\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xa6\x01\n" +
+	"\x19GetResourcePolicyResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12.\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tH\x02R\x0eresourcepolicy\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\x11\n" +
+	"\x0f_resourcepolicy\"\xa9\x01\n" +
 	"\x15GetSecretValueRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12%\n" +
-	"\fversionstage\x18\xb4\xa7\xc3m \x01(\tR\fversionstage\"\x84\x02\n" +
-	"\x16GetSecretValueResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12$\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fR\fsecretbinary\x12%\n" +
-	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tR\fsecretstring\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12'\n" +
-	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstages\"3\n" +
-	"\x14InternalServiceError\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidNextTokenException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidParameterException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
-	"\x17InvalidRequestException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"5\n" +
-	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xe3\x01\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x00R\tversionid\x88\x01\x01\x12*\n" +
+	"\fversionstage\x18\xb4\xa7\xc3m \x01(\tH\x01R\fversionstage\x88\x01\x01B\f\n" +
+	"\n" +
+	"_versionidB\x0f\n" +
+	"\r_versionstage\"\xf3\x02\n" +
+	"\x16GetSecretValueResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12*\n" +
+	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fH\x03R\fsecretbinary\x88\x01\x01\x12*\n" +
+	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tH\x04R\fsecretstring\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x05R\tversionid\x88\x01\x01\x12'\n" +
+	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstagesB\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_createddateB\a\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_secretbinaryB\x0f\n" +
+	"\r_secretstringB\f\n" +
+	"\n" +
+	"_versionid\"D\n" +
+	"\x14InternalServiceError\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidNextTokenException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidParameterException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17InvalidRequestException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16LimitExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xf6\x01\n" +
 	"\x1bListSecretVersionIdsRequest\x125\n" +
 	"\x11includedeprecated\x18\xbf\x8c͎\x01 \x01(\bH\x00R\x11includedeprecated\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x14\n" +
 	"\x12_includedeprecatedB\r\n" +
-	"\v_maxresults\"\xb4\x01\n" +
-	"\x1cListSecretVersionIdsResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12F\n" +
-	"\bversions\x18\x8d\xf4\x9ax \x03(\v2'.secretsmanager.SecretVersionsListEntryR\bversions\"\xf5\x02\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xe2\x01\n" +
+	"\x1cListSecretVersionIdsResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12F\n" +
+	"\bversions\x18\x8d\xf4\x9ax \x03(\v2'.secretsmanager.SecretVersionsListEntryR\bversionsB\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_nexttoken\"\x88\x03\n" +
 	"\x12ListSecretsRequest\x123\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x16.secretsmanager.FilterR\afilters\x12>\n" +
 	"\x16includeplanneddeletion\x18Ʊ\xd0\x1e \x01(\bH\x00R\x16includeplanneddeletion\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x125\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x125\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x1a.secretsmanager.SortByTypeR\x06sortby\x12?\n" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x1d.secretsmanager.SortOrderTypeR\tsortorderB\x19\n" +
 	"\x17_includeplanneddeletionB\r\n" +
-	"\v_maxresults\"{\n" +
-	"\x13ListSecretsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12C\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8e\x01\n" +
+	"\x13ListSecretsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12C\n" +
 	"\n" +
 	"secretlist\x18\xfe\xb6Յ\x01 \x03(\v2\x1f.secretsmanager.SecretListEntryR\n" +
-	"secretlist\"?\n" +
-	" MalformedPolicyDocumentException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\":\n" +
-	"\x1bPreconditionNotMetException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"4\n" +
-	"\x15PublicPolicyException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xb2\x01\n" +
+	"secretlistB\f\n" +
+	"\n" +
+	"_nexttoken\"P\n" +
+	" MalformedPolicyDocumentException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bPreconditionNotMetException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15PublicPolicyException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb2\x01\n" +
 	"\x18PutResourcePolicyRequest\x125\n" +
 	"\x11blockpublicpolicy\x18\xfe\xf3\xfd\xf0\x01 \x01(\bH\x00R\x11blockpublicpolicy\x88\x01\x01\x12)\n" +
 	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x14\n" +
-	"\x12_blockpublicpolicy\"H\n" +
-	"\x19PutResourcePolicyResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8c\x02\n" +
-	"\x15PutSecretValueRequest\x122\n" +
-	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tR\x12clientrequesttoken\x12(\n" +
-	"\rrotationtoken\x18\xf5\xfc\xa8\x8b\x01 \x01(\tR\rrotationtoken\x12%\n" +
-	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fR\fsecretbinary\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12%\n" +
-	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tR\fsecretstring\x12'\n" +
-	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstages\"\x90\x01\n" +
-	"\x16PutSecretValueResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12'\n" +
-	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstages\"}\n" +
+	"\x12_blockpublicpolicy\"c\n" +
+	"\x19PutResourcePolicyResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_name\"\xeb\x02\n" +
+	"\x15PutSecretValueRequest\x127\n" +
+	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12-\n" +
+	"\rrotationtoken\x18\xf5\xfc\xa8\x8b\x01 \x01(\tH\x01R\rrotationtoken\x88\x01\x01\x12*\n" +
+	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fH\x02R\fsecretbinary\x88\x01\x01\x12\x1e\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12*\n" +
+	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tH\x03R\fsecretstring\x88\x01\x01\x12'\n" +
+	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstagesB\x15\n" +
+	"\x13_clientrequesttokenB\x10\n" +
+	"\x0e_rotationtokenB\x0f\n" +
+	"\r_secretbinaryB\x0f\n" +
+	"\r_secretstring\"\xbe\x01\n" +
+	"\x16PutSecretValueResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01\x12'\n" +
+	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstagesB\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_versionid\"}\n" +
 	"#RemoveRegionsFromReplicationRequest\x126\n" +
 	"\x14removereplicaregions\x18\xbd\xf4\xad\xaf\x01 \x03(\tR\x14removereplicaregions\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\x95\x01\n" +
-	"$RemoveRegionsFromReplicationResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12W\n" +
-	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatus\"M\n" +
-	"\x11ReplicaRegionType\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12\x19\n" +
-	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\"\x80\x02\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xa2\x01\n" +
+	"$RemoveRegionsFromReplicationResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12W\n" +
+	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatusB\x06\n" +
+	"\x04_arn\"o\n" +
+	"\x11ReplicaRegionType\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x00R\bkmskeyid\x88\x01\x01\x12\x1e\n" +
+	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x01R\x06region\x88\x01\x01B\v\n" +
+	"\t_kmskeyidB\t\n" +
+	"\a_region\"\x80\x02\n" +
 	"\x1fReplicateSecretToRegionsRequest\x12S\n" +
 	"\x11addreplicaregions\x18\x9e\xd9\xf3\xdb\x01 \x03(\v2!.secretsmanager.ReplicaRegionTypeR\x11addreplicaregions\x12H\n" +
 	"\x1bforceoverwritereplicasecret\x18\xdc\xc5\xfcu \x01(\bH\x00R\x1bforceoverwritereplicasecret\x88\x01\x01\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x1e\n" +
-	"\x1c_forceoverwritereplicasecret\"\x91\x01\n" +
-	" ReplicateSecretToRegionsResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12W\n" +
-	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatus\"\xe0\x01\n" +
-	"\x15ReplicationStatusType\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12-\n" +
-	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tR\x10lastaccesseddate\x12\x19\n" +
-	"\x06region\x18\x9e\xf1\xb9I \x01(\tR\x06region\x125\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.secretsmanager.StatusTypeR\x06status\x12'\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tR\rstatusmessage\"6\n" +
-	"\x17ResourceExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
+	"\x1c_forceoverwritereplicasecret\"\x9e\x01\n" +
+	" ReplicateSecretToRegionsResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12W\n" +
+	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x03(\v2%.secretsmanager.ReplicationStatusTypeR\x11replicationstatusB\x06\n" +
+	"\x04_arn\"\xb3\x02\n" +
+	"\x15ReplicationStatusType\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x00R\bkmskeyid\x88\x01\x01\x122\n" +
+	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tH\x01R\x10lastaccesseddate\x88\x01\x01\x12\x1e\n" +
+	"\x06region\x18\x9e\xf1\xb9I \x01(\tH\x02R\x06region\x88\x01\x01\x125\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.secretsmanager.StatusTypeR\x06status\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x03R\rstatusmessage\x88\x01\x01B\v\n" +
+	"\t_kmskeyidB\x13\n" +
+	"\x11_lastaccesseddateB\t\n" +
+	"\a_regionB\x10\n" +
+	"\x0e_statusmessage\"G\n" +
+	"\x17ResourceExistsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"6\n" +
 	"\x14RestoreSecretRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"D\n" +
-	"\x15RestoreSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xfc\x03\n" +
-	"\x13RotateSecretRequest\x122\n" +
-	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tR\x12clientrequesttoken\x12}\n" +
-	"\x1eexternalsecretrotationmetadata\x18\xbe\xe5\x9c\x19 \x03(\v22.secretsmanager.ExternalSecretRotationMetadataItemR\x1eexternalsecretrotationmetadata\x12H\n" +
-	"\x1dexternalsecretrotationrolearn\x18\x80\x82\xba\xe0\x01 \x01(\tR\x1dexternalsecretrotationrolearn\x124\n" +
-	"\x11rotateimmediately\x18\xf5\xe0\xc5~ \x01(\bH\x00R\x11rotateimmediately\x88\x01\x01\x120\n" +
-	"\x11rotationlambdaarn\x18\xa0\xaf\xe0\x9f\x01 \x01(\tR\x11rotationlambdaarn\x12J\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"_\n" +
+	"\x15RestoreSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_name\"\xda\x04\n" +
+	"\x13RotateSecretRequest\x127\n" +
+	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12}\n" +
+	"\x1eexternalsecretrotationmetadata\x18\xbe\xe5\x9c\x19 \x03(\v22.secretsmanager.ExternalSecretRotationMetadataItemR\x1eexternalsecretrotationmetadata\x12M\n" +
+	"\x1dexternalsecretrotationrolearn\x18\x80\x82\xba\xe0\x01 \x01(\tH\x01R\x1dexternalsecretrotationrolearn\x88\x01\x01\x124\n" +
+	"\x11rotateimmediately\x18\xf5\xe0\xc5~ \x01(\bH\x02R\x11rotateimmediately\x88\x01\x01\x125\n" +
+	"\x11rotationlambdaarn\x18\xa0\xaf\xe0\x9f\x01 \x01(\tH\x03R\x11rotationlambdaarn\x88\x01\x01\x12J\n" +
 	"\rrotationrules\x18\u05c8\xdc{ \x01(\v2!.secretsmanager.RotationRulesTypeR\rrotationrules\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x14\n" +
-	"\x12_rotateimmediately\"e\n" +
-	"\x14RotateSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xc3\x01\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretidB\x15\n" +
+	"\x13_clientrequesttokenB \n" +
+	"\x1e_externalsecretrotationrolearnB\x14\n" +
+	"\x12_rotateimmediatelyB\x14\n" +
+	"\x12_rotationlambdaarn\"\x93\x01\n" +
+	"\x14RotateSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_versionid\"\xf1\x01\n" +
 	"\x11RotationRulesType\x12?\n" +
-	"\x16automaticallyafterdays\x18\xf4\uea27\x01 \x01(\x03H\x00R\x16automaticallyafterdays\x88\x01\x01\x12\x1e\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\tR\bduration\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpressionB\x19\n" +
-	"\x17_automaticallyafterdays\"\xf2\b\n" +
-	"\x0fSecretListEntry\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12$\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12$\n" +
-	"\vdeleteddate\x18\x8f\xa9\x99\xf6\x01 \x01(\tR\vdeleteddate\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12}\n" +
-	"\x1eexternalsecretrotationmetadata\x18\xbe\xe5\x9c\x19 \x03(\v22.secretsmanager.ExternalSecretRotationMetadataItemR\x1eexternalsecretrotationmetadata\x12H\n" +
-	"\x1dexternalsecretrotationrolearn\x18\x80\x82\xba\xe0\x01 \x01(\tR\x1dexternalsecretrotationrolearn\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12-\n" +
-	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tR\x10lastaccesseddate\x12,\n" +
-	"\x0flastchangeddate\x18\xe4\xfdݕ\x01 \x01(\tR\x0flastchangeddate\x12,\n" +
-	"\x0flastrotateddate\x18\xebҏ\xef\x01 \x01(\tR\x0flastrotateddate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12-\n" +
-	"\x10nextrotationdate\x18\x9b\xf4\xc8[ \x01(\tR\x10nextrotationdate\x12(\n" +
-	"\rowningservice\x18\x89\x82\xc4\xdc\x01 \x01(\tR\rowningservice\x12(\n" +
-	"\rprimaryregion\x18\xc2\xf0\xa7\xe5\x01 \x01(\tR\rprimaryregion\x120\n" +
-	"\x0frotationenabled\x18\xe5\xa7\xf3c \x01(\bH\x00R\x0frotationenabled\x88\x01\x01\x120\n" +
-	"\x11rotationlambdaarn\x18\xa0\xaf\xe0\x9f\x01 \x01(\tR\x11rotationlambdaarn\x12J\n" +
+	"\x16automaticallyafterdays\x18\xf4\uea27\x01 \x01(\x03H\x00R\x16automaticallyafterdays\x88\x01\x01\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\tH\x01R\bduration\x88\x01\x01\x127\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\x02R\x12scheduleexpression\x88\x01\x01B\x19\n" +
+	"\x17_automaticallyafterdaysB\v\n" +
+	"\t_durationB\x15\n" +
+	"\x13_scheduleexpression\"\xc2\v\n" +
+	"\x0fSecretListEntry\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdeleteddate\x18\x8f\xa9\x99\xf6\x01 \x01(\tH\x02R\vdeleteddate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12}\n" +
+	"\x1eexternalsecretrotationmetadata\x18\xbe\xe5\x9c\x19 \x03(\v22.secretsmanager.ExternalSecretRotationMetadataItemR\x1eexternalsecretrotationmetadata\x12M\n" +
+	"\x1dexternalsecretrotationrolearn\x18\x80\x82\xba\xe0\x01 \x01(\tH\x04R\x1dexternalsecretrotationrolearn\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x05R\bkmskeyid\x88\x01\x01\x122\n" +
+	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tH\x06R\x10lastaccesseddate\x88\x01\x01\x121\n" +
+	"\x0flastchangeddate\x18\xe4\xfdݕ\x01 \x01(\tH\aR\x0flastchangeddate\x88\x01\x01\x121\n" +
+	"\x0flastrotateddate\x18\xebҏ\xef\x01 \x01(\tH\bR\x0flastrotateddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\tR\x04name\x88\x01\x01\x122\n" +
+	"\x10nextrotationdate\x18\x9b\xf4\xc8[ \x01(\tH\n" +
+	"R\x10nextrotationdate\x88\x01\x01\x12-\n" +
+	"\rowningservice\x18\x89\x82\xc4\xdc\x01 \x01(\tH\vR\rowningservice\x88\x01\x01\x12-\n" +
+	"\rprimaryregion\x18\xc2\xf0\xa7\xe5\x01 \x01(\tH\fR\rprimaryregion\x88\x01\x01\x120\n" +
+	"\x0frotationenabled\x18\xe5\xa7\xf3c \x01(\bH\rR\x0frotationenabled\x88\x01\x01\x125\n" +
+	"\x11rotationlambdaarn\x18\xa0\xaf\xe0\x9f\x01 \x01(\tH\x0eR\x11rotationlambdaarn\x88\x01\x01\x12J\n" +
 	"\rrotationrules\x18\u05c8\xdc{ \x01(\v2!.secretsmanager.RotationRulesTypeR\rrotationrules\x12w\n" +
 	"\x16secretversionstostages\x18\xaf\xe2\xf4\xa9\x01 \x03(\v2;.secretsmanager.SecretListEntry.SecretversionstostagesEntryR\x16secretversionstostages\x12+\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x1aI\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\x12\x1b\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tH\x0fR\x04type\x88\x01\x01\x1aI\n" +
 	"\x1bSecretversionstostagesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_rotationenabled\"\xfe\x01\n" +
-	"\x10SecretValueEntry\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12$\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fR\fsecretbinary\x12%\n" +
-	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tR\fsecretstring\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12'\n" +
-	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstages\"\xdb\x01\n" +
-	"\x17SecretVersionsListEntry\x12$\n" +
-	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tR\vcreateddate\x12 \n" +
-	"\tkmskeyids\x18\xee\xfa\x9d\xe4\x01 \x03(\tR\tkmskeyids\x12-\n" +
-	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tR\x10lastaccesseddate\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12'\n" +
-	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstages\"A\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_createddateB\x0e\n" +
+	"\f_deleteddateB\x0e\n" +
+	"\f_descriptionB \n" +
+	"\x1e_externalsecretrotationrolearnB\v\n" +
+	"\t_kmskeyidB\x13\n" +
+	"\x11_lastaccesseddateB\x12\n" +
+	"\x10_lastchangeddateB\x12\n" +
+	"\x10_lastrotateddateB\a\n" +
+	"\x05_nameB\x13\n" +
+	"\x11_nextrotationdateB\x10\n" +
+	"\x0e_owningserviceB\x10\n" +
+	"\x0e_primaryregionB\x12\n" +
+	"\x10_rotationenabledB\x14\n" +
+	"\x12_rotationlambdaarnB\a\n" +
+	"\x05_type\"\xed\x02\n" +
+	"\x10SecretValueEntry\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12*\n" +
+	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fH\x03R\fsecretbinary\x88\x01\x01\x12*\n" +
+	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tH\x04R\fsecretstring\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x05R\tversionid\x88\x01\x01\x12'\n" +
+	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstagesB\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_createddateB\a\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_secretbinaryB\x0f\n" +
+	"\r_secretstringB\f\n" +
+	"\n" +
+	"_versionid\"\x9d\x02\n" +
+	"\x17SecretVersionsListEntry\x12)\n" +
+	"\vcreateddate\x18\xb0\xb0\xe7\xc6\x01 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12 \n" +
+	"\tkmskeyids\x18\xee\xfa\x9d\xe4\x01 \x03(\tR\tkmskeyids\x122\n" +
+	"\x10lastaccesseddate\x18\x93\xb2\xda\\ \x01(\tH\x01R\x10lastaccesseddate\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01\x12'\n" +
+	"\rversionstages\x18\xc1\xae\xf5j \x03(\tR\rversionstagesB\x0e\n" +
+	"\f_createddateB\x13\n" +
+	"\x11_lastaccesseddateB\f\n" +
+	"\n" +
+	"_versionid\"A\n" +
 	"\x1fStopReplicationToReplicaRequest\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"8\n" +
-	" StopReplicationToReplicaResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\"4\n" +
-	"\x03Tag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"a\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"E\n" +
+	" StopReplicationToReplicaResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01B\x06\n" +
+	"\x04_arn\"P\n" +
+	"\x03Tag\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x06\n" +
+	"\x04_keyB\b\n" +
+	"\x06_value\"a\n" +
 	"\x12TagResourceRequest\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12+\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x13.secretsmanager.TagR\x04tags\"T\n" +
 	"\x14UntagResourceRequest\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12\x1c\n" +
-	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x93\x02\n" +
-	"\x13UpdateSecretRequest\x122\n" +
-	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tR\x12clientrequesttoken\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
-	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fR\fsecretbinary\x12\x1e\n" +
+	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x90\x03\n" +
+	"\x13UpdateSecretRequest\x127\n" +
+	"\x12clientrequesttoken\x18\xf1\xef\xa2\xd9\x01 \x01(\tH\x00R\x12clientrequesttoken\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x02R\bkmskeyid\x88\x01\x01\x12*\n" +
+	"\fsecretbinary\x18\x81\x9e\x80- \x01(\fH\x03R\fsecretbinary\x88\x01\x01\x12\x1e\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12*\n" +
+	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tH\x04R\fsecretstring\x88\x01\x01\x12\x1b\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tH\x05R\x04type\x88\x01\x01B\x15\n" +
+	"\x13_clientrequesttokenB\x0e\n" +
+	"\f_descriptionB\v\n" +
+	"\t_kmskeyidB\x0f\n" +
+	"\r_secretbinaryB\x0f\n" +
+	"\r_secretstringB\a\n" +
+	"\x05_type\"\x93\x01\n" +
+	"\x14UpdateSecretResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_versionid\"\x81\x02\n" +
+	"\x1fUpdateSecretVersionStageRequest\x121\n" +
+	"\x0fmovetoversionid\x18\xc3\xfa\xdb\xf2\x01 \x01(\tH\x00R\x0fmovetoversionid\x88\x01\x01\x128\n" +
+	"\x13removefromversionid\x18\x93\xe6\xeb\\ \x01(\tH\x01R\x13removefromversionid\x88\x01\x01\x12\x1e\n" +
 	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12%\n" +
-	"\fsecretstring\x18\xad\xb6\xfcZ \x01(\tR\fsecretstring\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"e\n" +
-	"\x14UpdateSecretResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xcb\x01\n" +
-	"\x1fUpdateSecretVersionStageRequest\x12,\n" +
-	"\x0fmovetoversionid\x18\xc3\xfa\xdb\xf2\x01 \x01(\tR\x0fmovetoversionid\x123\n" +
-	"\x13removefromversionid\x18\x93\xe6\xeb\\ \x01(\tR\x13removefromversionid\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\x12%\n" +
-	"\fversionstage\x18\xb4\xa7\xc3m \x01(\tR\fversionstage\"O\n" +
-	" UpdateSecretVersionStageResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"j\n" +
+	"\fversionstage\x18\xb4\xa7\xc3m \x01(\tR\fversionstageB\x12\n" +
+	"\x10_movetoversionidB\x16\n" +
+	"\x14_removefromversionid\"j\n" +
+	" UpdateSecretVersionStageResponse\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\a\n" +
+	"\x05_name\"|\n" +
 	"\x1dValidateResourcePolicyRequest\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\x12\x1e\n" +
-	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tR\bsecretid\"\xd3\x01\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\x12#\n" +
+	"\bsecretid\x18\xe5\xd6\xeb\xa2\x01 \x01(\tH\x00R\bsecretid\x88\x01\x01B\v\n" +
+	"\t_secretid\"\xd3\x01\n" +
 	"\x1eValidateResourcePolicyResponse\x12?\n" +
 	"\x16policyvalidationpassed\x18\xb1ύ\x8e\x01 \x01(\bH\x00R\x16policyvalidationpassed\x88\x01\x01\x12U\n" +
 	"\x10validationerrors\x18\xbe\xc9\xea\xb5\x01 \x03(\v2%.secretsmanager.ValidationErrorsEntryR\x10validationerrorsB\x19\n" +
-	"\x17_policyvalidationpassed\"`\n" +
-	"\x15ValidationErrorsEntry\x12\x1f\n" +
-	"\tcheckname\x18ŕ\xbf  \x01(\tR\tcheckname\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage*\xa6\x02\n" +
+	"\x17_policyvalidationpassed\"\x89\x01\n" +
+	"\x15ValidationErrorsEntry\x12$\n" +
+	"\tcheckname\x18ŕ\xbf  \x01(\tH\x00R\tcheckname\x88\x01\x01\x12+\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x01R\ferrormessage\x88\x01\x01B\f\n" +
+	"\n" +
+	"_checknameB\x0f\n" +
+	"\r_errormessage*\xa6\x02\n" +
 	"\x14FilterNameStringType\x12#\n" +
 	"\x1fFILTER_NAME_STRING_TYPE_TAG_KEY\x10\x00\x12\x1f\n" +
 	"\x1bFILTER_NAME_STRING_TYPE_ALL\x10\x01\x12*\n" +
@@ -4986,19 +5158,63 @@ func file_secretsmanager_proto_init() {
 	if File_secretsmanager_proto != nil {
 		return
 	}
+	file_secretsmanager_proto_msgTypes[0].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[1].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[2].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[4].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[5].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[6].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[7].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[9].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[10].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[11].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[13].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[14].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[15].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[17].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[18].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[20].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[21].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[22].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[23].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[24].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[25].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[26].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[27].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[28].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[29].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[30].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[31].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[32].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[33].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[34].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[35].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[36].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[37].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[38].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[40].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[41].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[42].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[43].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[44].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[45].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[46].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[48].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[49].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[50].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[51].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[52].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[53].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[54].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[56].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[57].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[60].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[61].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[62].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[63].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[64].OneofWrappers = []any{}
 	file_secretsmanager_proto_msgTypes[65].OneofWrappers = []any{}
+	file_secretsmanager_proto_msgTypes[66].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

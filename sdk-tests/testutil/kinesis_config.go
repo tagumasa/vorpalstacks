@@ -21,7 +21,9 @@ func (r *TestRunner) kinesisConfigTests(ctx context.Context, client *kinesis.Cli
 	}); err != nil {
 		return []TestResult{SetupFailResult("kinesis", "CreateStream setup failed: %v", err)}
 	}
-	time.Sleep(500 * time.Millisecond)
+	if _, err := kinesisDescribeWhenReady(ctx, client, streamName, 10*time.Second); err != nil {
+		return []TestResult{SetupFailResult("kinesis", "CreateStream setup failed: stream not ready: %v", err)}
+	}
 
 	results = append(results, r.RunTest("kinesis", "EnableEnhancedMonitoring", func() error {
 		resp, err := client.EnableEnhancedMonitoring(ctx, &kinesis.EnableEnhancedMonitoringInput{
@@ -256,8 +258,7 @@ func (r *TestRunner) kinesisResourcePolicyTests(ctx context.Context, client *kin
 	}); err != nil {
 		return []TestResult{SetupFailResult("kinesis", "CreateStream (policy) setup failed: %v", err)}
 	}
-	time.Sleep(1 * time.Second)
-	policyStreamDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(policyStreamName)})
+	policyStreamDesc, err := kinesisDescribeWhenReady(ctx, client, policyStreamName, 10*time.Second)
 	if err != nil {
 		return []TestResult{SetupFailResult("kinesis", "DescribeStream (policy) setup failed: %v", err)}
 	}
@@ -337,8 +338,7 @@ func (r *TestRunner) kinesisAdvancedConfigTests(ctx context.Context, client *kin
 	}); err != nil {
 		return []TestResult{SetupFailResult("kinesis", "CreateStream (maxrec) setup failed: %v", err)}
 	}
-	time.Sleep(1 * time.Second)
-	maxRecordDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(maxRecordStreamName)})
+	maxRecordDesc, err := kinesisDescribeWhenReady(ctx, client, maxRecordStreamName, 10*time.Second)
 	if err != nil {
 		return []TestResult{SetupFailResult("kinesis", "DescribeStream (maxrec) setup failed: %v", err)}
 	}
@@ -366,8 +366,7 @@ func (r *TestRunner) kinesisAdvancedConfigTests(ctx context.Context, client *kin
 	}); err != nil {
 		return []TestResult{SetupFailResult("kinesis", "CreateStream (warm) setup failed: %v", err)}
 	}
-	time.Sleep(1 * time.Second)
-	warmDesc, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(warmStreamName)})
+	warmDesc, err := kinesisDescribeWhenReady(ctx, client, warmStreamName, 10*time.Second)
 	if err != nil {
 		return []TestResult{SetupFailResult("kinesis", "DescribeStream (warm) setup failed: %v", err)}
 	}

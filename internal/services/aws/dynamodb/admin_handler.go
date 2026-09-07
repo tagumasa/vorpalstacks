@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -43,7 +44,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 	return connect.NewResponse(&pb.ListTablesOutput{
 		Tablenames:             names,
-		Lastevaluatedtablename: nextMarker,
+		Lastevaluatedtablename: proto.String(nextMarker),
 	}), nil
 }
 

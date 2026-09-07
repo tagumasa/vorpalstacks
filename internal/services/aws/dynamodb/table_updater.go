@@ -26,101 +26,17 @@ func mergeAttributeDefinitions(existing, newDefs []*dbstore.AttributeDefinition)
 	return result
 }
 
-func deepCopyTable(t *dbstore.Table) *dbstore.Table {
-	if t == nil {
-		return nil
-	}
-	cp := *t
-	if t.KeySchema != nil {
-		cp.KeySchema = make([]*dbstore.KeySchemaElement, len(t.KeySchema))
-		for i, ks := range t.KeySchema {
-			kse := *ks
-			cp.KeySchema[i] = &kse
-		}
-	}
-	if t.AttributeDefinitions != nil {
-		cp.AttributeDefinitions = make([]*dbstore.AttributeDefinition, len(t.AttributeDefinitions))
-		for i, ad := range t.AttributeDefinitions {
-			ade := *ad
-			cp.AttributeDefinitions[i] = &ade
-		}
-	}
-	if t.ProvisionedThroughput != nil {
-		pt := *t.ProvisionedThroughput
-		cp.ProvisionedThroughput = &pt
-	}
-	if t.GlobalSecondaryIndexes != nil {
-		cp.GlobalSecondaryIndexes = make([]*dbstore.GlobalSecondaryIndex, len(t.GlobalSecondaryIndexes))
-		for i, gsi := range t.GlobalSecondaryIndexes {
-			g := *gsi
-			if gsi.KeySchema != nil {
-				g.KeySchema = make([]*dbstore.KeySchemaElement, len(gsi.KeySchema))
-				for j, ks := range gsi.KeySchema {
-					kse := *ks
-					g.KeySchema[j] = &kse
-				}
-			}
-			if gsi.Projection != nil {
-				p := *gsi.Projection
-				if gsi.Projection.NonKeyAttributes != nil {
-					p.NonKeyAttributes = make([]string, len(gsi.Projection.NonKeyAttributes))
-					copy(p.NonKeyAttributes, gsi.Projection.NonKeyAttributes)
-				}
-				g.Projection = &p
-			}
-			if gsi.ProvisionedThroughput != nil {
-				pt := *gsi.ProvisionedThroughput
-				g.ProvisionedThroughput = &pt
-			}
-			cp.GlobalSecondaryIndexes[i] = &g
-		}
-	}
-	if t.LocalSecondaryIndexes != nil {
-		cp.LocalSecondaryIndexes = make([]*dbstore.LocalSecondaryIndex, len(t.LocalSecondaryIndexes))
-		for i, lsi := range t.LocalSecondaryIndexes {
-			l := *lsi
-			if lsi.KeySchema != nil {
-				l.KeySchema = make([]*dbstore.KeySchemaElement, len(lsi.KeySchema))
-				for j, ks := range lsi.KeySchema {
-					kse := *ks
-					l.KeySchema[j] = &kse
-				}
-			}
-			if lsi.Projection != nil {
-				p := *lsi.Projection
-				if lsi.Projection.NonKeyAttributes != nil {
-					p.NonKeyAttributes = make([]string, len(lsi.Projection.NonKeyAttributes))
-					copy(p.NonKeyAttributes, lsi.Projection.NonKeyAttributes)
-				}
-				l.Projection = &p
-			}
-			cp.LocalSecondaryIndexes[i] = &l
-		}
-	}
-	if t.StreamSpecification != nil {
-		ss := *t.StreamSpecification
-		cp.StreamSpecification = &ss
-	}
-	if t.SSEDescription != nil {
-		sd := *t.SSEDescription
-		cp.SSEDescription = &sd
-	}
-	if t.TimeToLive != nil {
-		ttl := *t.TimeToLive
-		cp.TimeToLive = &ttl
-	}
-	if t.PointInTimeRecovery != nil {
-		pitr := *t.PointInTimeRecovery
-		cp.PointInTimeRecovery = &pitr
-	}
-	return &cp
-}
-
-func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, updates []interface{}) ([]*dbstore.GlobalSecondaryIndex, error) {
+// applyGSIUpdates applies GlobalSecondaryIndexUpdates to the existing index
+// list and returns the updated list plus the names of indexes this request
+// removes. A name that is both deleted and re-created in the same request
+// is not returned as deleted: the final schema still contains it, so its
+// entries must survive for the backfill to rebuild on top of.
+func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, updates []interface{}) ([]*dbstore.GlobalSecondaryIndex, []string, error) {
 	gsiMap := make(map[string]*dbstore.GlobalSecondaryIndex)
 	for _, g := range existing {
 		gsiMap[g.IndexName] = g
 	}
+	deletedNames := []string{}
 
 	for _, u := range updates {
 		update, ok := u.(map[string]interface{})
@@ -130,23 +46,27 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 
 		if create, ok := update["Create"].(map[string]interface{}); ok {
 			if !validateGSICreateRequired(create) {
-				return nil, ErrInvalidParameter
+				return nil, nil, ErrInvalidParameter
 			}
 			idxName := request.GetStringParam(create, "IndexName")
 			keySchema := parseKeySchema(create)
 			proj, err := parseProjection(create)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			if !validateProjectionRequired(create["Projection"].(map[string]interface{})) {
-				return nil, ErrInvalidParameter
+				return nil, nil, ErrInvalidParameter
+			}
+			gsiPT := parseProvisionedThroughput(create)
+			if gsiPT != nil && !validateProvisionedThroughputValues(gsiPT) {
+				return nil, nil, ErrInvalidParameter
 			}
 			gsiMap[idxName] = &dbstore.GlobalSecondaryIndex{
 				IndexName:             idxName,
 				IndexArn:              tableARN + "/index/" + idxName,
 				KeySchema:             keySchema,
 				Projection:            proj,
-				ProvisionedThroughput: parseProvisionedThroughput(create),
+				ProvisionedThroughput: gsiPT,
 				IndexStatus:           dbstore.IndexStatusActive,
 			}
 		}
@@ -154,30 +74,44 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 		if updateGSI, ok := update["Update"].(map[string]interface{}); ok {
 			idxName := request.GetStringParam(updateGSI, "IndexName")
 			if idxName == "" {
-				return nil, ErrInvalidParameter
+				return nil, nil, ErrInvalidParameter
 			}
-			if !validateIndexName(idxName) {
-				return nil, ErrInvalidParameter
+			if !validateResourceName(idxName) {
+				return nil, nil, ErrInvalidParameter
 			}
 			if idx, exists := gsiMap[idxName]; exists {
 				if provThroughput := parseProvisionedThroughput(updateGSI); provThroughput != nil {
+					if !validateProvisionedThroughputValues(provThroughput) {
+						return nil, nil, ErrInvalidParameter
+					}
 					idx.ProvisionedThroughput = provThroughput
 				}
 				idx.IndexStatus = dbstore.IndexStatusActive
 			} else {
-				return nil, ErrIndexNotFound
+				return nil, nil, ErrIndexNotFound
 			}
 		}
 
 		if deleteGSI, ok := update["Delete"].(map[string]interface{}); ok {
 			idxNameToDelete := request.GetStringParam(deleteGSI, "IndexName")
 			if idxNameToDelete == "" {
-				return nil, ErrInvalidParameter
+				return nil, nil, ErrInvalidParameter
 			}
 			if err := validateGSIDeleteExists(gsiMap, idxNameToDelete); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			delete(gsiMap, idxNameToDelete)
+			deletedNames = append(deletedNames, idxNameToDelete)
+		}
+	}
+
+	// An index deleted and re-created in the same request still exists in
+	// the final schema; only names absent from the final map have their
+	// entries cleaned up.
+	finalDeletes := deletedNames[:0]
+	for _, name := range deletedNames {
+		if _, stillPresent := gsiMap[name]; !stillPresent {
+			finalDeletes = append(finalDeletes, name)
 		}
 	}
 
@@ -188,5 +122,63 @@ func applyGSIUpdates(tableARN string, existing []*dbstore.GlobalSecondaryIndex, 
 	sort.Slice(result, func(i, j int) bool {
 		return result[i].IndexName < result[j].IndexName
 	})
-	return result, nil
+	return result, finalDeletes, nil
+}
+
+// applyVectorIndexUpdates applies VectorIndexUpdates to the existing vector
+// index list and returns the updated list plus the names this request creates
+// and removes. One UpdateTable request may add or remove exactly one vector
+// index, so more than one update element is rejected.
+func applyVectorIndexUpdates(tableARN string, existing []*dbstore.VectorIndex, updates []interface{}) ([]*dbstore.VectorIndex, []string, []string, error) {
+	if len(updates) > 1 {
+		return nil, nil, nil, ErrInvalidParameter
+	}
+
+	viMap := make(map[string]*dbstore.VectorIndex)
+	for _, v := range existing {
+		viMap[v.IndexName] = v
+	}
+	createdNames := []string{}
+	deletedNames := []string{}
+
+	for _, u := range updates {
+		update, ok := u.(map[string]interface{})
+		if !ok {
+			return nil, nil, nil, ErrInvalidParameter
+		}
+
+		if create, ok := update["Create"].(map[string]interface{}); ok {
+			idx, err := parseVectorIndex(create)
+			if err != nil {
+				return nil, nil, nil, err
+			}
+			if _, exists := viMap[idx.IndexName]; exists {
+				return nil, nil, nil, ErrIndexAlreadyExists
+			}
+			idx.IndexArn = tableARN + "/index/" + idx.IndexName
+			viMap[idx.IndexName] = idx
+			createdNames = append(createdNames, idx.IndexName)
+		}
+
+		if deleteVI, ok := update["Delete"].(map[string]interface{}); ok {
+			idxName := request.GetStringParam(deleteVI, "IndexName")
+			if idxName == "" {
+				return nil, nil, nil, ErrInvalidParameter
+			}
+			if _, exists := viMap[idxName]; !exists {
+				return nil, nil, nil, ErrIndexNotFound
+			}
+			delete(viMap, idxName)
+			deletedNames = append(deletedNames, idxName)
+		}
+	}
+
+	result := make([]*dbstore.VectorIndex, 0, len(viMap))
+	for _, v := range viMap {
+		result = append(result, v)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].IndexName < result[j].IndexName
+	})
+	return result, createdNames, deletedNames, nil
 }

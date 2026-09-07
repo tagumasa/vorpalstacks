@@ -19,7 +19,6 @@ type DynamoDBService struct {
 	accountID            string
 	stores               sync.Map // region → dynamodbstore.DynamoDBStoreInterface
 	storageManager       *storage.RegionStorageManager
-	busStoreFactory      *dynamodbstore.DynamoDBStoreFactory
 	bus                  eventbus.ServiceBus
 	bgCtx                context.Context
 	bgCancel             context.CancelFunc
@@ -74,7 +73,6 @@ func (s *DynamoDBService) Close() {
 // (e.g. from the EventBus DynamoDBInvoker).
 func (s *DynamoDBService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
-	s.busStoreFactory = dynamodbstore.NewDynamoDBStoreFactory(sm, s.accountID)
 }
 
 // SetEventBus sets the EventBus for cross-service invoker access (e.g. S3
@@ -83,13 +81,13 @@ func (s *DynamoDBService) SetEventBus(bus eventbus.ServiceBus) {
 	s.bus = bus
 }
 
-// GetStoreForRegion returns the DynamoDB store for the given region.
-// This is used by the DynamoDBInvoker adapter for cross-service access.
+// GetStoreForRegion returns the DynamoDB store for the given region from the
+// same per-region cache the request paths use. Cross-service access (the
+// DynamoDBInvoker adapter, global-table replication) therefore shares one
+// store instance — and one TTL worker, contributor lock, and stream sequence
+// allocator — per region instead of building a second one.
 func (s *DynamoDBService) GetStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error) {
-	if s.busStoreFactory == nil {
-		return nil, fmt.Errorf("storage manager not configured for DynamoDB service")
-	}
-	return s.busStoreFactory.GetStore(region)
+	return s.storeForRegion(region)
 }
 
 // GetCachedStoreForRegion returns the cached DynamoDB store for the given
@@ -97,26 +95,26 @@ func (s *DynamoDBService) GetStoreForRegion(region string) (dynamodbstore.Dynamo
 // the admin console handlers work without requiring a prior HTTP API request
 // to initialise the store.
 func (s *DynamoDBService) GetCachedStoreForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error) {
-	if v, ok := s.stores.Load(region); ok {
-		return v.(dynamodbstore.DynamoDBStoreInterface), nil
-	}
+	return s.storeForRegion(region)
+}
+
+// storeForRegion resolves the per-region store through the service's single
+// store cache, building it from the storage manager on first use.
+func (s *DynamoDBService) storeForRegion(region string) (dynamodbstore.DynamoDBStoreInterface, error) {
 	if s.storageManager == nil {
 		return nil, fmt.Errorf("dynamodb storage manager not initialised")
 	}
-	basicStorage, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
-	}
-	txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
-	}
-	store := dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region)
-	actual, loaded := s.stores.LoadOrStore(region, store)
-	if loaded {
-		store.Close()
-	}
-	return actual.(dynamodbstore.DynamoDBStoreInterface), nil
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (dynamodbstore.DynamoDBStoreInterface, error) {
+		basicStorage, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
+		}
+		txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
+		if !ok {
+			return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
+		}
+		return dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region), nil
+	})
 }
 
 func (s *DynamoDBService) store(reqCtx *request.RequestContext) (dynamodbstore.DynamoDBStoreInterface, error) {
@@ -211,4 +209,6 @@ func (s *DynamoDBService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("dynamodb", "ExecuteStatement", s.ExecuteStatement)
 	d.RegisterHandlerForService("dynamodb", "ExecuteTransaction", s.ExecuteTransaction)
 	d.RegisterHandlerForService("dynamodb", "BatchExecuteStatement", s.BatchExecuteStatement)
+
+	d.RegisterHandlerForService("dynamodb", "SearchVectors", s.SearchVectors)
 }

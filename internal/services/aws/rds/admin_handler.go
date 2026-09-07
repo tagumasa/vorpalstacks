@@ -60,9 +60,9 @@ func (h *AdminHandler) DescribeDBClusters(ctx context.Context, req *connect.Requ
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBClustersCore(stores, DescribeDBClustersInput{
-		DBClusterIdentifier: req.Msg.Dbclusteridentifier,
+		DBClusterIdentifier: req.Msg.GetDbclusteridentifier(),
 		Filters:             req.Msg.Filters,
-		Marker:              req.Msg.Marker,
+		Marker:              req.Msg.GetMarker(),
 		MaxRecords:          req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -77,16 +77,16 @@ func (h *AdminHandler) CreateDBCluster(ctx context.Context, req *connect.Request
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.createDBClusterCore(stores, CreateDBClusterInput{
-		DBClusterIdentifier:          req.Msg.Dbclusteridentifier,
+		DBClusterIdentifier:          req.Msg.GetDbclusteridentifier(),
 		Engine:                       req.Msg.Engine,
-		EngineVersion:                req.Msg.Engineversion,
-		DatabaseName:                 req.Msg.Databasename,
-		MasterUsername:               req.Msg.Masterusername,
+		EngineVersion:                req.Msg.GetEngineversion(),
+		DatabaseName:                 req.Msg.GetDatabasename(),
+		MasterUsername:               req.Msg.GetMasterusername(),
 		Port:                         req.Msg.GetPort(),
 		BackupRetentionPeriod:        req.Msg.GetBackupretentionperiod(),
 		AvailabilityZones:            req.Msg.Availabilityzones,
-		DBSubnetGroupName:            req.Msg.Dbsubnetgroupname,
-		DBClusterParameterGroupName:  req.Msg.Dbclusterparametergroupname,
+		DBSubnetGroupName:            req.Msg.GetDbsubnetgroupname(),
+		DBClusterParameterGroupName:  req.Msg.GetDbclusterparametergroupname(),
 		StorageEncrypted:             req.Msg.GetStorageencrypted(),
 		CopyTagsToSnapshot:           req.Msg.GetCopytagstosnapshot(),
 		DeletionProtection:           req.Msg.GetDeletionprotection(),
@@ -105,9 +105,9 @@ func (h *AdminHandler) DeleteDBCluster(ctx context.Context, req *connect.Request
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.deleteDBClusterCore(stores, DeleteDBClusterInput{
-		DBClusterIdentifier:       req.Msg.Dbclusteridentifier,
+		DBClusterIdentifier:       req.Msg.GetDbclusteridentifier(),
 		SkipFinalSnapshot:         req.Msg.GetSkipfinalsnapshot(),
-		FinalDBSnapshotIdentifier: req.Msg.Finaldbsnapshotidentifier,
+		FinalDBSnapshotIdentifier: req.Msg.GetFinaldbsnapshotidentifier(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -121,11 +121,11 @@ func (h *AdminHandler) DescribeDBClusterSnapshots(ctx context.Context, req *conn
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBClusterSnapshotsCore(stores, DescribeDBClusterSnapshotsInput{
-		DBClusterSnapshotIdentifier: req.Msg.Dbclustersnapshotidentifier,
-		DBClusterIdentifier:         req.Msg.Dbclusteridentifier,
-		SnapshotType:                req.Msg.Snapshottype,
+		DBClusterSnapshotIdentifier: req.Msg.GetDbclustersnapshotidentifier(),
+		DBClusterIdentifier:         req.Msg.GetDbclusteridentifier(),
+		SnapshotType:                req.Msg.GetSnapshottype(),
 		Filters:                     req.Msg.Filters,
-		Marker:                      req.Msg.Marker,
+		Marker:                      req.Msg.GetMarker(),
 		MaxRecords:                  req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -148,10 +148,10 @@ func (h *AdminHandler) DescribeDBClusterEndpoints(ctx context.Context, req *conn
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBClusterEndpointsCore(stores, DescribeDBClusterEndpointsInput{
-		DBClusterIdentifier:         req.Msg.Dbclusteridentifier,
-		DBClusterEndpointIdentifier: req.Msg.Dbclusterendpointidentifier,
+		DBClusterIdentifier:         req.Msg.GetDbclusteridentifier(),
+		DBClusterEndpointIdentifier: req.Msg.GetDbclusterendpointidentifier(),
 		Filters:                     req.Msg.Filters,
-		Marker:                      req.Msg.Marker,
+		Marker:                      req.Msg.GetMarker(),
 		MaxRecords:                  req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -166,7 +166,7 @@ func (h *AdminHandler) DescribeDBClusterParameters(ctx context.Context, req *con
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBClusterParametersCore(stores, DescribeDBClusterParametersInput{
-		DBClusterParameterGroupName: req.Msg.Dbclusterparametergroupname,
+		DBClusterParameterGroupName: req.Msg.GetDbclusterparametergroupname(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -179,12 +179,12 @@ func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Contex
 	pbParams := make([]*pb.Parameter, 0, 4)
 	for _, dp := range defaultClusterParamsForFamily(family) {
 		pbParams = append(pbParams, &pb.Parameter{
-			Parametername:  dp.name,
-			Parametervalue: dp.value,
-			Description:    dp.desc,
-			Source:         dp.source,
-			Applytype:      dp.apply,
-			Datatype:       dp.dtype,
+			Parametername:  proto.String(dp.name),
+			Parametervalue: proto.String(dp.value),
+			Description:    proto.String(dp.desc),
+			Source:         proto.String(dp.source),
+			Applytype:      proto.String(dp.apply),
+			Datatype:       proto.String(dp.dtype),
 			Ismodifiable:   proto.Bool(dp.modifiable == "true"),
 		})
 	}
@@ -192,7 +192,7 @@ func (h *AdminHandler) DescribeEngineDefaultClusterParameters(ctx context.Contex
 
 	return connect.NewResponse(&pb.DescribeEngineDefaultClusterParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
-			Dbparametergroupfamily: family,
+			Dbparametergroupfamily: proto.String(family),
 			Parameters:             pbParams,
 		},
 	}), nil
@@ -208,9 +208,9 @@ func (h *AdminHandler) DescribeDBInstances(ctx context.Context, req *connect.Req
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBInstancesCore(stores, DescribeDBInstancesInput{
-		DBInstanceIdentifier: req.Msg.Dbinstanceidentifier,
+		DBInstanceIdentifier: req.Msg.GetDbinstanceidentifier(),
 		Filters:              req.Msg.Filters,
-		Marker:               req.Msg.Marker,
+		Marker:               req.Msg.GetMarker(),
 		MaxRecords:           req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -225,38 +225,38 @@ func (h *AdminHandler) CreateDBInstance(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.createDBInstanceCore(stores, CreateDBInstanceInput{
-		DBInstanceIdentifier:               req.Msg.Dbinstanceidentifier,
-		DBClusterIdentifier:                req.Msg.Dbclusteridentifier,
+		DBInstanceIdentifier:               req.Msg.GetDbinstanceidentifier(),
+		DBClusterIdentifier:                req.Msg.GetDbclusteridentifier(),
 		Engine:                             req.Msg.Engine,
-		EngineVersion:                      req.Msg.Engineversion,
+		EngineVersion:                      req.Msg.GetEngineversion(),
 		DBInstanceClass:                    req.Msg.Dbinstanceclass,
-		AvailabilityZone:                   req.Msg.Availabilityzone,
-		PreferredMaintenanceWindow:         req.Msg.Preferredmaintenancewindow,
-		PreferredBackupWindow:              req.Msg.Preferredbackupwindow,
-		DBParameterGroupName:               req.Msg.Dbparametergroupname,
-		DBSubnetGroupName:                  req.Msg.Dbsubnetgroupname,
+		AvailabilityZone:                   req.Msg.GetAvailabilityzone(),
+		PreferredMaintenanceWindow:         req.Msg.GetPreferredmaintenancewindow(),
+		PreferredBackupWindow:              req.Msg.GetPreferredbackupwindow(),
+		DBParameterGroupName:               req.Msg.GetDbparametergroupname(),
+		DBSubnetGroupName:                  req.Msg.GetDbsubnetgroupname(),
 		PubliclyAccessible:                 req.Msg.GetPubliclyaccessible(),
 		AutoMinorVersionUpgrade:            req.Msg.GetAutominorversionupgrade(),
 		AllocatedStorage:                   req.Msg.GetAllocatedstorage(),
-		MasterUsername:                     req.Msg.Masterusername,
-		StorageType:                        req.Msg.Storagetype,
+		MasterUsername:                     req.Msg.GetMasterusername(),
+		StorageType:                        req.Msg.GetStoragetype(),
 		BackupRetentionPeriod:              req.Msg.GetBackupretentionperiod(),
-		LicenseModel:                       req.Msg.Licensemodel,
+		LicenseModel:                       req.Msg.GetLicensemodel(),
 		StorageEncrypted:                   req.Msg.GetStorageencrypted(),
-		KmsKeyId:                           req.Msg.Kmskeyid,
+		KmsKeyId:                           req.Msg.GetKmskeyid(),
 		DeletionProtection:                 req.Msg.GetDeletionprotection(),
 		MultiAZ:                            req.Msg.GetMultiaz(),
 		Port:                               req.Msg.GetPort(),
-		OptionGroupName:                    req.Msg.Optiongroupname,
+		OptionGroupName:                    req.Msg.GetOptiongroupname(),
 		Iops:                               req.Msg.GetIops(),
 		MaxAllocatedStorage:                req.Msg.GetMaxallocatedstorage(),
 		StorageThroughput:                  req.Msg.GetStoragethroughput(),
 		MonitoringInterval:                 req.Msg.GetMonitoringinterval(),
-		MonitoringRoleArn:                  req.Msg.Monitoringrolearn,
+		MonitoringRoleArn:                  req.Msg.GetMonitoringrolearn(),
 		EnablePerformanceInsights:          req.Msg.GetEnableperformanceinsights(),
-		PerformanceInsightsKMSKeyId:        req.Msg.Performanceinsightskmskeyid,
+		PerformanceInsightsKMSKeyId:        req.Msg.GetPerformanceinsightskmskeyid(),
 		PerformanceInsightsRetentionPeriod: req.Msg.GetPerformanceinsightsretentionperiod(),
-		CACertificateIdentifier:            req.Msg.Cacertificateidentifier,
+		CACertificateIdentifier:            req.Msg.GetCacertificateidentifier(),
 		CopyTagsToSnapshot:                 req.Msg.GetCopytagstosnapshot(),
 		EnabledCloudwatchLogsExports:       req.Msg.Enablecloudwatchlogsexports,
 		EnableIAMDatabaseAuthentication:    req.Msg.GetEnableiamdatabaseauthentication(),
@@ -275,9 +275,9 @@ func (h *AdminHandler) DeleteDBInstance(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.deleteDBInstanceCore(stores, DeleteDBInstanceInput{
-		DBInstanceIdentifier:      req.Msg.Dbinstanceidentifier,
+		DBInstanceIdentifier:      req.Msg.GetDbinstanceidentifier(),
 		SkipFinalSnapshot:         req.Msg.GetSkipfinalsnapshot(),
-		FinalDBSnapshotIdentifier: req.Msg.Finaldbsnapshotidentifier,
+		FinalDBSnapshotIdentifier: req.Msg.GetFinaldbsnapshotidentifier(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -299,8 +299,8 @@ func (h *AdminHandler) CreateDBSnapshot(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.createDBSnapshotCore(stores, CreateDBSnapshotInput{
-		DBInstanceIdentifier: req.Msg.Dbinstanceidentifier,
-		DBSnapshotIdentifier: req.Msg.Dbsnapshotidentifier,
+		DBInstanceIdentifier: req.Msg.GetDbinstanceidentifier(),
+		DBSnapshotIdentifier: req.Msg.GetDbsnapshotidentifier(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -314,11 +314,11 @@ func (h *AdminHandler) DescribeDBSnapshots(ctx context.Context, req *connect.Req
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBSnapshotsCore(stores, DescribeDBSnapshotsInput{
-		DBSnapshotIdentifier: req.Msg.Dbsnapshotidentifier,
-		DBInstanceIdentifier: req.Msg.Dbinstanceidentifier,
-		SnapshotType:         req.Msg.Snapshottype,
+		DBSnapshotIdentifier: req.Msg.GetDbsnapshotidentifier(),
+		DBInstanceIdentifier: req.Msg.GetDbinstanceidentifier(),
+		SnapshotType:         req.Msg.GetSnapshottype(),
 		Filters:              req.Msg.Filters,
-		Marker:               req.Msg.Marker,
+		Marker:               req.Msg.GetMarker(),
 		MaxRecords:           req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -337,9 +337,9 @@ func (h *AdminHandler) DescribeDBClusterParameterGroups(ctx context.Context, req
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBClusterParameterGroupsCore(stores, DescribeDBClusterParameterGroupsInput{
-		DBClusterParameterGroupName: req.Msg.Dbclusterparametergroupname,
+		DBClusterParameterGroupName: req.Msg.GetDbclusterparametergroupname(),
 		Filters:                     req.Msg.Filters,
-		Marker:                      req.Msg.Marker,
+		Marker:                      req.Msg.GetMarker(),
 		MaxRecords:                  req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -354,9 +354,9 @@ func (h *AdminHandler) DescribeDBParameterGroups(ctx context.Context, req *conne
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBParameterGroupsCore(stores, DescribeDBParameterGroupsInput{
-		DBParameterGroupName: req.Msg.Dbparametergroupname,
+		DBParameterGroupName: req.Msg.GetDbparametergroupname(),
 		Filters:              req.Msg.Filters,
-		Marker:               req.Msg.Marker,
+		Marker:               req.Msg.GetMarker(),
 		MaxRecords:           req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -371,7 +371,7 @@ func (h *AdminHandler) DescribeDBParameters(ctx context.Context, req *connect.Re
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBParametersCore(stores, DescribeDBParametersInput{
-		DBParameterGroupName: req.Msg.Dbparametergroupname,
+		DBParameterGroupName: req.Msg.GetDbparametergroupname(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -384,12 +384,12 @@ func (h *AdminHandler) DescribeEngineDefaultParameters(ctx context.Context, req 
 	pbParams := make([]*pb.Parameter, 0, 4)
 	for _, dp := range defaultInstanceParamsForFamily(family) {
 		pbParams = append(pbParams, &pb.Parameter{
-			Parametername:  dp.name,
-			Parametervalue: dp.value,
-			Description:    dp.desc,
-			Source:         dp.source,
-			Applytype:      dp.apply,
-			Datatype:       dp.dtype,
+			Parametername:  proto.String(dp.name),
+			Parametervalue: proto.String(dp.value),
+			Description:    proto.String(dp.desc),
+			Source:         proto.String(dp.source),
+			Applytype:      proto.String(dp.apply),
+			Datatype:       proto.String(dp.dtype),
 			Ismodifiable:   proto.Bool(dp.modifiable == "true"),
 		})
 	}
@@ -397,7 +397,7 @@ func (h *AdminHandler) DescribeEngineDefaultParameters(ctx context.Context, req 
 
 	return connect.NewResponse(&pb.DescribeEngineDefaultParametersResult{
 		Enginedefaults: &pb.EngineDefaults{
-			Dbparametergroupfamily: family,
+			Dbparametergroupfamily: proto.String(family),
 			Parameters:             pbParams,
 		},
 	}), nil
@@ -413,9 +413,9 @@ func (h *AdminHandler) DescribeDBSubnetGroups(ctx context.Context, req *connect.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeDBSubnetGroupsCore(stores, DescribeDBSubnetGroupsInput{
-		DBSubnetGroupName: req.Msg.Dbsubnetgroupname,
+		DBSubnetGroupName: req.Msg.GetDbsubnetgroupname(),
 		Filters:           req.Msg.Filters,
-		Marker:            req.Msg.Marker,
+		Marker:            req.Msg.GetMarker(),
 		MaxRecords:        req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -430,9 +430,9 @@ func (h *AdminHandler) DescribeGlobalClusters(ctx context.Context, req *connect.
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeGlobalClustersCore(stores, DescribeGlobalClustersInput{
-		GlobalClusterIdentifier: req.Msg.Globalclusteridentifier,
+		GlobalClusterIdentifier: req.Msg.GetGlobalclusteridentifier(),
 		Filters:                 req.Msg.Filters,
-		Marker:                  req.Msg.Marker,
+		Marker:                  req.Msg.GetMarker(),
 		MaxRecords:              req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -447,9 +447,9 @@ func (h *AdminHandler) DescribeEventSubscriptions(ctx context.Context, req *conn
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	result, err := h.service.describeEventSubscriptionsCore(stores, DescribeEventSubscriptionsInput{
-		SubscriptionName: req.Msg.Subscriptionname,
+		SubscriptionName: req.Msg.GetSubscriptionname(),
 		Filters:          req.Msg.Filters,
-		Marker:           req.Msg.Marker,
+		Marker:           req.Msg.GetMarker(),
 		MaxRecords:       req.Msg.GetMaxrecords(),
 	})
 	if err != nil {
@@ -465,12 +465,12 @@ func (h *AdminHandler) DescribeEvents(ctx context.Context, req *connect.Request[
 	}
 	result, err := h.service.describeEventsCore(stores, DescribeEventsInput{
 		SourceType:       req.Msg.Sourcetype,
-		SourceIdentifier: req.Msg.Sourceidentifier,
-		StartTime:        req.Msg.Starttime,
-		EndTime:          req.Msg.Endtime,
+		SourceIdentifier: req.Msg.GetSourceidentifier(),
+		StartTime:        req.Msg.GetStarttime(),
+		EndTime:          req.Msg.GetEndtime(),
 		Duration:         req.Msg.GetDuration(),
 		EventCategories:  req.Msg.Eventcategories,
-		Marker:           req.Msg.Marker,
+		Marker:           req.Msg.GetMarker(),
 		MaxRecords:       req.Msg.GetMaxrecords(),
 		Filters:          req.Msg.Filters,
 	})
@@ -531,20 +531,20 @@ func (h *AdminHandler) RemoveTagsFromResource(ctx context.Context, req *connect.
 func (h *AdminHandler) DescribeDBEngineVersions(ctx context.Context, req *connect.Request[pb.DescribeDBEngineVersionsMessage]) (*connect.Response[pb.DBEngineVersionMessage], error) {
 	versions := allEngineVersions()
 
-	if engine := req.Msg.Engine; engine != "" {
+	if engine := req.Msg.GetEngine(); engine != "" {
 		filtered := make([]*pb.DBEngineVersion, 0)
 		for _, v := range versions {
-			if v.Engine == engine {
+			if v.GetEngine() == engine {
 				filtered = append(filtered, v)
 			}
 		}
 		versions = filtered
 	}
 
-	if ev := req.Msg.Engineversion; ev != "" {
+	if ev := req.Msg.GetEngineversion(); ev != "" {
 		filtered := make([]*pb.DBEngineVersion, 0)
 		for _, v := range versions {
-			if v.Engineversion == ev {
+			if v.GetEngineversion() == ev {
 				filtered = append(filtered, v)
 			}
 		}
@@ -559,10 +559,10 @@ func (h *AdminHandler) DescribeDBEngineVersions(ctx context.Context, req *connec
 func (h *AdminHandler) DescribeEventCategories(ctx context.Context, req *connect.Request[pb.DescribeEventCategoriesMessage]) (*connect.Response[pb.EventCategoriesMessage], error) {
 	return connect.NewResponse(&pb.EventCategoriesMessage{
 		Eventcategoriesmaplist: []*pb.EventCategoriesMap{
-			{Sourcetype: "db-cluster", Eventcategories: []string{"creation", "deletion", "failover", "failure", "maintenance", "notification", "read replica", "recovery", "restoration", "backup"}},
-			{Sourcetype: "db-instance", Eventcategories: []string{"creation", "deletion", "failure", "maintenance", "notification", "recovery"}},
-			{Sourcetype: "db-snapshot", Eventcategories: []string{"creation", "deletion", "restoration"}},
-			{Sourcetype: "db-parameter-group", Eventcategories: []string{"creation", "modification", "deletion"}},
+			{Sourcetype: proto.String("db-cluster"), Eventcategories: []string{"creation", "deletion", "failover", "failure", "maintenance", "notification", "read replica", "recovery", "restoration", "backup"}},
+			{Sourcetype: proto.String("db-instance"), Eventcategories: []string{"creation", "deletion", "failure", "maintenance", "notification", "recovery"}},
+			{Sourcetype: proto.String("db-snapshot"), Eventcategories: []string{"creation", "deletion", "restoration"}},
+			{Sourcetype: proto.String("db-parameter-group"), Eventcategories: []string{"creation", "modification", "deletion"}},
 		},
 	}), nil
 }
@@ -575,20 +575,20 @@ func (h *AdminHandler) DescribePendingMaintenanceActions(ctx context.Context, re
 
 func (h *AdminHandler) DescribeOrderableDBInstanceOptions(ctx context.Context, req *connect.Request[pb.DescribeOrderableDBInstanceOptionsMessage]) (*connect.Response[pb.OrderableDBInstanceOptionsMessage], error) {
 	options := []*pb.OrderableDBInstanceOption{
-		{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.t3.medium", Licensemodel: "bring-your-own-license", Vpc: proto.Bool(true)},
-		{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.r5.large", Licensemodel: "bring-your-own-license", Vpc: proto.Bool(true)},
-		{Engine: "neptune", Engineversion: "1.4.0.1", Dbinstanceclass: "db.r5.xlarge", Licensemodel: "bring-your-own-license", Vpc: proto.Bool(true)},
-		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.t3.micro", Licensemodel: "general-public-license", Vpc: proto.Bool(true)},
-		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.t3.small", Licensemodel: "general-public-license", Vpc: proto.Bool(true)},
-		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.t3.medium", Licensemodel: "general-public-license", Vpc: proto.Bool(true)},
-		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.r5.large", Licensemodel: "general-public-license", Vpc: proto.Bool(true)},
-		{Engine: "mysql", Engineversion: "8.0.40", Dbinstanceclass: "db.r5.xlarge", Licensemodel: "general-public-license", Vpc: proto.Bool(true)},
+		{Engine: proto.String("neptune"), Engineversion: proto.String("1.4.0.1"), Dbinstanceclass: proto.String("db.t3.medium"), Licensemodel: proto.String("bring-your-own-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("neptune"), Engineversion: proto.String("1.4.0.1"), Dbinstanceclass: proto.String("db.r5.large"), Licensemodel: proto.String("bring-your-own-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("neptune"), Engineversion: proto.String("1.4.0.1"), Dbinstanceclass: proto.String("db.r5.xlarge"), Licensemodel: proto.String("bring-your-own-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("mysql"), Engineversion: proto.String("8.0.40"), Dbinstanceclass: proto.String("db.t3.micro"), Licensemodel: proto.String("general-public-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("mysql"), Engineversion: proto.String("8.0.40"), Dbinstanceclass: proto.String("db.t3.small"), Licensemodel: proto.String("general-public-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("mysql"), Engineversion: proto.String("8.0.40"), Dbinstanceclass: proto.String("db.t3.medium"), Licensemodel: proto.String("general-public-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("mysql"), Engineversion: proto.String("8.0.40"), Dbinstanceclass: proto.String("db.r5.large"), Licensemodel: proto.String("general-public-license"), Vpc: proto.Bool(true)},
+		{Engine: proto.String("mysql"), Engineversion: proto.String("8.0.40"), Dbinstanceclass: proto.String("db.r5.xlarge"), Licensemodel: proto.String("general-public-license"), Vpc: proto.Bool(true)},
 	}
 
-	if engine := req.Msg.Engine; engine != "" {
+	if engine := req.Msg.GetEngine(); engine != "" {
 		filtered := make([]*pb.OrderableDBInstanceOption, 0)
 		for _, o := range options {
-			if o.Engine == engine {
+			if o.GetEngine() == engine {
 				filtered = append(filtered, o)
 			}
 		}

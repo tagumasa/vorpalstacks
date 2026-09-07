@@ -51,21 +51,21 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 	descriptions := make([]*pb.UserPoolDescriptionType, 0, len(result.UserPools))
 	for _, pool := range result.UserPools {
 		desc := &pb.UserPoolDescriptionType{
-			Id:   pool.ID,
-			Name: pool.Name,
+			Id:   proto.String(pool.ID),
+			Name: proto.String(pool.Name),
 		}
 		if !pool.CreationDate.IsZero() {
-			desc.Creationdate = pool.CreationDate.Format(timeutils.ISO8601UTCFormat)
+			desc.Creationdate = proto.String(pool.CreationDate.Format(timeutils.ISO8601UTCFormat))
 		}
 		if !pool.LastModifiedDate.IsZero() {
-			desc.Lastmodifieddate = pool.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+			desc.Lastmodifieddate = proto.String(pool.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 		}
 		descriptions = append(descriptions, desc)
 	}
 
 	return connect.NewResponse(&pb.ListUserPoolsResponse{
 		Userpools: descriptions,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -154,15 +154,15 @@ func (h *AdminHandler) ListUserPoolClients(ctx context.Context, req *connect.Req
 	clients := make([]*pb.UserPoolClientDescription, 0, len(result.Clients))
 	for _, c := range result.Clients {
 		clients = append(clients, &pb.UserPoolClientDescription{
-			Clientid:   c.ClientID,
-			Userpoolid: c.UserPoolID,
-			Clientname: c.ClientName,
+			Clientid:   proto.String(c.ClientID),
+			Userpoolid: proto.String(c.UserPoolID),
+			Clientname: proto.String(c.ClientName),
 		})
 	}
 
 	return connect.NewResponse(&pb.ListUserPoolClientsResponse{
 		Userpoolclients: clients,
-		Nexttoken:       result.NextToken,
+		Nexttoken:       proto.String(result.NextToken),
 	}), nil
 }
 
@@ -211,7 +211,7 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 
 	return connect.NewResponse(&pb.ListGroupsResponse{
 		Groups:    groups,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -308,7 +308,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 
 	return connect.NewResponse(&pb.ListUsersResponse{
 		Users:           users,
-		Paginationtoken: result.NextToken,
+		Paginationtoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -325,8 +325,8 @@ func (h *AdminHandler) AdminGetUser(ctx context.Context, req *connect.Request[pb
 		Username:             user.Username,
 		Userstatus:           userStatusToProto(user.UserStatus),
 		Enabled:              proto.Bool(user.Enabled),
-		Usercreatedate:       user.CreatedDate.Format(timeutils.ISO8601UTCFormat),
-		Userlastmodifieddate: user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat),
+		Usercreatedate:       proto.String(user.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
+		Userlastmodifieddate: proto.String(user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)),
 	}), nil
 }
 
@@ -383,7 +383,7 @@ func (h *AdminHandler) ListIdentityProviders(ctx context.Context, req *connect.R
 
 	return connect.NewResponse(&pb.ListIdentityProvidersResponse{
 		Providers: providers,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 

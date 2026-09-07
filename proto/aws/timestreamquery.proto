@@ -96,7 +96,7 @@ service TimestreamQueryService {
 
 message AccessDeniedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -124,7 +124,7 @@ message CancelQueryRequest {
 
 message CancelQueryResponse {
 
-  string cancellationmessage = 226613662;
+  optional string cancellationmessage = 226613662;
 
 }
 
@@ -134,7 +134,7 @@ message CancelQueryResponse {
 
 message ColumnInfo {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   Type type = 290836590;
 
@@ -156,7 +156,7 @@ enum ComputeMode {
 
 message ConflictException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -164,11 +164,11 @@ message ConflictException {
 
 message CreateScheduledQueryRequest {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   ErrorReportConfiguration errorreportconfiguration = 222039776;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   string name = 266367751;
 
@@ -206,7 +206,7 @@ message Datum {
 
   Row rowvalue = 530552345;
 
-  string scalarvalue = 45700451;
+  optional string scalarvalue = 45700451;
 
   repeated TimeSeriesDataPoint timeseriesvalue = 468590991;
 
@@ -324,7 +324,7 @@ message ErrorReportLocation {
 
 message ExecuteScheduledQueryRequest {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   string invocationtime = 331845291;
 
@@ -360,7 +360,7 @@ message ExecutionStats {
 
 message InternalServerException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -370,7 +370,7 @@ message InternalServerException {
 
 message InvalidEndpointException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -382,7 +382,7 @@ message LastUpdate {
 
   LastUpdateStatus status = 6222352;
 
-  string statusmessage = 72590095;
+  optional string statusmessage = 72590095;
 
   optional int32 targetquerytcu = 183880621;
 
@@ -406,7 +406,7 @@ message ListScheduledQueriesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -414,7 +414,7 @@ message ListScheduledQueriesRequest {
 
 message ListScheduledQueriesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ScheduledQuery scheduledqueries = 458789865;
 
@@ -426,7 +426,7 @@ message ListTagsForResourceRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string resourcearn = 369516653;
 
@@ -436,7 +436,7 @@ message ListTagsForResourceRequest {
 
 message ListTagsForResourceResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Tag tags = 381526209;
 
@@ -464,15 +464,15 @@ enum MeasureValueType {
 
 message MixedMeasureMapping {
 
-  string measurename = 426079069;
+  optional string measurename = 426079069;
 
   MeasureValueType measurevaluetype = 466683165;
 
   repeated MultiMeasureAttributeMapping multimeasureattributemappings = 311133918;
 
-  string sourcecolumn = 219947651;
+  optional string sourcecolumn = 219947651;
 
-  string targetmeasurename = 469508316;
+  optional string targetmeasurename = 469508316;
 
 }
 
@@ -486,7 +486,7 @@ message MultiMeasureAttributeMapping {
 
   string sourcecolumn = 219947651;
 
-  string targetmultimeasureattributename = 415623663;
+  optional string targetmultimeasureattributename = 415623663;
 
 }
 
@@ -498,7 +498,7 @@ message MultiMeasureMappings {
 
   repeated MultiMeasureAttributeMapping multimeasureattributemappings = 311133918;
 
-  string targetmultimeasurename = 27420053;
+  optional string targetmultimeasurename = 27420053;
 
 }
 
@@ -602,7 +602,7 @@ message QueryComputeResponse {
 
 message QueryExecutionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -664,11 +664,11 @@ enum QueryPricingModel {
 
 message QueryRequest {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   optional int32 maxrows = 251920525;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   QueryInsights queryinsights = 105458863;
 
@@ -682,7 +682,7 @@ message QueryResponse {
 
   repeated ColumnInfo columninfo = 364742404;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string queryid = 110737519;
 
@@ -712,9 +712,9 @@ message QuerySpatialCoverageMax {
 
   repeated string partitionkey = 379379617;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
-  double value = 289929579;
+  optional double value = 289929579;
 
 }
 
@@ -728,7 +728,7 @@ message QueryStatus {
 
   optional int64 cumulativebytesscanned = 413524176;
 
-  double progresspercentage = 211894727;
+  optional double progresspercentage = 211894727;
 
 }
 
@@ -748,7 +748,7 @@ message QueryTemporalRange {
 
 message QueryTemporalRangeMax {
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
   optional int64 value = 289929579;
 
@@ -760,9 +760,9 @@ message QueryTemporalRangeMax {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string scheduledqueryarn = 234602964;
+  optional string scheduledqueryarn = 234602964;
 
 }
 
@@ -786,7 +786,7 @@ message S3Configuration {
 
   S3EncryptionOption encryptionoption = 160833062;
 
-  string objectkeyprefix = 132617574;
+  optional string objectkeyprefix = 132617574;
 
 }
 
@@ -806,9 +806,9 @@ enum S3EncryptionOption {
 
 message S3ReportLocation {
 
-  string bucketname = 208117045;
+  optional string bucketname = 208117045;
 
-  string objectkey = 335986226;
+  optional string objectkey = 335986226;
 
 }
 
@@ -874,7 +874,7 @@ message ScheduledQuery {
 
   string arn = 402345373;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   ErrorReportConfiguration errorreportconfiguration = 222039776;
 
@@ -882,9 +882,9 @@ message ScheduledQuery {
 
   string name = 266367751;
 
-  string nextinvocationtime = 424223272;
+  optional string nextinvocationtime = 424223272;
 
-  string previousinvocationtime = 7530344;
+  optional string previousinvocationtime = 7530344;
 
   ScheduledQueryState state = 502047895;
 
@@ -900,21 +900,21 @@ message ScheduledQueryDescription {
 
   string arn = 402345373;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   ErrorReportConfiguration errorreportconfiguration = 222039776;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   ScheduledQueryRunSummary lastrunsummary = 238724003;
 
   string name = 266367751;
 
-  string nextinvocationtime = 424223272;
+  optional string nextinvocationtime = 424223272;
 
   NotificationConfiguration notificationconfiguration = 290208045;
 
-  string previousinvocationtime = 7530344;
+  optional string previousinvocationtime = 7530344;
 
   string querystring = 435938663;
 
@@ -922,7 +922,7 @@ message ScheduledQueryDescription {
 
   ScheduleConfiguration scheduleconfiguration = 526075047;
 
-  string scheduledqueryexecutionrolearn = 284244182;
+  optional string scheduledqueryexecutionrolearn = 284244182;
 
   ScheduledQueryState state = 502047895;
 
@@ -992,15 +992,15 @@ message ScheduledQueryRunSummary {
 
   ExecutionStats executionstats = 220056093;
 
-  string failurereason = 232322142;
+  optional string failurereason = 232322142;
 
-  string invocationtime = 331845291;
+  optional string invocationtime = 331845291;
 
   ScheduledQueryInsightsResponse queryinsightsresponse = 354278130;
 
   ScheduledQueryRunStatus runstatus = 293822805;
 
-  string triggertime = 268796699;
+  optional string triggertime = 268796699;
 
 }
 
@@ -1022,11 +1022,11 @@ message SelectColumn {
 
   optional bool aliased = 157931831;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
   Type type = 290836590;
 
@@ -1038,7 +1038,7 @@ message SelectColumn {
 
 message ServiceQuotaExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1106,7 +1106,7 @@ message TargetDestination {
 
 message ThrottlingException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1132,7 +1132,7 @@ message TimestreamConfiguration {
 
   repeated DimensionMapping dimensionmappings = 224443741;
 
-  string measurenamecolumn = 112141775;
+  optional string measurenamecolumn = 112141775;
 
   repeated MixedMeasureMapping mixedmeasuremappings = 521774144;
 
@@ -1150,9 +1150,9 @@ message TimestreamConfiguration {
 
 message TimestreamDestination {
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -1228,7 +1228,7 @@ message UpdateScheduledQueryRequest {
 
 message ValidationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 

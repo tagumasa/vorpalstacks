@@ -284,23 +284,23 @@ message ActivateEventSourceRequest {
 
 message ApiDestination {
 
-  string apidestinationarn = 90996885;
+  optional string apidestinationarn = 90996885;
 
   ApiDestinationState apidestinationstate = 13153343;
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   ApiDestinationHttpMethod httpmethod = 398394961;
 
-  string invocationendpoint = 411800759;
+  optional string invocationendpoint = 411800759;
 
   optional int32 invocationratelimitpersecond = 295327816;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -340,13 +340,13 @@ enum ApiDestinationState {
 
 message Archive {
 
-  string archivename = 88048487;
+  optional string archivename = 88048487;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   optional int64 eventcount = 128612839;
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
   optional int32 retentiondays = 267894223;
 
@@ -354,7 +354,7 @@ message Archive {
 
   ArchiveState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -448,11 +448,11 @@ message CancelReplayRequest {
 
 message CancelReplayResponse {
 
-  string replayarn = 361946526;
+  optional string replayarn = 361946526;
 
   ReplayState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -476,7 +476,7 @@ message CapacityProviderStrategyItem {
 
 message ConcurrentModificationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -502,19 +502,19 @@ message Connection {
 
   ConnectionAuthorizationType authorizationtype = 481976511;
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   ConnectionState connectionstate = 404323675;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastauthorizedtime = 250638066;
+  optional string lastauthorizedtime = 250638066;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -524,7 +524,7 @@ message Connection {
 
 message ConnectionApiKeyAuthResponseParameters {
 
-  string apikeyname = 43133502;
+  optional string apikeyname = 43133502;
 
 }
 
@@ -562,7 +562,7 @@ enum ConnectionAuthorizationType {
 
 message ConnectionBasicAuthResponseParameters {
 
-  string username = 470340826;
+  optional string username = 470340826;
 
 }
 
@@ -574,9 +574,9 @@ message ConnectionBodyParameter {
 
   optional bool isvaluesecret = 157884907;
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -588,9 +588,9 @@ message ConnectionHeaderParameter {
 
   optional bool isvaluesecret = 157884907;
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -614,7 +614,7 @@ message ConnectionHttpParameters {
 
 message ConnectionOAuthClientResponseParameters {
 
-  string clientid = 448889284;
+  optional string clientid = 448889284;
 
 }
 
@@ -636,7 +636,7 @@ enum ConnectionOAuthHttpMethod {
 
 message ConnectionOAuthResponseParameters {
 
-  string authorizationendpoint = 427938596;
+  optional string authorizationendpoint = 427938596;
 
   ConnectionOAuthClientResponseParameters clientparameters = 246864127;
 
@@ -654,9 +654,9 @@ message ConnectionQueryStringParameter {
 
   optional bool isvaluesecret = 157884907;
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -686,7 +686,7 @@ message CreateApiDestinationRequest {
 
   string connectionarn = 187631553;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   ApiDestinationHttpMethod httpmethod = 398394961;
 
@@ -702,13 +702,13 @@ message CreateApiDestinationRequest {
 
 message CreateApiDestinationResponse {
 
-  string apidestinationarn = 90996885;
+  optional string apidestinationarn = 90996885;
 
   ApiDestinationState apidestinationstate = 13153343;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
 }
 
@@ -718,9 +718,9 @@ message CreateArchiveRequest {
 
   string archivename = 88048487;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string eventpattern = 233487232;
+  optional string eventpattern = 233487232;
 
   string eventsourcearn = 306357574;
 
@@ -732,13 +732,13 @@ message CreateArchiveRequest {
 
 message CreateArchiveResponse {
 
-  string archivearn = 56866685;
+  optional string archivearn = 56866685;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   ArchiveState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -818,7 +818,7 @@ message CreateConnectionRequest {
 
   ConnectionAuthorizationType authorizationtype = 481976511;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -828,13 +828,13 @@ message CreateConnectionRequest {
 
 message CreateConnectionResponse {
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   ConnectionState connectionstate = 404323675;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
 }
 
@@ -842,7 +842,7 @@ message CreateConnectionResponse {
 
 message CreateEventBusRequest {
 
-  string eventsourcename = 427669794;
+  optional string eventsourcename = 427669794;
 
   string name = 266367751;
 
@@ -854,7 +854,7 @@ message CreateEventBusRequest {
 
 message CreateEventBusResponse {
 
-  string eventbusarn = 515755843;
+  optional string eventbusarn = 515755843;
 
 }
 
@@ -872,7 +872,7 @@ message CreatePartnerEventSourceRequest {
 
 message CreatePartnerEventSourceResponse {
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
 }
 
@@ -890,7 +890,7 @@ message DeactivateEventSourceRequest {
 
 message DeadLetterConfig {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -906,15 +906,15 @@ message DeauthorizeConnectionRequest {
 
 message DeauthorizeConnectionResponse {
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   ConnectionState connectionstate = 404323675;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastauthorizedtime = 250638066;
+  optional string lastauthorizedtime = 250638066;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
 }
 
@@ -958,15 +958,15 @@ message DeleteConnectionRequest {
 
 message DeleteConnectionResponse {
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   ConnectionState connectionstate = 404323675;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastauthorizedtime = 250638066;
+  optional string lastauthorizedtime = 250638066;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
 }
 
@@ -992,7 +992,7 @@ message DeletePartnerEventSourceRequest {
 
 message DeleteRuleRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   optional bool force = 526711333;
 
@@ -1012,25 +1012,25 @@ message DescribeApiDestinationRequest {
 
 message DescribeApiDestinationResponse {
 
-  string apidestinationarn = 90996885;
+  optional string apidestinationarn = 90996885;
 
   ApiDestinationState apidestinationstate = 13153343;
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   ApiDestinationHttpMethod httpmethod = 398394961;
 
-  string invocationendpoint = 411800759;
+  optional string invocationendpoint = 411800759;
 
   optional int32 invocationratelimitpersecond = 295327816;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1046,19 +1046,19 @@ message DescribeArchiveRequest {
 
 message DescribeArchiveResponse {
 
-  string archivearn = 56866685;
+  optional string archivearn = 56866685;
 
-  string archivename = 88048487;
+  optional string archivename = 88048487;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int64 eventcount = 128612839;
 
-  string eventpattern = 233487232;
+  optional string eventpattern = 233487232;
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
   optional int32 retentiondays = 267894223;
 
@@ -1066,7 +1066,7 @@ message DescribeArchiveResponse {
 
   ArchiveState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -1086,23 +1086,23 @@ message DescribeConnectionResponse {
 
   ConnectionAuthorizationType authorizationtype = 481976511;
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   ConnectionState connectionstate = 404323675;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string lastauthorizedtime = 250638066;
+  optional string lastauthorizedtime = 250638066;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string secretarn = 241012025;
+  optional string secretarn = 241012025;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -1110,7 +1110,7 @@ message DescribeConnectionResponse {
 
 message DescribeEventBusRequest {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1118,11 +1118,11 @@ message DescribeEventBusRequest {
 
 message DescribeEventBusResponse {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
 }
 
@@ -1138,15 +1138,15 @@ message DescribeEventSourceRequest {
 
 message DescribeEventSourceResponse {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string createdby = 73491847;
+  optional string createdby = 73491847;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string expirationtime = 93473378;
+  optional string expirationtime = 93473378;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   EventSourceState state = 502047895;
 
@@ -1164,9 +1164,9 @@ message DescribePartnerEventSourceRequest {
 
 message DescribePartnerEventSourceResponse {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1182,29 +1182,29 @@ message DescribeReplayRequest {
 
 message DescribeReplayResponse {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   ReplayDestination destination = 457443680;
 
-  string eventendtime = 30229582;
+  optional string eventendtime = 30229582;
 
-  string eventlastreplayedtime = 7759073;
+  optional string eventlastreplayedtime = 7759073;
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
-  string eventstarttime = 103680757;
+  optional string eventstarttime = 103680757;
 
-  string replayarn = 361946526;
+  optional string replayarn = 361946526;
 
-  string replayendtime = 304261199;
+  optional string replayendtime = 304261199;
 
-  string replayname = 442173850;
+  optional string replayname = 442173850;
 
-  string replaystarttime = 503580492;
+  optional string replaystarttime = 503580492;
 
   ReplayState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -1212,7 +1212,7 @@ message DescribeReplayResponse {
 
 message DescribeRuleRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   string name = 266367751;
 
@@ -1222,23 +1222,23 @@ message DescribeRuleRequest {
 
 message DescribeRuleResponse {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string createdby = 73491847;
+  optional string createdby = 73491847;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
-  string eventpattern = 233487232;
+  optional string eventpattern = 233487232;
 
-  string managedby = 455511232;
+  optional string managedby = 455511232;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   RuleState state = 502047895;
 
@@ -1248,7 +1248,7 @@ message DescribeRuleResponse {
 
 message DisableRuleRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   string name = 266367751;
 
@@ -1266,7 +1266,7 @@ message EcsParameters {
 
   optional bool enableexecutecommand = 451374779;
 
-  string group = 91525165;
+  optional string group = 91525165;
 
   LaunchType launchtype = 184333335;
 
@@ -1276,11 +1276,11 @@ message EcsParameters {
 
   repeated PlacementStrategy placementstrategy = 25036678;
 
-  string platformversion = 139924287;
+  optional string platformversion = 139924287;
 
   PropagateTags propagatetags = 405557622;
 
-  string referenceid = 291739032;
+  optional string referenceid = 291739032;
 
   repeated Tag tags = 381526209;
 
@@ -1294,7 +1294,7 @@ message EcsParameters {
 
 message EnableRuleRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   string name = 266367751;
 
@@ -1306,11 +1306,11 @@ message EnableRuleRequest {
 
 message EventBus {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
 }
 
@@ -1320,15 +1320,15 @@ message EventBus {
 
 message EventSource {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string createdby = 73491847;
+  optional string createdby = 73491847;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string expirationtime = 93473378;
+  optional string expirationtime = 93473378;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   EventSourceState state = 502047895;
 
@@ -1366,7 +1366,7 @@ message HttpParameters {
 
 message IllegalStatusException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1388,7 +1388,7 @@ message InputTransformer {
 
 message InternalException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1398,7 +1398,7 @@ message InternalException {
 
 message InvalidEventPatternException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1408,7 +1408,7 @@ message InvalidEventPatternException {
 
 message InvalidStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1440,7 +1440,7 @@ enum LaunchType {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1448,13 +1448,13 @@ message LimitExceededException {
 
 message ListApiDestinationsRequest {
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1464,7 +1464,7 @@ message ListApiDestinationsResponse {
 
   repeated ApiDestination apidestinations = 321414539;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1472,13 +1472,13 @@ message ListApiDestinationsResponse {
 
 message ListArchivesRequest {
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   ArchiveState state = 502047895;
 
@@ -1490,7 +1490,7 @@ message ListArchivesResponse {
 
   repeated Archive archives = 73167779;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1502,9 +1502,9 @@ message ListConnectionsRequest {
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1514,7 +1514,7 @@ message ListConnectionsResponse {
 
   repeated Connection connections = 98252351;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1524,9 +1524,9 @@ message ListEventBusesRequest {
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1536,7 +1536,7 @@ message ListEventBusesResponse {
 
   repeated EventBus eventbuses = 125356616;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1546,9 +1546,9 @@ message ListEventSourcesRequest {
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1558,7 +1558,7 @@ message ListEventSourcesResponse {
 
   repeated EventSource eventsources = 368674668;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1570,7 +1570,7 @@ message ListPartnerEventSourceAccountsRequest {
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1578,7 +1578,7 @@ message ListPartnerEventSourceAccountsRequest {
 
 message ListPartnerEventSourceAccountsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PartnerEventSourceAccount partnereventsourceaccounts = 334415295;
 
@@ -1592,7 +1592,7 @@ message ListPartnerEventSourcesRequest {
 
   string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1600,7 +1600,7 @@ message ListPartnerEventSourcesRequest {
 
 message ListPartnerEventSourcesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PartnerEventSource partnereventsources = 502828176;
 
@@ -1610,13 +1610,13 @@ message ListPartnerEventSourcesResponse {
 
 message ListReplaysRequest {
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   ReplayState state = 502047895;
 
@@ -1626,7 +1626,7 @@ message ListReplaysRequest {
 
 message ListReplaysResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Replay replays = 312313364;
 
@@ -1636,11 +1636,11 @@ message ListReplaysResponse {
 
 message ListRuleNamesByTargetRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string targetarn = 217664144;
 
@@ -1650,7 +1650,7 @@ message ListRuleNamesByTargetRequest {
 
 message ListRuleNamesByTargetResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string rulenames = 267949170;
 
@@ -1660,13 +1660,13 @@ message ListRuleNamesByTargetResponse {
 
 message ListRulesRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   optional int32 limit = 412502741;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1674,7 +1674,7 @@ message ListRulesRequest {
 
 message ListRulesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Rule rules = 42675585;
 
@@ -1700,11 +1700,11 @@ message ListTagsForResourceResponse {
 
 message ListTargetsByRuleRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string rule = 475696372;
 
@@ -1714,7 +1714,7 @@ message ListTargetsByRuleRequest {
 
 message ListTargetsByRuleResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Target targets = 262180226;
 
@@ -1726,7 +1726,7 @@ message ListTargetsByRuleResponse {
 
 message ManagedRuleException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1746,7 +1746,7 @@ message NetworkConfiguration {
 
 message OperationDisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1756,9 +1756,9 @@ message OperationDisabledException {
 
 message PartnerEventSource {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1768,11 +1768,11 @@ message PartnerEventSource {
 
 message PartnerEventSourceAccount {
 
-  string account = 435725053;
+  optional string account = 435725053;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string expirationtime = 93473378;
+  optional string expirationtime = 93473378;
 
   EventSourceState state = 502047895;
 
@@ -1784,7 +1784,7 @@ message PartnerEventSourceAccount {
 
 message PlacementConstraint {
 
-  string expression = 253079532;
+  optional string expression = 253079532;
 
   PlacementConstraintType type = 287830350;
 
@@ -1806,7 +1806,7 @@ enum PlacementConstraintType {
 
 message PlacementStrategy {
 
-  string field = 125985384;
+  optional string field = 125985384;
 
   PlacementStrategyType type = 287830350;
 
@@ -1830,7 +1830,7 @@ enum PlacementStrategyType {
 
 message PolicyLengthExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1856,19 +1856,19 @@ message PutEventsRequest {
 
 message PutEventsRequestEntry {
 
-  string detail = 340030389;
+  optional string detail = 340030389;
 
-  string detailtype = 11758589;
+  optional string detailtype = 11758589;
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   repeated string resources = 358918291;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
-  string time = 535094277;
+  optional string time = 535094277;
 
-  string traceheader = 303628800;
+  optional string traceheader = 303628800;
 
 }
 
@@ -1888,11 +1888,11 @@ message PutEventsResponse {
 
 message PutEventsResultEntry {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string eventid = 376916819;
+  optional string eventid = 376916819;
 
 }
 
@@ -1910,15 +1910,15 @@ message PutPartnerEventsRequest {
 
 message PutPartnerEventsRequestEntry {
 
-  string detail = 340030389;
+  optional string detail = 340030389;
 
-  string detailtype = 11758589;
+  optional string detailtype = 11758589;
 
   repeated string resources = 358918291;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
-  string time = 535094277;
+  optional string time = 535094277;
 
 }
 
@@ -1938,11 +1938,11 @@ message PutPartnerEventsResponse {
 
 message PutPartnerEventsResultEntry {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string eventid = 376916819;
+  optional string eventid = 376916819;
 
 }
 
@@ -1950,17 +1950,17 @@ message PutPartnerEventsResultEntry {
 
 message PutPermissionRequest {
 
-  string action = 175614240;
+  optional string action = 175614240;
 
   Condition condition = 212017247;
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
-  string principal = 361640138;
+  optional string principal = 361640138;
 
-  string statementid = 169602348;
+  optional string statementid = 169602348;
 
 }
 
@@ -1968,17 +1968,17 @@ message PutPermissionRequest {
 
 message PutRuleRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
-  string eventpattern = 233487232;
+  optional string eventpattern = 233487232;
 
   string name = 266367751;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   RuleState state = 502047895;
 
@@ -1990,7 +1990,7 @@ message PutRuleRequest {
 
 message PutRuleResponse {
 
-  string rulearn = 217507655;
+  optional string rulearn = 217507655;
 
 }
 
@@ -1998,7 +1998,7 @@ message PutRuleResponse {
 
 message PutTargetsRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   string rule = 475696372;
 
@@ -2022,11 +2022,11 @@ message PutTargetsResponse {
 
 message PutTargetsResultEntry {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string targetid = 46993334;
+  optional string targetid = 46993334;
 
 }
 
@@ -2038,13 +2038,13 @@ message RedshiftDataParameters {
 
   string database = 278147289;
 
-  string dbuser = 392658689;
+  optional string dbuser = 392658689;
 
-  string secretmanagerarn = 530394088;
+  optional string secretmanagerarn = 530394088;
 
   string sql = 13608736;
 
-  string statementname = 23047926;
+  optional string statementname = 23047926;
 
   optional bool withevent = 5518724;
 
@@ -2054,11 +2054,11 @@ message RedshiftDataParameters {
 
 message RemovePermissionRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   optional bool removeallpermissions = 8309441;
 
-  string statementid = 169602348;
+  optional string statementid = 169602348;
 
 }
 
@@ -2066,7 +2066,7 @@ message RemovePermissionRequest {
 
 message RemoveTargetsRequest {
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
   optional bool force = 526711333;
 
@@ -2092,11 +2092,11 @@ message RemoveTargetsResponse {
 
 message RemoveTargetsResultEntry {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string targetid = 46993334;
+  optional string targetid = 46993334;
 
 }
 
@@ -2106,23 +2106,23 @@ message RemoveTargetsResultEntry {
 
 message Replay {
 
-  string eventendtime = 30229582;
+  optional string eventendtime = 30229582;
 
-  string eventlastreplayedtime = 7759073;
+  optional string eventlastreplayedtime = 7759073;
 
-  string eventsourcearn = 306357574;
+  optional string eventsourcearn = 306357574;
 
-  string eventstarttime = 103680757;
+  optional string eventstarttime = 103680757;
 
-  string replayendtime = 304261199;
+  optional string replayendtime = 304261199;
 
-  string replayname = 442173850;
+  optional string replayname = 442173850;
 
-  string replaystarttime = 503580492;
+  optional string replaystarttime = 503580492;
 
   ReplayState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -2162,7 +2162,7 @@ enum ReplayState {
 
 message ResourceAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2172,7 +2172,7 @@ message ResourceAlreadyExistsException {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2194,21 +2194,21 @@ message RetryPolicy {
 
 message Rule {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string eventbusname = 448449725;
+  optional string eventbusname = 448449725;
 
-  string eventpattern = 233487232;
+  optional string eventpattern = 233487232;
 
-  string managedby = 455511232;
+  optional string managedby = 455511232;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   RuleState state = 502047895;
 
@@ -2274,7 +2274,7 @@ message SageMakerPipelineParameters {
 
 message SqsParameters {
 
-  string messagegroupid = 419537435;
+  optional string messagegroupid = 419537435;
 
 }
 
@@ -2282,7 +2282,7 @@ message SqsParameters {
 
 message StartReplayRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   ReplayDestination destination = 457443680;
 
@@ -2300,13 +2300,13 @@ message StartReplayRequest {
 
 message StartReplayResponse {
 
-  string replayarn = 361946526;
+  optional string replayarn = 361946526;
 
-  string replaystarttime = 503580492;
+  optional string replaystarttime = 503580492;
 
   ReplayState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -2356,9 +2356,9 @@ message Target {
 
   string id = 384350465;
 
-  string input = 529785116;
+  optional string input = 529785116;
 
-  string inputpath = 223809421;
+  optional string inputpath = 223809421;
 
   InputTransformer inputtransformer = 31280095;
 
@@ -2368,7 +2368,7 @@ message Target {
 
   RetryPolicy retrypolicy = 266827188;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
   RunCommandParameters runcommandparameters = 351941188;
 
@@ -2416,13 +2416,13 @@ message UntagResourceResponse {
 
 message UpdateApiDestinationRequest {
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   ApiDestinationHttpMethod httpmethod = 398394961;
 
-  string invocationendpoint = 411800759;
+  optional string invocationendpoint = 411800759;
 
   optional int32 invocationratelimitpersecond = 295327816;
 
@@ -2434,13 +2434,13 @@ message UpdateApiDestinationRequest {
 
 message UpdateApiDestinationResponse {
 
-  string apidestinationarn = 90996885;
+  optional string apidestinationarn = 90996885;
 
   ApiDestinationState apidestinationstate = 13153343;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
 }
 
@@ -2450,9 +2450,9 @@ message UpdateArchiveRequest {
 
   string archivename = 88048487;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string eventpattern = 233487232;
+  optional string eventpattern = 233487232;
 
   optional int32 retentiondays = 267894223;
 
@@ -2462,13 +2462,13 @@ message UpdateArchiveRequest {
 
 message UpdateArchiveResponse {
 
-  string archivearn = 56866685;
+  optional string archivearn = 56866685;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   ArchiveState state = 502047895;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
 }
 
@@ -2478,9 +2478,9 @@ message UpdateArchiveResponse {
 
 message UpdateConnectionApiKeyAuthRequestParameters {
 
-  string apikeyname = 43133502;
+  optional string apikeyname = 43133502;
 
-  string apikeyvalue = 93786144;
+  optional string apikeyvalue = 93786144;
 
 }
 
@@ -2506,9 +2506,9 @@ message UpdateConnectionAuthRequestParameters {
 
 message UpdateConnectionBasicAuthRequestParameters {
 
-  string password = 214108217;
+  optional string password = 214108217;
 
-  string username = 470340826;
+  optional string username = 470340826;
 
 }
 
@@ -2518,9 +2518,9 @@ message UpdateConnectionBasicAuthRequestParameters {
 
 message UpdateConnectionOAuthClientRequestParameters {
 
-  string clientid = 448889284;
+  optional string clientid = 448889284;
 
-  string clientsecret = 500734711;
+  optional string clientsecret = 500734711;
 
 }
 
@@ -2530,7 +2530,7 @@ message UpdateConnectionOAuthClientRequestParameters {
 
 message UpdateConnectionOAuthRequestParameters {
 
-  string authorizationendpoint = 427938596;
+  optional string authorizationendpoint = 427938596;
 
   UpdateConnectionOAuthClientRequestParameters clientparameters = 246864127;
 
@@ -2548,7 +2548,7 @@ message UpdateConnectionRequest {
 
   ConnectionAuthorizationType authorizationtype = 481976511;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -2558,15 +2558,15 @@ message UpdateConnectionRequest {
 
 message UpdateConnectionResponse {
 
-  string connectionarn = 187631553;
+  optional string connectionarn = 187631553;
 
   ConnectionState connectionstate = 404323675;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastauthorizedtime = 250638066;
+  optional string lastauthorizedtime = 250638066;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
 }
 

@@ -1,6 +1,7 @@
 package eventbridge
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -17,24 +18,24 @@ func (h *AdminHandler) getStore(header http.Header) (*eventsstore.EventsStore, e
 // toPbEventBus converts a store EventBus to the proto representation.
 func toPbEventBus(eb *eventsstore.EventBus) *pb.EventBus {
 	return &pb.EventBus{
-		Name:   eb.Name,
-		Arn:    eb.ARN,
-		Policy: eb.Policy,
+		Name:   proto.String(eb.Name),
+		Arn:    proto.String(eb.ARN),
+		Policy: proto.String(eb.Policy),
 	}
 }
 
 // toPbRule converts a store Rule to the proto representation.
 func toPbRule(r *eventsstore.Rule) *pb.Rule {
 	return &pb.Rule{
-		Name:               r.Name,
-		Arn:                r.ARN,
-		Eventbusname:       r.EventBusName,
-		Description:        r.Description,
-		Eventpattern:       r.EventPattern,
-		Scheduleexpression: r.ScheduleExpression,
+		Name:               proto.String(r.Name),
+		Arn:                proto.String(r.ARN),
+		Eventbusname:       proto.String(r.EventBusName),
+		Description:        proto.String(r.Description),
+		Eventpattern:       proto.String(r.EventPattern),
+		Scheduleexpression: proto.String(r.ScheduleExpression),
 		State:              toPbRuleState(r.State),
-		Managedby:          r.ManagedBy,
-		Rolearn:            r.RoleARN,
+		Managedby:          proto.String(r.ManagedBy),
+		Rolearn:            proto.String(r.RoleARN),
 	}
 }
 

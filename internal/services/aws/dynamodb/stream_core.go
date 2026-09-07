@@ -1,11 +1,18 @@
 package dynamodb
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"strconv"
+	"strings"
+	"time"
 
 	"vorpalstacks/internal/core/logs"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	"vorpalstacks/internal/utils/aws/arn"
+	crypto "vorpalstacks/internal/utils/crypto"
 )
 
 // ---------------------------------------------------------------------------
@@ -37,9 +44,13 @@ type ShardInfo struct {
 }
 
 // describeStreamCore builds the description of a single DynamoDB stream.
-// Returns ErrResourceNotFound when the table or stream does not exist.
+// Returns ErrInvalidParameter when StreamArn is missing and
+// ErrResourceNotFound when the table or stream does not exist.
 func (s *DynamoDBService) describeStreamCore(store dbstore.DynamoDBStoreInterface, streamArn string) (*DescribeStreamResult, error) {
-	tableName := extractTableNameFromStreamArn(streamArn)
+	if streamArn == "" {
+		return nil, ErrInvalidParameter
+	}
+	tableName := arn.ParseStreamARN(streamArn)
 	if tableName == "" {
 		return nil, ErrResourceNotFound
 	}
@@ -87,12 +98,72 @@ type GetShardIteratorResult struct {
 	ShardIterator string
 }
 
+// encodeShardIterator creates an opaque iterator string from the table
+// name and sequence number. Format: "tableName|seqNum".
+// shardIteratorTTL is the documented shard iterator lifetime: a shard
+// iterator expires fifteen minutes after it was issued.
+const shardIteratorTTL = 15 * time.Minute
+
+// encodeShardIterator renders an opaque, signed iterator for a read
+// position. The payload carries the table, the sequence number to read
+// from, and the issue time; the HMAC-SHA256 signature under the
+// store-persisted signing key makes the token unforgeable — a client can
+// neither read a crafted position into the stream nor tamper with an
+// issued one, because only the server holds the key.
+func encodeShardIterator(signingKey []byte, tableName string, seq int64) string {
+	payload := fmt.Sprintf("%s|%d|%d", tableName, seq, streamTimeNow().Unix())
+	mac := crypto.HMACSHA256(signingKey, []byte(payload))
+	return base64.RawURLEncoding.EncodeToString(append([]byte(payload), mac...))
+}
+
+// decodeShardIterator verifies an iterator's signature and returns the
+// table name, sequence number, and issue time it carries. A token whose
+// signature does not verify — anything a client constructed or altered —
+// is rejected, as is any malformed encoding.
+func decodeShardIterator(signingKey []byte, iterator string) (string, int64, int64, error) {
+	raw, err := base64.RawURLEncoding.DecodeString(iterator)
+	if err != nil || len(raw) <= sha256.Size {
+		return "", 0, 0, fmt.Errorf("invalid iterator format")
+	}
+	split := len(raw) - sha256.Size
+	payload, mac := raw[:split], raw[split:]
+	if !hmac.Equal(crypto.HMACSHA256(signingKey, payload), mac) {
+		return "", 0, 0, fmt.Errorf("invalid iterator signature")
+	}
+	parts := strings.Split(string(payload), "|")
+	if len(parts) != 3 {
+		return "", 0, 0, fmt.Errorf("invalid iterator format")
+	}
+	tableName := parts[0]
+	seq, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	issuedAt, err := strconv.ParseInt(parts[2], 10, 64)
+	if err != nil {
+		return "", 0, 0, err
+	}
+	return tableName, seq, issuedAt, nil
+}
+
+// shardIteratorExpired reports whether an iterator issued at the given
+// unix time has passed the documented fifteen-minute lifetime.
+func shardIteratorExpired(issuedAtUnix int64, now time.Time) bool {
+	return now.Unix()-issuedAtUnix >= int64(shardIteratorTTL/time.Second)
+}
+
+// streamTimeNow returns the current time. Extracted for potential testing.
+var streamTimeNow = func() time.Time { return time.Now().UTC() }
+
 // getShardIteratorCore computes and encodes a shard iterator for the
-// requested position. Returns ErrResourceNotFound when the table or stream
-// does not exist, ErrInvalidParameter for unknown iterator types or bad
-// sequence numbers.
-func (s *DynamoDBService) getShardIteratorCore(store dbstore.DynamoDBStoreInterface, streamArn, iteratorType, sequenceNumber string) (*GetShardIteratorResult, error) {
-	tableName := extractTableNameFromStreamArn(streamArn)
+// requested position. Returns ErrInvalidParameter when a required parameter
+// is missing or the iterator type or sequence number is unknown, and
+// ErrResourceNotFound when the table or stream does not exist.
+func (s *DynamoDBService) getShardIteratorCore(store dbstore.DynamoDBStoreInterface, streamArn, shardId, iteratorType, sequenceNumber string) (*GetShardIteratorResult, error) {
+	if streamArn == "" || shardId == "" || iteratorType == "" {
+		return nil, ErrInvalidParameter
+	}
+	tableName := arn.ParseStreamARN(streamArn)
 	if tableName == "" {
 		return nil, ErrResourceNotFound
 	}
@@ -129,8 +200,13 @@ func (s *DynamoDBService) getShardIteratorCore(store dbstore.DynamoDBStoreInterf
 		return nil, ErrInvalidParameter
 	}
 
+	signingKey, err := store.Streams().IteratorSigningKey()
+	if err != nil {
+		return nil, err
+	}
+
 	return &GetShardIteratorResult{
-		ShardIterator: encodeShardIterator(tableName, startSeq),
+		ShardIterator: encodeShardIterator(signingKey, tableName, startSeq),
 	}, nil
 }
 
@@ -141,9 +217,39 @@ type GetRecordsResult struct {
 }
 
 // getRecordsCore retrieves up to limit stream records starting from the
-// decoded iterator position. Returns ErrResourceNotFound when the table
-// does not exist or streaming is disabled.
-func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, tableName string, fromSeq int64, limit int) (*GetRecordsResult, error) {
+// decoded iterator position. The iterator's format and fifteen-minute
+// lifetime and the Limit range are validated here — the model binds Limit
+// to PositiveLongObject (minimum 1) and documents values above 1000 as a
+// LimitExceededException. Returns ErrResourceNotFound when the table does
+// not exist or streaming is disabled.
+func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, iterator string, limit int, limitSet bool) (*GetRecordsResult, error) {
+	// An explicit Limit below 1 is invalid; a plain value check cannot tell
+	// "unset" apart from an explicit zero, so presence is signalled
+	// separately by the caller.
+	if limitSet && limit < 1 {
+		return nil, ErrInvalidParameter
+	}
+	if limit > getRecordsMaxLimit {
+		return nil, ErrStreamsLimitExceeded
+	}
+	if limit == 0 {
+		limit = getRecordsDefaultLimit
+	}
+	if iterator == "" {
+		return nil, ErrInvalidParameter
+	}
+	signingKey, err := store.Streams().IteratorSigningKey()
+	if err != nil {
+		return nil, err
+	}
+	tableName, fromSeq, issuedAt, err := decodeShardIterator(signingKey, iterator)
+	if err != nil {
+		return nil, ErrInvalidParameter
+	}
+	if shardIteratorExpired(issuedAt, streamTimeNow()) {
+		return nil, ErrExpiredIterator
+	}
+
 	table, err := store.Tables().Get(tableName)
 	if err != nil || table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
 		return nil, ErrResourceNotFound
@@ -176,7 +282,7 @@ func (s *DynamoDBService) getRecordsCore(store dbstore.DynamoDBStoreInterface, t
 
 	return &GetRecordsResult{
 		Records:           recordsResp,
-		NextShardIterator: encodeShardIterator(tableName, nextSeq),
+		NextShardIterator: encodeShardIterator(signingKey, tableName, nextSeq),
 	}, nil
 }
 
@@ -195,8 +301,16 @@ type ListStreamsResult struct {
 
 // listStreamsCore walks every table in the store, collects those with
 // streaming enabled, applies the optional TableName filter, and returns a
-// single page of stream entries.
+// single page of stream entries. The Limit default (and its cap) is applied
+// here so every caller shares one range policy.
 func (s *DynamoDBService) listStreamsCore(store dbstore.DynamoDBStoreInterface, tableNameFilter, exclusiveStartStreamArn string, limit int) (*ListStreamsResult, error) {
+	if limit == 0 {
+		limit = listStreamsDefaultLimit
+	}
+	if limit > listStreamsMaxLimit {
+		limit = listStreamsMaxLimit
+	}
+
 	// Collect ALL tables by walking every store page. A single List call
 	// is capped at DefaultMaxItems (100), so tables beyond that would be
 	// invisible if we only fetched one page.

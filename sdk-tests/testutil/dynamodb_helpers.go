@@ -10,17 +10,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
 
-// createDynamoTestTable creates a throwaway hash-only on-demand table and
-// returns a cleanup closure deleting it. The default shape is a single
-// string "id" hash key under PAY_PER_REQUEST billing, which is the fixture
-// most item-level tests need; opts may override the input (for example a
-// different hash-key attribute or extra members such as deletion
-// protection). Creation is wait-free: the service returns tables ACTIVE,
-// and flows that need an explicit active-wait poll separately.
+// createDynamoTestTable creates a throwaway on-demand table and returns a
+// cleanup closure deleting it. The default shape is a single string "id"
+// hash key under PAY_PER_REQUEST billing, which is the fixture most
+// item-level tests need; opts override the input with declarative members
+// (key schema, secondary indexes, stream specification, deletion
+// protection) so every fixture table shares one creation, error-wrapping
+// and cleanup path. Creation is wait-free: the service returns tables
+// ACTIVE, and flows that need an explicit active-wait poll separately.
 //
-// Tables whose create input is itself the scenario — GSI/LSI/stream/SSE
-// specifications, composite key schemas, negative validation paths — keep
-// their inline CreateTable calls so the exercised input stays visible.
+// Inline CreateTable calls remain only where the create input is itself
+// the assertion target: the CreateTable operation tests, negative
+// validation paths, and a fixture shared by a whole test family (one
+// definition consumed by many tests).
 func createDynamoTestTable(ctx context.Context, client *dynamodb.Client, name string, opts ...func(*dynamodb.CreateTableInput)) (func(), error) {
 	input := &dynamodb.CreateTableInput{
 		TableName: aws.String(name),
@@ -53,6 +55,42 @@ func withDynamoHashKey(attr string) func(*dynamodb.CreateTableInput) {
 		}
 		input.KeySchema = []types.KeySchemaElement{
 			{AttributeName: aws.String(attr), KeyType: types.KeyTypeHash},
+		}
+	}
+}
+
+// withDynamoKeySchema replaces the default single-string-key shape with the
+// given attribute definitions and key schema, for composite keys and
+// non-string (N/B) key types. The schema stays declarative at the call
+// site because the key shape is part of what the test exercises.
+func withDynamoKeySchema(defs []types.AttributeDefinition, schema []types.KeySchemaElement) func(*dynamodb.CreateTableInput) {
+	return func(input *dynamodb.CreateTableInput) {
+		input.AttributeDefinitions = defs
+		input.KeySchema = schema
+	}
+}
+
+// withDynamoGSI appends global secondary indexes to the fixture table.
+func withDynamoGSI(indexes ...types.GlobalSecondaryIndex) func(*dynamodb.CreateTableInput) {
+	return func(input *dynamodb.CreateTableInput) {
+		input.GlobalSecondaryIndexes = append(input.GlobalSecondaryIndexes, indexes...)
+	}
+}
+
+// withDynamoLSI appends local secondary indexes to the fixture table.
+func withDynamoLSI(indexes ...types.LocalSecondaryIndex) func(*dynamodb.CreateTableInput) {
+	return func(input *dynamodb.CreateTableInput) {
+		input.LocalSecondaryIndexes = append(input.LocalSecondaryIndexes, indexes...)
+	}
+}
+
+// withDynamoStream enables a stream with the given view type on the
+// fixture table.
+func withDynamoStream(view types.StreamViewType) func(*dynamodb.CreateTableInput) {
+	return func(input *dynamodb.CreateTableInput) {
+		input.StreamSpecification = &types.StreamSpecification{
+			StreamEnabled:  aws.Bool(true),
+			StreamViewType: view,
 		}
 	}
 }

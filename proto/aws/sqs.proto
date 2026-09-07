@@ -152,7 +152,7 @@ message AddPermissionRequest {
 
 message BatchEntryIdsNotDistinct {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -162,7 +162,7 @@ message BatchEntryIdsNotDistinct {
 
 message BatchRequestTooLong {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -176,7 +176,7 @@ message BatchResultErrorEntry {
 
   string id = 384350465;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   optional bool senderfault = 28412929;
 
@@ -278,7 +278,7 @@ message CreateQueueRequest {
 
 message CreateQueueResult {
 
-  string queueurl = 510632138;
+  optional string queueurl = 510632138;
 
 }
 
@@ -356,7 +356,7 @@ message DeleteQueueRequest {
 
 message EmptyBatchRequest {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -390,7 +390,7 @@ message GetQueueUrlRequest {
 
   string queuename = 154364636;
 
-  string queueownerawsaccountid = 248813375;
+  optional string queueownerawsaccountid = 248813375;
 
 }
 
@@ -400,7 +400,7 @@ message GetQueueUrlRequest {
 
 message GetQueueUrlResult {
 
-  string queueurl = 510632138;
+  optional string queueurl = 510632138;
 
 }
 
@@ -410,7 +410,7 @@ message GetQueueUrlResult {
 
 message InvalidAddress {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -420,7 +420,7 @@ message InvalidAddress {
 
 message InvalidAttributeName {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -430,7 +430,7 @@ message InvalidAttributeName {
 
 message InvalidAttributeValue {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -440,7 +440,7 @@ message InvalidAttributeValue {
 
 message InvalidBatchEntryId {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -458,7 +458,7 @@ message InvalidIdFormat {
 
 message InvalidMessageContents {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -468,7 +468,7 @@ message InvalidMessageContents {
 
 message InvalidSecurity {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -478,7 +478,7 @@ message InvalidSecurity {
 
 message KmsAccessDenied {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -488,7 +488,7 @@ message KmsAccessDenied {
 
 message KmsDisabled {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -498,7 +498,7 @@ message KmsDisabled {
 
 message KmsInvalidKeyUsage {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -508,7 +508,7 @@ message KmsInvalidKeyUsage {
 
 message KmsInvalidState {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -518,7 +518,7 @@ message KmsInvalidState {
 
 message KmsNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -528,7 +528,7 @@ message KmsNotFound {
 
 message KmsOptInRequired {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -538,7 +538,7 @@ message KmsOptInRequired {
 
 message KmsThrottled {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -550,7 +550,7 @@ message ListDeadLetterSourceQueuesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string queueurl = 510632138;
 
@@ -562,7 +562,7 @@ message ListDeadLetterSourceQueuesRequest {
 
 message ListDeadLetterSourceQueuesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string queueurls = 475536111;
 
@@ -596,19 +596,19 @@ message ListMessageMoveTasksResultEntry {
 
   optional int64 approximatenumberofmessagestomove = 108945690;
 
-  string destinationarn = 375726595;
+  optional string destinationarn = 375726595;
 
-  string failurereason = 232322142;
+  optional string failurereason = 232322142;
 
   optional int32 maxnumberofmessagespersecond = 335779921;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
   optional int64 startedtimestamp = 397447975;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string taskhandle = 190544291;
+  optional string taskhandle = 190544291;
 
 }
 
@@ -636,9 +636,9 @@ message ListQueuesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string queuenameprefix = 269478416;
+  optional string queuenameprefix = 269478416;
 
 }
 
@@ -648,7 +648,7 @@ message ListQueuesRequest {
 
 message ListQueuesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string queueurls = 62522575;
 
@@ -662,17 +662,17 @@ message Message {
 
   map<string, string> attributes = 209638581;
 
-  string body = 42602646;
+  optional string body = 42602646;
 
-  string md5ofbody = 229335371;
+  optional string md5ofbody = 229335371;
 
-  string md5ofmessageattributes = 499647077;
+  optional string md5ofmessageattributes = 499647077;
 
   map<string, MessageAttributeValue> messageattributes = 56443766;
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
-  string receipthandle = 134471750;
+  optional string receipthandle = 134471750;
 
 }
 
@@ -684,13 +684,13 @@ message MessageAttributeValue {
 
   repeated bytes binarylistvalues = 158345259;
 
-  bytes binaryvalue = 255476278;
+  optional bytes binaryvalue = 255476278;
 
   string datatype = 67988590;
 
   repeated string stringlistvalues = 86527527;
 
-  string stringvalue = 184416138;
+  optional string stringvalue = 184416138;
 
 }
 
@@ -744,13 +744,13 @@ message MessageSystemAttributeValue {
 
   repeated bytes binarylistvalues = 158345259;
 
-  bytes binaryvalue = 255476278;
+  optional bytes binaryvalue = 255476278;
 
   string datatype = 67988590;
 
   repeated string stringlistvalues = 86527527;
 
-  string stringvalue = 184416138;
+  optional string stringvalue = 184416138;
 
 }
 
@@ -760,7 +760,7 @@ message MessageSystemAttributeValue {
 
 message OverLimit {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -770,7 +770,7 @@ message OverLimit {
 
 message PurgeQueueInProgress {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -840,7 +840,7 @@ enum QueueAttributeName {
 
 message QueueDeletedRecently {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -850,7 +850,7 @@ message QueueDeletedRecently {
 
 message QueueDoesNotExist {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -860,7 +860,7 @@ message QueueDoesNotExist {
 
 message QueueNameExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -870,7 +870,7 @@ message QueueNameExists {
 
 message ReceiptHandleIsInvalid {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -890,7 +890,7 @@ message ReceiveMessageRequest {
 
   string queueurl = 510632138;
 
-  string receiverequestattemptid = 455135954;
+  optional string receiverequestattemptid = 455135954;
 
   optional int32 visibilitytimeout = 460820073;
 
@@ -926,7 +926,7 @@ message RemovePermissionRequest {
 
 message RequestThrottled {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -936,7 +936,7 @@ message RequestThrottled {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -966,9 +966,9 @@ message SendMessageBatchRequestEntry {
 
   string messagebody = 56920001;
 
-  string messagededuplicationid = 379560665;
+  optional string messagededuplicationid = 379560665;
 
-  string messagegroupid = 419537435;
+  optional string messagegroupid = 419537435;
 
   map<string, MessageSystemAttributeValue> messagesystemattributes = 194951997;
 
@@ -994,15 +994,15 @@ message SendMessageBatchResultEntry {
 
   string id = 384350465;
 
-  string md5ofmessageattributes = 499647077;
+  optional string md5ofmessageattributes = 499647077;
 
   string md5ofmessagebody = 28462758;
 
-  string md5ofmessagesystemattributes = 304512206;
+  optional string md5ofmessagesystemattributes = 304512206;
 
   string messageid = 360526634;
 
-  string sequencenumber = 98094362;
+  optional string sequencenumber = 98094362;
 
 }
 
@@ -1018,9 +1018,9 @@ message SendMessageRequest {
 
   string messagebody = 56920001;
 
-  string messagededuplicationid = 379560665;
+  optional string messagededuplicationid = 379560665;
 
-  string messagegroupid = 419537435;
+  optional string messagegroupid = 419537435;
 
   map<string, MessageSystemAttributeValue> messagesystemattributes = 194951997;
 
@@ -1034,15 +1034,15 @@ message SendMessageRequest {
 
 message SendMessageResult {
 
-  string md5ofmessageattributes = 499647077;
+  optional string md5ofmessageattributes = 499647077;
 
-  string md5ofmessagebody = 28462758;
+  optional string md5ofmessagebody = 28462758;
 
-  string md5ofmessagesystemattributes = 304512206;
+  optional string md5ofmessagesystemattributes = 304512206;
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
-  string sequencenumber = 98094362;
+  optional string sequencenumber = 98094362;
 
 }
 
@@ -1062,7 +1062,7 @@ message SetQueueAttributesRequest {
 
 message StartMessageMoveTaskRequest {
 
-  string destinationarn = 375726595;
+  optional string destinationarn = 375726595;
 
   optional int32 maxnumberofmessagespersecond = 335779921;
 
@@ -1074,7 +1074,7 @@ message StartMessageMoveTaskRequest {
 
 message StartMessageMoveTaskResult {
 
-  string taskhandle = 190544291;
+  optional string taskhandle = 190544291;
 
 }
 
@@ -1094,7 +1094,7 @@ message TagQueueRequest {
 
 message TooManyEntriesInBatchRequest {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1104,7 +1104,7 @@ message TooManyEntriesInBatchRequest {
 
 message UnsupportedOperation {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

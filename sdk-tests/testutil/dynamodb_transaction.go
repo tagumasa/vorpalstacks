@@ -83,6 +83,125 @@ func (r *TestRunner) dynamoDBBasicTransactionTests(ctx context.Context, client *
 		return nil
 	}))
 
+	// Transactional read capacity is charged per table: one ConsumedCapacity
+	// entry per table addressed, every targeted item consuming two read
+	// units (one to prepare the transaction, one to commit it) regardless of
+	// whether the item exists.
+	results = append(results, r.RunTest("dynamodb", "TransactGetItems_PerTableConsumedCapacity", func() error {
+		ccA := fmt.Sprintf("TGI-CC-A-%d", time.Now().UnixNano())
+		ccB := fmt.Sprintf("TGI-CC-B-%d", time.Now().UnixNano())
+		cleanupA, err := createDynamoTestTable(ctx, client, ccA)
+		if err != nil {
+			return err
+		}
+		defer cleanupA()
+		cleanupB, err := createDynamoTestTable(ctx, client, ccB)
+		if err != nil {
+			return err
+		}
+		defer cleanupB()
+
+		for _, id := range []string{"b1", "b2"} {
+			if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(ccB),
+				Item: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: id},
+				},
+			}); err != nil {
+				return err
+			}
+		}
+
+		resp, err := client.TransactGetItems(ctx, &dynamodb.TransactGetItemsInput{
+			ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
+			TransactItems: []types.TransactGetItem{
+				{Get: &types.Get{TableName: aws.String(ccA), Key: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "absent"},
+				}}},
+				{Get: &types.Get{TableName: aws.String(ccB), Key: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "b1"},
+				}}},
+				{Get: &types.Get{TableName: aws.String(ccB), Key: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "b2"},
+				}}},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		byTable := map[string]types.ConsumedCapacity{}
+		for _, cc := range resp.ConsumedCapacity {
+			byTable[aws.ToString(cc.TableName)] = cc
+		}
+		if len(byTable) != 2 {
+			return fmt.Errorf("expected one ConsumedCapacity entry per table, got %d entries", len(byTable))
+		}
+		if aws.ToFloat64(byTable[ccA].CapacityUnits) != 2 || aws.ToFloat64(byTable[ccA].ReadCapacityUnits) != 2 {
+			return fmt.Errorf("one-absent-item table capacity = %+v, want 2 units", byTable[ccA])
+		}
+		if aws.ToFloat64(byTable[ccB].CapacityUnits) != 4 || aws.ToFloat64(byTable[ccB].ReadCapacityUnits) != 4 {
+			return fmt.Errorf("two-item table capacity = %+v, want 4 units", byTable[ccB])
+		}
+		return nil
+	}))
+
+	// Transactional write capacity is charged per item: every written item
+	// consumes two write units per 1 KB of its size (one to prepare the
+	// transaction, one to commit it), aggregated per table.
+	results = append(results, r.RunTest("dynamodb", "TransactWriteItems_PerItemConsumedCapacity", func() error {
+		twA := fmt.Sprintf("TWI-CC-A-%d", time.Now().UnixNano())
+		twB := fmt.Sprintf("TWI-CC-B-%d", time.Now().UnixNano())
+		cleanupA, err := createDynamoTestTable(ctx, client, twA)
+		if err != nil {
+			return err
+		}
+		defer cleanupA()
+		cleanupB, err := createDynamoTestTable(ctx, client, twB)
+		if err != nil {
+			return err
+		}
+		defer cleanupB()
+
+		bigBody := strings.Repeat("x", 2500)
+		resp, err := client.TransactWriteItems(ctx, &dynamodb.TransactWriteItemsInput{
+			ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
+			TransactItems: []types.TransactWriteItem{
+				{Put: &types.Put{TableName: aws.String(twA), Item: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "a1"},
+				}}},
+				{Put: &types.Put{TableName: aws.String(twA), Item: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "a2"},
+				}}},
+				{Put: &types.Put{TableName: aws.String(twA), Item: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberS{Value: "a3"},
+				}}},
+				{Put: &types.Put{TableName: aws.String(twB), Item: map[string]types.AttributeValue{
+					"id":   &types.AttributeValueMemberS{Value: "b1"},
+					"body": &types.AttributeValueMemberS{Value: bigBody},
+				}}},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		byTable := map[string]types.ConsumedCapacity{}
+		for _, cc := range resp.ConsumedCapacity {
+			byTable[aws.ToString(cc.TableName)] = cc
+		}
+		if len(byTable) != 2 {
+			return fmt.Errorf("expected one ConsumedCapacity entry per table, got %d entries", len(byTable))
+		}
+		// Three items at the 1 KB minimum: 3 × 2 write units.
+		if aws.ToFloat64(byTable[twA].WriteCapacityUnits) != 6 || aws.ToFloat64(byTable[twA].CapacityUnits) != 6 {
+			return fmt.Errorf("three-item table capacity = %+v, want 6 write units", byTable[twA])
+		}
+		// One item of ~2.5 KB rounds to 3 KB: 3 × 2 write units.
+		if aws.ToFloat64(byTable[twB].WriteCapacityUnits) != 6 || aws.ToFloat64(byTable[twB].CapacityUnits) != 6 {
+			return fmt.Errorf("oversized-item table capacity = %+v, want 6 write units", byTable[twB])
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("dynamodb", "ExecuteTransaction", func() error {
 		resp, err := client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
 			TransactStatements: []types.ParameterizedStatement{

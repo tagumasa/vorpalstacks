@@ -38,9 +38,9 @@ func (h *AdminHandler) ListQueues(ctx context.Context, req *connect.Request[pb.L
 	}
 
 	result, err := h.service.listQueuesCore(store, ListQueuesInput{
-		QueueNamePrefix: req.Msg.Queuenameprefix,
+		QueueNamePrefix: req.Msg.GetQueuenameprefix(),
 		MaxResults:      int(req.Msg.GetMaxresults()),
-		NextToken:       req.Msg.Nexttoken,
+		NextToken:       req.Msg.GetNexttoken(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

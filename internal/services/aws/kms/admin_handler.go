@@ -44,7 +44,7 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	result, err := h.service.listKeysCore(stores, req.Msg.Marker, int(req.Msg.GetLimit()))
+	result, err := h.service.listKeysCore(stores, req.Msg.GetMarker(), int(req.Msg.GetLimit()))
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -52,14 +52,14 @@ func (h *AdminHandler) ListKeys(ctx context.Context, req *connect.Request[pb.Lis
 	keys := make([]*pb.KeyListEntry, len(result.Keys))
 	for i, k := range result.Keys {
 		keys[i] = &pb.KeyListEntry{
-			Keyid:  k.KeyID,
-			Keyarn: k.KeyArn,
+			Keyid:  proto.String(k.KeyID),
+			Keyarn: proto.String(k.KeyArn),
 		}
 	}
 
 	return connect.NewResponse(&pb.ListKeysResponse{
 		Keys:       keys,
-		Nextmarker: result.NextMarker,
+		Nextmarker: proto.String(result.NextMarker),
 		Truncated:  proto.Bool(result.IsTruncated),
 	}), nil
 }
@@ -141,12 +141,12 @@ func (h *AdminHandler) ScheduleKeyDeletion(ctx context.Context, req *connect.Req
 	}
 
 	resp := &pb.ScheduleKeyDeletionResponse{
-		Keyid:               meta.KeyID,
+		Keyid:               proto.String(meta.KeyID),
 		Keystate:            keyStateToProto(meta.KeyState),
 		Pendingwindowindays: proto.Int32(int32(days)),
 	}
 	if meta.DeletionDate != nil {
-		resp.Deletiondate = meta.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat)
+		resp.Deletiondate = proto.String(meta.DeletionDate.UTC().Format(timeutils.ISO8601UTCFormat))
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -233,29 +233,29 @@ func buildProtoKeyMetadata(meta *KeyMetadataResult, keyUsage pb.KeyUsageType, ke
 	_, _, _, accountID, _ := arnutil.SplitARN(meta.Arn)
 
 	md := &pb.KeyMetadata{
-		Awsaccountid:          accountID,
+		Awsaccountid:          proto.String(accountID),
 		Keyid:                 meta.KeyID,
-		Arn:                   meta.Arn,
+		Arn:                   proto.String(meta.Arn),
 		Keystate:              keyStateToProto(meta.KeyState),
 		Keyusage:              keyUsage,
 		Keyspec:               keySpec,
 		Customermasterkeyspec: pb.CustomerMasterKeySpec(keySpec),
-		Description:           meta.Description,
+		Description:           proto.String(meta.Description),
 		Enabled:               proto.Bool(meta.Enabled),
 		Origin:                origin,
 		Keymanager:            pb.KeyManagerType_KEY_MANAGER_TYPE_CUSTOMER,
 		Multiregion:           proto.Bool(meta.MultiRegion),
-		Creationdate:          meta.CreationDate.Format(timeutils.ISO8601UTCFormat),
+		Creationdate:          proto.String(meta.CreationDate.Format(timeutils.ISO8601UTCFormat)),
 	}
 
 	if meta.DeletionDate != nil {
-		md.Deletiondate = meta.DeletionDate.Format(timeutils.ISO8601UTCFormat)
+		md.Deletiondate = proto.String(meta.DeletionDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if meta.KeyState == "PendingDeletion" && meta.PendingWindowInDays > 0 {
 		md.Pendingdeletionwindowindays = proto.Int32(int32(meta.PendingWindowInDays))
 	}
 	if meta.ValidTo != nil {
-		md.Validto = meta.ValidTo.Format(timeutils.ISO8601UTCFormat)
+		md.Validto = proto.String(meta.ValidTo.Format(timeutils.ISO8601UTCFormat))
 	}
 	if meta.ExpirationModel == "KEY_MATERIAL_EXPIRES" {
 		md.Expirationmodel = pb.ExpirationModelType_EXPIRATION_MODEL_TYPE_KEY_MATERIAL_EXPIRES

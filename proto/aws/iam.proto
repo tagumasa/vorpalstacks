@@ -18,6 +18,11 @@ service IAMService {
   // Protocol: awsQuery
   rpc AcceptDelegationRequest(AcceptDelegationRequestRequest) returns (common.Empty);
 
+  // Creates an IAM role from the specified role template. The new role takes its configuration—including its name, path, trust policy, inline and managed policies, permissions boundary, tags, and max...
+  // HTTP: POST /
+  // Protocol: awsQuery
+  rpc AcquireRole(AcquireRoleRequest) returns (AcquireRoleResponse);
+
   // Adds a new client ID (also known as audience) to the list of client IDs already registered for the specified IAM OpenID Connect (OIDC) provider resource. This operation is idempotent; it does not f...
   // HTTP: POST /
   // Protocol: awsQuery
@@ -333,6 +338,11 @@ service IAMService {
   // Protocol: awsQuery
   rpc GetAccountPasswordPolicy(common.Empty) returns (GetAccountPasswordPolicyResponse);
 
+  // Retrieves the account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. The s...
+  // HTTP: POST /
+  // Protocol: awsQuery
+  rpc GetAccountProperties(GetAccountPropertiesRequest) returns (GetAccountPropertiesResponse);
+
   // Retrieves information about IAM entity usage and IAM quotas in the Amazon Web Services account. For information about IAM quotas, see IAM and STS quotas in the IAM User Guide.
   // HTTP: POST /
   // Protocol: awsQuery
@@ -422,6 +432,11 @@ service IAMService {
   // HTTP: POST /
   // Protocol: awsQuery
   rpc GetRolePolicy(GetRolePolicyRequest) returns (GetRolePolicyResponse);
+
+  // Retrieves information about a version of the specified role template. Role templates define a reusable configuration—including role name and path patterns, trust policy, inline and managed polici...
+  // HTTP: POST /
+  // Protocol: awsQuery
+  rpc GetRoleTemplateVersion(GetRoleTemplateVersionRequest) returns (GetRoleTemplateVersionResponse);
 
   // Returns the SAML provider metadocument that was uploaded when the IAM SAML provider resource object was created or updated. This operation requires Signature Version 4.
   // HTTP: POST /
@@ -642,6 +657,11 @@ service IAMService {
   // HTTP: POST /
   // Protocol: awsQuery
   rpc ListVirtualMFADevices(ListVirtualMFADevicesRequest) returns (ListVirtualMFADevicesResponse);
+
+  // Sets account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. Specify proper...
+  // HTTP: POST /
+  // Protocol: awsQuery
+  rpc PutAccountProperties(PutAccountPropertiesRequest) returns (PutAccountPropertiesResponse);
 
   // Adds or updates an inline policy document that is embedded in the specified IAM group. A user can also have managed policies attached to it. To attach a managed policy to a group, use AttachGroupPo...
   // HTTP: POST /
@@ -919,11 +939,11 @@ enum AccessAdvisorUsageGranularityType {
 
 message AccessDetail {
 
-  string entitypath = 93829450;
+  optional string entitypath = 93829450;
 
-  string lastauthenticatedtime = 258126198;
+  optional string lastauthenticatedtime = 258126198;
 
-  string region = 154040478;
+  optional string region = 154040478;
 
   string servicename = 137811296;
 
@@ -941,7 +961,7 @@ message AccessKey {
 
   string accesskeyid = 453893024;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   string secretaccesskey = 172288487;
 
@@ -957,7 +977,7 @@ message AccessKey {
 
 message AccessKeyLastUsed {
 
-  string lastuseddate = 70377689;
+  optional string lastuseddate = 70377689;
 
   string region = 154040478;
 
@@ -971,13 +991,13 @@ message AccessKeyLastUsed {
 
 message AccessKeyMetadata {
 
-  string accesskeyid = 453893024;
+  optional string accesskeyid = 453893024;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   statusType status = 6222352;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -987,7 +1007,27 @@ message AccessKeyMetadata {
 
 message AccountNotManagementOrDelegatedAdministratorException {
 
-  string message = 235854213;
+  optional string message = 235854213;
+
+}
+
+
+
+message AcquireRoleRequest {
+
+  map<string, ReplacementValueEntry> replacementvalues = 210013758;
+
+  string templatearn = 384599199;
+
+  optional int32 templateminorversion = 415714529;
+
+}
+
+
+
+message AcquireRoleResponse {
+
+  Role role = 271285818;
 
 }
 
@@ -1065,7 +1105,7 @@ message AttachUserPolicyRequest {
 
 message AttachedPermissionsBoundary {
 
-  string permissionsboundaryarn = 488828173;
+  optional string permissionsboundaryarn = 488828173;
 
   PermissionsBoundaryAttachmentType permissionsboundarytype = 523357118;
 
@@ -1077,9 +1117,21 @@ message AttachedPermissionsBoundary {
 
 message AttachedPolicy {
 
-  string policyarn = 497985859;
+  optional string policyarn = 497985859;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
+
+}
+
+
+
+enum AttachmentType {
+
+  ATTACHMENT_TYPE_GROUP = 0;
+
+  ATTACHMENT_TYPE_ROLE = 1;
+
+  ATTACHMENT_TYPE_USER = 2;
 
 }
 
@@ -1089,7 +1141,7 @@ message AttachedPolicy {
 
 message CallerIsNotManagementAccountException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1109,7 +1161,7 @@ message ChangePasswordRequest {
 
 message ConcurrentModificationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1119,7 +1171,7 @@ message ConcurrentModificationException {
 
 message ContextEntry {
 
-  string contextkeyname = 259692145;
+  optional string contextkeyname = 259692145;
 
   ContextKeyTypeEnum contextkeytype = 4954324;
 
@@ -1161,7 +1213,7 @@ enum ContextKeyTypeEnum {
 
 message CreateAccessKeyRequest {
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1193,13 +1245,13 @@ message CreateDelegationRequestRequest {
 
   optional bool onlysendbyowner = 218835688;
 
-  string owneraccountid = 369721751;
+  optional string owneraccountid = 369721751;
 
   DelegationPermission permissions = 117505412;
 
-  string redirecturl = 50921923;
+  optional string redirecturl = 50921923;
 
-  string requestmessage = 58996154;
+  optional string requestmessage = 58996154;
 
   string requestorworkflowid = 505587788;
 
@@ -1211,9 +1263,9 @@ message CreateDelegationRequestRequest {
 
 message CreateDelegationRequestResponse {
 
-  string consoledeeplink = 60202521;
+  optional string consoledeeplink = 60202521;
 
-  string delegationrequestid = 278928286;
+  optional string delegationrequestid = 278928286;
 
 }
 
@@ -1223,7 +1275,7 @@ message CreateGroupRequest {
 
   string groupname = 357049672;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
 }
 
@@ -1243,7 +1295,7 @@ message CreateInstanceProfileRequest {
 
   string instanceprofilename = 458172269;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   repeated Tag tags = 381526209;
 
@@ -1263,11 +1315,11 @@ message CreateInstanceProfileResponse {
 
 message CreateLoginProfileRequest {
 
-  string password = 214108217;
+  optional string password = 214108217;
 
   optional bool passwordresetrequired = 330943683;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1301,7 +1353,7 @@ message CreateOpenIDConnectProviderRequest {
 
 message CreateOpenIDConnectProviderResponse {
 
-  string openidconnectproviderarn = 488896995;
+  optional string openidconnectproviderarn = 488896995;
 
   repeated Tag tags = 381526209;
 
@@ -1311,9 +1363,9 @@ message CreateOpenIDConnectProviderResponse {
 
 message CreatePolicyRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   string policydocument = 238049099;
 
@@ -1361,13 +1413,13 @@ message CreateRoleRequest {
 
   string assumerolepolicydocument = 500384765;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 maxsessionduration = 391414912;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
-  string permissionsboundary = 17310134;
+  optional string permissionsboundary = 17310134;
 
   string rolename = 407845299;
 
@@ -1389,7 +1441,7 @@ message CreateRoleResponse {
 
 message CreateSAMLProviderRequest {
 
-  string addprivatekey = 205767607;
+  optional string addprivatekey = 205767607;
 
   assertionEncryptionModeType assertionencryptionmode = 474560298;
 
@@ -1407,7 +1459,7 @@ message CreateSAMLProviderRequest {
 
 message CreateSAMLProviderResponse {
 
-  string samlproviderarn = 294266533;
+  optional string samlproviderarn = 294266533;
 
   repeated Tag tags = 381526209;
 
@@ -1419,9 +1471,9 @@ message CreateServiceLinkedRoleRequest {
 
   string awsservicename = 378200975;
 
-  string customsuffix = 269317868;
+  optional string customsuffix = 269317868;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
 }
 
@@ -1457,9 +1509,9 @@ message CreateServiceSpecificCredentialResponse {
 
 message CreateUserRequest {
 
-  string path = 191292503;
+  optional string path = 191292503;
 
-  string permissionsboundary = 17310134;
+  optional string permissionsboundary = 17310134;
 
   repeated Tag tags = 381526209;
 
@@ -1481,7 +1533,7 @@ message CreateUserResponse {
 
 message CreateVirtualMFADeviceRequest {
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   repeated Tag tags = 381526209;
 
@@ -1505,7 +1557,7 @@ message CreateVirtualMFADeviceResponse {
 
 message CredentialReportExpiredException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1515,7 +1567,7 @@ message CredentialReportExpiredException {
 
 message CredentialReportNotPresentException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1525,7 +1577,7 @@ message CredentialReportNotPresentException {
 
 message CredentialReportNotReadyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1535,7 +1587,7 @@ message DeactivateMFADeviceRequest {
 
   string serialnumber = 418274661;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1547,7 +1599,7 @@ message DelegationPermission {
 
   repeated PolicyParameter parameters = 494900218;
 
-  string policytemplatearn = 456924085;
+  optional string policytemplatearn = 456924085;
 
 }
 
@@ -1557,37 +1609,37 @@ message DelegationPermission {
 
 message DelegationRequest {
 
-  string approverid = 358748230;
+  optional string approverid = 358748230;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
-  string delegationrequestid = 278928286;
+  optional string delegationrequestid = 278928286;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string expirationtime = 93473378;
+  optional string expirationtime = 93473378;
 
-  string notes = 267393899;
+  optional string notes = 267393899;
 
   optional bool onlysendbyowner = 218835688;
 
-  string owneraccountid = 369721751;
+  optional string owneraccountid = 369721751;
 
-  string ownerid = 375630298;
+  optional string ownerid = 375630298;
 
-  string permissionpolicy = 482652389;
+  optional string permissionpolicy = 482652389;
 
   DelegationPermission permissions = 117505412;
 
-  string redirecturl = 50921923;
+  optional string redirecturl = 50921923;
 
-  string rejectionreason = 114778373;
+  optional string rejectionreason = 114778373;
 
-  string requestmessage = 58996154;
+  optional string requestmessage = 58996154;
 
-  string requestorid = 231558211;
+  optional string requestorid = 231558211;
 
-  string requestorname = 16690957;
+  optional string requestorname = 16690957;
 
   repeated string rolepermissionrestrictionarns = 47253157;
 
@@ -1595,7 +1647,7 @@ message DelegationRequest {
 
   stateType state = 502047895;
 
-  string updatedtime = 156274570;
+  optional string updatedtime = 156274570;
 
 }
 
@@ -1605,7 +1657,7 @@ message DeleteAccessKeyRequest {
 
   string accesskeyid = 453893024;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1623,7 +1675,7 @@ message DeleteAccountAliasRequest {
 
 message DeleteConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1657,7 +1709,7 @@ message DeleteInstanceProfileRequest {
 
 message DeleteLoginProfileRequest {
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1761,7 +1813,7 @@ message DeleteServiceSpecificCredentialRequest {
 
   string servicespecificcredentialid = 426936633;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1771,7 +1823,7 @@ message DeleteSigningCertificateRequest {
 
   string certificateid = 149606126;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -1815,7 +1867,7 @@ message DeleteVirtualMFADeviceRequest {
 
 message DeletionTaskFailureReasonType {
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
   repeated RoleUsageType roleusagelist = 363512789;
 
@@ -1877,7 +1929,7 @@ message DisableOrganizationsRootCredentialsManagementResponse {
 
   repeated FeatureType enabledfeatures = 211387242;
 
-  string organizationid = 311006120;
+  optional string organizationid = 311006120;
 
 }
 
@@ -1893,7 +1945,7 @@ message DisableOrganizationsRootSessionsResponse {
 
   repeated FeatureType enabledfeatures = 211387242;
 
-  string organizationid = 311006120;
+  optional string organizationid = 311006120;
 
 }
 
@@ -1903,7 +1955,7 @@ message DisableOrganizationsRootSessionsResponse {
 
 message DuplicateCertificateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1913,7 +1965,7 @@ message DuplicateCertificateException {
 
 message DuplicateSSHPublicKeyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1943,7 +1995,7 @@ message EnableOrganizationsRootCredentialsManagementResponse {
 
   repeated FeatureType enabledfeatures = 211387242;
 
-  string organizationid = 311006120;
+  optional string organizationid = 311006120;
 
 }
 
@@ -1959,7 +2011,7 @@ message EnableOrganizationsRootSessionsResponse {
 
   repeated FeatureType enabledfeatures = 211387242;
 
-  string organizationid = 311006120;
+  optional string organizationid = 311006120;
 
 }
 
@@ -1967,7 +2019,7 @@ message EnableOrganizationsRootSessionsResponse {
 
 message EnableOutboundWebIdentityFederationResponse {
 
-  string issueridentifier = 64259590;
+  optional string issueridentifier = 64259590;
 
 }
 
@@ -1977,7 +2029,7 @@ message EnableOutboundWebIdentityFederationResponse {
 
 message EntityAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1989,7 +2041,7 @@ message EntityDetails {
 
   EntityInfo entityinfo = 401992803;
 
-  string lastauthenticated = 389149429;
+  optional string lastauthenticated = 389149429;
 
 }
 
@@ -2005,7 +2057,7 @@ message EntityInfo {
 
   string name = 266367751;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   policyOwnerEntityType type = 290836590;
 
@@ -2017,7 +2069,7 @@ message EntityInfo {
 
 message EntityTemporarilyUnmodifiableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2051,7 +2103,7 @@ message ErrorDetails {
 
 
 
-// Contains the results of a simulation. This data type is used by the return parameter of SimulateCustomPolicy and SimulatePrincipalPolicy .
+// Contains the results of a simulation. This data type is used by the return parameter of SimulateCustomPolicy and SimulatePrincipalPolicy . The simulator now returns a single EvaluationResult per ac...
 
 message EvaluationResult {
 
@@ -2061,7 +2113,7 @@ message EvaluationResult {
 
   map<string, PolicyEvaluationDecisionType> evaldecisiondetails = 70732822;
 
-  string evalresourcename = 9391249;
+  optional string evalresourcename = 9391249;
 
   repeated Statement matchedstatements = 389771374;
 
@@ -2081,7 +2133,7 @@ message EvaluationResult {
 
 message FeatureDisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2091,7 +2143,7 @@ message FeatureDisabledException {
 
 message FeatureEnabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2111,7 +2163,7 @@ enum FeatureType {
 
 message GenerateCredentialReportResponse {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   ReportStateType state = 502047895;
 
@@ -2123,7 +2175,7 @@ message GenerateOrganizationsAccessReportRequest {
 
   string entitypath = 93829450;
 
-  string organizationspolicyid = 16852361;
+  optional string organizationspolicyid = 16852361;
 
 }
 
@@ -2131,7 +2183,7 @@ message GenerateOrganizationsAccessReportRequest {
 
 message GenerateOrganizationsAccessReportResponse {
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
 }
 
@@ -2149,7 +2201,7 @@ message GenerateServiceLastAccessedDetailsRequest {
 
 message GenerateServiceLastAccessedDetailsResponse {
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
 }
 
@@ -2169,7 +2221,7 @@ message GetAccessKeyLastUsedResponse {
 
   AccessKeyLastUsed accesskeylastused = 104233392;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -2179,7 +2231,7 @@ message GetAccountAuthorizationDetailsRequest {
 
   repeated EntityType filter = 346669208;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2195,7 +2247,7 @@ message GetAccountAuthorizationDetailsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ManagedPolicyDetail policies = 40015384;
 
@@ -2212,6 +2264,20 @@ message GetAccountAuthorizationDetailsResponse {
 message GetAccountPasswordPolicyResponse {
 
   PasswordPolicy passwordpolicy = 235700227;
+
+}
+
+
+
+message GetAccountPropertiesRequest {
+
+}
+
+
+
+message GetAccountPropertiesResponse {
+
+  map<string, string> properties = 29886973;
 
 }
 
@@ -2259,9 +2325,9 @@ message GetContextKeysForPrincipalPolicyRequest {
 
 message GetCredentialReportResponse {
 
-  bytes content = 23568227;
+  optional bytes content = 23568227;
 
-  string generatedtime = 88097636;
+  optional string generatedtime = 88097636;
 
   ReportFormatType reportformat = 67774421;
 
@@ -2319,7 +2385,7 @@ message GetGroupRequest {
 
   string groupname = 357049672;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2335,7 +2401,7 @@ message GetGroupResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated User users = 112472756;
 
@@ -2347,7 +2413,7 @@ message GetHumanReadableSummaryRequest {
 
   string entityarn = 422623110;
 
-  string locale = 493771704;
+  optional string locale = 493771704;
 
 }
 
@@ -2355,9 +2421,9 @@ message GetHumanReadableSummaryRequest {
 
 message GetHumanReadableSummaryResponse {
 
-  string locale = 493771704;
+  optional string locale = 493771704;
 
-  string summarycontent = 116389717;
+  optional string summarycontent = 116389717;
 
   summaryStateType summarystate = 124704997;
 
@@ -2385,7 +2451,7 @@ message GetInstanceProfileResponse {
 
 message GetLoginProfileRequest {
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -2405,7 +2471,7 @@ message GetMFADeviceRequest {
 
   string serialnumber = 418274661;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -2415,11 +2481,11 @@ message GetMFADeviceResponse {
 
   map<string, string> certifications = 399647051;
 
-  string enabledate = 99725723;
+  optional string enabledate = 99725723;
 
   string serialnumber = 418274661;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -2439,13 +2505,13 @@ message GetOpenIDConnectProviderResponse {
 
   repeated string clientidlist = 428113132;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   repeated Tag tags = 381526209;
 
   repeated string thumbprintlist = 88528351;
 
-  string url = 354018239;
+  optional string url = 354018239;
 
 }
 
@@ -2455,7 +2521,7 @@ message GetOrganizationsAccessReportRequest {
 
   string jobid = 108489298;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2473,13 +2539,13 @@ message GetOrganizationsAccessReportResponse {
 
   optional bool istruncated = 242094042;
 
-  string jobcompletiondate = 517991255;
+  optional string jobcompletiondate = 517991255;
 
   string jobcreationdate = 201415034;
 
   jobStatusType jobstatus = 108973639;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 numberofservicesaccessible = 27175708;
 
@@ -2491,7 +2557,7 @@ message GetOrganizationsAccessReportResponse {
 
 message GetOutboundWebIdentityFederationInfoResponse {
 
-  string issueridentifier = 64259590;
+  optional string issueridentifier = 64259590;
 
   optional bool jwtvendingenabled = 148790521;
 
@@ -2579,6 +2645,24 @@ message GetRoleResponse {
 
 
 
+message GetRoleTemplateVersionRequest {
+
+  optional int32 minorversion = 270686611;
+
+  string templatearn = 384599199;
+
+}
+
+
+
+message GetRoleTemplateVersionResponse {
+
+  RoleTemplateVersion roletemplateversion = 425066210;
+
+}
+
+
+
 message GetSAMLProviderRequest {
 
   string samlproviderarn = 294266533;
@@ -2593,17 +2677,17 @@ message GetSAMLProviderResponse {
 
   assertionEncryptionModeType assertionencryptionmode = 474560298;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   repeated SAMLPrivateKey privatekeylist = 145689700;
 
-  string samlmetadatadocument = 282432645;
+  optional string samlmetadatadocument = 282432645;
 
-  string samlprovideruuid = 241210667;
+  optional string samlprovideruuid = 241210667;
 
   repeated Tag tags = 381526209;
 
-  string validuntil = 366644404;
+  optional string validuntil = 366644404;
 
 }
 
@@ -2653,7 +2737,7 @@ message GetServiceLastAccessedDetailsRequest {
 
   string jobid = 108489298;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2675,7 +2759,7 @@ message GetServiceLastAccessedDetailsResponse {
 
   AccessAdvisorUsageGranularityType jobtype = 279889397;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ServiceLastAccessed serviceslastaccessed = 264776823;
 
@@ -2687,7 +2771,7 @@ message GetServiceLastAccessedDetailsWithEntitiesRequest {
 
   string jobid = 108489298;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2711,7 +2795,7 @@ message GetServiceLastAccessedDetailsWithEntitiesResponse {
 
   jobStatusType jobstatus = 108973639;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2761,7 +2845,7 @@ message GetUserPolicyResponse {
 
 message GetUserRequest {
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -2799,19 +2883,45 @@ message Group {
 
 message GroupDetail {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
   repeated AttachedPolicy attachedmanagedpolicies = 155564765;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
-  string groupid = 73973250;
+  optional string groupid = 73973250;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
 
   repeated PolicyDetail grouppolicylist = 442500627;
 
-  string path = 191292503;
+  optional string path = 191292503;
+
+}
+
+
+
+// Contains an inline policy template that the service embeds in roles that you create from a role template.
+
+message InlinePolicy {
+
+  string policydocument = 238049099;
+
+  string policyname = 266468029;
+
+}
+
+
+
+// Identifies one or more inline policies that are embedded in IAM users, groups, or roles, by the name of the policy together with the type and name of the entity that it is attached to. Wildcard cha...
+
+message InlinePolicyIdentifierType {
+
+  string attachmentname = 430858572;
+
+  AttachmentType attachmenttype = 132010369;
+
+  string policyname = 266468029;
 
 }
 
@@ -2843,7 +2953,7 @@ message InstanceProfile {
 
 message InvalidAuthenticationCodeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2853,7 +2963,7 @@ message InvalidAuthenticationCodeException {
 
 message InvalidCertificateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2863,7 +2973,7 @@ message InvalidCertificateException {
 
 message InvalidInputException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2873,7 +2983,7 @@ message InvalidInputException {
 
 message InvalidPublicKeyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2883,7 +2993,7 @@ message InvalidPublicKeyException {
 
 message InvalidUserTypeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2893,7 +3003,7 @@ message InvalidUserTypeException {
 
 message KeyPairMismatchException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2903,7 +3013,7 @@ message KeyPairMismatchException {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2911,11 +3021,11 @@ message LimitExceededException {
 
 message ListAccessKeysRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -2929,7 +3039,7 @@ message ListAccessKeysResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2937,7 +3047,7 @@ message ListAccessKeysResponse {
 
 message ListAccountAliasesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -2953,7 +3063,7 @@ message ListAccountAliasesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2963,11 +3073,11 @@ message ListAttachedGroupPoliciesRequest {
 
   string groupname = 357049672;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
 }
 
@@ -2981,7 +3091,7 @@ message ListAttachedGroupPoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2989,11 +3099,11 @@ message ListAttachedGroupPoliciesResponse {
 
 message ListAttachedRolePoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
   string rolename = 407845299;
 
@@ -3009,7 +3119,7 @@ message ListAttachedRolePoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3017,11 +3127,11 @@ message ListAttachedRolePoliciesResponse {
 
 message ListAttachedUserPoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
   string username = 473243898;
 
@@ -3037,7 +3147,7 @@ message ListAttachedUserPoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3045,11 +3155,11 @@ message ListAttachedUserPoliciesResponse {
 
 message ListDelegationRequestsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string ownerid = 375630298;
+  optional string ownerid = 375630298;
 
 }
 
@@ -3059,7 +3169,7 @@ message ListDelegationRequestsResponse {
 
   repeated DelegationRequest delegationrequests = 385003146;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional bool istruncated = 459873914;
 
@@ -3071,11 +3181,11 @@ message ListEntitiesForPolicyRequest {
 
   EntityType entityfilter = 325795861;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
   string policyarn = 497985859;
 
@@ -3091,7 +3201,7 @@ message ListEntitiesForPolicyResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated PolicyGroup policygroups = 187209232;
 
@@ -3107,7 +3217,7 @@ message ListGroupPoliciesRequest {
 
   string groupname = 357049672;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3121,7 +3231,7 @@ message ListGroupPoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated string policynames = 264098782;
 
@@ -3131,7 +3241,7 @@ message ListGroupPoliciesResponse {
 
 message ListGroupsForUserRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3149,7 +3259,7 @@ message ListGroupsForUserResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3157,11 +3267,11 @@ message ListGroupsForUserResponse {
 
 message ListGroupsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
 }
 
@@ -3175,7 +3285,7 @@ message ListGroupsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3185,7 +3295,7 @@ message ListInstanceProfileTagsRequest {
 
   string instanceprofilename = 458172269;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3197,7 +3307,7 @@ message ListInstanceProfileTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3207,7 +3317,7 @@ message ListInstanceProfileTagsResponse {
 
 message ListInstanceProfilesForRoleRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3225,7 +3335,7 @@ message ListInstanceProfilesForRoleResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3233,11 +3343,11 @@ message ListInstanceProfilesForRoleResponse {
 
 message ListInstanceProfilesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
 }
 
@@ -3251,7 +3361,7 @@ message ListInstanceProfilesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3259,7 +3369,7 @@ message ListInstanceProfilesResponse {
 
 message ListMFADeviceTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3273,7 +3383,7 @@ message ListMFADeviceTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3283,11 +3393,11 @@ message ListMFADeviceTagsResponse {
 
 message ListMFADevicesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -3301,7 +3411,7 @@ message ListMFADevicesResponse {
 
   repeated MFADevice mfadevices = 17178165;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3309,7 +3419,7 @@ message ListMFADevicesResponse {
 
 message ListOpenIDConnectProviderTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3323,7 +3433,7 @@ message ListOpenIDConnectProviderTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3357,7 +3467,7 @@ message ListOrganizationsFeaturesResponse {
 
   repeated FeatureType enabledfeatures = 211387242;
 
-  string organizationid = 311006120;
+  optional string organizationid = 311006120;
 
 }
 
@@ -3369,7 +3479,7 @@ message ListPoliciesGrantingServiceAccessEntry {
 
   repeated PolicyGrantingServiceAccess policies = 40015384;
 
-  string servicenamespace = 432654764;
+  optional string servicenamespace = 432654764;
 
 }
 
@@ -3379,7 +3489,7 @@ message ListPoliciesGrantingServiceAccessRequest {
 
   string arn = 402345373;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated string servicenamespaces = 279494409;
 
@@ -3391,7 +3501,7 @@ message ListPoliciesGrantingServiceAccessResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ListPoliciesGrantingServiceAccessEntry policiesgrantingserviceaccess = 90939387;
 
@@ -3401,13 +3511,13 @@ message ListPoliciesGrantingServiceAccessResponse {
 
 message ListPoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
   optional bool onlyattached = 264348868;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
   PolicyUsageType policyusagefilter = 102535305;
 
@@ -3423,7 +3533,7 @@ message ListPoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Policy policies = 40015384;
 
@@ -3433,7 +3543,7 @@ message ListPoliciesResponse {
 
 message ListPolicyTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3447,7 +3557,7 @@ message ListPolicyTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3457,7 +3567,7 @@ message ListPolicyTagsResponse {
 
 message ListPolicyVersionsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3473,7 +3583,7 @@ message ListPolicyVersionsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated PolicyVersion versions = 252099085;
 
@@ -3483,7 +3593,7 @@ message ListPolicyVersionsResponse {
 
 message ListRolePoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3499,7 +3609,7 @@ message ListRolePoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated string policynames = 264098782;
 
@@ -3509,7 +3619,7 @@ message ListRolePoliciesResponse {
 
 message ListRoleTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3523,7 +3633,7 @@ message ListRoleTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3533,11 +3643,11 @@ message ListRoleTagsResponse {
 
 message ListRolesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
 }
 
@@ -3549,7 +3659,7 @@ message ListRolesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Role roles = 511168127;
 
@@ -3559,7 +3669,7 @@ message ListRolesResponse {
 
 message ListSAMLProviderTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3573,7 +3683,7 @@ message ListSAMLProviderTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3599,11 +3709,11 @@ message ListSAMLProvidersResponse {
 
 message ListSSHPublicKeysRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -3615,7 +3725,7 @@ message ListSSHPublicKeysResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated SSHPublicKeyMetadata sshpublickeys = 469962073;
 
@@ -3625,7 +3735,7 @@ message ListSSHPublicKeysResponse {
 
 message ListServerCertificateTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3639,7 +3749,7 @@ message ListServerCertificateTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3649,11 +3759,11 @@ message ListServerCertificateTagsResponse {
 
 message ListServerCertificatesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
 }
 
@@ -3665,7 +3775,7 @@ message ListServerCertificatesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ServerCertificateMetadata servercertificatemetadatalist = 230344753;
 
@@ -3677,13 +3787,13 @@ message ListServiceSpecificCredentialsRequest {
 
   optional bool allusers = 97090269;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string servicename = 137811296;
+  optional string servicename = 137811296;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -3693,7 +3803,7 @@ message ListServiceSpecificCredentialsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated ServiceSpecificCredentialMetadata servicespecificcredentials = 82595803;
 
@@ -3703,11 +3813,11 @@ message ListServiceSpecificCredentialsResponse {
 
 message ListSigningCertificatesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -3721,7 +3831,7 @@ message ListSigningCertificatesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -3729,7 +3839,7 @@ message ListSigningCertificatesResponse {
 
 message ListUserPoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3745,7 +3855,7 @@ message ListUserPoliciesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated string policynames = 264098782;
 
@@ -3755,7 +3865,7 @@ message ListUserPoliciesResponse {
 
 message ListUserTagsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3769,7 +3879,7 @@ message ListUserTagsResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated Tag tags = 381526209;
 
@@ -3779,11 +3889,11 @@ message ListUserTagsResponse {
 
 message ListUsersRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string pathprefix = 398040011;
+  optional string pathprefix = 398040011;
 
 }
 
@@ -3795,7 +3905,7 @@ message ListUsersResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated User users = 112472756;
 
@@ -3807,7 +3917,7 @@ message ListVirtualMFADevicesRequest {
 
   assignmentStatusType assignmentstatus = 277782963;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -3821,7 +3931,7 @@ message ListVirtualMFADevicesResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   repeated VirtualMFADevice virtualmfadevices = 117329102;
 
@@ -3861,7 +3971,7 @@ message MFADevice {
 
 message MalformedCertificateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3871,7 +3981,7 @@ message MalformedCertificateException {
 
 message MalformedPolicyDocumentException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3881,29 +3991,39 @@ message MalformedPolicyDocumentException {
 
 message ManagedPolicyDetail {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
   optional int32 attachmentcount = 468165416;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
-  string defaultversionid = 296003120;
+  optional string defaultversionid = 296003120;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional bool isattachable = 2814573;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   optional int32 permissionsboundaryusagecount = 271917656;
 
-  string policyid = 299520499;
+  optional string policyid = 299520499;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
   repeated PolicyVersion policyversionlist = 173611150;
 
-  string updatedate = 402617681;
+  optional string updatedate = 402617681;
+
+}
+
+
+
+// The request was rejected because the resulting role name conflicts with an existing role in the account.
+
+message NameConflictException {
+
+  optional string message = 82970853;
 
 }
 
@@ -3913,7 +4033,7 @@ message ManagedPolicyDetail {
 
 message NoSuchEntityException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3923,7 +4043,7 @@ message NoSuchEntityException {
 
 message OpenIDConnectProviderListEntry {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -3933,7 +4053,17 @@ message OpenIDConnectProviderListEntry {
 
 message OpenIdIdpCommunicationErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// Represents one level of an Organizations hierarchy—the organization root, an organizational unit (OU), or an account—together with the service control policies (SCPs) that apply at that level. ...
+
+message OrderedOrganizationPolicyType {
+
+  repeated string servicecontrolpolicyinputlist = 435896958;
 
 }
 
@@ -3943,7 +4073,7 @@ message OpenIdIdpCommunicationErrorException {
 
 message OrganizationNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3953,7 +4083,7 @@ message OrganizationNotFoundException {
 
 message OrganizationNotInAllFeaturesModeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3964,6 +4094,28 @@ message OrganizationNotInAllFeaturesModeException {
 message OrganizationsDecisionDetail {
 
   optional bool allowedbyorganizations = 387308871;
+
+}
+
+
+
+// Defines a parameter that a role template accepts. You supply values for these parameters when you create a role with AcquireRole.
+
+message ParameterDefinition {
+
+  optional string defaultvalue = 218709920;
+
+  optional string description = 115243530;
+
+  optional bool immutable = 514829536;
+
+  optional bool isrequired = 368521841;
+
+  string name = 266367751;
+
+  optional string subtype = 152988350;
+
+  parameterTypeType type = 290836590;
 
 }
 
@@ -4001,7 +4153,7 @@ message PasswordPolicy {
 
 message PasswordPolicyViolationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4029,29 +4181,29 @@ message PermissionsBoundaryDecisionDetail {
 
 message Policy {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
   optional int32 attachmentcount = 468165416;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
-  string defaultversionid = 296003120;
+  optional string defaultversionid = 296003120;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional bool isattachable = 2814573;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   optional int32 permissionsboundaryusagecount = 271917656;
 
-  string policyid = 299520499;
+  optional string policyid = 299520499;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
   repeated Tag tags = 381526209;
 
-  string updatedate = 402617681;
+  optional string updatedate = 402617681;
 
 }
 
@@ -4061,9 +4213,9 @@ message Policy {
 
 message PolicyDetail {
 
-  string policydocument = 238049099;
+  optional string policydocument = 238049099;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
 }
 
@@ -4085,7 +4237,7 @@ enum PolicyEvaluationDecisionType {
 
 message PolicyEvaluationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4095,11 +4247,11 @@ message PolicyEvaluationException {
 
 message PolicyGrantingServiceAccess {
 
-  string entityname = 79565666;
+  optional string entityname = 79565666;
 
   policyOwnerEntityType entitytype = 327275163;
 
-  string policyarn = 497985859;
+  optional string policyarn = 497985859;
 
   string policyname = 266468029;
 
@@ -4113,9 +4265,41 @@ message PolicyGrantingServiceAccess {
 
 message PolicyGroup {
 
-  string groupid = 73973250;
+  optional string groupid = 73973250;
 
-  string groupname = 357049672;
+  optional string groupname = 357049672;
+
+}
+
+
+
+// Identifies one or more policies as a union type. Specify exactly one of PolicyType, PolicyArn, or InlinePolicyIdentifier to identify policies by their type, by Amazon Resource Name (ARN), or by the...
+
+message PolicyIdentifier {
+
+  InlinePolicyIdentifierType inlinepolicyidentifier = 170017278;
+
+  optional string policyarn = 497985859;
+
+  PolicyIdentifierPolicyType policytype = 470619144;
+
+}
+
+
+
+enum PolicyIdentifierPolicyType {
+
+  POLICY_IDENTIFIER_POLICY_TYPE_SCP = 0;
+
+  POLICY_IDENTIFIER_POLICY_TYPE_USER_MANAGED = 1;
+
+  POLICY_IDENTIFIER_POLICY_TYPE_AWS_MANAGED = 2;
+
+  POLICY_IDENTIFIER_POLICY_TYPE_INLINE = 3;
+
+  POLICY_IDENTIFIER_POLICY_TYPE_RCP = 4;
+
+  POLICY_IDENTIFIER_POLICY_TYPE_PERMISSION_BOUNDARY = 5;
 
 }
 
@@ -4125,7 +4309,7 @@ message PolicyGroup {
 
 message PolicyNotAttachableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4135,7 +4319,7 @@ message PolicyNotAttachableException {
 
 message PolicyParameter {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   PolicyParameterTypeEnum type = 290836590;
 
@@ -4159,9 +4343,9 @@ enum PolicyParameterTypeEnum {
 
 message PolicyRole {
 
-  string roleid = 486019037;
+  optional string roleid = 486019037;
 
-  string rolename = 407845299;
+  optional string rolename = 407845299;
 
 }
 
@@ -4201,9 +4385,9 @@ enum PolicyUsageType {
 
 message PolicyUser {
 
-  string userid = 10274112;
+  optional string userid = 10274112;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -4213,13 +4397,13 @@ message PolicyUser {
 
 message PolicyVersion {
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
-  string document = 407108341;
+  optional string document = 407108341;
 
   optional bool isdefaultversion = 465655635;
 
-  string versionid = 338063515;
+  optional string versionid = 338063515;
 
 }
 
@@ -4232,6 +4416,20 @@ message Position {
   optional int32 column = 46213704;
 
   optional int32 line = 403240264;
+
+}
+
+
+
+message PutAccountPropertiesRequest {
+
+  map<string, string> properties = 29886973;
+
+}
+
+
+
+message PutAccountPropertiesResponse {
 
 }
 
@@ -4297,7 +4495,7 @@ message RejectDelegationRequestRequest {
 
   string delegationrequestid = 278928286;
 
-  string notes = 267393899;
+  optional string notes = 267393899;
 
 }
 
@@ -4333,6 +4531,16 @@ message RemoveUserFromGroupRequest {
 
 
 
+// Contains the list of replacement values for a single template parameter used when creating a role from a role template.
+
+message ReplacementValueEntry {
+
+  repeated string values = 223158876;
+
+}
+
+
+
 enum ReportFormatType {
 
   REPORT_FORMAT_TYPE_TEXT_CSV = 0;
@@ -4345,7 +4553,7 @@ enum ReportFormatType {
 
 message ReportGenerationLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4367,7 +4575,7 @@ message ResetServiceSpecificCredentialRequest {
 
   string servicespecificcredentialid = 426936633;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -4421,11 +4629,11 @@ message Role {
 
   string arn = 402345373;
 
-  string assumerolepolicydocument = 500384765;
+  optional string assumerolepolicydocument = 500384765;
 
   string createdate = 37690514;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 maxsessionduration = 391414912;
 
@@ -4439,6 +4647,8 @@ message Role {
 
   string rolename = 407845299;
 
+  SourceRoleTemplate sourceroletemplate = 426914995;
+
   repeated Tag tags = 381526209;
 
 }
@@ -4449,25 +4659,25 @@ message Role {
 
 message RoleDetail {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string assumerolepolicydocument = 500384765;
+  optional string assumerolepolicydocument = 500384765;
 
   repeated AttachedPolicy attachedmanagedpolicies = 155564765;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   repeated InstanceProfile instanceprofilelist = 261628088;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   AttachedPermissionsBoundary permissionsboundary = 17310134;
 
-  string roleid = 486019037;
+  optional string roleid = 486019037;
 
   RoleLastUsed rolelastused = 298072393;
 
-  string rolename = 407845299;
+  optional string rolename = 407845299;
 
   repeated PolicyDetail rolepolicylist = 536765692;
 
@@ -4481,9 +4691,83 @@ message RoleDetail {
 
 message RoleLastUsed {
 
-  string lastuseddate = 70377689;
+  optional string lastuseddate = 70377689;
 
-  string region = 154040478;
+  optional string region = 154040478;
+
+}
+
+
+
+// The request was rejected because someone modified the role template while the service was creating the role. Wait a few minutes and try the request again.
+
+message RoleModifiedException {
+
+  optional string message = 82970853;
+
+}
+
+
+
+// The request was rejected because the specified role template is disabled. A disabled role template cannot be used to create new roles. Contact your administrator to enable the role template, or use...
+
+message RoleTemplateDisabledException {
+
+  optional string message = 82970853;
+
+}
+
+
+
+// Contains information about a version of an IAM role template, including the configuration that is used to create roles with AcquireRole. This structure is returned as a response element by the GetR...
+
+message RoleTemplateVersion {
+
+  optional string assumerolepolicydocumenttemplate = 514350087;
+
+  optional string createtimestamp = 424485820;
+
+  optional int32 defaultminorversion = 68083354;
+
+  optional string description = 115243530;
+
+  optional bool enabled = 478602303;
+
+  repeated InlinePolicy inlinepolicytemplates = 365952522;
+
+  optional int32 majorversion = 248630895;
+
+  managedByTypeType managedbytype = 197665256;
+
+  optional string managedbyvalue = 525525461;
+
+  repeated string managedpolicyarns = 190920037;
+
+  optional int32 maxsessionduration = 391414912;
+
+  optional int32 minorversion = 270686611;
+
+  repeated ParameterDefinition parametersdefinition = 508613821;
+
+  optional string permissionboundaryarn = 441620176;
+
+  optional string roledescriptionpattern = 271362290;
+
+  optional string rolenamepattern = 414566329;
+
+  optional string rolepathpattern = 322582505;
+
+  repeated TagTemplate roletagstemplate = 448624207;
+
+  optional string templatearn = 384599199;
+
+  optional string templatename = 480529457;
+
+  optional string templateversionid = 361013889;
+
+  optional string updatetimestamp = 339621717;
+
+  optional bool versionenabled = 526435437;
 
 }
 
@@ -4493,7 +4777,7 @@ message RoleLastUsed {
 
 message RoleUsageType {
 
-  string region = 154040478;
+  optional string region = 154040478;
 
   repeated string resources = 358918291;
 
@@ -4505,9 +4789,9 @@ message RoleUsageType {
 
 message SAMLPrivateKey {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
 }
 
@@ -4517,11 +4801,11 @@ message SAMLPrivateKey {
 
 message SAMLProviderListEntry {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
-  string validuntil = 366644404;
+  optional string validuntil = 366644404;
 
 }
 
@@ -4539,7 +4823,7 @@ message SSHPublicKey {
 
   statusType status = 6222352;
 
-  string uploaddate = 89572857;
+  optional string uploaddate = 89572857;
 
   string username = 473243898;
 
@@ -4577,7 +4861,7 @@ message ServerCertificate {
 
   string certificatebody = 147144541;
 
-  string certificatechain = 369292378;
+  optional string certificatechain = 369292378;
 
   ServerCertificateMetadata servercertificatemetadata = 274199561;
 
@@ -4593,7 +4877,7 @@ message ServerCertificateMetadata {
 
   string arn = 402345373;
 
-  string expiration = 245879945;
+  optional string expiration = 245879945;
 
   string path = 191292503;
 
@@ -4601,7 +4885,7 @@ message ServerCertificateMetadata {
 
   string servercertificatename = 63357055;
 
-  string uploaddate = 89572857;
+  optional string uploaddate = 89572857;
 
 }
 
@@ -4611,7 +4895,7 @@ message ServerCertificateMetadata {
 
 message ServiceAccessNotEnabledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4621,7 +4905,7 @@ message ServiceAccessNotEnabledException {
 
 message ServiceFailureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4631,11 +4915,11 @@ message ServiceFailureException {
 
 message ServiceLastAccessed {
 
-  string lastauthenticated = 389149429;
+  optional string lastauthenticated = 389149429;
 
-  string lastauthenticatedentity = 530201520;
+  optional string lastauthenticatedentity = 530201520;
 
-  string lastauthenticatedregion = 91136313;
+  optional string lastauthenticatedregion = 91136313;
 
   string servicename = 137811296;
 
@@ -4653,7 +4937,7 @@ message ServiceLastAccessed {
 
 message ServiceNotSupportedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4665,19 +4949,19 @@ message ServiceSpecificCredential {
 
   string createdate = 37690514;
 
-  string expirationdate = 17577725;
+  optional string expirationdate = 17577725;
 
-  string servicecredentialalias = 202396008;
+  optional string servicecredentialalias = 202396008;
 
-  string servicecredentialsecret = 3133058;
+  optional string servicecredentialsecret = 3133058;
 
   string servicename = 137811296;
 
-  string servicepassword = 296023718;
+  optional string servicepassword = 296023718;
 
   string servicespecificcredentialid = 426936633;
 
-  string serviceusername = 328571397;
+  optional string serviceusername = 328571397;
 
   statusType status = 6222352;
 
@@ -4693,15 +4977,15 @@ message ServiceSpecificCredentialMetadata {
 
   string createdate = 37690514;
 
-  string expirationdate = 17577725;
+  optional string expirationdate = 17577725;
 
-  string servicecredentialalias = 202396008;
+  optional string servicecredentialalias = 202396008;
 
   string servicename = 137811296;
 
   string servicespecificcredentialid = 426936633;
 
-  string serviceusername = 328571397;
+  optional string serviceusername = 328571397;
 
   statusType status = 6222352;
 
@@ -4739,7 +5023,7 @@ message SigningCertificate {
 
   statusType status = 6222352;
 
-  string uploaddate = 89572857;
+  optional string uploaddate = 89572857;
 
   string username = 473243898;
 
@@ -4751,13 +5035,15 @@ message SimulateCustomPolicyRequest {
 
   repeated string actionnames = 106940510;
 
-  string callerarn = 249627822;
+  optional string callerarn = 249627822;
 
   repeated ContextEntry contextentries = 361913797;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
+
+  repeated OrderedOrganizationPolicyType orderedorganizationpolicyinputlist = 163347934;
 
   repeated string permissionsboundarypolicyinputlist = 424163706;
 
@@ -4765,11 +5051,11 @@ message SimulateCustomPolicyRequest {
 
   repeated string resourcearns = 222677390;
 
-  string resourcehandlingoption = 447283374;
+  optional string resourcehandlingoption = 447283374;
 
-  string resourceowner = 523737189;
+  optional string resourceowner = 523737189;
 
-  string resourcepolicy = 15747632;
+  optional string resourcepolicy = 15747632;
 
 }
 
@@ -4783,7 +5069,7 @@ message SimulatePolicyResponse {
 
   optional bool istruncated = 242094042;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -4793,15 +5079,17 @@ message SimulatePrincipalPolicyRequest {
 
   repeated string actionnames = 106940510;
 
-  string callerarn = 249627822;
+  optional string callerarn = 249627822;
 
   repeated ContextEntry contextentries = 361913797;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
   repeated string permissionsboundarypolicyinputlist = 424163706;
+
+  repeated PolicyIdentifier policyexclusionlist = 313561390;
 
   repeated string policyinputlist = 320766346;
 
@@ -4809,11 +5097,23 @@ message SimulatePrincipalPolicyRequest {
 
   repeated string resourcearns = 222677390;
 
-  string resourcehandlingoption = 447283374;
+  optional string resourcehandlingoption = 447283374;
 
-  string resourceowner = 523737189;
+  optional string resourceowner = 523737189;
 
-  string resourcepolicy = 15747632;
+  optional string resourcepolicy = 15747632;
+
+}
+
+
+
+// Contains information about the role template that a role was created from.
+
+message SourceRoleTemplate {
+
+  string templatearn = 384599199;
+
+  int32 templateminorversion = 415714529;
 
 }
 
@@ -4825,7 +5125,7 @@ message Statement {
 
   Position endposition = 52449718;
 
-  string sourcepolicyid = 364395760;
+  optional string sourcepolicyid = 364395760;
 
   PolicySourceType sourcepolicytype = 13742643;
 
@@ -4917,6 +5217,18 @@ message TagServerCertificateRequest {
 
 
 
+// Represents a tag that is applied to roles that are created from a role template. The key and value can include @{parameter} placeholders that are replaced with template parameter values when the ro...
+
+message TagTemplate {
+
+  string key = 219859213;
+
+  string value = 289929579;
+
+}
+
+
+
 message TagUserRequest {
 
   repeated Tag tags = 381526209;
@@ -4931,13 +5243,13 @@ message TagUserRequest {
 
 message TrackedActionLastAccessed {
 
-  string actionname = 115541053;
+  optional string actionname = 115541053;
 
-  string lastaccessedentity = 442988598;
+  optional string lastaccessedentity = 442988598;
 
-  string lastaccessedregion = 213791971;
+  optional string lastaccessedregion = 213791971;
 
-  string lastaccessedtime = 407082528;
+  optional string lastaccessedtime = 407082528;
 
 }
 
@@ -4947,7 +5259,7 @@ message TrackedActionLastAccessed {
 
 message UnmodifiableEntityException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4957,7 +5269,7 @@ message UnmodifiableEntityException {
 
 message UnrecognizedPublicKeyEncodingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5049,7 +5361,7 @@ message UpdateAccessKeyRequest {
 
   statusType status = 6222352;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -5093,7 +5405,7 @@ message UpdateDelegationRequestRequest {
 
   string delegationrequestid = 278928286;
 
-  string notes = 267393899;
+  optional string notes = 267393899;
 
 }
 
@@ -5103,9 +5415,9 @@ message UpdateGroupRequest {
 
   string groupname = 357049672;
 
-  string newgroupname = 103615532;
+  optional string newgroupname = 103615532;
 
-  string newpath = 101274219;
+  optional string newpath = 101274219;
 
 }
 
@@ -5113,7 +5425,7 @@ message UpdateGroupRequest {
 
 message UpdateLoginProfileRequest {
 
-  string password = 214108217;
+  optional string password = 214108217;
 
   optional bool passwordresetrequired = 330943683;
 
@@ -5153,7 +5465,7 @@ message UpdateRoleDescriptionResponse {
 
 message UpdateRoleRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 maxsessionduration = 391414912;
 
@@ -5171,13 +5483,13 @@ message UpdateRoleResponse {
 
 message UpdateSAMLProviderRequest {
 
-  string addprivatekey = 205767607;
+  optional string addprivatekey = 205767607;
 
   assertionEncryptionModeType assertionencryptionmode = 474560298;
 
-  string removeprivatekey = 506848260;
+  optional string removeprivatekey = 506848260;
 
-  string samlmetadatadocument = 282432645;
+  optional string samlmetadatadocument = 282432645;
 
   string samlproviderarn = 294266533;
 
@@ -5189,7 +5501,7 @@ message UpdateSAMLProviderRequest {
 
 message UpdateSAMLProviderResponse {
 
-  string samlproviderarn = 294266533;
+  optional string samlproviderarn = 294266533;
 
 }
 
@@ -5209,9 +5521,9 @@ message UpdateSSHPublicKeyRequest {
 
 message UpdateServerCertificateRequest {
 
-  string newpath = 101274219;
+  optional string newpath = 101274219;
 
-  string newservercertificatename = 68932667;
+  optional string newservercertificatename = 68932667;
 
   string servercertificatename = 63357055;
 
@@ -5225,7 +5537,7 @@ message UpdateServiceSpecificCredentialRequest {
 
   statusType status = 6222352;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -5237,7 +5549,7 @@ message UpdateSigningCertificateRequest {
 
   statusType status = 6222352;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -5245,9 +5557,9 @@ message UpdateSigningCertificateRequest {
 
 message UpdateUserRequest {
 
-  string newpath = 101274219;
+  optional string newpath = 101274219;
 
-  string newusername = 339337854;
+  optional string newusername = 339337854;
 
   string username = 473243898;
 
@@ -5279,9 +5591,9 @@ message UploadServerCertificateRequest {
 
   string certificatebody = 147144541;
 
-  string certificatechain = 369292378;
+  optional string certificatechain = 369292378;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   string privatekey = 173312700;
 
@@ -5309,7 +5621,7 @@ message UploadSigningCertificateRequest {
 
   string certificatebody = 147144541;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
 }
 
@@ -5333,7 +5645,7 @@ message User {
 
   string createdate = 37690514;
 
-  string passwordlastused = 177372702;
+  optional string passwordlastused = 177372702;
 
   string path = 191292503;
 
@@ -5353,23 +5665,23 @@ message User {
 
 message UserDetail {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
   repeated AttachedPolicy attachedmanagedpolicies = 155564765;
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   repeated string grouplist = 283781749;
 
-  string path = 191292503;
+  optional string path = 191292503;
 
   AttachedPermissionsBoundary permissionsboundary = 17310134;
 
   repeated Tag tags = 381526209;
 
-  string userid = 10274112;
+  optional string userid = 10274112;
 
-  string username = 473243898;
+  optional string username = 473243898;
 
   repeated PolicyDetail userpolicylist = 327234653;
 
@@ -5381,11 +5693,11 @@ message UserDetail {
 
 message VirtualMFADevice {
 
-  bytes base32stringseed = 257240642;
+  optional bytes base32stringseed = 257240642;
 
-  string enabledate = 99725723;
+  optional string enabledate = 99725723;
 
-  bytes qrcodepng = 218976787;
+  optional bytes qrcodepng = 218976787;
 
   string serialnumber = 418274661;
 
@@ -5446,6 +5758,32 @@ enum jobStatusType {
   JOB_STATUS_TYPE_COMPLETED = 1;
 
   JOB_STATUS_TYPE_FAILED = 2;
+
+}
+
+
+
+enum managedByTypeType {
+
+  MANAGED_BY_TYPE_TYPE_SERVICE = 0;
+
+}
+
+
+
+enum parameterTypeType {
+
+  PARAMETER_TYPE_TYPE_STRINGLIST = 0;
+
+  PARAMETER_TYPE_TYPE_ARN = 1;
+
+  PARAMETER_TYPE_TYPE_ARNLIST = 2;
+
+  PARAMETER_TYPE_TYPE_STRING = 3;
+
+  PARAMETER_TYPE_TYPE_NUMBER = 4;
+
+  PARAMETER_TYPE_TYPE_NUMBERLIST = 5;
 
 }
 

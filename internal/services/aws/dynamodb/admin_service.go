@@ -24,8 +24,11 @@ func (s *DynamoDBService) adminListTables(region, marker string, limit int32) ([
 		return nil, "", err
 	}
 
+	// The proto limit is optional int32: zero means absent, which both
+	// planes normalise to the documented maximum before the Core's range
+	// validation; any other value is the Core's to accept or reject.
 	lim := listTablesMaxLimit
-	if limit > 0 {
+	if limit != 0 {
 		lim = int(limit)
 	}
 
@@ -156,36 +159,42 @@ func protoAttrDefsToStore(pbADs []*pb.AttributeDefinition) []*dbstore.AttributeD
 // ---------------------------------------------------------------------------
 // Admin item service methods
 //
-// These methods resolve the store, convert proto types, validate the table
-// is active, delegate to item core functions (which include all side
-// effects: stream capture, Kinesis destinations, global table replication),
-// and return proto-ready results.
+// These methods resolve the store, convert proto types, resolve the table
+// with the same per-operation semantics the HTTP plane enforces (reads
+// accept any table status, writes require ACTIVE), delegate to item core
+// functions (which include all side effects: stream capture, Kinesis
+// destinations, global table replication), and return proto-ready results.
 // ---------------------------------------------------------------------------
+
+// adminResolveTable resolves the store and table for an admin item
+// operation. Name validation and table lookup live in describeTableCore;
+// requireActive mirrors the HTTP plane's split — write handlers resolve
+// through validateAndGetActiveTable, read handlers through
+// validateAndGetTable — so both planes reject and accept the same table
+// states per operation.
+func (s *DynamoDBService) adminResolveTable(region, tableName string, requireActive bool) (dbstore.DynamoDBStoreInterface, *dbstore.Table, error) {
+	store, err := s.GetCachedStoreForRegion(region)
+	if err != nil {
+		return nil, nil, err
+	}
+	table, err := s.describeTableCore(store, tableName)
+	if err != nil {
+		return nil, nil, err
+	}
+	if requireActive && table.Status != dbstore.TableStatusActive {
+		return nil, nil, ErrTableNotActive
+	}
+	return store, table, nil
+}
 
 // adminGetItem retrieves a single item by primary key for the admin console.
 func (s *DynamoDBService) adminGetItem(ctx context.Context, region, tableName string, pbKey map[string]*pb.AttributeValue) (map[string]*pb.AttributeValue, error) {
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
-	store, err := s.GetCachedStoreForRegion(region)
+	store, table, err := s.adminResolveTable(region, tableName, false)
 	if err != nil {
 		return nil, err
 	}
 
-	table, err := s.describeTableCore(store, tableName)
-	if err != nil {
-		return nil, err
-	}
-	if table.Status != dbstore.TableStatusActive {
-		return nil, ErrTableNotActive
-	}
-
-	key := protoAVMapToStore(pbKey)
-	if !validateKeyValueNotEmpty(key) {
-		return nil, ErrInvalidParameter
-	}
-
-	item, err := s.getItemCore(ctx, store, tableName, key)
+	item, err := s.getItemCore(ctx, store, table, protoAVMapToStore(pbKey))
 	if err != nil {
 		if dbstore.IsItemNotFound(err) {
 			return map[string]*pb.AttributeValue{}, nil
@@ -203,34 +212,25 @@ type adminScanResult struct {
 	LastEvaluatedKey map[string]*pb.AttributeValue
 }
 
-// adminScan retrieves a paginated list of items for the admin console.
-// It delegates to scanItemsCore so that the limit-cap logic and store
-// access are shared with any other Core caller; no admin code path
-// touches the store layer directly.
-func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbStartKey map[string]*pb.AttributeValue) (*adminScanResult, error) {
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
-	store, err := s.GetCachedStoreForRegion(region)
+// adminScan retrieves a paginated list of items for the admin console. It
+// delegates to scanCore — the same single Scan implementation the data plane
+// uses — supplying a minimal parameter set (table, limit, exclusive start
+// key) with filters, projections and parallel segments left unset.
+func (s *DynamoDBService) adminScan(ctx context.Context, region, tableName string, limit int32, pbStartKey map[string]*pb.AttributeValue) (*adminScanResult, error) {
+	store, table, err := s.adminResolveTable(region, tableName, false)
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate table existence.
-	if _, err := s.describeTableCore(store, tableName); err != nil {
-		return nil, err
+	params := map[string]interface{}{"TableName": tableName}
+	if limit > 0 {
+		params["Limit"] = limit
 	}
-
-	marker := ""
 	if len(pbStartKey) > 0 {
-		marker = s.buildItemMarkerFromKey(store, tableName, protoAVMapToStore(pbStartKey))
+		params["ExclusiveStartKey"] = buildItemResponse(protoAVMapToStore(pbStartKey))
 	}
 
-	coreResult, err := s.scanItemsCore(store, ScanItemsInput{
-		TableName: tableName,
-		Limit:     int(limit),
-		Marker:    marker,
-	})
+	coreResult, err := s.scanCore(ctx, store, table, params)
 	if err != nil {
 		return nil, err
 	}
@@ -246,9 +246,8 @@ func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbSta
 		Items: pbItems,
 		Count: int32(len(coreResult.Items)),
 	}
-	if coreResult.NextMarker != "" && len(coreResult.Items) > 0 {
-		lastItem := coreResult.Items[len(coreResult.Items)-1]
-		result.LastEvaluatedKey = storeAVMapToProto(lastItem.Key)
+	if coreResult.LastEvaluatedKey != nil {
+		result.LastEvaluatedKey = storeAVMapToProto(coreResult.LastEvaluatedKey)
 	}
 
 	return result, nil
@@ -256,125 +255,39 @@ func (s *DynamoDBService) adminScan(region, tableName string, limit int32, pbSta
 
 // adminPutItem creates or replaces an item for the admin console.
 // It applies all side effects: stream capture, Kinesis destinations, and
-// global table replication — identical to the HTTP API path.
+// global table replication — identical to the HTTP API path, whose
+// validation (item size, key completeness, key types) lives in the shared
+// putItemCore.
 func (s *DynamoDBService) adminPutItem(ctx context.Context, region, tableName string, pbItem map[string]*pb.AttributeValue) (map[string]*pb.AttributeValue, error) {
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
-	store, err := s.GetCachedStoreForRegion(region)
+	store, table, err := s.adminResolveTable(region, tableName, true)
 	if err != nil {
 		return nil, err
 	}
 
-	table, err := s.describeTableCore(store, tableName)
-	if err != nil {
-		return nil, err
-	}
-	if table.Status != dbstore.TableStatusActive {
-		return nil, ErrTableNotActive
-	}
-
-	attrs := protoAVMapToStore(pbItem)
-
-	if itemSize := calculateItemSize(attrs); itemSize > maxItemSizeBytes {
-		return nil, ErrInvalidParameter
-	}
-
-	key := s.extractKeyFromItem(table, attrs)
-	if key == nil {
-		return nil, ErrMissingKey
-	}
-	if !validateKeyValueNotEmpty(key) {
-		return nil, ErrInvalidParameter
-	}
-
-	storedItem, _, err := s.putItemCore(ctx, store, region, table, key, attrs, nil)
+	result, err := s.putItemCore(ctx, store, region, PutItemCoreInput{
+		Table: table,
+		Item:  protoAVMapToStore(pbItem),
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	return storeAVMapToProto(storedItem.Attributes), nil
+	return storeAVMapToProto(result.StoredItem.Attributes), nil
 }
 
 // adminDeleteItem removes an item for the admin console.
 // It applies all side effects: stream capture, Kinesis destinations, and
-// global table replication — identical to the HTTP API path.
+// global table replication — identical to the HTTP API path, whose key
+// validation lives in the shared deleteItemCore.
 func (s *DynamoDBService) adminDeleteItem(ctx context.Context, region, tableName string, pbKey map[string]*pb.AttributeValue) error {
-	if tableName == "" {
-		return ErrInvalidParameter
-	}
-	store, err := s.GetCachedStoreForRegion(region)
+	store, table, err := s.adminResolveTable(region, tableName, true)
 	if err != nil {
 		return err
 	}
 
-	table, err := s.describeTableCore(store, tableName)
-	if err != nil {
-		return err
-	}
-	if table.Status != dbstore.TableStatusActive {
-		return ErrTableNotActive
-	}
-
-	key := protoAVMapToStore(pbKey)
-	if !validateKeyValueNotEmpty(key) {
-		return ErrInvalidParameter
-	}
-
-	_, err = s.deleteItemCore(ctx, store, region, table, key, nil)
+	_, err = s.deleteItemCore(ctx, store, region, DeleteItemCoreInput{
+		Table: table,
+		Key:   protoAVMapToStore(pbKey),
+	})
 	return err
-}
-
-// buildItemMarkerFromKey constructs a pagination marker from a key map.
-// This replaces the old admin_handler_items.go buildItemMarker method,
-// moving store knowledge into the service layer.
-func (s *DynamoDBService) buildItemMarkerFromKey(store dbstore.DynamoDBStoreInterface, tableName string, key map[string]*dbstore.AttributeValue) string {
-	table, err := store.Tables().Get(tableName)
-	if err != nil {
-		return tableName + dbstore.KeySep
-	}
-
-	pkName := ""
-	skName := ""
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dbstore.KeyTypeHash {
-			pkName = ks.AttributeName
-		} else if ks.KeyType == dbstore.KeyTypeRange {
-			skName = ks.AttributeName
-		}
-	}
-
-	pkValue := avToString(key[pkName])
-	if pkValue == "" {
-		return tableName + dbstore.KeySep
-	}
-
-	if skName != "" {
-		if key[skName] != nil {
-			skValue := avToString(key[skName])
-			if skValue != "" {
-				return tableName + dbstore.KeySep + pkValue + dbstore.KeySep + skValue
-			}
-		}
-	}
-
-	return tableName + dbstore.KeySep + pkValue
-}
-
-// avToString extracts a string representation of an AttributeValue for
-// use in pagination marker construction.
-func avToString(av *dbstore.AttributeValue) string {
-	if av == nil {
-		return ""
-	}
-	if av.S != nil {
-		return *av.S
-	}
-	if av.N != nil {
-		return *av.N
-	}
-	if av.B != nil {
-		return string(av.B)
-	}
-	return ""
 }

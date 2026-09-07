@@ -39,7 +39,7 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 	items, nextToken, err := h.service.listIdentityPoolsShortCore(store, ListIdentityPoolsInput{
 		MaxResults:         int(req.Msg.Maxresults),
 		MaxResultsProvided: true,
-		NextToken:          req.Msg.Nexttoken,
+		NextToken:          req.Msg.GetNexttoken(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -48,8 +48,8 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 	descriptions := make([]*pb.IdentityPoolShortDescription, 0, len(items))
 	for _, pool := range items {
 		descriptions = append(descriptions, &pb.IdentityPoolShortDescription{
-			Identitypoolid:   pool.ID,
-			Identitypoolname: pool.Name,
+			Identitypoolid:   proto.String(pool.ID),
+			Identitypoolname: proto.String(pool.Name),
 		})
 	}
 
@@ -57,7 +57,7 @@ func (h *AdminHandler) ListIdentityPools(ctx context.Context, req *connect.Reque
 		Identitypools: descriptions,
 	}
 	if nextToken != "" {
-		resp.Nexttoken = nextToken
+		resp.Nexttoken = proto.String(nextToken)
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -138,12 +138,12 @@ func poolOutToProto(p *IdentityPoolOut) *pb.IdentityPool {
 		Identitypoolname:               p.Name,
 		Allowunauthenticatedidentities: proto.Bool(p.AllowUnauthenticatedIdentities),
 		Allowclassicflow:               proto.Bool(p.AllowClassicFlow),
-		Developerprovidername:          p.DeveloperProviderName,
+		Developerprovidername:          proto.String(p.DeveloperProviderName),
 	}
 	for _, cp := range p.CognitoIdentityProviders {
 		resp.Cognitoidentityproviders = append(resp.Cognitoidentityproviders, &pb.CognitoIdentityProvider{
-			Providername:         cp.ProviderName,
-			Clientid:             cp.ClientID,
+			Providername:         proto.String(cp.ProviderName),
+			Clientid:             proto.String(cp.ClientID),
 			Serversidetokencheck: proto.Bool(cp.ServerSideTokenCheck),
 		})
 	}

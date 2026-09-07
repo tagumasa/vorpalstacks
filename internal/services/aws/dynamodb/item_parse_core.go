@@ -171,69 +171,16 @@ func parseAttributeValue(v interface{}) *dbstore.AttributeValue {
 	return nil
 }
 
+// buildItemResponse renders a typed attribute map in the wire shape; the
+// codec itself lives in the store package next to the AttributeValue type.
 func buildItemResponse(attrs map[string]*dbstore.AttributeValue) map[string]interface{} {
-	if attrs == nil {
-		return map[string]interface{}{}
-	}
-
-	result := make(map[string]interface{})
-	for k, v := range attrs {
-		result[k] = buildAttributeValueResponse(v)
-	}
-	return result
+	return dbstore.BuildItemWire(attrs)
 }
 
+// buildAttributeValueResponse renders one typed attribute value in the wire
+// shape, delegating to the store package's single wire codec.
 func buildAttributeValueResponse(av *dbstore.AttributeValue) map[string]interface{} {
-	if av == nil {
-		return nil
-	}
-
-	result := make(map[string]interface{})
-
-	if av.S != nil {
-		result["S"] = *av.S
-	}
-	if av.N != nil {
-		result["N"] = *av.N
-	}
-	if av.B != nil {
-		result["B"] = base64.StdEncoding.EncodeToString(av.B)
-	}
-	if av.BOOL != nil {
-		result["BOOL"] = *av.BOOL
-	}
-	if av.NULL != nil && *av.NULL {
-		result["NULL"] = true
-	}
-	if av.SS != nil {
-		result["SS"] = av.SS
-	}
-	if av.NS != nil {
-		result["NS"] = av.NS
-	}
-	if av.BS != nil {
-		var encodedBS []string
-		for _, b := range av.BS {
-			encodedBS = append(encodedBS, base64.StdEncoding.EncodeToString(b))
-		}
-		result["BS"] = encodedBS
-	}
-	if av.M != nil {
-		m := make(map[string]interface{})
-		for k, v := range av.M {
-			m[k] = buildAttributeValueResponse(v)
-		}
-		result["M"] = m
-	}
-	if av.L != nil {
-		var l []interface{}
-		for _, item := range av.L {
-			l = append(l, buildAttributeValueResponse(item))
-		}
-		result["L"] = l
-	}
-
-	return result
+	return dbstore.BuildAttributeValueWire(av)
 }
 
 func buildItemsResponse(items []*dbstore.Item) []map[string]interface{} {
@@ -326,6 +273,9 @@ func parseProjectionExpression(params map[string]interface{}) ([]string, error) 
 	attrs := splitAndTrim(projExpr, ",")
 	for _, attr := range attrs {
 		resolved := resolvePathTokens(attr, names)
+		if _, pathErr := parseDocPath(resolved); pathErr != nil {
+			return nil, ErrInvalidParameter
+		}
 		projection = append(projection, resolved)
 	}
 
@@ -381,11 +331,14 @@ func resolvePathTokens(path string, names map[string]string) string {
 func applyProjection(attrs map[string]*dbstore.AttributeValue, projection []string) map[string]*dbstore.AttributeValue {
 	result := make(map[string]*dbstore.AttributeValue)
 	for _, path := range projection {
-		val := getNestedAttrValueForProjection(attrs, path)
+		parts, pathErr := parseDocPath(path)
+		if pathErr != nil {
+			continue
+		}
+		val := getDocPathValue(attrs, parts)
 		if val == nil {
 			continue
 		}
-		parts := parseProjPathParts(path)
 		if len(parts) <= 1 {
 			key := path
 			if len(parts) == 1 {
@@ -405,7 +358,7 @@ func applyProjection(attrs map[string]*dbstore.AttributeValue, projection []stri
 	return result
 }
 
-func buildNestedValue(parts []projPathPart, leaf *dbstore.AttributeValue) *dbstore.AttributeValue {
+func buildNestedValue(parts []docPathPart, leaf *dbstore.AttributeValue) *dbstore.AttributeValue {
 	if len(parts) == 0 {
 		return leaf
 	}
@@ -420,7 +373,7 @@ func buildNestedValue(parts []projPathPart, leaf *dbstore.AttributeValue) *dbsto
 	return &dbstore.AttributeValue{M: m}
 }
 
-func mergeNestedValues(existing *dbstore.AttributeValue, nested *dbstore.AttributeValue, parts []projPathPart) {
+func mergeNestedValues(existing *dbstore.AttributeValue, nested *dbstore.AttributeValue, parts []docPathPart) {
 	if len(parts) == 0 || existing == nil {
 		return
 	}
@@ -450,101 +403,6 @@ func mergeNestedValues(existing *dbstore.AttributeValue, nested *dbstore.Attribu
 	}
 }
 
-func getNestedAttrValueForProjection(attrs map[string]*dbstore.AttributeValue, path string) *dbstore.AttributeValue {
-	parts := parseProjPathParts(path)
-	if len(parts) == 0 {
-		if v, ok := attrs[path]; ok {
-			return v
-		}
-		return nil
-	}
-
-	if len(parts) == 1 {
-		if v, ok := attrs[parts[0].name]; ok {
-			return v
-		}
-		return nil
-	}
-
-	topAttr := parts[0].name
-	topVal, ok := attrs[topAttr]
-	if !ok {
-		return nil
-	}
-
-	current := topVal
-	for i := 1; i < len(parts); i++ {
-		part := parts[i]
-		if part.isIndex {
-			if current.L == nil || part.index >= len(current.L) {
-				return nil
-			}
-			current = current.L[part.index]
-		} else {
-			if current.M == nil {
-				return nil
-			}
-			if v, exists := current.M[part.name]; exists {
-				current = v
-			} else {
-				return nil
-			}
-		}
-	}
-	return current
-}
-
-type projPathPart struct {
-	name    string
-	index   int
-	isIndex bool
-}
-
-func parseProjPathParts(path string) []projPathPart {
-	var parts []projPathPart
-	current := ""
-	i := 0
-
-	for i < len(path) {
-		c := path[i]
-		switch c {
-		case '.':
-			if current != "" {
-				parts = append(parts, projPathPart{name: current})
-				current = ""
-			}
-			i++
-		case '[':
-			if current != "" {
-				parts = append(parts, projPathPart{name: current})
-				current = ""
-			}
-			j := i + 1
-			for j < len(path) && path[j] != ']' {
-				j++
-			}
-			idxStr := path[i+1 : j]
-			idx := 0
-			for _, ch := range idxStr {
-				if ch >= '0' && ch <= '9' {
-					idx = idx*10 + int(ch-'0')
-				}
-			}
-			parts = append(parts, projPathPart{index: idx, isIndex: true})
-			i = j + 1
-		default:
-			current += string(c)
-			i++
-		}
-	}
-
-	if current != "" {
-		parts = append(parts, projPathPart{name: current})
-	}
-
-	return parts
-}
-
 func parseExclusiveStartKey(params map[string]interface{}) (map[string]*dbstore.AttributeValue, error) {
 	raw, present := params["ExclusiveStartKey"]
 	if !present || raw == nil {
@@ -561,29 +419,14 @@ func parseExclusiveStartKey(params map[string]interface{}) (map[string]*dbstore.
 }
 
 func getExpressionAttributes(params map[string]interface{}) (map[string]string, map[string]*dbstore.AttributeValue, error) {
-	names := make(map[string]string)
-	values := make(map[string]*dbstore.AttributeValue)
-
-	if namesMap, ok := params["ExpressionAttributeNames"].(map[string]interface{}); ok {
-		for k, v := range namesMap {
-			vs, ok := v.(string)
-			if !ok {
-				return nil, nil, ErrInvalidParameter
-			}
-			names[k] = vs
-		}
+	names, err := parseExpressionAttributeNames(params)
+	if err != nil {
+		return nil, nil, err
 	}
-
-	if valuesMap, ok := params["ExpressionAttributeValues"].(map[string]interface{}); ok {
-		for k, v := range valuesMap {
-			parsed := parseAttributeValue(v)
-			if parsed == nil {
-				return nil, nil, fmt.Errorf("invalid value for expression attribute %q", k)
-			}
-			values[k] = parsed
-		}
+	values, err := parseExpressionAttributeValues(params)
+	if err != nil {
+		return nil, nil, err
 	}
-
 	return names, values, nil
 }
 
@@ -630,22 +473,7 @@ func isValidDynamoDBNumber(n string) bool {
 	if abs.Cmp(numberMaxMagnitude) >= 0 || abs.Cmp(numberMinMagnitude) < 0 {
 		return false
 	}
-	return countSignificantDigits(n) <= numberMaxSignificantDigits
-}
-
-// countSignificantDigits counts the mantissa's significant digits: leading
-// and trailing zeros are trimmed, matching the DynamoDB number normalisation
-// (zero alone carries no significant digits).
-func countSignificantDigits(n string) int {
-	mantissa := n
-	if idx := strings.IndexAny(mantissa, "eE"); idx != -1 {
-		mantissa = mantissa[:idx]
-	}
-	mantissa = strings.TrimLeft(mantissa, "+-")
-	mantissa = strings.ReplaceAll(mantissa, ".", "")
-	mantissa = strings.TrimLeft(mantissa, "0")
-	mantissa = strings.TrimRight(mantissa, "0")
-	return len(mantissa)
+	return dbstore.CountSignificantDigits(n) <= numberMaxSignificantDigits
 }
 
 func buildUpdatedAttributesResponse(attrs map[string]*dbstore.AttributeValue, updatedAttrNames []string) map[string]interface{} {

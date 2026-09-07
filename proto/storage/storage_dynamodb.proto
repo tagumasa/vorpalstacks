@@ -106,7 +106,7 @@ message AttributeDefinition {
   ScalarAttributeType attribute_type = 2;
 }
 
-// ProvisionedThroughput represents the provisioned throughput.
+// WarmThroughput represents the warm throughput of a table.
 message WarmThroughput {
   int64 read_units_per_second = 1;
   int64 write_units_per_second = 2;
@@ -124,6 +124,8 @@ message OnDemandThroughput {
   int64 max_write_request_units = 2;
 }
 
+// ProvisionedThroughput represents the provisioned throughput of a table
+// or index.
 message ProvisionedThroughput {
   int64 read_capacity_units = 1;
   int64 write_capacity_units = 2;
@@ -141,13 +143,13 @@ message Projection {
 // GlobalSecondaryIndex represents a global secondary index.
 message GlobalSecondaryIndex {
   string index_name = 1;
-  string index_arn = 8;
-  repeated KeySchemaElement key_schema = 2;
-  Projection projection = 3;
-  ProvisionedThroughput provisioned_throughput = 4;
-  IndexStatus index_status = 5;
-  int64 index_size_bytes = 6;
-  int64 item_count = 7;
+  string index_arn = 2;
+  repeated KeySchemaElement key_schema = 3;
+  Projection projection = 4;
+  ProvisionedThroughput provisioned_throughput = 5;
+  IndexStatus index_status = 6;
+  int64 index_size_bytes = 7;
+  int64 item_count = 8;
 }
 
 // LocalSecondaryIndex represents a local secondary index.
@@ -157,6 +159,34 @@ message LocalSecondaryIndex {
   Projection projection = 3;
   int64 index_size_bytes = 4;
   int64 item_count = 5;
+}
+
+// SearchSchemaElement defines an attribute's role in a vector index search
+// schema: HASH partitions the index, INLINE_FILTER is projected for filtering.
+message SearchSchemaElement {
+  string attribute_name = 1;
+  string search_schema_element_type = 2;
+}
+
+// VectorIndex represents a vector index on a table.
+message VectorIndex {
+  string index_name = 1;
+  string vector_attribute_name = 2;
+  int64 dimensions = 3;
+  string distance_function = 4;  // COSINE | EUCLIDEAN | DOT_PRODUCT
+  Projection projection = 5;
+  repeated SearchSchemaElement search_schema = 6;
+  IndexStatus index_status = 7;
+  bool backfilling = 8;
+  string index_arn = 9;
+  int64 index_size_bytes = 10;
+  int64 item_count = 11;
+}
+
+// VectorIndexEntry is the stored record of one item's vector under one
+// vector index; the item's encoded primary key is part of the bucket key.
+message VectorIndexEntry {
+  repeated double vector = 1;
 }
 
 // StreamSpecification represents the DynamoDB streams specification.
@@ -202,37 +232,47 @@ message KinesisDataStreamDestination {
   string approximate_creation_date_time_precision = 4;
 }
 
-// Table represents a DynamoDB table.
+// Table represents a DynamoDB table. Fields are grouped logically —
+// identity, schema and configuration, runtime state, timestamps — so the
+// numbering reads in the order the concepts belong together.
 message Table {
+  // Identity.
   string name = 1;
   string arn = 2;
-  TableStatus status = 3;
-  google.protobuf.Timestamp creation_date_time = 4;
-  google.protobuf.Timestamp last_updated_date_time = 5;
-  repeated KeySchemaElement key_schema = 6;
-  repeated AttributeDefinition attribute_definitions = 7;
-  ProvisionedThroughput provisioned_throughput = 8;
-  BillingMode billing_mode = 9;
-  repeated GlobalSecondaryIndex global_secondary_indexes = 10;
-  repeated LocalSecondaryIndex local_secondary_indexes = 11;
+  // Schema and configuration.
+  repeated KeySchemaElement key_schema = 3;
+  repeated AttributeDefinition attribute_definitions = 4;
+  BillingMode billing_mode = 5;
+  ProvisionedThroughput provisioned_throughput = 6;
+  OnDemandThroughput on_demand_throughput = 7;
+  WarmThroughput warm_throughput = 8;
+  repeated GlobalSecondaryIndex global_secondary_indexes = 9;
+  repeated LocalSecondaryIndex local_secondary_indexes = 10;
+  repeated VectorIndex vector_indexes = 11;
   StreamSpecification stream_specification = 12;
   SSEDescription sse_description = 13;
-  int64 table_size_bytes = 14;
-  int64 item_count = 15;
-  repeated Tag tags = 16;
-  bool deletion_protection_enabled = 17;
-  string stream_arn = 18;
-  string latest_stream_label = 19;
-  TimeToLiveSpecification time_to_live = 20;
-  PointInTimeRecoveryDescription point_in_time_recovery = 21;
-  string resource_policy = 22;
-  repeated KinesisDataStreamDestination kinesis_data_stream_destinations = 23;
-  bool contributor_insights_enabled = 24;
-  string contributor_insights_mode = 26;
-  string table_class = 25;
-  WarmThroughput warm_throughput = 27;
-  OnDemandThroughput on_demand_throughput = 28;
-  RestoreSummary restore_summary = 29;
+  string table_class = 14;
+  bool deletion_protection_enabled = 15;
+  TimeToLiveSpecification time_to_live = 16;
+  PointInTimeRecoveryDescription point_in_time_recovery = 17;
+  string resource_policy = 18;
+  int32 resource_policy_revision_id = 19;
+  repeated KinesisDataStreamDestination kinesis_data_stream_destinations = 20;
+  bool contributor_insights_enabled = 21;
+  string contributor_insights_mode = 22;
+  google.protobuf.Timestamp contributor_insights_updated_at = 23;
+  string global_table_source_arn = 24;
+  repeated Tag tags = 25;
+  // Runtime state.
+  TableStatus status = 26;
+  int64 table_size_bytes = 27;
+  int64 item_count = 28;
+  string stream_arn = 29;
+  string latest_stream_label = 30;
+  RestoreSummary restore_summary = 31;
+  // Timestamps.
+  google.protobuf.Timestamp creation_date_time = 32;
+  google.protobuf.Timestamp last_updated_date_time = 33;
 }
 
 // AttributeValue represents a DynamoDB attribute value.
@@ -308,6 +348,7 @@ message Backup {
   ProvisionedThroughput provisioned_throughput = 16;
   repeated GlobalSecondaryIndex global_secondary_indexes = 17;
   repeated LocalSecondaryIndex local_secondary_indexes = 18;
+  repeated VectorIndex vector_indexes = 19;
 }
 
 // Replica represents a replica of a global table.
@@ -317,6 +358,10 @@ message Replica {
   string billing_mode = 3;
   int64 provisioned_read_capacity_units = 4;
   int64 provisioned_write_capacity_units = 5;
+  AutoScalingSettingsDescription read_auto_scaling_settings = 6;
+  repeated IndexAutoScalingSettings global_secondary_index_read_settings = 7;
+  string table_class = 8;
+  google.protobuf.Timestamp table_class_last_updated = 9;
 }
 
 // GlobalTable represents a global table in DynamoDB.
@@ -326,19 +371,14 @@ message GlobalTable {
   string global_table_status = 3;
   google.protobuf.Timestamp creation_date_time = 4;
   repeated Replica replication_group = 5;
+  AutoScalingSettingsDescription write_auto_scaling_settings = 6;
+  repeated IndexAutoScalingSettings global_secondary_index_write_settings = 7;
 }
 
-// TTLSpecification represents the TTL specification for a table.
-message TTLSpecification {
-  string table_name = 1;
-  bool enabled = 2;
-  string attribute_name = 3;
-}
-
-// Endpoint represents a DynamoDB endpoint.
-message Endpoint {
-  string address = 1;
-  int64 cache_period_in_minutes = 2;
+// BackupSnapshot is the stored item snapshot of a backup: the complete set
+// of items captured at backup time.
+message BackupSnapshot {
+  repeated Item items = 1;
 }
 
 // S3BucketSource represents an S3 bucket source for table import.
@@ -362,6 +402,10 @@ message ImportTableDescription {
   S3BucketSource s3_bucket_source = 10;
   string failure_code = 11;
   string failure_message = 12;
+  int64 imported_item_count = 13;
+  int64 error_count = 14;
+  string client_token = 15;
+  string input_compression_type = 16;
 }
 
 // ExportDescription represents the description of a table export.
@@ -381,6 +425,11 @@ message ExportDescription {
   string failure_message = 13;
   int64 billed_size_bytes = 14;
   google.protobuf.Timestamp export_time = 15;
+  string client_token = 16;
+  string s3_bucket_owner = 17;
+  string s3_sse_kms_key_id = 18;
+  string export_manifest = 19;
+  string export_type = 20;
 }
 
 // ContributorInsightsSummary represents the contributor insights summary.
@@ -388,4 +437,124 @@ message ContributorInsightsSummary {
   string table_name = 1;
   string index_name = 2;
   string contributor_insights_status = 3;
+}
+
+// TargetTrackingScalingPolicyConfiguration mirrors the model's
+// AutoScalingTargetTrackingScalingPolicyConfigurationDescription. The scalar
+// members are proto3 optional because absence is meaningful on the wire.
+message TargetTrackingScalingPolicyConfiguration {
+  optional bool disable_scale_in = 1;
+  optional int32 scale_in_cooldown = 2;
+  optional int32 scale_out_cooldown = 3;
+  double target_value = 4;
+}
+
+// AutoScalingPolicyDescription mirrors the model's AutoScalingPolicyDescription.
+message AutoScalingPolicyDescription {
+  optional string policy_name = 1;
+  TargetTrackingScalingPolicyConfiguration target_tracking_scaling_policy_configuration = 2;
+}
+
+// AutoScalingSettingsDescription mirrors the model's
+// AutoScalingSettingsDescription.
+message AutoScalingSettingsDescription {
+  optional int64 minimum_units = 1;
+  optional int64 maximum_units = 2;
+  optional bool auto_scaling_disabled = 3;
+  optional string auto_scaling_role_arn = 4;
+  repeated AutoScalingPolicyDescription scaling_policies = 5;
+}
+
+// IndexAutoScalingSettings is one index's stored settings: capacity units
+// plus the read and write auto-scaling descriptions. A stored write-side
+// entry leaves the read members unset and vice versa.
+message IndexAutoScalingSettings {
+  string index_name = 1;
+  optional int64 provisioned_read_capacity_units = 2;
+  optional int64 provisioned_write_capacity_units = 3;
+  AutoScalingSettingsDescription read = 4;
+  AutoScalingSettingsDescription write = 5;
+}
+
+// ReplicaAutoScalingDescription is one replica's stored auto-scaling state
+// for UpdateTableReplicaAutoScaling / DescribeTableReplicaAutoScaling.
+message ReplicaAutoScalingDescription {
+  string region_name = 1;
+  AutoScalingSettingsDescription read = 2;
+  AutoScalingSettingsDescription write = 3;
+  repeated IndexAutoScalingSettings global_secondary_indexes = 4;
+}
+
+// TableReplicaAutoScalingSettings is the stored table-level auto-scaling
+// record: the per-replica descriptions keyed by region.
+message TableReplicaAutoScalingSettings {
+  repeated ReplicaAutoScalingDescription replicas = 1;
+}
+
+// StreamUserIdentity identifies the actor that triggered a stream event;
+// service-initiated records (TTL expiry, replication) carry the Service
+// principal so consumers can tell them from client writes.
+message StreamUserIdentity {
+  string identity_type = 1;
+  string principal_id = 2;
+}
+
+// StoredStreamRecordData is the DynamoDB-specific portion of a stored
+// stream record; images are kept in their typed attribute-value form.
+message StoredStreamRecordData {
+  int64 approximate_creation_date_time = 1;
+  map<string, AttributeValue> keys = 2;
+  map<string, AttributeValue> new_image = 3;
+  map<string, AttributeValue> old_image = 4;
+  string sequence_number = 5;
+  int64 size_bytes = 6;
+  string stream_view_type = 7;
+}
+
+// StoredStreamRecord is the persisted form of one DynamoDB Streams record.
+message StoredStreamRecord {
+  string event_id = 1;
+  string event_name = 2;
+  string event_version = 3;
+  string event_source = 4;
+  string aws_region = 5;
+  StoredStreamRecordData dynamodb = 6;
+  string event_source_arn = 7;
+  StreamUserIdentity user_identity = 8;
+}
+
+// StreamSequenceCounter is the per-table sequence allocator state; the
+// trimmed floor records the highest sequence number removed by retention.
+message StreamSequenceCounter {
+  int64 last_seq = 1;
+  int64 trimmed_floor = 2;
+}
+
+// JournalRecord is the persisted form of one item mutation on a table with
+// point-in-time recovery enabled; the before image holds the attribute map
+// the item had before the mutation.
+message JournalRecord {
+  int64 timestamp = 1;
+  string operation = 2;
+  map<string, AttributeValue> key = 3;
+  map<string, AttributeValue> before_image = 4;
+}
+
+// ContributorAccess is one minute-bucketed access counter of a tracked key:
+// the event count and the consumed-throughput-unit total.
+message ContributorAccess {
+  int64 count = 1;
+  double units = 2;
+}
+
+// IdempotencyRecord is the persisted form of one TransactWriteItems client
+// request token: the request hash it was first used with, the claim state,
+// and when the record lapses. A completed record also carries the per-table
+// read capacity units the transaction's items consumed, which a same-token
+// replay reports instead of the write units of the initial call.
+message IdempotencyRecord {
+  string request_hash = 1;
+  string state = 2;
+  int64 expires_at = 3;
+  map<string, double> replay_read_units = 4;
 }

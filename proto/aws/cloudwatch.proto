@@ -203,6 +203,11 @@ service CloudWatchService {
   // Protocol: awsJson1_0
   rpc PutInsightRule(PutInsightRuleInput) returns (PutInsightRuleOutput);
 
+  // Creates or updates a log alarm. A log alarm evaluates the results of a CloudWatch Logs scheduled query against the configured threshold and comparison operator to determine its state. When you crea...
+  // HTTP:  
+  // Protocol: awsJson1_0
+  rpc PutLogAlarm(PutLogAlarmInput) returns (common.Empty);
+
   // Creates a managed Contributor Insights rule for a specified Amazon Web Services resource. When you enable a managed rule, you create a Contributor Insights rule that collects data from Amazon Web S...
   // HTTP:  
   // Protocol: awsJson1_0
@@ -284,7 +289,7 @@ message AlarmContributor {
 
   string statereason = 376138483;
 
-  string statetransitionedtimestamp = 46811093;
+  optional string statetransitionedtimestamp = 46811093;
 
 }
 
@@ -296,19 +301,19 @@ message AlarmHistoryItem {
 
   map<string, string> alarmcontributorattributes = 34317575;
 
-  string alarmcontributorid = 305558919;
+  optional string alarmcontributorid = 305558919;
 
-  string alarmname = 54095842;
+  optional string alarmname = 54095842;
 
   AlarmType alarmtype = 301805339;
 
-  string historydata = 30118600;
+  optional string historydata = 30118600;
 
   HistoryItemType historyitemtype = 442439537;
 
-  string historysummary = 53483226;
+  optional string historysummary = 53483226;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
 }
 
@@ -330,13 +335,13 @@ enum AlarmMuteRuleStatus {
 
 message AlarmMuteRuleSummary {
 
-  string alarmmuterulearn = 493590237;
+  optional string alarmmuterulearn = 493590237;
 
-  string expiredate = 454143207;
+  optional string expiredate = 454143207;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
-  string mutetype = 111213245;
+  optional string mutetype = 111213245;
 
   AlarmMuteRuleStatus status = 6222352;
 
@@ -362,7 +367,9 @@ enum AlarmType {
 
   ALARM_TYPE_COMPOSITEALARM = 0;
 
-  ALARM_TYPE_METRICALARM = 1;
+  ALARM_TYPE_LOGALARM = 1;
+
+  ALARM_TYPE_METRICALARM = 2;
 
 }
 
@@ -372,6 +379,8 @@ enum AlarmType {
 
 message AnomalyDetector {
 
+  optional string anomalydetectorid = 390762170;
+
   AnomalyDetectorConfiguration configuration = 442426458;
 
   repeated Dimension dimensions = 462933457;
@@ -380,13 +389,13 @@ message AnomalyDetector {
 
   MetricMathAnomalyDetector metricmathanomalydetector = 439381475;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
   SingleMetricAnomalyDetector singlemetricanomalydetector = 418531933;
 
-  string stat = 325549752;
+  optional string stat = 325549752;
 
   AnomalyDetectorStateValue statevalue = 334526008;
 
@@ -400,7 +409,7 @@ message AnomalyDetectorConfiguration {
 
   repeated Range excludedtimeranges = 31303297;
 
-  string metrictimezone = 528921359;
+  optional string metrictimezone = 528921359;
 
 }
 
@@ -472,9 +481,9 @@ message CompositeAlarm {
 
   ActionsSuppressedBy actionssuppressedby = 377750064;
 
-  string actionssuppressedreason = 20815779;
+  optional string actionssuppressedreason = 20815779;
 
-  string actionssuppressor = 486417535;
+  optional string actionssuppressor = 486417535;
 
   optional int32 actionssuppressorextensionperiod = 183723543;
 
@@ -482,27 +491,27 @@ message CompositeAlarm {
 
   repeated string alarmactions = 355779506;
 
-  string alarmarn = 276019462;
+  optional string alarmarn = 276019462;
 
-  string alarmconfigurationupdatedtimestamp = 51935494;
+  optional string alarmconfigurationupdatedtimestamp = 51935494;
 
-  string alarmdescription = 30583613;
+  optional string alarmdescription = 30583613;
 
-  string alarmname = 54095842;
+  optional string alarmname = 54095842;
 
-  string alarmrule = 516996973;
+  optional string alarmrule = 516996973;
 
   repeated string insufficientdataactions = 498450778;
 
   repeated string okactions = 377443763;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
-  string statereasondata = 262771075;
+  optional string statereasondata = 262771075;
 
-  string statetransitionedtimestamp = 46811093;
+  optional string statetransitionedtimestamp = 46811093;
 
-  string stateupdatedtimestamp = 375406848;
+  optional string stateupdatedtimestamp = 375406848;
 
   StateValue statevalue = 334526008;
 
@@ -514,7 +523,7 @@ message CompositeAlarm {
 
 message ConcurrentModificationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -524,7 +533,7 @@ message ConcurrentModificationException {
 
 message ConflictException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -534,11 +543,11 @@ message ConflictException {
 
 message DashboardEntry {
 
-  string dashboardarn = 108051951;
+  optional string dashboardarn = 108051951;
 
-  string dashboardname = 506599873;
+  optional string dashboardname = 506599873;
 
-  string lastmodified = 434048551;
+  optional string lastmodified = 434048551;
 
   optional int64 size = 105352829;
 
@@ -552,7 +561,7 @@ message DashboardInvalidInputError {
 
   repeated DashboardValidationMessage dashboardvalidationmessages = 36455465;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -562,7 +571,7 @@ message DashboardInvalidInputError {
 
 message DashboardNotFoundError {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -572,9 +581,9 @@ message DashboardNotFoundError {
 
 message DashboardValidationMessage {
 
-  string datapath = 505315415;
+  optional string datapath = 505315415;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -584,19 +593,19 @@ message DashboardValidationMessage {
 
 message Datapoint {
 
-  double average = 134712777;
+  optional double average = 134712777;
 
   map<string, double> extendedstatistics = 365818700;
 
-  double maximum = 43343394;
+  optional double maximum = 43343394;
 
-  double minimum = 438536856;
+  optional double minimum = 438536856;
 
-  double samplecount = 384919839;
+  optional double samplecount = 384919839;
 
-  double sum = 534303305;
+  optional double sum = 534303305;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   StandardUnit unit = 148989480;
 
@@ -622,17 +631,19 @@ message DeleteAlarmsInput {
 
 message DeleteAnomalyDetectorInput {
 
+  optional string anomalydetectorid = 390762170;
+
   repeated Dimension dimensions = 462933457;
 
   MetricMathAnomalyDetector metricmathanomalydetector = 439381475;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
   SingleMetricAnomalyDetector singlemetricanomalydetector = 418531933;
 
-  string stat = 325549752;
+  optional string stat = 325549752;
 
 }
 
@@ -692,7 +703,7 @@ message DescribeAlarmContributorsInput {
 
   string alarmname = 54095842;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -702,7 +713,7 @@ message DescribeAlarmContributorsOutput {
 
   repeated AlarmContributor alarmcontributors = 265859209;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -710,23 +721,23 @@ message DescribeAlarmContributorsOutput {
 
 message DescribeAlarmHistoryInput {
 
-  string alarmcontributorid = 305558919;
+  optional string alarmcontributorid = 305558919;
 
-  string alarmname = 54095842;
+  optional string alarmname = 54095842;
 
   repeated AlarmType alarmtypes = 445751884;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
   HistoryItemType historyitemtype = 442439537;
 
   optional int32 maxrecords = 220314370;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   ScanBy scanby = 344142854;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
 }
 
@@ -736,7 +747,7 @@ message DescribeAlarmHistoryOutput {
 
   repeated AlarmHistoryItem alarmhistoryitems = 152760951;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -746,7 +757,7 @@ message DescribeAlarmsForMetricInput {
 
   repeated Dimension dimensions = 462933457;
 
-  string extendedstatistic = 285620763;
+  optional string extendedstatistic = 285620763;
 
   string metricname = 106340219;
 
@@ -772,21 +783,21 @@ message DescribeAlarmsForMetricOutput {
 
 message DescribeAlarmsInput {
 
-  string actionprefix = 67679956;
+  optional string actionprefix = 67679956;
 
-  string alarmnameprefix = 96412406;
+  optional string alarmnameprefix = 96412406;
 
   repeated string alarmnames = 90874583;
 
   repeated AlarmType alarmtypes = 445751884;
 
-  string childrenofalarmname = 204127700;
+  optional string childrenofalarmname = 204127700;
 
   optional int32 maxrecords = 220314370;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string parentsofalarmname = 512433260;
+  optional string parentsofalarmname = 512433260;
 
   StateValue statevalue = 334526008;
 
@@ -798,9 +809,11 @@ message DescribeAlarmsOutput {
 
   repeated CompositeAlarm compositealarms = 214076095;
 
+  repeated LogAlarm logalarms = 238482392;
+
   repeated MetricAlarm metricalarms = 117806408;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -808,17 +821,19 @@ message DescribeAlarmsOutput {
 
 message DescribeAnomalyDetectorsInput {
 
+  repeated string anomalydetectorids = 341755903;
+
   repeated AnomalyDetectorType anomalydetectortypes = 274334014;
 
   repeated Dimension dimensions = 462933457;
 
   optional int32 maxresults = 275174450;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -828,7 +843,7 @@ message DescribeAnomalyDetectorsOutput {
 
   repeated AnomalyDetector anomalydetectors = 399089190;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -838,7 +853,7 @@ message DescribeInsightRulesInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -848,7 +863,7 @@ message DescribeInsightRulesOutput {
 
   repeated InsightRule insightrules = 87263475;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -872,7 +887,7 @@ message DimensionFilter {
 
   string name = 266367751;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -986,6 +1001,18 @@ enum EvaluationState {
 
 
 
+// The evaluation window that an alarm uses to select the range of metric data that it evaluates each time it runs. This is a union type. Set exactly one of its members, SlidingWindow or WallClockWind...
+
+message EvaluationWindow {
+
+  SlidingWindow slidingwindow = 45916946;
+
+  WallClockWindow wallclockwindow = 323548406;
+
+}
+
+
+
 message GetAlarmMuteRuleInput {
 
   string alarmmuterulename = 530877511;
@@ -996,23 +1023,23 @@ message GetAlarmMuteRuleInput {
 
 message GetAlarmMuteRuleOutput {
 
-  string alarmmuterulearn = 493590237;
+  optional string alarmmuterulearn = 493590237;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string expiredate = 454143207;
+  optional string expiredate = 454143207;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   MuteTargets mutetargets = 356717131;
 
-  string mutetype = 111213245;
+  optional string mutetype = 111213245;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   Rule rule = 475696372;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   AlarmMuteRuleStatus status = 6222352;
 
@@ -1030,11 +1057,11 @@ message GetDashboardInput {
 
 message GetDashboardOutput {
 
-  string dashboardarn = 108051951;
+  optional string dashboardarn = 108051951;
 
-  string dashboardbody = 3403236;
+  optional string dashboardbody = 3403236;
 
-  string dashboardname = 506599873;
+  optional string dashboardname = 506599873;
 
 }
 
@@ -1054,7 +1081,7 @@ message GetDatasetOutput {
 
   string datasetid = 488191983;
 
-  string kmskeyarn = 110041649;
+  optional string kmskeyarn = 110041649;
 
 }
 
@@ -1068,7 +1095,7 @@ message GetInsightRuleReportInput {
 
   repeated string metrics = 436365847;
 
-  string orderby = 353010019;
+  optional string orderby = 353010019;
 
   int32 period = 119833637;
 
@@ -1082,9 +1109,9 @@ message GetInsightRuleReportInput {
 
 message GetInsightRuleReportOutput {
 
-  double aggregatevalue = 225313242;
+  optional double aggregatevalue = 225313242;
 
-  string aggregationstatistic = 333233758;
+  optional string aggregationstatistic = 333233758;
 
   optional int64 approximateuniquecount = 55617722;
 
@@ -1108,7 +1135,7 @@ message GetMetricDataInput {
 
   repeated MetricDataQuery metricdataqueries = 92209504;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   ScanBy scanby = 344142854;
 
@@ -1124,7 +1151,7 @@ message GetMetricDataOutput {
 
   repeated MetricDataResult metricdataresults = 373784842;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1158,7 +1185,7 @@ message GetMetricStatisticsOutput {
 
   repeated Datapoint datapoints = 37512135;
 
-  string label = 516747934;
+  optional string label = 516747934;
 
 }
 
@@ -1174,27 +1201,27 @@ message GetMetricStreamInput {
 
 message GetMetricStreamOutput {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
   repeated MetricStreamFilter excludefilters = 426990841;
 
-  string firehosearn = 55494200;
+  optional string firehosearn = 55494200;
 
   repeated MetricStreamFilter includefilters = 90967031;
 
   optional bool includelinkedaccountsmetrics = 356901952;
 
-  string lastupdatedate = 65755725;
+  optional string lastupdatedate = 65755725;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   MetricStreamOutputFormat outputformat = 519139704;
 
-  string rolearn = 322567169;
+  optional string rolearn = 322567169;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
   repeated MetricStreamStatisticsConfiguration statisticsconfigurations = 175876178;
 
@@ -1206,7 +1233,7 @@ message GetMetricWidgetImageInput {
 
   string metricwidget = 283026730;
 
-  string outputformat = 519139704;
+  optional string outputformat = 519139704;
 
 }
 
@@ -1214,7 +1241,7 @@ message GetMetricWidgetImageInput {
 
 message GetMetricWidgetImageOutput {
 
-  bytes metricwidgetimage = 484815311;
+  optional bytes metricwidgetimage = 484815311;
 
 }
 
@@ -1300,21 +1327,21 @@ message InsightRuleContributorDatapoint {
 
 message InsightRuleMetricDatapoint {
 
-  double average = 134712777;
+  optional double average = 134712777;
 
-  double maxcontributorvalue = 389006680;
+  optional double maxcontributorvalue = 389006680;
 
-  double maximum = 43343394;
+  optional double maximum = 43343394;
 
-  double minimum = 438536856;
+  optional double minimum = 438536856;
 
-  double samplecount = 384919839;
+  optional double samplecount = 384919839;
 
-  double sum = 534303305;
+  optional double sum = 534303305;
 
   string timestamp = 162390468;
 
-  double uniquecontributors = 504374565;
+  optional double uniquecontributors = 504374565;
 
 }
 
@@ -1324,7 +1351,7 @@ message InsightRuleMetricDatapoint {
 
 message InternalServiceFault {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1334,7 +1361,7 @@ message InternalServiceFault {
 
 message InvalidFormatFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1344,7 +1371,7 @@ message InvalidFormatFault {
 
 message InvalidNextToken {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1354,7 +1381,7 @@ message InvalidNextToken {
 
 message InvalidParameterCombinationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1364,7 +1391,7 @@ message InvalidParameterCombinationException {
 
 message InvalidParameterValueException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1404,7 +1431,7 @@ message KmsKeyNotFoundException {
 
 message LabelOptions {
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
 
 }
 
@@ -1414,7 +1441,7 @@ message LabelOptions {
 
 message LimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1424,7 +1451,7 @@ message LimitExceededException {
 
 message LimitExceededFault {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1432,11 +1459,11 @@ message LimitExceededFault {
 
 message ListAlarmMuteRulesInput {
 
-  string alarmname = 54095842;
+  optional string alarmname = 54095842;
 
   optional int32 maxrecords = 220314370;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated AlarmMuteRuleStatus statuses = 374056024;
 
@@ -1448,7 +1475,7 @@ message ListAlarmMuteRulesOutput {
 
   repeated AlarmMuteRuleSummary alarmmuterulesummaries = 440906836;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1456,9 +1483,9 @@ message ListAlarmMuteRulesOutput {
 
 message ListDashboardsInput {
 
-  string dashboardnameprefix = 301015421;
+  optional string dashboardnameprefix = 301015421;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1468,7 +1495,7 @@ message ListDashboardsOutput {
 
   repeated DashboardEntry dashboardentries = 281104826;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1478,7 +1505,7 @@ message ListManagedInsightRulesInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string resourcearn = 369516653;
 
@@ -1490,7 +1517,7 @@ message ListManagedInsightRulesOutput {
 
   repeated ManagedRuleDescription managedrules = 347090906;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1500,7 +1527,7 @@ message ListMetricStreamsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1510,7 +1537,7 @@ message ListMetricStreamsOutput {
 
   repeated MetricStreamEntry entries = 481075860;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1522,13 +1549,13 @@ message ListMetricsInput {
 
   optional bool includelinkedaccounts = 228605043;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string owningaccount = 339968073;
+  optional string owningaccount = 339968073;
 
   RecentlyActive recentlyactive = 179617336;
 
@@ -1540,7 +1567,7 @@ message ListMetricsOutput {
 
   repeated Metric metrics = 436365847;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string owningaccounts = 21159138;
 
@@ -1564,6 +1591,60 @@ message ListTagsForResourceOutput {
 
 
 
+// The details about a log alarm.
+
+message LogAlarm {
+
+  optional int32 actionloglinecount = 505597453;
+
+  optional string actionloglinerolearn = 673897;
+
+  optional bool actionsenabled = 126027878;
+
+  repeated string alarmactions = 355779506;
+
+  optional string alarmarn = 276019462;
+
+  optional string alarmconfigurationupdatedtimestamp = 51935494;
+
+  optional string alarmdescription = 30583613;
+
+  optional string alarmname = 54095842;
+
+  ComparisonOperator comparisonoperator = 7059861;
+
+  EvaluationState evaluationstate = 338863857;
+
+  repeated string insufficientdataactions = 498450778;
+
+  repeated string okactions = 377443763;
+
+  optional int32 queryresultstoalarm = 188456732;
+
+  optional int32 queryresultstoevaluate = 315639558;
+
+  ScheduledQueryConfiguration scheduledqueryconfiguration = 48313143;
+
+  optional string statereason = 376138483;
+
+  optional string statereasondata = 262771075;
+
+  optional string statetransitionedtimestamp = 46811093;
+
+  optional string stateupdatedtimestamp = 375406848;
+
+  StateValue statevalue = 334526008;
+
+  optional double threshold = 394884505;
+
+  optional string treatmissingdata = 226418150;
+
+  WarmUpConfiguration warmupconfiguration = 439442074;
+
+}
+
+
+
 // Contains the information that's required to enable a managed Contributor Insights rule for an Amazon Web Services resource.
 
 message ManagedRule {
@@ -1582,11 +1663,11 @@ message ManagedRule {
 
 message ManagedRuleDescription {
 
-  string resourcearn = 369516653;
+  optional string resourcearn = 369516653;
 
   ManagedRuleState rulestate = 419921189;
 
-  string templatename = 480529457;
+  optional string templatename = 480529457;
 
 }
 
@@ -1608,9 +1689,9 @@ message ManagedRuleState {
 
 message MessageData {
 
-  string code = 425572629;
+  optional string code = 425572629;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -1622,9 +1703,9 @@ message Metric {
 
   repeated Dimension dimensions = 462933457;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
 }
 
@@ -1638,13 +1719,13 @@ message MetricAlarm {
 
   repeated string alarmactions = 355779506;
 
-  string alarmarn = 276019462;
+  optional string alarmarn = 276019462;
 
-  string alarmconfigurationupdatedtimestamp = 51935494;
+  optional string alarmconfigurationupdatedtimestamp = 51935494;
 
-  string alarmdescription = 30583613;
+  optional string alarmdescription = 30583613;
 
-  string alarmname = 54095842;
+  optional string alarmname = 54095842;
 
   ComparisonOperator comparisonoperator = 7059861;
 
@@ -1652,7 +1733,7 @@ message MetricAlarm {
 
   repeated Dimension dimensions = 462933457;
 
-  string evaluatelowsamplecountpercentile = 64366323;
+  optional string evaluatelowsamplecountpercentile = 64366323;
 
   EvaluationCriteria evaluationcriteria = 307988387;
 
@@ -1662,39 +1743,43 @@ message MetricAlarm {
 
   EvaluationState evaluationstate = 338863857;
 
-  string extendedstatistic = 285620763;
+  EvaluationWindow evaluationwindow = 269053504;
+
+  optional string extendedstatistic = 285620763;
 
   repeated string insufficientdataactions = 498450778;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
   repeated MetricDataQuery metrics = 436365847;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
   repeated string okactions = 377443763;
 
   optional int32 period = 119833637;
 
-  string statereason = 376138483;
+  optional string statereason = 376138483;
 
-  string statereasondata = 262771075;
+  optional string statereasondata = 262771075;
 
-  string statetransitionedtimestamp = 46811093;
+  optional string statetransitionedtimestamp = 46811093;
 
-  string stateupdatedtimestamp = 375406848;
+  optional string stateupdatedtimestamp = 375406848;
 
   StateValue statevalue = 334526008;
 
   Statistic statistic = 67293470;
 
-  double threshold = 394884505;
+  optional double threshold = 394884505;
 
-  string thresholdmetricid = 41342194;
+  optional string thresholdmetricid = 41342194;
 
-  string treatmissingdata = 226418150;
+  optional string treatmissingdata = 226418150;
 
   StandardUnit unit = 148989480;
+
+  WarmUpConfiguration warmupconfiguration = 439442074;
 
 }
 
@@ -1714,13 +1799,13 @@ message MetricCharacteristics {
 
 message MetricDataQuery {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
-  string expression = 193051916;
+  optional string expression = 193051916;
 
   string id = 384350465;
 
-  string label = 516747934;
+  optional string label = 516747934;
 
   MetricStat metricstat = 167166628;
 
@@ -1736,9 +1821,9 @@ message MetricDataQuery {
 
 message MetricDataResult {
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string label = 516747934;
+  optional string label = 516747934;
 
   repeated MessageData messages = 409018326;
 
@@ -1766,11 +1851,11 @@ message MetricDatum {
 
   optional int32 storageresolution = 194430293;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   StandardUnit unit = 148989480;
 
-  double value = 289929579;
+  optional double value = 289929579;
 
   repeated double values = 223158876;
 
@@ -1808,19 +1893,19 @@ message MetricStat {
 
 message MetricStreamEntry {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string firehosearn = 55494200;
+  optional string firehosearn = 55494200;
 
-  string lastupdatedate = 65755725;
+  optional string lastupdatedate = 65755725;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   MetricStreamOutputFormat outputformat = 519139704;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
 }
 
@@ -1832,7 +1917,7 @@ message MetricStreamFilter {
 
   repeated string metricnames = 56384300;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
 }
 
@@ -1878,7 +1963,7 @@ message MetricStreamStatisticsMetric {
 
 message MissingRequiredParameterException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1908,13 +1993,13 @@ enum OTelEnrichmentStatus {
 
 message PartialFailure {
 
-  string exceptiontype = 176478087;
+  optional string exceptiontype = 176478087;
 
-  string failurecode = 84707897;
+  optional string failurecode = 84707897;
 
-  string failuredescription = 249093686;
+  optional string failuredescription = 249093686;
 
-  string failureresource = 315801394;
+  optional string failureresource = 315801394;
 
 }
 
@@ -1922,9 +2007,9 @@ message PartialFailure {
 
 message PutAlarmMuteRuleInput {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string expiredate = 454143207;
+  optional string expiredate = 454143207;
 
   MuteTargets mutetargets = 356717131;
 
@@ -1932,7 +2017,7 @@ message PutAlarmMuteRuleInput {
 
   Rule rule = 475696372;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   repeated Tag tags = 381526209;
 
@@ -1950,19 +2035,21 @@ message PutAnomalyDetectorInput {
 
   MetricMathAnomalyDetector metricmathanomalydetector = 439381475;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
   SingleMetricAnomalyDetector singlemetricanomalydetector = 418531933;
 
-  string stat = 325549752;
+  optional string stat = 325549752;
 
 }
 
 
 
 message PutAnomalyDetectorOutput {
+
+  optional string anomalydetectorid = 390762170;
 
 }
 
@@ -1972,7 +2059,7 @@ message PutCompositeAlarmInput {
 
   optional bool actionsenabled = 126027878;
 
-  string actionssuppressor = 486417535;
+  optional string actionssuppressor = 486417535;
 
   optional int32 actionssuppressorextensionperiod = 183723543;
 
@@ -1980,7 +2067,7 @@ message PutCompositeAlarmInput {
 
   repeated string alarmactions = 355779506;
 
-  string alarmdescription = 30583613;
+  optional string alarmdescription = 30583613;
 
   string alarmname = 54095842;
 
@@ -2024,7 +2111,7 @@ message PutInsightRuleInput {
 
   string rulename = 214688793;
 
-  string rulestate = 419921189;
+  optional string rulestate = 419921189;
 
   repeated Tag tags = 381526209;
 
@@ -2033,6 +2120,44 @@ message PutInsightRuleInput {
 
 
 message PutInsightRuleOutput {
+
+}
+
+
+
+message PutLogAlarmInput {
+
+  optional int32 actionloglinecount = 505597453;
+
+  optional string actionloglinerolearn = 673897;
+
+  optional bool actionsenabled = 126027878;
+
+  repeated string alarmactions = 355779506;
+
+  optional string alarmdescription = 30583613;
+
+  string alarmname = 54095842;
+
+  ComparisonOperator comparisonoperator = 7059861;
+
+  repeated string insufficientdataactions = 498450778;
+
+  repeated string okactions = 377443763;
+
+  int32 queryresultstoalarm = 188456732;
+
+  int32 queryresultstoevaluate = 315639558;
+
+  ScheduledQueryConfiguration scheduledqueryconfiguration = 48313143;
+
+  repeated Tag tags = 381526209;
+
+  double threshold = 394884505;
+
+  optional string treatmissingdata = 226418150;
+
+  WarmUpConfiguration warmupconfiguration = 439442074;
 
 }
 
@@ -2060,7 +2185,7 @@ message PutMetricAlarmInput {
 
   repeated string alarmactions = 355779506;
 
-  string alarmdescription = 30583613;
+  optional string alarmdescription = 30583613;
 
   string alarmname = 54095842;
 
@@ -2070,7 +2195,7 @@ message PutMetricAlarmInput {
 
   repeated Dimension dimensions = 462933457;
 
-  string evaluatelowsamplecountpercentile = 64366323;
+  optional string evaluatelowsamplecountpercentile = 64366323;
 
   EvaluationCriteria evaluationcriteria = 307988387;
 
@@ -2078,15 +2203,17 @@ message PutMetricAlarmInput {
 
   optional int32 evaluationperiods = 214794856;
 
-  string extendedstatistic = 285620763;
+  EvaluationWindow evaluationwindow = 269053504;
+
+  optional string extendedstatistic = 285620763;
 
   repeated string insufficientdataactions = 498450778;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
   repeated MetricDataQuery metrics = 436365847;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
   repeated string okactions = 377443763;
 
@@ -2096,13 +2223,15 @@ message PutMetricAlarmInput {
 
   repeated Tag tags = 381526209;
 
-  double threshold = 394884505;
+  optional double threshold = 394884505;
 
-  string thresholdmetricid = 41342194;
+  optional string thresholdmetricid = 41342194;
 
-  string treatmissingdata = 226418150;
+  optional string treatmissingdata = 226418150;
 
   StandardUnit unit = 148989480;
+
+  WarmUpConfiguration warmupconfiguration = 439442074;
 
 }
 
@@ -2148,7 +2277,7 @@ message PutMetricStreamInput {
 
 message PutMetricStreamOutput {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -2174,11 +2303,21 @@ enum RecentlyActive {
 
 
 
+// The operation could not be completed because the request conflicts with the current state of the alarm or its underlying scheduled query resource.
+
+message ResourceConflict {
+
+  optional string message = 82970853;
+
+}
+
+
+
 // The named resource does not exist.
 
 message ResourceNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2188,11 +2327,11 @@ message ResourceNotFound {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
 }
 
@@ -2226,7 +2365,43 @@ message Schedule {
 
   string expression = 193051916;
 
-  string timezone = 246302531;
+  optional string timezone = 246302531;
+
+}
+
+
+
+// Contains the schedule expression and time-range offsets that define when a scheduled query runs and what time range each execution covers.
+
+message ScheduleConfiguration {
+
+  optional int64 endtimeoffset = 47768649;
+
+  string scheduleexpression = 446089471;
+
+  int64 starttimeoffset = 452053242;
+
+}
+
+
+
+// The configuration of the CloudWatch Logs scheduled query that backs a log alarm.
+
+message ScheduledQueryConfiguration {
+
+  string aggregationexpression = 224713548;
+
+  repeated string loggroupidentifiers = 163339673;
+
+  optional string queryarn = 490942167;
+
+  string querystring = 435938663;
+
+  ScheduleConfiguration scheduleconfiguration = 526075047;
+
+  string scheduledqueryrolearn = 532331068;
+
+  repeated Tag tags = 381526209;
 
 }
 
@@ -2238,7 +2413,7 @@ message SetAlarmStateInput {
 
   string statereason = 376138483;
 
-  string statereasondata = 262771075;
+  optional string statereasondata = 262771075;
 
   StateValue statevalue = 334526008;
 
@@ -2250,15 +2425,23 @@ message SetAlarmStateInput {
 
 message SingleMetricAnomalyDetector {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
   repeated Dimension dimensions = 462933457;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string namespace = 355353153;
+  optional string namespace = 355353153;
 
-  string stat = 325549752;
+  optional string stat = 325549752;
+
+}
+
+
+
+// An evaluation window that advances each time the alarm is evaluated, forming a rolling time window. This is the default evaluation window. A sliding window has no additional configuration options. ...
+
+message SlidingWindow {
 
 }
 
@@ -2473,6 +2656,28 @@ message UntagResourceInput {
 
 
 message UntagResourceOutput {
+
+}
+
+
+
+// An evaluation window that aligns the evaluated range to fixed clock boundaries that match the alarm's period, such as the top of the hour, midnight, or the start of the calendar week, optionally in...
+
+message WallClockWindow {
+
+  optional string timezone = 246302531;
+
+}
+
+
+
+// The configuration settings that define the warm-up behavior for an alarm. Use these settings to delay alarm evaluation after you create or update the alarm, which reduces alarm noise while a new re...
+
+message WarmUpConfiguration {
+
+  optional bool onlystartevaluatingafterwarmupperiodends = 42457515;
+
+  int32 warmupperioddurationinminutes = 143115257;
 
 }
 

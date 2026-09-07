@@ -154,6 +154,25 @@ func (s *BaseStore) ScanPrefix(prefix string, fn func(key string, value []byte) 
 	return iter.Error()
 }
 
+// ScanPrefixReverse iterates over items with a given prefix in descending
+// key order. When before is non-empty, iteration starts at the largest key
+// strictly less than before; otherwise it starts at the largest key in the
+// prefix.
+func (s *BaseStore) ScanPrefixReverse(prefix, before string, fn func(key string, value []byte) error) error {
+	var beforeKey []byte
+	if before != "" {
+		beforeKey = []byte(before)
+	}
+	iter := s.bucket.ScanPrefixReverse([]byte(prefix), beforeKey)
+	defer iter.Close()
+	for iter.Next() {
+		if err := fn(string(iter.Key()), iter.Value()); err != nil {
+			return err
+		}
+	}
+	return iter.Error()
+}
+
 // DeleteByPrefix deletes all items with a given prefix.
 func (s *BaseStore) DeleteByPrefix(prefix string) error {
 	iter := s.bucket.ScanPrefix([]byte(prefix))

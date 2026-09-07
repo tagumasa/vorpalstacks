@@ -83,9 +83,9 @@ func (r *TestRunner) runIoTIntegrationRuleActionTests(tc *iotTestContext) []Test
 			return fmt.Errorf("iotdataplane.Publish: %w", err)
 		}
 
-		// 4. Poll SQS for the message.
+		// 4. Poll SQS for the message. ReceiveMessage already waits
+		// server-side via WaitTimeSeconds, so no leading sleep is needed.
 		for i := 0; i < 10; i++ {
-			time.Sleep(1 * time.Second)
 			recvOut, err := sqsClient.ReceiveMessage(ctx, &sqs.ReceiveMessageInput{
 				QueueUrl:            aws.String(queueURL),
 				MaxNumberOfMessages: 10,
@@ -165,8 +165,8 @@ func (r *TestRunner) runIoTIntegrationRuleActionTests(tc *iotTestContext) []Test
 
 		// Poll the CloudWatch Logs API: the message must be readable from the
 		// configured group, immediately, through the API read plane.
-		for i := 0; i < 10; i++ {
-			time.Sleep(1 * time.Second)
+		for i := 0; i < 40; i++ {
+			time.Sleep(250 * time.Millisecond)
 			streams, err := cwlClient.DescribeLogStreams(ctx, &cloudwatchlogs.DescribeLogStreamsInput{
 				LogGroupName: aws.String(logGroupName),
 			})

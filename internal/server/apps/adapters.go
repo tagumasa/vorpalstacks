@@ -484,16 +484,33 @@ func (a *dynamoDBInvokerAdapter) recordContributorQuery(ctx context.Context, s d
 	if !table.ContributorInsightsEnabled {
 		return
 	}
-	pkName := ""
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == dynamodbstore.KeyTypeHash {
-			pkName = ks.AttributeName
-			break
-		}
-	}
+	pkName := hashKeyName(table)
 	if pkName == "" {
 		return
 	}
+	value := partitionKeyAttr(table, partitionKeyValue)
+	if err := s.RecordContributorQuery(ctx, table.Name, map[string]*dynamodbstore.AttributeValue{pkName: value}); err != nil {
+		logs.Warn("failed to record contributor query event",
+			logs.String("table", table.Name), logs.Err(err))
+	}
+}
+
+// hashKeyName returns the attribute name of the table's hash key, or an
+// empty string when the schema carries none.
+func hashKeyName(table *dynamodbstore.Table) string {
+	for _, ks := range table.KeySchema {
+		if ks.KeyType == dynamodbstore.KeyTypeHash {
+			return ks.AttributeName
+		}
+	}
+	return ""
+}
+
+// partitionKeyAttr builds the partition-key attribute value with the raw
+// partition value typed from the table's attribute definitions, so scans
+// and contributor accounting render the same key series as item writes.
+func partitionKeyAttr(table *dynamodbstore.Table, partitionKeyValue string) *dynamodbstore.AttributeValue {
+	pkName := hashKeyName(table)
 	pkType := dynamodbstore.ScalarAttributeTypeS
 	for _, def := range table.AttributeDefinitions {
 		if def.AttributeName == pkName {
@@ -510,10 +527,7 @@ func (a *dynamoDBInvokerAdapter) recordContributorQuery(ctx context.Context, s d
 	default:
 		value.S = &partitionKeyValue
 	}
-	if err := s.RecordContributorQuery(ctx, table.Name, map[string]*dynamodbstore.AttributeValue{pkName: value}); err != nil {
-		logs.Warn("failed to record contributor query event",
-			logs.String("table", table.Name), logs.Err(err))
-	}
+	return value
 }
 
 // GetItem retrieves a single item from DynamoDB by key.
@@ -609,9 +623,12 @@ func (a *dynamoDBInvokerAdapter) Query(ctx context.Context, region, tableName, p
 	if limit <= 0 {
 		limit = 1000
 	}
+	// The partition scan takes an EncodeKeyValue rendering of the partition
+	// value, the same form item keys carry.
+	encodedPartition := dynamodbstore.EncodeKeyValue(partitionKeyAttr(table, partitionKeyValue))
 	var results []map[string]interface{}
 	count := 0
-	_, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, table, partitionKeyValue, dynamodbstore.ScanOptions{}, func(item *dynamodbstore.Item) error {
+	_, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, table, encodedPartition, dynamodbstore.ScanOptions{}, func(item *dynamodbstore.Item) error {
 		if count >= limit {
 			return errScanLimitReached
 		}
@@ -681,7 +698,10 @@ func (a *dynamoDBInvokerAdapter) QueryWithPagination(ctx context.Context, region
 	}
 	opts := dynamodbstore.ScanOptions{Limit: limit, Marker: exclusiveStartKey}
 	var results []map[string]interface{}
-	nextMarker, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, table, partitionKeyValue, opts, func(item *dynamodbstore.Item) error {
+	// The partition scan takes an EncodeKeyValue rendering of the partition
+	// value, the same form item keys carry.
+	encodedPartition := dynamodbstore.EncodeKeyValue(partitionKeyAttr(table, partitionKeyValue))
+	nextMarker, queryErr := s.Items().ScanByPartitionKeyWithTable(tableName, table, encodedPartition, opts, func(item *dynamodbstore.Item) error {
 		results = append(results, dynamoItemToPlainMap(item))
 		return nil
 	})

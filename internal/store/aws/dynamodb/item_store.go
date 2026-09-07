@@ -3,7 +3,6 @@ package dynamodb
 
 import (
 	"errors"
-	"fmt"
 
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/storage"
@@ -23,6 +22,10 @@ func gsiIndexBucketName(region string) string {
 
 func lsiIndexBucketName(region string) string {
 	return "dynamodb_lsi_index-" + region
+}
+
+func vectorIndexBucketName(region string) string {
+	return "dynamodb_vector_index-" + region
 }
 
 func tagMainBucketName(region string) string {
@@ -61,27 +64,7 @@ func (s *ItemStore) buildItemKey(tableName string, key map[string]*AttributeValu
 	if err != nil {
 		return ""
 	}
-
-	pkName := s.tableStore.GetPartitionKey(table)
-	skName := s.tableStore.GetSortKey(table)
-
-	pkValue := attributeValueToString(key[pkName])
-	if pkValue == "" {
-		return ""
-	}
-
-	if skName != "" {
-		if key[skName] == nil {
-			return ""
-		}
-		skValue := attributeValueToString(key[skName])
-		if skValue == "" {
-			return ""
-		}
-		return fmt.Sprintf("%s"+keySep+"%s"+keySep+"%s", tableName, pkValue, skValue)
-	}
-
-	return fmt.Sprintf("%s"+keySep+"%s", tableName, pkValue)
+	return EncodeItemKey(tableName, key, table)
 }
 
 // Get retrieves a DynamoDB item by table name and key.
@@ -98,11 +81,7 @@ func (s *ItemStore) Get(tableName string, key map[string]*AttributeValue) (*Item
 		}
 		return nil, err
 	}
-	return &Item{
-		TableName:  pbItem.TableName,
-		Key:        protoToAttributeValueMapDirect(pbItem.Key),
-		Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-	}, nil
+	return itemFromProto(&pbItem), nil
 }
 
 // Exists checks if a DynamoDB item exists.
@@ -111,44 +90,32 @@ func (s *ItemStore) Exists(tableName string, key map[string]*AttributeValue) boo
 	return itemKey != "" && s.BaseStore.Exists(itemKey)
 }
 
-// List returns a list of DynamoDB items with pagination.
+// List returns a list of DynamoDB items with pagination. The returned
+// marker names the last item the page delivered; an empty marker means the
+// walk is exhausted. Resuming with the marker delivers the remaining items
+// exactly once.
 func (s *ItemStore) List(tableName string, marker string, limit int) ([]*Item, string, error) {
-	prefix := tableName + keySep
 	var items []*Item
-	var lastKey string
-
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		if marker != "" && key <= marker {
-			return nil
-		}
-		if limit > 0 && len(items) >= limit {
-			lastKey = key
-			return errScanLimitReached
-		}
-
-		var pbItem pb.Item
-		if err := proto.Unmarshal(value, &pbItem); err != nil {
-			return err
-		}
-		item := &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		}
+	lastKey, err := s.scanWalk(tableName+KeySep, ScanOptions{Limit: limit, Marker: marker}, nil, func(item *Item) error {
 		items = append(items, item)
 		return nil
 	})
-
-	if err != nil && !errors.Is(err, errScanLimitReached) {
+	if err != nil {
 		return nil, "", err
 	}
 	return items, lastKey, nil
 }
 
-// ScanOptions controls the behaviour of a storage-level scan.
+// ScanOptions controls the behaviour of a storage-level scan. Filter, when
+// non-nil, is applied to each item during iteration — before the Limit is
+// counted — so a filtered scan reads only as far as its page requires.
+// Reverse walks descending; its Marker names the key to start strictly
+// before (the forward walk resumes strictly after it).
 type ScanOptions struct {
-	Limit  int
-	Marker string
+	Limit   int
+	Marker  string
+	Reverse bool
+	Filter  func(*Item) bool
 }
 
 // Scan scans all items in a DynamoDB table.
@@ -159,18 +126,21 @@ func (s *ItemStore) Scan(tableName string, fn func(item *Item) error) error {
 	return err
 }
 
-// ScanWithOptions scans items with limit and marker support for pagination.
-func (s *ItemStore) ScanWithOptions(tableName string, opts ScanOptions, fn func(item *Item) error) (string, error) {
-	prefix := tableName + keySep
+// scanWalk drives one bounded item walk over a key prefix: the marker
+// resume, the reverse direction, the per-item decode, the limit, and the
+// errScanLimitReached epilogue are owned here. accept, when non-nil,
+// decides whether a decoded item belongs to the page (partition membership,
+// filter) — accepted items are delivered to fn and count towards the limit,
+// rejected items are skipped without consuming it. The returned marker
+// names the last delivered key and is set only when the limit stopped the
+// walk; the forward walk resumes strictly after it, the reverse walk
+// strictly before it.
+func (s *ItemStore) scanWalk(prefix string, opts ScanOptions, accept func(*Item) bool, fn func(*Item) error) (string, error) {
 	var lastKey string
 	count := 0
 
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		if opts.Marker != "" && key <= opts.Marker {
-			return nil
-		}
+	visit := func(key string, value []byte) error {
 		if opts.Limit > 0 && count >= opts.Limit {
-			lastKey = key
 			return errScanLimitReached
 		}
 
@@ -178,19 +148,46 @@ func (s *ItemStore) ScanWithOptions(tableName string, opts ScanOptions, fn func(
 		if err := proto.Unmarshal(value, &pbItem); err != nil {
 			return err
 		}
-		item := &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
+		item := itemFromProto(&pbItem)
+		if accept != nil && !accept(item) {
+			return nil
 		}
 		count++
-		return fn(item)
-	})
+		if err := fn(item); err != nil {
+			return err
+		}
+		lastKey = key
+		return nil
+	}
+
+	var err error
+	if opts.Reverse {
+		err = s.BaseStore.ScanPrefixReverse(prefix, opts.Marker, visit)
+	} else {
+		err = s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
+			if opts.Marker != "" && key <= opts.Marker {
+				return nil
+			}
+			return visit(key, value)
+		})
+	}
 
 	if err != nil && !errors.Is(err, errScanLimitReached) {
 		return "", err
 	}
-	return lastKey, nil
+	if errors.Is(err, errScanLimitReached) {
+		return lastKey, nil
+	}
+	return "", nil
+}
+
+// ScanWithOptions scans items with limit and marker support for pagination.
+// The returned marker names the last item the page delivered and is set
+// only when the limit stopped the walk — an empty marker means the walk is
+// exhausted. Reverse walks descending and resume strictly before the
+// marker, the same direction contract the partition scan honours.
+func (s *ItemStore) ScanWithOptions(tableName string, opts ScanOptions, fn func(*Item) error) (string, error) {
+	return s.scanWalk(tableName+KeySep, opts, opts.Filter, fn)
 }
 
 // ScanByPartitionKey scans items with a specific partition key value.
@@ -209,148 +206,33 @@ func (s *ItemStore) ScanByPartitionKeyWithTable(tableName string, table *Table, 
 	return s.scanByPartitionKeyWithTable(tableName, table, partitionKeyValue, opts, fn)
 }
 
+// scanByPartitionKeyWithTable scans one partition in the direction opts
+// selects. partitionKeyValue must already be an EncodeKeyValue rendering;
+// the encoded component is prefix-free, so no trailing separator is needed
+// to keep the scan inside the partition. Storage keys encode the sort key
+// with the sort-correct value encoder, so a forward walk yields ascending
+// sort keys and a reverse walk descending ones — the limit bounds both
+// directions, and the filter runs before the limit is counted. The returned
+// marker names the last item the page delivered and is set only when the
+// limit stopped the walk; the forward walk resumes strictly after it, the
+// reverse walk strictly before it.
 func (s *ItemStore) scanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, opts ScanOptions, fn func(item *Item) error) (string, error) {
-	prefix := tableName + keySep + partitionKeyValue
-	hasSortKey := s.tableStore.GetSortKey(table) != ""
-	if hasSortKey {
-		prefix += keySep
-	}
-
-	pkName := s.tableStore.GetPartitionKey(table)
-	var lastKey string
-	count := 0
-
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		if opts.Marker != "" && key <= opts.Marker {
-			return nil
+	pkName, _ := schemaKeyNames(table.KeySchema)
+	return s.scanWalk(tableName+KeySep+partitionKeyValue, opts, func(item *Item) bool {
+		if EncodeKeyValue(item.Key[pkName]) != partitionKeyValue {
+			return false
 		}
-		var pbItem pb.Item
-		if err := proto.Unmarshal(value, &pbItem); err != nil {
-			return err
-		}
-		item := &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		}
-		itemPkValue := attributeValueToString(item.Key[pkName])
-		if itemPkValue != partitionKeyValue {
-			return nil
-		}
-		if opts.Limit > 0 && count >= opts.Limit {
-			lastKey = key
-			return errScanLimitReached
-		}
-		count++
-		return fn(item)
-	})
-
-	if err != nil && !errors.Is(err, errScanLimitReached) {
-		return "", err
-	}
-	return lastKey, nil
+		return opts.Filter == nil || opts.Filter(item)
+	}, fn)
 }
 
 // Count returns the number of items in a DynamoDB table.
 func (s *ItemStore) Count(tableName string) (int64, error) {
 	var count int64
-	prefix := tableName + keySep
+	prefix := tableName + KeySep
 	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
 		count++
 		return nil
 	})
 	return count, err
-}
-
-// DeleteAllForTable removes all items from a DynamoDB table.
-// Items are deleted first; GSI/LSI indexes are cleaned afterwards.
-// If index cleanup fails, orphan index entries may remain, but this is
-// preferable to losing GSI/LSI data while items still exist.
-func (s *ItemStore) DeleteAllForTable(tableName string) error {
-	prefix := tableName + keySep
-
-	const batchSize = 1000
-	var keysBatch []string
-
-	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		keysBatch = append(keysBatch, key)
-		if len(keysBatch) >= batchSize {
-			for _, k := range keysBatch {
-				if delErr := s.BaseStore.Delete(k); delErr != nil {
-					return delErr
-				}
-			}
-			keysBatch = keysBatch[:0]
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	for _, key := range keysBatch {
-		if delErr := s.BaseStore.Delete(key); delErr != nil {
-			return delErr
-		}
-	}
-
-	gsiBucket := s.storage.Bucket(gsiIndexBucketName(s.region))
-	if gsiBucket != nil {
-		if err := s.deleteByPrefix(gsiBucket, prefix); err != nil {
-			return err
-		}
-	}
-
-	lsiBucket := s.storage.Bucket(lsiIndexBucketName(s.region))
-	if lsiBucket != nil {
-		if err := s.deleteByPrefix(lsiBucket, prefix); err != nil {
-			return err
-		}
-	}
-
-	table, err := s.tableStore.Get(tableName)
-	if err != nil {
-		if !IsTableNotFound(err) {
-			return fmt.Errorf("get table for size reset: %w", err)
-		}
-		return nil
-	}
-	if err := s.tableStore.UpdateTableSize(tableName, -table.TableSizeBytes); err != nil {
-		return fmt.Errorf("reset table size after delete all: %w", err)
-	}
-	if err := s.tableStore.UpdateItemCount(tableName, -table.ItemCount); err != nil {
-		return fmt.Errorf("reset item count after delete all: %w", err)
-	}
-	return nil
-}
-
-func (s *ItemStore) deleteByPrefix(bucket storage.Bucket, prefix string) error {
-	var keysBatch []string
-	const batchSize = 1000
-
-	iter := bucket.ScanPrefix([]byte(prefix))
-	defer iter.Close()
-
-	for iter.Next() {
-		keysBatch = append(keysBatch, string(iter.Key()))
-		if len(keysBatch) >= batchSize {
-			for _, k := range keysBatch {
-				if delErr := bucket.Delete([]byte(k)); delErr != nil {
-					return delErr
-				}
-			}
-			keysBatch = keysBatch[:0]
-		}
-	}
-
-	if err := iter.Error(); err != nil {
-		return err
-	}
-
-	for _, k := range keysBatch {
-		if delErr := bucket.Delete([]byte(k)); delErr != nil {
-			return delErr
-		}
-	}
-	return nil
 }

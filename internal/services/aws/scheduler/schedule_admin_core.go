@@ -85,13 +85,13 @@ func protoTargetToStore(pbTarget *pb.Target) *schedulerstore.Target {
 	}
 	t := &schedulerstore.Target{
 		Arn:     pbTarget.Arn,
-		Input:   pbTarget.Input,
+		Input:   pbTarget.GetInput(),
 		RoleArn: pbTarget.Rolearn,
 	}
 
 	if pbTarget.Deadletterconfig != nil {
 		t.DeadLetterConfig = &schedulerstore.DeadLetterConfig{
-			Arn: pbTarget.Deadletterconfig.Arn,
+			Arn: pbTarget.Deadletterconfig.GetArn(),
 		}
 	}
 
@@ -110,7 +110,7 @@ func protoTargetToStore(pbTarget *pb.Target) *schedulerstore.Target {
 
 	if pbTarget.Sqsparameters != nil {
 		t.SqsParameters = &schedulerstore.SqsParameters{
-			MessageGroupId: pbTarget.Sqsparameters.Messagegroupid,
+			MessageGroupId: pbTarget.Sqsparameters.GetMessagegroupid(),
 		}
 	}
 
@@ -139,11 +139,11 @@ func protoTargetToStore(pbTarget *pb.Target) *schedulerstore.Target {
 func protoEcsParametersToStore(pbEcs *pb.EcsParameters) *schedulerstore.EcsParameters {
 	ecs := &schedulerstore.EcsParameters{
 		TaskDefinitionArn: pbEcs.Taskdefinitionarn,
-		LaunchType:        pbEcs.Launchtype,
-		PlatformVersion:   pbEcs.Platformversion,
-		Group:             pbEcs.Group,
-		PropagateTags:     pbEcs.Propagatetags,
-		ReferenceId:       pbEcs.Referenceid,
+		LaunchType:        pbEcs.GetLaunchtype(),
+		PlatformVersion:   pbEcs.GetPlatformversion(),
+		Group:             pbEcs.GetGroup(),
+		PropagateTags:     pbEcs.GetPropagatetags(),
+		ReferenceId:       pbEcs.GetReferenceid(),
 	}
 
 	if pbEcs.Taskcount != nil {
@@ -180,15 +180,15 @@ func protoEcsParametersToStore(pbEcs *pb.EcsParameters) *schedulerstore.EcsParam
 
 	for _, pc := range pbEcs.Placementconstraints {
 		ecs.PlacementConstraints = append(ecs.PlacementConstraints, schedulerstore.PlacementConstraint{
-			Type:       pc.Type,
-			Expression: pc.Expression,
+			Type:       pc.GetType(),
+			Expression: pc.GetExpression(),
 		})
 	}
 
 	for _, ps := range pbEcs.Placementstrategy {
 		ecs.PlacementStrategy = append(ecs.PlacementStrategy, schedulerstore.PlacementStrategy{
-			Type:  ps.Type,
-			Field: ps.Field,
+			Type:  ps.GetType(),
+			Field: ps.GetField(),
 		})
 	}
 
@@ -208,8 +208,8 @@ func protoNetworkConfigToStore(pbNet *pb.NetworkConfiguration) *schedulerstore.N
 			SecurityGroups: vpc.Securitygroups,
 		},
 	}
-	if vpc.Assignpublicip != "" {
-		nc.AwsVpcConfiguration.AssignPublicIp = vpc.Assignpublicip
+	if vpc.GetAssignpublicip() != "" {
+		nc.AwsVpcConfiguration.AssignPublicIp = vpc.GetAssignpublicip()
 	}
 	return nc
 }

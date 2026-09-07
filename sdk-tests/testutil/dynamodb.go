@@ -78,6 +78,9 @@ func (r *TestRunner) RunDynamoDBTests() []TestResult {
 	results = append(results, r.dynamoDBQueryScanConformanceTests(ctx, client)...)
 	results = append(results, r.dynamoDBGlobalTableReplicationTests(ctx, client)...)
 
+	// Phase 4b2: Vector indexes and SearchVectors (self-contained)
+	results = append(results, r.dynamoDBVectorTests(ctx, client)...)
+
 	// Phase 4c: Point-in-time recovery (self-contained)
 	results = append(results, r.dynamoDBPITRTests(ctx, client)...)
 

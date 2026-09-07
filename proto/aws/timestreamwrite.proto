@@ -172,17 +172,17 @@ enum BatchLoadStatus {
 
 message BatchLoadTask {
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
-  string lastupdatedtime = 177046166;
+  optional string lastupdatedtime = 177046166;
 
-  string resumableuntil = 340504066;
+  optional string resumableuntil = 340504066;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
-  string taskid = 18532514;
+  optional string taskid = 18532514;
 
   BatchLoadStatus taskstatus = 448718071;
 
@@ -194,15 +194,15 @@ message BatchLoadTask {
 
 message BatchLoadTaskDescription {
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   DataModelConfiguration datamodelconfiguration = 195075337;
 
   DataSourceConfiguration datasourceconfiguration = 256337787;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string lastupdatedtime = 177046166;
+  optional string lastupdatedtime = 177046166;
 
   BatchLoadProgressReport progressreport = 345169253;
 
@@ -210,13 +210,13 @@ message BatchLoadTaskDescription {
 
   ReportConfiguration reportconfiguration = 410368276;
 
-  string resumableuntil = 340504066;
+  optional string resumableuntil = 340504066;
 
-  string targetdatabasename = 454828599;
+  optional string targetdatabasename = 454828599;
 
-  string targettablename = 298767720;
+  optional string targettablename = 298767720;
 
-  string taskid = 18532514;
+  optional string taskid = 18532514;
 
   BatchLoadStatus taskstatus = 448718071;
 
@@ -236,7 +236,7 @@ message ConflictException {
 
 message CreateBatchLoadTaskRequest {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   DataModelConfiguration datamodelconfiguration = 195075337;
 
@@ -266,7 +266,7 @@ message CreateDatabaseRequest {
 
   string databasename = 89545052;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   repeated Tag tags = 381526209;
 
@@ -312,13 +312,13 @@ message CreateTableResponse {
 
 message CsvConfiguration {
 
-  string columnseparator = 8188515;
+  optional string columnseparator = 8188515;
 
-  string escapechar = 210340939;
+  optional string escapechar = 210340939;
 
-  string nullvalue = 440981694;
+  optional string nullvalue = 440981694;
 
-  string quotechar = 242375728;
+  optional string quotechar = 242375728;
 
   optional bool trimwhitespace = 386966069;
 
@@ -332,13 +332,13 @@ message DataModel {
 
   repeated DimensionMapping dimensionmappings = 224443741;
 
-  string measurenamecolumn = 112141775;
+  optional string measurenamecolumn = 112141775;
 
   repeated MixedMeasureMapping mixedmeasuremappings = 521774144;
 
   MultiMeasureMappings multimeasuremappings = 501736394;
 
-  string timecolumn = 519449367;
+  optional string timecolumn = 519449367;
 
   TimeUnit timeunit = 181686379;
 
@@ -362,9 +362,9 @@ message DataModelConfiguration {
 
 message DataModelS3Configuration {
 
-  string bucketname = 208117045;
+  optional string bucketname = 208117045;
 
-  string objectkey = 335986226;
+  optional string objectkey = 335986226;
 
 }
 
@@ -390,7 +390,7 @@ message DataSourceS3Configuration {
 
   string bucketname = 208117045;
 
-  string objectkeyprefix = 132617574;
+  optional string objectkeyprefix = 132617574;
 
 }
 
@@ -400,15 +400,15 @@ message DataSourceS3Configuration {
 
 message Database {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string lastupdatedtime = 177046166;
+  optional string lastupdatedtime = 177046166;
 
   optional int64 tablecount = 323868967;
 
@@ -516,9 +516,9 @@ message Dimension {
 
 message DimensionMapping {
 
-  string destinationcolumn = 338930478;
+  optional string destinationcolumn = 338930478;
 
-  string sourcecolumn = 219947651;
+  optional string sourcecolumn = 219947651;
 
 }
 
@@ -558,7 +558,7 @@ message InternalServerException {
 
 message InvalidEndpointException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -568,7 +568,7 @@ message ListBatchLoadTasksRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   BatchLoadStatus taskstatus = 448718071;
 
@@ -580,7 +580,7 @@ message ListBatchLoadTasksResponse {
 
   repeated BatchLoadTask batchloadtasks = 292572092;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -590,7 +590,7 @@ message ListDatabasesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -600,7 +600,7 @@ message ListDatabasesResponse {
 
   repeated Database databases = 71867698;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -608,11 +608,11 @@ message ListDatabasesResponse {
 
 message ListTablesRequest {
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -620,7 +620,7 @@ message ListTablesRequest {
 
 message ListTablesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Table tables = 357958629;
 
@@ -702,15 +702,15 @@ enum MeasureValueType {
 
 message MixedMeasureMapping {
 
-  string measurename = 426079069;
+  optional string measurename = 426079069;
 
   MeasureValueType measurevaluetype = 466683165;
 
   repeated MultiMeasureAttributeMapping multimeasureattributemappings = 311133918;
 
-  string sourcecolumn = 219947651;
+  optional string sourcecolumn = 219947651;
 
-  string targetmeasurename = 469508316;
+  optional string targetmeasurename = 469508316;
 
 }
 
@@ -724,7 +724,7 @@ message MultiMeasureAttributeMapping {
 
   string sourcecolumn = 219947651;
 
-  string targetmultimeasureattributename = 415623663;
+  optional string targetmultimeasureattributename = 415623663;
 
 }
 
@@ -736,7 +736,7 @@ message MultiMeasureMappings {
 
   repeated MultiMeasureAttributeMapping multimeasureattributemappings = 311133918;
 
-  string targetmultimeasurename = 27420053;
+  optional string targetmultimeasurename = 27420053;
 
 }
 
@@ -748,7 +748,7 @@ message PartitionKey {
 
   PartitionKeyEnforcementLevel enforcementinrecord = 121680624;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   PartitionKeyType type = 290836590;
 
@@ -782,15 +782,15 @@ message Record {
 
   repeated Dimension dimensions = 462933457;
 
-  string measurename = 426079069;
+  optional string measurename = 426079069;
 
-  string measurevalue = 407670165;
+  optional string measurevalue = 407670165;
 
   MeasureValueType measurevaluetype = 466683165;
 
   repeated MeasureValue measurevalues = 126050982;
 
-  string time = 535094277;
+  optional string time = 535094277;
 
   TimeUnit timeunit = 181686379;
 
@@ -820,7 +820,7 @@ message RejectedRecord {
 
   optional int64 existingversion = 457856209;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
   optional int32 recordindex = 221086889;
 
@@ -832,7 +832,7 @@ message RejectedRecord {
 
 message RejectedRecordsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   repeated RejectedRecord rejectedrecords = 374345864;
 
@@ -858,9 +858,9 @@ message ReportS3Configuration {
 
   S3EncryptionOption encryptionoption = 160833062;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string objectkeyprefix = 132617574;
+  optional string objectkeyprefix = 132617574;
 
 }
 
@@ -870,7 +870,7 @@ message ReportS3Configuration {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -906,13 +906,13 @@ message RetentionProperties {
 
 message S3Configuration {
 
-  string bucketname = 208117045;
+  optional string bucketname = 208117045;
 
   S3EncryptionOption encryptionoption = 160833062;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
-  string objectkeyprefix = 132617574;
+  optional string objectkeyprefix = 132617574;
 
 }
 
@@ -958,7 +958,7 @@ message Schema {
 
 message ServiceQuotaExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -968,13 +968,13 @@ message ServiceQuotaExceededException {
 
 message Table {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string databasename = 89545052;
+  optional string databasename = 89545052;
 
-  string lastupdatedtime = 177046166;
+  optional string lastupdatedtime = 177046166;
 
   MagneticStoreWriteProperties magneticstorewriteproperties = 127209171;
 
@@ -982,7 +982,7 @@ message Table {
 
   Schema schema = 412122455;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
   TableStatus tablestatus = 207908810;
 

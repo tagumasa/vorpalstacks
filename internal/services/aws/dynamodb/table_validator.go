@@ -4,12 +4,12 @@ import (
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
-// validateIndexNameUniqueness reports whether all GSI and LSI index names
-// within a table definition are distinct. Returns the typed
+// validateIndexNameUniqueness reports whether all GSI, LSI, and vector index
+// names within a table definition are distinct. Returns the typed
 // ErrIndexAlreadyExists sentinel so the caller can surface
 // ResourceInUseException with a precise message rather than the generic
 // ValidationException.
-func validateIndexNameUniqueness(gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbstore.LocalSecondaryIndex) error {
+func validateIndexNameUniqueness(gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbstore.LocalSecondaryIndex, vector []*dbstore.VectorIndex) error {
 	indexNames := make(map[string]bool)
 	for _, idx := range gsi {
 		if idx.IndexName == "" {
@@ -28,6 +28,30 @@ func validateIndexNameUniqueness(gsi []*dbstore.GlobalSecondaryIndex, lsi []*dbs
 			return ErrIndexAlreadyExists
 		}
 		indexNames[idx.IndexName] = true
+	}
+	for _, idx := range vector {
+		if idx.IndexName == "" {
+			return ErrInvalidParameter
+		}
+		if indexNames[idx.IndexName] {
+			return ErrIndexAlreadyExists
+		}
+		indexNames[idx.IndexName] = true
+	}
+	return nil
+}
+
+// validateVectorAttributeDimensions reports whether every pair of vector
+// indexes sharing one vector attribute declares the same dimension count
+// (model docs: indexes referencing the same attribute must agree on
+// dimensions).
+func validateVectorAttributeDimensions(vector []*dbstore.VectorIndex) error {
+	dimsByAttr := make(map[string]int64)
+	for _, idx := range vector {
+		if d, seen := dimsByAttr[idx.VectorAttributeName]; seen && d != idx.Dimensions {
+			return ErrInvalidParameter
+		}
+		dimsByAttr[idx.VectorAttributeName] = idx.Dimensions
 	}
 	return nil
 }

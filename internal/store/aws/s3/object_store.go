@@ -48,6 +48,10 @@ var (
 	ErrBucketHasObjects = common.NewStoreError("s3", "bucket_has_objects", common.ErrConflict)
 	// ErrUploadNotFound is returned when the specified multipart upload does not exist.
 	ErrUploadNotFound = common.NewStoreError("s3", "upload_not_found", common.ErrNotFound)
+	// ErrVersioningNotEnabled is returned when an operation that requires a
+	// specific object version runs against a bucket whose versioning was
+	// never enabled.
+	ErrVersioningNotEnabled = common.NewStoreError("s3", "versioning_not_enabled", common.ErrInvalidState)
 )
 
 // ObjectStore manages S3 object storage and retrieval.

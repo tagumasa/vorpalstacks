@@ -40,6 +40,8 @@ const (
 	// IAMServiceAcceptDelegationRequestProcedure is the fully-qualified name of the IAMService's
 	// AcceptDelegationRequest RPC.
 	IAMServiceAcceptDelegationRequestProcedure = "/iam.IAMService/AcceptDelegationRequest"
+	// IAMServiceAcquireRoleProcedure is the fully-qualified name of the IAMService's AcquireRole RPC.
+	IAMServiceAcquireRoleProcedure = "/iam.IAMService/AcquireRole"
 	// IAMServiceAddClientIDToOpenIDConnectProviderProcedure is the fully-qualified name of the
 	// IAMService's AddClientIDToOpenIDConnectProvider RPC.
 	IAMServiceAddClientIDToOpenIDConnectProviderProcedure = "/iam.IAMService/AddClientIDToOpenIDConnectProvider"
@@ -221,6 +223,9 @@ const (
 	// IAMServiceGetAccountPasswordPolicyProcedure is the fully-qualified name of the IAMService's
 	// GetAccountPasswordPolicy RPC.
 	IAMServiceGetAccountPasswordPolicyProcedure = "/iam.IAMService/GetAccountPasswordPolicy"
+	// IAMServiceGetAccountPropertiesProcedure is the fully-qualified name of the IAMService's
+	// GetAccountProperties RPC.
+	IAMServiceGetAccountPropertiesProcedure = "/iam.IAMService/GetAccountProperties"
 	// IAMServiceGetAccountSummaryProcedure is the fully-qualified name of the IAMService's
 	// GetAccountSummary RPC.
 	IAMServiceGetAccountSummaryProcedure = "/iam.IAMService/GetAccountSummary"
@@ -271,6 +276,9 @@ const (
 	// IAMServiceGetRolePolicyProcedure is the fully-qualified name of the IAMService's GetRolePolicy
 	// RPC.
 	IAMServiceGetRolePolicyProcedure = "/iam.IAMService/GetRolePolicy"
+	// IAMServiceGetRoleTemplateVersionProcedure is the fully-qualified name of the IAMService's
+	// GetRoleTemplateVersion RPC.
+	IAMServiceGetRoleTemplateVersionProcedure = "/iam.IAMService/GetRoleTemplateVersion"
 	// IAMServiceGetSAMLProviderProcedure is the fully-qualified name of the IAMService's
 	// GetSAMLProvider RPC.
 	IAMServiceGetSAMLProviderProcedure = "/iam.IAMService/GetSAMLProvider"
@@ -396,6 +404,9 @@ const (
 	// IAMServiceListVirtualMFADevicesProcedure is the fully-qualified name of the IAMService's
 	// ListVirtualMFADevices RPC.
 	IAMServiceListVirtualMFADevicesProcedure = "/iam.IAMService/ListVirtualMFADevices"
+	// IAMServicePutAccountPropertiesProcedure is the fully-qualified name of the IAMService's
+	// PutAccountProperties RPC.
+	IAMServicePutAccountPropertiesProcedure = "/iam.IAMService/PutAccountProperties"
 	// IAMServicePutGroupPolicyProcedure is the fully-qualified name of the IAMService's PutGroupPolicy
 	// RPC.
 	IAMServicePutGroupPolicyProcedure = "/iam.IAMService/PutGroupPolicy"
@@ -544,6 +555,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	AcceptDelegationRequest(context.Context, *connect.Request[iam.AcceptDelegationRequestRequest]) (*connect.Response[common.Empty], error)
+	// Creates an IAM role from the specified role template. The new role takes its configuration—including its name, path, trust policy, inline and managed policies, permissions boundary, tags, and max...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	AcquireRole(context.Context, *connect.Request[iam.AcquireRoleRequest]) (*connect.Response[iam.AcquireRoleResponse], error)
 	// Adds a new client ID (also known as audience) to the list of client IDs already registered for the specified IAM OpenID Connect (OIDC) provider resource. This operation is idempotent; it does not f...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -796,6 +811,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetAccountPasswordPolicy(context.Context, *connect.Request[common.Empty]) (*connect.Response[iam.GetAccountPasswordPolicyResponse], error)
+	// Retrieves the account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. The s...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetAccountProperties(context.Context, *connect.Request[iam.GetAccountPropertiesRequest]) (*connect.Response[iam.GetAccountPropertiesResponse], error)
 	// Retrieves information about IAM entity usage and IAM quotas in the Amazon Web Services account. For information about IAM quotas, see IAM and STS quotas in the IAM User Guide.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -868,6 +887,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetRolePolicy(context.Context, *connect.Request[iam.GetRolePolicyRequest]) (*connect.Response[iam.GetRolePolicyResponse], error)
+	// Retrieves information about a version of the specified role template. Role templates define a reusable configuration—including role name and path patterns, trust policy, inline and managed polici...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetRoleTemplateVersion(context.Context, *connect.Request[iam.GetRoleTemplateVersionRequest]) (*connect.Response[iam.GetRoleTemplateVersionResponse], error)
 	// Returns the SAML provider metadocument that was uploaded when the IAM SAML provider resource object was created or updated. This operation requires Signature Version 4.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -1044,6 +1067,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	ListVirtualMFADevices(context.Context, *connect.Request[iam.ListVirtualMFADevicesRequest]) (*connect.Response[iam.ListVirtualMFADevicesResponse], error)
+	// Sets account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. Specify proper...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	PutAccountProperties(context.Context, *connect.Request[iam.PutAccountPropertiesRequest]) (*connect.Response[iam.PutAccountPropertiesResponse], error)
 	// Adds or updates an inline policy document that is embedded in the specified IAM group. A user can also have managed policies attached to it. To attach a managed policy to a group, use AttachGroupPo...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -1261,6 +1288,12 @@ func NewIAMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+IAMServiceAcceptDelegationRequestProcedure,
 			connect.WithSchema(iAMServiceMethods.ByName("AcceptDelegationRequest")),
+			connect.WithClientOptions(opts...),
+		),
+		acquireRole: connect.NewClient[iam.AcquireRoleRequest, iam.AcquireRoleResponse](
+			httpClient,
+			baseURL+IAMServiceAcquireRoleProcedure,
+			connect.WithSchema(iAMServiceMethods.ByName("AcquireRole")),
 			connect.WithClientOptions(opts...),
 		),
 		addClientIDToOpenIDConnectProvider: connect.NewClient[iam.AddClientIDToOpenIDConnectProviderRequest, common.Empty](
@@ -1641,6 +1674,12 @@ func NewIAMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(iAMServiceMethods.ByName("GetAccountPasswordPolicy")),
 			connect.WithClientOptions(opts...),
 		),
+		getAccountProperties: connect.NewClient[iam.GetAccountPropertiesRequest, iam.GetAccountPropertiesResponse](
+			httpClient,
+			baseURL+IAMServiceGetAccountPropertiesProcedure,
+			connect.WithSchema(iAMServiceMethods.ByName("GetAccountProperties")),
+			connect.WithClientOptions(opts...),
+		),
 		getAccountSummary: connect.NewClient[common.Empty, iam.GetAccountSummaryResponse](
 			httpClient,
 			baseURL+IAMServiceGetAccountSummaryProcedure,
@@ -1747,6 +1786,12 @@ func NewIAMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+IAMServiceGetRolePolicyProcedure,
 			connect.WithSchema(iAMServiceMethods.ByName("GetRolePolicy")),
+			connect.WithClientOptions(opts...),
+		),
+		getRoleTemplateVersion: connect.NewClient[iam.GetRoleTemplateVersionRequest, iam.GetRoleTemplateVersionResponse](
+			httpClient,
+			baseURL+IAMServiceGetRoleTemplateVersionProcedure,
+			connect.WithSchema(iAMServiceMethods.ByName("GetRoleTemplateVersion")),
 			connect.WithClientOptions(opts...),
 		),
 		getSAMLProvider: connect.NewClient[iam.GetSAMLProviderRequest, iam.GetSAMLProviderResponse](
@@ -2011,6 +2056,12 @@ func NewIAMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+IAMServiceListVirtualMFADevicesProcedure,
 			connect.WithSchema(iAMServiceMethods.ByName("ListVirtualMFADevices")),
+			connect.WithClientOptions(opts...),
+		),
+		putAccountProperties: connect.NewClient[iam.PutAccountPropertiesRequest, iam.PutAccountPropertiesResponse](
+			httpClient,
+			baseURL+IAMServicePutAccountPropertiesProcedure,
+			connect.WithSchema(iAMServiceMethods.ByName("PutAccountProperties")),
 			connect.WithClientOptions(opts...),
 		),
 		putGroupPolicy: connect.NewClient[iam.PutGroupPolicyRequest, common.Empty](
@@ -2319,6 +2370,7 @@ func NewIAMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 // iAMServiceClient implements IAMServiceClient.
 type iAMServiceClient struct {
 	acceptDelegationRequest                       *connect.Client[iam.AcceptDelegationRequestRequest, common.Empty]
+	acquireRole                                   *connect.Client[iam.AcquireRoleRequest, iam.AcquireRoleResponse]
 	addClientIDToOpenIDConnectProvider            *connect.Client[iam.AddClientIDToOpenIDConnectProviderRequest, common.Empty]
 	addRoleToInstanceProfile                      *connect.Client[iam.AddRoleToInstanceProfileRequest, common.Empty]
 	addUserToGroup                                *connect.Client[iam.AddUserToGroupRequest, common.Empty]
@@ -2382,6 +2434,7 @@ type iAMServiceClient struct {
 	getAccessKeyLastUsed                          *connect.Client[iam.GetAccessKeyLastUsedRequest, iam.GetAccessKeyLastUsedResponse]
 	getAccountAuthorizationDetails                *connect.Client[iam.GetAccountAuthorizationDetailsRequest, iam.GetAccountAuthorizationDetailsResponse]
 	getAccountPasswordPolicy                      *connect.Client[common.Empty, iam.GetAccountPasswordPolicyResponse]
+	getAccountProperties                          *connect.Client[iam.GetAccountPropertiesRequest, iam.GetAccountPropertiesResponse]
 	getAccountSummary                             *connect.Client[common.Empty, iam.GetAccountSummaryResponse]
 	getContextKeysForCustomPolicy                 *connect.Client[iam.GetContextKeysForCustomPolicyRequest, iam.GetContextKeysForPolicyResponse]
 	getContextKeysForPrincipalPolicy              *connect.Client[iam.GetContextKeysForPrincipalPolicyRequest, iam.GetContextKeysForPolicyResponse]
@@ -2400,6 +2453,7 @@ type iAMServiceClient struct {
 	getPolicyVersion                              *connect.Client[iam.GetPolicyVersionRequest, iam.GetPolicyVersionResponse]
 	getRole                                       *connect.Client[iam.GetRoleRequest, iam.GetRoleResponse]
 	getRolePolicy                                 *connect.Client[iam.GetRolePolicyRequest, iam.GetRolePolicyResponse]
+	getRoleTemplateVersion                        *connect.Client[iam.GetRoleTemplateVersionRequest, iam.GetRoleTemplateVersionResponse]
 	getSAMLProvider                               *connect.Client[iam.GetSAMLProviderRequest, iam.GetSAMLProviderResponse]
 	getServerCertificate                          *connect.Client[iam.GetServerCertificateRequest, iam.GetServerCertificateResponse]
 	getServiceLastAccessedDetails                 *connect.Client[iam.GetServiceLastAccessedDetailsRequest, iam.GetServiceLastAccessedDetailsResponse]
@@ -2444,6 +2498,7 @@ type iAMServiceClient struct {
 	listUsers                                     *connect.Client[iam.ListUsersRequest, iam.ListUsersResponse]
 	listUserTags                                  *connect.Client[iam.ListUserTagsRequest, iam.ListUserTagsResponse]
 	listVirtualMFADevices                         *connect.Client[iam.ListVirtualMFADevicesRequest, iam.ListVirtualMFADevicesResponse]
+	putAccountProperties                          *connect.Client[iam.PutAccountPropertiesRequest, iam.PutAccountPropertiesResponse]
 	putGroupPolicy                                *connect.Client[iam.PutGroupPolicyRequest, common.Empty]
 	putRolePermissionsBoundary                    *connect.Client[iam.PutRolePermissionsBoundaryRequest, common.Empty]
 	putRolePolicy                                 *connect.Client[iam.PutRolePolicyRequest, common.Empty]
@@ -2499,6 +2554,11 @@ type iAMServiceClient struct {
 // AcceptDelegationRequest calls iam.IAMService.AcceptDelegationRequest.
 func (c *iAMServiceClient) AcceptDelegationRequest(ctx context.Context, req *connect.Request[iam.AcceptDelegationRequestRequest]) (*connect.Response[common.Empty], error) {
 	return c.acceptDelegationRequest.CallUnary(ctx, req)
+}
+
+// AcquireRole calls iam.IAMService.AcquireRole.
+func (c *iAMServiceClient) AcquireRole(ctx context.Context, req *connect.Request[iam.AcquireRoleRequest]) (*connect.Response[iam.AcquireRoleResponse], error) {
+	return c.acquireRole.CallUnary(ctx, req)
 }
 
 // AddClientIDToOpenIDConnectProvider calls iam.IAMService.AddClientIDToOpenIDConnectProvider.
@@ -2818,6 +2878,11 @@ func (c *iAMServiceClient) GetAccountPasswordPolicy(ctx context.Context, req *co
 	return c.getAccountPasswordPolicy.CallUnary(ctx, req)
 }
 
+// GetAccountProperties calls iam.IAMService.GetAccountProperties.
+func (c *iAMServiceClient) GetAccountProperties(ctx context.Context, req *connect.Request[iam.GetAccountPropertiesRequest]) (*connect.Response[iam.GetAccountPropertiesResponse], error) {
+	return c.getAccountProperties.CallUnary(ctx, req)
+}
+
 // GetAccountSummary calls iam.IAMService.GetAccountSummary.
 func (c *iAMServiceClient) GetAccountSummary(ctx context.Context, req *connect.Request[common.Empty]) (*connect.Response[iam.GetAccountSummaryResponse], error) {
 	return c.getAccountSummary.CallUnary(ctx, req)
@@ -2906,6 +2971,11 @@ func (c *iAMServiceClient) GetRole(ctx context.Context, req *connect.Request[iam
 // GetRolePolicy calls iam.IAMService.GetRolePolicy.
 func (c *iAMServiceClient) GetRolePolicy(ctx context.Context, req *connect.Request[iam.GetRolePolicyRequest]) (*connect.Response[iam.GetRolePolicyResponse], error) {
 	return c.getRolePolicy.CallUnary(ctx, req)
+}
+
+// GetRoleTemplateVersion calls iam.IAMService.GetRoleTemplateVersion.
+func (c *iAMServiceClient) GetRoleTemplateVersion(ctx context.Context, req *connect.Request[iam.GetRoleTemplateVersionRequest]) (*connect.Response[iam.GetRoleTemplateVersionResponse], error) {
+	return c.getRoleTemplateVersion.CallUnary(ctx, req)
 }
 
 // GetSAMLProvider calls iam.IAMService.GetSAMLProvider.
@@ -3127,6 +3197,11 @@ func (c *iAMServiceClient) ListUserTags(ctx context.Context, req *connect.Reques
 // ListVirtualMFADevices calls iam.IAMService.ListVirtualMFADevices.
 func (c *iAMServiceClient) ListVirtualMFADevices(ctx context.Context, req *connect.Request[iam.ListVirtualMFADevicesRequest]) (*connect.Response[iam.ListVirtualMFADevicesResponse], error) {
 	return c.listVirtualMFADevices.CallUnary(ctx, req)
+}
+
+// PutAccountProperties calls iam.IAMService.PutAccountProperties.
+func (c *iAMServiceClient) PutAccountProperties(ctx context.Context, req *connect.Request[iam.PutAccountPropertiesRequest]) (*connect.Response[iam.PutAccountPropertiesResponse], error) {
+	return c.putAccountProperties.CallUnary(ctx, req)
 }
 
 // PutGroupPolicy calls iam.IAMService.PutGroupPolicy.
@@ -3386,6 +3461,10 @@ type IAMServiceHandler interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	AcceptDelegationRequest(context.Context, *connect.Request[iam.AcceptDelegationRequestRequest]) (*connect.Response[common.Empty], error)
+	// Creates an IAM role from the specified role template. The new role takes its configuration—including its name, path, trust policy, inline and managed policies, permissions boundary, tags, and max...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	AcquireRole(context.Context, *connect.Request[iam.AcquireRoleRequest]) (*connect.Response[iam.AcquireRoleResponse], error)
 	// Adds a new client ID (also known as audience) to the list of client IDs already registered for the specified IAM OpenID Connect (OIDC) provider resource. This operation is idempotent; it does not f...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -3638,6 +3717,10 @@ type IAMServiceHandler interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetAccountPasswordPolicy(context.Context, *connect.Request[common.Empty]) (*connect.Response[iam.GetAccountPasswordPolicyResponse], error)
+	// Retrieves the account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. The s...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetAccountProperties(context.Context, *connect.Request[iam.GetAccountPropertiesRequest]) (*connect.Response[iam.GetAccountPropertiesResponse], error)
 	// Retrieves information about IAM entity usage and IAM quotas in the Amazon Web Services account. For information about IAM quotas, see IAM and STS quotas in the IAM User Guide.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -3710,6 +3793,10 @@ type IAMServiceHandler interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetRolePolicy(context.Context, *connect.Request[iam.GetRolePolicyRequest]) (*connect.Response[iam.GetRolePolicyResponse], error)
+	// Retrieves information about a version of the specified role template. Role templates define a reusable configuration—including role name and path patterns, trust policy, inline and managed polici...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetRoleTemplateVersion(context.Context, *connect.Request[iam.GetRoleTemplateVersionRequest]) (*connect.Response[iam.GetRoleTemplateVersionResponse], error)
 	// Returns the SAML provider metadocument that was uploaded when the IAM SAML provider resource object was created or updated. This operation requires Signature Version 4.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -3886,6 +3973,10 @@ type IAMServiceHandler interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	ListVirtualMFADevices(context.Context, *connect.Request[iam.ListVirtualMFADevicesRequest]) (*connect.Response[iam.ListVirtualMFADevicesResponse], error)
+	// Sets account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. Specify proper...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	PutAccountProperties(context.Context, *connect.Request[iam.PutAccountPropertiesRequest]) (*connect.Response[iam.PutAccountPropertiesResponse], error)
 	// Adds or updates an inline policy document that is embedded in the specified IAM group. A user can also have managed policies attached to it. To attach a managed policy to a group, use AttachGroupPo...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -4099,6 +4190,12 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 		IAMServiceAcceptDelegationRequestProcedure,
 		svc.AcceptDelegationRequest,
 		connect.WithSchema(iAMServiceMethods.ByName("AcceptDelegationRequest")),
+		connect.WithHandlerOptions(opts...),
+	)
+	iAMServiceAcquireRoleHandler := connect.NewUnaryHandler(
+		IAMServiceAcquireRoleProcedure,
+		svc.AcquireRole,
+		connect.WithSchema(iAMServiceMethods.ByName("AcquireRole")),
 		connect.WithHandlerOptions(opts...),
 	)
 	iAMServiceAddClientIDToOpenIDConnectProviderHandler := connect.NewUnaryHandler(
@@ -4479,6 +4576,12 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(iAMServiceMethods.ByName("GetAccountPasswordPolicy")),
 		connect.WithHandlerOptions(opts...),
 	)
+	iAMServiceGetAccountPropertiesHandler := connect.NewUnaryHandler(
+		IAMServiceGetAccountPropertiesProcedure,
+		svc.GetAccountProperties,
+		connect.WithSchema(iAMServiceMethods.ByName("GetAccountProperties")),
+		connect.WithHandlerOptions(opts...),
+	)
 	iAMServiceGetAccountSummaryHandler := connect.NewUnaryHandler(
 		IAMServiceGetAccountSummaryProcedure,
 		svc.GetAccountSummary,
@@ -4585,6 +4688,12 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 		IAMServiceGetRolePolicyProcedure,
 		svc.GetRolePolicy,
 		connect.WithSchema(iAMServiceMethods.ByName("GetRolePolicy")),
+		connect.WithHandlerOptions(opts...),
+	)
+	iAMServiceGetRoleTemplateVersionHandler := connect.NewUnaryHandler(
+		IAMServiceGetRoleTemplateVersionProcedure,
+		svc.GetRoleTemplateVersion,
+		connect.WithSchema(iAMServiceMethods.ByName("GetRoleTemplateVersion")),
 		connect.WithHandlerOptions(opts...),
 	)
 	iAMServiceGetSAMLProviderHandler := connect.NewUnaryHandler(
@@ -4849,6 +4958,12 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 		IAMServiceListVirtualMFADevicesProcedure,
 		svc.ListVirtualMFADevices,
 		connect.WithSchema(iAMServiceMethods.ByName("ListVirtualMFADevices")),
+		connect.WithHandlerOptions(opts...),
+	)
+	iAMServicePutAccountPropertiesHandler := connect.NewUnaryHandler(
+		IAMServicePutAccountPropertiesProcedure,
+		svc.PutAccountProperties,
+		connect.WithSchema(iAMServiceMethods.ByName("PutAccountProperties")),
 		connect.WithHandlerOptions(opts...),
 	)
 	iAMServicePutGroupPolicyHandler := connect.NewUnaryHandler(
@@ -5155,6 +5270,8 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 		switch r.URL.Path {
 		case IAMServiceAcceptDelegationRequestProcedure:
 			iAMServiceAcceptDelegationRequestHandler.ServeHTTP(w, r)
+		case IAMServiceAcquireRoleProcedure:
+			iAMServiceAcquireRoleHandler.ServeHTTP(w, r)
 		case IAMServiceAddClientIDToOpenIDConnectProviderProcedure:
 			iAMServiceAddClientIDToOpenIDConnectProviderHandler.ServeHTTP(w, r)
 		case IAMServiceAddRoleToInstanceProfileProcedure:
@@ -5281,6 +5398,8 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 			iAMServiceGetAccountAuthorizationDetailsHandler.ServeHTTP(w, r)
 		case IAMServiceGetAccountPasswordPolicyProcedure:
 			iAMServiceGetAccountPasswordPolicyHandler.ServeHTTP(w, r)
+		case IAMServiceGetAccountPropertiesProcedure:
+			iAMServiceGetAccountPropertiesHandler.ServeHTTP(w, r)
 		case IAMServiceGetAccountSummaryProcedure:
 			iAMServiceGetAccountSummaryHandler.ServeHTTP(w, r)
 		case IAMServiceGetContextKeysForCustomPolicyProcedure:
@@ -5317,6 +5436,8 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 			iAMServiceGetRoleHandler.ServeHTTP(w, r)
 		case IAMServiceGetRolePolicyProcedure:
 			iAMServiceGetRolePolicyHandler.ServeHTTP(w, r)
+		case IAMServiceGetRoleTemplateVersionProcedure:
+			iAMServiceGetRoleTemplateVersionHandler.ServeHTTP(w, r)
 		case IAMServiceGetSAMLProviderProcedure:
 			iAMServiceGetSAMLProviderHandler.ServeHTTP(w, r)
 		case IAMServiceGetServerCertificateProcedure:
@@ -5405,6 +5526,8 @@ func NewIAMServiceHandler(svc IAMServiceHandler, opts ...connect.HandlerOption) 
 			iAMServiceListUserTagsHandler.ServeHTTP(w, r)
 		case IAMServiceListVirtualMFADevicesProcedure:
 			iAMServiceListVirtualMFADevicesHandler.ServeHTTP(w, r)
+		case IAMServicePutAccountPropertiesProcedure:
+			iAMServicePutAccountPropertiesHandler.ServeHTTP(w, r)
 		case IAMServicePutGroupPolicyProcedure:
 			iAMServicePutGroupPolicyHandler.ServeHTTP(w, r)
 		case IAMServicePutRolePermissionsBoundaryProcedure:
@@ -5516,6 +5639,10 @@ type UnimplementedIAMServiceHandler struct{}
 
 func (UnimplementedIAMServiceHandler) AcceptDelegationRequest(context.Context, *connect.Request[iam.AcceptDelegationRequestRequest]) (*connect.Response[common.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.AcceptDelegationRequest is not implemented"))
+}
+
+func (UnimplementedIAMServiceHandler) AcquireRole(context.Context, *connect.Request[iam.AcquireRoleRequest]) (*connect.Response[iam.AcquireRoleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.AcquireRole is not implemented"))
 }
 
 func (UnimplementedIAMServiceHandler) AddClientIDToOpenIDConnectProvider(context.Context, *connect.Request[iam.AddClientIDToOpenIDConnectProviderRequest]) (*connect.Response[common.Empty], error) {
@@ -5770,6 +5897,10 @@ func (UnimplementedIAMServiceHandler) GetAccountPasswordPolicy(context.Context, 
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.GetAccountPasswordPolicy is not implemented"))
 }
 
+func (UnimplementedIAMServiceHandler) GetAccountProperties(context.Context, *connect.Request[iam.GetAccountPropertiesRequest]) (*connect.Response[iam.GetAccountPropertiesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.GetAccountProperties is not implemented"))
+}
+
 func (UnimplementedIAMServiceHandler) GetAccountSummary(context.Context, *connect.Request[common.Empty]) (*connect.Response[iam.GetAccountSummaryResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.GetAccountSummary is not implemented"))
 }
@@ -5840,6 +5971,10 @@ func (UnimplementedIAMServiceHandler) GetRole(context.Context, *connect.Request[
 
 func (UnimplementedIAMServiceHandler) GetRolePolicy(context.Context, *connect.Request[iam.GetRolePolicyRequest]) (*connect.Response[iam.GetRolePolicyResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.GetRolePolicy is not implemented"))
+}
+
+func (UnimplementedIAMServiceHandler) GetRoleTemplateVersion(context.Context, *connect.Request[iam.GetRoleTemplateVersionRequest]) (*connect.Response[iam.GetRoleTemplateVersionResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.GetRoleTemplateVersion is not implemented"))
 }
 
 func (UnimplementedIAMServiceHandler) GetSAMLProvider(context.Context, *connect.Request[iam.GetSAMLProviderRequest]) (*connect.Response[iam.GetSAMLProviderResponse], error) {
@@ -6016,6 +6151,10 @@ func (UnimplementedIAMServiceHandler) ListUserTags(context.Context, *connect.Req
 
 func (UnimplementedIAMServiceHandler) ListVirtualMFADevices(context.Context, *connect.Request[iam.ListVirtualMFADevicesRequest]) (*connect.Response[iam.ListVirtualMFADevicesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.ListVirtualMFADevices is not implemented"))
+}
+
+func (UnimplementedIAMServiceHandler) PutAccountProperties(context.Context, *connect.Request[iam.PutAccountPropertiesRequest]) (*connect.Response[iam.PutAccountPropertiesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("iam.IAMService.PutAccountProperties is not implemented"))
 }
 
 func (UnimplementedIAMServiceHandler) PutGroupPolicy(context.Context, *connect.Request[iam.PutGroupPolicyRequest]) (*connect.Response[common.Empty], error) {

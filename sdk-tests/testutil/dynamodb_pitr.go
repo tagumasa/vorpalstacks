@@ -143,6 +143,72 @@ func (r *TestRunner) dynamoDBPITRTests(ctx context.Context, client *dynamodb.Cli
 		return nil
 	}))
 
+	rpidTable := fmt.Sprintf("PitrRpid-%d", suffix)
+	results = append(results, r.RunTest("dynamodb", "UpdateContinuousBackups_StatusAndRecoveryPeriod", func() error {
+		cleanupTable, err := createDynamoTestTable(ctx, client, rpidTable)
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		enable, err := client.UpdateContinuousBackups(ctx, &dynamodb.UpdateContinuousBackupsInput{
+			TableName: aws.String(rpidTable),
+			PointInTimeRecoverySpecification: &types.PointInTimeRecoverySpecification{
+				PointInTimeRecoveryEnabled: aws.Bool(true),
+				RecoveryPeriodInDays:       aws.Int32(1),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("enable recovery: %w", err)
+		}
+		// Continuous backups exist on every table, so the outer status is
+		// ENABLED regardless of the recovery setting.
+		if enable.ContinuousBackupsDescription.ContinuousBackupsStatus != types.ContinuousBackupsStatusEnabled {
+			return fmt.Errorf("enable response ContinuousBackupsStatus = %q, want ENABLED", enable.ContinuousBackupsDescription.ContinuousBackupsStatus)
+		}
+		if enable.ContinuousBackupsDescription.PointInTimeRecoveryDescription == nil ||
+			enable.ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus != types.PointInTimeRecoveryStatusEnabled {
+			return fmt.Errorf("enable response recovery status = %+v, want ENABLED", enable.ContinuousBackupsDescription.PointInTimeRecoveryDescription)
+		}
+
+		desc, err := client.DescribeContinuousBackups(ctx, &dynamodb.DescribeContinuousBackupsInput{
+			TableName: aws.String(rpidTable),
+		})
+		if err != nil {
+			return fmt.Errorf("describe continuous backups: %w", err)
+		}
+		pitr := desc.ContinuousBackupsDescription.PointInTimeRecoveryDescription
+		if pitr == nil || pitr.RecoveryPeriodInDays == nil || *pitr.RecoveryPeriodInDays != 1 {
+			return fmt.Errorf("describe recovery period = %+v, want 1", pitr)
+		}
+		if pitr.EarliestRestorableDateTime == nil || pitr.LatestRestorableDateTime == nil {
+			return fmt.Errorf("describe must report the restorable window, got %+v", pitr)
+		}
+		// A fresh enable with a 1-day period: the window starts at the
+		// enable moment (now) and must not reach a full day back.
+		if pitr.EarliestRestorableDateTime.Before(time.Now().Add(-time.Hour)) {
+			return fmt.Errorf("earliest restorable %v must start at the recent enable moment", pitr.EarliestRestorableDateTime)
+		}
+
+		disable, err := client.UpdateContinuousBackups(ctx, &dynamodb.UpdateContinuousBackupsInput{
+			TableName: aws.String(rpidTable),
+			PointInTimeRecoverySpecification: &types.PointInTimeRecoverySpecification{
+				PointInTimeRecoveryEnabled: aws.Bool(false),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("disable recovery: %w", err)
+		}
+		if disable.ContinuousBackupsDescription.ContinuousBackupsStatus != types.ContinuousBackupsStatusEnabled {
+			return fmt.Errorf("disable response ContinuousBackupsStatus = %q, want ENABLED (continuous backups exist on every table)", disable.ContinuousBackupsDescription.ContinuousBackupsStatus)
+		}
+		if disable.ContinuousBackupsDescription.PointInTimeRecoveryDescription == nil ||
+			disable.ContinuousBackupsDescription.PointInTimeRecoveryDescription.PointInTimeRecoveryStatus != types.PointInTimeRecoveryStatusDisabled {
+			return fmt.Errorf("disable response recovery status = %+v, want DISABLED", disable.ContinuousBackupsDescription.PointInTimeRecoveryDescription)
+		}
+		return nil
+	}))
+
 	noPitrTable := fmt.Sprintf("PitrNone-%d", suffix)
 	results = append(results, r.RunTest("dynamodb", "RestoreTableToPointInTime_WithoutRecovery_Rejected", func() error {
 		cleanupTable, err := createDynamoTestTable(ctx, client, noPitrTable)

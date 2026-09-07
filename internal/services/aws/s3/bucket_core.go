@@ -1161,6 +1161,12 @@ func (s *S3Service) deleteObjectCore(ctx context.Context, objectStore s3store.Ob
 	}
 	result, err := objectStore.DeleteWithVersion(ctx, in.Bucket, in.Key, in.VersionID)
 	if err != nil {
+		// A non-versioned bucket only ever holds the null version, so a
+		// version-addressed delete there references a version that does
+		// not exist — the AWS-documented NoSuchVersion case.
+		if errors.Is(err, s3store.ErrVersioningNotEnabled) {
+			return nil, ErrNoSuchVersion
+		}
 		return nil, err
 	}
 	if result == nil {
@@ -1195,9 +1201,13 @@ func (s *S3Service) deleteObjectsCore(ctx context.Context, objectStore s3store.O
 		if obj.VersionID != "" {
 			delResult, err := objectStore.DeleteWithVersion(ctx, in.Bucket, obj.Key, obj.VersionID)
 			if err != nil {
+				code := "InternalError"
+				if errors.Is(err, s3store.ErrVersioningNotEnabled) {
+					code = "NoSuchVersion"
+				}
 				result.Errors = append(result.Errors, AdminDeleteError{
 					Key:     obj.Key,
-					Code:    "InternalError",
+					Code:    code,
 					Message: err.Error(),
 				})
 				continue

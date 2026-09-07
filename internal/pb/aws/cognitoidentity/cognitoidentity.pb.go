@@ -218,8 +218,8 @@ func (RoleMappingType) EnumDescriptor() ([]byte, []int) {
 
 type CognitoIdentityProvider struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Clientid             string                 `protobuf:"bytes,448902180,opt,name=clientid,proto3" json:"clientid,omitempty"`
-	Providername         string                 `protobuf:"bytes,485101816,opt,name=providername,proto3" json:"providername,omitempty"`
+	Clientid             *string                `protobuf:"bytes,448902180,opt,name=clientid,proto3,oneof" json:"clientid,omitempty"`
+	Providername         *string                `protobuf:"bytes,485101816,opt,name=providername,proto3,oneof" json:"providername,omitempty"`
 	Serversidetokencheck *bool                  `protobuf:"varint,291427543,opt,name=serversidetokencheck,proto3,oneof" json:"serversidetokencheck,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -256,15 +256,15 @@ func (*CognitoIdentityProvider) Descriptor() ([]byte, []int) {
 }
 
 func (x *CognitoIdentityProvider) GetClientid() string {
-	if x != nil {
-		return x.Clientid
+	if x != nil && x.Clientid != nil {
+		return *x.Clientid
 	}
 	return ""
 }
 
 func (x *CognitoIdentityProvider) GetProvidername() string {
-	if x != nil {
-		return x.Providername
+	if x != nil && x.Providername != nil {
+		return *x.Providername
 	}
 	return ""
 }
@@ -278,7 +278,7 @@ func (x *CognitoIdentityProvider) GetServersidetokencheck() bool {
 
 type ConcurrentModificationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -314,8 +314,8 @@ func (*ConcurrentModificationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConcurrentModificationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -325,7 +325,7 @@ type CreateIdentityPoolInput struct {
 	Allowclassicflow               *bool                      `protobuf:"varint,101299523,opt,name=allowclassicflow,proto3,oneof" json:"allowclassicflow,omitempty"`
 	Allowunauthenticatedidentities *bool                      `protobuf:"varint,290546287,opt,name=allowunauthenticatedidentities,proto3,oneof" json:"allowunauthenticatedidentities,omitempty"`
 	Cognitoidentityproviders       []*CognitoIdentityProvider `protobuf:"bytes,109610365,rep,name=cognitoidentityproviders,proto3" json:"cognitoidentityproviders,omitempty"`
-	Developerprovidername          string                     `protobuf:"bytes,517589792,opt,name=developerprovidername,proto3" json:"developerprovidername,omitempty"`
+	Developerprovidername          *string                    `protobuf:"bytes,517589792,opt,name=developerprovidername,proto3,oneof" json:"developerprovidername,omitempty"`
 	Identitypoolname               string                     `protobuf:"bytes,41275091,opt,name=identitypoolname,proto3" json:"identitypoolname,omitempty"`
 	Identitypooltags               map[string]string          `protobuf:"bytes,305630405,rep,name=identitypooltags,proto3" json:"identitypooltags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Openidconnectproviderarns      []string                   `protobuf:"bytes,137395556,rep,name=openidconnectproviderarns,proto3" json:"openidconnectproviderarns,omitempty"`
@@ -387,8 +387,8 @@ func (x *CreateIdentityPoolInput) GetCognitoidentityproviders() []*CognitoIdenti
 }
 
 func (x *CreateIdentityPoolInput) GetDeveloperprovidername() string {
-	if x != nil {
-		return x.Developerprovidername
+	if x != nil && x.Developerprovidername != nil {
+		return *x.Developerprovidername
 	}
 	return ""
 }
@@ -430,10 +430,10 @@ func (x *CreateIdentityPoolInput) GetSupportedloginproviders() map[string]string
 
 type Credentials struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accesskeyid   string                 `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3" json:"accesskeyid,omitempty"`
-	Expiration    string                 `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Secretkey     string                 `protobuf:"bytes,465028505,opt,name=secretkey,proto3" json:"secretkey,omitempty"`
-	Sessiontoken  string                 `protobuf:"bytes,211161069,opt,name=sessiontoken,proto3" json:"sessiontoken,omitempty"`
+	Accesskeyid   *string                `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3,oneof" json:"accesskeyid,omitempty"`
+	Expiration    *string                `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
+	Secretkey     *string                `protobuf:"bytes,465028505,opt,name=secretkey,proto3,oneof" json:"secretkey,omitempty"`
+	Sessiontoken  *string                `protobuf:"bytes,211161069,opt,name=sessiontoken,proto3,oneof" json:"sessiontoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -469,29 +469,29 @@ func (*Credentials) Descriptor() ([]byte, []int) {
 }
 
 func (x *Credentials) GetAccesskeyid() string {
-	if x != nil {
-		return x.Accesskeyid
+	if x != nil && x.Accesskeyid != nil {
+		return *x.Accesskeyid
 	}
 	return ""
 }
 
 func (x *Credentials) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
 
 func (x *Credentials) GetSecretkey() string {
-	if x != nil {
-		return x.Secretkey
+	if x != nil && x.Secretkey != nil {
+		return *x.Secretkey
 	}
 	return ""
 }
 
 func (x *Credentials) GetSessiontoken() string {
-	if x != nil {
-		return x.Sessiontoken
+	if x != nil && x.Sessiontoken != nil {
+		return *x.Sessiontoken
 	}
 	return ""
 }
@@ -718,7 +718,7 @@ func (x *DescribeIdentityPoolInput) GetIdentitypoolid() string {
 
 type DeveloperUserAlreadyRegisteredException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -754,15 +754,15 @@ func (*DeveloperUserAlreadyRegisteredException) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeveloperUserAlreadyRegisteredException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ExternalServiceException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -798,15 +798,15 @@ func (*ExternalServiceException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExternalServiceException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type GetCredentialsForIdentityInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Customrolearn string                 `protobuf:"bytes,146997938,opt,name=customrolearn,proto3" json:"customrolearn,omitempty"`
+	Customrolearn *string                `protobuf:"bytes,146997938,opt,name=customrolearn,proto3,oneof" json:"customrolearn,omitempty"`
 	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
 	Logins        map[string]string      `protobuf:"bytes,109702772,rep,name=logins,proto3" json:"logins,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
@@ -844,8 +844,8 @@ func (*GetCredentialsForIdentityInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetCredentialsForIdentityInput) GetCustomrolearn() string {
-	if x != nil {
-		return x.Customrolearn
+	if x != nil && x.Customrolearn != nil {
+		return *x.Customrolearn
 	}
 	return ""
 }
@@ -867,7 +867,7 @@ func (x *GetCredentialsForIdentityInput) GetLogins() map[string]string {
 type GetCredentialsForIdentityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Credentials   *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
+	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -910,15 +910,15 @@ func (x *GetCredentialsForIdentityResponse) GetCredentials() *Credentials {
 }
 
 func (x *GetCredentialsForIdentityResponse) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
 
 type GetIdInput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Accountid      string                 `protobuf:"bytes,65954002,opt,name=accountid,proto3" json:"accountid,omitempty"`
+	Accountid      *string                `protobuf:"bytes,65954002,opt,name=accountid,proto3,oneof" json:"accountid,omitempty"`
 	Identitypoolid string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
 	Logins         map[string]string      `protobuf:"bytes,109702772,rep,name=logins,proto3" json:"logins,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields  protoimpl.UnknownFields
@@ -956,8 +956,8 @@ func (*GetIdInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetIdInput) GetAccountid() string {
-	if x != nil {
-		return x.Accountid
+	if x != nil && x.Accountid != nil {
+		return *x.Accountid
 	}
 	return ""
 }
@@ -978,7 +978,7 @@ func (x *GetIdInput) GetLogins() map[string]string {
 
 type GetIdResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
+	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1014,8 +1014,8 @@ func (*GetIdResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetIdResponse) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
@@ -1066,7 +1066,7 @@ func (x *GetIdentityPoolRolesInput) GetIdentitypoolid() string {
 
 type GetIdentityPoolRolesResponse struct {
 	state          protoimpl.MessageState  `protogen:"open.v1"`
-	Identitypoolid string                  `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
+	Identitypoolid *string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3,oneof" json:"identitypoolid,omitempty"`
 	Rolemappings   map[string]*RoleMapping `protobuf:"bytes,96154047,rep,name=rolemappings,proto3" json:"rolemappings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Roles          map[string]string       `protobuf:"bytes,511168127,rep,name=roles,proto3" json:"roles,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields  protoimpl.UnknownFields
@@ -1104,8 +1104,8 @@ func (*GetIdentityPoolRolesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetIdentityPoolRolesResponse) GetIdentitypoolid() string {
-	if x != nil {
-		return x.Identitypoolid
+	if x != nil && x.Identitypoolid != nil {
+		return *x.Identitypoolid
 	}
 	return ""
 }
@@ -1126,7 +1126,7 @@ func (x *GetIdentityPoolRolesResponse) GetRoles() map[string]string {
 
 type GetOpenIdTokenForDeveloperIdentityInput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Identityid     string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
+	Identityid     *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	Identitypoolid string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
 	Logins         map[string]string      `protobuf:"bytes,109702772,rep,name=logins,proto3" json:"logins,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Principaltags  map[string]string      `protobuf:"bytes,346698229,rep,name=principaltags,proto3" json:"principaltags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -1166,8 +1166,8 @@ func (*GetOpenIdTokenForDeveloperIdentityInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetOpenIdTokenForDeveloperIdentityInput) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
@@ -1202,8 +1202,8 @@ func (x *GetOpenIdTokenForDeveloperIdentityInput) GetTokenduration() int64 {
 
 type GetOpenIdTokenForDeveloperIdentityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
-	Token         string                 `protobuf:"bytes,439704531,opt,name=token,proto3" json:"token,omitempty"`
+	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
+	Token         *string                `protobuf:"bytes,439704531,opt,name=token,proto3,oneof" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1239,15 +1239,15 @@ func (*GetOpenIdTokenForDeveloperIdentityResponse) Descriptor() ([]byte, []int) 
 }
 
 func (x *GetOpenIdTokenForDeveloperIdentityResponse) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
 
 func (x *GetOpenIdTokenForDeveloperIdentityResponse) GetToken() string {
-	if x != nil {
-		return x.Token
+	if x != nil && x.Token != nil {
+		return *x.Token
 	}
 	return ""
 }
@@ -1306,8 +1306,8 @@ func (x *GetOpenIdTokenInput) GetLogins() map[string]string {
 
 type GetOpenIdTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
-	Token         string                 `protobuf:"bytes,439704531,opt,name=token,proto3" json:"token,omitempty"`
+	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
+	Token         *string                `protobuf:"bytes,439704531,opt,name=token,proto3,oneof" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1343,15 +1343,15 @@ func (*GetOpenIdTokenResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetOpenIdTokenResponse) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
 
 func (x *GetOpenIdTokenResponse) GetToken() string {
-	if x != nil {
-		return x.Token
+	if x != nil && x.Token != nil {
+		return *x.Token
 	}
 	return ""
 }
@@ -1410,8 +1410,8 @@ func (x *GetPrincipalTagAttributeMapInput) GetIdentityprovidername() string {
 
 type GetPrincipalTagAttributeMapResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Identitypoolid       string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
-	Identityprovidername string                 `protobuf:"bytes,419175410,opt,name=identityprovidername,proto3" json:"identityprovidername,omitempty"`
+	Identitypoolid       *string                `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3,oneof" json:"identitypoolid,omitempty"`
+	Identityprovidername *string                `protobuf:"bytes,419175410,opt,name=identityprovidername,proto3,oneof" json:"identityprovidername,omitempty"`
 	Principaltags        map[string]string      `protobuf:"bytes,346698229,rep,name=principaltags,proto3" json:"principaltags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Usedefaults          *bool                  `protobuf:"varint,306413999,opt,name=usedefaults,proto3,oneof" json:"usedefaults,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -1449,15 +1449,15 @@ func (*GetPrincipalTagAttributeMapResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPrincipalTagAttributeMapResponse) GetIdentitypoolid() string {
-	if x != nil {
-		return x.Identitypoolid
+	if x != nil && x.Identitypoolid != nil {
+		return *x.Identitypoolid
 	}
 	return ""
 }
 
 func (x *GetPrincipalTagAttributeMapResponse) GetIdentityprovidername() string {
-	if x != nil {
-		return x.Identityprovidername
+	if x != nil && x.Identityprovidername != nil {
+		return *x.Identityprovidername
 	}
 	return ""
 }
@@ -1478,9 +1478,9 @@ func (x *GetPrincipalTagAttributeMapResponse) GetUsedefaults() bool {
 
 type IdentityDescription struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Creationdate     string                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Identityid       string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
-	Lastmodifieddate string                 `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3" json:"lastmodifieddate,omitempty"`
+	Creationdate     *string                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Identityid       *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
+	Lastmodifieddate *string                `protobuf:"bytes,24249427,opt,name=lastmodifieddate,proto3,oneof" json:"lastmodifieddate,omitempty"`
 	Logins           []string               `protobuf:"bytes,109702772,rep,name=logins,proto3" json:"logins,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -1517,22 +1517,22 @@ func (*IdentityDescription) Descriptor() ([]byte, []int) {
 }
 
 func (x *IdentityDescription) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *IdentityDescription) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
 
 func (x *IdentityDescription) GetLastmodifieddate() string {
-	if x != nil {
-		return x.Lastmodifieddate
+	if x != nil && x.Lastmodifieddate != nil {
+		return *x.Lastmodifieddate
 	}
 	return ""
 }
@@ -1549,7 +1549,7 @@ type IdentityPool struct {
 	Allowclassicflow               *bool                      `protobuf:"varint,101299523,opt,name=allowclassicflow,proto3,oneof" json:"allowclassicflow,omitempty"`
 	Allowunauthenticatedidentities *bool                      `protobuf:"varint,290546287,opt,name=allowunauthenticatedidentities,proto3,oneof" json:"allowunauthenticatedidentities,omitempty"`
 	Cognitoidentityproviders       []*CognitoIdentityProvider `protobuf:"bytes,109610365,rep,name=cognitoidentityproviders,proto3" json:"cognitoidentityproviders,omitempty"`
-	Developerprovidername          string                     `protobuf:"bytes,517589792,opt,name=developerprovidername,proto3" json:"developerprovidername,omitempty"`
+	Developerprovidername          *string                    `protobuf:"bytes,517589792,opt,name=developerprovidername,proto3,oneof" json:"developerprovidername,omitempty"`
 	Identitypoolid                 string                     `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
 	Identitypoolname               string                     `protobuf:"bytes,41275091,opt,name=identitypoolname,proto3" json:"identitypoolname,omitempty"`
 	Identitypooltags               map[string]string          `protobuf:"bytes,305630405,rep,name=identitypooltags,proto3" json:"identitypooltags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -1612,8 +1612,8 @@ func (x *IdentityPool) GetCognitoidentityproviders() []*CognitoIdentityProvider 
 }
 
 func (x *IdentityPool) GetDeveloperprovidername() string {
-	if x != nil {
-		return x.Developerprovidername
+	if x != nil && x.Developerprovidername != nil {
+		return *x.Developerprovidername
 	}
 	return ""
 }
@@ -1662,8 +1662,8 @@ func (x *IdentityPool) GetSupportedloginproviders() map[string]string {
 
 type IdentityPoolShortDescription struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Identitypoolid   string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
-	Identitypoolname string                 `protobuf:"bytes,41275091,opt,name=identitypoolname,proto3" json:"identitypoolname,omitempty"`
+	Identitypoolid   *string                `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3,oneof" json:"identitypoolid,omitempty"`
+	Identitypoolname *string                `protobuf:"bytes,41275091,opt,name=identitypoolname,proto3,oneof" json:"identitypoolname,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1699,22 +1699,22 @@ func (*IdentityPoolShortDescription) Descriptor() ([]byte, []int) {
 }
 
 func (x *IdentityPoolShortDescription) GetIdentitypoolid() string {
-	if x != nil {
-		return x.Identitypoolid
+	if x != nil && x.Identitypoolid != nil {
+		return *x.Identitypoolid
 	}
 	return ""
 }
 
 func (x *IdentityPoolShortDescription) GetIdentitypoolname() string {
-	if x != nil {
-		return x.Identitypoolname
+	if x != nil && x.Identitypoolname != nil {
+		return *x.Identitypoolname
 	}
 	return ""
 }
 
 type InternalErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1750,15 +1750,15 @@ func (*InternalErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InternalErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidIdentityPoolConfigurationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1794,15 +1794,15 @@ func (*InvalidIdentityPoolConfigurationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidIdentityPoolConfigurationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1838,15 +1838,15 @@ func (*InvalidParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1882,8 +1882,8 @@ func (*LimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *LimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1893,7 +1893,7 @@ type ListIdentitiesInput struct {
 	Hidedisabled   *bool                  `protobuf:"varint,189789070,opt,name=hidedisabled,proto3,oneof" json:"hidedisabled,omitempty"`
 	Identitypoolid string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
 	Maxresults     int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken      string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1950,8 +1950,8 @@ func (x *ListIdentitiesInput) GetMaxresults() int32 {
 }
 
 func (x *ListIdentitiesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -1959,8 +1959,8 @@ func (x *ListIdentitiesInput) GetNexttoken() string {
 type ListIdentitiesResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Identities     []*IdentityDescription `protobuf:"bytes,452470428,rep,name=identities,proto3" json:"identities,omitempty"`
-	Identitypoolid string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
-	Nexttoken      string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Identitypoolid *string                `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3,oneof" json:"identitypoolid,omitempty"`
+	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2003,15 +2003,15 @@ func (x *ListIdentitiesResponse) GetIdentities() []*IdentityDescription {
 }
 
 func (x *ListIdentitiesResponse) GetIdentitypoolid() string {
-	if x != nil {
-		return x.Identitypoolid
+	if x != nil && x.Identitypoolid != nil {
+		return *x.Identitypoolid
 	}
 	return ""
 }
 
 func (x *ListIdentitiesResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2019,7 +2019,7 @@ func (x *ListIdentitiesResponse) GetNexttoken() string {
 type ListIdentityPoolsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    int32                  `protobuf:"varint,275174450,opt,name=maxresults,proto3" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2062,8 +2062,8 @@ func (x *ListIdentityPoolsInput) GetMaxresults() int32 {
 }
 
 func (x *ListIdentityPoolsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2071,7 +2071,7 @@ func (x *ListIdentityPoolsInput) GetNexttoken() string {
 type ListIdentityPoolsResponse struct {
 	state         protoimpl.MessageState          `protogen:"open.v1"`
 	Identitypools []*IdentityPoolShortDescription `protobuf:"bytes,158350303,rep,name=identitypools,proto3" json:"identitypools,omitempty"`
-	Nexttoken     string                          `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                         `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2114,8 +2114,8 @@ func (x *ListIdentityPoolsResponse) GetIdentitypools() []*IdentityPoolShortDescr
 }
 
 func (x *ListIdentityPoolsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2210,11 +2210,11 @@ func (x *ListTagsForResourceResponse) GetTags() map[string]string {
 
 type LookupDeveloperIdentityInput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Developeruseridentifier string                 `protobuf:"bytes,349826618,opt,name=developeruseridentifier,proto3" json:"developeruseridentifier,omitempty"`
-	Identityid              string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
+	Developeruseridentifier *string                `protobuf:"bytes,349826618,opt,name=developeruseridentifier,proto3,oneof" json:"developeruseridentifier,omitempty"`
+	Identityid              *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	Identitypoolid          string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
 	Maxresults              *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken               string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken               *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2250,15 +2250,15 @@ func (*LookupDeveloperIdentityInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *LookupDeveloperIdentityInput) GetDeveloperuseridentifier() string {
-	if x != nil {
-		return x.Developeruseridentifier
+	if x != nil && x.Developeruseridentifier != nil {
+		return *x.Developeruseridentifier
 	}
 	return ""
 }
 
 func (x *LookupDeveloperIdentityInput) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
@@ -2278,8 +2278,8 @@ func (x *LookupDeveloperIdentityInput) GetMaxresults() int32 {
 }
 
 func (x *LookupDeveloperIdentityInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2287,8 +2287,8 @@ func (x *LookupDeveloperIdentityInput) GetNexttoken() string {
 type LookupDeveloperIdentityResponse struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Developeruseridentifierlist []string               `protobuf:"bytes,86156134,rep,name=developeruseridentifierlist,proto3" json:"developeruseridentifierlist,omitempty"`
-	Identityid                  string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
-	Nexttoken                   string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Identityid                  *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
+	Nexttoken                   *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -2331,15 +2331,15 @@ func (x *LookupDeveloperIdentityResponse) GetDeveloperuseridentifierlist() []str
 }
 
 func (x *LookupDeveloperIdentityResponse) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
 
 func (x *LookupDeveloperIdentityResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2482,7 +2482,7 @@ func (x *MergeDeveloperIdentitiesInput) GetSourceuseridentifier() string {
 
 type MergeDeveloperIdentitiesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
+	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2518,15 +2518,15 @@ func (*MergeDeveloperIdentitiesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *MergeDeveloperIdentitiesResponse) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
 
 type NotAuthorizedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2562,15 +2562,15 @@ func (*NotAuthorizedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NotAuthorizedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2606,15 +2606,15 @@ func (*ResourceConflictException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2650,8 +2650,8 @@ func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2890,8 +2890,8 @@ func (x *SetPrincipalTagAttributeMapInput) GetUsedefaults() bool {
 
 type SetPrincipalTagAttributeMapResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Identitypoolid       string                 `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3" json:"identitypoolid,omitempty"`
-	Identityprovidername string                 `protobuf:"bytes,419175410,opt,name=identityprovidername,proto3" json:"identityprovidername,omitempty"`
+	Identitypoolid       *string                `protobuf:"bytes,23936765,opt,name=identitypoolid,proto3,oneof" json:"identitypoolid,omitempty"`
+	Identityprovidername *string                `protobuf:"bytes,419175410,opt,name=identityprovidername,proto3,oneof" json:"identityprovidername,omitempty"`
 	Principaltags        map[string]string      `protobuf:"bytes,346698229,rep,name=principaltags,proto3" json:"principaltags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Usedefaults          *bool                  `protobuf:"varint,306413999,opt,name=usedefaults,proto3,oneof" json:"usedefaults,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -2929,15 +2929,15 @@ func (*SetPrincipalTagAttributeMapResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *SetPrincipalTagAttributeMapResponse) GetIdentitypoolid() string {
-	if x != nil {
-		return x.Identitypoolid
+	if x != nil && x.Identitypoolid != nil {
+		return *x.Identitypoolid
 	}
 	return ""
 }
 
 func (x *SetPrincipalTagAttributeMapResponse) GetIdentityprovidername() string {
-	if x != nil {
-		return x.Identityprovidername
+	if x != nil && x.Identityprovidername != nil {
+		return *x.Identityprovidername
 	}
 	return ""
 }
@@ -3046,7 +3046,7 @@ func (*TagResourceResponse) Descriptor() ([]byte, []int) {
 
 type TooManyRequestsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3082,8 +3082,8 @@ func (*TooManyRequestsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyRequestsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3219,7 +3219,7 @@ func (x *UnlinkIdentityInput) GetLoginstoremove() []string {
 type UnprocessedIdentityId struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Errorcode     ErrorCode              `protobuf:"varint,34663193,opt,name=errorcode,proto3,enum=cognitoidentity.ErrorCode" json:"errorcode,omitempty"`
-	Identityid    string                 `protobuf:"bytes,234187223,opt,name=identityid,proto3" json:"identityid,omitempty"`
+	Identityid    *string                `protobuf:"bytes,234187223,opt,name=identityid,proto3,oneof" json:"identityid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3262,8 +3262,8 @@ func (x *UnprocessedIdentityId) GetErrorcode() ErrorCode {
 }
 
 func (x *UnprocessedIdentityId) GetIdentityid() string {
-	if x != nil {
-		return x.Identityid
+	if x != nil && x.Identityid != nil {
+		return *x.Identityid
 	}
 	return ""
 }
@@ -3360,19 +3360,23 @@ var File_cognitoidentity_proto protoreflect.FileDescriptor
 
 const file_cognitoidentity_proto_rawDesc = "" +
 	"\n" +
-	"\x15cognitoidentity.proto\x12\x0fcognitoidentity\x1a\fcommon.proto\x1a\taws.proto\"\xb7\x01\n" +
-	"\x17CognitoIdentityProvider\x12\x1e\n" +
-	"\bclientid\x18\xa4\xe8\x86\xd6\x01 \x01(\tR\bclientid\x12&\n" +
-	"\fprovidername\x18\xf8\xa1\xa8\xe7\x01 \x01(\tR\fprovidername\x12;\n" +
-	"\x14serversidetokencheck\x18ש\xfb\x8a\x01 \x01(\bH\x00R\x14serversidetokencheck\x88\x01\x01B\x17\n" +
-	"\x15_serversidetokencheck\">\n" +
-	"\x1fConcurrentModificationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9e\a\n" +
+	"\x15cognitoidentity.proto\x12\x0fcognitoidentity\x1a\fcommon.proto\x1a\taws.proto\"\xdf\x01\n" +
+	"\x17CognitoIdentityProvider\x12#\n" +
+	"\bclientid\x18\xa4\xe8\x86\xd6\x01 \x01(\tH\x00R\bclientid\x88\x01\x01\x12+\n" +
+	"\fprovidername\x18\xf8\xa1\xa8\xe7\x01 \x01(\tH\x01R\fprovidername\x88\x01\x01\x12;\n" +
+	"\x14serversidetokencheck\x18ש\xfb\x8a\x01 \x01(\bH\x02R\x14serversidetokencheck\x88\x01\x01B\v\n" +
+	"\t_clientidB\x0f\n" +
+	"\r_providernameB\x17\n" +
+	"\x15_serversidetokencheck\"O\n" +
+	"\x1fConcurrentModificationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xbd\a\n" +
 	"\x17CreateIdentityPoolInput\x122\n" +
 	"\x10allowclassicflow\x18\xc3\xea\xa60 \x01(\bH\x00R\x10allowclassicflow\x88\x01\x01\x12O\n" +
 	"\x1eallowunauthenticatedidentities\x18\xef\xc4Ŋ\x01 \x01(\bH\x01R\x1eallowunauthenticatedidentities\x88\x01\x01\x12g\n" +
-	"\x18cognitoidentityproviders\x18\xfd\x8a\xa24 \x03(\v2(.cognitoidentity.CognitoIdentityProviderR\x18cognitoidentityproviders\x128\n" +
-	"\x15developerprovidername\x18\xa0\x96\xe7\xf6\x01 \x01(\tR\x15developerprovidername\x12-\n" +
+	"\x18cognitoidentityproviders\x18\xfd\x8a\xa24 \x03(\v2(.cognitoidentity.CognitoIdentityProviderR\x18cognitoidentityproviders\x12=\n" +
+	"\x15developerprovidername\x18\xa0\x96\xe7\xf6\x01 \x01(\tH\x02R\x15developerprovidername\x88\x01\x01\x12-\n" +
 	"\x10identitypoolname\x18ӝ\xd7\x13 \x01(\tR\x10identitypoolname\x12n\n" +
 	"\x10identitypooltags\x18řޑ\x01 \x03(\v2>.cognitoidentity.CreateIdentityPoolInput.IdentitypooltagsEntryR\x10identitypooltags\x12?\n" +
 	"\x19openidconnectproviderarns\x18\xe4\xfa\xc1A \x03(\tR\x19openidconnectproviderarns\x12-\n" +
@@ -3385,14 +3389,20 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
 	"\x11_allowclassicflowB!\n" +
-	"\x1f_allowunauthenticatedidentities\"\x9f\x01\n" +
-	"\vCredentials\x12$\n" +
-	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x12!\n" +
+	"\x1f_allowunauthenticatedidentitiesB\x18\n" +
+	"\x16_developerprovidername\"\xf1\x01\n" +
+	"\vCredentials\x12)\n" +
+	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tH\x00R\vaccesskeyid\x88\x01\x01\x12&\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12 \n" +
-	"\tsecretkey\x18\x99\x8b\xdf\xdd\x01 \x01(\tR\tsecretkey\x12%\n" +
-	"\fsessiontoken\x18\xed\x9f\xd8d \x01(\tR\fsessiontoken\"M\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\x01R\n" +
+	"expiration\x88\x01\x01\x12%\n" +
+	"\tsecretkey\x18\x99\x8b\xdf\xdd\x01 \x01(\tH\x02R\tsecretkey\x88\x01\x01\x12*\n" +
+	"\fsessiontoken\x18\xed\x9f\xd8d \x01(\tH\x03R\fsessiontoken\x88\x01\x01B\x0e\n" +
+	"\f_accesskeyidB\r\n" +
+	"\v_expirationB\f\n" +
+	"\n" +
+	"_secretkeyB\x0f\n" +
+	"\r_sessiontoken\"M\n" +
 	"\x15DeleteIdentitiesInput\x124\n" +
 	"\x13identityidstodelete\x18\xe6楢\x01 \x03(\tR\x13identityidstodelete\"~\n" +
 	"\x18DeleteIdentitiesResponse\x12b\n" +
@@ -3404,41 +3414,50 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
 	"identityid\"F\n" +
 	"\x19DescribeIdentityPoolInput\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\"F\n" +
-	"'DeveloperUserAlreadyRegisteredException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18ExternalServiceException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xff\x01\n" +
-	"\x1eGetCredentialsForIdentityInput\x12'\n" +
-	"\rcustomrolearn\x18\xb2\x85\x8cF \x01(\tR\rcustomrolearn\x12!\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\"W\n" +
+	"'DeveloperUserAlreadyRegisteredException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18ExternalServiceException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x96\x02\n" +
+	"\x1eGetCredentialsForIdentityInput\x12,\n" +
+	"\rcustomrolearn\x18\xb2\x85\x8cF \x01(\tH\x00R\rcustomrolearn\x88\x01\x01\x12!\n" +
 	"\n" +
 	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
 	"identityid\x12V\n" +
 	"\x06logins\x18\xf4ܧ4 \x03(\v2;.cognitoidentity.GetCredentialsForIdentityInput.LoginsEntryR\x06logins\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8a\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
+	"\x0e_customrolearn\"\x9e\x01\n" +
 	"!GetCredentialsForIdentityResponse\x12B\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x1c.cognitoidentity.CredentialsR\vcredentials\x12!\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x1c.cognitoidentity.CredentialsR\vcredentials\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\"\xd7\x01\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01B\r\n" +
+	"\v_identityid\"\xea\x01\n" +
 	"\n" +
-	"GetIdInput\x12\x1f\n" +
-	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tR\taccountid\x12)\n" +
+	"GetIdInput\x12$\n" +
+	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tH\x00R\taccountid\x88\x01\x01\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12B\n" +
 	"\x06logins\x18\xf4ܧ4 \x03(\v2'.cognitoidentity.GetIdInput.LoginsEntryR\x06logins\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"2\n" +
-	"\rGetIdResponse\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\f\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\"F\n" +
+	"_accountid\"F\n" +
+	"\rGetIdResponse\x12&\n" +
+	"\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01B\r\n" +
+	"\v_identityid\"F\n" +
 	"\x19GetIdentityPoolRolesInput\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\"\x9e\x03\n" +
-	"\x1cGetIdentityPoolRolesResponse\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12f\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\"\xb6\x03\n" +
+	"\x1cGetIdentityPoolRolesResponse\x12.\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tH\x00R\x0eidentitypoolid\x88\x01\x01\x12f\n" +
 	"\frolemappings\x18\xbf\xe3\xec- \x03(\v2?.cognitoidentity.GetIdentityPoolRolesResponse.RolemappingsEntryR\frolemappings\x12R\n" +
 	"\x05roles\x18\xff\x9c\xdf\xf3\x01 \x03(\v28.cognitoidentity.GetIdentityPoolRolesResponse.RolesEntryR\x05roles\x1a]\n" +
 	"\x11RolemappingsEntry\x12\x10\n" +
@@ -3447,27 +3466,31 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\n" +
 	"RolesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8d\x04\n" +
-	"'GetOpenIdTokenForDeveloperIdentityInput\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_identitypoolid\"\xa1\x04\n" +
+	"'GetOpenIdTokenForDeveloperIdentityInput\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\x12)\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12_\n" +
 	"\x06logins\x18\xf4ܧ4 \x03(\v2D.cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput.LoginsEntryR\x06logins\x12u\n" +
 	"\rprincipaltags\x18\xf5㨥\x01 \x03(\v2K.cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput.PrincipaltagsEntryR\rprincipaltags\x12-\n" +
-	"\rtokenduration\x18\x8f\xa3\x87\xc0\x01 \x01(\x03H\x00R\rtokenduration\x88\x01\x01\x1a9\n" +
+	"\rtokenduration\x18\x8f\xa3\x87\xc0\x01 \x01(\x03H\x01R\rtokenduration\x88\x01\x01\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a@\n" +
 	"\x12PrincipaltagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
-	"\x0e_tokenduration\"i\n" +
-	"*GetOpenIdTokenForDeveloperIdentityResponse\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_identityidB\x10\n" +
+	"\x0e_tokenduration\"\x8c\x01\n" +
+	"*GetOpenIdTokenForDeveloperIdentityResponse\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\x12\x18\n" +
-	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\"\xc0\x01\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01\x12\x1d\n" +
+	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tH\x01R\x05token\x88\x01\x01B\r\n" +
+	"\v_identityidB\b\n" +
+	"\x06_token\"\xc0\x01\n" +
 	"\x13GetOpenIdTokenInput\x12!\n" +
 	"\n" +
 	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
@@ -3475,36 +3498,43 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x06logins\x18\xf4ܧ4 \x03(\v20.cognitoidentity.GetOpenIdTokenInput.LoginsEntryR\x06logins\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"U\n" +
-	"\x16GetOpenIdTokenResponse\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"x\n" +
+	"\x16GetOpenIdTokenResponse\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\x12\x18\n" +
-	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\"\x85\x01\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01\x12\x1d\n" +
+	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tH\x01R\x05token\x88\x01\x01B\r\n" +
+	"\v_identityidB\b\n" +
+	"\x06_token\"\x85\x01\n" +
 	" GetPrincipalTagAttributeMapInput\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x126\n" +
-	"\x14identityprovidername\x18\xf2\xb7\xf0\xc7\x01 \x01(\tR\x14identityprovidername\"\xf8\x02\n" +
-	"#GetPrincipalTagAttributeMapResponse\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x126\n" +
-	"\x14identityprovidername\x18\xf2\xb7\xf0\xc7\x01 \x01(\tR\x14identityprovidername\x12q\n" +
+	"\x14identityprovidername\x18\xf2\xb7\xf0\xc7\x01 \x01(\tR\x14identityprovidername\"\xae\x03\n" +
+	"#GetPrincipalTagAttributeMapResponse\x12.\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tH\x00R\x0eidentitypoolid\x88\x01\x01\x12;\n" +
+	"\x14identityprovidername\x18\xf2\xb7\xf0\xc7\x01 \x01(\tH\x01R\x14identityprovidername\x88\x01\x01\x12q\n" +
 	"\rprincipaltags\x18\xf5㨥\x01 \x03(\v2G.cognitoidentity.GetPrincipalTagAttributeMapResponse.PrincipaltagsEntryR\rprincipaltags\x12)\n" +
-	"\vusedefaults\x18\xaf\x83\x8e\x92\x01 \x01(\bH\x00R\vusedefaults\x88\x01\x01\x1a@\n" +
+	"\vusedefaults\x18\xaf\x83\x8e\x92\x01 \x01(\bH\x02R\vusedefaults\x88\x01\x01\x1a@\n" +
 	"\x12PrincipaltagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
-	"\f_usedefaults\"\xaa\x01\n" +
-	"\x13IdentityDescription\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_identitypoolidB\x17\n" +
+	"\x15_identityprovidernameB\x0e\n" +
+	"\f_usedefaults\"\xee\x01\n" +
+	"\x13IdentityDescription\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\x12-\n" +
-	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tR\x10lastmodifieddate\x12\x19\n" +
-	"\x06logins\x18\xf4ܧ4 \x03(\tR\x06logins\"\xa7\a\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x01R\n" +
+	"identityid\x88\x01\x01\x122\n" +
+	"\x10lastmodifieddate\x18ӈ\xc8\v \x01(\tH\x02R\x10lastmodifieddate\x88\x01\x01\x12\x19\n" +
+	"\x06logins\x18\xf4ܧ4 \x03(\tR\x06loginsB\x0f\n" +
+	"\r_creationdateB\r\n" +
+	"\v_identityidB\x13\n" +
+	"\x11_lastmodifieddate\"\xc6\a\n" +
 	"\fIdentityPool\x122\n" +
 	"\x10allowclassicflow\x18\xc3\xea\xa60 \x01(\bH\x00R\x10allowclassicflow\x88\x01\x01\x12O\n" +
 	"\x1eallowunauthenticatedidentities\x18\xef\xc4Ŋ\x01 \x01(\bH\x01R\x1eallowunauthenticatedidentities\x88\x01\x01\x12g\n" +
-	"\x18cognitoidentityproviders\x18\xfd\x8a\xa24 \x03(\v2(.cognitoidentity.CognitoIdentityProviderR\x18cognitoidentityproviders\x128\n" +
-	"\x15developerprovidername\x18\xa0\x96\xe7\xf6\x01 \x01(\tR\x15developerprovidername\x12)\n" +
+	"\x18cognitoidentityproviders\x18\xfd\x8a\xa24 \x03(\v2(.cognitoidentity.CognitoIdentityProviderR\x18cognitoidentityproviders\x12=\n" +
+	"\x15developerprovidername\x18\xa0\x96\xe7\xf6\x01 \x01(\tH\x02R\x15developerprovidername\x88\x01\x01\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12-\n" +
 	"\x10identitypoolname\x18ӝ\xd7\x13 \x01(\tR\x10identitypoolname\x12c\n" +
 	"\x10identitypooltags\x18řޑ\x01 \x03(\v23.cognitoidentity.IdentityPool.IdentitypooltagsEntryR\x10identitypooltags\x12?\n" +
@@ -3518,64 +3548,91 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
 	"\x11_allowclassicflowB!\n" +
-	"\x1f_allowunauthenticatedidentities\"x\n" +
-	"\x1cIdentityPoolShortDescription\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12-\n" +
-	"\x10identitypoolname\x18ӝ\xd7\x13 \x01(\tR\x10identitypoolname\"5\n" +
-	"\x16InternalErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"H\n" +
-	")InvalidIdentityPoolConfigurationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19InvalidParameterException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc2\x01\n" +
+	"\x1f_allowunauthenticatedidentitiesB\x18\n" +
+	"\x16_developerprovidername\"\xaa\x01\n" +
+	"\x1cIdentityPoolShortDescription\x12.\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tH\x00R\x0eidentitypoolid\x88\x01\x01\x122\n" +
+	"\x10identitypoolname\x18ӝ\xd7\x13 \x01(\tH\x01R\x10identitypoolname\x88\x01\x01B\x11\n" +
+	"\x0f_identitypoolidB\x13\n" +
+	"\x11_identitypoolname\"F\n" +
+	"\x16InternalErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Y\n" +
+	")InvalidIdentityPoolConfigurationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidParameterException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16LimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xd5\x01\n" +
 	"\x13ListIdentitiesInput\x12*\n" +
 	"\fhidedisabled\x18\x8e\xe7\xbfZ \x01(\bH\x00R\fhidedisabled\x88\x01\x01\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12\"\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\x0f\n" +
-	"\r_hidedisabled\"\xae\x01\n" +
+	"maxresults\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\x0f\n" +
+	"\r_hidedisabledB\f\n" +
+	"\n" +
+	"_nexttoken\"\xd9\x01\n" +
 	"\x16ListIdentitiesResponse\x12H\n" +
 	"\n" +
 	"identities\x18\x9c\xcd\xe0\xd7\x01 \x03(\v2$.cognitoidentity.IdentityDescriptionR\n" +
-	"identities\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"]\n" +
+	"identities\x12.\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tH\x00R\x0eidentitypoolid\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\x11\n" +
+	"\x0f_identitypoolidB\f\n" +
+	"\n" +
+	"_nexttoken\"p\n" +
 	"\x16ListIdentityPoolsInput\x12\"\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05R\n" +
-	"maxresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
+	"maxresults\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xa7\x01\n" +
 	"\x19ListIdentityPoolsResponse\x12V\n" +
-	"\ridentitypools\x18\xdf\xf7\xc0K \x03(\v2-.cognitoidentity.IdentityPoolShortDescriptionR\ridentitypools\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"@\n" +
+	"\ridentitypools\x18\xdf\xf7\xc0K \x03(\v2-.cognitoidentity.IdentityPoolShortDescriptionR\ridentitypools\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"@\n" +
 	"\x18ListTagsForResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\xa6\x01\n" +
 	"\x1bListTagsForResourceResponse\x12N\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v26.cognitoidentity.ListTagsForResourceResponse.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x02\n" +
-	"\x1cLookupDeveloperIdentityInput\x12<\n" +
-	"\x17developeruseridentifier\x18\xba\xdc\xe7\xa6\x01 \x01(\tR\x17developeruseridentifier\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcb\x02\n" +
+	"\x1cLookupDeveloperIdentityInput\x12A\n" +
+	"\x17developeruseridentifier\x18\xba\xdc\xe7\xa6\x01 \x01(\tH\x00R\x17developeruseridentifier\x88\x01\x01\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\x12)\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x01R\n" +
+	"identityid\x88\x01\x01\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\xaa\x01\n" +
-	"\x1fLookupDeveloperIdentityResponse\x12C\n" +
-	"\x1bdeveloperuseridentifierlist\x18\xe6Ɗ) \x03(\tR\x1bdeveloperuseridentifierlist\x12!\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x02R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01B\x1a\n" +
+	"\x18_developeruseridentifierB\r\n" +
+	"\v_identityidB\r\n" +
+	"\v_maxresultsB\f\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xa6\x01\n" +
+	"_nexttoken\"\xd1\x01\n" +
+	"\x1fLookupDeveloperIdentityResponse\x12C\n" +
+	"\x1bdeveloperuseridentifierlist\x18\xe6Ɗ) \x03(\tR\x1bdeveloperuseridentifierlist\x12&\n" +
+	"\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_identityidB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa6\x01\n" +
 	"\vMappingRule\x12\x17\n" +
 	"\x05claim\x18\x90\x84\x80\x17 \x01(\tR\x05claim\x12F\n" +
 	"\tmatchtype\x18\xa7\xba\x8d- \x01(\x0e2%.cognitoidentity.MappingRuleMatchTypeR\tmatchtype\x12\x1c\n" +
@@ -3585,17 +3642,24 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x19destinationuseridentifier\x18\xe0猟\x01 \x01(\tR\x19destinationuseridentifier\x128\n" +
 	"\x15developerprovidername\x18\xa0\x96\xe7\xf6\x01 \x01(\tR\x15developerprovidername\x12)\n" +
 	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x125\n" +
-	"\x14sourceuseridentifier\x18\xf1Ǌj \x01(\tR\x14sourceuseridentifier\"E\n" +
-	" MergeDeveloperIdentitiesResponse\x12!\n" +
+	"\x14sourceuseridentifier\x18\xf1Ǌj \x01(\tR\x14sourceuseridentifier\"Y\n" +
+	" MergeDeveloperIdentitiesResponse\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\"5\n" +
-	"\x16NotAuthorizedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19ResourceConflictException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8f\x02\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01B\r\n" +
+	"\v_identityid\"F\n" +
+	"\x16NotAuthorizedException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceConflictException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x8f\x02\n" +
 	"\vRoleMapping\x12j\n" +
 	"\x17ambiguousroleresolution\x18\x8a\x82\xd3\xc3\x01 \x01(\x0e2,.cognitoidentity.AmbiguousRoleResolutionTypeR\x17ambiguousroleresolution\x12Z\n" +
 	"\x12rulesconfiguration\x18\xb3\x98\xf6: \x01(\v2'.cognitoidentity.RulesConfigurationTypeR\x12rulesconfiguration\x128\n" +
@@ -3621,15 +3685,17 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x12PrincipaltagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
-	"\f_usedefaults\"\xf8\x02\n" +
-	"#SetPrincipalTagAttributeMapResponse\x12)\n" +
-	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tR\x0eidentitypoolid\x126\n" +
-	"\x14identityprovidername\x18\xf2\xb7\xf0\xc7\x01 \x01(\tR\x14identityprovidername\x12q\n" +
+	"\f_usedefaults\"\xae\x03\n" +
+	"#SetPrincipalTagAttributeMapResponse\x12.\n" +
+	"\x0eidentitypoolid\x18\xfd\xfd\xb4\v \x01(\tH\x00R\x0eidentitypoolid\x88\x01\x01\x12;\n" +
+	"\x14identityprovidername\x18\xf2\xb7\xf0\xc7\x01 \x01(\tH\x01R\x14identityprovidername\x88\x01\x01\x12q\n" +
 	"\rprincipaltags\x18\xf5㨥\x01 \x03(\v2G.cognitoidentity.SetPrincipalTagAttributeMapResponse.PrincipaltagsEntryR\rprincipaltags\x12)\n" +
-	"\vusedefaults\x18\xaf\x83\x8e\x92\x01 \x01(\bH\x00R\vusedefaults\x88\x01\x01\x1a@\n" +
+	"\vusedefaults\x18\xaf\x83\x8e\x92\x01 \x01(\bH\x02R\vusedefaults\x88\x01\x01\x1a@\n" +
 	"\x12PrincipaltagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_identitypoolidB\x17\n" +
+	"\x15_identityprovidernameB\x0e\n" +
 	"\f_usedefaults\"\xb6\x01\n" +
 	"\x10TagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12C\n" +
@@ -3637,9 +3703,11 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x15\n" +
-	"\x13TagResourceResponse\"7\n" +
-	"\x18TooManyRequestsException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe4\x01\n" +
+	"\x13TagResourceResponse\"H\n" +
+	"\x18TooManyRequestsException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe4\x01\n" +
 	"\x1cUnlinkDeveloperIdentityInput\x128\n" +
 	"\x15developerprovidername\x18\xa0\x96\xe7\xf6\x01 \x01(\tR\x15developerprovidername\x12<\n" +
 	"\x17developeruseridentifier\x18\xba\xdc\xe7\xa6\x01 \x01(\tR\x17developeruseridentifier\x12!\n" +
@@ -3655,12 +3723,13 @@ const file_cognitoidentity_proto_rawDesc = "" +
 	"\x0eloginstoremove\x18\xbb\xef\xfa\xe9\x01 \x03(\tR\x0eloginstoremove\x1a9\n" +
 	"\vLoginsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"w\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x8b\x01\n" +
 	"\x15UnprocessedIdentityId\x12;\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\x0e2\x1a.cognitoidentity.ErrorCodeR\terrorcode\x12!\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\x0e2\x1a.cognitoidentity.ErrorCodeR\terrorcode\x12&\n" +
 	"\n" +
-	"identityid\x18\xd7\xd3\xd5o \x01(\tR\n" +
-	"identityid\"X\n" +
+	"identityid\x18\xd7\xd3\xd5o \x01(\tH\x00R\n" +
+	"identityid\x88\x01\x01B\r\n" +
+	"\v_identityid\"X\n" +
 	"\x12UntagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x17\n" +
@@ -3894,14 +3963,41 @@ func file_cognitoidentity_proto_init() {
 		return
 	}
 	file_cognitoidentity_proto_msgTypes[0].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[1].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[2].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[3].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[9].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[10].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[11].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[12].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[13].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[14].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[16].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[17].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[18].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[20].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[22].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[23].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[24].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[25].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[26].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[27].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[28].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[29].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[30].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[31].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[32].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[33].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[36].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[37].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[40].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[41].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[42].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[43].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[47].OneofWrappers = []any{}
 	file_cognitoidentity_proto_msgTypes[48].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[51].OneofWrappers = []any{}
+	file_cognitoidentity_proto_msgTypes[54].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

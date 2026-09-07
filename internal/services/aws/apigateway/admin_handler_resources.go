@@ -3,6 +3,7 @@ package apigateway
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 
 	"connectrpc.com/connect"
 
@@ -24,9 +25,9 @@ func (h *AdminHandler) GetResources(ctx context.Context, req *connect.Request[pb
 	}
 
 	limit := int(req.Msg.GetLimit())
-	start, end, nextPos, ok := paginateAdminList(len(resources), req.Msg.Position, limit)
+	start, end, nextPos, ok := paginateAdminList(len(resources), req.Msg.GetPosition(), limit)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.GetPosition()))
 	}
 
 	items := make([]*pb.Resource, 0, end-start)
@@ -35,7 +36,7 @@ func (h *AdminHandler) GetResources(ctx context.Context, req *connect.Request[pb
 	}
 	resp := &pb.Resources{Items: items}
 	if nextPos != "" {
-		resp.Position = nextPos
+		resp.Position = proto.String(nextPos)
 	}
 	return connect.NewResponse(resp), nil
 }

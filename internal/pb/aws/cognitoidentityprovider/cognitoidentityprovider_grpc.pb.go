@@ -28,6 +28,7 @@ const (
 	CognitoIdentityProviderService_AdminAddUserToGroup_FullMethodName                  = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminAddUserToGroup"
 	CognitoIdentityProviderService_AdminConfirmSignUp_FullMethodName                   = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminConfirmSignUp"
 	CognitoIdentityProviderService_AdminCreateUser_FullMethodName                      = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminCreateUser"
+	CognitoIdentityProviderService_AdminDeleteSoftwareToken_FullMethodName             = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminDeleteSoftwareToken"
 	CognitoIdentityProviderService_AdminDeleteUser_FullMethodName                      = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminDeleteUser"
 	CognitoIdentityProviderService_AdminDeleteUserAttributes_FullMethodName            = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminDeleteUserAttributes"
 	CognitoIdentityProviderService_AdminDisableProviderForUser_FullMethodName          = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminDisableProviderForUser"
@@ -36,6 +37,7 @@ const (
 	CognitoIdentityProviderService_AdminForgetDevice_FullMethodName                    = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminForgetDevice"
 	CognitoIdentityProviderService_AdminGetDevice_FullMethodName                       = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminGetDevice"
 	CognitoIdentityProviderService_AdminGetUser_FullMethodName                         = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminGetUser"
+	CognitoIdentityProviderService_AdminGetUserAuthFactors_FullMethodName              = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminGetUserAuthFactors"
 	CognitoIdentityProviderService_AdminInitiateAuth_FullMethodName                    = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminInitiateAuth"
 	CognitoIdentityProviderService_AdminLinkProviderForUser_FullMethodName             = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminLinkProviderForUser"
 	CognitoIdentityProviderService_AdminListDevices_FullMethodName                     = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminListDevices"
@@ -86,17 +88,20 @@ const (
 	CognitoIdentityProviderService_DescribeResourceServer_FullMethodName               = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeResourceServer"
 	CognitoIdentityProviderService_DescribeRiskConfiguration_FullMethodName            = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeRiskConfiguration"
 	CognitoIdentityProviderService_DescribeTerms_FullMethodName                        = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeTerms"
+	CognitoIdentityProviderService_DescribeTermsByClient_FullMethodName                = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeTermsByClient"
 	CognitoIdentityProviderService_DescribeUserImportJob_FullMethodName                = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeUserImportJob"
 	CognitoIdentityProviderService_DescribeUserPool_FullMethodName                     = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeUserPool"
 	CognitoIdentityProviderService_DescribeUserPoolClient_FullMethodName               = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeUserPoolClient"
 	CognitoIdentityProviderService_DescribeUserPoolDomain_FullMethodName               = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeUserPoolDomain"
 	CognitoIdentityProviderService_ForgetDevice_FullMethodName                         = "/cognitoidentityprovider.CognitoIdentityProviderService/ForgetDevice"
 	CognitoIdentityProviderService_ForgotPassword_FullMethodName                       = "/cognitoidentityprovider.CognitoIdentityProviderService/ForgotPassword"
+	CognitoIdentityProviderService_GetClientToken_FullMethodName                       = "/cognitoidentityprovider.CognitoIdentityProviderService/GetClientToken"
 	CognitoIdentityProviderService_GetCSVHeader_FullMethodName                         = "/cognitoidentityprovider.CognitoIdentityProviderService/GetCSVHeader"
 	CognitoIdentityProviderService_GetDevice_FullMethodName                            = "/cognitoidentityprovider.CognitoIdentityProviderService/GetDevice"
 	CognitoIdentityProviderService_GetGroup_FullMethodName                             = "/cognitoidentityprovider.CognitoIdentityProviderService/GetGroup"
 	CognitoIdentityProviderService_GetIdentityProviderByIdentifier_FullMethodName      = "/cognitoidentityprovider.CognitoIdentityProviderService/GetIdentityProviderByIdentifier"
 	CognitoIdentityProviderService_GetLogDeliveryConfiguration_FullMethodName          = "/cognitoidentityprovider.CognitoIdentityProviderService/GetLogDeliveryConfiguration"
+	CognitoIdentityProviderService_GetProvisionedLimit_FullMethodName                  = "/cognitoidentityprovider.CognitoIdentityProviderService/GetProvisionedLimit"
 	CognitoIdentityProviderService_GetSigningCertificate_FullMethodName                = "/cognitoidentityprovider.CognitoIdentityProviderService/GetSigningCertificate"
 	CognitoIdentityProviderService_GetTokensFromRefreshToken_FullMethodName            = "/cognitoidentityprovider.CognitoIdentityProviderService/GetTokensFromRefreshToken"
 	CognitoIdentityProviderService_GetUICustomization_FullMethodName                   = "/cognitoidentityprovider.CognitoIdentityProviderService/GetUICustomization"
@@ -140,6 +145,7 @@ const (
 	CognitoIdentityProviderService_UpdateGroup_FullMethodName                          = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateGroup"
 	CognitoIdentityProviderService_UpdateIdentityProvider_FullMethodName               = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateIdentityProvider"
 	CognitoIdentityProviderService_UpdateManagedLoginBranding_FullMethodName           = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateManagedLoginBranding"
+	CognitoIdentityProviderService_UpdateProvisionedLimit_FullMethodName               = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateProvisionedLimit"
 	CognitoIdentityProviderService_UpdateResourceServer_FullMethodName                 = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateResourceServer"
 	CognitoIdentityProviderService_UpdateTerms_FullMethodName                          = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateTerms"
 	CognitoIdentityProviderService_UpdateUserAttributes_FullMethodName                 = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateUserAttributes"
@@ -177,6 +183,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminCreateUser(ctx context.Context, in *AdminCreateUserRequest, opts ...grpc.CallOption) (*AdminCreateUserResponse, error)
+	// Deletes a user's registered time-based one-time password (TOTP) multi-factor authentication (MFA) factor, also known as a software token. After this operation, the user can no longer sign in with T...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminDeleteSoftwareToken(ctx context.Context, in *AdminDeleteSoftwareTokenRequest, opts ...grpc.CallOption) (*AdminDeleteSoftwareTokenResponse, error)
 	// Deletes a user profile in your user pool. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you must use IAM credentials...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -209,6 +219,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminGetUser(ctx context.Context, in *AdminGetUserRequest, opts ...grpc.CallOption) (*AdminGetUserResponse, error)
+	// Lists the authentication options for a user in a user pool. Returns the following: The user's multi-factor authentication (MFA) preferences. The user's options for choice-based authentication with ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminGetUserAuthFactors(ctx context.Context, in *AdminGetUserAuthFactorsRequest, opts ...grpc.CallOption) (*AdminGetUserAuthFactorsResponse, error)
 	// Starts sign-in for applications with a server-side component, for example a traditional web application. This operation specifies the authentication flow that you'd like to begin. The authenticatio...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -409,6 +423,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeTerms(ctx context.Context, in *DescribeTermsRequest, opts ...grpc.CallOption) (*DescribeTermsResponse, error)
+	// Returns details for the terms documents that are associated with an app client, identified by the app client ID, user pool ID, and terms name. For more information, see Terms documents. To call Des...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeTermsByClient(ctx context.Context, in *DescribeTermsByClientRequest, opts ...grpc.CallOption) (*DescribeTermsByClientResponse, error)
 	// Describes a user import job. For more information about user CSV import, see Importing users from a CSV file.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -421,7 +439,7 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolClient(ctx context.Context, in *DescribeUserPoolClientRequest, opts ...grpc.CallOption) (*DescribeUserPoolClientResponse, error)
-	// Given a user pool domain name, returns information about the domain configuration. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For thi...
+	// Given a user pool domain name, returns information about the domain configuration. This operation doesn't return results when you query a prefix domain in a secondary Region. Prefix domains are Reg...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolDomain(ctx context.Context, in *DescribeUserPoolDomainRequest, opts ...grpc.CallOption) (*DescribeUserPoolDomainResponse, error)
@@ -433,6 +451,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ForgotPassword(ctx context.Context, in *ForgotPasswordRequest, opts ...grpc.CallOption) (*ForgotPasswordResponse, error)
+	// Issues an access token for machine-to-machine (M2M) authorization. Your app client provides its client ID and secret, and receives an access token that authorizes requests to your resource servers....
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetClientToken(ctx context.Context, in *GetClientTokenRequest, opts ...grpc.CallOption) (*GetClientTokenResponse, error)
 	// Given a user pool ID, generates a comma-separated value (CSV) list populated with available user attributes in the user pool. This list is the header for the CSV file that determines the users in a...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -453,6 +475,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetLogDeliveryConfiguration(ctx context.Context, in *GetLogDeliveryConfigurationRequest, opts ...grpc.CallOption) (*GetLogDeliveryConfigurationResponse, error)
+	// Returns the current provisioned limit for a specific API category. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you...
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetProvisionedLimit(ctx context.Context, in *GetProvisionedLimitRequest, opts ...grpc.CallOption) (*GetProvisionedLimitResponse, error)
 	// Given a user pool ID, returns the signing certificate for SAML 2.0 federation. Issued certificates are valid for 10 years from the date of issue. Amazon Cognito issues and assigns a new signing cer...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -625,6 +651,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateManagedLoginBranding(ctx context.Context, in *UpdateManagedLoginBrandingRequest, opts ...grpc.CallOption) (*UpdateManagedLoginBrandingResponse, error)
+	// Sets the provisioned limit for a specific API category. The value must be between the default limit and your account-level maximum limit in Service Quotas. Managed login user pools don't support ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateProvisionedLimit(ctx context.Context, in *UpdateProvisionedLimitRequest, opts ...grpc.CallOption) (*UpdateProvisionedLimitResponse, error)
 	// Updates the name and scopes of a resource server. All other fields are read-only. For more information about resource servers, see Access control with resource servers. If you don't provide a value...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -721,6 +751,16 @@ func (c *cognitoIdentityProviderServiceClient) AdminCreateUser(ctx context.Conte
 	return out, nil
 }
 
+func (c *cognitoIdentityProviderServiceClient) AdminDeleteSoftwareToken(ctx context.Context, in *AdminDeleteSoftwareTokenRequest, opts ...grpc.CallOption) (*AdminDeleteSoftwareTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminDeleteSoftwareTokenResponse)
+	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_AdminDeleteSoftwareToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cognitoIdentityProviderServiceClient) AdminDeleteUser(ctx context.Context, in *AdminDeleteUserRequest, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
@@ -795,6 +835,16 @@ func (c *cognitoIdentityProviderServiceClient) AdminGetUser(ctx context.Context,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(AdminGetUserResponse)
 	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_AdminGetUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cognitoIdentityProviderServiceClient) AdminGetUserAuthFactors(ctx context.Context, in *AdminGetUserAuthFactorsRequest, opts ...grpc.CallOption) (*AdminGetUserAuthFactorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminGetUserAuthFactorsResponse)
+	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_AdminGetUserAuthFactors_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1301,6 +1351,16 @@ func (c *cognitoIdentityProviderServiceClient) DescribeTerms(ctx context.Context
 	return out, nil
 }
 
+func (c *cognitoIdentityProviderServiceClient) DescribeTermsByClient(ctx context.Context, in *DescribeTermsByClientRequest, opts ...grpc.CallOption) (*DescribeTermsByClientResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeTermsByClientResponse)
+	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_DescribeTermsByClient_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cognitoIdentityProviderServiceClient) DescribeUserImportJob(ctx context.Context, in *DescribeUserImportJobRequest, opts ...grpc.CallOption) (*DescribeUserImportJobResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DescribeUserImportJobResponse)
@@ -1361,6 +1421,16 @@ func (c *cognitoIdentityProviderServiceClient) ForgotPassword(ctx context.Contex
 	return out, nil
 }
 
+func (c *cognitoIdentityProviderServiceClient) GetClientToken(ctx context.Context, in *GetClientTokenRequest, opts ...grpc.CallOption) (*GetClientTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetClientTokenResponse)
+	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_GetClientToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cognitoIdentityProviderServiceClient) GetCSVHeader(ctx context.Context, in *GetCSVHeaderRequest, opts ...grpc.CallOption) (*GetCSVHeaderResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCSVHeaderResponse)
@@ -1405,6 +1475,16 @@ func (c *cognitoIdentityProviderServiceClient) GetLogDeliveryConfiguration(ctx c
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetLogDeliveryConfigurationResponse)
 	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_GetLogDeliveryConfiguration_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *cognitoIdentityProviderServiceClient) GetProvisionedLimit(ctx context.Context, in *GetProvisionedLimitRequest, opts ...grpc.CallOption) (*GetProvisionedLimitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProvisionedLimitResponse)
+	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_GetProvisionedLimit_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1841,6 +1921,16 @@ func (c *cognitoIdentityProviderServiceClient) UpdateManagedLoginBranding(ctx co
 	return out, nil
 }
 
+func (c *cognitoIdentityProviderServiceClient) UpdateProvisionedLimit(ctx context.Context, in *UpdateProvisionedLimitRequest, opts ...grpc.CallOption) (*UpdateProvisionedLimitResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateProvisionedLimitResponse)
+	err := c.cc.Invoke(ctx, CognitoIdentityProviderService_UpdateProvisionedLimit_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cognitoIdentityProviderServiceClient) UpdateResourceServer(ctx context.Context, in *UpdateResourceServerRequest, opts ...grpc.CallOption) (*UpdateResourceServerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateResourceServerResponse)
@@ -1957,6 +2047,10 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminCreateUser(context.Context, *AdminCreateUserRequest) (*AdminCreateUserResponse, error)
+	// Deletes a user's registered time-based one-time password (TOTP) multi-factor authentication (MFA) factor, also known as a software token. After this operation, the user can no longer sign in with T...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminDeleteSoftwareToken(context.Context, *AdminDeleteSoftwareTokenRequest) (*AdminDeleteSoftwareTokenResponse, error)
 	// Deletes a user profile in your user pool. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you must use IAM credentials...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -1989,6 +2083,10 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminGetUser(context.Context, *AdminGetUserRequest) (*AdminGetUserResponse, error)
+	// Lists the authentication options for a user in a user pool. Returns the following: The user's multi-factor authentication (MFA) preferences. The user's options for choice-based authentication with ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminGetUserAuthFactors(context.Context, *AdminGetUserAuthFactorsRequest) (*AdminGetUserAuthFactorsResponse, error)
 	// Starts sign-in for applications with a server-side component, for example a traditional web application. This operation specifies the authentication flow that you'd like to begin. The authenticatio...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2189,6 +2287,10 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeTerms(context.Context, *DescribeTermsRequest) (*DescribeTermsResponse, error)
+	// Returns details for the terms documents that are associated with an app client, identified by the app client ID, user pool ID, and terms name. For more information, see Terms documents. To call Des...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeTermsByClient(context.Context, *DescribeTermsByClientRequest) (*DescribeTermsByClientResponse, error)
 	// Describes a user import job. For more information about user CSV import, see Importing users from a CSV file.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2201,7 +2303,7 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolClient(context.Context, *DescribeUserPoolClientRequest) (*DescribeUserPoolClientResponse, error)
-	// Given a user pool domain name, returns information about the domain configuration. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For thi...
+	// Given a user pool domain name, returns information about the domain configuration. This operation doesn't return results when you query a prefix domain in a secondary Region. Prefix domains are Reg...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolDomain(context.Context, *DescribeUserPoolDomainRequest) (*DescribeUserPoolDomainResponse, error)
@@ -2213,6 +2315,10 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error)
+	// Issues an access token for machine-to-machine (M2M) authorization. Your app client provides its client ID and secret, and receives an access token that authorizes requests to your resource servers....
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetClientToken(context.Context, *GetClientTokenRequest) (*GetClientTokenResponse, error)
 	// Given a user pool ID, generates a comma-separated value (CSV) list populated with available user attributes in the user pool. This list is the header for the CSV file that determines the users in a...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2233,6 +2339,10 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetLogDeliveryConfiguration(context.Context, *GetLogDeliveryConfigurationRequest) (*GetLogDeliveryConfigurationResponse, error)
+	// Returns the current provisioned limit for a specific API category. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you...
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetProvisionedLimit(context.Context, *GetProvisionedLimitRequest) (*GetProvisionedLimitResponse, error)
 	// Given a user pool ID, returns the signing certificate for SAML 2.0 federation. Issued certificates are valid for 10 years from the date of issue. Amazon Cognito issues and assigns a new signing cer...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2405,6 +2515,10 @@ type CognitoIdentityProviderServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateManagedLoginBranding(context.Context, *UpdateManagedLoginBrandingRequest) (*UpdateManagedLoginBrandingResponse, error)
+	// Sets the provisioned limit for a specific API category. The value must be between the default limit and your account-level maximum limit in Service Quotas. Managed login user pools don't support ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateProvisionedLimit(context.Context, *UpdateProvisionedLimitRequest) (*UpdateProvisionedLimitResponse, error)
 	// Updates the name and scopes of a resource server. All other fields are read-only. For more information about resource servers, see Access control with resource servers. If you don't provide a value...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2466,6 +2580,9 @@ func (UnimplementedCognitoIdentityProviderServiceServer) AdminConfirmSignUp(cont
 func (UnimplementedCognitoIdentityProviderServiceServer) AdminCreateUser(context.Context, *AdminCreateUserRequest) (*AdminCreateUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminCreateUser not implemented")
 }
+func (UnimplementedCognitoIdentityProviderServiceServer) AdminDeleteSoftwareToken(context.Context, *AdminDeleteSoftwareTokenRequest) (*AdminDeleteSoftwareTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminDeleteSoftwareToken not implemented")
+}
 func (UnimplementedCognitoIdentityProviderServiceServer) AdminDeleteUser(context.Context, *AdminDeleteUserRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminDeleteUser not implemented")
 }
@@ -2489,6 +2606,9 @@ func (UnimplementedCognitoIdentityProviderServiceServer) AdminGetDevice(context.
 }
 func (UnimplementedCognitoIdentityProviderServiceServer) AdminGetUser(context.Context, *AdminGetUserRequest) (*AdminGetUserResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminGetUser not implemented")
+}
+func (UnimplementedCognitoIdentityProviderServiceServer) AdminGetUserAuthFactors(context.Context, *AdminGetUserAuthFactorsRequest) (*AdminGetUserAuthFactorsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminGetUserAuthFactors not implemented")
 }
 func (UnimplementedCognitoIdentityProviderServiceServer) AdminInitiateAuth(context.Context, *AdminInitiateAuthRequest) (*AdminInitiateAuthResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method AdminInitiateAuth not implemented")
@@ -2640,6 +2760,9 @@ func (UnimplementedCognitoIdentityProviderServiceServer) DescribeRiskConfigurati
 func (UnimplementedCognitoIdentityProviderServiceServer) DescribeTerms(context.Context, *DescribeTermsRequest) (*DescribeTermsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DescribeTerms not implemented")
 }
+func (UnimplementedCognitoIdentityProviderServiceServer) DescribeTermsByClient(context.Context, *DescribeTermsByClientRequest) (*DescribeTermsByClientResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeTermsByClient not implemented")
+}
 func (UnimplementedCognitoIdentityProviderServiceServer) DescribeUserImportJob(context.Context, *DescribeUserImportJobRequest) (*DescribeUserImportJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DescribeUserImportJob not implemented")
 }
@@ -2658,6 +2781,9 @@ func (UnimplementedCognitoIdentityProviderServiceServer) ForgetDevice(context.Co
 func (UnimplementedCognitoIdentityProviderServiceServer) ForgotPassword(context.Context, *ForgotPasswordRequest) (*ForgotPasswordResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ForgotPassword not implemented")
 }
+func (UnimplementedCognitoIdentityProviderServiceServer) GetClientToken(context.Context, *GetClientTokenRequest) (*GetClientTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetClientToken not implemented")
+}
 func (UnimplementedCognitoIdentityProviderServiceServer) GetCSVHeader(context.Context, *GetCSVHeaderRequest) (*GetCSVHeaderResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCSVHeader not implemented")
 }
@@ -2672,6 +2798,9 @@ func (UnimplementedCognitoIdentityProviderServiceServer) GetIdentityProviderById
 }
 func (UnimplementedCognitoIdentityProviderServiceServer) GetLogDeliveryConfiguration(context.Context, *GetLogDeliveryConfigurationRequest) (*GetLogDeliveryConfigurationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetLogDeliveryConfiguration not implemented")
+}
+func (UnimplementedCognitoIdentityProviderServiceServer) GetProvisionedLimit(context.Context, *GetProvisionedLimitRequest) (*GetProvisionedLimitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProvisionedLimit not implemented")
 }
 func (UnimplementedCognitoIdentityProviderServiceServer) GetSigningCertificate(context.Context, *GetSigningCertificateRequest) (*GetSigningCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSigningCertificate not implemented")
@@ -2801,6 +2930,9 @@ func (UnimplementedCognitoIdentityProviderServiceServer) UpdateIdentityProvider(
 }
 func (UnimplementedCognitoIdentityProviderServiceServer) UpdateManagedLoginBranding(context.Context, *UpdateManagedLoginBrandingRequest) (*UpdateManagedLoginBrandingResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateManagedLoginBranding not implemented")
+}
+func (UnimplementedCognitoIdentityProviderServiceServer) UpdateProvisionedLimit(context.Context, *UpdateProvisionedLimitRequest) (*UpdateProvisionedLimitResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateProvisionedLimit not implemented")
 }
 func (UnimplementedCognitoIdentityProviderServiceServer) UpdateResourceServer(context.Context, *UpdateResourceServerRequest) (*UpdateResourceServerResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateResourceServer not implemented")
@@ -2937,6 +3069,24 @@ func _CognitoIdentityProviderService_AdminCreateUser_Handler(srv interface{}, ct
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CognitoIdentityProviderServiceServer).AdminCreateUser(ctx, req.(*AdminCreateUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CognitoIdentityProviderService_AdminDeleteSoftwareToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminDeleteSoftwareTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CognitoIdentityProviderServiceServer).AdminDeleteSoftwareToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CognitoIdentityProviderService_AdminDeleteSoftwareToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CognitoIdentityProviderServiceServer).AdminDeleteSoftwareToken(ctx, req.(*AdminDeleteSoftwareTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3081,6 +3231,24 @@ func _CognitoIdentityProviderService_AdminGetUser_Handler(srv interface{}, ctx c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CognitoIdentityProviderServiceServer).AdminGetUser(ctx, req.(*AdminGetUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CognitoIdentityProviderService_AdminGetUserAuthFactors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminGetUserAuthFactorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CognitoIdentityProviderServiceServer).AdminGetUserAuthFactors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CognitoIdentityProviderService_AdminGetUserAuthFactors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CognitoIdentityProviderServiceServer).AdminGetUserAuthFactors(ctx, req.(*AdminGetUserAuthFactorsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3985,6 +4153,24 @@ func _CognitoIdentityProviderService_DescribeTerms_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CognitoIdentityProviderService_DescribeTermsByClient_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeTermsByClientRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CognitoIdentityProviderServiceServer).DescribeTermsByClient(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CognitoIdentityProviderService_DescribeTermsByClient_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CognitoIdentityProviderServiceServer).DescribeTermsByClient(ctx, req.(*DescribeTermsByClientRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CognitoIdentityProviderService_DescribeUserImportJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DescribeUserImportJobRequest)
 	if err := dec(in); err != nil {
@@ -4093,6 +4279,24 @@ func _CognitoIdentityProviderService_ForgotPassword_Handler(srv interface{}, ctx
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CognitoIdentityProviderService_GetClientToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetClientTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CognitoIdentityProviderServiceServer).GetClientToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CognitoIdentityProviderService_GetClientToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CognitoIdentityProviderServiceServer).GetClientToken(ctx, req.(*GetClientTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CognitoIdentityProviderService_GetCSVHeader_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCSVHeaderRequest)
 	if err := dec(in); err != nil {
@@ -4179,6 +4383,24 @@ func _CognitoIdentityProviderService_GetLogDeliveryConfiguration_Handler(srv int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CognitoIdentityProviderServiceServer).GetLogDeliveryConfiguration(ctx, req.(*GetLogDeliveryConfigurationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CognitoIdentityProviderService_GetProvisionedLimit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProvisionedLimitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CognitoIdentityProviderServiceServer).GetProvisionedLimit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CognitoIdentityProviderService_GetProvisionedLimit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CognitoIdentityProviderServiceServer).GetProvisionedLimit(ctx, req.(*GetProvisionedLimitRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4957,6 +5179,24 @@ func _CognitoIdentityProviderService_UpdateManagedLoginBranding_Handler(srv inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CognitoIdentityProviderService_UpdateProvisionedLimit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProvisionedLimitRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CognitoIdentityProviderServiceServer).UpdateProvisionedLimit(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CognitoIdentityProviderService_UpdateProvisionedLimit_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CognitoIdentityProviderServiceServer).UpdateProvisionedLimit(ctx, req.(*UpdateProvisionedLimitRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CognitoIdentityProviderService_UpdateResourceServer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateResourceServerRequest)
 	if err := dec(in); err != nil {
@@ -5147,6 +5387,10 @@ var CognitoIdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CognitoIdentityProviderService_AdminCreateUser_Handler,
 		},
 		{
+			MethodName: "AdminDeleteSoftwareToken",
+			Handler:    _CognitoIdentityProviderService_AdminDeleteSoftwareToken_Handler,
+		},
+		{
 			MethodName: "AdminDeleteUser",
 			Handler:    _CognitoIdentityProviderService_AdminDeleteUser_Handler,
 		},
@@ -5177,6 +5421,10 @@ var CognitoIdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminGetUser",
 			Handler:    _CognitoIdentityProviderService_AdminGetUser_Handler,
+		},
+		{
+			MethodName: "AdminGetUserAuthFactors",
+			Handler:    _CognitoIdentityProviderService_AdminGetUserAuthFactors_Handler,
 		},
 		{
 			MethodName: "AdminInitiateAuth",
@@ -5379,6 +5627,10 @@ var CognitoIdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CognitoIdentityProviderService_DescribeTerms_Handler,
 		},
 		{
+			MethodName: "DescribeTermsByClient",
+			Handler:    _CognitoIdentityProviderService_DescribeTermsByClient_Handler,
+		},
+		{
 			MethodName: "DescribeUserImportJob",
 			Handler:    _CognitoIdentityProviderService_DescribeUserImportJob_Handler,
 		},
@@ -5403,6 +5655,10 @@ var CognitoIdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CognitoIdentityProviderService_ForgotPassword_Handler,
 		},
 		{
+			MethodName: "GetClientToken",
+			Handler:    _CognitoIdentityProviderService_GetClientToken_Handler,
+		},
+		{
 			MethodName: "GetCSVHeader",
 			Handler:    _CognitoIdentityProviderService_GetCSVHeader_Handler,
 		},
@@ -5421,6 +5677,10 @@ var CognitoIdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLogDeliveryConfiguration",
 			Handler:    _CognitoIdentityProviderService_GetLogDeliveryConfiguration_Handler,
+		},
+		{
+			MethodName: "GetProvisionedLimit",
+			Handler:    _CognitoIdentityProviderService_GetProvisionedLimit_Handler,
 		},
 		{
 			MethodName: "GetSigningCertificate",
@@ -5593,6 +5853,10 @@ var CognitoIdentityProviderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateManagedLoginBranding",
 			Handler:    _CognitoIdentityProviderService_UpdateManagedLoginBranding_Handler,
+		},
+		{
+			MethodName: "UpdateProvisionedLimit",
+			Handler:    _CognitoIdentityProviderService_UpdateProvisionedLimit_Handler,
 		},
 		{
 			MethodName: "UpdateResourceServer",

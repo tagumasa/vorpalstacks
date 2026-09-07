@@ -26,12 +26,12 @@ func toPbUser(user *iamstore.User) *pb.User {
 	}
 
 	if user.PasswordLastUsed != nil {
-		pbUser.Passwordlastused = user.PasswordLastUsed.Format(timeutils.ISO8601UTCFormat)
+		pbUser.Passwordlastused = proto.String(user.PasswordLastUsed.Format(timeutils.ISO8601UTCFormat))
 	}
 
 	if user.PermissionsBoundary != nil {
 		pbUser.Permissionsboundary = &pb.AttachedPermissionsBoundary{
-			Permissionsboundaryarn:  user.PermissionsBoundary.PermissionsBoundaryArn,
+			Permissionsboundaryarn:  proto.String(user.PermissionsBoundary.PermissionsBoundaryArn),
 			Permissionsboundarytype: pb.PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY,
 		}
 	}
@@ -54,24 +54,24 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 		Arn:                      role.Arn,
 		Path:                     role.Path,
 		Createdate:               role.CreateDate.Format(timeutils.ISO8601UTCFormat),
-		Assumerolepolicydocument: role.AssumeRolePolicyDocument,
-		Description:              role.Description,
+		Assumerolepolicydocument: proto.String(role.AssumeRolePolicyDocument),
+		Description:              proto.String(role.Description),
 		Maxsessionduration:       proto.Int32(int32(role.MaxSessionDuration)),
 	}
 
 	if role.PermissionsBoundary != nil {
 		pbRole.Permissionsboundary = &pb.AttachedPermissionsBoundary{
-			Permissionsboundaryarn:  role.PermissionsBoundary.PermissionsBoundaryArn,
+			Permissionsboundaryarn:  proto.String(role.PermissionsBoundary.PermissionsBoundaryArn),
 			Permissionsboundarytype: pb.PermissionsBoundaryAttachmentType_PERMISSIONS_BOUNDARY_ATTACHMENT_TYPE_POLICY,
 		}
 	}
 
 	if role.RoleLastUsed != nil {
 		pbRole.Rolelastused = &pb.RoleLastUsed{
-			Region: role.RoleLastUsed.Region,
+			Region: proto.String(role.RoleLastUsed.Region),
 		}
 		if role.RoleLastUsed.LastUsedDate != nil {
-			pbRole.Rolelastused.Lastuseddate = role.RoleLastUsed.LastUsedDate.Format(timeutils.ISO8601UTCFormat)
+			pbRole.Rolelastused.Lastuseddate = proto.String(role.RoleLastUsed.LastUsedDate.Format(timeutils.ISO8601UTCFormat))
 		}
 	}
 
@@ -88,17 +88,17 @@ func toPbRole(role *iamstore.Role) *pb.Role {
 // toPbPolicy converts a store-layer Policy to the proto representation.
 func toPbPolicy(policy *iamstore.Policy) *pb.Policy {
 	pbPolicy := &pb.Policy{
-		Policyname:                    policy.PolicyName,
-		Policyid:                      policy.ID,
-		Arn:                           policy.Arn,
-		Path:                          policy.Path,
-		Createdate:                    policy.CreateDate.Format(timeutils.ISO8601UTCFormat),
-		Updatedate:                    policy.UpdateDate.Format(timeutils.ISO8601UTCFormat),
-		Defaultversionid:              policy.DefaultVersionId,
+		Policyname:                    proto.String(policy.PolicyName),
+		Policyid:                      proto.String(policy.ID),
+		Arn:                           proto.String(policy.Arn),
+		Path:                          proto.String(policy.Path),
+		Createdate:                    proto.String(policy.CreateDate.Format(timeutils.ISO8601UTCFormat)),
+		Updatedate:                    proto.String(policy.UpdateDate.Format(timeutils.ISO8601UTCFormat)),
+		Defaultversionid:              proto.String(policy.DefaultVersionId),
 		Attachmentcount:               proto.Int32(int32(policy.AttachmentCount)),
 		Permissionsboundaryusagecount: proto.Int32(int32(policy.PermissionsBoundaryUsageCount)),
 		Isattachable:                  proto.Bool(policy.IsAttachable),
-		Description:                   policy.Description,
+		Description:                   proto.String(policy.Description),
 	}
 
 	if len(policy.Tags) > 0 {

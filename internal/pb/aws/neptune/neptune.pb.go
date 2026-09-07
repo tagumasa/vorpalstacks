@@ -182,7 +182,7 @@ func (SourceType) EnumDescriptor() ([]byte, []int) {
 type AddRoleToDBClusterMessage struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusteridentifier string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Featurename         string                 `protobuf:"bytes,218369023,opt,name=featurename,proto3" json:"featurename,omitempty"`
+	Featurename         *string                `protobuf:"bytes,218369023,opt,name=featurename,proto3,oneof" json:"featurename,omitempty"`
 	Rolearn             string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -226,8 +226,8 @@ func (x *AddRoleToDBClusterMessage) GetDbclusteridentifier() string {
 }
 
 func (x *AddRoleToDBClusterMessage) GetFeaturename() string {
-	if x != nil {
-		return x.Featurename
+	if x != nil && x.Featurename != nil {
+		return *x.Featurename
 	}
 	return ""
 }
@@ -493,7 +493,7 @@ func (x *ApplyPendingMaintenanceActionResult) GetResourcependingmaintenanceactio
 
 type AuthorizationNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -529,15 +529,15 @@ func (*AuthorizationNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *AuthorizationNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type AvailabilityZone struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -573,15 +573,15 @@ func (*AvailabilityZone) Descriptor() ([]byte, []int) {
 }
 
 func (x *AvailabilityZone) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type CertificateNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -617,16 +617,16 @@ func (*CertificateNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *CertificateNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CharacterSet struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Charactersetdescription string                 `protobuf:"bytes,154663819,opt,name=charactersetdescription,proto3" json:"charactersetdescription,omitempty"`
-	Charactersetname        string                 `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
+	Charactersetdescription *string                `protobuf:"bytes,154663819,opt,name=charactersetdescription,proto3,oneof" json:"charactersetdescription,omitempty"`
+	Charactersetname        *string                `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -662,15 +662,15 @@ func (*CharacterSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *CharacterSet) GetCharactersetdescription() string {
-	if x != nil {
-		return x.Charactersetdescription
+	if x != nil && x.Charactersetdescription != nil {
+		return *x.Charactersetdescription
 	}
 	return ""
 }
 
 func (x *CharacterSet) GetCharactersetname() string {
-	if x != nil {
-		return x.Charactersetname
+	if x != nil && x.Charactersetname != nil {
+		return *x.Charactersetname
 	}
 	return ""
 }
@@ -731,13 +731,13 @@ type ClusterPendingModifiedValues struct {
 	state                            protoimpl.MessageState        `protogen:"open.v1"`
 	Allocatedstorage                 *int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Backupretentionperiod            *int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Dbclusteridentifier              string                        `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Engineversion                    string                        `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Dbclusteridentifier              *string                       `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Engineversion                    *string                       `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled *bool                         `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
 	Iops                             *int32                        `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
-	Networktype                      string                        `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
+	Networktype                      *string                       `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
 	Pendingcloudwatchlogsexports     *PendingCloudwatchLogsExports `protobuf:"bytes,188240935,opt,name=pendingcloudwatchlogsexports,proto3" json:"pendingcloudwatchlogsexports,omitempty"`
-	Storagetype                      string                        `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                      *string                       `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -787,15 +787,15 @@ func (x *ClusterPendingModifiedValues) GetBackupretentionperiod() int32 {
 }
 
 func (x *ClusterPendingModifiedValues) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *ClusterPendingModifiedValues) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -815,8 +815,8 @@ func (x *ClusterPendingModifiedValues) GetIops() int32 {
 }
 
 func (x *ClusterPendingModifiedValues) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
@@ -829,8 +829,8 @@ func (x *ClusterPendingModifiedValues) GetPendingcloudwatchlogsexports() *Pendin
 }
 
 func (x *ClusterPendingModifiedValues) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -950,8 +950,8 @@ func (x *CopyDBClusterParameterGroupResult) GetDbclusterparametergroup() *DBClus
 type CopyDBClusterSnapshotMessage struct {
 	state                             protoimpl.MessageState `protogen:"open.v1"`
 	Copytags                          *bool                  `protobuf:"varint,446093102,opt,name=copytags,proto3,oneof" json:"copytags,omitempty"`
-	Kmskeyid                          string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Presignedurl                      string                 `protobuf:"bytes,334334652,opt,name=presignedurl,proto3" json:"presignedurl,omitempty"`
+	Kmskeyid                          *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Presignedurl                      *string                `protobuf:"bytes,334334652,opt,name=presignedurl,proto3,oneof" json:"presignedurl,omitempty"`
 	Sourcedbclustersnapshotidentifier string                 `protobuf:"bytes,344557892,opt,name=sourcedbclustersnapshotidentifier,proto3" json:"sourcedbclustersnapshotidentifier,omitempty"`
 	Tags                              []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Targetdbclustersnapshotidentifier string                 `protobuf:"bytes,186576340,opt,name=targetdbclustersnapshotidentifier,proto3" json:"targetdbclustersnapshotidentifier,omitempty"`
@@ -997,15 +997,15 @@ func (x *CopyDBClusterSnapshotMessage) GetCopytags() bool {
 }
 
 func (x *CopyDBClusterSnapshotMessage) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *CopyDBClusterSnapshotMessage) GetPresignedurl() string {
-	if x != nil {
-		return x.Presignedurl
+	if x != nil && x.Presignedurl != nil {
+		return *x.Presignedurl
 	}
 	return ""
 }
@@ -1273,16 +1273,16 @@ func (x *CreateDBClusterEndpointMessage) GetTags() []*Tag {
 
 type CreateDBClusterEndpointOutput struct {
 	state                               protoimpl.MessageState `protogen:"open.v1"`
-	Customendpointtype                  string                 `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3" json:"customendpointtype,omitempty"`
-	Dbclusterendpointarn                string                 `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3" json:"dbclusterendpointarn,omitempty"`
-	Dbclusterendpointidentifier         string                 `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3" json:"dbclusterendpointidentifier,omitempty"`
-	Dbclusterendpointresourceidentifier string                 `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3" json:"dbclusterendpointresourceidentifier,omitempty"`
-	Dbclusteridentifier                 string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Endpoint                            string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Endpointtype                        string                 `protobuf:"bytes,486186837,opt,name=endpointtype,proto3" json:"endpointtype,omitempty"`
+	Customendpointtype                  *string                `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3,oneof" json:"customendpointtype,omitempty"`
+	Dbclusterendpointarn                *string                `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3,oneof" json:"dbclusterendpointarn,omitempty"`
+	Dbclusterendpointidentifier         *string                `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3,oneof" json:"dbclusterendpointidentifier,omitempty"`
+	Dbclusterendpointresourceidentifier *string                `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3,oneof" json:"dbclusterendpointresourceidentifier,omitempty"`
+	Dbclusteridentifier                 *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Endpoint                            *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Endpointtype                        *string                `protobuf:"bytes,486186837,opt,name=endpointtype,proto3,oneof" json:"endpointtype,omitempty"`
 	Excludedmembers                     []string               `protobuf:"bytes,395651603,rep,name=excludedmembers,proto3" json:"excludedmembers,omitempty"`
 	Staticmembers                       []string               `protobuf:"bytes,176064991,rep,name=staticmembers,proto3" json:"staticmembers,omitempty"`
-	Status                              string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status                              *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -1318,50 +1318,50 @@ func (*CreateDBClusterEndpointOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDBClusterEndpointOutput) GetCustomendpointtype() string {
-	if x != nil {
-		return x.Customendpointtype
+	if x != nil && x.Customendpointtype != nil {
+		return *x.Customendpointtype
 	}
 	return ""
 }
 
 func (x *CreateDBClusterEndpointOutput) GetDbclusterendpointarn() string {
-	if x != nil {
-		return x.Dbclusterendpointarn
+	if x != nil && x.Dbclusterendpointarn != nil {
+		return *x.Dbclusterendpointarn
 	}
 	return ""
 }
 
 func (x *CreateDBClusterEndpointOutput) GetDbclusterendpointidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointidentifier
+	if x != nil && x.Dbclusterendpointidentifier != nil {
+		return *x.Dbclusterendpointidentifier
 	}
 	return ""
 }
 
 func (x *CreateDBClusterEndpointOutput) GetDbclusterendpointresourceidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointresourceidentifier
+	if x != nil && x.Dbclusterendpointresourceidentifier != nil {
+		return *x.Dbclusterendpointresourceidentifier
 	}
 	return ""
 }
 
 func (x *CreateDBClusterEndpointOutput) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *CreateDBClusterEndpointOutput) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
 
 func (x *CreateDBClusterEndpointOutput) GetEndpointtype() string {
-	if x != nil {
-		return x.Endpointtype
+	if x != nil && x.Endpointtype != nil {
+		return *x.Endpointtype
 	}
 	return ""
 }
@@ -1381,8 +1381,8 @@ func (x *CreateDBClusterEndpointOutput) GetStaticmembers() []string {
 }
 
 func (x *CreateDBClusterEndpointOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -1391,31 +1391,31 @@ type CreateDBClusterMessage struct {
 	state                            protoimpl.MessageState            `protogen:"open.v1"`
 	Availabilityzones                []string                          `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
 	Backupretentionperiod            *int32                            `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Charactersetname                 string                            `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
+	Charactersetname                 *string                           `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
 	Copytagstosnapshot               *bool                             `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier              string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbclusterparametergroupname      string                            `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
-	Dbsubnetgroupname                string                            `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
-	Databasename                     string                            `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
+	Dbclusterparametergroupname      *string                           `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
+	Dbsubnetgroupname                *string                           `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
+	Databasename                     *string                           `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
 	Deletionprotection               *bool                             `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Enablecloudwatchlogsexports      []string                          `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
 	Enableiamdatabaseauthentication  *bool                             `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Engine                           string                            `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                    string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Globalclusteridentifier          string                            `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
-	Kmskeyid                         string                            `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Masteruserpassword               string                            `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
-	Masterusername                   string                            `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
-	Networktype                      string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
-	Optiongroupname                  string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
+	Engineversion                    *string                           `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Globalclusteridentifier          *string                           `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3,oneof" json:"globalclusteridentifier,omitempty"`
+	Kmskeyid                         *string                           `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Masteruserpassword               *string                           `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
+	Masterusername                   *string                           `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
+	Networktype                      *string                           `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
+	Optiongroupname                  *string                           `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
 	Port                             *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Presignedurl                     string                            `protobuf:"bytes,334334652,opt,name=presignedurl,proto3" json:"presignedurl,omitempty"`
-	Preferredbackupwindow            string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow       string                            `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
-	Replicationsourceidentifier      string                            `protobuf:"bytes,432981256,opt,name=replicationsourceidentifier,proto3" json:"replicationsourceidentifier,omitempty"`
+	Presignedurl                     *string                           `protobuf:"bytes,334334652,opt,name=presignedurl,proto3,oneof" json:"presignedurl,omitempty"`
+	Preferredbackupwindow            *string                           `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow       *string                           `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
+	Replicationsourceidentifier      *string                           `protobuf:"bytes,432981256,opt,name=replicationsourceidentifier,proto3,oneof" json:"replicationsourceidentifier,omitempty"`
 	Serverlessv2Scalingconfiguration *ServerlessV2ScalingConfiguration `protobuf:"bytes,357537595,opt,name=serverlessv2scalingconfiguration,proto3" json:"serverlessv2scalingconfiguration,omitempty"`
 	Storageencrypted                 *bool                             `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagetype                      string                            `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                      *string                           `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Tags                             []*Tag                            `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Vpcsecuritygroupids              []string                          `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
@@ -1467,8 +1467,8 @@ func (x *CreateDBClusterMessage) GetBackupretentionperiod() int32 {
 }
 
 func (x *CreateDBClusterMessage) GetCharactersetname() string {
-	if x != nil {
-		return x.Charactersetname
+	if x != nil && x.Charactersetname != nil {
+		return *x.Charactersetname
 	}
 	return ""
 }
@@ -1488,22 +1488,22 @@ func (x *CreateDBClusterMessage) GetDbclusteridentifier() string {
 }
 
 func (x *CreateDBClusterMessage) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
@@ -1537,50 +1537,50 @@ func (x *CreateDBClusterMessage) GetEngine() string {
 }
 
 func (x *CreateDBClusterMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetGlobalclusteridentifier() string {
-	if x != nil {
-		return x.Globalclusteridentifier
+	if x != nil && x.Globalclusteridentifier != nil {
+		return *x.Globalclusteridentifier
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetMasteruserpassword() string {
-	if x != nil {
-		return x.Masteruserpassword
+	if x != nil && x.Masteruserpassword != nil {
+		return *x.Masteruserpassword
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetMasterusername() string {
-	if x != nil {
-		return x.Masterusername
+	if x != nil && x.Masterusername != nil {
+		return *x.Masterusername
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
@@ -1593,29 +1593,29 @@ func (x *CreateDBClusterMessage) GetPort() int32 {
 }
 
 func (x *CreateDBClusterMessage) GetPresignedurl() string {
-	if x != nil {
-		return x.Presignedurl
+	if x != nil && x.Presignedurl != nil {
+		return *x.Presignedurl
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetPreferredbackupwindow() string {
-	if x != nil {
-		return x.Preferredbackupwindow
+	if x != nil && x.Preferredbackupwindow != nil {
+		return *x.Preferredbackupwindow
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetPreferredmaintenancewindow() string {
-	if x != nil {
-		return x.Preferredmaintenancewindow
+	if x != nil && x.Preferredmaintenancewindow != nil {
+		return *x.Preferredmaintenancewindow
 	}
 	return ""
 }
 
 func (x *CreateDBClusterMessage) GetReplicationsourceidentifier() string {
-	if x != nil {
-		return x.Replicationsourceidentifier
+	if x != nil && x.Replicationsourceidentifier != nil {
+		return *x.Replicationsourceidentifier
 	}
 	return ""
 }
@@ -1635,8 +1635,8 @@ func (x *CreateDBClusterMessage) GetStorageencrypted() bool {
 }
 
 func (x *CreateDBClusterMessage) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -1919,46 +1919,46 @@ type CreateDBInstanceMessage struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	Allocatedstorage                *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade         *bool                  `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
-	Availabilityzone                string                 `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
+	Availabilityzone                *string                `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3,oneof" json:"availabilityzone,omitempty"`
 	Backupretentionperiod           *int32                 `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Charactersetname                string                 `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
+	Charactersetname                *string                `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
 	Copytagstosnapshot              *bool                  `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier             string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
 	Dbinstanceclass                 string                 `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
 	Dbinstanceidentifier            string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Dbname                          string                 `protobuf:"bytes,135387881,opt,name=dbname,proto3" json:"dbname,omitempty"`
-	Dbparametergroupname            string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
+	Dbname                          *string                `protobuf:"bytes,135387881,opt,name=dbname,proto3,oneof" json:"dbname,omitempty"`
+	Dbparametergroupname            *string                `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
 	Dbsecuritygroups                []string               `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
-	Dbsubnetgroupname               string                 `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
+	Dbsubnetgroupname               *string                `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
 	Deletionprotection              *bool                  `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Domain                          string                 `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Domainiamrolename               string                 `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3" json:"domainiamrolename,omitempty"`
+	Domain                          *string                `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
+	Domainiamrolename               *string                `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3,oneof" json:"domainiamrolename,omitempty"`
 	Enablecloudwatchlogsexports     []string               `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
 	Enableiamdatabaseauthentication *bool                  `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Enableperformanceinsights       *bool                  `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
 	Engine                          string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                   string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engineversion                   *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Iops                            *int32                 `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
-	Kmskeyid                        string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Licensemodel                    string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Masteruserpassword              string                 `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
-	Masterusername                  string                 `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
+	Kmskeyid                        *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Licensemodel                    *string                `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Masteruserpassword              *string                `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
+	Masterusername                  *string                `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
 	Monitoringinterval              *int32                 `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
-	Monitoringrolearn               string                 `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
+	Monitoringrolearn               *string                `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3,oneof" json:"monitoringrolearn,omitempty"`
 	Multiaz                         *bool                  `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
-	Optiongroupname                 string                 `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Performanceinsightskmskeyid     string                 `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
+	Optiongroupname                 *string                `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
+	Performanceinsightskmskeyid     *string                `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3,oneof" json:"performanceinsightskmskeyid,omitempty"`
 	Port                            *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Preferredbackupwindow           string                 `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow      string                 `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
+	Preferredbackupwindow           *string                `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow      *string                `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
 	Promotiontier                   *int32                 `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible              *bool                  `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Storageencrypted                *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagetype                     string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                     *string                `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Tags                            []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Tdecredentialarn                string                 `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3" json:"tdecredentialarn,omitempty"`
-	Tdecredentialpassword           string                 `protobuf:"bytes,67652301,opt,name=tdecredentialpassword,proto3" json:"tdecredentialpassword,omitempty"`
-	Timezone                        string                 `protobuf:"bytes,246302531,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	Tdecredentialarn                *string                `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3,oneof" json:"tdecredentialarn,omitempty"`
+	Tdecredentialpassword           *string                `protobuf:"bytes,67652301,opt,name=tdecredentialpassword,proto3,oneof" json:"tdecredentialpassword,omitempty"`
+	Timezone                        *string                `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
 	Vpcsecuritygroupids             []string               `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
@@ -2009,8 +2009,8 @@ func (x *CreateDBInstanceMessage) GetAutominorversionupgrade() bool {
 }
 
 func (x *CreateDBInstanceMessage) GetAvailabilityzone() string {
-	if x != nil {
-		return x.Availabilityzone
+	if x != nil && x.Availabilityzone != nil {
+		return *x.Availabilityzone
 	}
 	return ""
 }
@@ -2023,8 +2023,8 @@ func (x *CreateDBInstanceMessage) GetBackupretentionperiod() int32 {
 }
 
 func (x *CreateDBInstanceMessage) GetCharactersetname() string {
-	if x != nil {
-		return x.Charactersetname
+	if x != nil && x.Charactersetname != nil {
+		return *x.Charactersetname
 	}
 	return ""
 }
@@ -2058,15 +2058,15 @@ func (x *CreateDBInstanceMessage) GetDbinstanceidentifier() string {
 }
 
 func (x *CreateDBInstanceMessage) GetDbname() string {
-	if x != nil {
-		return x.Dbname
+	if x != nil && x.Dbname != nil {
+		return *x.Dbname
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetDbparametergroupname() string {
-	if x != nil {
-		return x.Dbparametergroupname
+	if x != nil && x.Dbparametergroupname != nil {
+		return *x.Dbparametergroupname
 	}
 	return ""
 }
@@ -2079,8 +2079,8 @@ func (x *CreateDBInstanceMessage) GetDbsecuritygroups() []string {
 }
 
 func (x *CreateDBInstanceMessage) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
@@ -2093,15 +2093,15 @@ func (x *CreateDBInstanceMessage) GetDeletionprotection() bool {
 }
 
 func (x *CreateDBInstanceMessage) GetDomain() string {
-	if x != nil {
-		return x.Domain
+	if x != nil && x.Domain != nil {
+		return *x.Domain
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetDomainiamrolename() string {
-	if x != nil {
-		return x.Domainiamrolename
+	if x != nil && x.Domainiamrolename != nil {
+		return *x.Domainiamrolename
 	}
 	return ""
 }
@@ -2135,8 +2135,8 @@ func (x *CreateDBInstanceMessage) GetEngine() string {
 }
 
 func (x *CreateDBInstanceMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -2149,29 +2149,29 @@ func (x *CreateDBInstanceMessage) GetIops() int32 {
 }
 
 func (x *CreateDBInstanceMessage) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetMasteruserpassword() string {
-	if x != nil {
-		return x.Masteruserpassword
+	if x != nil && x.Masteruserpassword != nil {
+		return *x.Masteruserpassword
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetMasterusername() string {
-	if x != nil {
-		return x.Masterusername
+	if x != nil && x.Masterusername != nil {
+		return *x.Masterusername
 	}
 	return ""
 }
@@ -2184,8 +2184,8 @@ func (x *CreateDBInstanceMessage) GetMonitoringinterval() int32 {
 }
 
 func (x *CreateDBInstanceMessage) GetMonitoringrolearn() string {
-	if x != nil {
-		return x.Monitoringrolearn
+	if x != nil && x.Monitoringrolearn != nil {
+		return *x.Monitoringrolearn
 	}
 	return ""
 }
@@ -2198,15 +2198,15 @@ func (x *CreateDBInstanceMessage) GetMultiaz() bool {
 }
 
 func (x *CreateDBInstanceMessage) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetPerformanceinsightskmskeyid() string {
-	if x != nil {
-		return x.Performanceinsightskmskeyid
+	if x != nil && x.Performanceinsightskmskeyid != nil {
+		return *x.Performanceinsightskmskeyid
 	}
 	return ""
 }
@@ -2219,15 +2219,15 @@ func (x *CreateDBInstanceMessage) GetPort() int32 {
 }
 
 func (x *CreateDBInstanceMessage) GetPreferredbackupwindow() string {
-	if x != nil {
-		return x.Preferredbackupwindow
+	if x != nil && x.Preferredbackupwindow != nil {
+		return *x.Preferredbackupwindow
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetPreferredmaintenancewindow() string {
-	if x != nil {
-		return x.Preferredmaintenancewindow
+	if x != nil && x.Preferredmaintenancewindow != nil {
+		return *x.Preferredmaintenancewindow
 	}
 	return ""
 }
@@ -2254,8 +2254,8 @@ func (x *CreateDBInstanceMessage) GetStorageencrypted() bool {
 }
 
 func (x *CreateDBInstanceMessage) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -2268,22 +2268,22 @@ func (x *CreateDBInstanceMessage) GetTags() []*Tag {
 }
 
 func (x *CreateDBInstanceMessage) GetTdecredentialarn() string {
-	if x != nil {
-		return x.Tdecredentialarn
+	if x != nil && x.Tdecredentialarn != nil {
+		return *x.Tdecredentialarn
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetTdecredentialpassword() string {
-	if x != nil {
-		return x.Tdecredentialpassword
+	if x != nil && x.Tdecredentialpassword != nil {
+		return *x.Tdecredentialpassword
 	}
 	return ""
 }
 
 func (x *CreateDBInstanceMessage) GetTimezone() string {
-	if x != nil {
-		return x.Timezone
+	if x != nil && x.Timezone != nil {
+		return *x.Timezone
 	}
 	return ""
 }
@@ -2569,7 +2569,7 @@ type CreateEventSubscriptionMessage struct {
 	Eventcategories  []string               `protobuf:"bytes,3676820,rep,name=eventcategories,proto3" json:"eventcategories,omitempty"`
 	Snstopicarn      string                 `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
 	Sourceids        []string               `protobuf:"bytes,507107075,rep,name=sourceids,proto3" json:"sourceids,omitempty"`
-	Sourcetype       string                 `protobuf:"bytes,195731217,opt,name=sourcetype,proto3" json:"sourcetype,omitempty"`
+	Sourcetype       *string                `protobuf:"bytes,195731217,opt,name=sourcetype,proto3,oneof" json:"sourcetype,omitempty"`
 	Subscriptionname string                 `protobuf:"bytes,181900944,opt,name=subscriptionname,proto3" json:"subscriptionname,omitempty"`
 	Tags             []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -2635,8 +2635,8 @@ func (x *CreateEventSubscriptionMessage) GetSourceids() []string {
 }
 
 func (x *CreateEventSubscriptionMessage) GetSourcetype() string {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ""
 }
@@ -2701,12 +2701,12 @@ func (x *CreateEventSubscriptionResult) GetEventsubscription() *EventSubscriptio
 
 type CreateGlobalClusterMessage struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Databasename              string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
+	Databasename              *string                `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
 	Deletionprotection        *bool                  `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Engine                    string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion             string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engine                    *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion             *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Globalclusteridentifier   string                 `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
-	Sourcedbclusteridentifier string                 `protobuf:"bytes,319462008,opt,name=sourcedbclusteridentifier,proto3" json:"sourcedbclusteridentifier,omitempty"`
+	Sourcedbclusteridentifier *string                `protobuf:"bytes,319462008,opt,name=sourcedbclusteridentifier,proto3,oneof" json:"sourcedbclusteridentifier,omitempty"`
 	Storageencrypted          *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
 	Tags                      []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -2744,8 +2744,8 @@ func (*CreateGlobalClusterMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateGlobalClusterMessage) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
@@ -2758,15 +2758,15 @@ func (x *CreateGlobalClusterMessage) GetDeletionprotection() bool {
 }
 
 func (x *CreateGlobalClusterMessage) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *CreateGlobalClusterMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -2779,8 +2779,8 @@ func (x *CreateGlobalClusterMessage) GetGlobalclusteridentifier() string {
 }
 
 func (x *CreateGlobalClusterMessage) GetSourcedbclusteridentifier() string {
-	if x != nil {
-		return x.Sourcedbclusteridentifier
+	if x != nil && x.Sourcedbclusteridentifier != nil {
+		return *x.Sourcedbclusteridentifier
 	}
 	return ""
 }
@@ -2847,49 +2847,49 @@ type DBCluster struct {
 	state                                  protoimpl.MessageState                `protogen:"open.v1"`
 	Allocatedstorage                       *int32                                `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Associatedroles                        []*DBClusterRole                      `protobuf:"bytes,428985325,rep,name=associatedroles,proto3" json:"associatedroles,omitempty"`
-	Automaticrestarttime                   string                                `protobuf:"bytes,497974735,opt,name=automaticrestarttime,proto3" json:"automaticrestarttime,omitempty"`
+	Automaticrestarttime                   *string                               `protobuf:"bytes,497974735,opt,name=automaticrestarttime,proto3,oneof" json:"automaticrestarttime,omitempty"`
 	Availabilityzones                      []string                              `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
 	Backupretentionperiod                  *int32                                `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Charactersetname                       string                                `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
-	Clonegroupid                           string                                `protobuf:"bytes,66234961,opt,name=clonegroupid,proto3" json:"clonegroupid,omitempty"`
-	Clustercreatetime                      string                                `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3" json:"clustercreatetime,omitempty"`
+	Charactersetname                       *string                               `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
+	Clonegroupid                           *string                               `protobuf:"bytes,66234961,opt,name=clonegroupid,proto3,oneof" json:"clonegroupid,omitempty"`
+	Clustercreatetime                      *string                               `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3,oneof" json:"clustercreatetime,omitempty"`
 	Copytagstosnapshot                     *bool                                 `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Crossaccountclone                      *bool                                 `protobuf:"varint,163557100,opt,name=crossaccountclone,proto3,oneof" json:"crossaccountclone,omitempty"`
-	Dbclusterarn                           string                                `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3" json:"dbclusterarn,omitempty"`
-	Dbclusteridentifier                    string                                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
+	Dbclusterarn                           *string                               `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3,oneof" json:"dbclusterarn,omitempty"`
+	Dbclusteridentifier                    *string                               `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
 	Dbclustermembers                       []*DBClusterMember                    `protobuf:"bytes,244422719,rep,name=dbclustermembers,proto3" json:"dbclustermembers,omitempty"`
 	Dbclusteroptiongroupmemberships        []*DBClusterOptionGroupStatus         `protobuf:"bytes,246934587,rep,name=dbclusteroptiongroupmemberships,proto3" json:"dbclusteroptiongroupmemberships,omitempty"`
-	Dbclusterparametergroup                string                                `protobuf:"bytes,260166678,opt,name=dbclusterparametergroup,proto3" json:"dbclusterparametergroup,omitempty"`
-	Dbsubnetgroup                          string                                `protobuf:"bytes,390486926,opt,name=dbsubnetgroup,proto3" json:"dbsubnetgroup,omitempty"`
-	Databasename                           string                                `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
-	Dbclusterresourceid                    string                                `protobuf:"bytes,203287771,opt,name=dbclusterresourceid,proto3" json:"dbclusterresourceid,omitempty"`
+	Dbclusterparametergroup                *string                               `protobuf:"bytes,260166678,opt,name=dbclusterparametergroup,proto3,oneof" json:"dbclusterparametergroup,omitempty"`
+	Dbsubnetgroup                          *string                               `protobuf:"bytes,390486926,opt,name=dbsubnetgroup,proto3,oneof" json:"dbsubnetgroup,omitempty"`
+	Databasename                           *string                               `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
+	Dbclusterresourceid                    *string                               `protobuf:"bytes,203287771,opt,name=dbclusterresourceid,proto3,oneof" json:"dbclusterresourceid,omitempty"`
 	Deletionprotection                     *bool                                 `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Earliestrestorabletime                 string                                `protobuf:"bytes,151224339,opt,name=earliestrestorabletime,proto3" json:"earliestrestorabletime,omitempty"`
+	Earliestrestorabletime                 *string                               `protobuf:"bytes,151224339,opt,name=earliestrestorabletime,proto3,oneof" json:"earliestrestorabletime,omitempty"`
 	Enabledcloudwatchlogsexports           []string                              `protobuf:"bytes,312380693,rep,name=enabledcloudwatchlogsexports,proto3" json:"enabledcloudwatchlogsexports,omitempty"`
-	Endpoint                               string                                `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Engine                                 string                                `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                          string                                `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Globalclusteridentifier                string                                `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
-	Hostedzoneid                           string                                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
+	Endpoint                               *string                               `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Engine                                 *string                               `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion                          *string                               `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Globalclusteridentifier                *string                               `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3,oneof" json:"globalclusteridentifier,omitempty"`
+	Hostedzoneid                           *string                               `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
 	Iamdatabaseauthenticationenabled       *bool                                 `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
-	Iooptimizednextallowedmodificationtime string                                `protobuf:"bytes,206659625,opt,name=iooptimizednextallowedmodificationtime,proto3" json:"iooptimizednextallowedmodificationtime,omitempty"`
-	Kmskeyid                               string                                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Latestrestorabletime                   string                                `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3" json:"latestrestorabletime,omitempty"`
-	Masterusername                         string                                `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
+	Iooptimizednextallowedmodificationtime *string                               `protobuf:"bytes,206659625,opt,name=iooptimizednextallowedmodificationtime,proto3,oneof" json:"iooptimizednextallowedmodificationtime,omitempty"`
+	Kmskeyid                               *string                               `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Latestrestorabletime                   *string                               `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3,oneof" json:"latestrestorabletime,omitempty"`
+	Masterusername                         *string                               `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
 	Multiaz                                *bool                                 `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
-	Networktype                            string                                `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
+	Networktype                            *string                               `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
 	Pendingmodifiedvalues                  *ClusterPendingModifiedValues         `protobuf:"bytes,10750914,opt,name=pendingmodifiedvalues,proto3" json:"pendingmodifiedvalues,omitempty"`
-	Percentprogress                        string                                `protobuf:"bytes,66105414,opt,name=percentprogress,proto3" json:"percentprogress,omitempty"`
+	Percentprogress                        *string                               `protobuf:"bytes,66105414,opt,name=percentprogress,proto3,oneof" json:"percentprogress,omitempty"`
 	Port                                   *int32                                `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Preferredbackupwindow                  string                                `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow             string                                `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
+	Preferredbackupwindow                  *string                               `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow             *string                               `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
 	Readreplicaidentifiers                 []string                              `protobuf:"bytes,524252782,rep,name=readreplicaidentifiers,proto3" json:"readreplicaidentifiers,omitempty"`
-	Readerendpoint                         string                                `protobuf:"bytes,481361340,opt,name=readerendpoint,proto3" json:"readerendpoint,omitempty"`
-	Replicationsourceidentifier            string                                `protobuf:"bytes,432981256,opt,name=replicationsourceidentifier,proto3" json:"replicationsourceidentifier,omitempty"`
+	Readerendpoint                         *string                               `protobuf:"bytes,481361340,opt,name=readerendpoint,proto3,oneof" json:"readerendpoint,omitempty"`
+	Replicationsourceidentifier            *string                               `protobuf:"bytes,432981256,opt,name=replicationsourceidentifier,proto3,oneof" json:"replicationsourceidentifier,omitempty"`
 	Serverlessv2Scalingconfiguration       *ServerlessV2ScalingConfigurationInfo `protobuf:"bytes,357537595,opt,name=serverlessv2scalingconfiguration,proto3" json:"serverlessv2scalingconfiguration,omitempty"`
-	Status                                 string                                `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status                                 *string                               `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Storageencrypted                       *bool                                 `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagetype                            string                                `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                            *string                               `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Vpcsecuritygroups                      []*VpcSecurityGroupMembership         `protobuf:"bytes,463975815,rep,name=vpcsecuritygroups,proto3" json:"vpcsecuritygroups,omitempty"`
 	unknownFields                          protoimpl.UnknownFields
 	sizeCache                              protoimpl.SizeCache
@@ -2940,8 +2940,8 @@ func (x *DBCluster) GetAssociatedroles() []*DBClusterRole {
 }
 
 func (x *DBCluster) GetAutomaticrestarttime() string {
-	if x != nil {
-		return x.Automaticrestarttime
+	if x != nil && x.Automaticrestarttime != nil {
+		return *x.Automaticrestarttime
 	}
 	return ""
 }
@@ -2961,22 +2961,22 @@ func (x *DBCluster) GetBackupretentionperiod() int32 {
 }
 
 func (x *DBCluster) GetCharactersetname() string {
-	if x != nil {
-		return x.Charactersetname
+	if x != nil && x.Charactersetname != nil {
+		return *x.Charactersetname
 	}
 	return ""
 }
 
 func (x *DBCluster) GetClonegroupid() string {
-	if x != nil {
-		return x.Clonegroupid
+	if x != nil && x.Clonegroupid != nil {
+		return *x.Clonegroupid
 	}
 	return ""
 }
 
 func (x *DBCluster) GetClustercreatetime() string {
-	if x != nil {
-		return x.Clustercreatetime
+	if x != nil && x.Clustercreatetime != nil {
+		return *x.Clustercreatetime
 	}
 	return ""
 }
@@ -2996,15 +2996,15 @@ func (x *DBCluster) GetCrossaccountclone() bool {
 }
 
 func (x *DBCluster) GetDbclusterarn() string {
-	if x != nil {
-		return x.Dbclusterarn
+	if x != nil && x.Dbclusterarn != nil {
+		return *x.Dbclusterarn
 	}
 	return ""
 }
 
 func (x *DBCluster) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
@@ -3024,29 +3024,29 @@ func (x *DBCluster) GetDbclusteroptiongroupmemberships() []*DBClusterOptionGroup
 }
 
 func (x *DBCluster) GetDbclusterparametergroup() string {
-	if x != nil {
-		return x.Dbclusterparametergroup
+	if x != nil && x.Dbclusterparametergroup != nil {
+		return *x.Dbclusterparametergroup
 	}
 	return ""
 }
 
 func (x *DBCluster) GetDbsubnetgroup() string {
-	if x != nil {
-		return x.Dbsubnetgroup
+	if x != nil && x.Dbsubnetgroup != nil {
+		return *x.Dbsubnetgroup
 	}
 	return ""
 }
 
 func (x *DBCluster) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
 
 func (x *DBCluster) GetDbclusterresourceid() string {
-	if x != nil {
-		return x.Dbclusterresourceid
+	if x != nil && x.Dbclusterresourceid != nil {
+		return *x.Dbclusterresourceid
 	}
 	return ""
 }
@@ -3059,8 +3059,8 @@ func (x *DBCluster) GetDeletionprotection() bool {
 }
 
 func (x *DBCluster) GetEarliestrestorabletime() string {
-	if x != nil {
-		return x.Earliestrestorabletime
+	if x != nil && x.Earliestrestorabletime != nil {
+		return *x.Earliestrestorabletime
 	}
 	return ""
 }
@@ -3073,36 +3073,36 @@ func (x *DBCluster) GetEnabledcloudwatchlogsexports() []string {
 }
 
 func (x *DBCluster) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
 
 func (x *DBCluster) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *DBCluster) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
 
 func (x *DBCluster) GetGlobalclusteridentifier() string {
-	if x != nil {
-		return x.Globalclusteridentifier
+	if x != nil && x.Globalclusteridentifier != nil {
+		return *x.Globalclusteridentifier
 	}
 	return ""
 }
 
 func (x *DBCluster) GetHostedzoneid() string {
-	if x != nil {
-		return x.Hostedzoneid
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
 	}
 	return ""
 }
@@ -3115,29 +3115,29 @@ func (x *DBCluster) GetIamdatabaseauthenticationenabled() bool {
 }
 
 func (x *DBCluster) GetIooptimizednextallowedmodificationtime() string {
-	if x != nil {
-		return x.Iooptimizednextallowedmodificationtime
+	if x != nil && x.Iooptimizednextallowedmodificationtime != nil {
+		return *x.Iooptimizednextallowedmodificationtime
 	}
 	return ""
 }
 
 func (x *DBCluster) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *DBCluster) GetLatestrestorabletime() string {
-	if x != nil {
-		return x.Latestrestorabletime
+	if x != nil && x.Latestrestorabletime != nil {
+		return *x.Latestrestorabletime
 	}
 	return ""
 }
 
 func (x *DBCluster) GetMasterusername() string {
-	if x != nil {
-		return x.Masterusername
+	if x != nil && x.Masterusername != nil {
+		return *x.Masterusername
 	}
 	return ""
 }
@@ -3150,8 +3150,8 @@ func (x *DBCluster) GetMultiaz() bool {
 }
 
 func (x *DBCluster) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
@@ -3164,8 +3164,8 @@ func (x *DBCluster) GetPendingmodifiedvalues() *ClusterPendingModifiedValues {
 }
 
 func (x *DBCluster) GetPercentprogress() string {
-	if x != nil {
-		return x.Percentprogress
+	if x != nil && x.Percentprogress != nil {
+		return *x.Percentprogress
 	}
 	return ""
 }
@@ -3178,15 +3178,15 @@ func (x *DBCluster) GetPort() int32 {
 }
 
 func (x *DBCluster) GetPreferredbackupwindow() string {
-	if x != nil {
-		return x.Preferredbackupwindow
+	if x != nil && x.Preferredbackupwindow != nil {
+		return *x.Preferredbackupwindow
 	}
 	return ""
 }
 
 func (x *DBCluster) GetPreferredmaintenancewindow() string {
-	if x != nil {
-		return x.Preferredmaintenancewindow
+	if x != nil && x.Preferredmaintenancewindow != nil {
+		return *x.Preferredmaintenancewindow
 	}
 	return ""
 }
@@ -3199,15 +3199,15 @@ func (x *DBCluster) GetReadreplicaidentifiers() []string {
 }
 
 func (x *DBCluster) GetReaderendpoint() string {
-	if x != nil {
-		return x.Readerendpoint
+	if x != nil && x.Readerendpoint != nil {
+		return *x.Readerendpoint
 	}
 	return ""
 }
 
 func (x *DBCluster) GetReplicationsourceidentifier() string {
-	if x != nil {
-		return x.Replicationsourceidentifier
+	if x != nil && x.Replicationsourceidentifier != nil {
+		return *x.Replicationsourceidentifier
 	}
 	return ""
 }
@@ -3220,8 +3220,8 @@ func (x *DBCluster) GetServerlessv2Scalingconfiguration() *ServerlessV2ScalingCo
 }
 
 func (x *DBCluster) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3234,8 +3234,8 @@ func (x *DBCluster) GetStorageencrypted() bool {
 }
 
 func (x *DBCluster) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -3249,7 +3249,7 @@ func (x *DBCluster) GetVpcsecuritygroups() []*VpcSecurityGroupMembership {
 
 type DBClusterAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3285,24 +3285,24 @@ func (*DBClusterAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterEndpoint struct {
 	state                               protoimpl.MessageState `protogen:"open.v1"`
-	Customendpointtype                  string                 `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3" json:"customendpointtype,omitempty"`
-	Dbclusterendpointarn                string                 `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3" json:"dbclusterendpointarn,omitempty"`
-	Dbclusterendpointidentifier         string                 `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3" json:"dbclusterendpointidentifier,omitempty"`
-	Dbclusterendpointresourceidentifier string                 `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3" json:"dbclusterendpointresourceidentifier,omitempty"`
-	Dbclusteridentifier                 string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Endpoint                            string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Endpointtype                        string                 `protobuf:"bytes,486186837,opt,name=endpointtype,proto3" json:"endpointtype,omitempty"`
+	Customendpointtype                  *string                `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3,oneof" json:"customendpointtype,omitempty"`
+	Dbclusterendpointarn                *string                `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3,oneof" json:"dbclusterendpointarn,omitempty"`
+	Dbclusterendpointidentifier         *string                `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3,oneof" json:"dbclusterendpointidentifier,omitempty"`
+	Dbclusterendpointresourceidentifier *string                `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3,oneof" json:"dbclusterendpointresourceidentifier,omitempty"`
+	Dbclusteridentifier                 *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Endpoint                            *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Endpointtype                        *string                `protobuf:"bytes,486186837,opt,name=endpointtype,proto3,oneof" json:"endpointtype,omitempty"`
 	Excludedmembers                     []string               `protobuf:"bytes,395651603,rep,name=excludedmembers,proto3" json:"excludedmembers,omitempty"`
 	Staticmembers                       []string               `protobuf:"bytes,176064991,rep,name=staticmembers,proto3" json:"staticmembers,omitempty"`
-	Status                              string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status                              *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -3338,50 +3338,50 @@ func (*DBClusterEndpoint) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterEndpoint) GetCustomendpointtype() string {
-	if x != nil {
-		return x.Customendpointtype
+	if x != nil && x.Customendpointtype != nil {
+		return *x.Customendpointtype
 	}
 	return ""
 }
 
 func (x *DBClusterEndpoint) GetDbclusterendpointarn() string {
-	if x != nil {
-		return x.Dbclusterendpointarn
+	if x != nil && x.Dbclusterendpointarn != nil {
+		return *x.Dbclusterendpointarn
 	}
 	return ""
 }
 
 func (x *DBClusterEndpoint) GetDbclusterendpointidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointidentifier
+	if x != nil && x.Dbclusterendpointidentifier != nil {
+		return *x.Dbclusterendpointidentifier
 	}
 	return ""
 }
 
 func (x *DBClusterEndpoint) GetDbclusterendpointresourceidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointresourceidentifier
+	if x != nil && x.Dbclusterendpointresourceidentifier != nil {
+		return *x.Dbclusterendpointresourceidentifier
 	}
 	return ""
 }
 
 func (x *DBClusterEndpoint) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *DBClusterEndpoint) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
 
 func (x *DBClusterEndpoint) GetEndpointtype() string {
-	if x != nil {
-		return x.Endpointtype
+	if x != nil && x.Endpointtype != nil {
+		return *x.Endpointtype
 	}
 	return ""
 }
@@ -3401,15 +3401,15 @@ func (x *DBClusterEndpoint) GetStaticmembers() []string {
 }
 
 func (x *DBClusterEndpoint) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type DBClusterEndpointAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3445,8 +3445,8 @@ func (*DBClusterEndpointAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterEndpointAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3454,7 +3454,7 @@ func (x *DBClusterEndpointAlreadyExistsFault) GetMessage() string {
 type DBClusterEndpointMessage struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusterendpoints []*DBClusterEndpoint   `protobuf:"bytes,283715448,rep,name=dbclusterendpoints,proto3" json:"dbclusterendpoints,omitempty"`
-	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker             *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3497,15 +3497,15 @@ func (x *DBClusterEndpointMessage) GetDbclusterendpoints() []*DBClusterEndpoint 
 }
 
 func (x *DBClusterEndpointMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBClusterEndpointNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3541,15 +3541,15 @@ func (*DBClusterEndpointNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterEndpointNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterEndpointQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3585,16 +3585,16 @@ func (*DBClusterEndpointQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterEndpointQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterMember struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusterparametergroupstatus string                 `protobuf:"bytes,237254592,opt,name=dbclusterparametergroupstatus,proto3" json:"dbclusterparametergroupstatus,omitempty"`
-	Dbinstanceidentifier          string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
+	Dbclusterparametergroupstatus *string                `protobuf:"bytes,237254592,opt,name=dbclusterparametergroupstatus,proto3,oneof" json:"dbclusterparametergroupstatus,omitempty"`
+	Dbinstanceidentifier          *string                `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3,oneof" json:"dbinstanceidentifier,omitempty"`
 	Isclusterwriter               *bool                  `protobuf:"varint,506087795,opt,name=isclusterwriter,proto3,oneof" json:"isclusterwriter,omitempty"`
 	Promotiontier                 *int32                 `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
@@ -3632,15 +3632,15 @@ func (*DBClusterMember) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterMember) GetDbclusterparametergroupstatus() string {
-	if x != nil {
-		return x.Dbclusterparametergroupstatus
+	if x != nil && x.Dbclusterparametergroupstatus != nil {
+		return *x.Dbclusterparametergroupstatus
 	}
 	return ""
 }
 
 func (x *DBClusterMember) GetDbinstanceidentifier() string {
-	if x != nil {
-		return x.Dbinstanceidentifier
+	if x != nil && x.Dbinstanceidentifier != nil {
+		return *x.Dbinstanceidentifier
 	}
 	return ""
 }
@@ -3662,7 +3662,7 @@ func (x *DBClusterMember) GetPromotiontier() int32 {
 type DBClusterMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusters    []*DBCluster           `protobuf:"bytes,474293657,rep,name=dbclusters,proto3" json:"dbclusters,omitempty"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3705,15 +3705,15 @@ func (x *DBClusterMessage) GetDbclusters() []*DBCluster {
 }
 
 func (x *DBClusterMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBClusterNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3749,16 +3749,16 @@ func (*DBClusterNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterOptionGroupStatus struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusteroptiongroupname string                 `protobuf:"bytes,25126019,opt,name=dbclusteroptiongroupname,proto3" json:"dbclusteroptiongroupname,omitempty"`
-	Status                   string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Dbclusteroptiongroupname *string                `protobuf:"bytes,25126019,opt,name=dbclusteroptiongroupname,proto3,oneof" json:"dbclusteroptiongroupname,omitempty"`
+	Status                   *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -3794,25 +3794,25 @@ func (*DBClusterOptionGroupStatus) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterOptionGroupStatus) GetDbclusteroptiongroupname() string {
-	if x != nil {
-		return x.Dbclusteroptiongroupname
+	if x != nil && x.Dbclusteroptiongroupname != nil {
+		return *x.Dbclusteroptiongroupname
 	}
 	return ""
 }
 
 func (x *DBClusterOptionGroupStatus) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type DBClusterParameterGroup struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusterparametergrouparn  string                 `protobuf:"bytes,337924141,opt,name=dbclusterparametergrouparn,proto3" json:"dbclusterparametergrouparn,omitempty"`
-	Dbclusterparametergroupname string                 `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
-	Dbparametergroupfamily      string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
-	Description                 string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Dbclusterparametergrouparn  *string                `protobuf:"bytes,337924141,opt,name=dbclusterparametergrouparn,proto3,oneof" json:"dbclusterparametergrouparn,omitempty"`
+	Dbclusterparametergroupname *string                `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
+	Dbparametergroupfamily      *string                `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3,oneof" json:"dbparametergroupfamily,omitempty"`
+	Description                 *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -3848,36 +3848,36 @@ func (*DBClusterParameterGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterParameterGroup) GetDbclusterparametergrouparn() string {
-	if x != nil {
-		return x.Dbclusterparametergrouparn
+	if x != nil && x.Dbclusterparametergrouparn != nil {
+		return *x.Dbclusterparametergrouparn
 	}
 	return ""
 }
 
 func (x *DBClusterParameterGroup) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
 
 func (x *DBClusterParameterGroup) GetDbparametergroupfamily() string {
-	if x != nil {
-		return x.Dbparametergroupfamily
+	if x != nil && x.Dbparametergroupfamily != nil {
+		return *x.Dbparametergroupfamily
 	}
 	return ""
 }
 
 func (x *DBClusterParameterGroup) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 type DBClusterParameterGroupDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Parameters    []*Parameter           `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3914,8 +3914,8 @@ func (*DBClusterParameterGroupDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterParameterGroupDetails) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -3929,7 +3929,7 @@ func (x *DBClusterParameterGroupDetails) GetParameters() []*Parameter {
 
 type DBClusterParameterGroupNameMessage struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusterparametergroupname string                 `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
+	Dbclusterparametergroupname *string                `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -3965,15 +3965,15 @@ func (*DBClusterParameterGroupNameMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterParameterGroupNameMessage) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
 
 type DBClusterParameterGroupNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4009,8 +4009,8 @@ func (*DBClusterParameterGroupNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterParameterGroupNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4018,7 +4018,7 @@ func (x *DBClusterParameterGroupNotFoundFault) GetMessage() string {
 type DBClusterParameterGroupsMessage struct {
 	state                    protoimpl.MessageState     `protogen:"open.v1"`
 	Dbclusterparametergroups []*DBClusterParameterGroup `protobuf:"bytes,258038931,rep,name=dbclusterparametergroups,proto3" json:"dbclusterparametergroups,omitempty"`
-	Marker                   string                     `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                   *string                    `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -4061,15 +4061,15 @@ func (x *DBClusterParameterGroupsMessage) GetDbclusterparametergroups() []*DBClu
 }
 
 func (x *DBClusterParameterGroupsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBClusterQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4105,17 +4105,17 @@ func (*DBClusterQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterRole struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Featurename   string                 `protobuf:"bytes,218369023,opt,name=featurename,proto3" json:"featurename,omitempty"`
-	Rolearn       string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
-	Status        string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Featurename   *string                `protobuf:"bytes,218369023,opt,name=featurename,proto3,oneof" json:"featurename,omitempty"`
+	Rolearn       *string                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
+	Status        *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4151,29 +4151,29 @@ func (*DBClusterRole) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterRole) GetFeaturename() string {
-	if x != nil {
-		return x.Featurename
+	if x != nil && x.Featurename != nil {
+		return *x.Featurename
 	}
 	return ""
 }
 
 func (x *DBClusterRole) GetRolearn() string {
-	if x != nil {
-		return x.Rolearn
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
 	}
 	return ""
 }
 
 func (x *DBClusterRole) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type DBClusterRoleAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4209,15 +4209,15 @@ func (*DBClusterRoleAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterRoleAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterRoleNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4253,15 +4253,15 @@ func (*DBClusterRoleNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterRoleNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterRoleQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4297,8 +4297,8 @@ func (*DBClusterRoleQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterRoleQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4307,25 +4307,25 @@ type DBClusterSnapshot struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
 	Allocatedstorage                 *int32                 `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Availabilityzones                []string               `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
-	Clustercreatetime                string                 `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3" json:"clustercreatetime,omitempty"`
-	Dbclusteridentifier              string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbclustersnapshotarn             string                 `protobuf:"bytes,468809279,opt,name=dbclustersnapshotarn,proto3" json:"dbclustersnapshotarn,omitempty"`
-	Dbclustersnapshotidentifier      string                 `protobuf:"bytes,204169569,opt,name=dbclustersnapshotidentifier,proto3" json:"dbclustersnapshotidentifier,omitempty"`
-	Engine                           string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                    string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Clustercreatetime                *string                `protobuf:"bytes,119020389,opt,name=clustercreatetime,proto3,oneof" json:"clustercreatetime,omitempty"`
+	Dbclusteridentifier              *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Dbclustersnapshotarn             *string                `protobuf:"bytes,468809279,opt,name=dbclustersnapshotarn,proto3,oneof" json:"dbclustersnapshotarn,omitempty"`
+	Dbclustersnapshotidentifier      *string                `protobuf:"bytes,204169569,opt,name=dbclustersnapshotidentifier,proto3,oneof" json:"dbclustersnapshotidentifier,omitempty"`
+	Engine                           *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion                    *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Iamdatabaseauthenticationenabled *bool                  `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
-	Kmskeyid                         string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Licensemodel                     string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Masterusername                   string                 `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
+	Kmskeyid                         *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Licensemodel                     *string                `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Masterusername                   *string                `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
 	Percentprogress                  *int32                 `protobuf:"varint,66105414,opt,name=percentprogress,proto3,oneof" json:"percentprogress,omitempty"`
 	Port                             *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Snapshotcreatetime               string                 `protobuf:"bytes,168899877,opt,name=snapshotcreatetime,proto3" json:"snapshotcreatetime,omitempty"`
-	Snapshottype                     string                 `protobuf:"bytes,399375494,opt,name=snapshottype,proto3" json:"snapshottype,omitempty"`
-	Sourcedbclustersnapshotarn       string                 `protobuf:"bytes,75298872,opt,name=sourcedbclustersnapshotarn,proto3" json:"sourcedbclustersnapshotarn,omitempty"`
-	Status                           string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Snapshotcreatetime               *string                `protobuf:"bytes,168899877,opt,name=snapshotcreatetime,proto3,oneof" json:"snapshotcreatetime,omitempty"`
+	Snapshottype                     *string                `protobuf:"bytes,399375494,opt,name=snapshottype,proto3,oneof" json:"snapshottype,omitempty"`
+	Sourcedbclustersnapshotarn       *string                `protobuf:"bytes,75298872,opt,name=sourcedbclustersnapshotarn,proto3,oneof" json:"sourcedbclustersnapshotarn,omitempty"`
+	Status                           *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Storageencrypted                 *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagetype                      string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
-	Vpcid                            string                 `protobuf:"bytes,412355958,opt,name=vpcid,proto3" json:"vpcid,omitempty"`
+	Storagetype                      *string                `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
+	Vpcid                            *string                `protobuf:"bytes,412355958,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -4375,43 +4375,43 @@ func (x *DBClusterSnapshot) GetAvailabilityzones() []string {
 }
 
 func (x *DBClusterSnapshot) GetClustercreatetime() string {
-	if x != nil {
-		return x.Clustercreatetime
+	if x != nil && x.Clustercreatetime != nil {
+		return *x.Clustercreatetime
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetDbclustersnapshotarn() string {
-	if x != nil {
-		return x.Dbclustersnapshotarn
+	if x != nil && x.Dbclustersnapshotarn != nil {
+		return *x.Dbclustersnapshotarn
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetDbclustersnapshotidentifier() string {
-	if x != nil {
-		return x.Dbclustersnapshotidentifier
+	if x != nil && x.Dbclustersnapshotidentifier != nil {
+		return *x.Dbclustersnapshotidentifier
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -4424,22 +4424,22 @@ func (x *DBClusterSnapshot) GetIamdatabaseauthenticationenabled() bool {
 }
 
 func (x *DBClusterSnapshot) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetMasterusername() string {
-	if x != nil {
-		return x.Masterusername
+	if x != nil && x.Masterusername != nil {
+		return *x.Masterusername
 	}
 	return ""
 }
@@ -4459,29 +4459,29 @@ func (x *DBClusterSnapshot) GetPort() int32 {
 }
 
 func (x *DBClusterSnapshot) GetSnapshotcreatetime() string {
-	if x != nil {
-		return x.Snapshotcreatetime
+	if x != nil && x.Snapshotcreatetime != nil {
+		return *x.Snapshotcreatetime
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetSnapshottype() string {
-	if x != nil {
-		return x.Snapshottype
+	if x != nil && x.Snapshottype != nil {
+		return *x.Snapshottype
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetSourcedbclustersnapshotarn() string {
-	if x != nil {
-		return x.Sourcedbclustersnapshotarn
+	if x != nil && x.Sourcedbclustersnapshotarn != nil {
+		return *x.Sourcedbclustersnapshotarn
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -4494,22 +4494,22 @@ func (x *DBClusterSnapshot) GetStorageencrypted() bool {
 }
 
 func (x *DBClusterSnapshot) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
 
 func (x *DBClusterSnapshot) GetVpcid() string {
-	if x != nil {
-		return x.Vpcid
+	if x != nil && x.Vpcid != nil {
+		return *x.Vpcid
 	}
 	return ""
 }
 
 type DBClusterSnapshotAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4545,15 +4545,15 @@ func (*DBClusterSnapshotAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterSnapshotAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBClusterSnapshotAttribute struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Attributename   string                 `protobuf:"bytes,352717485,opt,name=attributename,proto3" json:"attributename,omitempty"`
+	Attributename   *string                `protobuf:"bytes,352717485,opt,name=attributename,proto3,oneof" json:"attributename,omitempty"`
 	Attributevalues []string               `protobuf:"bytes,192289814,rep,name=attributevalues,proto3" json:"attributevalues,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -4590,8 +4590,8 @@ func (*DBClusterSnapshotAttribute) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterSnapshotAttribute) GetAttributename() string {
-	if x != nil {
-		return x.Attributename
+	if x != nil && x.Attributename != nil {
+		return *x.Attributename
 	}
 	return ""
 }
@@ -4606,7 +4606,7 @@ func (x *DBClusterSnapshotAttribute) GetAttributevalues() []string {
 type DBClusterSnapshotAttributesResult struct {
 	state                       protoimpl.MessageState        `protogen:"open.v1"`
 	Dbclustersnapshotattributes []*DBClusterSnapshotAttribute `protobuf:"bytes,159465255,rep,name=dbclustersnapshotattributes,proto3" json:"dbclustersnapshotattributes,omitempty"`
-	Dbclustersnapshotidentifier string                        `protobuf:"bytes,204169569,opt,name=dbclustersnapshotidentifier,proto3" json:"dbclustersnapshotidentifier,omitempty"`
+	Dbclustersnapshotidentifier *string                       `protobuf:"bytes,204169569,opt,name=dbclustersnapshotidentifier,proto3,oneof" json:"dbclustersnapshotidentifier,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -4649,8 +4649,8 @@ func (x *DBClusterSnapshotAttributesResult) GetDbclustersnapshotattributes() []*
 }
 
 func (x *DBClusterSnapshotAttributesResult) GetDbclustersnapshotidentifier() string {
-	if x != nil {
-		return x.Dbclustersnapshotidentifier
+	if x != nil && x.Dbclustersnapshotidentifier != nil {
+		return *x.Dbclustersnapshotidentifier
 	}
 	return ""
 }
@@ -4658,7 +4658,7 @@ func (x *DBClusterSnapshotAttributesResult) GetDbclustersnapshotidentifier() str
 type DBClusterSnapshotMessage struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Dbclustersnapshots []*DBClusterSnapshot   `protobuf:"bytes,52656105,rep,name=dbclustersnapshots,proto3" json:"dbclustersnapshots,omitempty"`
-	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker             *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4701,15 +4701,15 @@ func (x *DBClusterSnapshotMessage) GetDbclustersnapshots() []*DBClusterSnapshot 
 }
 
 func (x *DBClusterSnapshotMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBClusterSnapshotNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4745,20 +4745,20 @@ func (*DBClusterSnapshotNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBClusterSnapshotNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBEngineVersion struct {
 	state                              protoimpl.MessageState `protogen:"open.v1"`
-	Dbenginedescription                string                 `protobuf:"bytes,308369458,opt,name=dbenginedescription,proto3" json:"dbenginedescription,omitempty"`
-	Dbengineversiondescription         string                 `protobuf:"bytes,532378692,opt,name=dbengineversiondescription,proto3" json:"dbengineversiondescription,omitempty"`
-	Dbparametergroupfamily             string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
+	Dbenginedescription                *string                `protobuf:"bytes,308369458,opt,name=dbenginedescription,proto3,oneof" json:"dbenginedescription,omitempty"`
+	Dbengineversiondescription         *string                `protobuf:"bytes,532378692,opt,name=dbengineversiondescription,proto3,oneof" json:"dbengineversiondescription,omitempty"`
+	Dbparametergroupfamily             *string                `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3,oneof" json:"dbparametergroupfamily,omitempty"`
 	Defaultcharacterset                *CharacterSet          `protobuf:"bytes,154454048,opt,name=defaultcharacterset,proto3" json:"defaultcharacterset,omitempty"`
-	Engine                             string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                      string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engine                             *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion                      *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Exportablelogtypes                 []string               `protobuf:"bytes,76126621,rep,name=exportablelogtypes,proto3" json:"exportablelogtypes,omitempty"`
 	Supportedcharactersets             []*CharacterSet        `protobuf:"bytes,344346726,rep,name=supportedcharactersets,proto3" json:"supportedcharactersets,omitempty"`
 	Supportedtimezones                 []*Timezone            `protobuf:"bytes,112838160,rep,name=supportedtimezones,proto3" json:"supportedtimezones,omitempty"`
@@ -4801,22 +4801,22 @@ func (*DBEngineVersion) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBEngineVersion) GetDbenginedescription() string {
-	if x != nil {
-		return x.Dbenginedescription
+	if x != nil && x.Dbenginedescription != nil {
+		return *x.Dbenginedescription
 	}
 	return ""
 }
 
 func (x *DBEngineVersion) GetDbengineversiondescription() string {
-	if x != nil {
-		return x.Dbengineversiondescription
+	if x != nil && x.Dbengineversiondescription != nil {
+		return *x.Dbengineversiondescription
 	}
 	return ""
 }
 
 func (x *DBEngineVersion) GetDbparametergroupfamily() string {
-	if x != nil {
-		return x.Dbparametergroupfamily
+	if x != nil && x.Dbparametergroupfamily != nil {
+		return *x.Dbparametergroupfamily
 	}
 	return ""
 }
@@ -4829,15 +4829,15 @@ func (x *DBEngineVersion) GetDefaultcharacterset() *CharacterSet {
 }
 
 func (x *DBEngineVersion) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *DBEngineVersion) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -4894,7 +4894,7 @@ func (x *DBEngineVersion) GetValidupgradetarget() []*UpgradeTarget {
 type DBEngineVersionMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Dbengineversions []*DBEngineVersion     `protobuf:"bytes,445640181,rep,name=dbengineversions,proto3" json:"dbengineversions,omitempty"`
-	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker           *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -4937,8 +4937,8 @@ func (x *DBEngineVersionMessage) GetDbengineversions() []*DBEngineVersion {
 }
 
 func (x *DBEngineVersionMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -4947,57 +4947,57 @@ type DBInstance struct {
 	state                                 protoimpl.MessageState        `protogen:"open.v1"`
 	Allocatedstorage                      *int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Autominorversionupgrade               *bool                         `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
-	Availabilityzone                      string                        `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3" json:"availabilityzone,omitempty"`
+	Availabilityzone                      *string                       `protobuf:"bytes,391476601,opt,name=availabilityzone,proto3,oneof" json:"availabilityzone,omitempty"`
 	Backupretentionperiod                 *int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Cacertificateidentifier               string                        `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
-	Charactersetname                      string                        `protobuf:"bytes,488468644,opt,name=charactersetname,proto3" json:"charactersetname,omitempty"`
+	Cacertificateidentifier               *string                       `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
+	Charactersetname                      *string                       `protobuf:"bytes,488468644,opt,name=charactersetname,proto3,oneof" json:"charactersetname,omitempty"`
 	Copytagstosnapshot                    *bool                         `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
-	Dbclusteridentifier                   string                        `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbinstancearn                         string                        `protobuf:"bytes,520508360,opt,name=dbinstancearn,proto3" json:"dbinstancearn,omitempty"`
-	Dbinstanceclass                       string                        `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
-	Dbinstanceidentifier                  string                        `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Dbinstancestatus                      string                        `protobuf:"bytes,9029731,opt,name=dbinstancestatus,proto3" json:"dbinstancestatus,omitempty"`
-	Dbname                                string                        `protobuf:"bytes,135387881,opt,name=dbname,proto3" json:"dbname,omitempty"`
+	Dbclusteridentifier                   *string                       `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Dbinstancearn                         *string                       `protobuf:"bytes,520508360,opt,name=dbinstancearn,proto3,oneof" json:"dbinstancearn,omitempty"`
+	Dbinstanceclass                       *string                       `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3,oneof" json:"dbinstanceclass,omitempty"`
+	Dbinstanceidentifier                  *string                       `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3,oneof" json:"dbinstanceidentifier,omitempty"`
+	Dbinstancestatus                      *string                       `protobuf:"bytes,9029731,opt,name=dbinstancestatus,proto3,oneof" json:"dbinstancestatus,omitempty"`
+	Dbname                                *string                       `protobuf:"bytes,135387881,opt,name=dbname,proto3,oneof" json:"dbname,omitempty"`
 	Dbparametergroups                     []*DBParameterGroupStatus     `protobuf:"bytes,87728011,rep,name=dbparametergroups,proto3" json:"dbparametergroups,omitempty"`
 	Dbsecuritygroups                      []*DBSecurityGroupMembership  `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
 	Dbsubnetgroup                         *DBSubnetGroup                `protobuf:"bytes,390486926,opt,name=dbsubnetgroup,proto3" json:"dbsubnetgroup,omitempty"`
 	Dbinstanceport                        *int32                        `protobuf:"varint,122890396,opt,name=dbinstanceport,proto3,oneof" json:"dbinstanceport,omitempty"`
-	Dbiresourceid                         string                        `protobuf:"bytes,483153532,opt,name=dbiresourceid,proto3" json:"dbiresourceid,omitempty"`
+	Dbiresourceid                         *string                       `protobuf:"bytes,483153532,opt,name=dbiresourceid,proto3,oneof" json:"dbiresourceid,omitempty"`
 	Deletionprotection                    *bool                         `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Domainmemberships                     []*DomainMembership           `protobuf:"bytes,340588819,rep,name=domainmemberships,proto3" json:"domainmemberships,omitempty"`
 	Enabledcloudwatchlogsexports          []string                      `protobuf:"bytes,312380693,rep,name=enabledcloudwatchlogsexports,proto3" json:"enabledcloudwatchlogsexports,omitempty"`
 	Endpoint                              *Endpoint                     `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Engine                                string                        `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                         string                        `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Enhancedmonitoringresourcearn         string                        `protobuf:"bytes,233441497,opt,name=enhancedmonitoringresourcearn,proto3" json:"enhancedmonitoringresourcearn,omitempty"`
+	Engine                                *string                       `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion                         *string                       `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Enhancedmonitoringresourcearn         *string                       `protobuf:"bytes,233441497,opt,name=enhancedmonitoringresourcearn,proto3,oneof" json:"enhancedmonitoringresourcearn,omitempty"`
 	Iamdatabaseauthenticationenabled      *bool                         `protobuf:"varint,148277621,opt,name=iamdatabaseauthenticationenabled,proto3,oneof" json:"iamdatabaseauthenticationenabled,omitempty"`
-	Instancecreatetime                    string                        `protobuf:"bytes,479568832,opt,name=instancecreatetime,proto3" json:"instancecreatetime,omitempty"`
+	Instancecreatetime                    *string                       `protobuf:"bytes,479568832,opt,name=instancecreatetime,proto3,oneof" json:"instancecreatetime,omitempty"`
 	Iops                                  *int32                        `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
-	Kmskeyid                              string                        `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Latestrestorabletime                  string                        `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3" json:"latestrestorabletime,omitempty"`
-	Licensemodel                          string                        `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Masterusername                        string                        `protobuf:"bytes,110287892,opt,name=masterusername,proto3" json:"masterusername,omitempty"`
+	Kmskeyid                              *string                       `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Latestrestorabletime                  *string                       `protobuf:"bytes,238336097,opt,name=latestrestorabletime,proto3,oneof" json:"latestrestorabletime,omitempty"`
+	Licensemodel                          *string                       `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Masterusername                        *string                       `protobuf:"bytes,110287892,opt,name=masterusername,proto3,oneof" json:"masterusername,omitempty"`
 	Monitoringinterval                    *int32                        `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
-	Monitoringrolearn                     string                        `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
+	Monitoringrolearn                     *string                       `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3,oneof" json:"monitoringrolearn,omitempty"`
 	Multiaz                               *bool                         `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
-	Networktype                           string                        `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
+	Networktype                           *string                       `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
 	Optiongroupmemberships                []*OptionGroupMembership      `protobuf:"bytes,295991077,rep,name=optiongroupmemberships,proto3" json:"optiongroupmemberships,omitempty"`
 	Pendingmodifiedvalues                 *PendingModifiedValues        `protobuf:"bytes,10750914,opt,name=pendingmodifiedvalues,proto3" json:"pendingmodifiedvalues,omitempty"`
 	Performanceinsightsenabled            *bool                         `protobuf:"varint,390617050,opt,name=performanceinsightsenabled,proto3,oneof" json:"performanceinsightsenabled,omitempty"`
-	Performanceinsightskmskeyid           string                        `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Preferredbackupwindow                 string                        `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow            string                        `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
+	Performanceinsightskmskeyid           *string                       `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3,oneof" json:"performanceinsightskmskeyid,omitempty"`
+	Preferredbackupwindow                 *string                       `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow            *string                       `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
 	Promotiontier                         *int32                        `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible                    *bool                         `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
 	Readreplicadbclusteridentifiers       []string                      `protobuf:"bytes,174932412,rep,name=readreplicadbclusteridentifiers,proto3" json:"readreplicadbclusteridentifiers,omitempty"`
 	Readreplicadbinstanceidentifiers      []string                      `protobuf:"bytes,261713211,rep,name=readreplicadbinstanceidentifiers,proto3" json:"readreplicadbinstanceidentifiers,omitempty"`
-	Readreplicasourcedbinstanceidentifier string                        `protobuf:"bytes,306391633,opt,name=readreplicasourcedbinstanceidentifier,proto3" json:"readreplicasourcedbinstanceidentifier,omitempty"`
-	Secondaryavailabilityzone             string                        `protobuf:"bytes,228625469,opt,name=secondaryavailabilityzone,proto3" json:"secondaryavailabilityzone,omitempty"`
+	Readreplicasourcedbinstanceidentifier *string                       `protobuf:"bytes,306391633,opt,name=readreplicasourcedbinstanceidentifier,proto3,oneof" json:"readreplicasourcedbinstanceidentifier,omitempty"`
+	Secondaryavailabilityzone             *string                       `protobuf:"bytes,228625469,opt,name=secondaryavailabilityzone,proto3,oneof" json:"secondaryavailabilityzone,omitempty"`
 	Statusinfos                           []*DBInstanceStatusInfo       `protobuf:"bytes,421770169,rep,name=statusinfos,proto3" json:"statusinfos,omitempty"`
 	Storageencrypted                      *bool                         `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
-	Storagetype                           string                        `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
-	Tdecredentialarn                      string                        `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3" json:"tdecredentialarn,omitempty"`
-	Timezone                              string                        `protobuf:"bytes,246302531,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	Storagetype                           *string                       `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
+	Tdecredentialarn                      *string                       `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3,oneof" json:"tdecredentialarn,omitempty"`
+	Timezone                              *string                       `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
 	Vpcsecuritygroups                     []*VpcSecurityGroupMembership `protobuf:"bytes,463975815,rep,name=vpcsecuritygroups,proto3" json:"vpcsecuritygroups,omitempty"`
 	unknownFields                         protoimpl.UnknownFields
 	sizeCache                             protoimpl.SizeCache
@@ -5048,8 +5048,8 @@ func (x *DBInstance) GetAutominorversionupgrade() bool {
 }
 
 func (x *DBInstance) GetAvailabilityzone() string {
-	if x != nil {
-		return x.Availabilityzone
+	if x != nil && x.Availabilityzone != nil {
+		return *x.Availabilityzone
 	}
 	return ""
 }
@@ -5062,15 +5062,15 @@ func (x *DBInstance) GetBackupretentionperiod() int32 {
 }
 
 func (x *DBInstance) GetCacertificateidentifier() string {
-	if x != nil {
-		return x.Cacertificateidentifier
+	if x != nil && x.Cacertificateidentifier != nil {
+		return *x.Cacertificateidentifier
 	}
 	return ""
 }
 
 func (x *DBInstance) GetCharactersetname() string {
-	if x != nil {
-		return x.Charactersetname
+	if x != nil && x.Charactersetname != nil {
+		return *x.Charactersetname
 	}
 	return ""
 }
@@ -5083,43 +5083,43 @@ func (x *DBInstance) GetCopytagstosnapshot() bool {
 }
 
 func (x *DBInstance) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *DBInstance) GetDbinstancearn() string {
-	if x != nil {
-		return x.Dbinstancearn
+	if x != nil && x.Dbinstancearn != nil {
+		return *x.Dbinstancearn
 	}
 	return ""
 }
 
 func (x *DBInstance) GetDbinstanceclass() string {
-	if x != nil {
-		return x.Dbinstanceclass
+	if x != nil && x.Dbinstanceclass != nil {
+		return *x.Dbinstanceclass
 	}
 	return ""
 }
 
 func (x *DBInstance) GetDbinstanceidentifier() string {
-	if x != nil {
-		return x.Dbinstanceidentifier
+	if x != nil && x.Dbinstanceidentifier != nil {
+		return *x.Dbinstanceidentifier
 	}
 	return ""
 }
 
 func (x *DBInstance) GetDbinstancestatus() string {
-	if x != nil {
-		return x.Dbinstancestatus
+	if x != nil && x.Dbinstancestatus != nil {
+		return *x.Dbinstancestatus
 	}
 	return ""
 }
 
 func (x *DBInstance) GetDbname() string {
-	if x != nil {
-		return x.Dbname
+	if x != nil && x.Dbname != nil {
+		return *x.Dbname
 	}
 	return ""
 }
@@ -5153,8 +5153,8 @@ func (x *DBInstance) GetDbinstanceport() int32 {
 }
 
 func (x *DBInstance) GetDbiresourceid() string {
-	if x != nil {
-		return x.Dbiresourceid
+	if x != nil && x.Dbiresourceid != nil {
+		return *x.Dbiresourceid
 	}
 	return ""
 }
@@ -5188,22 +5188,22 @@ func (x *DBInstance) GetEndpoint() *Endpoint {
 }
 
 func (x *DBInstance) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *DBInstance) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
 
 func (x *DBInstance) GetEnhancedmonitoringresourcearn() string {
-	if x != nil {
-		return x.Enhancedmonitoringresourcearn
+	if x != nil && x.Enhancedmonitoringresourcearn != nil {
+		return *x.Enhancedmonitoringresourcearn
 	}
 	return ""
 }
@@ -5216,8 +5216,8 @@ func (x *DBInstance) GetIamdatabaseauthenticationenabled() bool {
 }
 
 func (x *DBInstance) GetInstancecreatetime() string {
-	if x != nil {
-		return x.Instancecreatetime
+	if x != nil && x.Instancecreatetime != nil {
+		return *x.Instancecreatetime
 	}
 	return ""
 }
@@ -5230,29 +5230,29 @@ func (x *DBInstance) GetIops() int32 {
 }
 
 func (x *DBInstance) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *DBInstance) GetLatestrestorabletime() string {
-	if x != nil {
-		return x.Latestrestorabletime
+	if x != nil && x.Latestrestorabletime != nil {
+		return *x.Latestrestorabletime
 	}
 	return ""
 }
 
 func (x *DBInstance) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
 
 func (x *DBInstance) GetMasterusername() string {
-	if x != nil {
-		return x.Masterusername
+	if x != nil && x.Masterusername != nil {
+		return *x.Masterusername
 	}
 	return ""
 }
@@ -5265,8 +5265,8 @@ func (x *DBInstance) GetMonitoringinterval() int32 {
 }
 
 func (x *DBInstance) GetMonitoringrolearn() string {
-	if x != nil {
-		return x.Monitoringrolearn
+	if x != nil && x.Monitoringrolearn != nil {
+		return *x.Monitoringrolearn
 	}
 	return ""
 }
@@ -5279,8 +5279,8 @@ func (x *DBInstance) GetMultiaz() bool {
 }
 
 func (x *DBInstance) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
@@ -5307,22 +5307,22 @@ func (x *DBInstance) GetPerformanceinsightsenabled() bool {
 }
 
 func (x *DBInstance) GetPerformanceinsightskmskeyid() string {
-	if x != nil {
-		return x.Performanceinsightskmskeyid
+	if x != nil && x.Performanceinsightskmskeyid != nil {
+		return *x.Performanceinsightskmskeyid
 	}
 	return ""
 }
 
 func (x *DBInstance) GetPreferredbackupwindow() string {
-	if x != nil {
-		return x.Preferredbackupwindow
+	if x != nil && x.Preferredbackupwindow != nil {
+		return *x.Preferredbackupwindow
 	}
 	return ""
 }
 
 func (x *DBInstance) GetPreferredmaintenancewindow() string {
-	if x != nil {
-		return x.Preferredmaintenancewindow
+	if x != nil && x.Preferredmaintenancewindow != nil {
+		return *x.Preferredmaintenancewindow
 	}
 	return ""
 }
@@ -5356,15 +5356,15 @@ func (x *DBInstance) GetReadreplicadbinstanceidentifiers() []string {
 }
 
 func (x *DBInstance) GetReadreplicasourcedbinstanceidentifier() string {
-	if x != nil {
-		return x.Readreplicasourcedbinstanceidentifier
+	if x != nil && x.Readreplicasourcedbinstanceidentifier != nil {
+		return *x.Readreplicasourcedbinstanceidentifier
 	}
 	return ""
 }
 
 func (x *DBInstance) GetSecondaryavailabilityzone() string {
-	if x != nil {
-		return x.Secondaryavailabilityzone
+	if x != nil && x.Secondaryavailabilityzone != nil {
+		return *x.Secondaryavailabilityzone
 	}
 	return ""
 }
@@ -5384,22 +5384,22 @@ func (x *DBInstance) GetStorageencrypted() bool {
 }
 
 func (x *DBInstance) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
 
 func (x *DBInstance) GetTdecredentialarn() string {
-	if x != nil {
-		return x.Tdecredentialarn
+	if x != nil && x.Tdecredentialarn != nil {
+		return *x.Tdecredentialarn
 	}
 	return ""
 }
 
 func (x *DBInstance) GetTimezone() string {
-	if x != nil {
-		return x.Timezone
+	if x != nil && x.Timezone != nil {
+		return *x.Timezone
 	}
 	return ""
 }
@@ -5413,7 +5413,7 @@ func (x *DBInstance) GetVpcsecuritygroups() []*VpcSecurityGroupMembership {
 
 type DBInstanceAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5449,8 +5449,8 @@ func (*DBInstanceAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBInstanceAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5458,7 +5458,7 @@ func (x *DBInstanceAlreadyExistsFault) GetMessage() string {
 type DBInstanceMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dbinstances   []*DBInstance          `protobuf:"bytes,124401898,rep,name=dbinstances,proto3" json:"dbinstances,omitempty"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5501,15 +5501,15 @@ func (x *DBInstanceMessage) GetDbinstances() []*DBInstance {
 }
 
 func (x *DBInstanceMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBInstanceNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5545,18 +5545,18 @@ func (*DBInstanceNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBInstanceNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBInstanceStatusInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Normal        *bool                  `protobuf:"varint,417212275,opt,name=normal,proto3,oneof" json:"normal,omitempty"`
-	Status        string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
-	Statustype    string                 `protobuf:"bytes,183616024,opt,name=statustype,proto3" json:"statustype,omitempty"`
+	Status        *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Statustype    *string                `protobuf:"bytes,183616024,opt,name=statustype,proto3,oneof" json:"statustype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5592,8 +5592,8 @@ func (*DBInstanceStatusInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBInstanceStatusInfo) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5606,25 +5606,25 @@ func (x *DBInstanceStatusInfo) GetNormal() bool {
 }
 
 func (x *DBInstanceStatusInfo) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *DBInstanceStatusInfo) GetStatustype() string {
-	if x != nil {
-		return x.Statustype
+	if x != nil && x.Statustype != nil {
+		return *x.Statustype
 	}
 	return ""
 }
 
 type DBParameterGroup struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Dbparametergrouparn    string                 `protobuf:"bytes,311052949,opt,name=dbparametergrouparn,proto3" json:"dbparametergrouparn,omitempty"`
-	Dbparametergroupfamily string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
-	Dbparametergroupname   string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
-	Description            string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Dbparametergrouparn    *string                `protobuf:"bytes,311052949,opt,name=dbparametergrouparn,proto3,oneof" json:"dbparametergrouparn,omitempty"`
+	Dbparametergroupfamily *string                `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3,oneof" json:"dbparametergroupfamily,omitempty"`
+	Dbparametergroupname   *string                `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
+	Description            *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -5660,36 +5660,36 @@ func (*DBParameterGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroup) GetDbparametergrouparn() string {
-	if x != nil {
-		return x.Dbparametergrouparn
+	if x != nil && x.Dbparametergrouparn != nil {
+		return *x.Dbparametergrouparn
 	}
 	return ""
 }
 
 func (x *DBParameterGroup) GetDbparametergroupfamily() string {
-	if x != nil {
-		return x.Dbparametergroupfamily
+	if x != nil && x.Dbparametergroupfamily != nil {
+		return *x.Dbparametergroupfamily
 	}
 	return ""
 }
 
 func (x *DBParameterGroup) GetDbparametergroupname() string {
-	if x != nil {
-		return x.Dbparametergroupname
+	if x != nil && x.Dbparametergroupname != nil {
+		return *x.Dbparametergroupname
 	}
 	return ""
 }
 
 func (x *DBParameterGroup) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 type DBParameterGroupAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5725,15 +5725,15 @@ func (*DBParameterGroupAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroupAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBParameterGroupDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Parameters    []*Parameter           `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5770,8 +5770,8 @@ func (*DBParameterGroupDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroupDetails) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -5785,7 +5785,7 @@ func (x *DBParameterGroupDetails) GetParameters() []*Parameter {
 
 type DBParameterGroupNameMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dbparametergroupname string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
+	Dbparametergroupname *string                `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -5821,15 +5821,15 @@ func (*DBParameterGroupNameMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroupNameMessage) GetDbparametergroupname() string {
-	if x != nil {
-		return x.Dbparametergroupname
+	if x != nil && x.Dbparametergroupname != nil {
+		return *x.Dbparametergroupname
 	}
 	return ""
 }
 
 type DBParameterGroupNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5865,15 +5865,15 @@ func (*DBParameterGroupNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroupNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBParameterGroupQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5909,16 +5909,16 @@ func (*DBParameterGroupQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroupQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBParameterGroupStatus struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dbparametergroupname string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
-	Parameterapplystatus string                 `protobuf:"bytes,247572783,opt,name=parameterapplystatus,proto3" json:"parameterapplystatus,omitempty"`
+	Dbparametergroupname *string                `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
+	Parameterapplystatus *string                `protobuf:"bytes,247572783,opt,name=parameterapplystatus,proto3,oneof" json:"parameterapplystatus,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -5954,15 +5954,15 @@ func (*DBParameterGroupStatus) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBParameterGroupStatus) GetDbparametergroupname() string {
-	if x != nil {
-		return x.Dbparametergroupname
+	if x != nil && x.Dbparametergroupname != nil {
+		return *x.Dbparametergroupname
 	}
 	return ""
 }
 
 func (x *DBParameterGroupStatus) GetParameterapplystatus() string {
-	if x != nil {
-		return x.Parameterapplystatus
+	if x != nil && x.Parameterapplystatus != nil {
+		return *x.Parameterapplystatus
 	}
 	return ""
 }
@@ -5970,7 +5970,7 @@ func (x *DBParameterGroupStatus) GetParameterapplystatus() string {
 type DBParameterGroupsMessage struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Dbparametergroups []*DBParameterGroup    `protobuf:"bytes,87728011,rep,name=dbparametergroups,proto3" json:"dbparametergroups,omitempty"`
-	Marker            string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker            *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6013,16 +6013,16 @@ func (x *DBParameterGroupsMessage) GetDbparametergroups() []*DBParameterGroup {
 }
 
 func (x *DBParameterGroupsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBSecurityGroupMembership struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Dbsecuritygroupname string                 `protobuf:"bytes,52398568,opt,name=dbsecuritygroupname,proto3" json:"dbsecuritygroupname,omitempty"`
-	Status              string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Dbsecuritygroupname *string                `protobuf:"bytes,52398568,opt,name=dbsecuritygroupname,proto3,oneof" json:"dbsecuritygroupname,omitempty"`
+	Status              *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -6058,22 +6058,22 @@ func (*DBSecurityGroupMembership) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSecurityGroupMembership) GetDbsecuritygroupname() string {
-	if x != nil {
-		return x.Dbsecuritygroupname
+	if x != nil && x.Dbsecuritygroupname != nil {
+		return *x.Dbsecuritygroupname
 	}
 	return ""
 }
 
 func (x *DBSecurityGroupMembership) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type DBSecurityGroupNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6109,15 +6109,15 @@ func (*DBSecurityGroupNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSecurityGroupNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBSnapshotAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6153,15 +6153,15 @@ func (*DBSnapshotAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSnapshotAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBSnapshotNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6197,21 +6197,21 @@ func (*DBSnapshotNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSnapshotNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBSubnetGroup struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Dbsubnetgrouparn         string                 `protobuf:"bytes,462416357,opt,name=dbsubnetgrouparn,proto3" json:"dbsubnetgrouparn,omitempty"`
-	Dbsubnetgroupdescription string                 `protobuf:"bytes,111127330,opt,name=dbsubnetgroupdescription,proto3" json:"dbsubnetgroupdescription,omitempty"`
-	Dbsubnetgroupname        string                 `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
-	Subnetgroupstatus        string                 `protobuf:"bytes,470254430,opt,name=subnetgroupstatus,proto3" json:"subnetgroupstatus,omitempty"`
+	Dbsubnetgrouparn         *string                `protobuf:"bytes,462416357,opt,name=dbsubnetgrouparn,proto3,oneof" json:"dbsubnetgrouparn,omitempty"`
+	Dbsubnetgroupdescription *string                `protobuf:"bytes,111127330,opt,name=dbsubnetgroupdescription,proto3,oneof" json:"dbsubnetgroupdescription,omitempty"`
+	Dbsubnetgroupname        *string                `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
+	Subnetgroupstatus        *string                `protobuf:"bytes,470254430,opt,name=subnetgroupstatus,proto3,oneof" json:"subnetgroupstatus,omitempty"`
 	Subnets                  []*Subnet              `protobuf:"bytes,414921506,rep,name=subnets,proto3" json:"subnets,omitempty"`
 	Supportednetworktypes    []string               `protobuf:"bytes,290618199,rep,name=supportednetworktypes,proto3" json:"supportednetworktypes,omitempty"`
-	Vpcid                    string                 `protobuf:"bytes,412355958,opt,name=vpcid,proto3" json:"vpcid,omitempty"`
+	Vpcid                    *string                `protobuf:"bytes,412355958,opt,name=vpcid,proto3,oneof" json:"vpcid,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -6247,29 +6247,29 @@ func (*DBSubnetGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSubnetGroup) GetDbsubnetgrouparn() string {
-	if x != nil {
-		return x.Dbsubnetgrouparn
+	if x != nil && x.Dbsubnetgrouparn != nil {
+		return *x.Dbsubnetgrouparn
 	}
 	return ""
 }
 
 func (x *DBSubnetGroup) GetDbsubnetgroupdescription() string {
-	if x != nil {
-		return x.Dbsubnetgroupdescription
+	if x != nil && x.Dbsubnetgroupdescription != nil {
+		return *x.Dbsubnetgroupdescription
 	}
 	return ""
 }
 
 func (x *DBSubnetGroup) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
 
 func (x *DBSubnetGroup) GetSubnetgroupstatus() string {
-	if x != nil {
-		return x.Subnetgroupstatus
+	if x != nil && x.Subnetgroupstatus != nil {
+		return *x.Subnetgroupstatus
 	}
 	return ""
 }
@@ -6289,15 +6289,15 @@ func (x *DBSubnetGroup) GetSupportednetworktypes() []string {
 }
 
 func (x *DBSubnetGroup) GetVpcid() string {
-	if x != nil {
-		return x.Vpcid
+	if x != nil && x.Vpcid != nil {
+		return *x.Vpcid
 	}
 	return ""
 }
 
 type DBSubnetGroupAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6333,15 +6333,15 @@ func (*DBSubnetGroupAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSubnetGroupAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBSubnetGroupDoesNotCoverEnoughAZs struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6377,8 +6377,8 @@ func (*DBSubnetGroupDoesNotCoverEnoughAZs) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSubnetGroupDoesNotCoverEnoughAZs) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -6386,7 +6386,7 @@ func (x *DBSubnetGroupDoesNotCoverEnoughAZs) GetMessage() string {
 type DBSubnetGroupMessage struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Dbsubnetgroups []*DBSubnetGroup       `protobuf:"bytes,29544667,rep,name=dbsubnetgroups,proto3" json:"dbsubnetgroups,omitempty"`
-	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker         *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -6429,15 +6429,15 @@ func (x *DBSubnetGroupMessage) GetDbsubnetgroups() []*DBSubnetGroup {
 }
 
 func (x *DBSubnetGroupMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type DBSubnetGroupNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6473,15 +6473,15 @@ func (*DBSubnetGroupNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSubnetGroupNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBSubnetGroupQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6517,15 +6517,15 @@ func (*DBSubnetGroupQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSubnetGroupQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBSubnetQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6561,15 +6561,15 @@ func (*DBSubnetQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBSubnetQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DBUpgradeDependencyFailureFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6605,8 +6605,8 @@ func (*DBUpgradeDependencyFailureFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DBUpgradeDependencyFailureFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -6657,16 +6657,16 @@ func (x *DeleteDBClusterEndpointMessage) GetDbclusterendpointidentifier() string
 
 type DeleteDBClusterEndpointOutput struct {
 	state                               protoimpl.MessageState `protogen:"open.v1"`
-	Customendpointtype                  string                 `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3" json:"customendpointtype,omitempty"`
-	Dbclusterendpointarn                string                 `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3" json:"dbclusterendpointarn,omitempty"`
-	Dbclusterendpointidentifier         string                 `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3" json:"dbclusterendpointidentifier,omitempty"`
-	Dbclusterendpointresourceidentifier string                 `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3" json:"dbclusterendpointresourceidentifier,omitempty"`
-	Dbclusteridentifier                 string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Endpoint                            string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Endpointtype                        string                 `protobuf:"bytes,486186837,opt,name=endpointtype,proto3" json:"endpointtype,omitempty"`
+	Customendpointtype                  *string                `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3,oneof" json:"customendpointtype,omitempty"`
+	Dbclusterendpointarn                *string                `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3,oneof" json:"dbclusterendpointarn,omitempty"`
+	Dbclusterendpointidentifier         *string                `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3,oneof" json:"dbclusterendpointidentifier,omitempty"`
+	Dbclusterendpointresourceidentifier *string                `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3,oneof" json:"dbclusterendpointresourceidentifier,omitempty"`
+	Dbclusteridentifier                 *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Endpoint                            *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Endpointtype                        *string                `protobuf:"bytes,486186837,opt,name=endpointtype,proto3,oneof" json:"endpointtype,omitempty"`
 	Excludedmembers                     []string               `protobuf:"bytes,395651603,rep,name=excludedmembers,proto3" json:"excludedmembers,omitempty"`
 	Staticmembers                       []string               `protobuf:"bytes,176064991,rep,name=staticmembers,proto3" json:"staticmembers,omitempty"`
-	Status                              string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status                              *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -6702,50 +6702,50 @@ func (*DeleteDBClusterEndpointOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetCustomendpointtype() string {
-	if x != nil {
-		return x.Customendpointtype
+	if x != nil && x.Customendpointtype != nil {
+		return *x.Customendpointtype
 	}
 	return ""
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetDbclusterendpointarn() string {
-	if x != nil {
-		return x.Dbclusterendpointarn
+	if x != nil && x.Dbclusterendpointarn != nil {
+		return *x.Dbclusterendpointarn
 	}
 	return ""
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetDbclusterendpointidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointidentifier
+	if x != nil && x.Dbclusterendpointidentifier != nil {
+		return *x.Dbclusterendpointidentifier
 	}
 	return ""
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetDbclusterendpointresourceidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointresourceidentifier
+	if x != nil && x.Dbclusterendpointresourceidentifier != nil {
+		return *x.Dbclusterendpointresourceidentifier
 	}
 	return ""
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetEndpointtype() string {
-	if x != nil {
-		return x.Endpointtype
+	if x != nil && x.Endpointtype != nil {
+		return *x.Endpointtype
 	}
 	return ""
 }
@@ -6765,8 +6765,8 @@ func (x *DeleteDBClusterEndpointOutput) GetStaticmembers() []string {
 }
 
 func (x *DeleteDBClusterEndpointOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -6774,7 +6774,7 @@ func (x *DeleteDBClusterEndpointOutput) GetStatus() string {
 type DeleteDBClusterMessage struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusteridentifier       string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Finaldbsnapshotidentifier string                 `protobuf:"bytes,475816475,opt,name=finaldbsnapshotidentifier,proto3" json:"finaldbsnapshotidentifier,omitempty"`
+	Finaldbsnapshotidentifier *string                `protobuf:"bytes,475816475,opt,name=finaldbsnapshotidentifier,proto3,oneof" json:"finaldbsnapshotidentifier,omitempty"`
 	Skipfinalsnapshot         *bool                  `protobuf:"varint,357211619,opt,name=skipfinalsnapshot,proto3,oneof" json:"skipfinalsnapshot,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -6818,8 +6818,8 @@ func (x *DeleteDBClusterMessage) GetDbclusteridentifier() string {
 }
 
 func (x *DeleteDBClusterMessage) GetFinaldbsnapshotidentifier() string {
-	if x != nil {
-		return x.Finaldbsnapshotidentifier
+	if x != nil && x.Finaldbsnapshotidentifier != nil {
+		return *x.Finaldbsnapshotidentifier
 	}
 	return ""
 }
@@ -7010,7 +7010,7 @@ func (x *DeleteDBClusterSnapshotResult) GetDbclustersnapshot() *DBClusterSnapsho
 type DeleteDBInstanceMessage struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Dbinstanceidentifier      string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Finaldbsnapshotidentifier string                 `protobuf:"bytes,475816475,opt,name=finaldbsnapshotidentifier,proto3" json:"finaldbsnapshotidentifier,omitempty"`
+	Finaldbsnapshotidentifier *string                `protobuf:"bytes,475816475,opt,name=finaldbsnapshotidentifier,proto3,oneof" json:"finaldbsnapshotidentifier,omitempty"`
 	Skipfinalsnapshot         *bool                  `protobuf:"varint,357211619,opt,name=skipfinalsnapshot,proto3,oneof" json:"skipfinalsnapshot,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -7054,8 +7054,8 @@ func (x *DeleteDBInstanceMessage) GetDbinstanceidentifier() string {
 }
 
 func (x *DeleteDBInstanceMessage) GetFinaldbsnapshotidentifier() string {
-	if x != nil {
-		return x.Finaldbsnapshotidentifier
+	if x != nil && x.Finaldbsnapshotidentifier != nil {
+		return *x.Finaldbsnapshotidentifier
 	}
 	return ""
 }
@@ -7377,10 +7377,10 @@ func (x *DeleteGlobalClusterResult) GetGlobalcluster() *GlobalCluster {
 
 type DescribeDBClusterEndpointsMessage struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusterendpointidentifier string                 `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3" json:"dbclusterendpointidentifier,omitempty"`
-	Dbclusteridentifier         string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
+	Dbclusterendpointidentifier *string                `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3,oneof" json:"dbclusterendpointidentifier,omitempty"`
+	Dbclusteridentifier         *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                      *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -7417,15 +7417,15 @@ func (*DescribeDBClusterEndpointsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBClusterEndpointsMessage) GetDbclusterendpointidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointidentifier
+	if x != nil && x.Dbclusterendpointidentifier != nil {
+		return *x.Dbclusterendpointidentifier
 	}
 	return ""
 }
 
 func (x *DescribeDBClusterEndpointsMessage) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
@@ -7438,8 +7438,8 @@ func (x *DescribeDBClusterEndpointsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBClusterEndpointsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -7453,9 +7453,9 @@ func (x *DescribeDBClusterEndpointsMessage) GetMaxrecords() int32 {
 
 type DescribeDBClusterParameterGroupsMessage struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusterparametergroupname string                 `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
+	Dbclusterparametergroupname *string                `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                      *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -7492,8 +7492,8 @@ func (*DescribeDBClusterParameterGroupsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBClusterParameterGroupsMessage) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
@@ -7506,8 +7506,8 @@ func (x *DescribeDBClusterParameterGroupsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBClusterParameterGroupsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -7523,9 +7523,9 @@ type DescribeDBClusterParametersMessage struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusterparametergroupname string                 `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                      *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Source                      string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
+	Source                      *string                `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -7575,8 +7575,8 @@ func (x *DescribeDBClusterParametersMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBClusterParametersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -7589,8 +7589,8 @@ func (x *DescribeDBClusterParametersMessage) GetMaxrecords() int32 {
 }
 
 func (x *DescribeDBClusterParametersMessage) GetSource() string {
-	if x != nil {
-		return x.Source
+	if x != nil && x.Source != nil {
+		return *x.Source
 	}
 	return ""
 }
@@ -7685,14 +7685,14 @@ func (x *DescribeDBClusterSnapshotAttributesResult) GetDbclustersnapshotattribut
 
 type DescribeDBClusterSnapshotsMessage struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusteridentifier         string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbclustersnapshotidentifier string                 `protobuf:"bytes,204169569,opt,name=dbclustersnapshotidentifier,proto3" json:"dbclustersnapshotidentifier,omitempty"`
+	Dbclusteridentifier         *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Dbclustersnapshotidentifier *string                `protobuf:"bytes,204169569,opt,name=dbclustersnapshotidentifier,proto3,oneof" json:"dbclustersnapshotidentifier,omitempty"`
 	Filters                     []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Includepublic               *bool                  `protobuf:"varint,93586819,opt,name=includepublic,proto3,oneof" json:"includepublic,omitempty"`
 	Includeshared               *bool                  `protobuf:"varint,30653391,opt,name=includeshared,proto3,oneof" json:"includeshared,omitempty"`
-	Marker                      string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                      *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords                  *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Snapshottype                string                 `protobuf:"bytes,399375494,opt,name=snapshottype,proto3" json:"snapshottype,omitempty"`
+	Snapshottype                *string                `protobuf:"bytes,399375494,opt,name=snapshottype,proto3,oneof" json:"snapshottype,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -7728,15 +7728,15 @@ func (*DescribeDBClusterSnapshotsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBClusterSnapshotsMessage) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *DescribeDBClusterSnapshotsMessage) GetDbclustersnapshotidentifier() string {
-	if x != nil {
-		return x.Dbclustersnapshotidentifier
+	if x != nil && x.Dbclustersnapshotidentifier != nil {
+		return *x.Dbclustersnapshotidentifier
 	}
 	return ""
 }
@@ -7763,8 +7763,8 @@ func (x *DescribeDBClusterSnapshotsMessage) GetIncludeshared() bool {
 }
 
 func (x *DescribeDBClusterSnapshotsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -7777,17 +7777,17 @@ func (x *DescribeDBClusterSnapshotsMessage) GetMaxrecords() int32 {
 }
 
 func (x *DescribeDBClusterSnapshotsMessage) GetSnapshottype() string {
-	if x != nil {
-		return x.Snapshottype
+	if x != nil && x.Snapshottype != nil {
+		return *x.Snapshottype
 	}
 	return ""
 }
 
 type DescribeDBClustersMessage struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusteridentifier string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
+	Dbclusteridentifier *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
 	Filters             []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker              string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker              *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -7824,8 +7824,8 @@ func (*DescribeDBClustersMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBClustersMessage) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
@@ -7838,8 +7838,8 @@ func (x *DescribeDBClustersMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBClustersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -7853,14 +7853,14 @@ func (x *DescribeDBClustersMessage) GetMaxrecords() int32 {
 
 type DescribeDBEngineVersionsMessage struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Dbparametergroupfamily     string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
+	Dbparametergroupfamily     *string                `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3,oneof" json:"dbparametergroupfamily,omitempty"`
 	Defaultonly                *bool                  `protobuf:"varint,18470185,opt,name=defaultonly,proto3,oneof" json:"defaultonly,omitempty"`
-	Engine                     string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion              string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engine                     *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion              *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Filters                    []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Listsupportedcharactersets *bool                  `protobuf:"varint,489164522,opt,name=listsupportedcharactersets,proto3,oneof" json:"listsupportedcharactersets,omitempty"`
 	Listsupportedtimezones     *bool                  `protobuf:"varint,149832388,opt,name=listsupportedtimezones,proto3,oneof" json:"listsupportedtimezones,omitempty"`
-	Marker                     string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                     *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords                 *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -7897,8 +7897,8 @@ func (*DescribeDBEngineVersionsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBEngineVersionsMessage) GetDbparametergroupfamily() string {
-	if x != nil {
-		return x.Dbparametergroupfamily
+	if x != nil && x.Dbparametergroupfamily != nil {
+		return *x.Dbparametergroupfamily
 	}
 	return ""
 }
@@ -7911,15 +7911,15 @@ func (x *DescribeDBEngineVersionsMessage) GetDefaultonly() bool {
 }
 
 func (x *DescribeDBEngineVersionsMessage) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *DescribeDBEngineVersionsMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -7946,8 +7946,8 @@ func (x *DescribeDBEngineVersionsMessage) GetListsupportedtimezones() bool {
 }
 
 func (x *DescribeDBEngineVersionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -7961,9 +7961,9 @@ func (x *DescribeDBEngineVersionsMessage) GetMaxrecords() int32 {
 
 type DescribeDBInstancesMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dbinstanceidentifier string                 `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
+	Dbinstanceidentifier *string                `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3,oneof" json:"dbinstanceidentifier,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker               *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -8000,8 +8000,8 @@ func (*DescribeDBInstancesMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBInstancesMessage) GetDbinstanceidentifier() string {
-	if x != nil {
-		return x.Dbinstanceidentifier
+	if x != nil && x.Dbinstanceidentifier != nil {
+		return *x.Dbinstanceidentifier
 	}
 	return ""
 }
@@ -8014,8 +8014,8 @@ func (x *DescribeDBInstancesMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBInstancesMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8029,9 +8029,9 @@ func (x *DescribeDBInstancesMessage) GetMaxrecords() int32 {
 
 type DescribeDBParameterGroupsMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dbparametergroupname string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
+	Dbparametergroupname *string                `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker               *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -8068,8 +8068,8 @@ func (*DescribeDBParameterGroupsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBParameterGroupsMessage) GetDbparametergroupname() string {
-	if x != nil {
-		return x.Dbparametergroupname
+	if x != nil && x.Dbparametergroupname != nil {
+		return *x.Dbparametergroupname
 	}
 	return ""
 }
@@ -8082,8 +8082,8 @@ func (x *DescribeDBParameterGroupsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBParameterGroupsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8099,9 +8099,9 @@ type DescribeDBParametersMessage struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Dbparametergroupname string                 `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
 	Filters              []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker               string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker               *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords           *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Source               string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
+	Source               *string                `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -8151,8 +8151,8 @@ func (x *DescribeDBParametersMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBParametersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8165,17 +8165,17 @@ func (x *DescribeDBParametersMessage) GetMaxrecords() int32 {
 }
 
 func (x *DescribeDBParametersMessage) GetSource() string {
-	if x != nil {
-		return x.Source
+	if x != nil && x.Source != nil {
+		return *x.Source
 	}
 	return ""
 }
 
 type DescribeDBSubnetGroupsMessage struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Dbsubnetgroupname string                 `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
+	Dbsubnetgroupname *string                `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
 	Filters           []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker            string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker            *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords        *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -8212,8 +8212,8 @@ func (*DescribeDBSubnetGroupsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeDBSubnetGroupsMessage) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
@@ -8226,8 +8226,8 @@ func (x *DescribeDBSubnetGroupsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeDBSubnetGroupsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8243,7 +8243,7 @@ type DescribeEngineDefaultClusterParametersMessage struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Dbparametergroupfamily string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                 *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords             *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -8294,8 +8294,8 @@ func (x *DescribeEngineDefaultClusterParametersMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeEngineDefaultClusterParametersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8355,7 +8355,7 @@ type DescribeEngineDefaultParametersMessage struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Dbparametergroupfamily string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
 	Filters                []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                 *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords             *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -8406,8 +8406,8 @@ func (x *DescribeEngineDefaultParametersMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeEngineDefaultParametersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8466,7 +8466,7 @@ func (x *DescribeEngineDefaultParametersResult) GetEnginedefaults() *EngineDefau
 type DescribeEventCategoriesMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Filters       []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Sourcetype    string                 `protobuf:"bytes,195731217,opt,name=sourcetype,proto3" json:"sourcetype,omitempty"`
+	Sourcetype    *string                `protobuf:"bytes,195731217,opt,name=sourcetype,proto3,oneof" json:"sourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8509,8 +8509,8 @@ func (x *DescribeEventCategoriesMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeEventCategoriesMessage) GetSourcetype() string {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ""
 }
@@ -8518,9 +8518,9 @@ func (x *DescribeEventCategoriesMessage) GetSourcetype() string {
 type DescribeEventSubscriptionsMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Filters          []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker           *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords       *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Subscriptionname string                 `protobuf:"bytes,181900944,opt,name=subscriptionname,proto3" json:"subscriptionname,omitempty"`
+	Subscriptionname *string                `protobuf:"bytes,181900944,opt,name=subscriptionname,proto3,oneof" json:"subscriptionname,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -8563,8 +8563,8 @@ func (x *DescribeEventSubscriptionsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeEventSubscriptionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8577,8 +8577,8 @@ func (x *DescribeEventSubscriptionsMessage) GetMaxrecords() int32 {
 }
 
 func (x *DescribeEventSubscriptionsMessage) GetSubscriptionname() string {
-	if x != nil {
-		return x.Subscriptionname
+	if x != nil && x.Subscriptionname != nil {
+		return *x.Subscriptionname
 	}
 	return ""
 }
@@ -8586,14 +8586,14 @@ func (x *DescribeEventSubscriptionsMessage) GetSubscriptionname() string {
 type DescribeEventsMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Duration         *int32                 `protobuf:"varint,348604718,opt,name=duration,proto3,oneof" json:"duration,omitempty"`
-	Endtime          string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Endtime          *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Eventcategories  []string               `protobuf:"bytes,3676820,rep,name=eventcategories,proto3" json:"eventcategories,omitempty"`
 	Filters          []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker           string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker           *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords       *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Sourceidentifier string                 `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3" json:"sourceidentifier,omitempty"`
+	Sourceidentifier *string                `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3,oneof" json:"sourceidentifier,omitempty"`
 	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=neptune.SourceType" json:"sourcetype,omitempty"`
-	Starttime        string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Starttime        *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -8636,8 +8636,8 @@ func (x *DescribeEventsMessage) GetDuration() int32 {
 }
 
 func (x *DescribeEventsMessage) GetEndtime() string {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return ""
 }
@@ -8657,8 +8657,8 @@ func (x *DescribeEventsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeEventsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8671,8 +8671,8 @@ func (x *DescribeEventsMessage) GetMaxrecords() int32 {
 }
 
 func (x *DescribeEventsMessage) GetSourceidentifier() string {
-	if x != nil {
-		return x.Sourceidentifier
+	if x != nil && x.Sourceidentifier != nil {
+		return *x.Sourceidentifier
 	}
 	return ""
 }
@@ -8685,16 +8685,16 @@ func (x *DescribeEventsMessage) GetSourcetype() SourceType {
 }
 
 func (x *DescribeEventsMessage) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
 
 type DescribeGlobalClustersMessage struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Globalclusteridentifier string                 `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
-	Marker                  string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Globalclusteridentifier *string                `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3,oneof" json:"globalclusteridentifier,omitempty"`
+	Marker                  *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords              *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -8731,15 +8731,15 @@ func (*DescribeGlobalClustersMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeGlobalClustersMessage) GetGlobalclusteridentifier() string {
-	if x != nil {
-		return x.Globalclusteridentifier
+	if x != nil && x.Globalclusteridentifier != nil {
+		return *x.Globalclusteridentifier
 	}
 	return ""
 }
 
 func (x *DescribeGlobalClustersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8753,12 +8753,12 @@ func (x *DescribeGlobalClustersMessage) GetMaxrecords() int32 {
 
 type DescribeOrderableDBInstanceOptionsMessage struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Dbinstanceclass string                 `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
+	Dbinstanceclass *string                `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3,oneof" json:"dbinstanceclass,omitempty"`
 	Engine          string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion   string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engineversion   *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Filters         []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Licensemodel    string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Marker          string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Licensemodel    *string                `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Marker          *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords      *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
 	Vpc             *bool                  `protobuf:"varint,500923177,opt,name=vpc,proto3,oneof" json:"vpc,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -8796,8 +8796,8 @@ func (*DescribeOrderableDBInstanceOptionsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeOrderableDBInstanceOptionsMessage) GetDbinstanceclass() string {
-	if x != nil {
-		return x.Dbinstanceclass
+	if x != nil && x.Dbinstanceclass != nil {
+		return *x.Dbinstanceclass
 	}
 	return ""
 }
@@ -8810,8 +8810,8 @@ func (x *DescribeOrderableDBInstanceOptionsMessage) GetEngine() string {
 }
 
 func (x *DescribeOrderableDBInstanceOptionsMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -8824,15 +8824,15 @@ func (x *DescribeOrderableDBInstanceOptionsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribeOrderableDBInstanceOptionsMessage) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
 
 func (x *DescribeOrderableDBInstanceOptionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8854,9 +8854,9 @@ func (x *DescribeOrderableDBInstanceOptionsMessage) GetVpc() bool {
 type DescribePendingMaintenanceActionsMessage struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Filters            []*Filter              `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
-	Marker             string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker             *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Resourceidentifier string                 `protobuf:"bytes,279224111,opt,name=resourceidentifier,proto3" json:"resourceidentifier,omitempty"`
+	Resourceidentifier *string                `protobuf:"bytes,279224111,opt,name=resourceidentifier,proto3,oneof" json:"resourceidentifier,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -8899,8 +8899,8 @@ func (x *DescribePendingMaintenanceActionsMessage) GetFilters() []*Filter {
 }
 
 func (x *DescribePendingMaintenanceActionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -8913,8 +8913,8 @@ func (x *DescribePendingMaintenanceActionsMessage) GetMaxrecords() int32 {
 }
 
 func (x *DescribePendingMaintenanceActionsMessage) GetResourceidentifier() string {
-	if x != nil {
-		return x.Resourceidentifier
+	if x != nil && x.Resourceidentifier != nil {
+		return *x.Resourceidentifier
 	}
 	return ""
 }
@@ -9009,10 +9009,10 @@ func (x *DescribeValidDBInstanceModificationsResult) GetValiddbinstancemodificat
 
 type DomainMembership struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Domain        string                 `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Fqdn          string                 `protobuf:"bytes,187797391,opt,name=fqdn,proto3" json:"fqdn,omitempty"`
-	Iamrolename   string                 `protobuf:"bytes,191653342,opt,name=iamrolename,proto3" json:"iamrolename,omitempty"`
-	Status        string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Domain        *string                `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
+	Fqdn          *string                `protobuf:"bytes,187797391,opt,name=fqdn,proto3,oneof" json:"fqdn,omitempty"`
+	Iamrolename   *string                `protobuf:"bytes,191653342,opt,name=iamrolename,proto3,oneof" json:"iamrolename,omitempty"`
+	Status        *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9048,36 +9048,36 @@ func (*DomainMembership) Descriptor() ([]byte, []int) {
 }
 
 func (x *DomainMembership) GetDomain() string {
-	if x != nil {
-		return x.Domain
+	if x != nil && x.Domain != nil {
+		return *x.Domain
 	}
 	return ""
 }
 
 func (x *DomainMembership) GetFqdn() string {
-	if x != nil {
-		return x.Fqdn
+	if x != nil && x.Fqdn != nil {
+		return *x.Fqdn
 	}
 	return ""
 }
 
 func (x *DomainMembership) GetIamrolename() string {
-	if x != nil {
-		return x.Iamrolename
+	if x != nil && x.Iamrolename != nil {
+		return *x.Iamrolename
 	}
 	return ""
 }
 
 func (x *DomainMembership) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type DomainNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9113,16 +9113,16 @@ func (*DomainNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *DomainNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DoubleRange struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	From          float64                `protobuf:"fixed64,410269078,opt,name=from,proto3" json:"from,omitempty"`
-	To            float64                `protobuf:"fixed64,32872005,opt,name=to,proto3" json:"to,omitempty"`
+	From          *float64               `protobuf:"fixed64,410269078,opt,name=from,proto3,oneof" json:"from,omitempty"`
+	To            *float64               `protobuf:"fixed64,32872005,opt,name=to,proto3,oneof" json:"to,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9158,23 +9158,23 @@ func (*DoubleRange) Descriptor() ([]byte, []int) {
 }
 
 func (x *DoubleRange) GetFrom() float64 {
-	if x != nil {
-		return x.From
+	if x != nil && x.From != nil {
+		return *x.From
 	}
 	return 0
 }
 
 func (x *DoubleRange) GetTo() float64 {
-	if x != nil {
-		return x.To
+	if x != nil && x.To != nil {
+		return *x.To
 	}
 	return 0
 }
 
 type Endpoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Address       string                 `protobuf:"bytes,268787956,opt,name=address,proto3" json:"address,omitempty"`
-	Hostedzoneid  string                 `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3" json:"hostedzoneid,omitempty"`
+	Address       *string                `protobuf:"bytes,268787956,opt,name=address,proto3,oneof" json:"address,omitempty"`
+	Hostedzoneid  *string                `protobuf:"bytes,346531710,opt,name=hostedzoneid,proto3,oneof" json:"hostedzoneid,omitempty"`
 	Port          *int32                 `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9211,15 +9211,15 @@ func (*Endpoint) Descriptor() ([]byte, []int) {
 }
 
 func (x *Endpoint) GetAddress() string {
-	if x != nil {
-		return x.Address
+	if x != nil && x.Address != nil {
+		return *x.Address
 	}
 	return ""
 }
 
 func (x *Endpoint) GetHostedzoneid() string {
-	if x != nil {
-		return x.Hostedzoneid
+	if x != nil && x.Hostedzoneid != nil {
+		return *x.Hostedzoneid
 	}
 	return ""
 }
@@ -9233,8 +9233,8 @@ func (x *Endpoint) GetPort() int32 {
 
 type EngineDefaults struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Dbparametergroupfamily string                 `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3" json:"dbparametergroupfamily,omitempty"`
-	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Dbparametergroupfamily *string                `protobuf:"bytes,351778594,opt,name=dbparametergroupfamily,proto3,oneof" json:"dbparametergroupfamily,omitempty"`
+	Marker                 *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Parameters             []*Parameter           `protobuf:"bytes,494900218,rep,name=parameters,proto3" json:"parameters,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -9271,15 +9271,15 @@ func (*EngineDefaults) Descriptor() ([]byte, []int) {
 }
 
 func (x *EngineDefaults) GetDbparametergroupfamily() string {
-	if x != nil {
-		return x.Dbparametergroupfamily
+	if x != nil && x.Dbparametergroupfamily != nil {
+		return *x.Dbparametergroupfamily
 	}
 	return ""
 }
 
 func (x *EngineDefaults) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -9293,11 +9293,11 @@ func (x *EngineDefaults) GetParameters() []*Parameter {
 
 type Event struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Date             string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
+	Date             *string                `protobuf:"bytes,458388346,opt,name=date,proto3,oneof" json:"date,omitempty"`
 	Eventcategories  []string               `protobuf:"bytes,3676820,rep,name=eventcategories,proto3" json:"eventcategories,omitempty"`
-	Message          string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Sourcearn        string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
-	Sourceidentifier string                 `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3" json:"sourceidentifier,omitempty"`
+	Message          *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Sourcearn        *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
+	Sourceidentifier *string                `protobuf:"bytes,190015756,opt,name=sourceidentifier,proto3,oneof" json:"sourceidentifier,omitempty"`
 	Sourcetype       SourceType             `protobuf:"varint,195731217,opt,name=sourcetype,proto3,enum=neptune.SourceType" json:"sourcetype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -9334,8 +9334,8 @@ func (*Event) Descriptor() ([]byte, []int) {
 }
 
 func (x *Event) GetDate() string {
-	if x != nil {
-		return x.Date
+	if x != nil && x.Date != nil {
+		return *x.Date
 	}
 	return ""
 }
@@ -9348,22 +9348,22 @@ func (x *Event) GetEventcategories() []string {
 }
 
 func (x *Event) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *Event) GetSourcearn() string {
-	if x != nil {
-		return x.Sourcearn
+	if x != nil && x.Sourcearn != nil {
+		return *x.Sourcearn
 	}
 	return ""
 }
 
 func (x *Event) GetSourceidentifier() string {
-	if x != nil {
-		return x.Sourceidentifier
+	if x != nil && x.Sourceidentifier != nil {
+		return *x.Sourceidentifier
 	}
 	return ""
 }
@@ -9378,7 +9378,7 @@ func (x *Event) GetSourcetype() SourceType {
 type EventCategoriesMap struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Eventcategories []string               `protobuf:"bytes,3676820,rep,name=eventcategories,proto3" json:"eventcategories,omitempty"`
-	Sourcetype      string                 `protobuf:"bytes,195731217,opt,name=sourcetype,proto3" json:"sourcetype,omitempty"`
+	Sourcetype      *string                `protobuf:"bytes,195731217,opt,name=sourcetype,proto3,oneof" json:"sourcetype,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -9421,8 +9421,8 @@ func (x *EventCategoriesMap) GetEventcategories() []string {
 }
 
 func (x *EventCategoriesMap) GetSourcetype() string {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ""
 }
@@ -9473,16 +9473,16 @@ func (x *EventCategoriesMessage) GetEventcategoriesmaplist() []*EventCategoriesM
 
 type EventSubscription struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Custsubscriptionid       string                 `protobuf:"bytes,34626299,opt,name=custsubscriptionid,proto3" json:"custsubscriptionid,omitempty"`
-	Customerawsid            string                 `protobuf:"bytes,465559608,opt,name=customerawsid,proto3" json:"customerawsid,omitempty"`
+	Custsubscriptionid       *string                `protobuf:"bytes,34626299,opt,name=custsubscriptionid,proto3,oneof" json:"custsubscriptionid,omitempty"`
+	Customerawsid            *string                `protobuf:"bytes,465559608,opt,name=customerawsid,proto3,oneof" json:"customerawsid,omitempty"`
 	Enabled                  *bool                  `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Eventcategorieslist      []string               `protobuf:"bytes,508733244,rep,name=eventcategorieslist,proto3" json:"eventcategorieslist,omitempty"`
-	Eventsubscriptionarn     string                 `protobuf:"bytes,350612974,opt,name=eventsubscriptionarn,proto3" json:"eventsubscriptionarn,omitempty"`
-	Snstopicarn              string                 `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
+	Eventsubscriptionarn     *string                `protobuf:"bytes,350612974,opt,name=eventsubscriptionarn,proto3,oneof" json:"eventsubscriptionarn,omitempty"`
+	Snstopicarn              *string                `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
 	Sourceidslist            []string               `protobuf:"bytes,484349727,rep,name=sourceidslist,proto3" json:"sourceidslist,omitempty"`
-	Sourcetype               string                 `protobuf:"bytes,195731217,opt,name=sourcetype,proto3" json:"sourcetype,omitempty"`
-	Status                   string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
-	Subscriptioncreationtime string                 `protobuf:"bytes,180376685,opt,name=subscriptioncreationtime,proto3" json:"subscriptioncreationtime,omitempty"`
+	Sourcetype               *string                `protobuf:"bytes,195731217,opt,name=sourcetype,proto3,oneof" json:"sourcetype,omitempty"`
+	Status                   *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Subscriptioncreationtime *string                `protobuf:"bytes,180376685,opt,name=subscriptioncreationtime,proto3,oneof" json:"subscriptioncreationtime,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -9518,15 +9518,15 @@ func (*EventSubscription) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventSubscription) GetCustsubscriptionid() string {
-	if x != nil {
-		return x.Custsubscriptionid
+	if x != nil && x.Custsubscriptionid != nil {
+		return *x.Custsubscriptionid
 	}
 	return ""
 }
 
 func (x *EventSubscription) GetCustomerawsid() string {
-	if x != nil {
-		return x.Customerawsid
+	if x != nil && x.Customerawsid != nil {
+		return *x.Customerawsid
 	}
 	return ""
 }
@@ -9546,15 +9546,15 @@ func (x *EventSubscription) GetEventcategorieslist() []string {
 }
 
 func (x *EventSubscription) GetEventsubscriptionarn() string {
-	if x != nil {
-		return x.Eventsubscriptionarn
+	if x != nil && x.Eventsubscriptionarn != nil {
+		return *x.Eventsubscriptionarn
 	}
 	return ""
 }
 
 func (x *EventSubscription) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
@@ -9567,29 +9567,29 @@ func (x *EventSubscription) GetSourceidslist() []string {
 }
 
 func (x *EventSubscription) GetSourcetype() string {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ""
 }
 
 func (x *EventSubscription) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *EventSubscription) GetSubscriptioncreationtime() string {
-	if x != nil {
-		return x.Subscriptioncreationtime
+	if x != nil && x.Subscriptioncreationtime != nil {
+		return *x.Subscriptioncreationtime
 	}
 	return ""
 }
 
 type EventSubscriptionQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9625,8 +9625,8 @@ func (*EventSubscriptionQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventSubscriptionQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -9634,7 +9634,7 @@ func (x *EventSubscriptionQuotaExceededFault) GetMessage() string {
 type EventSubscriptionsMessage struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Eventsubscriptionslist []*EventSubscription   `protobuf:"bytes,157846668,rep,name=eventsubscriptionslist,proto3" json:"eventsubscriptionslist,omitempty"`
-	Marker                 string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                 *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -9677,8 +9677,8 @@ func (x *EventSubscriptionsMessage) GetEventsubscriptionslist() []*EventSubscrip
 }
 
 func (x *EventSubscriptionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -9686,7 +9686,7 @@ func (x *EventSubscriptionsMessage) GetMarker() string {
 type EventsMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*Event               `protobuf:"bytes,3416229,rep,name=events,proto3" json:"events,omitempty"`
-	Marker        string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker        *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9729,16 +9729,16 @@ func (x *EventsMessage) GetEvents() []*Event {
 }
 
 func (x *EventsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type FailoverDBClusterMessage struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusteridentifier        string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Targetdbinstanceidentifier string                 `protobuf:"bytes,241268391,opt,name=targetdbinstanceidentifier,proto3" json:"targetdbinstanceidentifier,omitempty"`
+	Dbclusteridentifier        *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Targetdbinstanceidentifier *string                `protobuf:"bytes,241268391,opt,name=targetdbinstanceidentifier,proto3,oneof" json:"targetdbinstanceidentifier,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -9774,15 +9774,15 @@ func (*FailoverDBClusterMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *FailoverDBClusterMessage) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *FailoverDBClusterMessage) GetTargetdbinstanceidentifier() string {
-	if x != nil {
-		return x.Targetdbinstanceidentifier
+	if x != nil && x.Targetdbinstanceidentifier != nil {
+		return *x.Targetdbinstanceidentifier
 	}
 	return ""
 }
@@ -9945,10 +9945,10 @@ func (x *FailoverGlobalClusterResult) GetGlobalcluster() *GlobalCluster {
 
 type FailoverState struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Fromdbclusterarn  string                 `protobuf:"bytes,119220095,opt,name=fromdbclusterarn,proto3" json:"fromdbclusterarn,omitempty"`
+	Fromdbclusterarn  *string                `protobuf:"bytes,119220095,opt,name=fromdbclusterarn,proto3,oneof" json:"fromdbclusterarn,omitempty"`
 	Isdatalossallowed *bool                  `protobuf:"varint,28895927,opt,name=isdatalossallowed,proto3,oneof" json:"isdatalossallowed,omitempty"`
 	Status            FailoverStatus         `protobuf:"varint,6222352,opt,name=status,proto3,enum=neptune.FailoverStatus" json:"status,omitempty"`
-	Todbclusterarn    string                 `protobuf:"bytes,469618472,opt,name=todbclusterarn,proto3" json:"todbclusterarn,omitempty"`
+	Todbclusterarn    *string                `protobuf:"bytes,469618472,opt,name=todbclusterarn,proto3,oneof" json:"todbclusterarn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -9984,8 +9984,8 @@ func (*FailoverState) Descriptor() ([]byte, []int) {
 }
 
 func (x *FailoverState) GetFromdbclusterarn() string {
-	if x != nil {
-		return x.Fromdbclusterarn
+	if x != nil && x.Fromdbclusterarn != nil {
+		return *x.Fromdbclusterarn
 	}
 	return ""
 }
@@ -10005,8 +10005,8 @@ func (x *FailoverState) GetStatus() FailoverStatus {
 }
 
 func (x *FailoverState) GetTodbclusterarn() string {
-	if x != nil {
-		return x.Todbclusterarn
+	if x != nil && x.Todbclusterarn != nil {
+		return *x.Todbclusterarn
 	}
 	return ""
 }
@@ -10065,16 +10065,16 @@ func (x *Filter) GetValues() []string {
 
 type GlobalCluster struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Databasename            string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
+	Databasename            *string                `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
 	Deletionprotection      *bool                  `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Engine                  string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion           string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engine                  *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion           *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Failoverstate           *FailoverState         `protobuf:"bytes,304680521,opt,name=failoverstate,proto3" json:"failoverstate,omitempty"`
-	Globalclusterarn        string                 `protobuf:"bytes,276790160,opt,name=globalclusterarn,proto3" json:"globalclusterarn,omitempty"`
-	Globalclusteridentifier string                 `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
+	Globalclusterarn        *string                `protobuf:"bytes,276790160,opt,name=globalclusterarn,proto3,oneof" json:"globalclusterarn,omitempty"`
+	Globalclusteridentifier *string                `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3,oneof" json:"globalclusteridentifier,omitempty"`
 	Globalclustermembers    []*GlobalClusterMember `protobuf:"bytes,315949036,rep,name=globalclustermembers,proto3" json:"globalclustermembers,omitempty"`
-	Globalclusterresourceid string                 `protobuf:"bytes,398885538,opt,name=globalclusterresourceid,proto3" json:"globalclusterresourceid,omitempty"`
-	Status                  string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Globalclusterresourceid *string                `protobuf:"bytes,398885538,opt,name=globalclusterresourceid,proto3,oneof" json:"globalclusterresourceid,omitempty"`
+	Status                  *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Storageencrypted        *bool                  `protobuf:"varint,378808047,opt,name=storageencrypted,proto3,oneof" json:"storageencrypted,omitempty"`
 	Taglist                 []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -10112,8 +10112,8 @@ func (*GlobalCluster) Descriptor() ([]byte, []int) {
 }
 
 func (x *GlobalCluster) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
@@ -10126,15 +10126,15 @@ func (x *GlobalCluster) GetDeletionprotection() bool {
 }
 
 func (x *GlobalCluster) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *GlobalCluster) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -10147,15 +10147,15 @@ func (x *GlobalCluster) GetFailoverstate() *FailoverState {
 }
 
 func (x *GlobalCluster) GetGlobalclusterarn() string {
-	if x != nil {
-		return x.Globalclusterarn
+	if x != nil && x.Globalclusterarn != nil {
+		return *x.Globalclusterarn
 	}
 	return ""
 }
 
 func (x *GlobalCluster) GetGlobalclusteridentifier() string {
-	if x != nil {
-		return x.Globalclusteridentifier
+	if x != nil && x.Globalclusteridentifier != nil {
+		return *x.Globalclusteridentifier
 	}
 	return ""
 }
@@ -10168,15 +10168,15 @@ func (x *GlobalCluster) GetGlobalclustermembers() []*GlobalClusterMember {
 }
 
 func (x *GlobalCluster) GetGlobalclusterresourceid() string {
-	if x != nil {
-		return x.Globalclusterresourceid
+	if x != nil && x.Globalclusterresourceid != nil {
+		return *x.Globalclusterresourceid
 	}
 	return ""
 }
 
 func (x *GlobalCluster) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -10197,7 +10197,7 @@ func (x *GlobalCluster) GetTaglist() []*Tag {
 
 type GlobalClusterAlreadyExistsFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10233,15 +10233,15 @@ func (*GlobalClusterAlreadyExistsFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *GlobalClusterAlreadyExistsFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type GlobalClusterMember struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dbclusterarn  string                 `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3" json:"dbclusterarn,omitempty"`
+	Dbclusterarn  *string                `protobuf:"bytes,173586159,opt,name=dbclusterarn,proto3,oneof" json:"dbclusterarn,omitempty"`
 	Iswriter      *bool                  `protobuf:"varint,23347771,opt,name=iswriter,proto3,oneof" json:"iswriter,omitempty"`
 	Readers       []string               `protobuf:"bytes,168786784,rep,name=readers,proto3" json:"readers,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10279,8 +10279,8 @@ func (*GlobalClusterMember) Descriptor() ([]byte, []int) {
 }
 
 func (x *GlobalClusterMember) GetDbclusterarn() string {
-	if x != nil {
-		return x.Dbclusterarn
+	if x != nil && x.Dbclusterarn != nil {
+		return *x.Dbclusterarn
 	}
 	return ""
 }
@@ -10301,7 +10301,7 @@ func (x *GlobalClusterMember) GetReaders() []string {
 
 type GlobalClusterNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10337,15 +10337,15 @@ func (*GlobalClusterNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *GlobalClusterNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type GlobalClusterQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10381,8 +10381,8 @@ func (*GlobalClusterQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *GlobalClusterQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -10390,7 +10390,7 @@ func (x *GlobalClusterQuotaExceededFault) GetMessage() string {
 type GlobalClustersMessage struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Globalclusters []*GlobalCluster       `protobuf:"bytes,386209410,rep,name=globalclusters,proto3" json:"globalclusters,omitempty"`
-	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker         *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -10433,15 +10433,15 @@ func (x *GlobalClustersMessage) GetGlobalclusters() []*GlobalCluster {
 }
 
 func (x *GlobalClustersMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
 
 type InstanceQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10477,15 +10477,15 @@ func (*InstanceQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InstanceQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientDBClusterCapacityFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10521,15 +10521,15 @@ func (*InsufficientDBClusterCapacityFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientDBClusterCapacityFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientDBInstanceCapacityFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10565,15 +10565,15 @@ func (*InsufficientDBInstanceCapacityFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientDBInstanceCapacityFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientStorageClusterCapacityFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10609,15 +10609,15 @@ func (*InsufficientStorageClusterCapacityFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientStorageClusterCapacityFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBClusterEndpointStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10653,15 +10653,15 @@ func (*InvalidDBClusterEndpointStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBClusterEndpointStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBClusterSnapshotStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10697,15 +10697,15 @@ func (*InvalidDBClusterSnapshotStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBClusterSnapshotStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBClusterStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10741,15 +10741,15 @@ func (*InvalidDBClusterStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBClusterStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBInstanceStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10785,15 +10785,15 @@ func (*InvalidDBInstanceStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBInstanceStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBParameterGroupStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10829,15 +10829,15 @@ func (*InvalidDBParameterGroupStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBParameterGroupStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBSecurityGroupStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10873,15 +10873,15 @@ func (*InvalidDBSecurityGroupStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBSecurityGroupStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBSnapshotStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10917,15 +10917,15 @@ func (*InvalidDBSnapshotStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBSnapshotStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBSubnetGroupStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10961,15 +10961,15 @@ func (*InvalidDBSubnetGroupStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBSubnetGroupStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDBSubnetStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11005,15 +11005,15 @@ func (*InvalidDBSubnetStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDBSubnetStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEventSubscriptionStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11049,15 +11049,15 @@ func (*InvalidEventSubscriptionStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEventSubscriptionStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidGlobalClusterStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11093,15 +11093,15 @@ func (*InvalidGlobalClusterStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidGlobalClusterStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidRestoreFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11137,15 +11137,15 @@ func (*InvalidRestoreFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidRestoreFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidSubnet struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11181,15 +11181,15 @@ func (*InvalidSubnet) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidSubnet) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidVPCNetworkStateFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11225,15 +11225,15 @@ func (*InvalidVPCNetworkStateFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidVPCNetworkStateFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSKeyNotAccessibleFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11269,8 +11269,8 @@ func (*KMSKeyNotAccessibleFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSKeyNotAccessibleFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -11330,7 +11330,7 @@ func (x *ListTagsForResourceMessage) GetResourcename() string {
 type ModifyDBClusterEndpointMessage struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusterendpointidentifier string                 `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3" json:"dbclusterendpointidentifier,omitempty"`
-	Endpointtype                string                 `protobuf:"bytes,486186837,opt,name=endpointtype,proto3" json:"endpointtype,omitempty"`
+	Endpointtype                *string                `protobuf:"bytes,486186837,opt,name=endpointtype,proto3,oneof" json:"endpointtype,omitempty"`
 	Excludedmembers             []string               `protobuf:"bytes,395651603,rep,name=excludedmembers,proto3" json:"excludedmembers,omitempty"`
 	Staticmembers               []string               `protobuf:"bytes,176064991,rep,name=staticmembers,proto3" json:"staticmembers,omitempty"`
 	unknownFields               protoimpl.UnknownFields
@@ -11375,8 +11375,8 @@ func (x *ModifyDBClusterEndpointMessage) GetDbclusterendpointidentifier() string
 }
 
 func (x *ModifyDBClusterEndpointMessage) GetEndpointtype() string {
-	if x != nil {
-		return x.Endpointtype
+	if x != nil && x.Endpointtype != nil {
+		return *x.Endpointtype
 	}
 	return ""
 }
@@ -11397,16 +11397,16 @@ func (x *ModifyDBClusterEndpointMessage) GetStaticmembers() []string {
 
 type ModifyDBClusterEndpointOutput struct {
 	state                               protoimpl.MessageState `protogen:"open.v1"`
-	Customendpointtype                  string                 `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3" json:"customendpointtype,omitempty"`
-	Dbclusterendpointarn                string                 `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3" json:"dbclusterendpointarn,omitempty"`
-	Dbclusterendpointidentifier         string                 `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3" json:"dbclusterendpointidentifier,omitempty"`
-	Dbclusterendpointresourceidentifier string                 `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3" json:"dbclusterendpointresourceidentifier,omitempty"`
-	Dbclusteridentifier                 string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Endpoint                            string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Endpointtype                        string                 `protobuf:"bytes,486186837,opt,name=endpointtype,proto3" json:"endpointtype,omitempty"`
+	Customendpointtype                  *string                `protobuf:"bytes,164193420,opt,name=customendpointtype,proto3,oneof" json:"customendpointtype,omitempty"`
+	Dbclusterendpointarn                *string                `protobuf:"bytes,283728474,opt,name=dbclusterendpointarn,proto3,oneof" json:"dbclusterendpointarn,omitempty"`
+	Dbclusterendpointidentifier         *string                `protobuf:"bytes,318277614,opt,name=dbclusterendpointidentifier,proto3,oneof" json:"dbclusterendpointidentifier,omitempty"`
+	Dbclusterendpointresourceidentifier *string                `protobuf:"bytes,321654390,opt,name=dbclusterendpointresourceidentifier,proto3,oneof" json:"dbclusterendpointresourceidentifier,omitempty"`
+	Dbclusteridentifier                 *string                `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3,oneof" json:"dbclusteridentifier,omitempty"`
+	Endpoint                            *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Endpointtype                        *string                `protobuf:"bytes,486186837,opt,name=endpointtype,proto3,oneof" json:"endpointtype,omitempty"`
 	Excludedmembers                     []string               `protobuf:"bytes,395651603,rep,name=excludedmembers,proto3" json:"excludedmembers,omitempty"`
 	Staticmembers                       []string               `protobuf:"bytes,176064991,rep,name=staticmembers,proto3" json:"staticmembers,omitempty"`
-	Status                              string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status                              *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -11442,50 +11442,50 @@ func (*ModifyDBClusterEndpointOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetCustomendpointtype() string {
-	if x != nil {
-		return x.Customendpointtype
+	if x != nil && x.Customendpointtype != nil {
+		return *x.Customendpointtype
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetDbclusterendpointarn() string {
-	if x != nil {
-		return x.Dbclusterendpointarn
+	if x != nil && x.Dbclusterendpointarn != nil {
+		return *x.Dbclusterendpointarn
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetDbclusterendpointidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointidentifier
+	if x != nil && x.Dbclusterendpointidentifier != nil {
+		return *x.Dbclusterendpointidentifier
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetDbclusterendpointresourceidentifier() string {
-	if x != nil {
-		return x.Dbclusterendpointresourceidentifier
+	if x != nil && x.Dbclusterendpointresourceidentifier != nil {
+		return *x.Dbclusterendpointresourceidentifier
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetDbclusteridentifier() string {
-	if x != nil {
-		return x.Dbclusteridentifier
+	if x != nil && x.Dbclusteridentifier != nil {
+		return *x.Dbclusteridentifier
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetEndpointtype() string {
-	if x != nil {
-		return x.Endpointtype
+	if x != nil && x.Endpointtype != nil {
+		return *x.Endpointtype
 	}
 	return ""
 }
@@ -11505,8 +11505,8 @@ func (x *ModifyDBClusterEndpointOutput) GetStaticmembers() []string {
 }
 
 func (x *ModifyDBClusterEndpointOutput) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -11519,20 +11519,20 @@ type ModifyDBClusterMessage struct {
 	Cloudwatchlogsexportconfiguration *CloudwatchLogsExportConfiguration `protobuf:"bytes,311727375,opt,name=cloudwatchlogsexportconfiguration,proto3" json:"cloudwatchlogsexportconfiguration,omitempty"`
 	Copytagstosnapshot                *bool                              `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier               string                             `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbclusterparametergroupname       string                             `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
-	Dbinstanceparametergroupname      string                             `protobuf:"bytes,505550326,opt,name=dbinstanceparametergroupname,proto3" json:"dbinstanceparametergroupname,omitempty"`
+	Dbclusterparametergroupname       *string                            `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
+	Dbinstanceparametergroupname      *string                            `protobuf:"bytes,505550326,opt,name=dbinstanceparametergroupname,proto3,oneof" json:"dbinstanceparametergroupname,omitempty"`
 	Deletionprotection                *bool                              `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Enableiamdatabaseauthentication   *bool                              `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
-	Engineversion                     string                             `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Masteruserpassword                string                             `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
-	Networktype                       string                             `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
-	Newdbclusteridentifier            string                             `protobuf:"bytes,86287437,opt,name=newdbclusteridentifier,proto3" json:"newdbclusteridentifier,omitempty"`
-	Optiongroupname                   string                             `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
+	Engineversion                     *string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Masteruserpassword                *string                            `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
+	Networktype                       *string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
+	Newdbclusteridentifier            *string                            `protobuf:"bytes,86287437,opt,name=newdbclusteridentifier,proto3,oneof" json:"newdbclusteridentifier,omitempty"`
+	Optiongroupname                   *string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
 	Port                              *int32                             `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Preferredbackupwindow             string                             `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow        string                             `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
+	Preferredbackupwindow             *string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow        *string                            `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
 	Serverlessv2Scalingconfiguration  *ServerlessV2ScalingConfiguration  `protobuf:"bytes,357537595,opt,name=serverlessv2scalingconfiguration,proto3" json:"serverlessv2scalingconfiguration,omitempty"`
-	Storagetype                       string                             `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                       *string                            `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Vpcsecuritygroupids               []string                           `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
@@ -11611,15 +11611,15 @@ func (x *ModifyDBClusterMessage) GetDbclusteridentifier() string {
 }
 
 func (x *ModifyDBClusterMessage) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterMessage) GetDbinstanceparametergroupname() string {
-	if x != nil {
-		return x.Dbinstanceparametergroupname
+	if x != nil && x.Dbinstanceparametergroupname != nil {
+		return *x.Dbinstanceparametergroupname
 	}
 	return ""
 }
@@ -11639,36 +11639,36 @@ func (x *ModifyDBClusterMessage) GetEnableiamdatabaseauthentication() bool {
 }
 
 func (x *ModifyDBClusterMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterMessage) GetMasteruserpassword() string {
-	if x != nil {
-		return x.Masteruserpassword
+	if x != nil && x.Masteruserpassword != nil {
+		return *x.Masteruserpassword
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterMessage) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterMessage) GetNewdbclusteridentifier() string {
-	if x != nil {
-		return x.Newdbclusteridentifier
+	if x != nil && x.Newdbclusteridentifier != nil {
+		return *x.Newdbclusteridentifier
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterMessage) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
@@ -11681,15 +11681,15 @@ func (x *ModifyDBClusterMessage) GetPort() int32 {
 }
 
 func (x *ModifyDBClusterMessage) GetPreferredbackupwindow() string {
-	if x != nil {
-		return x.Preferredbackupwindow
+	if x != nil && x.Preferredbackupwindow != nil {
+		return *x.Preferredbackupwindow
 	}
 	return ""
 }
 
 func (x *ModifyDBClusterMessage) GetPreferredmaintenancewindow() string {
-	if x != nil {
-		return x.Preferredmaintenancewindow
+	if x != nil && x.Preferredmaintenancewindow != nil {
+		return *x.Preferredmaintenancewindow
 	}
 	return ""
 }
@@ -11702,8 +11702,8 @@ func (x *ModifyDBClusterMessage) GetServerlessv2Scalingconfiguration() *Serverle
 }
 
 func (x *ModifyDBClusterMessage) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -11930,37 +11930,37 @@ type ModifyDBInstanceMessage struct {
 	Applyimmediately                  *bool                              `protobuf:"varint,145941916,opt,name=applyimmediately,proto3,oneof" json:"applyimmediately,omitempty"`
 	Autominorversionupgrade           *bool                              `protobuf:"varint,32758492,opt,name=autominorversionupgrade,proto3,oneof" json:"autominorversionupgrade,omitempty"`
 	Backupretentionperiod             *int32                             `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Cacertificateidentifier           string                             `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
+	Cacertificateidentifier           *string                            `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
 	Cloudwatchlogsexportconfiguration *CloudwatchLogsExportConfiguration `protobuf:"bytes,311727375,opt,name=cloudwatchlogsexportconfiguration,proto3" json:"cloudwatchlogsexportconfiguration,omitempty"`
 	Copytagstosnapshot                *bool                              `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
-	Dbinstanceclass                   string                             `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
+	Dbinstanceclass                   *string                            `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3,oneof" json:"dbinstanceclass,omitempty"`
 	Dbinstanceidentifier              string                             `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Dbparametergroupname              string                             `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3" json:"dbparametergroupname,omitempty"`
+	Dbparametergroupname              *string                            `protobuf:"bytes,174683359,opt,name=dbparametergroupname,proto3,oneof" json:"dbparametergroupname,omitempty"`
 	Dbportnumber                      *int32                             `protobuf:"varint,107009294,opt,name=dbportnumber,proto3,oneof" json:"dbportnumber,omitempty"`
 	Dbsecuritygroups                  []string                           `protobuf:"bytes,420763246,rep,name=dbsecuritygroups,proto3" json:"dbsecuritygroups,omitempty"`
-	Dbsubnetgroupname                 string                             `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
+	Dbsubnetgroupname                 *string                            `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
 	Deletionprotection                *bool                              `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Domain                            string                             `protobuf:"bytes,505186578,opt,name=domain,proto3" json:"domain,omitempty"`
-	Domainiamrolename                 string                             `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3" json:"domainiamrolename,omitempty"`
+	Domain                            *string                            `protobuf:"bytes,505186578,opt,name=domain,proto3,oneof" json:"domain,omitempty"`
+	Domainiamrolename                 *string                            `protobuf:"bytes,113148154,opt,name=domainiamrolename,proto3,oneof" json:"domainiamrolename,omitempty"`
 	Enableiamdatabaseauthentication   *bool                              `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Enableperformanceinsights         *bool                              `protobuf:"varint,485203758,opt,name=enableperformanceinsights,proto3,oneof" json:"enableperformanceinsights,omitempty"`
-	Engineversion                     string                             `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engineversion                     *string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Iops                              *int32                             `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
-	Licensemodel                      string                             `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Masteruserpassword                string                             `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
+	Licensemodel                      *string                            `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Masteruserpassword                *string                            `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
 	Monitoringinterval                *int32                             `protobuf:"varint,320121591,opt,name=monitoringinterval,proto3,oneof" json:"monitoringinterval,omitempty"`
-	Monitoringrolearn                 string                             `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3" json:"monitoringrolearn,omitempty"`
+	Monitoringrolearn                 *string                            `protobuf:"bytes,181188871,opt,name=monitoringrolearn,proto3,oneof" json:"monitoringrolearn,omitempty"`
 	Multiaz                           *bool                              `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
-	Newdbinstanceidentifier           string                             `protobuf:"bytes,331758776,opt,name=newdbinstanceidentifier,proto3" json:"newdbinstanceidentifier,omitempty"`
-	Optiongroupname                   string                             `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Performanceinsightskmskeyid       string                             `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3" json:"performanceinsightskmskeyid,omitempty"`
-	Preferredbackupwindow             string                             `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3" json:"preferredbackupwindow,omitempty"`
-	Preferredmaintenancewindow        string                             `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3" json:"preferredmaintenancewindow,omitempty"`
+	Newdbinstanceidentifier           *string                            `protobuf:"bytes,331758776,opt,name=newdbinstanceidentifier,proto3,oneof" json:"newdbinstanceidentifier,omitempty"`
+	Optiongroupname                   *string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
+	Performanceinsightskmskeyid       *string                            `protobuf:"bytes,395732922,opt,name=performanceinsightskmskeyid,proto3,oneof" json:"performanceinsightskmskeyid,omitempty"`
+	Preferredbackupwindow             *string                            `protobuf:"bytes,39404485,opt,name=preferredbackupwindow,proto3,oneof" json:"preferredbackupwindow,omitempty"`
+	Preferredmaintenancewindow        *string                            `protobuf:"bytes,99987842,opt,name=preferredmaintenancewindow,proto3,oneof" json:"preferredmaintenancewindow,omitempty"`
 	Promotiontier                     *int32                             `protobuf:"varint,170834723,opt,name=promotiontier,proto3,oneof" json:"promotiontier,omitempty"`
 	Publiclyaccessible                *bool                              `protobuf:"varint,256833310,opt,name=publiclyaccessible,proto3,oneof" json:"publiclyaccessible,omitempty"`
-	Storagetype                       string                             `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
-	Tdecredentialarn                  string                             `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3" json:"tdecredentialarn,omitempty"`
-	Tdecredentialpassword             string                             `protobuf:"bytes,67652301,opt,name=tdecredentialpassword,proto3" json:"tdecredentialpassword,omitempty"`
+	Storagetype                       *string                            `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
+	Tdecredentialarn                  *string                            `protobuf:"bytes,108659737,opt,name=tdecredentialarn,proto3,oneof" json:"tdecredentialarn,omitempty"`
+	Tdecredentialpassword             *string                            `protobuf:"bytes,67652301,opt,name=tdecredentialpassword,proto3,oneof" json:"tdecredentialpassword,omitempty"`
 	Vpcsecuritygroupids               []string                           `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
@@ -12032,8 +12032,8 @@ func (x *ModifyDBInstanceMessage) GetBackupretentionperiod() int32 {
 }
 
 func (x *ModifyDBInstanceMessage) GetCacertificateidentifier() string {
-	if x != nil {
-		return x.Cacertificateidentifier
+	if x != nil && x.Cacertificateidentifier != nil {
+		return *x.Cacertificateidentifier
 	}
 	return ""
 }
@@ -12053,8 +12053,8 @@ func (x *ModifyDBInstanceMessage) GetCopytagstosnapshot() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetDbinstanceclass() string {
-	if x != nil {
-		return x.Dbinstanceclass
+	if x != nil && x.Dbinstanceclass != nil {
+		return *x.Dbinstanceclass
 	}
 	return ""
 }
@@ -12067,8 +12067,8 @@ func (x *ModifyDBInstanceMessage) GetDbinstanceidentifier() string {
 }
 
 func (x *ModifyDBInstanceMessage) GetDbparametergroupname() string {
-	if x != nil {
-		return x.Dbparametergroupname
+	if x != nil && x.Dbparametergroupname != nil {
+		return *x.Dbparametergroupname
 	}
 	return ""
 }
@@ -12088,8 +12088,8 @@ func (x *ModifyDBInstanceMessage) GetDbsecuritygroups() []string {
 }
 
 func (x *ModifyDBInstanceMessage) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
@@ -12102,15 +12102,15 @@ func (x *ModifyDBInstanceMessage) GetDeletionprotection() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetDomain() string {
-	if x != nil {
-		return x.Domain
+	if x != nil && x.Domain != nil {
+		return *x.Domain
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetDomainiamrolename() string {
-	if x != nil {
-		return x.Domainiamrolename
+	if x != nil && x.Domainiamrolename != nil {
+		return *x.Domainiamrolename
 	}
 	return ""
 }
@@ -12130,8 +12130,8 @@ func (x *ModifyDBInstanceMessage) GetEnableperformanceinsights() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -12144,15 +12144,15 @@ func (x *ModifyDBInstanceMessage) GetIops() int32 {
 }
 
 func (x *ModifyDBInstanceMessage) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetMasteruserpassword() string {
-	if x != nil {
-		return x.Masteruserpassword
+	if x != nil && x.Masteruserpassword != nil {
+		return *x.Masteruserpassword
 	}
 	return ""
 }
@@ -12165,8 +12165,8 @@ func (x *ModifyDBInstanceMessage) GetMonitoringinterval() int32 {
 }
 
 func (x *ModifyDBInstanceMessage) GetMonitoringrolearn() string {
-	if x != nil {
-		return x.Monitoringrolearn
+	if x != nil && x.Monitoringrolearn != nil {
+		return *x.Monitoringrolearn
 	}
 	return ""
 }
@@ -12179,36 +12179,36 @@ func (x *ModifyDBInstanceMessage) GetMultiaz() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetNewdbinstanceidentifier() string {
-	if x != nil {
-		return x.Newdbinstanceidentifier
+	if x != nil && x.Newdbinstanceidentifier != nil {
+		return *x.Newdbinstanceidentifier
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetPerformanceinsightskmskeyid() string {
-	if x != nil {
-		return x.Performanceinsightskmskeyid
+	if x != nil && x.Performanceinsightskmskeyid != nil {
+		return *x.Performanceinsightskmskeyid
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetPreferredbackupwindow() string {
-	if x != nil {
-		return x.Preferredbackupwindow
+	if x != nil && x.Preferredbackupwindow != nil {
+		return *x.Preferredbackupwindow
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetPreferredmaintenancewindow() string {
-	if x != nil {
-		return x.Preferredmaintenancewindow
+	if x != nil && x.Preferredmaintenancewindow != nil {
+		return *x.Preferredmaintenancewindow
 	}
 	return ""
 }
@@ -12228,22 +12228,22 @@ func (x *ModifyDBInstanceMessage) GetPubliclyaccessible() bool {
 }
 
 func (x *ModifyDBInstanceMessage) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetTdecredentialarn() string {
-	if x != nil {
-		return x.Tdecredentialarn
+	if x != nil && x.Tdecredentialarn != nil {
+		return *x.Tdecredentialarn
 	}
 	return ""
 }
 
 func (x *ModifyDBInstanceMessage) GetTdecredentialpassword() string {
-	if x != nil {
-		return x.Tdecredentialpassword
+	if x != nil && x.Tdecredentialpassword != nil {
+		return *x.Tdecredentialpassword
 	}
 	return ""
 }
@@ -12353,7 +12353,7 @@ func (x *ModifyDBParameterGroupMessage) GetParameters() []*Parameter {
 
 type ModifyDBSubnetGroupMessage struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Dbsubnetgroupdescription string                 `protobuf:"bytes,111127330,opt,name=dbsubnetgroupdescription,proto3" json:"dbsubnetgroupdescription,omitempty"`
+	Dbsubnetgroupdescription *string                `protobuf:"bytes,111127330,opt,name=dbsubnetgroupdescription,proto3,oneof" json:"dbsubnetgroupdescription,omitempty"`
 	Dbsubnetgroupname        string                 `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
 	Subnetids                []string               `protobuf:"bytes,266219411,rep,name=subnetids,proto3" json:"subnetids,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -12391,8 +12391,8 @@ func (*ModifyDBSubnetGroupMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *ModifyDBSubnetGroupMessage) GetDbsubnetgroupdescription() string {
-	if x != nil {
-		return x.Dbsubnetgroupdescription
+	if x != nil && x.Dbsubnetgroupdescription != nil {
+		return *x.Dbsubnetgroupdescription
 	}
 	return ""
 }
@@ -12459,8 +12459,8 @@ type ModifyEventSubscriptionMessage struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Enabled          *bool                  `protobuf:"varint,478602303,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Eventcategories  []string               `protobuf:"bytes,3676820,rep,name=eventcategories,proto3" json:"eventcategories,omitempty"`
-	Snstopicarn      string                 `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
-	Sourcetype       string                 `protobuf:"bytes,195731217,opt,name=sourcetype,proto3" json:"sourcetype,omitempty"`
+	Snstopicarn      *string                `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
+	Sourcetype       *string                `protobuf:"bytes,195731217,opt,name=sourcetype,proto3,oneof" json:"sourcetype,omitempty"`
 	Subscriptionname string                 `protobuf:"bytes,181900944,opt,name=subscriptionname,proto3" json:"subscriptionname,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -12511,15 +12511,15 @@ func (x *ModifyEventSubscriptionMessage) GetEventcategories() []string {
 }
 
 func (x *ModifyEventSubscriptionMessage) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
 
 func (x *ModifyEventSubscriptionMessage) GetSourcetype() string {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ""
 }
@@ -12579,9 +12579,9 @@ type ModifyGlobalClusterMessage struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Allowmajorversionupgrade   *bool                  `protobuf:"varint,40687812,opt,name=allowmajorversionupgrade,proto3,oneof" json:"allowmajorversionupgrade,omitempty"`
 	Deletionprotection         *bool                  `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
-	Engineversion              string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Engineversion              *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Globalclusteridentifier    string                 `protobuf:"bytes,114980092,opt,name=globalclusteridentifier,proto3" json:"globalclusteridentifier,omitempty"`
-	Newglobalclusteridentifier string                 `protobuf:"bytes,421899376,opt,name=newglobalclusteridentifier,proto3" json:"newglobalclusteridentifier,omitempty"`
+	Newglobalclusteridentifier *string                `protobuf:"bytes,421899376,opt,name=newglobalclusteridentifier,proto3,oneof" json:"newglobalclusteridentifier,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -12631,8 +12631,8 @@ func (x *ModifyGlobalClusterMessage) GetDeletionprotection() bool {
 }
 
 func (x *ModifyGlobalClusterMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -12645,8 +12645,8 @@ func (x *ModifyGlobalClusterMessage) GetGlobalclusteridentifier() string {
 }
 
 func (x *ModifyGlobalClusterMessage) GetNewglobalclusteridentifier() string {
-	if x != nil {
-		return x.Newglobalclusteridentifier
+	if x != nil && x.Newglobalclusteridentifier != nil {
+		return *x.Newglobalclusteridentifier
 	}
 	return ""
 }
@@ -12697,7 +12697,7 @@ func (x *ModifyGlobalClusterResult) GetGlobalcluster() *GlobalCluster {
 
 type NetworkTypeNotSupportedFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12733,16 +12733,16 @@ func (*NetworkTypeNotSupportedFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *NetworkTypeNotSupportedFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type OptionGroupMembership struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Optiongroupname string                 `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
-	Status          string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Optiongroupname *string                `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
+	Status          *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -12778,22 +12778,22 @@ func (*OptionGroupMembership) Descriptor() ([]byte, []int) {
 }
 
 func (x *OptionGroupMembership) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
 
 func (x *OptionGroupMembership) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 type OptionGroupNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12829,8 +12829,8 @@ func (*OptionGroupNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *OptionGroupNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12838,19 +12838,19 @@ func (x *OptionGroupNotFoundFault) GetMessage() string {
 type OrderableDBInstanceOption struct {
 	state                             protoimpl.MessageState `protogen:"open.v1"`
 	Availabilityzones                 []*AvailabilityZone    `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
-	Dbinstanceclass                   string                 `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
-	Engine                            string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                     string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Licensemodel                      string                 `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
+	Dbinstanceclass                   *string                `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3,oneof" json:"dbinstanceclass,omitempty"`
+	Engine                            *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion                     *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Licensemodel                      *string                `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
 	Maxiopsperdbinstance              *int32                 `protobuf:"varint,408072995,opt,name=maxiopsperdbinstance,proto3,oneof" json:"maxiopsperdbinstance,omitempty"`
-	Maxiopspergib                     float64                `protobuf:"fixed64,246799832,opt,name=maxiopspergib,proto3" json:"maxiopspergib,omitempty"`
+	Maxiopspergib                     *float64               `protobuf:"fixed64,246799832,opt,name=maxiopspergib,proto3,oneof" json:"maxiopspergib,omitempty"`
 	Maxstoragesize                    *int32                 `protobuf:"varint,492016524,opt,name=maxstoragesize,proto3,oneof" json:"maxstoragesize,omitempty"`
 	Miniopsperdbinstance              *int32                 `protobuf:"varint,497359021,opt,name=miniopsperdbinstance,proto3,oneof" json:"miniopsperdbinstance,omitempty"`
-	Miniopspergib                     float64                `protobuf:"fixed64,511052642,opt,name=miniopspergib,proto3" json:"miniopspergib,omitempty"`
+	Miniopspergib                     *float64               `protobuf:"fixed64,511052642,opt,name=miniopspergib,proto3,oneof" json:"miniopspergib,omitempty"`
 	Minstoragesize                    *int32                 `protobuf:"varint,208793958,opt,name=minstoragesize,proto3,oneof" json:"minstoragesize,omitempty"`
 	Multiazcapable                    *bool                  `protobuf:"varint,505918340,opt,name=multiazcapable,proto3,oneof" json:"multiazcapable,omitempty"`
 	Readreplicacapable                *bool                  `protobuf:"varint,231235798,opt,name=readreplicacapable,proto3,oneof" json:"readreplicacapable,omitempty"`
-	Storagetype                       string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                       *string                `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Supportednetworktypes             []string               `protobuf:"bytes,290618199,rep,name=supportednetworktypes,proto3" json:"supportednetworktypes,omitempty"`
 	Supportsenhancedmonitoring        *bool                  `protobuf:"varint,455571550,opt,name=supportsenhancedmonitoring,proto3,oneof" json:"supportsenhancedmonitoring,omitempty"`
 	Supportsglobaldatabases           *bool                  `protobuf:"varint,169786221,opt,name=supportsglobaldatabases,proto3,oneof" json:"supportsglobaldatabases,omitempty"`
@@ -12901,29 +12901,29 @@ func (x *OrderableDBInstanceOption) GetAvailabilityzones() []*AvailabilityZone {
 }
 
 func (x *OrderableDBInstanceOption) GetDbinstanceclass() string {
-	if x != nil {
-		return x.Dbinstanceclass
+	if x != nil && x.Dbinstanceclass != nil {
+		return *x.Dbinstanceclass
 	}
 	return ""
 }
 
 func (x *OrderableDBInstanceOption) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *OrderableDBInstanceOption) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
 
 func (x *OrderableDBInstanceOption) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
@@ -12936,8 +12936,8 @@ func (x *OrderableDBInstanceOption) GetMaxiopsperdbinstance() int32 {
 }
 
 func (x *OrderableDBInstanceOption) GetMaxiopspergib() float64 {
-	if x != nil {
-		return x.Maxiopspergib
+	if x != nil && x.Maxiopspergib != nil {
+		return *x.Maxiopspergib
 	}
 	return 0
 }
@@ -12957,8 +12957,8 @@ func (x *OrderableDBInstanceOption) GetMiniopsperdbinstance() int32 {
 }
 
 func (x *OrderableDBInstanceOption) GetMiniopspergib() float64 {
-	if x != nil {
-		return x.Miniopspergib
+	if x != nil && x.Miniopspergib != nil {
+		return *x.Miniopspergib
 	}
 	return 0
 }
@@ -12985,8 +12985,8 @@ func (x *OrderableDBInstanceOption) GetReadreplicacapable() bool {
 }
 
 func (x *OrderableDBInstanceOption) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -13049,7 +13049,7 @@ func (x *OrderableDBInstanceOption) GetVpc() bool {
 
 type OrderableDBInstanceOptionsMessage struct {
 	state                      protoimpl.MessageState       `protogen:"open.v1"`
-	Marker                     string                       `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                     *string                      `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Orderabledbinstanceoptions []*OrderableDBInstanceOption `protobuf:"bytes,29320461,rep,name=orderabledbinstanceoptions,proto3" json:"orderabledbinstanceoptions,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -13086,8 +13086,8 @@ func (*OrderableDBInstanceOptionsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *OrderableDBInstanceOptionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -13101,16 +13101,16 @@ func (x *OrderableDBInstanceOptionsMessage) GetOrderabledbinstanceoptions() []*O
 
 type Parameter struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Allowedvalues        string                 `protobuf:"bytes,294513354,opt,name=allowedvalues,proto3" json:"allowedvalues,omitempty"`
+	Allowedvalues        *string                `protobuf:"bytes,294513354,opt,name=allowedvalues,proto3,oneof" json:"allowedvalues,omitempty"`
 	Applymethod          ApplyMethod            `protobuf:"varint,521377563,opt,name=applymethod,proto3,enum=neptune.ApplyMethod" json:"applymethod,omitempty"`
-	Applytype            string                 `protobuf:"bytes,65384676,opt,name=applytype,proto3" json:"applytype,omitempty"`
-	Datatype             string                 `protobuf:"bytes,67988590,opt,name=datatype,proto3" json:"datatype,omitempty"`
-	Description          string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Applytype            *string                `protobuf:"bytes,65384676,opt,name=applytype,proto3,oneof" json:"applytype,omitempty"`
+	Datatype             *string                `protobuf:"bytes,67988590,opt,name=datatype,proto3,oneof" json:"datatype,omitempty"`
+	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Ismodifiable         *bool                  `protobuf:"varint,378567392,opt,name=ismodifiable,proto3,oneof" json:"ismodifiable,omitempty"`
-	Minimumengineversion string                 `protobuf:"bytes,447657876,opt,name=minimumengineversion,proto3" json:"minimumengineversion,omitempty"`
-	Parametername        string                 `protobuf:"bytes,318572308,opt,name=parametername,proto3" json:"parametername,omitempty"`
-	Parametervalue       string                 `protobuf:"bytes,471366210,opt,name=parametervalue,proto3" json:"parametervalue,omitempty"`
-	Source               string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
+	Minimumengineversion *string                `protobuf:"bytes,447657876,opt,name=minimumengineversion,proto3,oneof" json:"minimumengineversion,omitempty"`
+	Parametername        *string                `protobuf:"bytes,318572308,opt,name=parametername,proto3,oneof" json:"parametername,omitempty"`
+	Parametervalue       *string                `protobuf:"bytes,471366210,opt,name=parametervalue,proto3,oneof" json:"parametervalue,omitempty"`
+	Source               *string                `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -13146,8 +13146,8 @@ func (*Parameter) Descriptor() ([]byte, []int) {
 }
 
 func (x *Parameter) GetAllowedvalues() string {
-	if x != nil {
-		return x.Allowedvalues
+	if x != nil && x.Allowedvalues != nil {
+		return *x.Allowedvalues
 	}
 	return ""
 }
@@ -13160,22 +13160,22 @@ func (x *Parameter) GetApplymethod() ApplyMethod {
 }
 
 func (x *Parameter) GetApplytype() string {
-	if x != nil {
-		return x.Applytype
+	if x != nil && x.Applytype != nil {
+		return *x.Applytype
 	}
 	return ""
 }
 
 func (x *Parameter) GetDatatype() string {
-	if x != nil {
-		return x.Datatype
+	if x != nil && x.Datatype != nil {
+		return *x.Datatype
 	}
 	return ""
 }
 
 func (x *Parameter) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -13188,29 +13188,29 @@ func (x *Parameter) GetIsmodifiable() bool {
 }
 
 func (x *Parameter) GetMinimumengineversion() string {
-	if x != nil {
-		return x.Minimumengineversion
+	if x != nil && x.Minimumengineversion != nil {
+		return *x.Minimumengineversion
 	}
 	return ""
 }
 
 func (x *Parameter) GetParametername() string {
-	if x != nil {
-		return x.Parametername
+	if x != nil && x.Parametername != nil {
+		return *x.Parametername
 	}
 	return ""
 }
 
 func (x *Parameter) GetParametervalue() string {
-	if x != nil {
-		return x.Parametervalue
+	if x != nil && x.Parametervalue != nil {
+		return *x.Parametervalue
 	}
 	return ""
 }
 
 func (x *Parameter) GetSource() string {
-	if x != nil {
-		return x.Source
+	if x != nil && x.Source != nil {
+		return *x.Source
 	}
 	return ""
 }
@@ -13269,12 +13269,12 @@ func (x *PendingCloudwatchLogsExports) GetLogtypestoenable() []string {
 
 type PendingMaintenanceAction struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Action               string                 `protobuf:"bytes,175614240,opt,name=action,proto3" json:"action,omitempty"`
-	Autoappliedafterdate string                 `protobuf:"bytes,408069844,opt,name=autoappliedafterdate,proto3" json:"autoappliedafterdate,omitempty"`
-	Currentapplydate     string                 `protobuf:"bytes,92791415,opt,name=currentapplydate,proto3" json:"currentapplydate,omitempty"`
-	Description          string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Forcedapplydate      string                 `protobuf:"bytes,83582353,opt,name=forcedapplydate,proto3" json:"forcedapplydate,omitempty"`
-	Optinstatus          string                 `protobuf:"bytes,536182928,opt,name=optinstatus,proto3" json:"optinstatus,omitempty"`
+	Action               *string                `protobuf:"bytes,175614240,opt,name=action,proto3,oneof" json:"action,omitempty"`
+	Autoappliedafterdate *string                `protobuf:"bytes,408069844,opt,name=autoappliedafterdate,proto3,oneof" json:"autoappliedafterdate,omitempty"`
+	Currentapplydate     *string                `protobuf:"bytes,92791415,opt,name=currentapplydate,proto3,oneof" json:"currentapplydate,omitempty"`
+	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Forcedapplydate      *string                `protobuf:"bytes,83582353,opt,name=forcedapplydate,proto3,oneof" json:"forcedapplydate,omitempty"`
+	Optinstatus          *string                `protobuf:"bytes,536182928,opt,name=optinstatus,proto3,oneof" json:"optinstatus,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -13310,50 +13310,50 @@ func (*PendingMaintenanceAction) Descriptor() ([]byte, []int) {
 }
 
 func (x *PendingMaintenanceAction) GetAction() string {
-	if x != nil {
-		return x.Action
+	if x != nil && x.Action != nil {
+		return *x.Action
 	}
 	return ""
 }
 
 func (x *PendingMaintenanceAction) GetAutoappliedafterdate() string {
-	if x != nil {
-		return x.Autoappliedafterdate
+	if x != nil && x.Autoappliedafterdate != nil {
+		return *x.Autoappliedafterdate
 	}
 	return ""
 }
 
 func (x *PendingMaintenanceAction) GetCurrentapplydate() string {
-	if x != nil {
-		return x.Currentapplydate
+	if x != nil && x.Currentapplydate != nil {
+		return *x.Currentapplydate
 	}
 	return ""
 }
 
 func (x *PendingMaintenanceAction) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *PendingMaintenanceAction) GetForcedapplydate() string {
-	if x != nil {
-		return x.Forcedapplydate
+	if x != nil && x.Forcedapplydate != nil {
+		return *x.Forcedapplydate
 	}
 	return ""
 }
 
 func (x *PendingMaintenanceAction) GetOptinstatus() string {
-	if x != nil {
-		return x.Optinstatus
+	if x != nil && x.Optinstatus != nil {
+		return *x.Optinstatus
 	}
 	return ""
 }
 
 type PendingMaintenanceActionsMessage struct {
 	state                     protoimpl.MessageState               `protogen:"open.v1"`
-	Marker                    string                               `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker                    *string                              `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Pendingmaintenanceactions []*ResourcePendingMaintenanceActions `protobuf:"bytes,300063191,rep,name=pendingmaintenanceactions,proto3" json:"pendingmaintenanceactions,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -13390,8 +13390,8 @@ func (*PendingMaintenanceActionsMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *PendingMaintenanceActionsMessage) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -13407,18 +13407,18 @@ type PendingModifiedValues struct {
 	state                        protoimpl.MessageState        `protogen:"open.v1"`
 	Allocatedstorage             *int32                        `protobuf:"varint,463241784,opt,name=allocatedstorage,proto3,oneof" json:"allocatedstorage,omitempty"`
 	Backupretentionperiod        *int32                        `protobuf:"varint,411111671,opt,name=backupretentionperiod,proto3,oneof" json:"backupretentionperiod,omitempty"`
-	Cacertificateidentifier      string                        `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3" json:"cacertificateidentifier,omitempty"`
-	Dbinstanceclass              string                        `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3" json:"dbinstanceclass,omitempty"`
-	Dbinstanceidentifier         string                        `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3" json:"dbinstanceidentifier,omitempty"`
-	Dbsubnetgroupname            string                        `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
-	Engineversion                string                        `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Cacertificateidentifier      *string                       `protobuf:"bytes,471589144,opt,name=cacertificateidentifier,proto3,oneof" json:"cacertificateidentifier,omitempty"`
+	Dbinstanceclass              *string                       `protobuf:"bytes,423358041,opt,name=dbinstanceclass,proto3,oneof" json:"dbinstanceclass,omitempty"`
+	Dbinstanceidentifier         *string                       `protobuf:"bytes,272754580,opt,name=dbinstanceidentifier,proto3,oneof" json:"dbinstanceidentifier,omitempty"`
+	Dbsubnetgroupname            *string                       `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
+	Engineversion                *string                       `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Iops                         *int32                        `protobuf:"varint,1043585,opt,name=iops,proto3,oneof" json:"iops,omitempty"`
-	Licensemodel                 string                        `protobuf:"bytes,59641010,opt,name=licensemodel,proto3" json:"licensemodel,omitempty"`
-	Masteruserpassword           string                        `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3" json:"masteruserpassword,omitempty"`
+	Licensemodel                 *string                       `protobuf:"bytes,59641010,opt,name=licensemodel,proto3,oneof" json:"licensemodel,omitempty"`
+	Masteruserpassword           *string                       `protobuf:"bytes,326176122,opt,name=masteruserpassword,proto3,oneof" json:"masteruserpassword,omitempty"`
 	Multiaz                      *bool                         `protobuf:"varint,354702794,opt,name=multiaz,proto3,oneof" json:"multiaz,omitempty"`
 	Pendingcloudwatchlogsexports *PendingCloudwatchLogsExports `protobuf:"bytes,188240935,opt,name=pendingcloudwatchlogsexports,proto3" json:"pendingcloudwatchlogsexports,omitempty"`
 	Port                         *int32                        `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Storagetype                  string                        `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                  *string                       `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -13468,36 +13468,36 @@ func (x *PendingModifiedValues) GetBackupretentionperiod() int32 {
 }
 
 func (x *PendingModifiedValues) GetCacertificateidentifier() string {
-	if x != nil {
-		return x.Cacertificateidentifier
+	if x != nil && x.Cacertificateidentifier != nil {
+		return *x.Cacertificateidentifier
 	}
 	return ""
 }
 
 func (x *PendingModifiedValues) GetDbinstanceclass() string {
-	if x != nil {
-		return x.Dbinstanceclass
+	if x != nil && x.Dbinstanceclass != nil {
+		return *x.Dbinstanceclass
 	}
 	return ""
 }
 
 func (x *PendingModifiedValues) GetDbinstanceidentifier() string {
-	if x != nil {
-		return x.Dbinstanceidentifier
+	if x != nil && x.Dbinstanceidentifier != nil {
+		return *x.Dbinstanceidentifier
 	}
 	return ""
 }
 
 func (x *PendingModifiedValues) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
 
 func (x *PendingModifiedValues) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -13510,15 +13510,15 @@ func (x *PendingModifiedValues) GetIops() int32 {
 }
 
 func (x *PendingModifiedValues) GetLicensemodel() string {
-	if x != nil {
-		return x.Licensemodel
+	if x != nil && x.Licensemodel != nil {
+		return *x.Licensemodel
 	}
 	return ""
 }
 
 func (x *PendingModifiedValues) GetMasteruserpassword() string {
-	if x != nil {
-		return x.Masteruserpassword
+	if x != nil && x.Masteruserpassword != nil {
+		return *x.Masteruserpassword
 	}
 	return ""
 }
@@ -13545,8 +13545,8 @@ func (x *PendingModifiedValues) GetPort() int32 {
 }
 
 func (x *PendingModifiedValues) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -13641,7 +13641,7 @@ func (x *PromoteReadReplicaDBClusterResult) GetDbcluster() *DBCluster {
 
 type ProvisionedIopsNotAvailableInAZFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13677,8 +13677,8 @@ func (*ProvisionedIopsNotAvailableInAZFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *ProvisionedIopsNotAvailableInAZFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -13938,7 +13938,7 @@ func (x *RemoveFromGlobalClusterResult) GetGlobalcluster() *GlobalCluster {
 type RemoveRoleFromDBClusterMessage struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Dbclusteridentifier string                 `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Featurename         string                 `protobuf:"bytes,218369023,opt,name=featurename,proto3" json:"featurename,omitempty"`
+	Featurename         *string                `protobuf:"bytes,218369023,opt,name=featurename,proto3,oneof" json:"featurename,omitempty"`
 	Rolearn             string                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -13982,8 +13982,8 @@ func (x *RemoveRoleFromDBClusterMessage) GetDbclusteridentifier() string {
 }
 
 func (x *RemoveRoleFromDBClusterMessage) GetFeaturename() string {
-	if x != nil {
-		return x.Featurename
+	if x != nil && x.Featurename != nil {
+		return *x.Featurename
 	}
 	return ""
 }
@@ -14265,7 +14265,7 @@ func (x *ResetDBParameterGroupMessage) GetResetallparameters() bool {
 
 type ResourceNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14301,8 +14301,8 @@ func (*ResourceNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -14310,7 +14310,7 @@ func (x *ResourceNotFoundFault) GetMessage() string {
 type ResourcePendingMaintenanceActions struct {
 	state                           protoimpl.MessageState      `protogen:"open.v1"`
 	Pendingmaintenanceactiondetails []*PendingMaintenanceAction `protobuf:"bytes,358572378,rep,name=pendingmaintenanceactiondetails,proto3" json:"pendingmaintenanceactiondetails,omitempty"`
-	Resourceidentifier              string                      `protobuf:"bytes,279224111,opt,name=resourceidentifier,proto3" json:"resourceidentifier,omitempty"`
+	Resourceidentifier              *string                     `protobuf:"bytes,279224111,opt,name=resourceidentifier,proto3,oneof" json:"resourceidentifier,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -14353,8 +14353,8 @@ func (x *ResourcePendingMaintenanceActions) GetPendingmaintenanceactiondetails()
 }
 
 func (x *ResourcePendingMaintenanceActions) GetResourceidentifier() string {
-	if x != nil {
-		return x.Resourceidentifier
+	if x != nil && x.Resourceidentifier != nil {
+		return *x.Resourceidentifier
 	}
 	return ""
 }
@@ -14364,21 +14364,21 @@ type RestoreDBClusterFromSnapshotMessage struct {
 	Availabilityzones                []string                          `protobuf:"bytes,109527122,rep,name=availabilityzones,proto3" json:"availabilityzones,omitempty"`
 	Copytagstosnapshot               *bool                             `protobuf:"varint,457270425,opt,name=copytagstosnapshot,proto3,oneof" json:"copytagstosnapshot,omitempty"`
 	Dbclusteridentifier              string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbclusterparametergroupname      string                            `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
-	Dbsubnetgroupname                string                            `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
-	Databasename                     string                            `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
+	Dbclusterparametergroupname      *string                           `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
+	Dbsubnetgroupname                *string                           `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
+	Databasename                     *string                           `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
 	Deletionprotection               *bool                             `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Enablecloudwatchlogsexports      []string                          `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
 	Enableiamdatabaseauthentication  *bool                             `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
 	Engine                           string                            `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion                    string                            `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
-	Kmskeyid                         string                            `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Networktype                      string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
-	Optiongroupname                  string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
+	Engineversion                    *string                           `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
+	Kmskeyid                         *string                           `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Networktype                      *string                           `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
+	Optiongroupname                  *string                           `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
 	Port                             *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
 	Serverlessv2Scalingconfiguration *ServerlessV2ScalingConfiguration `protobuf:"bytes,357537595,opt,name=serverlessv2scalingconfiguration,proto3" json:"serverlessv2scalingconfiguration,omitempty"`
 	Snapshotidentifier               string                            `protobuf:"bytes,399355719,opt,name=snapshotidentifier,proto3" json:"snapshotidentifier,omitempty"`
-	Storagetype                      string                            `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                      *string                           `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Tags                             []*Tag                            `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Vpcsecuritygroupids              []string                          `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
@@ -14437,22 +14437,22 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetDbclusteridentifier() string {
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
@@ -14486,29 +14486,29 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetEngine() string {
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
@@ -14535,8 +14535,8 @@ func (x *RestoreDBClusterFromSnapshotMessage) GetSnapshotidentifier() string {
 }
 
 func (x *RestoreDBClusterFromSnapshotMessage) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -14602,20 +14602,20 @@ func (x *RestoreDBClusterFromSnapshotResult) GetDbcluster() *DBCluster {
 type RestoreDBClusterToPointInTimeMessage struct {
 	state                            protoimpl.MessageState            `protogen:"open.v1"`
 	Dbclusteridentifier              string                            `protobuf:"bytes,340406993,opt,name=dbclusteridentifier,proto3" json:"dbclusteridentifier,omitempty"`
-	Dbclusterparametergroupname      string                            `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3" json:"dbclusterparametergroupname,omitempty"`
-	Dbsubnetgroupname                string                            `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3" json:"dbsubnetgroupname,omitempty"`
+	Dbclusterparametergroupname      *string                           `protobuf:"bytes,385487703,opt,name=dbclusterparametergroupname,proto3,oneof" json:"dbclusterparametergroupname,omitempty"`
+	Dbsubnetgroupname                *string                           `protobuf:"bytes,84186031,opt,name=dbsubnetgroupname,proto3,oneof" json:"dbsubnetgroupname,omitempty"`
 	Deletionprotection               *bool                             `protobuf:"varint,504781905,opt,name=deletionprotection,proto3,oneof" json:"deletionprotection,omitempty"`
 	Enablecloudwatchlogsexports      []string                          `protobuf:"bytes,388544133,rep,name=enablecloudwatchlogsexports,proto3" json:"enablecloudwatchlogsexports,omitempty"`
 	Enableiamdatabaseauthentication  *bool                             `protobuf:"varint,463292667,opt,name=enableiamdatabaseauthentication,proto3,oneof" json:"enableiamdatabaseauthentication,omitempty"`
-	Kmskeyid                         string                            `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
-	Networktype                      string                            `protobuf:"bytes,349272270,opt,name=networktype,proto3" json:"networktype,omitempty"`
-	Optiongroupname                  string                            `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3" json:"optiongroupname,omitempty"`
+	Kmskeyid                         *string                           `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
+	Networktype                      *string                           `protobuf:"bytes,349272270,opt,name=networktype,proto3,oneof" json:"networktype,omitempty"`
+	Optiongroupname                  *string                           `protobuf:"bytes,303464901,opt,name=optiongroupname,proto3,oneof" json:"optiongroupname,omitempty"`
 	Port                             *int32                            `protobuf:"varint,46480583,opt,name=port,proto3,oneof" json:"port,omitempty"`
-	Restoretotime                    string                            `protobuf:"bytes,116850538,opt,name=restoretotime,proto3" json:"restoretotime,omitempty"`
-	Restoretype                      string                            `protobuf:"bytes,379354682,opt,name=restoretype,proto3" json:"restoretype,omitempty"`
+	Restoretotime                    *string                           `protobuf:"bytes,116850538,opt,name=restoretotime,proto3,oneof" json:"restoretotime,omitempty"`
+	Restoretype                      *string                           `protobuf:"bytes,379354682,opt,name=restoretype,proto3,oneof" json:"restoretype,omitempty"`
 	Serverlessv2Scalingconfiguration *ServerlessV2ScalingConfiguration `protobuf:"bytes,357537595,opt,name=serverlessv2scalingconfiguration,proto3" json:"serverlessv2scalingconfiguration,omitempty"`
 	Sourcedbclusteridentifier        string                            `protobuf:"bytes,319462008,opt,name=sourcedbclusteridentifier,proto3" json:"sourcedbclusteridentifier,omitempty"`
-	Storagetype                      string                            `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype                      *string                           `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	Tags                             []*Tag                            `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Uselatestrestorabletime          *bool                             `protobuf:"varint,434512618,opt,name=uselatestrestorabletime,proto3,oneof" json:"uselatestrestorabletime,omitempty"`
 	Vpcsecuritygroupids              []string                          `protobuf:"bytes,151967510,rep,name=vpcsecuritygroupids,proto3" json:"vpcsecuritygroupids,omitempty"`
@@ -14661,15 +14661,15 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetDbclusteridentifier() string {
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetDbclusterparametergroupname() string {
-	if x != nil {
-		return x.Dbclusterparametergroupname
+	if x != nil && x.Dbclusterparametergroupname != nil {
+		return *x.Dbclusterparametergroupname
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetDbsubnetgroupname() string {
-	if x != nil {
-		return x.Dbsubnetgroupname
+	if x != nil && x.Dbsubnetgroupname != nil {
+		return *x.Dbsubnetgroupname
 	}
 	return ""
 }
@@ -14696,22 +14696,22 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetEnableiamdatabaseauthenticatio
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetNetworktype() string {
-	if x != nil {
-		return x.Networktype
+	if x != nil && x.Networktype != nil {
+		return *x.Networktype
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetOptiongroupname() string {
-	if x != nil {
-		return x.Optiongroupname
+	if x != nil && x.Optiongroupname != nil {
+		return *x.Optiongroupname
 	}
 	return ""
 }
@@ -14724,15 +14724,15 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetPort() int32 {
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetRestoretotime() string {
-	if x != nil {
-		return x.Restoretotime
+	if x != nil && x.Restoretotime != nil {
+		return *x.Restoretotime
 	}
 	return ""
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetRestoretype() string {
-	if x != nil {
-		return x.Restoretype
+	if x != nil && x.Restoretype != nil {
+		return *x.Restoretype
 	}
 	return ""
 }
@@ -14752,8 +14752,8 @@ func (x *RestoreDBClusterToPointInTimeMessage) GetSourcedbclusteridentifier() st
 }
 
 func (x *RestoreDBClusterToPointInTimeMessage) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
@@ -14825,7 +14825,7 @@ func (x *RestoreDBClusterToPointInTimeResult) GetDbcluster() *DBCluster {
 
 type SNSInvalidTopicFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14861,15 +14861,15 @@ func (*SNSInvalidTopicFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SNSInvalidTopicFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SNSNoAuthorizationFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14905,15 +14905,15 @@ func (*SNSNoAuthorizationFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SNSNoAuthorizationFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SNSTopicArnNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14949,16 +14949,16 @@ func (*SNSTopicArnNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SNSTopicArnNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ServerlessV2ScalingConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxcapacity   float64                `protobuf:"fixed64,453778390,opt,name=maxcapacity,proto3" json:"maxcapacity,omitempty"`
-	Mincapacity   float64                `protobuf:"fixed64,195482820,opt,name=mincapacity,proto3" json:"mincapacity,omitempty"`
+	Maxcapacity   *float64               `protobuf:"fixed64,453778390,opt,name=maxcapacity,proto3,oneof" json:"maxcapacity,omitempty"`
+	Mincapacity   *float64               `protobuf:"fixed64,195482820,opt,name=mincapacity,proto3,oneof" json:"mincapacity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14994,23 +14994,23 @@ func (*ServerlessV2ScalingConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServerlessV2ScalingConfiguration) GetMaxcapacity() float64 {
-	if x != nil {
-		return x.Maxcapacity
+	if x != nil && x.Maxcapacity != nil {
+		return *x.Maxcapacity
 	}
 	return 0
 }
 
 func (x *ServerlessV2ScalingConfiguration) GetMincapacity() float64 {
-	if x != nil {
-		return x.Mincapacity
+	if x != nil && x.Mincapacity != nil {
+		return *x.Mincapacity
 	}
 	return 0
 }
 
 type ServerlessV2ScalingConfigurationInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maxcapacity   float64                `protobuf:"fixed64,453778390,opt,name=maxcapacity,proto3" json:"maxcapacity,omitempty"`
-	Mincapacity   float64                `protobuf:"fixed64,195482820,opt,name=mincapacity,proto3" json:"mincapacity,omitempty"`
+	Maxcapacity   *float64               `protobuf:"fixed64,453778390,opt,name=maxcapacity,proto3,oneof" json:"maxcapacity,omitempty"`
+	Mincapacity   *float64               `protobuf:"fixed64,195482820,opt,name=mincapacity,proto3,oneof" json:"mincapacity,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15046,22 +15046,22 @@ func (*ServerlessV2ScalingConfigurationInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServerlessV2ScalingConfigurationInfo) GetMaxcapacity() float64 {
-	if x != nil {
-		return x.Maxcapacity
+	if x != nil && x.Maxcapacity != nil {
+		return *x.Maxcapacity
 	}
 	return 0
 }
 
 func (x *ServerlessV2ScalingConfigurationInfo) GetMincapacity() float64 {
-	if x != nil {
-		return x.Mincapacity
+	if x != nil && x.Mincapacity != nil {
+		return *x.Mincapacity
 	}
 	return 0
 }
 
 type SharedSnapshotQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15097,15 +15097,15 @@ func (*SharedSnapshotQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SharedSnapshotQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SnapshotQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15141,15 +15141,15 @@ func (*SnapshotQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SnapshotQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SourceNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15185,8 +15185,8 @@ func (*SourceNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SourceNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -15369,7 +15369,7 @@ func (x *StopDBClusterResult) GetDbcluster() *DBCluster {
 
 type StorageQuotaExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15405,15 +15405,15 @@ func (*StorageQuotaExceededFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *StorageQuotaExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type StorageTypeNotSupportedFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15449,8 +15449,8 @@ func (*StorageTypeNotSupportedFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *StorageTypeNotSupportedFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -15458,8 +15458,8 @@ func (x *StorageTypeNotSupportedFault) GetMessage() string {
 type Subnet struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Subnetavailabilityzone *AvailabilityZone      `protobuf:"bytes,443128546,opt,name=subnetavailabilityzone,proto3" json:"subnetavailabilityzone,omitempty"`
-	Subnetidentifier       string                 `protobuf:"bytes,529146716,opt,name=subnetidentifier,proto3" json:"subnetidentifier,omitempty"`
-	Subnetstatus           string                 `protobuf:"bytes,370202379,opt,name=subnetstatus,proto3" json:"subnetstatus,omitempty"`
+	Subnetidentifier       *string                `protobuf:"bytes,529146716,opt,name=subnetidentifier,proto3,oneof" json:"subnetidentifier,omitempty"`
+	Subnetstatus           *string                `protobuf:"bytes,370202379,opt,name=subnetstatus,proto3,oneof" json:"subnetstatus,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -15502,22 +15502,22 @@ func (x *Subnet) GetSubnetavailabilityzone() *AvailabilityZone {
 }
 
 func (x *Subnet) GetSubnetidentifier() string {
-	if x != nil {
-		return x.Subnetidentifier
+	if x != nil && x.Subnetidentifier != nil {
+		return *x.Subnetidentifier
 	}
 	return ""
 }
 
 func (x *Subnet) GetSubnetstatus() string {
-	if x != nil {
-		return x.Subnetstatus
+	if x != nil && x.Subnetstatus != nil {
+		return *x.Subnetstatus
 	}
 	return ""
 }
 
 type SubnetAlreadyInUse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15553,15 +15553,15 @@ func (*SubnetAlreadyInUse) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubnetAlreadyInUse) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SubscriptionAlreadyExistFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15597,15 +15597,15 @@ func (*SubscriptionAlreadyExistFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubscriptionAlreadyExistFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SubscriptionCategoryNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15641,15 +15641,15 @@ func (*SubscriptionCategoryNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubscriptionCategoryNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SubscriptionNotFoundFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15685,8 +15685,8 @@ func (*SubscriptionNotFoundFault) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubscriptionNotFoundFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -15789,8 +15789,8 @@ func (x *SwitchoverGlobalClusterResult) GetGlobalcluster() *GlobalCluster {
 
 type Tag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Key           *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15826,15 +15826,15 @@ func (*Tag) Descriptor() ([]byte, []int) {
 }
 
 func (x *Tag) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *Tag) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -15885,7 +15885,7 @@ func (x *TagListMessage) GetTaglist() []*Tag {
 
 type Timezone struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timezonename  string                 `protobuf:"bytes,169004074,opt,name=timezonename,proto3" json:"timezonename,omitempty"`
+	Timezonename  *string                `protobuf:"bytes,169004074,opt,name=timezonename,proto3,oneof" json:"timezonename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15921,8 +15921,8 @@ func (*Timezone) Descriptor() ([]byte, []int) {
 }
 
 func (x *Timezone) GetTimezonename() string {
-	if x != nil {
-		return x.Timezonename
+	if x != nil && x.Timezonename != nil {
+		return *x.Timezonename
 	}
 	return ""
 }
@@ -15930,9 +15930,9 @@ func (x *Timezone) GetTimezonename() string {
 type UpgradeTarget struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Autoupgrade             *bool                  `protobuf:"varint,459829255,opt,name=autoupgrade,proto3,oneof" json:"autoupgrade,omitempty"`
-	Description             string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Engine                  string                 `protobuf:"bytes,459347292,opt,name=engine,proto3" json:"engine,omitempty"`
-	Engineversion           string                 `protobuf:"bytes,44953462,opt,name=engineversion,proto3" json:"engineversion,omitempty"`
+	Description             *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Engine                  *string                `protobuf:"bytes,459347292,opt,name=engine,proto3,oneof" json:"engine,omitempty"`
+	Engineversion           *string                `protobuf:"bytes,44953462,opt,name=engineversion,proto3,oneof" json:"engineversion,omitempty"`
 	Ismajorversionupgrade   *bool                  `protobuf:"varint,371376543,opt,name=ismajorversionupgrade,proto3,oneof" json:"ismajorversionupgrade,omitempty"`
 	Supportsglobaldatabases *bool                  `protobuf:"varint,169786221,opt,name=supportsglobaldatabases,proto3,oneof" json:"supportsglobaldatabases,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -15977,22 +15977,22 @@ func (x *UpgradeTarget) GetAutoupgrade() bool {
 }
 
 func (x *UpgradeTarget) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *UpgradeTarget) GetEngine() string {
-	if x != nil {
-		return x.Engine
+	if x != nil && x.Engine != nil {
+		return *x.Engine
 	}
 	return ""
 }
 
 func (x *UpgradeTarget) GetEngineversion() string {
-	if x != nil {
-		return x.Engineversion
+	if x != nil && x.Engineversion != nil {
+		return *x.Engineversion
 	}
 	return ""
 }
@@ -16060,7 +16060,7 @@ type ValidStorageOptions struct {
 	Iopstostorageratio []*DoubleRange         `protobuf:"bytes,247385970,rep,name=iopstostorageratio,proto3" json:"iopstostorageratio,omitempty"`
 	Provisionediops    []*Range               `protobuf:"bytes,98596101,rep,name=provisionediops,proto3" json:"provisionediops,omitempty"`
 	Storagesize        []*Range               `protobuf:"bytes,369255464,rep,name=storagesize,proto3" json:"storagesize,omitempty"`
-	Storagetype        string                 `protobuf:"bytes,154478743,opt,name=storagetype,proto3" json:"storagetype,omitempty"`
+	Storagetype        *string                `protobuf:"bytes,154478743,opt,name=storagetype,proto3,oneof" json:"storagetype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -16117,16 +16117,16 @@ func (x *ValidStorageOptions) GetStoragesize() []*Range {
 }
 
 func (x *ValidStorageOptions) GetStoragetype() string {
-	if x != nil {
-		return x.Storagetype
+	if x != nil && x.Storagetype != nil {
+		return *x.Storagetype
 	}
 	return ""
 }
 
 type VpcSecurityGroupMembership struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Status             string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
-	Vpcsecuritygroupid string                 `protobuf:"bytes,384421317,opt,name=vpcsecuritygroupid,proto3" json:"vpcsecuritygroupid,omitempty"`
+	Status             *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Vpcsecuritygroupid *string                `protobuf:"bytes,384421317,opt,name=vpcsecuritygroupid,proto3,oneof" json:"vpcsecuritygroupid,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -16162,15 +16162,15 @@ func (*VpcSecurityGroupMembership) Descriptor() ([]byte, []int) {
 }
 
 func (x *VpcSecurityGroupMembership) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *VpcSecurityGroupMembership) GetVpcsecuritygroupid() string {
-	if x != nil {
-		return x.Vpcsecuritygroupid
+	if x != nil && x.Vpcsecuritygroupid != nil {
+		return *x.Vpcsecuritygroupid
 	}
 	return ""
 }
@@ -16179,11 +16179,12 @@ var File_neptune_proto protoreflect.FileDescriptor
 
 const file_neptune_proto_rawDesc = "" +
 	"\n" +
-	"\rneptune.proto\x12\aneptune\x1a\fcommon.proto\x1a\taws.proto\"\x94\x01\n" +
+	"\rneptune.proto\x12\aneptune\x1a\fcommon.proto\x1a\taws.proto\"\xa9\x01\n" +
 	"\x19AddRoleToDBClusterMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12#\n" +
-	"\vfeaturename\x18\xff\x97\x90h \x01(\tR\vfeaturename\x12\x1c\n" +
-	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\"\x88\x01\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
+	"\vfeaturename\x18\xff\x97\x90h \x01(\tH\x00R\vfeaturename\x88\x01\x01\x12\x1c\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearnB\x0e\n" +
+	"\f_featurename\"\x88\x01\n" +
 	"(AddSourceIdentifierToSubscriptionMessage\x12-\n" +
 	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tR\x10sourceidentifier\x12-\n" +
 	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionname\"w\n" +
@@ -16197,48 +16198,61 @@ const file_neptune_proto_rawDesc = "" +
 	"\toptintype\x18\xee\xb5\xd4\xdd\x01 \x01(\tR\toptintype\x122\n" +
 	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifier\"\xa2\x01\n" +
 	"#ApplyPendingMaintenanceActionResult\x12{\n" +
-	"!resourcependingmaintenanceactions\x18\xc7ܻ\x11 \x01(\v2*.neptune.ResourcePendingMaintenanceActionsR!resourcependingmaintenanceactions\"9\n" +
-	"\x1aAuthorizationNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\")\n" +
-	"\x10AvailabilityZone\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"7\n" +
-	"\x18CertificateNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"{\n" +
-	"\fCharacterSet\x12;\n" +
-	"\x17charactersetdescription\x18\x8b\xf7\xdfI \x01(\tR\x17charactersetdescription\x12.\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\"}\n" +
+	"!resourcependingmaintenanceactions\x18\xc7ܻ\x11 \x01(\v2*.neptune.ResourcePendingMaintenanceActionsR!resourcependingmaintenanceactions\"J\n" +
+	"\x1aAuthorizationNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"7\n" +
+	"\x10AvailabilityZone\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"H\n" +
+	"\x18CertificateNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb6\x01\n" +
+	"\fCharacterSet\x12@\n" +
+	"\x17charactersetdescription\x18\x8b\xf7\xdfI \x01(\tH\x00R\x17charactersetdescription\x88\x01\x01\x123\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x01R\x10charactersetname\x88\x01\x01B\x1a\n" +
+	"\x18_charactersetdescriptionB\x13\n" +
+	"\x11_charactersetname\"}\n" +
 	"!CloudwatchLogsExportConfiguration\x12,\n" +
 	"\x0fdisablelogtypes\x18\xf9\xa1\xb0\xe1\x01 \x03(\tR\x0fdisablelogtypes\x12*\n" +
-	"\x0eenablelogtypes\x18Ω\xb5\xd6\x01 \x03(\tR\x0eenablelogtypes\"\xf6\x04\n" +
+	"\x0eenablelogtypes\x18Ω\xb5\xd6\x01 \x03(\tR\x0eenablelogtypes\"\xd4\x05\n" +
 	"\x1cClusterPendingModifiedValues\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x02R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x03R\x04iops\x88\x01\x01\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12l\n" +
-	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2%.neptune.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetypeB\x13\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x02R\x13dbclusteridentifier\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x03R\rengineversion\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x04R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x05R\x04iops\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x06R\vnetworktype\x88\x01\x01\x12l\n" +
+	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2%.neptune.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\aR\vstoragetype\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x18\n" +
-	"\x16_backupretentionperiodB#\n" +
+	"\x16_backupretentionperiodB\x16\n" +
+	"\x14_dbclusteridentifierB\x10\n" +
+	"\x0e_engineversionB#\n" +
 	"!_iamdatabaseauthenticationenabledB\a\n" +
-	"\x05_iops\"\xe6\x02\n" +
+	"\x05_iopsB\x0e\n" +
+	"\f_networktypeB\x0e\n" +
+	"\f_storagetype\"\xe6\x02\n" +
 	"\"CopyDBClusterParameterGroupMessage\x12\\\n" +
 	"'sourcedbclusterparametergroupidentifier\x18\xe2Է\xce\x01 \x01(\tR'sourcedbclusterparametergroupidentifier\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x12^\n" +
 	"(targetdbclusterparametergroupdescription\x18\xe5\xfe\xfb\xe2\x01 \x01(\tR(targetdbclusterparametergroupdescription\x12\\\n" +
 	"'targetdbclusterparametergroupidentifier\x18\x92\x86\xa8\x80\x01 \x01(\tR'targetdbclusterparametergroupidentifier\"\x82\x01\n" +
 	"!CopyDBClusterParameterGroupResult\x12]\n" +
-	"\x17dbclusterparametergroup\x18\x96\xa8\x87| \x01(\v2 .neptune.DBClusterParameterGroupR\x17dbclusterparametergroup\"\xe0\x02\n" +
+	"\x17dbclusterparametergroup\x18\x96\xa8\x87| \x01(\v2 .neptune.DBClusterParameterGroupR\x17dbclusterparametergroup\"\x88\x03\n" +
 	"\x1cCopyDBClusterSnapshotMessage\x12#\n" +
-	"\bcopytags\x18\xae\xae\xdb\xd4\x01 \x01(\bH\x00R\bcopytags\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12&\n" +
-	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x12P\n" +
+	"\bcopytags\x18\xae\xae\xdb\xd4\x01 \x01(\bH\x00R\bcopytags\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x12+\n" +
+	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tH\x02R\fpresignedurl\x88\x01\x01\x12P\n" +
 	"!sourcedbclustersnapshotidentifier\x18Ē\xa6\xa4\x01 \x01(\tR!sourcedbclustersnapshotidentifier\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x12O\n" +
 	"!targetdbclustersnapshotidentifier\x18\xd4\xdb\xfbX \x01(\tR!targetdbclustersnapshotidentifierB\v\n" +
-	"\t_copytags\"j\n" +
+	"\t_copytagsB\v\n" +
+	"\t_kmskeyidB\x0f\n" +
+	"\r_presignedurl\"j\n" +
 	"\x1bCopyDBClusterSnapshotResult\x12K\n" +
 	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x1a.neptune.DBClusterSnapshotR\x11dbclustersnapshot\"\xb4\x02\n" +
 	"\x1bCopyDBParameterGroupMessage\x12N\n" +
@@ -16254,54 +16268,79 @@ const file_neptune_proto_rawDesc = "" +
 	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
 	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12$\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\"\x95\x04\n" +
-	"\x1dCreateDBClusterEndpointOutput\x121\n" +
-	"\x12customendpointtype\x18\x8cɥN \x01(\tR\x12customendpointtype\x126\n" +
-	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tR\x14dbclusterendpointarn\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12T\n" +
-	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tR#dbclusterendpointresourceidentifier\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12&\n" +
-	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\"\xf6\x05\n" +
+	"\x1dCreateDBClusterEndpointOutput\x126\n" +
+	"\x12customendpointtype\x18\x8cɥN \x01(\tH\x00R\x12customendpointtype\x88\x01\x01\x12;\n" +
+	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tH\x01R\x14dbclusterendpointarn\x88\x01\x01\x12I\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tH\x02R\x1bdbclusterendpointidentifier\x88\x01\x01\x12Y\n" +
+	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tH\x03R#dbclusterendpointresourceidentifier\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x04R\x13dbclusteridentifier\x88\x01\x01\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x05R\bendpoint\x88\x01\x01\x12+\n" +
+	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tH\x06R\fendpointtype\x88\x01\x01\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
-	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xab\r\n" +
+	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\aR\x06status\x88\x01\x01B\x15\n" +
+	"\x13_customendpointtypeB\x17\n" +
+	"\x15_dbclusterendpointarnB\x1e\n" +
+	"\x1c_dbclusterendpointidentifierB&\n" +
+	"$_dbclusterendpointresourceidentifierB\x16\n" +
+	"\x14_dbclusteridentifierB\v\n" +
+	"\t_endpointB\x0f\n" +
+	"\r_endpointtypeB\t\n" +
+	"\a_status\"\xda\x10\n" +
 	"\x16CreateDBClusterMessage\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x00R\x15backupretentionperiod\x88\x01\x01\x12.\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x01R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x02R\x12deletionprotection\x88\x01\x01\x12D\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x00R\x15backupretentionperiod\x88\x01\x01\x123\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x01R\x10charactersetname\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x03R\x1bdbclusterparametergroupname\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x04R\x11dbsubnetgroupname\x88\x01\x01\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x05R\fdatabasename\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x06R\x12deletionprotection\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x03R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x122\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x04R\x04port\x88\x01\x01\x12&\n" +
-	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tR\fpresignedurl\x127\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12D\n" +
-	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tR\x1breplicationsourceidentifier\x12y\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\aR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\bR\rengineversion\x88\x01\x01\x12@\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\tR\x17globalclusteridentifier\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\n" +
+	"R\bkmskeyid\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\vR\x12masteruserpassword\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\fR\x0emasterusername\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\rR\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x0eR\x0foptiongroupname\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x0fR\x04port\x88\x01\x01\x12+\n" +
+	"\fpresignedurl\x18\xbc\x95\xb6\x9f\x01 \x01(\tH\x10R\fpresignedurl\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x11R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH\x12R\x1apreferredmaintenancewindow\x88\x01\x01\x12I\n" +
+	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tH\x13R\x1breplicationsourceidentifier\x88\x01\x01\x12y\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).neptune.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x05R\x10storageencrypted\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12$\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x14R\x10storageencrypted\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x15R\vstoragetype\x88\x01\x01\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x18\n" +
-	"\x16_backupretentionperiodB\x15\n" +
-	"\x13_copytagstosnapshotB\x15\n" +
+	"\x16_backupretentionperiodB\x13\n" +
+	"\x11_charactersetnameB\x15\n" +
+	"\x13_copytagstosnapshotB\x1e\n" +
+	"\x1c_dbclusterparametergroupnameB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x0f\n" +
+	"\r_databasenameB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
-	" _enableiamdatabaseauthenticationB\a\n" +
-	"\x05_portB\x13\n" +
-	"\x11_storageencrypted\"\xf3\x01\n" +
+	" _enableiamdatabaseauthenticationB\x10\n" +
+	"\x0e_engineversionB\x1a\n" +
+	"\x18_globalclusteridentifierB\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_masteruserpasswordB\x11\n" +
+	"\x0f_masterusernameB\x0e\n" +
+	"\f_networktypeB\x12\n" +
+	"\x10_optiongroupnameB\a\n" +
+	"\x05_portB\x0f\n" +
+	"\r_presignedurlB\x18\n" +
+	"\x16_preferredbackupwindowB\x1d\n" +
+	"\x1b_preferredmaintenancewindowB\x1e\n" +
+	"\x1c_replicationsourceidentifierB\x13\n" +
+	"\x11_storageencryptedB\x0e\n" +
+	"\f_storagetype\"\xf3\x01\n" +
 	"$CreateDBClusterParameterGroupMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12:\n" +
 	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12#\n" +
@@ -16316,67 +16355,88 @@ const file_neptune_proto_rawDesc = "" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\"l\n" +
 	"\x1dCreateDBClusterSnapshotResult\x12K\n" +
-	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x1a.neptune.DBClusterSnapshotR\x11dbclustersnapshot\"\x8b\x13\n" +
+	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x1a.neptune.DBClusterSnapshotR\x11dbclustersnapshot\"\xa2\x17\n" +
 	"\x17CreateDBInstanceMessage\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12.\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x123\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tH\x02R\x10availabilityzone\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x03R\x15backupretentionperiod\x88\x01\x01\x123\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x04R\x10charactersetname\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x05R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12,\n" +
 	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12\x19\n" +
-	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tR\x06dbname\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12.\n" +
-	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x04R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12D\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12\x1e\n" +
+	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tH\x06R\x06dbname\x88\x01\x01\x12:\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\aR\x14dbparametergroupname\x88\x01\x01\x12.\n" +
+	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\bR\x11dbsubnetgroupname\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\tR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\n" +
+	"R\x06domain\x88\x01\x01\x124\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\vR\x11domainiamrolename\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x06R\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\aR\x04iops\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x122\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\bR\x12monitoringinterval\x88\x01\x01\x12/\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\tR\amultiaz\x88\x01\x01\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\n" +
-	"R\x04port\x88\x01\x01\x127\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\vR\rpromotiontier\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\fR\x12publiclyaccessible\x88\x01\x01\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\rR\x10storageencrypted\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12$\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x12-\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x127\n" +
-	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tR\x15tdecredentialpassword\x12\x1d\n" +
-	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\x123\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\fR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\rR\x19enableperformanceinsights\x88\x01\x01\x12\x1a\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x0eR\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x0fR\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x10R\bkmskeyid\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x11R\flicensemodel\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x12R\x12masteruserpassword\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\x13R\x0emasterusername\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x14R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x15R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x16R\amultiaz\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x17R\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x18R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x19R\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x1aR\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH\x1bR\x1apreferredmaintenancewindow\x88\x01\x01\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x1cR\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x1dR\x12publiclyaccessible\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x1eR\x10storageencrypted\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x1fR\vstoragetype\x88\x01\x01\x12$\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x122\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH R\x10tdecredentialarn\x88\x01\x01\x12<\n" +
+	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tH!R\x15tdecredentialpassword\x88\x01\x01\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH\"R\btimezone\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
-	"\x18_autominorversionupgradeB\x18\n" +
-	"\x16_backupretentionperiodB\x15\n" +
-	"\x13_copytagstosnapshotB\x15\n" +
-	"\x13_deletionprotectionB\"\n" +
+	"\x18_autominorversionupgradeB\x13\n" +
+	"\x11_availabilityzoneB\x18\n" +
+	"\x16_backupretentionperiodB\x13\n" +
+	"\x11_charactersetnameB\x15\n" +
+	"\x13_copytagstosnapshotB\t\n" +
+	"\a_dbnameB\x17\n" +
+	"\x15_dbparametergroupnameB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x15\n" +
+	"\x13_deletionprotectionB\t\n" +
+	"\a_domainB\x14\n" +
+	"\x12_domainiamrolenameB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\a\n" +
-	"\x05_iopsB\x15\n" +
-	"\x13_monitoringintervalB\n" +
+	"\x1a_enableperformanceinsightsB\x10\n" +
+	"\x0e_engineversionB\a\n" +
+	"\x05_iopsB\v\n" +
+	"\t_kmskeyidB\x0f\n" +
+	"\r_licensemodelB\x15\n" +
+	"\x13_masteruserpasswordB\x11\n" +
+	"\x0f_masterusernameB\x15\n" +
+	"\x13_monitoringintervalB\x14\n" +
+	"\x12_monitoringrolearnB\n" +
 	"\n" +
-	"\b_multiazB\a\n" +
-	"\x05_portB\x10\n" +
+	"\b_multiazB\x12\n" +
+	"\x10_optiongroupnameB\x1e\n" +
+	"\x1c_performanceinsightskmskeyidB\a\n" +
+	"\x05_portB\x18\n" +
+	"\x16_preferredbackupwindowB\x1d\n" +
+	"\x1b_preferredmaintenancewindowB\x10\n" +
 	"\x0e_promotiontierB\x15\n" +
 	"\x13_publiclyaccessibleB\x13\n" +
-	"\x11_storageencrypted\"Q\n" +
+	"\x11_storageencryptedB\x0e\n" +
+	"\f_storagetypeB\x13\n" +
+	"\x11_tdecredentialarnB\x18\n" +
+	"\x16_tdecredentialpasswordB\v\n" +
+	"\t_timezone\"Q\n" +
 	"\x16CreateDBInstanceResult\x127\n" +
 	"\n" +
 	"dbinstance\x18Ჩ\xfb\x01 \x01(\v2\x13.neptune.DBInstanceR\n" +
@@ -16394,379 +16454,574 @@ const file_neptune_proto_rawDesc = "" +
 	"\tsubnetids\x18\x93\xdf\xf8~ \x03(\tR\tsubnetids\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\"]\n" +
 	"\x19CreateDBSubnetGroupResult\x12@\n" +
-	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\v2\x16.neptune.DBSubnetGroupR\rdbsubnetgroup\"\xbc\x02\n" +
+	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\v2\x16.neptune.DBSubnetGroupR\rdbsubnetgroup\"\xd0\x02\n" +
 	"\x1eCreateEventSubscriptionMessage\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x12+\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12$\n" +
 	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tR\vsnstopicarn\x12 \n" +
-	"\tsourceids\x18\x83\xae\xe7\xf1\x01 \x03(\tR\tsourceids\x12!\n" +
+	"\tsourceids\x18\x83\xae\xe7\xf1\x01 \x03(\tR\tsourceids\x12&\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\x12-\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\tH\x01R\n" +
+	"sourcetype\x88\x01\x01\x12-\n" +
 	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionname\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tagsB\n" +
 	"\n" +
-	"\b_enabled\"m\n" +
+	"\b_enabledB\r\n" +
+	"\v_sourcetype\"m\n" +
 	"\x1dCreateEventSubscriptionResult\x12L\n" +
-	"\x11eventsubscription\x18\xc3嫦\x01 \x01(\v2\x1a.neptune.EventSubscriptionR\x11eventsubscription\"\xc7\x03\n" +
-	"\x1aCreateGlobalClusterMessage\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x00R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12@\n" +
-	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tR\x19sourcedbclusteridentifier\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x01R\x10storageencrypted\x88\x01\x01\x12$\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tagsB\x15\n" +
-	"\x13_deletionprotectionB\x13\n" +
+	"\x11eventsubscription\x18\xc3嫦\x01 \x01(\v2\x1a.neptune.EventSubscriptionR\x11eventsubscription\"\xa7\x04\n" +
+	"\x1aCreateGlobalClusterMessage\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x00R\fdatabasename\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x02R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x03R\rengineversion\x88\x01\x01\x12;\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12E\n" +
+	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tH\x04R\x19sourcedbclusteridentifier\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x05R\x10storageencrypted\x88\x01\x01\x12$\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tagsB\x0f\n" +
+	"\r_databasenameB\x15\n" +
+	"\x13_deletionprotectionB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x1c\n" +
+	"\x1a_sourcedbclusteridentifierB\x13\n" +
 	"\x11_storageencrypted\"]\n" +
 	"\x19CreateGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\xde\x15\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\xc0\x1b\n" +
 	"\tDBCluster\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12D\n" +
-	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x16.neptune.DBClusterRoleR\x0fassociatedroles\x126\n" +
-	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tR\x14automaticrestarttime\x12/\n" +
+	"\x0fassociatedroles\x18\xed\x97\xc7\xcc\x01 \x03(\v2\x16.neptune.DBClusterRoleR\x0fassociatedroles\x12;\n" +
+	"\x14automaticrestarttime\x18\xcf\xfb\xb9\xed\x01 \x01(\tH\x01R\x14automaticrestarttime\x88\x01\x01\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12.\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x12%\n" +
-	"\fclonegroupid\x18\xd1\xd4\xca\x1f \x01(\tR\fclonegroupid\x12/\n" +
-	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tR\x11clustercreatetime\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x02R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x11crossaccountclone\x18\xec\xdd\xfeM \x01(\bH\x03R\x11crossaccountclone\x88\x01\x01\x12%\n" +
-	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tR\fdbclusterarn\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12G\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x123\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x03R\x10charactersetname\x88\x01\x01\x12*\n" +
+	"\fclonegroupid\x18\xd1\xd4\xca\x1f \x01(\tH\x04R\fclonegroupid\x88\x01\x01\x124\n" +
+	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tH\x05R\x11clustercreatetime\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x06R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
+	"\x11crossaccountclone\x18\xec\xdd\xfeM \x01(\bH\aR\x11crossaccountclone\x88\x01\x01\x12*\n" +
+	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tH\bR\fdbclusterarn\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\tR\x13dbclusteridentifier\x88\x01\x01\x12G\n" +
 	"\x10dbclustermembers\x18\xbf\xb0\xc6t \x03(\v2\x18.neptune.DBClusterMemberR\x10dbclustermembers\x12p\n" +
-	"\x1fdbclusteroptiongroupmemberships\x18\xbb\xd8\xdfu \x03(\v2#.neptune.DBClusterOptionGroupStatusR\x1fdbclusteroptiongroupmemberships\x12;\n" +
-	"\x17dbclusterparametergroup\x18\x96\xa8\x87| \x01(\tR\x17dbclusterparametergroup\x12(\n" +
-	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\tR\rdbsubnetgroup\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x123\n" +
-	"\x13dbclusterresourceid\x18\xdb\xd9\xf7` \x01(\tR\x13dbclusterresourceid\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x04R\x12deletionprotection\x88\x01\x01\x129\n" +
-	"\x16earliestrestorabletime\x18\x93\x80\x8eH \x01(\tR\x16earliestrestorabletime\x12F\n" +
-	"\x1cenabledcloudwatchlogsexports\x18\x95\x9a\xfa\x94\x01 \x03(\tR\x1cenabledcloudwatchlogsexports\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x05R iamdatabaseauthenticationenabled\x88\x01\x01\x12Y\n" +
-	"&iooptimizednextallowedmodificationtime\x18\xa9\xc0\xc5b \x01(\tR&iooptimizednextallowedmodificationtime\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x125\n" +
-	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tR\x14latestrestorabletime\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x06R\amultiaz\x88\x01\x01\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12^\n" +
-	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2%.neptune.ClusterPendingModifiedValuesR\x15pendingmodifiedvalues\x12+\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tR\x0fpercentprogress\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\aR\x04port\x88\x01\x01\x127\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12:\n" +
-	"\x16readreplicaidentifiers\x18\xee\xec\xfd\xf9\x01 \x03(\tR\x16readreplicaidentifiers\x12*\n" +
-	"\x0ereaderendpoint\x18\xbc\xfb\xc3\xe5\x01 \x01(\tR\x0ereaderendpoint\x12D\n" +
-	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tR\x1breplicationsourceidentifier\x12}\n" +
-	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2-.neptune.ServerlessV2ScalingConfigurationInfoR serverlessv2scalingconfiguration\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\bR\x10storageencrypted\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12U\n" +
+	"\x1fdbclusteroptiongroupmemberships\x18\xbb\xd8\xdfu \x03(\v2#.neptune.DBClusterOptionGroupStatusR\x1fdbclusteroptiongroupmemberships\x12@\n" +
+	"\x17dbclusterparametergroup\x18\x96\xa8\x87| \x01(\tH\n" +
+	"R\x17dbclusterparametergroup\x88\x01\x01\x12-\n" +
+	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\tH\vR\rdbsubnetgroup\x88\x01\x01\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\fR\fdatabasename\x88\x01\x01\x128\n" +
+	"\x13dbclusterresourceid\x18\xdb\xd9\xf7` \x01(\tH\rR\x13dbclusterresourceid\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x0eR\x12deletionprotection\x88\x01\x01\x12>\n" +
+	"\x16earliestrestorabletime\x18\x93\x80\x8eH \x01(\tH\x0fR\x16earliestrestorabletime\x88\x01\x01\x12F\n" +
+	"\x1cenabledcloudwatchlogsexports\x18\x95\x9a\xfa\x94\x01 \x03(\tR\x1cenabledcloudwatchlogsexports\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x10R\bendpoint\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x11R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x12R\rengineversion\x88\x01\x01\x12@\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x13R\x17globalclusteridentifier\x88\x01\x01\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x14R\fhostedzoneid\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x15R iamdatabaseauthenticationenabled\x88\x01\x01\x12^\n" +
+	"&iooptimizednextallowedmodificationtime\x18\xa9\xc0\xc5b \x01(\tH\x16R&iooptimizednextallowedmodificationtime\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x17R\bkmskeyid\x88\x01\x01\x12:\n" +
+	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tH\x18R\x14latestrestorabletime\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\x19R\x0emasterusername\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x1aR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1bR\vnetworktype\x88\x01\x01\x12^\n" +
+	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2%.neptune.ClusterPendingModifiedValuesR\x15pendingmodifiedvalues\x120\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\tH\x1cR\x0fpercentprogress\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x1dR\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x1eR\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH\x1fR\x1apreferredmaintenancewindow\x88\x01\x01\x12:\n" +
+	"\x16readreplicaidentifiers\x18\xee\xec\xfd\xf9\x01 \x03(\tR\x16readreplicaidentifiers\x12/\n" +
+	"\x0ereaderendpoint\x18\xbc\xfb\xc3\xe5\x01 \x01(\tH R\x0ereaderendpoint\x88\x01\x01\x12I\n" +
+	"\x1breplicationsourceidentifier\x18\x88\x8a\xbb\xce\x01 \x01(\tH!R\x1breplicationsourceidentifier\x88\x01\x01\x12}\n" +
+	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2-.neptune.ServerlessV2ScalingConfigurationInfoR serverlessv2scalingconfiguration\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\"R\x06status\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH#R\x10storageencrypted\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH$R\vstoragetype\x88\x01\x01\x12U\n" +
 	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2#.neptune.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB\x13\n" +
-	"\x11_allocatedstorageB\x18\n" +
-	"\x16_backupretentionperiodB\x15\n" +
+	"\x11_allocatedstorageB\x17\n" +
+	"\x15_automaticrestarttimeB\x18\n" +
+	"\x16_backupretentionperiodB\x13\n" +
+	"\x11_charactersetnameB\x0f\n" +
+	"\r_clonegroupidB\x14\n" +
+	"\x12_clustercreatetimeB\x15\n" +
 	"\x13_copytagstosnapshotB\x14\n" +
-	"\x12_crossaccountcloneB\x15\n" +
-	"\x13_deletionprotectionB#\n" +
-	"!_iamdatabaseauthenticationenabledB\n" +
+	"\x12_crossaccountcloneB\x0f\n" +
+	"\r_dbclusterarnB\x16\n" +
+	"\x14_dbclusteridentifierB\x1a\n" +
+	"\x18_dbclusterparametergroupB\x10\n" +
+	"\x0e_dbsubnetgroupB\x0f\n" +
+	"\r_databasenameB\x16\n" +
+	"\x14_dbclusterresourceidB\x15\n" +
+	"\x13_deletionprotectionB\x19\n" +
+	"\x17_earliestrestorabletimeB\v\n" +
+	"\t_endpointB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x1a\n" +
+	"\x18_globalclusteridentifierB\x0f\n" +
+	"\r_hostedzoneidB#\n" +
+	"!_iamdatabaseauthenticationenabledB)\n" +
+	"'_iooptimizednextallowedmodificationtimeB\v\n" +
+	"\t_kmskeyidB\x17\n" +
+	"\x15_latestrestorabletimeB\x11\n" +
+	"\x0f_masterusernameB\n" +
 	"\n" +
-	"\b_multiazB\a\n" +
-	"\x05_portB\x13\n" +
-	"\x11_storageencrypted\":\n" +
-	"\x1bDBClusterAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x89\x04\n" +
-	"\x11DBClusterEndpoint\x121\n" +
-	"\x12customendpointtype\x18\x8cɥN \x01(\tR\x12customendpointtype\x126\n" +
-	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tR\x14dbclusterendpointarn\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12T\n" +
-	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tR#dbclusterendpointresourceidentifier\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12&\n" +
-	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
+	"\b_multiazB\x0e\n" +
+	"\f_networktypeB\x12\n" +
+	"\x10_percentprogressB\a\n" +
+	"\x05_portB\x18\n" +
+	"\x16_preferredbackupwindowB\x1d\n" +
+	"\x1b_preferredmaintenancewindowB\x11\n" +
+	"\x0f_readerendpointB\x1e\n" +
+	"\x1c_replicationsourceidentifierB\t\n" +
+	"\a_statusB\x13\n" +
+	"\x11_storageencryptedB\x0e\n" +
+	"\f_storagetype\"K\n" +
+	"\x1bDBClusterAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xea\x05\n" +
+	"\x11DBClusterEndpoint\x126\n" +
+	"\x12customendpointtype\x18\x8cɥN \x01(\tH\x00R\x12customendpointtype\x88\x01\x01\x12;\n" +
+	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tH\x01R\x14dbclusterendpointarn\x88\x01\x01\x12I\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tH\x02R\x1bdbclusterendpointidentifier\x88\x01\x01\x12Y\n" +
+	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tH\x03R#dbclusterendpointresourceidentifier\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x04R\x13dbclusteridentifier\x88\x01\x01\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x05R\bendpoint\x88\x01\x01\x12+\n" +
+	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tH\x06R\fendpointtype\x88\x01\x01\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
-	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"B\n" +
-	"#DBClusterEndpointAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x85\x01\n" +
+	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\aR\x06status\x88\x01\x01B\x15\n" +
+	"\x13_customendpointtypeB\x17\n" +
+	"\x15_dbclusterendpointarnB\x1e\n" +
+	"\x1c_dbclusterendpointidentifierB&\n" +
+	"$_dbclusterendpointresourceidentifierB\x16\n" +
+	"\x14_dbclusteridentifierB\v\n" +
+	"\t_endpointB\x0f\n" +
+	"\r_endpointtypeB\t\n" +
+	"\a_status\"S\n" +
+	"#DBClusterEndpointAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x95\x01\n" +
 	"\x18DBClusterEndpointMessage\x12N\n" +
-	"\x12dbclusterendpoints\x18\xf8Τ\x87\x01 \x03(\v2\x1a.neptune.DBClusterEndpointR\x12dbclusterendpoints\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"=\n" +
-	"\x1eDBClusterEndpointNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"B\n" +
-	"#DBClusterEndpointQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x99\x02\n" +
-	"\x0fDBClusterMember\x12G\n" +
-	"\x1ddbclusterparametergroupstatus\x18\xc0\xef\x90q \x01(\tR\x1ddbclusterparametergroupstatus\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x121\n" +
-	"\x0fisclusterwriter\x18\xf3\x92\xa9\xf1\x01 \x01(\bH\x00R\x0fisclusterwriter\x88\x01\x01\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x01R\rpromotiontier\x88\x01\x01B\x12\n" +
+	"\x12dbclusterendpoints\x18\xf8Τ\x87\x01 \x03(\v2\x1a.neptune.DBClusterEndpointR\x12dbclusterendpoints\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"N\n" +
+	"\x1eDBClusterEndpointNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#DBClusterEndpointQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xde\x02\n" +
+	"\x0fDBClusterMember\x12L\n" +
+	"\x1ddbclusterparametergroupstatus\x18\xc0\xef\x90q \x01(\tH\x00R\x1ddbclusterparametergroupstatus\x88\x01\x01\x12;\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x01R\x14dbinstanceidentifier\x88\x01\x01\x121\n" +
+	"\x0fisclusterwriter\x18\xf3\x92\xa9\xf1\x01 \x01(\bH\x02R\x0fisclusterwriter\x88\x01\x01\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x03R\rpromotiontier\x88\x01\x01B \n" +
+	"\x1e_dbclusterparametergroupstatusB\x17\n" +
+	"\x15_dbinstanceidentifierB\x12\n" +
 	"\x10_isclusterwriterB\x10\n" +
-	"\x0e_promotiontier\"e\n" +
+	"\x0e_promotiontier\"u\n" +
 	"\x10DBClusterMessage\x126\n" +
 	"\n" +
 	"dbclusters\x18\x99˔\xe2\x01 \x03(\v2\x12.neptune.DBClusterR\n" +
-	"dbclusters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"5\n" +
-	"\x16DBClusterNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"v\n" +
-	"\x1aDBClusterOptionGroupStatus\x12=\n" +
-	"\x18dbclusteroptiongroupname\x18\x83\xc9\xfd\v \x01(\tR\x18dbclusteroptiongroupname\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\x84\x02\n" +
-	"\x17DBClusterParameterGroup\x12B\n" +
-	"\x1adbclusterparametergrouparn\x18\xad\xa0\x91\xa1\x01 \x01(\tR\x1adbclusterparametergrouparn\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\"s\n" +
-	"\x1eDBClusterParameterGroupDetails\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x126\n" +
+	"dbclusters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"F\n" +
+	"\x16DBClusterNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa8\x01\n" +
+	"\x1aDBClusterOptionGroupStatus\x12B\n" +
+	"\x18dbclusteroptiongroupname\x18\x83\xc9\xfd\v \x01(\tH\x00R\x18dbclusteroptiongroupname\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x01R\x06status\x88\x01\x01B\x1b\n" +
+	"\x19_dbclusteroptiongroupnameB\t\n" +
+	"\a_status\"\x82\x03\n" +
+	"\x17DBClusterParameterGroup\x12G\n" +
+	"\x1adbclusterparametergrouparn\x18\xad\xa0\x91\xa1\x01 \x01(\tH\x00R\x1adbclusterparametergrouparn\x88\x01\x01\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x01R\x1bdbclusterparametergroupname\x88\x01\x01\x12?\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tH\x02R\x16dbparametergroupfamily\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01B\x1d\n" +
+	"\x1b_dbclusterparametergrouparnB\x1e\n" +
+	"\x1c_dbclusterparametergroupnameB\x19\n" +
+	"\x17_dbparametergroupfamilyB\x0e\n" +
+	"\f_description\"\x83\x01\n" +
+	"\x1eDBClusterParameterGroupDetails\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x126\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x12.neptune.ParameterR\n" +
-	"parameters\"j\n" +
-	"\"DBClusterParameterGroupNameMessage\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\"C\n" +
-	"$DBClusterParameterGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9d\x01\n" +
+	"parametersB\t\n" +
+	"\a_marker\"\x8f\x01\n" +
+	"\"DBClusterParameterGroupNameMessage\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x00R\x1bdbclusterparametergroupname\x88\x01\x01B\x1e\n" +
+	"\x1c_dbclusterparametergroupname\"T\n" +
+	"$DBClusterParameterGroupNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xad\x01\n" +
 	"\x1fDBClusterParameterGroupsMessage\x12_\n" +
-	"\x18dbclusterparametergroups\x18\x93\xb9\x85{ \x03(\v2 .neptune.DBClusterParameterGroupR\x18dbclusterparametergroups\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\":\n" +
-	"\x1bDBClusterQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"m\n" +
-	"\rDBClusterRole\x12#\n" +
-	"\vfeaturename\x18\xff\x97\x90h \x01(\tR\vfeaturename\x12\x1c\n" +
-	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\">\n" +
-	"\x1fDBClusterRoleAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aDBClusterRoleNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
-	"\x1fDBClusterRoleQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xce\b\n" +
+	"\x18dbclusterparametergroups\x18\x93\xb9\x85{ \x03(\v2 .neptune.DBClusterParameterGroupR\x18dbclusterparametergroups\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"K\n" +
+	"\x1bDBClusterQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa3\x01\n" +
+	"\rDBClusterRole\x12(\n" +
+	"\vfeaturename\x18\xff\x97\x90h \x01(\tH\x00R\vfeaturename\x88\x01\x01\x12!\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x01R\arolearn\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x02R\x06status\x88\x01\x01B\x0e\n" +
+	"\f_featurenameB\n" +
+	"\n" +
+	"\b_rolearnB\t\n" +
+	"\a_status\"O\n" +
+	"\x1fDBClusterRoleAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aDBClusterRoleNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fDBClusterRoleQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xba\v\n" +
 	"\x11DBClusterSnapshot\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12/\n" +
-	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x12/\n" +
-	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tR\x11clustercreatetime\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x126\n" +
-	"\x14dbclustersnapshotarn\x18\xbf\xec\xc5\xdf\x01 \x01(\tR\x14dbclustersnapshotarn\x12C\n" +
-	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x01R iamdatabaseauthenticationenabled\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x120\n" +
-	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05H\x02R\x0fpercentprogress\x88\x01\x01\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x03R\x04port\x88\x01\x01\x121\n" +
-	"\x12snapshotcreatetime\x18\xa5\xea\xc4P \x01(\tR\x12snapshotcreatetime\x12&\n" +
-	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottype\x12A\n" +
-	"\x1asourcedbclustersnapshotarn\x18\xb8\xf0\xf3# \x01(\tR\x1asourcedbclustersnapshotarn\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x04R\x10storageencrypted\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12\x18\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcidB\x13\n" +
-	"\x11_allocatedstorageB#\n" +
-	"!_iamdatabaseauthenticationenabledB\x12\n" +
+	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x124\n" +
+	"\x11clustercreatetime\x18\xe5\xb6\xe08 \x01(\tH\x01R\x11clustercreatetime\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x02R\x13dbclusteridentifier\x88\x01\x01\x12;\n" +
+	"\x14dbclustersnapshotarn\x18\xbf\xec\xc5\xdf\x01 \x01(\tH\x03R\x14dbclustersnapshotarn\x88\x01\x01\x12H\n" +
+	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tH\x04R\x1bdbclustersnapshotidentifier\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x05R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x06R\rengineversion\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\aR iamdatabaseauthenticationenabled\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\bR\bkmskeyid\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\tR\flicensemodel\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\n" +
+	"R\x0emasterusername\x88\x01\x01\x120\n" +
+	"\x0fpercentprogress\x18\xc6\xe0\xc2\x1f \x01(\x05H\vR\x0fpercentprogress\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\fR\x04port\x88\x01\x01\x126\n" +
+	"\x12snapshotcreatetime\x18\xa5\xea\xc4P \x01(\tH\rR\x12snapshotcreatetime\x88\x01\x01\x12+\n" +
+	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tH\x0eR\fsnapshottype\x88\x01\x01\x12F\n" +
+	"\x1asourcedbclustersnapshotarn\x18\xb8\xf0\xf3# \x01(\tH\x0fR\x1asourcedbclustersnapshotarn\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x10R\x06status\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x11R\x10storageencrypted\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x12R\vstoragetype\x88\x01\x01\x12\x1d\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x13R\x05vpcid\x88\x01\x01B\x13\n" +
+	"\x11_allocatedstorageB\x14\n" +
+	"\x12_clustercreatetimeB\x16\n" +
+	"\x14_dbclusteridentifierB\x17\n" +
+	"\x15_dbclustersnapshotarnB\x1e\n" +
+	"\x1c_dbclustersnapshotidentifierB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB#\n" +
+	"!_iamdatabaseauthenticationenabledB\v\n" +
+	"\t_kmskeyidB\x0f\n" +
+	"\r_licensemodelB\x11\n" +
+	"\x0f_masterusernameB\x12\n" +
 	"\x10_percentprogressB\a\n" +
-	"\x05_portB\x13\n" +
-	"\x11_storageencrypted\"B\n" +
-	"#DBClusterSnapshotAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"s\n" +
-	"\x1aDBClusterSnapshotAttribute\x12(\n" +
-	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12+\n" +
-	"\x0fattributevalues\x18\x96\xb8\xd8[ \x03(\tR\x0fattributevalues\"\xd2\x01\n" +
+	"\x05_portB\x15\n" +
+	"\x13_snapshotcreatetimeB\x0f\n" +
+	"\r_snapshottypeB\x1d\n" +
+	"\x1b_sourcedbclustersnapshotarnB\t\n" +
+	"\a_statusB\x13\n" +
+	"\x11_storageencryptedB\x0e\n" +
+	"\f_storagetypeB\b\n" +
+	"\x06_vpcid\"S\n" +
+	"#DBClusterSnapshotAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x8a\x01\n" +
+	"\x1aDBClusterSnapshotAttribute\x12-\n" +
+	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tH\x00R\rattributename\x88\x01\x01\x12+\n" +
+	"\x0fattributevalues\x18\x96\xb8\xd8[ \x03(\tR\x0fattributevaluesB\x10\n" +
+	"\x0e_attributename\"\xf7\x01\n" +
 	"!DBClusterSnapshotAttributesResult\x12h\n" +
-	"\x1bdbclustersnapshotattributes\x18\xa7\xfe\x84L \x03(\v2#.neptune.DBClusterSnapshotAttributeR\x1bdbclustersnapshotattributes\x12C\n" +
-	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\"\x84\x01\n" +
+	"\x1bdbclustersnapshotattributes\x18\xa7\xfe\x84L \x03(\v2#.neptune.DBClusterSnapshotAttributeR\x1bdbclustersnapshotattributes\x12H\n" +
+	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tH\x00R\x1bdbclustersnapshotidentifier\x88\x01\x01B\x1e\n" +
+	"\x1c_dbclustersnapshotidentifier\"\x94\x01\n" +
 	"\x18DBClusterSnapshotMessage\x12M\n" +
-	"\x12dbclustersnapshots\x18\xe9\xef\x8d\x19 \x03(\v2\x1a.neptune.DBClusterSnapshotR\x12dbclustersnapshots\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"=\n" +
-	"\x1eDBClusterSnapshotNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9f\a\n" +
-	"\x0fDBEngineVersion\x124\n" +
-	"\x13dbenginedescription\x18\xb2\xb0\x85\x93\x01 \x01(\tR\x13dbenginedescription\x12B\n" +
-	"\x1adbengineversiondescription\x18\xc4\xe8\xed\xfd\x01 \x01(\tR\x1adbengineversiondescription\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12J\n" +
-	"\x13defaultcharacterset\x18\xa0\x90\xd3I \x01(\v2\x15.neptune.CharacterSetR\x13defaultcharacterset\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x121\n" +
+	"\x12dbclustersnapshots\x18\xe9\xef\x8d\x19 \x03(\v2\x1a.neptune.DBClusterSnapshotR\x12dbclustersnapshots\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"N\n" +
+	"\x1eDBClusterSnapshotNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa7\b\n" +
+	"\x0fDBEngineVersion\x129\n" +
+	"\x13dbenginedescription\x18\xb2\xb0\x85\x93\x01 \x01(\tH\x00R\x13dbenginedescription\x88\x01\x01\x12G\n" +
+	"\x1adbengineversiondescription\x18\xc4\xe8\xed\xfd\x01 \x01(\tH\x01R\x1adbengineversiondescription\x88\x01\x01\x12?\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tH\x02R\x16dbparametergroupfamily\x88\x01\x01\x12J\n" +
+	"\x13defaultcharacterset\x18\xa0\x90\xd3I \x01(\v2\x15.neptune.CharacterSetR\x13defaultcharacterset\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x03R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x04R\rengineversion\x88\x01\x01\x121\n" +
 	"\x12exportablelogtypes\x18\x9d\xb3\xa6$ \x03(\tR\x12exportablelogtypes\x12Q\n" +
 	"\x16supportedcharactersets\x18栙\xa4\x01 \x03(\v2\x15.neptune.CharacterSetR\x16supportedcharactersets\x12D\n" +
 	"\x12supportedtimezones\x18\x90\x8c\xe75 \x03(\v2\x11.neptune.TimezoneR\x12supportedtimezones\x12@\n" +
-	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\x00R\x17supportsglobaldatabases\x88\x01\x01\x12W\n" +
-	"\"supportslogexportstocloudwatchlogs\x18\xe3\x8a\xd4\xdf\x01 \x01(\bH\x01R\"supportslogexportstocloudwatchlogs\x88\x01\x01\x128\n" +
-	"\x13supportsreadreplica\x18첡$ \x01(\bH\x02R\x13supportsreadreplica\x88\x01\x01\x12I\n" +
-	"\x12validupgradetarget\x18\xaf\xd6\xcaM \x03(\v2\x16.neptune.UpgradeTargetR\x12validupgradetargetB\x1a\n" +
+	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\x05R\x17supportsglobaldatabases\x88\x01\x01\x12W\n" +
+	"\"supportslogexportstocloudwatchlogs\x18\xe3\x8a\xd4\xdf\x01 \x01(\bH\x06R\"supportslogexportstocloudwatchlogs\x88\x01\x01\x128\n" +
+	"\x13supportsreadreplica\x18첡$ \x01(\bH\aR\x13supportsreadreplica\x88\x01\x01\x12I\n" +
+	"\x12validupgradetarget\x18\xaf\xd6\xcaM \x03(\v2\x16.neptune.UpgradeTargetR\x12validupgradetargetB\x16\n" +
+	"\x14_dbenginedescriptionB\x1d\n" +
+	"\x1b_dbengineversiondescriptionB\x19\n" +
+	"\x17_dbparametergroupfamilyB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x1a\n" +
 	"\x18_supportsglobaldatabasesB%\n" +
 	"#_supportslogexportstocloudwatchlogsB\x16\n" +
-	"\x14_supportsreadreplica\"}\n" +
+	"\x14_supportsreadreplica\"\x8d\x01\n" +
 	"\x16DBEngineVersionMessage\x12H\n" +
-	"\x10dbengineversions\x18\xf5ۿ\xd4\x01 \x03(\v2\x18.neptune.DBEngineVersionR\x10dbengineversions\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\xd2\x1a\n" +
+	"\x10dbengineversions\x18\xf5ۿ\xd4\x01 \x03(\v2\x18.neptune.DBEngineVersionR\x10dbengineversions\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"\xc6 \n" +
 	"\n" +
 	"DBInstance\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12@\n" +
-	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x12.\n" +
-	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tR\x10availabilityzone\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
-	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12.\n" +
-	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tR\x10charactersetname\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
-	"\rdbinstancearn\x18ȧ\x99\xf8\x01 \x01(\tR\rdbinstancearn\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12-\n" +
-	"\x10dbinstancestatus\x18㐧\x04 \x01(\tR\x10dbinstancestatus\x12\x19\n" +
-	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tR\x06dbname\x12P\n" +
+	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x01R\x17autominorversionupgrade\x88\x01\x01\x123\n" +
+	"\x10availabilityzone\x18\xf9\xeaպ\x01 \x01(\tH\x02R\x10availabilityzone\x88\x01\x01\x12=\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x03R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
+	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x04R\x17cacertificateidentifier\x88\x01\x01\x123\n" +
+	"\x10charactersetname\x18\xa4\xe1\xf5\xe8\x01 \x01(\tH\x05R\x10charactersetname\x88\x01\x01\x127\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x06R\x12copytagstosnapshot\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\aR\x13dbclusteridentifier\x88\x01\x01\x12-\n" +
+	"\rdbinstancearn\x18ȧ\x99\xf8\x01 \x01(\tH\bR\rdbinstancearn\x88\x01\x01\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\tR\x0fdbinstanceclass\x88\x01\x01\x12;\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\n" +
+	"R\x14dbinstanceidentifier\x88\x01\x01\x122\n" +
+	"\x10dbinstancestatus\x18㐧\x04 \x01(\tH\vR\x10dbinstancestatus\x88\x01\x01\x12\x1e\n" +
+	"\x06dbname\x18\xe9\xb5\xc7@ \x01(\tH\fR\x06dbname\x88\x01\x01\x12P\n" +
 	"\x11dbparametergroups\x18\x8b\xbf\xea) \x03(\v2\x1f.neptune.DBParameterGroupStatusR\x11dbparametergroups\x12R\n" +
 	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\v2\".neptune.DBSecurityGroupMembershipR\x10dbsecuritygroups\x12@\n" +
 	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\v2\x16.neptune.DBSubnetGroupR\rdbsubnetgroup\x12.\n" +
-	"\x0edbinstanceport\x18\x9c\xd1\xcc: \x01(\x05H\x04R\x0edbinstanceport\x88\x01\x01\x12(\n" +
-	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tR\rdbiresourceid\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x05R\x12deletionprotection\x88\x01\x01\x12K\n" +
+	"\x0edbinstanceport\x18\x9c\xd1\xcc: \x01(\x05H\rR\x0edbinstanceport\x88\x01\x01\x12-\n" +
+	"\rdbiresourceid\x18\xfc\xac\xb1\xe6\x01 \x01(\tH\x0eR\rdbiresourceid\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x0fR\x12deletionprotection\x88\x01\x01\x12K\n" +
 	"\x11domainmemberships\x18\x93\xf2\xb3\xa2\x01 \x03(\v2\x19.neptune.DomainMembershipR\x11domainmemberships\x12F\n" +
 	"\x1cenabledcloudwatchlogsexports\x18\x95\x9a\xfa\x94\x01 \x03(\tR\x1cenabledcloudwatchlogsexports\x120\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\v2\x11.neptune.EndpointR\bendpoint\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12G\n" +
-	"\x1denhancedmonitoringresourcearn\x18ّ\xa8o \x01(\tR\x1denhancedmonitoringresourcearn\x12R\n" +
-	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x06R iamdatabaseauthenticationenabled\x88\x01\x01\x122\n" +
-	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tR\x12instancecreatetime\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\aR\x04iops\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x125\n" +
-	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tR\x14latestrestorabletime\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12)\n" +
-	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tR\x0emasterusername\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\bR\x12monitoringinterval\x88\x01\x01\x12/\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\tR\amultiaz\x88\x01\x01\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12Z\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\v2\x11.neptune.EndpointR\bendpoint\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x10R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x11R\rengineversion\x88\x01\x01\x12L\n" +
+	"\x1denhancedmonitoringresourcearn\x18ّ\xa8o \x01(\tH\x12R\x1denhancedmonitoringresourcearn\x88\x01\x01\x12R\n" +
+	" iamdatabaseauthenticationenabled\x18\xf5\x92\xdaF \x01(\bH\x13R iamdatabaseauthenticationenabled\x88\x01\x01\x127\n" +
+	"\x12instancecreatetime\x18\xc0\xc7\xd6\xe4\x01 \x01(\tH\x14R\x12instancecreatetime\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x15R\x04iops\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x16R\bkmskeyid\x88\x01\x01\x12:\n" +
+	"\x14latestrestorabletime\x18\xe1\xf0\xd2q \x01(\tH\x17R\x14latestrestorabletime\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x18R\flicensemodel\x88\x01\x01\x12.\n" +
+	"\x0emasterusername\x18\x94\xb8\xcb4 \x01(\tH\x19R\x0emasterusername\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x1aR\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x1bR\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x1cR\amultiaz\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x1dR\vnetworktype\x88\x01\x01\x12Z\n" +
 	"\x16optiongroupmemberships\x18\xa5\ue44d\x01 \x03(\v2\x1e.neptune.OptionGroupMembershipR\x16optiongroupmemberships\x12W\n" +
 	"\x15pendingmodifiedvalues\x18\u0097\x90\x05 \x01(\v2\x1e.neptune.PendingModifiedValuesR\x15pendingmodifiedvalues\x12G\n" +
-	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH\n" +
-	"R\x1aperformanceinsightsenabled\x88\x01\x01\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x127\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\vR\rpromotiontier\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\fR\x12publiclyaccessible\x88\x01\x01\x12K\n" +
+	"\x1aperformanceinsightsenabled\x18گ\xa1\xba\x01 \x01(\bH\x1eR\x1aperformanceinsightsenabled\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x1fR\x1bperformanceinsightskmskeyid\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH R\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH!R\x1apreferredmaintenancewindow\x88\x01\x01\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\"R\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH#R\x12publiclyaccessible\x88\x01\x01\x12K\n" +
 	"\x1freadreplicadbclusteridentifiers\x18\xbc\x83\xb5S \x03(\tR\x1freadreplicadbclusteridentifiers\x12M\n" +
-	" readreplicadbinstanceidentifiers\x18\xbb\xda\xe5| \x03(\tR readreplicadbinstanceidentifiers\x12X\n" +
-	"%readreplicasourcedbinstanceidentifier\x18\xd1Ԍ\x92\x01 \x01(\tR%readreplicasourcedbinstanceidentifier\x12?\n" +
-	"\x19secondaryavailabilityzone\x18\xbd\x98\x82m \x01(\tR\x19secondaryavailabilityzone\x12C\n" +
+	" readreplicadbinstanceidentifiers\x18\xbb\xda\xe5| \x03(\tR readreplicadbinstanceidentifiers\x12]\n" +
+	"%readreplicasourcedbinstanceidentifier\x18\xd1Ԍ\x92\x01 \x01(\tH$R%readreplicasourcedbinstanceidentifier\x88\x01\x01\x12D\n" +
+	"\x19secondaryavailabilityzone\x18\xbd\x98\x82m \x01(\tH%R\x19secondaryavailabilityzone\x88\x01\x01\x12C\n" +
 	"\vstatusinfos\x18\xb9\xe7\x8e\xc9\x01 \x03(\v2\x1d.neptune.DBInstanceStatusInfoR\vstatusinfos\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\rR\x10storageencrypted\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12-\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x12\x1d\n" +
-	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\x12U\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH&R\x10storageencrypted\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH'R\vstoragetype\x88\x01\x01\x122\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH(R\x10tdecredentialarn\x88\x01\x01\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH)R\btimezone\x88\x01\x01\x12U\n" +
 	"\x11vpcsecuritygroups\x18\x87\xeb\x9e\xdd\x01 \x03(\v2#.neptune.VpcSecurityGroupMembershipR\x11vpcsecuritygroupsB\x13\n" +
 	"\x11_allocatedstorageB\x1a\n" +
-	"\x18_autominorversionupgradeB\x18\n" +
-	"\x16_backupretentionperiodB\x15\n" +
-	"\x13_copytagstosnapshotB\x11\n" +
-	"\x0f_dbinstanceportB\x15\n" +
-	"\x13_deletionprotectionB#\n" +
-	"!_iamdatabaseauthenticationenabledB\a\n" +
-	"\x05_iopsB\x15\n" +
-	"\x13_monitoringintervalB\n" +
+	"\x18_autominorversionupgradeB\x13\n" +
+	"\x11_availabilityzoneB\x18\n" +
+	"\x16_backupretentionperiodB\x1a\n" +
+	"\x18_cacertificateidentifierB\x13\n" +
+	"\x11_charactersetnameB\x15\n" +
+	"\x13_copytagstosnapshotB\x16\n" +
+	"\x14_dbclusteridentifierB\x10\n" +
+	"\x0e_dbinstancearnB\x12\n" +
+	"\x10_dbinstanceclassB\x17\n" +
+	"\x15_dbinstanceidentifierB\x13\n" +
+	"\x11_dbinstancestatusB\t\n" +
+	"\a_dbnameB\x11\n" +
+	"\x0f_dbinstanceportB\x10\n" +
+	"\x0e_dbiresourceidB\x15\n" +
+	"\x13_deletionprotectionB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB \n" +
+	"\x1e_enhancedmonitoringresourcearnB#\n" +
+	"!_iamdatabaseauthenticationenabledB\x15\n" +
+	"\x13_instancecreatetimeB\a\n" +
+	"\x05_iopsB\v\n" +
+	"\t_kmskeyidB\x17\n" +
+	"\x15_latestrestorabletimeB\x0f\n" +
+	"\r_licensemodelB\x11\n" +
+	"\x0f_masterusernameB\x15\n" +
+	"\x13_monitoringintervalB\x14\n" +
+	"\x12_monitoringrolearnB\n" +
 	"\n" +
-	"\b_multiazB\x1d\n" +
-	"\x1b_performanceinsightsenabledB\x10\n" +
+	"\b_multiazB\x0e\n" +
+	"\f_networktypeB\x1d\n" +
+	"\x1b_performanceinsightsenabledB\x1e\n" +
+	"\x1c_performanceinsightskmskeyidB\x18\n" +
+	"\x16_preferredbackupwindowB\x1d\n" +
+	"\x1b_preferredmaintenancewindowB\x10\n" +
 	"\x0e_promotiontierB\x15\n" +
-	"\x13_publiclyaccessibleB\x13\n" +
-	"\x11_storageencrypted\";\n" +
-	"\x1cDBInstanceAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"h\n" +
-	"\x11DBInstanceMessage\x128\n" +
-	"\vdbinstances\x18\xea\xf1\xa8; \x03(\v2\x13.neptune.DBInstanceR\vdbinstances\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"6\n" +
-	"\x17DBInstanceNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9d\x01\n" +
-	"\x14DBInstanceStatusInfo\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\x1f\n" +
-	"\x06normal\x18\xf3\xce\xf8\xc6\x01 \x01(\bH\x00R\x06normal\x88\x01\x01\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12!\n" +
+	"\x13_publiclyaccessibleB(\n" +
+	"&_readreplicasourcedbinstanceidentifierB\x1c\n" +
+	"\x1a_secondaryavailabilityzoneB\x13\n" +
+	"\x11_storageencryptedB\x0e\n" +
+	"\f_storagetypeB\x13\n" +
+	"\x11_tdecredentialarnB\v\n" +
+	"\t_timezone\"L\n" +
+	"\x1cDBInstanceAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"statustype\x18\x98\x84\xc7W \x01(\tR\n" +
-	"statustypeB\t\n" +
-	"\a_normal\"\xe0\x01\n" +
-	"\x10DBParameterGroup\x124\n" +
-	"\x13dbparametergrouparn\x18\x95\x95\xa9\x94\x01 \x01(\tR\x13dbparametergrouparn\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\"A\n" +
-	"\"DBParameterGroupAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"l\n" +
-	"\x17DBParameterGroupDetails\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x126\n" +
+	"\b_message\"x\n" +
+	"\x11DBInstanceMessage\x128\n" +
+	"\vdbinstances\x18\xea\xf1\xa8; \x03(\v2\x13.neptune.DBInstanceR\vdbinstances\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"G\n" +
+	"\x17DBInstanceNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xd2\x01\n" +
+	"\x14DBInstanceStatusInfo\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12\x1f\n" +
+	"\x06normal\x18\xf3\xce\xf8\xc6\x01 \x01(\bH\x01R\x06normal\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x02R\x06status\x88\x01\x01\x12&\n" +
+	"\n" +
+	"statustype\x18\x98\x84\xc7W \x01(\tH\x03R\n" +
+	"statustype\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\t\n" +
+	"\a_normalB\t\n" +
+	"\a_statusB\r\n" +
+	"\v_statustype\"\xd0\x02\n" +
+	"\x10DBParameterGroup\x129\n" +
+	"\x13dbparametergrouparn\x18\x95\x95\xa9\x94\x01 \x01(\tH\x00R\x13dbparametergrouparn\x88\x01\x01\x12?\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tH\x01R\x16dbparametergroupfamily\x88\x01\x01\x12:\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\x02R\x14dbparametergroupname\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01B\x16\n" +
+	"\x14_dbparametergrouparnB\x19\n" +
+	"\x17_dbparametergroupfamilyB\x17\n" +
+	"\x15_dbparametergroupnameB\x0e\n" +
+	"\f_description\"R\n" +
+	"\"DBParameterGroupAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"|\n" +
+	"\x17DBParameterGroupDetails\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x126\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x12.neptune.ParameterR\n" +
-	"parameters\"T\n" +
-	"\x1bDBParameterGroupNameMessage\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\"<\n" +
-	"\x1dDBParameterGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"DBParameterGroupQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x86\x01\n" +
-	"\x16DBParameterGroupStatus\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x125\n" +
-	"\x14parameterapplystatus\x18\xaf҆v \x01(\tR\x14parameterapplystatus\"\x81\x01\n" +
+	"parametersB\t\n" +
+	"\a_marker\"r\n" +
+	"\x1bDBParameterGroupNameMessage\x12:\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\x00R\x14dbparametergroupname\x88\x01\x01B\x17\n" +
+	"\x15_dbparametergroupname\"M\n" +
+	"\x1dDBParameterGroupNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"DBParameterGroupQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xc2\x01\n" +
+	"\x16DBParameterGroupStatus\x12:\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\x00R\x14dbparametergroupname\x88\x01\x01\x12:\n" +
+	"\x14parameterapplystatus\x18\xaf҆v \x01(\tH\x01R\x14parameterapplystatus\x88\x01\x01B\x17\n" +
+	"\x15_dbparametergroupnameB\x17\n" +
+	"\x15_parameterapplystatus\"\x91\x01\n" +
 	"\x18DBParameterGroupsMessage\x12J\n" +
-	"\x11dbparametergroups\x18\x8b\xbf\xea) \x03(\v2\x19.neptune.DBParameterGroupR\x11dbparametergroups\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"k\n" +
-	"\x19DBSecurityGroupMembership\x123\n" +
-	"\x13dbsecuritygroupname\x18\xe8\x93\xfe\x18 \x01(\tR\x13dbsecuritygroupname\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\";\n" +
-	"\x1cDBSecurityGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cDBSnapshotAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
-	"\x17DBSnapshotNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xe4\x02\n" +
-	"\rDBSubnetGroup\x12.\n" +
-	"\x10dbsubnetgrouparn\x18\xe5ӿ\xdc\x01 \x01(\tR\x10dbsubnetgrouparn\x12=\n" +
-	"\x18dbsubnetgroupdescription\x18\xa2\xd6\xfe4 \x01(\tR\x18dbsubnetgroupdescription\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x120\n" +
-	"\x11subnetgroupstatus\x18ކ\x9e\xe0\x01 \x01(\tR\x11subnetgroupstatus\x12-\n" +
+	"\x11dbparametergroups\x18\x8b\xbf\xea) \x03(\v2\x19.neptune.DBParameterGroupR\x11dbparametergroups\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"\x98\x01\n" +
+	"\x19DBSecurityGroupMembership\x128\n" +
+	"\x13dbsecuritygroupname\x18\xe8\x93\xfe\x18 \x01(\tH\x00R\x13dbsecuritygroupname\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x01R\x06status\x88\x01\x01B\x16\n" +
+	"\x14_dbsecuritygroupnameB\t\n" +
+	"\a_status\"L\n" +
+	"\x1cDBSecurityGroupNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cDBSnapshotAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17DBSnapshotNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe5\x03\n" +
+	"\rDBSubnetGroup\x123\n" +
+	"\x10dbsubnetgrouparn\x18\xe5ӿ\xdc\x01 \x01(\tH\x00R\x10dbsubnetgrouparn\x88\x01\x01\x12B\n" +
+	"\x18dbsubnetgroupdescription\x18\xa2\xd6\xfe4 \x01(\tH\x01R\x18dbsubnetgroupdescription\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x02R\x11dbsubnetgroupname\x88\x01\x01\x125\n" +
+	"\x11subnetgroupstatus\x18ކ\x9e\xe0\x01 \x01(\tH\x03R\x11subnetgroupstatus\x88\x01\x01\x12-\n" +
 	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\v2\x0f.neptune.SubnetR\asubnets\x128\n" +
-	"\x15supportednetworktypes\x18\xd7\xf6Ɋ\x01 \x03(\tR\x15supportednetworktypes\x12\x18\n" +
-	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tR\x05vpcid\">\n" +
-	"\x1fDBSubnetGroupAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"DBSubnetGroupDoesNotCoverEnoughAZs\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"t\n" +
+	"\x15supportednetworktypes\x18\xd7\xf6Ɋ\x01 \x03(\tR\x15supportednetworktypes\x12\x1d\n" +
+	"\x05vpcid\x18\xf6\x9a\xd0\xc4\x01 \x01(\tH\x04R\x05vpcid\x88\x01\x01B\x13\n" +
+	"\x11_dbsubnetgrouparnB\x1b\n" +
+	"\x19_dbsubnetgroupdescriptionB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x14\n" +
+	"\x12_subnetgroupstatusB\b\n" +
+	"\x06_vpcid\"O\n" +
+	"\x1fDBSubnetGroupAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"DBSubnetGroupDoesNotCoverEnoughAZs\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x84\x01\n" +
 	"\x14DBSubnetGroupMessage\x12A\n" +
-	"\x0edbsubnetgroups\x18ۡ\x8b\x0e \x03(\v2\x16.neptune.DBSubnetGroupR\x0edbsubnetgroups\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"9\n" +
-	"\x1aDBSubnetGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
-	"\x1fDBSubnetGroupQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aDBSubnetQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
-	"\x1fDBUpgradeDependencyFailureFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"f\n" +
+	"\x0edbsubnetgroups\x18ۡ\x8b\x0e \x03(\v2\x16.neptune.DBSubnetGroupR\x0edbsubnetgroups\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"J\n" +
+	"\x1aDBSubnetGroupNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fDBSubnetGroupQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aDBSubnetQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fDBUpgradeDependencyFailureFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"f\n" +
 	"\x1eDeleteDBClusterEndpointMessage\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\"\x95\x04\n" +
-	"\x1dDeleteDBClusterEndpointOutput\x121\n" +
-	"\x12customendpointtype\x18\x8cɥN \x01(\tR\x12customendpointtype\x126\n" +
-	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tR\x14dbclusterendpointarn\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12T\n" +
-	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tR#dbclusterendpointresourceidentifier\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12&\n" +
-	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\"\xf6\x05\n" +
+	"\x1dDeleteDBClusterEndpointOutput\x126\n" +
+	"\x12customendpointtype\x18\x8cɥN \x01(\tH\x00R\x12customendpointtype\x88\x01\x01\x12;\n" +
+	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tH\x01R\x14dbclusterendpointarn\x88\x01\x01\x12I\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tH\x02R\x1bdbclusterendpointidentifier\x88\x01\x01\x12Y\n" +
+	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tH\x03R#dbclusterendpointresourceidentifier\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x04R\x13dbclusteridentifier\x88\x01\x01\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x05R\bendpoint\x88\x01\x01\x12+\n" +
+	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tH\x06R\fendpointtype\x88\x01\x01\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
-	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xdd\x01\n" +
+	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\aR\x06status\x88\x01\x01B\x15\n" +
+	"\x13_customendpointtypeB\x17\n" +
+	"\x15_dbclusterendpointarnB\x1e\n" +
+	"\x1c_dbclusterendpointidentifierB&\n" +
+	"$_dbclusterendpointresourceidentifierB\x16\n" +
+	"\x14_dbclusteridentifierB\v\n" +
+	"\t_endpointB\x0f\n" +
+	"\r_endpointtypeB\t\n" +
+	"\a_status\"\x80\x02\n" +
 	"\x16DeleteDBClusterMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12@\n" +
-	"\x19finaldbsnapshotidentifier\x18\x9b\xc4\xf1\xe2\x01 \x01(\tR\x19finaldbsnapshotidentifier\x125\n" +
-	"\x11skipfinalsnapshot\x18㻪\xaa\x01 \x01(\bH\x00R\x11skipfinalsnapshot\x88\x01\x01B\x14\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12E\n" +
+	"\x19finaldbsnapshotidentifier\x18\x9b\xc4\xf1\xe2\x01 \x01(\tH\x00R\x19finaldbsnapshotidentifier\x88\x01\x01\x125\n" +
+	"\x11skipfinalsnapshot\x18㻪\xaa\x01 \x01(\bH\x01R\x11skipfinalsnapshot\x88\x01\x01B\x1c\n" +
+	"\x1a_finaldbsnapshotidentifierB\x14\n" +
 	"\x12_skipfinalsnapshot\"l\n" +
 	"$DeleteDBClusterParameterGroupMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\"M\n" +
@@ -16775,11 +17030,12 @@ const file_neptune_proto_rawDesc = "" +
 	"\x1eDeleteDBClusterSnapshotMessage\x12C\n" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\"l\n" +
 	"\x1dDeleteDBClusterSnapshotResult\x12K\n" +
-	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x1a.neptune.DBClusterSnapshotR\x11dbclustersnapshot\"\xe0\x01\n" +
+	"\x11dbclustersnapshot\x18\x8c\xf2\xcc] \x01(\v2\x1a.neptune.DBClusterSnapshotR\x11dbclustersnapshot\"\x83\x02\n" +
 	"\x17DeleteDBInstanceMessage\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12@\n" +
-	"\x19finaldbsnapshotidentifier\x18\x9b\xc4\xf1\xe2\x01 \x01(\tR\x19finaldbsnapshotidentifier\x125\n" +
-	"\x11skipfinalsnapshot\x18㻪\xaa\x01 \x01(\bH\x00R\x11skipfinalsnapshot\x88\x01\x01B\x14\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12E\n" +
+	"\x19finaldbsnapshotidentifier\x18\x9b\xc4\xf1\xe2\x01 \x01(\tH\x00R\x19finaldbsnapshotidentifier\x88\x01\x01\x125\n" +
+	"\x11skipfinalsnapshot\x18㻪\xaa\x01 \x01(\bH\x01R\x11skipfinalsnapshot\x88\x01\x01B\x1c\n" +
+	"\x1a_finaldbsnapshotidentifierB\x14\n" +
 	"\x12_skipfinalsnapshot\"Q\n" +
 	"\x16DeleteDBInstanceResult\x127\n" +
 	"\n" +
@@ -16796,252 +17052,329 @@ const file_neptune_proto_rawDesc = "" +
 	"\x1aDeleteGlobalClusterMessage\x12;\n" +
 	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\"]\n" +
 	"\x19DeleteGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\x9f\x02\n" +
-	"!DescribeDBClusterEndpointsMessage\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\xf1\x02\n" +
+	"!DescribeDBClusterEndpointsMessage\x12I\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tH\x00R\x1bdbclusterendpointidentifier\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x01R\x13dbclusteridentifier\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\xef\x01\n" +
-	"'DescribeDBClusterParameterGroupsMessage\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
+	"maxrecords\x88\x01\x01B\x1e\n" +
+	"\x1c_dbclusterendpointidentifierB\x16\n" +
+	"\x14_dbclusteridentifierB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\xa4\x02\n" +
+	"'DescribeDBClusterParameterGroupsMessage\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x00R\x1bdbclusterparametergroupname\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\x85\x02\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01B\x1e\n" +
+	"\x1c_dbclusterparametergroupnameB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\xa5\x02\n" +
 	"\"DescribeDBClusterParametersMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06sourceB\r\n" +
-	"\v_maxrecords\"q\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x02R\x06source\x88\x01\x01B\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecordsB\t\n" +
+	"\a_source\"q\n" +
 	"*DescribeDBClusterSnapshotAttributesMessage\x12C\n" +
 	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\"\xa8\x01\n" +
 	")DescribeDBClusterSnapshotAttributesResult\x12{\n" +
-	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2*.neptune.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xc6\x03\n" +
-	"!DescribeDBClusterSnapshotsMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12C\n" +
-	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tR\x1bdbclustersnapshotidentifier\x12,\n" +
+	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2*.neptune.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xae\x04\n" +
+	"!DescribeDBClusterSnapshotsMessage\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x00R\x13dbclusteridentifier\x88\x01\x01\x12H\n" +
+	"\x1bdbclustersnapshotidentifier\x18\xe1\u00ada \x01(\tH\x01R\x1bdbclustersnapshotidentifier\x88\x01\x01\x12,\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12,\n" +
-	"\rincludepublic\x18\x83\x8b\xd0, \x01(\bH\x00R\rincludepublic\x88\x01\x01\x12,\n" +
-	"\rincludeshared\x18\xcf\xf7\xce\x0e \x01(\bH\x01R\rincludeshared\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\rincludepublic\x18\x83\x8b\xd0, \x01(\bH\x02R\rincludepublic\x88\x01\x01\x12,\n" +
+	"\rincludeshared\x18\xcf\xf7\xce\x0e \x01(\bH\x03R\rincludeshared\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x04R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x05R\n" +
+	"maxrecords\x88\x01\x01\x12+\n" +
+	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tH\x06R\fsnapshottype\x88\x01\x01B\x16\n" +
+	"\x14_dbclusteridentifierB\x1e\n" +
+	"\x1c_dbclustersnapshotidentifierB\x10\n" +
+	"\x0e_includepublicB\x10\n" +
+	"\x0e_includesharedB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecordsB\x0f\n" +
+	"\r_snapshottype\"\xfe\x01\n" +
+	"\x19DescribeDBClustersMessage\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x00R\x13dbclusteridentifier\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
 	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
-	"maxrecords\x88\x01\x01\x12&\n" +
-	"\fsnapshottype\x18\x86\xf9\xb7\xbe\x01 \x01(\tR\fsnapshottypeB\x10\n" +
-	"\x0e_includepublicB\x10\n" +
-	"\x0e_includesharedB\r\n" +
-	"\v_maxrecords\"\xd1\x01\n" +
-	"\x19DescribeDBClustersMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
-	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\x9f\x04\n" +
-	"\x1fDescribeDBEngineVersionsMessage\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12(\n" +
-	"\vdefaultonly\x18\xa9\xaa\xe7\b \x01(\bH\x00R\vdefaultonly\x88\x01\x01\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12,\n" +
+	"maxrecords\x88\x01\x01B\x16\n" +
+	"\x14_dbclusteridentifierB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\xf6\x04\n" +
+	"\x1fDescribeDBEngineVersionsMessage\x12?\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tH\x00R\x16dbparametergroupfamily\x88\x01\x01\x12(\n" +
+	"\vdefaultonly\x18\xa9\xaa\xe7\b \x01(\bH\x01R\vdefaultonly\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x02R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x03R\rengineversion\x88\x01\x01\x12,\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12G\n" +
-	"\x1alistsupportedcharactersets\x18Ꝡ\xe9\x01 \x01(\bH\x01R\x1alistsupportedcharactersets\x88\x01\x01\x12>\n" +
-	"\x16listsupportedtimezones\x18ą\xb9G \x01(\bH\x02R\x16listsupportedtimezones\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\x1alistsupportedcharactersets\x18Ꝡ\xe9\x01 \x01(\bH\x04R\x1alistsupportedcharactersets\x88\x01\x01\x12>\n" +
+	"\x16listsupportedtimezones\x18ą\xb9G \x01(\bH\x05R\x16listsupportedtimezones\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x06R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
-	"maxrecords\x88\x01\x01B\x0e\n" +
-	"\f_defaultonlyB\x1d\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\aR\n" +
+	"maxrecords\x88\x01\x01B\x19\n" +
+	"\x17_dbparametergroupfamilyB\x0e\n" +
+	"\f_defaultonlyB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x1d\n" +
 	"\x1b_listsupportedcharactersetsB\x19\n" +
-	"\x17_listsupportedtimezonesB\r\n" +
-	"\v_maxrecords\"\xd4\x01\n" +
-	"\x1aDescribeDBInstancesMessage\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\x17_listsupportedtimezonesB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\x82\x02\n" +
+	"\x1aDescribeDBInstancesMessage\x12;\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x00R\x14dbinstanceidentifier\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\xd9\x01\n" +
-	" DescribeDBParameterGroupsMessage\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01B\x17\n" +
+	"\x15_dbinstanceidentifierB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\x87\x02\n" +
+	" DescribeDBParameterGroupsMessage\x12:\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\x00R\x14dbparametergroupname\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\xef\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01B\x17\n" +
+	"\x15_dbparametergroupnameB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\x8f\x02\n" +
 	"\x1bDescribeDBParametersMessage\x125\n" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
-	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06sourceB\r\n" +
-	"\v_maxrecords\"\xd0\x01\n" +
-	"\x1dDescribeDBSubnetGroupsMessage\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
-	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\xeb\x01\n" +
-	"-DescribeEngineDefaultClusterParametersMessage\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
-	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"s\n" +
-	",DescribeEngineDefaultClusterParametersResult\x12C\n" +
-	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x17.neptune.EngineDefaultsR\x0eenginedefaults\"\xe4\x01\n" +
-	"&DescribeEngineDefaultParametersMessage\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
-	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"l\n" +
-	"%DescribeEngineDefaultParametersResult\x12C\n" +
-	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x17.neptune.EngineDefaultsR\x0eenginedefaults\"q\n" +
-	"\x1eDescribeEventCategoriesMessage\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12!\n" +
-	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\"\xd2\x01\n" +
-	"!DescribeEventSubscriptionsMessage\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
-	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x12-\n" +
-	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionnameB\r\n" +
-	"\v_maxrecords\"\x9c\x03\n" +
-	"\x15DescribeEventsMessage\x12#\n" +
-	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12+\n" +
-	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
 	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
-	"maxrecords\x88\x01\x01\x12-\n" +
-	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tR\x10sourceidentifier\x126\n" +
+	"maxrecords\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x02R\x06source\x88\x01\x01B\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecordsB\t\n" +
+	"\a_source\"\xfb\x01\n" +
+	"\x1dDescribeDBSubnetGroupsMessage\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x00R\x11dbsubnetgroupname\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01B\x14\n" +
+	"\x12_dbsubnetgroupnameB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\xfb\x01\n" +
+	"-DescribeEngineDefaultClusterParametersMessage\x12:\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01B\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"s\n" +
+	",DescribeEngineDefaultClusterParametersResult\x12C\n" +
+	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x17.neptune.EngineDefaultsR\x0eenginedefaults\"\xf4\x01\n" +
+	"&DescribeEngineDefaultParametersMessage\x12:\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01B\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"l\n" +
+	"%DescribeEngineDefaultParametersResult\x12C\n" +
+	"\x0eenginedefaults\x18Α\x8e\x88\x01 \x01(\v2\x17.neptune.EngineDefaultsR\x0eenginedefaults\"\x85\x01\n" +
+	"\x1eDescribeEventCategoriesMessage\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12&\n" +
+	"\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\tH\x00R\n" +
+	"sourcetype\x88\x01\x01B\r\n" +
+	"\v_sourcetype\"\xfc\x01\n" +
+	"!DescribeEventSubscriptionsMessage\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01\x122\n" +
+	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tH\x02R\x10subscriptionname\x88\x01\x01B\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecordsB\x13\n" +
+	"\x11_subscriptionname\"\xea\x03\n" +
+	"\x15DescribeEventsMessage\x12#\n" +
+	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\x05H\x00R\bduration\x88\x01\x01\x12 \n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x01R\aendtime\x88\x01\x01\x12+\n" +
+	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
+	"maxrecords\x88\x01\x01\x122\n" +
+	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x04R\x10sourceidentifier\x88\x01\x01\x126\n" +
 	"\n" +
 	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x13.neptune.SourceTypeR\n" +
-	"sourcetype\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\v\n" +
-	"\t_durationB\r\n" +
-	"\v_maxrecords\"\xae\x01\n" +
-	"\x1dDescribeGlobalClustersMessage\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"sourcetype\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01B\v\n" +
+	"\t_durationB\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01B\r\n" +
-	"\v_maxrecords\"\xe8\x02\n" +
-	")DescribeOrderableDBInstanceOptionsMessage\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\b_endtimeB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecordsB\x13\n" +
+	"\x11_sourceidentifierB\f\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
+	"_starttime\"\xdf\x01\n" +
+	"\x1dDescribeGlobalClustersMessage\x12@\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x00R\x17globalclusteridentifier\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x02R\n" +
+	"maxrecords\x88\x01\x01B\x1a\n" +
+	"\x18_globalclusteridentifierB\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecords\"\xbe\x03\n" +
+	")DescribeOrderableDBInstanceOptionsMessage\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x00R\x0fdbinstanceclass\x88\x01\x01\x12\x1a\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x01R\rengineversion\x88\x01\x01\x12,\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x02R\flicensemodel\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x03R\x06marker\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x04R\n" +
 	"maxrecords\x88\x01\x01\x12\x19\n" +
-	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x01R\x03vpc\x88\x01\x01B\r\n" +
+	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x05R\x03vpc\x88\x01\x01B\x12\n" +
+	"\x10_dbinstanceclassB\x10\n" +
+	"\x0e_engineversionB\x0f\n" +
+	"\r_licensemodelB\t\n" +
+	"\a_markerB\r\n" +
 	"\v_maxrecordsB\x06\n" +
-	"\x04_vpc\"\xde\x01\n" +
+	"\x04_vpc\"\x8a\x02\n" +
 	"(DescribePendingMaintenanceActionsMessage\x12,\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12&\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x122\n" +
-	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifierB\r\n" +
-	"\v_maxrecords\"e\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01\x127\n" +
+	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tH\x02R\x12resourceidentifier\x88\x01\x01B\t\n" +
+	"\a_markerB\r\n" +
+	"\v_maxrecordsB\x15\n" +
+	"\x13_resourceidentifier\"e\n" +
 	"+DescribeValidDBInstanceModificationsMessage\x126\n" +
 	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\"\xb0\x01\n" +
 	"*DescribeValidDBInstanceModificationsResult\x12\x81\x01\n" +
-	"#validdbinstancemodificationsmessage\x18٪\x93^ \x01(\v2,.neptune.ValidDBInstanceModificationsMessageR#validdbinstancemodificationsmessage\"\x85\x01\n" +
-	"\x10DomainMembership\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12\x15\n" +
-	"\x04fqdn\x18\x8f\x9f\xc6Y \x01(\tR\x04fqdn\x12#\n" +
-	"\viamrolename\x18\xde˱[ \x01(\tR\viamrolename\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"2\n" +
-	"\x13DomainNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\vDoubleRange\x12\x16\n" +
-	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x01R\x04from\x12\x11\n" +
-	"\x02to\x18Ŭ\xd6\x0f \x01(\x01R\x02to\"u\n" +
-	"\bEndpoint\x12\x1c\n" +
-	"\aaddress\x18\xf4\xc1\x95\x80\x01 \x01(\tR\aaddress\x12&\n" +
-	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tR\fhostedzoneid\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x00R\x04port\x88\x01\x01B\a\n" +
-	"\x05_port\"\x9f\x01\n" +
-	"\x0eEngineDefaults\x12:\n" +
-	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tR\x16dbparametergroupfamily\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x126\n" +
+	"#validdbinstancemodificationsmessage\x18٪\x93^ \x01(\v2,.neptune.ValidDBInstanceModificationsMessageR#validdbinstancemodificationsmessage\"\xc8\x01\n" +
+	"\x10DomainMembership\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\x00R\x06domain\x88\x01\x01\x12\x1a\n" +
+	"\x04fqdn\x18\x8f\x9f\xc6Y \x01(\tH\x01R\x04fqdn\x88\x01\x01\x12(\n" +
+	"\viamrolename\x18\xde˱[ \x01(\tH\x02R\viamrolename\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x03R\x06status\x88\x01\x01B\t\n" +
+	"\a_domainB\a\n" +
+	"\x05_fqdnB\x0e\n" +
+	"\f_iamrolenameB\t\n" +
+	"\a_status\"C\n" +
+	"\x13DomainNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\vDoubleRange\x12\x1b\n" +
+	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x01H\x00R\x04from\x88\x01\x01\x12\x16\n" +
+	"\x02to\x18Ŭ\xd6\x0f \x01(\x01H\x01R\x02to\x88\x01\x01B\a\n" +
+	"\x05_fromB\x05\n" +
+	"\x03_to\"\x9c\x01\n" +
+	"\bEndpoint\x12!\n" +
+	"\aaddress\x18\xf4\xc1\x95\x80\x01 \x01(\tH\x00R\aaddress\x88\x01\x01\x12+\n" +
+	"\fhostedzoneid\x18\xfeΞ\xa5\x01 \x01(\tH\x01R\fhostedzoneid\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x02R\x04port\x88\x01\x01B\n" +
+	"\n" +
+	"\b_addressB\x0f\n" +
+	"\r_hostedzoneidB\a\n" +
+	"\x05_port\"\xcf\x01\n" +
+	"\x0eEngineDefaults\x12?\n" +
+	"\x16dbparametergroupfamily\x18\xa2\xeeާ\x01 \x01(\tH\x00R\x16dbparametergroupfamily\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x01R\x06marker\x88\x01\x01\x126\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x12.neptune.ParameterR\n" +
-	"parameters\"\xf2\x01\n" +
-	"\x05Event\x12\x16\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12+\n" +
-	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12 \n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\x12-\n" +
-	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tR\x10sourceidentifier\x126\n" +
+	"parametersB\x19\n" +
+	"\x17_dbparametergroupfamilyB\t\n" +
+	"\a_marker\"\xbe\x02\n" +
+	"\x05Event\x12\x1b\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x00R\x04date\x88\x01\x01\x12+\n" +
+	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01\x12%\n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x02R\tsourcearn\x88\x01\x01\x122\n" +
+	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tH\x03R\x10sourceidentifier\x88\x01\x01\x126\n" +
 	"\n" +
 	"sourcetype\x18\x91\xbe\xaa] \x01(\x0e2\x13.neptune.SourceTypeR\n" +
-	"sourcetype\"d\n" +
+	"sourcetypeB\a\n" +
+	"\x05_dateB\n" +
+	"\n" +
+	"\b_messageB\f\n" +
+	"\n" +
+	"_sourcearnB\x13\n" +
+	"\x11_sourceidentifier\"x\n" +
 	"\x12EventCategoriesMap\x12+\n" +
-	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12!\n" +
+	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12&\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\"q\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\tH\x00R\n" +
+	"sourcetype\x88\x01\x01B\r\n" +
+	"\v_sourcetype\"q\n" +
 	"\x16EventCategoriesMessage\x12W\n" +
-	"\x16eventcategoriesmaplist\x18\xcc\xfe\xf9\x87\x01 \x03(\v2\x1b.neptune.EventCategoriesMapR\x16eventcategoriesmaplist\"\xda\x03\n" +
-	"\x11EventSubscription\x121\n" +
-	"\x12custsubscriptionid\x18\xfb\xb5\xc1\x10 \x01(\tR\x12custsubscriptionid\x12(\n" +
-	"\rcustomerawsid\x18\xb8\xc0\xff\xdd\x01 \x01(\tR\rcustomerawsid\x12!\n" +
-	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x124\n" +
-	"\x13eventcategorieslist\x18\xbc\xce\xca\xf2\x01 \x03(\tR\x13eventcategorieslist\x126\n" +
-	"\x14eventsubscriptionarn\x18\xeeۗ\xa7\x01 \x01(\tR\x14eventsubscriptionarn\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tR\vsnstopicarn\x12(\n" +
-	"\rsourceidslist\x18\x9f\xae\xfa\xe6\x01 \x03(\tR\rsourceidslist\x12!\n" +
+	"\x16eventcategoriesmaplist\x18\xcc\xfe\xf9\x87\x01 \x03(\v2\x1b.neptune.EventCategoriesMapR\x16eventcategoriesmaplist\"\x86\x05\n" +
+	"\x11EventSubscription\x126\n" +
+	"\x12custsubscriptionid\x18\xfb\xb5\xc1\x10 \x01(\tH\x00R\x12custsubscriptionid\x88\x01\x01\x12-\n" +
+	"\rcustomerawsid\x18\xb8\xc0\xff\xdd\x01 \x01(\tH\x01R\rcustomerawsid\x88\x01\x01\x12!\n" +
+	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x02R\aenabled\x88\x01\x01\x124\n" +
+	"\x13eventcategorieslist\x18\xbc\xce\xca\xf2\x01 \x03(\tR\x13eventcategorieslist\x12;\n" +
+	"\x14eventsubscriptionarn\x18\xeeۗ\xa7\x01 \x01(\tH\x03R\x14eventsubscriptionarn\x88\x01\x01\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tH\x04R\vsnstopicarn\x88\x01\x01\x12(\n" +
+	"\rsourceidslist\x18\x9f\xae\xfa\xe6\x01 \x03(\tR\rsourceidslist\x12&\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12=\n" +
-	"\x18subscriptioncreationtime\x18\xed\xa8\x81V \x01(\tR\x18subscriptioncreationtimeB\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\tH\x05R\n" +
+	"sourcetype\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x06R\x06status\x88\x01\x01\x12B\n" +
+	"\x18subscriptioncreationtime\x18\xed\xa8\x81V \x01(\tH\aR\x18subscriptioncreationtime\x88\x01\x01B\x15\n" +
+	"\x13_custsubscriptionidB\x10\n" +
+	"\x0e_customerawsidB\n" +
 	"\n" +
-	"\b_enabled\"B\n" +
-	"#EventSubscriptionQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8d\x01\n" +
+	"\b_enabledB\x17\n" +
+	"\x15_eventsubscriptionarnB\x0e\n" +
+	"\f_snstopicarnB\r\n" +
+	"\v_sourcetypeB\t\n" +
+	"\a_statusB\x1b\n" +
+	"\x19_subscriptioncreationtime\"S\n" +
+	"#EventSubscriptionQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9d\x01\n" +
 	"\x19EventSubscriptionsMessage\x12U\n" +
-	"\x16eventsubscriptionslist\x18\x8c\x99\xa2K \x03(\v2\x1a.neptune.EventSubscriptionR\x16eventsubscriptionslist\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"U\n" +
+	"\x16eventsubscriptionslist\x18\x8c\x99\xa2K \x03(\v2\x1a.neptune.EventSubscriptionR\x16eventsubscriptionslist\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"e\n" +
 	"\rEventsMessage\x12)\n" +
-	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x0e.neptune.EventR\x06events\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"\x93\x01\n" +
-	"\x18FailoverDBClusterMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12A\n" +
-	"\x1atargetdbinstanceidentifier\x18\xa7\xed\x85s \x01(\tR\x1atargetdbinstanceidentifier\"O\n" +
+	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x0e.neptune.EventR\x06events\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"\xd4\x01\n" +
+	"\x18FailoverDBClusterMessage\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x00R\x13dbclusteridentifier\x88\x01\x01\x12F\n" +
+	"\x1atargetdbinstanceidentifier\x18\xa7\xed\x85s \x01(\tH\x01R\x1atargetdbinstanceidentifier\x88\x01\x01B\x16\n" +
+	"\x14_dbclusteridentifierB\x1d\n" +
+	"\x1b_targetdbinstanceidentifier\"O\n" +
 	"\x17FailoverDBClusterResult\x124\n" +
 	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"\x93\x02\n" +
 	"\x1cFailoverGlobalClusterMessage\x12,\n" +
@@ -17054,131 +17387,206 @@ const file_neptune_proto_rawDesc = "" +
 	"\x0e_allowdatalossB\r\n" +
 	"\v_switchover\"_\n" +
 	"\x1bFailoverGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\xea\x01\n" +
-	"\rFailoverState\x12-\n" +
-	"\x10fromdbclusterarn\x18\xff\xce\xec8 \x01(\tR\x10fromdbclusterarn\x124\n" +
-	"\x11isdatalossallowed\x18\xb7\xd5\xe3\r \x01(\bH\x00R\x11isdatalossallowed\x88\x01\x01\x122\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.neptune.FailoverStatusR\x06status\x12*\n" +
-	"\x0etodbclusterarn\x18\xa8\x9e\xf7\xdf\x01 \x01(\tR\x0etodbclusterarnB\x14\n" +
-	"\x12_isdatalossallowed\":\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\x9c\x02\n" +
+	"\rFailoverState\x122\n" +
+	"\x10fromdbclusterarn\x18\xff\xce\xec8 \x01(\tH\x00R\x10fromdbclusterarn\x88\x01\x01\x124\n" +
+	"\x11isdatalossallowed\x18\xb7\xd5\xe3\r \x01(\bH\x01R\x11isdatalossallowed\x88\x01\x01\x122\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.neptune.FailoverStatusR\x06status\x12/\n" +
+	"\x0etodbclusterarn\x18\xa8\x9e\xf7\xdf\x01 \x01(\tH\x02R\x0etodbclusterarn\x88\x01\x01B\x13\n" +
+	"\x11_fromdbclusterarnB\x14\n" +
+	"\x12_isdatalossallowedB\x11\n" +
+	"\x0f_todbclusterarn\":\n" +
 	"\x06Filter\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\x9f\x05\n" +
-	"\rGlobalCluster\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x00R\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12@\n" +
-	"\rfailoverstate\x18ɜ\xa4\x91\x01 \x01(\v2\x16.neptune.FailoverStateR\rfailoverstate\x12.\n" +
-	"\x10globalclusterarn\x18\x90\xf7\xfd\x83\x01 \x01(\tR\x10globalclusterarn\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12T\n" +
-	"\x14globalclustermembers\x18\xec\xffӖ\x01 \x03(\v2\x1c.neptune.GlobalClusterMemberR\x14globalclustermembers\x12<\n" +
-	"\x17globalclusterresourceid\x18\xa2\x85\x9a\xbe\x01 \x01(\tR\x17globalclusterresourceid\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x123\n" +
-	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\x01R\x10storageencrypted\x88\x01\x01\x12*\n" +
-	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\f.neptune.TagR\ataglistB\x15\n" +
-	"\x13_deletionprotectionB\x13\n" +
-	"\x11_storageencrypted\">\n" +
-	"\x1fGlobalClusterAlreadyExistsFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x8a\x01\n" +
-	"\x13GlobalClusterMember\x12%\n" +
-	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tR\fdbclusterarn\x12\"\n" +
-	"\biswriter\x18\xbb\x84\x91\v \x01(\bH\x00R\biswriter\x88\x01\x01\x12\x1b\n" +
-	"\areaders\x18\xe0\xf6\xbdP \x03(\tR\areadersB\v\n" +
-	"\t_iswriter\"9\n" +
-	"\x1aGlobalClusterNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
-	"\x1fGlobalClusterQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"v\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"\xc8\x06\n" +
+	"\rGlobalCluster\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x00R\fdatabasename\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x02R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x03R\rengineversion\x88\x01\x01\x12@\n" +
+	"\rfailoverstate\x18ɜ\xa4\x91\x01 \x01(\v2\x16.neptune.FailoverStateR\rfailoverstate\x123\n" +
+	"\x10globalclusterarn\x18\x90\xf7\xfd\x83\x01 \x01(\tH\x04R\x10globalclusterarn\x88\x01\x01\x12@\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tH\x05R\x17globalclusteridentifier\x88\x01\x01\x12T\n" +
+	"\x14globalclustermembers\x18\xec\xffӖ\x01 \x03(\v2\x1c.neptune.GlobalClusterMemberR\x14globalclustermembers\x12A\n" +
+	"\x17globalclusterresourceid\x18\xa2\x85\x9a\xbe\x01 \x01(\tH\x06R\x17globalclusterresourceid\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\aR\x06status\x88\x01\x01\x123\n" +
+	"\x10storageencrypted\x18\xef\xcdд\x01 \x01(\bH\bR\x10storageencrypted\x88\x01\x01\x12*\n" +
+	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\f.neptune.TagR\ataglistB\x0f\n" +
+	"\r_databasenameB\x15\n" +
+	"\x13_deletionprotectionB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x13\n" +
+	"\x11_globalclusterarnB\x1a\n" +
+	"\x18_globalclusteridentifierB\x1a\n" +
+	"\x18_globalclusterresourceidB\t\n" +
+	"\a_statusB\x13\n" +
+	"\x11_storageencrypted\"O\n" +
+	"\x1fGlobalClusterAlreadyExistsFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa0\x01\n" +
+	"\x13GlobalClusterMember\x12*\n" +
+	"\fdbclusterarn\x18\xef\xed\xe2R \x01(\tH\x00R\fdbclusterarn\x88\x01\x01\x12\"\n" +
+	"\biswriter\x18\xbb\x84\x91\v \x01(\bH\x01R\biswriter\x88\x01\x01\x12\x1b\n" +
+	"\areaders\x18\xe0\xf6\xbdP \x03(\tR\areadersB\x0f\n" +
+	"\r_dbclusterarnB\v\n" +
+	"\t_iswriter\"J\n" +
+	"\x1aGlobalClusterNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fGlobalClusterQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x86\x01\n" +
 	"\x15GlobalClustersMessage\x12B\n" +
-	"\x0eglobalclusters\x18\x82\xad\x94\xb8\x01 \x03(\v2\x16.neptune.GlobalClusterR\x0eglobalclusters\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\"9\n" +
-	"\x1aInstanceQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"InsufficientDBClusterCapacityFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"B\n" +
-	"#InsufficientDBInstanceCapacityFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"F\n" +
-	"'InsufficientStorageClusterCapacityFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"InvalidDBClusterEndpointStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"InvalidDBClusterSnapshotStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aInvalidDBClusterStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bInvalidDBInstanceStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"@\n" +
-	"!InvalidDBParameterGroupStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"?\n" +
-	" InvalidDBSecurityGroupStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bInvalidDBSnapshotStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidDBSubnetGroupStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19InvalidDBSubnetStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"InvalidEventSubscriptionStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidGlobalClusterStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13InvalidRestoreFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\",\n" +
-	"\rInvalidSubnet\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bInvalidVPCNetworkStateFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18KMSKeyNotAccessibleFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"r\n" +
+	"\x0eglobalclusters\x18\x82\xad\x94\xb8\x01 \x03(\v2\x16.neptune.GlobalClusterR\x0eglobalclusters\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01B\t\n" +
+	"\a_marker\"J\n" +
+	"\x1aInstanceQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"InsufficientDBClusterCapacityFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#InsufficientDBInstanceCapacityFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"W\n" +
+	"'InsufficientStorageClusterCapacityFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"InvalidDBClusterEndpointStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"InvalidDBClusterSnapshotStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aInvalidDBClusterStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bInvalidDBInstanceStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Q\n" +
+	"!InvalidDBParameterGroupStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" InvalidDBSecurityGroupStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bInvalidDBSnapshotStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidDBSubnetGroupStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidDBSubnetStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"InvalidEventSubscriptionStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidGlobalClusterStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13InvalidRestoreFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"=\n" +
+	"\rInvalidSubnet\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bInvalidVPCNetworkStateFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18KMSKeyNotAccessibleFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"r\n" +
 	"\x1aListTagsForResourceMessage\x12,\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x0f.neptune.FilterR\afilters\x12&\n" +
-	"\fresourcename\x18\u05eeՀ\x01 \x01(\tR\fresourcename\"\xe5\x01\n" +
+	"\fresourcename\x18\u05eeՀ\x01 \x01(\tR\fresourcename\"\xfb\x01\n" +
 	"\x1eModifyDBClusterEndpointMessage\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12&\n" +
-	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12+\n" +
+	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tH\x00R\fendpointtype\x88\x01\x01\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
-	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\"\x95\x04\n" +
-	"\x1dModifyDBClusterEndpointOutput\x121\n" +
-	"\x12customendpointtype\x18\x8cɥN \x01(\tR\x12customendpointtype\x126\n" +
-	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tR\x14dbclusterendpointarn\x12D\n" +
-	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tR\x1bdbclusterendpointidentifier\x12T\n" +
-	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tR#dbclusterendpointresourceidentifier\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12&\n" +
-	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tR\fendpointtype\x12,\n" +
+	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembersB\x0f\n" +
+	"\r_endpointtype\"\xf6\x05\n" +
+	"\x1dModifyDBClusterEndpointOutput\x126\n" +
+	"\x12customendpointtype\x18\x8cɥN \x01(\tH\x00R\x12customendpointtype\x88\x01\x01\x12;\n" +
+	"\x14dbclusterendpointarn\x18ڴ\xa5\x87\x01 \x01(\tH\x01R\x14dbclusterendpointarn\x88\x01\x01\x12I\n" +
+	"\x1bdbclusterendpointidentifier\x18\xee\x8f\xe2\x97\x01 \x01(\tH\x02R\x1bdbclusterendpointidentifier\x88\x01\x01\x12Y\n" +
+	"#dbclusterendpointresourceidentifier\x18\xf6\x9c\xb0\x99\x01 \x01(\tH\x03R#dbclusterendpointresourceidentifier\x88\x01\x01\x129\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tH\x04R\x13dbclusteridentifier\x88\x01\x01\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x05R\bendpoint\x88\x01\x01\x12+\n" +
+	"\fendpointtype\x18վ\xea\xe7\x01 \x01(\tH\x06R\fendpointtype\x88\x01\x01\x12,\n" +
 	"\x0fexcludedmembers\x18\x93\xd4Լ\x01 \x03(\tR\x0fexcludedmembers\x12'\n" +
-	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xd6\v\n" +
+	"\rstaticmembers\x18ߓ\xfaS \x03(\tR\rstaticmembers\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\aR\x06status\x88\x01\x01B\x15\n" +
+	"\x13_customendpointtypeB\x17\n" +
+	"\x15_dbclusterendpointarnB\x1e\n" +
+	"\x1c_dbclusterendpointidentifierB&\n" +
+	"$_dbclusterendpointresourceidentifierB\x16\n" +
+	"\x14_dbclusteridentifierB\v\n" +
+	"\t_endpointB\x0f\n" +
+	"\r_endpointtypeB\t\n" +
+	"\a_status\"\xfa\r\n" +
 	"\x16ModifyDBClusterMessage\x12B\n" +
 	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x00R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
 	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x01R\x10applyimmediately\x88\x01\x01\x12=\n" +
 	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x02R\x15backupretentionperiod\x88\x01\x01\x12|\n" +
 	"!cloudwatchlogsexportconfiguration\x18\x8f\xaaҔ\x01 \x01(\v2*.neptune.CloudwatchLogsExportConfigurationR!cloudwatchlogsexportconfiguration\x127\n" +
 	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x03R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12F\n" +
-	"\x1cdbinstanceparametergroupname\x18\xf6\xab\x88\xf1\x01 \x01(\tR\x1cdbinstanceparametergroupname\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x04R\x12deletionprotection\x88\x01\x01\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x122\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x129\n" +
-	"\x16newdbclusteridentifier\x18\xcdȒ) \x01(\tR\x16newdbclusteridentifier\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x06R\x04port\x88\x01\x01\x127\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12y\n" +
-	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).neptune.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x123\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x04R\x1bdbclusterparametergroupname\x88\x01\x01\x12K\n" +
+	"\x1cdbinstanceparametergroupname\x18\xf6\xab\x88\xf1\x01 \x01(\tH\x05R\x1cdbinstanceparametergroupname\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x06R\x12deletionprotection\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\aR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\bR\rengineversion\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\tR\x12masteruserpassword\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\n" +
+	"R\vnetworktype\x88\x01\x01\x12>\n" +
+	"\x16newdbclusteridentifier\x18\xcdȒ) \x01(\tH\vR\x16newdbclusteridentifier\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\fR\x0foptiongroupname\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\rR\x04port\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x0eR\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH\x0fR\x1apreferredmaintenancewindow\x88\x01\x01\x12y\n" +
+	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).neptune.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x10R\vstoragetype\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1b\n" +
 	"\x19_allowmajorversionupgradeB\x13\n" +
 	"\x11_applyimmediatelyB\x18\n" +
 	"\x16_backupretentionperiodB\x15\n" +
-	"\x13_copytagstosnapshotB\x15\n" +
+	"\x13_copytagstosnapshotB\x1e\n" +
+	"\x1c_dbclusterparametergroupnameB\x1f\n" +
+	"\x1d_dbinstanceparametergroupnameB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
-	" _enableiamdatabaseauthenticationB\a\n" +
-	"\x05_port\"\xa4\x01\n" +
+	" _enableiamdatabaseauthenticationB\x10\n" +
+	"\x0e_engineversionB\x15\n" +
+	"\x13_masteruserpasswordB\x0e\n" +
+	"\f_networktypeB\x19\n" +
+	"\x17_newdbclusteridentifierB\x12\n" +
+	"\x10_optiongroupnameB\a\n" +
+	"\x05_portB\x18\n" +
+	"\x16_preferredbackupwindowB\x1d\n" +
+	"\x1b_preferredmaintenancewindowB\x0e\n" +
+	"\f_storagetype\"\xa4\x01\n" +
 	"$ModifyDBClusterParameterGroupMessage\x12D\n" +
 	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x126\n" +
 	"\n" +
@@ -17192,62 +17600,80 @@ const file_neptune_proto_rawDesc = "" +
 	"\vvaluestoadd\x18\x86\xb1\xa9F \x03(\tR\vvaluestoadd\x12*\n" +
 	"\x0evaluestoremove\x18\x93\x9e\xff\xd2\x01 \x03(\tR\x0evaluestoremove\"\xa5\x01\n" +
 	"&ModifyDBClusterSnapshotAttributeResult\x12{\n" +
-	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2*.neptune.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xdb\x12\n" +
+	"!dbclustersnapshotattributesresult\x18З\xa8W \x01(\v2*.neptune.DBClusterSnapshotAttributesResultR!dbclustersnapshotattributesresult\"\xcd\x16\n" +
 	"\x17ModifyDBInstanceMessage\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12B\n" +
 	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x01R\x18allowmajorversionupgrade\x88\x01\x01\x122\n" +
 	"\x10applyimmediately\x18\x9c\xcb\xcbE \x01(\bH\x02R\x10applyimmediately\x88\x01\x01\x12@\n" +
 	"\x17autominorversionupgrade\x18ܵ\xcf\x0f \x01(\bH\x03R\x17autominorversionupgrade\x88\x01\x01\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x04R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
-	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12|\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x04R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
+	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x05R\x17cacertificateidentifier\x88\x01\x01\x12|\n" +
 	"!cloudwatchlogsexportconfiguration\x18\x8f\xaaҔ\x01 \x01(\v2*.neptune.CloudwatchLogsExportConfigurationR!cloudwatchlogsexportconfiguration\x127\n" +
-	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x05R\x12copytagstosnapshot\x88\x01\x01\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x125\n" +
-	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x12*\n" +
-	"\fdbportnumber\x18\x8e\xaa\x833 \x01(\x05H\x06R\fdbportnumber\x88\x01\x01\x12.\n" +
-	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\aR\x12deletionprotection\x88\x01\x01\x12\x1a\n" +
-	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tR\x06domain\x12/\n" +
-	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tR\x11domainiamrolename\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\bR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
-	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\tR\x19enableperformanceinsights\x88\x01\x01\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\n" +
-	"R\x04iops\x88\x01\x01\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x122\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x127\n" +
-	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\vR\x12monitoringinterval\x88\x01\x01\x12/\n" +
-	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tR\x11monitoringrolearn\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\fR\amultiaz\x88\x01\x01\x12<\n" +
-	"\x17newdbinstanceidentifier\x18\xb8\xf9\x98\x9e\x01 \x01(\tR\x17newdbinstanceidentifier\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12D\n" +
-	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tR\x1bperformanceinsightskmskeyid\x127\n" +
-	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tR\x15preferredbackupwindow\x12A\n" +
-	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tR\x1apreferredmaintenancewindow\x12,\n" +
-	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\rR\rpromotiontier\x88\x01\x01\x126\n" +
-	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x0eR\x12publiclyaccessible\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12-\n" +
-	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tR\x10tdecredentialarn\x127\n" +
-	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tR\x15tdecredentialpassword\x123\n" +
+	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x06R\x12copytagstosnapshot\x88\x01\x01\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\aR\x0fdbinstanceclass\x88\x01\x01\x126\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12:\n" +
+	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tH\bR\x14dbparametergroupname\x88\x01\x01\x12*\n" +
+	"\fdbportnumber\x18\x8e\xaa\x833 \x01(\x05H\tR\fdbportnumber\x88\x01\x01\x12.\n" +
+	"\x10dbsecuritygroups\x18\xee\xac\xd1\xc8\x01 \x03(\tR\x10dbsecuritygroups\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\n" +
+	"R\x11dbsubnetgroupname\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\vR\x12deletionprotection\x88\x01\x01\x12\x1f\n" +
+	"\x06domain\x18\x92\x92\xf2\xf0\x01 \x01(\tH\fR\x06domain\x88\x01\x01\x124\n" +
+	"\x11domainiamrolename\x18\xfa\x81\xfa5 \x01(\tH\rR\x11domainiamrolename\x88\x01\x01\x12Q\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x0eR\x1fenableiamdatabaseauthentication\x88\x01\x01\x12E\n" +
+	"\x19enableperformanceinsights\x18\xae\xbe\xae\xe7\x01 \x01(\bH\x0fR\x19enableperformanceinsights\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x10R\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\x11R\x04iops\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x12R\flicensemodel\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\x13R\x12masteruserpassword\x88\x01\x01\x127\n" +
+	"\x12monitoringinterval\x18\xf7\xd5Ҙ\x01 \x01(\x05H\x14R\x12monitoringinterval\x88\x01\x01\x124\n" +
+	"\x11monitoringrolearn\x18\x87\xf2\xb2V \x01(\tH\x15R\x11monitoringrolearn\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x16R\amultiaz\x88\x01\x01\x12A\n" +
+	"\x17newdbinstanceidentifier\x18\xb8\xf9\x98\x9e\x01 \x01(\tH\x17R\x17newdbinstanceidentifier\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x18R\x0foptiongroupname\x88\x01\x01\x12I\n" +
+	"\x1bperformanceinsightskmskeyid\x18\xba\xcfټ\x01 \x01(\tH\x19R\x1bperformanceinsightskmskeyid\x88\x01\x01\x12<\n" +
+	"\x15preferredbackupwindow\x18Ň\xe5\x12 \x01(\tH\x1aR\x15preferredbackupwindow\x88\x01\x01\x12F\n" +
+	"\x1apreferredmaintenancewindow\x18\x82\xe3\xd6/ \x01(\tH\x1bR\x1apreferredmaintenancewindow\x88\x01\x01\x12,\n" +
+	"\rpromotiontier\x18\xa3\xf6\xbaQ \x01(\x05H\x1cR\rpromotiontier\x88\x01\x01\x126\n" +
+	"\x12publiclyaccessible\x18\x9e\xee\xbbz \x01(\bH\x1dR\x12publiclyaccessible\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x1eR\vstoragetype\x88\x01\x01\x122\n" +
+	"\x10tdecredentialarn\x18\x99\x88\xe83 \x01(\tH\x1fR\x10tdecredentialarn\x88\x01\x01\x12<\n" +
+	"\x15tdecredentialpassword\x18͕\xa1  \x01(\tH R\x15tdecredentialpassword\x88\x01\x01\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x13\n" +
 	"\x11_allocatedstorageB\x1b\n" +
 	"\x19_allowmajorversionupgradeB\x13\n" +
 	"\x11_applyimmediatelyB\x1a\n" +
 	"\x18_autominorversionupgradeB\x18\n" +
-	"\x16_backupretentionperiodB\x15\n" +
-	"\x13_copytagstosnapshotB\x0f\n" +
-	"\r_dbportnumberB\x15\n" +
-	"\x13_deletionprotectionB\"\n" +
+	"\x16_backupretentionperiodB\x1a\n" +
+	"\x18_cacertificateidentifierB\x15\n" +
+	"\x13_copytagstosnapshotB\x12\n" +
+	"\x10_dbinstanceclassB\x17\n" +
+	"\x15_dbparametergroupnameB\x0f\n" +
+	"\r_dbportnumberB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x15\n" +
+	"\x13_deletionprotectionB\t\n" +
+	"\a_domainB\x14\n" +
+	"\x12_domainiamrolenameB\"\n" +
 	" _enableiamdatabaseauthenticationB\x1c\n" +
-	"\x1a_enableperformanceinsightsB\a\n" +
-	"\x05_iopsB\x15\n" +
-	"\x13_monitoringintervalB\n" +
+	"\x1a_enableperformanceinsightsB\x10\n" +
+	"\x0e_engineversionB\a\n" +
+	"\x05_iopsB\x0f\n" +
+	"\r_licensemodelB\x15\n" +
+	"\x13_masteruserpasswordB\x15\n" +
+	"\x13_monitoringintervalB\x14\n" +
+	"\x12_monitoringrolearnB\n" +
 	"\n" +
-	"\b_multiazB\x10\n" +
+	"\b_multiazB\x1a\n" +
+	"\x18_newdbinstanceidentifierB\x12\n" +
+	"\x10_optiongroupnameB\x1e\n" +
+	"\x1c_performanceinsightskmskeyidB\x18\n" +
+	"\x16_preferredbackupwindowB\x1d\n" +
+	"\x1b_preferredmaintenancewindowB\x10\n" +
 	"\x0e_promotiontierB\x15\n" +
-	"\x13_publiclyaccessible\"Q\n" +
+	"\x13_publiclyaccessibleB\x0e\n" +
+	"\f_storagetypeB\x13\n" +
+	"\x11_tdecredentialarnB\x18\n" +
+	"\x16_tdecredentialpassword\"Q\n" +
 	"\x16ModifyDBInstanceResult\x127\n" +
 	"\n" +
 	"dbinstance\x18Ჩ\xfb\x01 \x01(\v2\x13.neptune.DBInstanceR\n" +
@@ -17256,134 +17682,180 @@ const file_neptune_proto_rawDesc = "" +
 	"\x14dbparametergroupname\x18\xdf\xe9\xa5S \x01(\tR\x14dbparametergroupname\x126\n" +
 	"\n" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x12.neptune.ParameterR\n" +
-	"parameters\"\xad\x01\n" +
-	"\x1aModifyDBSubnetGroupMessage\x12=\n" +
-	"\x18dbsubnetgroupdescription\x18\xa2\xd6\xfe4 \x01(\tR\x18dbsubnetgroupdescription\x12/\n" +
+	"parameters\"\xcf\x01\n" +
+	"\x1aModifyDBSubnetGroupMessage\x12B\n" +
+	"\x18dbsubnetgroupdescription\x18\xa2\xd6\xfe4 \x01(\tH\x00R\x18dbsubnetgroupdescription\x88\x01\x01\x12/\n" +
 	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12\x1f\n" +
-	"\tsubnetids\x18\x93\xdf\xf8~ \x03(\tR\tsubnetids\"]\n" +
+	"\tsubnetids\x18\x93\xdf\xf8~ \x03(\tR\tsubnetidsB\x1b\n" +
+	"\x19_dbsubnetgroupdescription\"]\n" +
 	"\x19ModifyDBSubnetGroupResult\x12@\n" +
-	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\v2\x16.neptune.DBSubnetGroupR\rdbsubnetgroup\"\xf4\x01\n" +
+	"\rdbsubnetgroup\x18\x8e\xb7\x99\xba\x01 \x01(\v2\x16.neptune.DBSubnetGroupR\rdbsubnetgroup\"\x9d\x02\n" +
 	"\x1eModifyEventSubscriptionMessage\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01\x12+\n" +
-	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tR\vsnstopicarn\x12!\n" +
+	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\tR\x0feventcategories\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tH\x01R\vsnstopicarn\x88\x01\x01\x12&\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\x12-\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\tH\x02R\n" +
+	"sourcetype\x88\x01\x01\x12-\n" +
 	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionnameB\n" +
 	"\n" +
-	"\b_enabled\"m\n" +
+	"\b_enabledB\x0e\n" +
+	"\f_snstopicarnB\r\n" +
+	"\v_sourcetype\"m\n" +
 	"\x1dModifyEventSubscriptionResult\x12L\n" +
-	"\x11eventsubscription\x18\xc3嫦\x01 \x01(\v2\x1a.neptune.EventSubscriptionR\x11eventsubscription\"\xf7\x02\n" +
+	"\x11eventsubscription\x18\xc3嫦\x01 \x01(\v2\x1a.neptune.EventSubscriptionR\x11eventsubscription\"\xb2\x03\n" +
 	"\x1aModifyGlobalClusterMessage\x12B\n" +
 	"\x18allowmajorversionupgrade\x18ı\xb3\x13 \x01(\bH\x00R\x18allowmajorversionupgrade\x88\x01\x01\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12;\n" +
-	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12B\n" +
-	"\x1anewglobalclusteridentifier\x18\xf0ؖ\xc9\x01 \x01(\tR\x1anewglobalclusteridentifierB\x1b\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x02R\rengineversion\x88\x01\x01\x12;\n" +
+	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12G\n" +
+	"\x1anewglobalclusteridentifier\x18\xf0ؖ\xc9\x01 \x01(\tH\x03R\x1anewglobalclusteridentifier\x88\x01\x01B\x1b\n" +
 	"\x19_allowmajorversionupgradeB\x15\n" +
-	"\x13_deletionprotection\"]\n" +
+	"\x13_deletionprotectionB\x10\n" +
+	"\x0e_engineversionB\x1d\n" +
+	"\x1b_newglobalclusteridentifier\"]\n" +
 	"\x19ModifyGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\";\n" +
-	"\x1cNetworkTypeNotSupportedFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"`\n" +
-	"\x15OptionGroupMembership\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"7\n" +
-	"\x18OptionGroupNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xec\v\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"L\n" +
+	"\x1cNetworkTypeNotSupportedFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x89\x01\n" +
+	"\x15OptionGroupMembership\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x00R\x0foptiongroupname\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x01R\x06status\x88\x01\x01B\x12\n" +
+	"\x10_optiongroupnameB\t\n" +
+	"\a_status\"H\n" +
+	"\x18OptionGroupNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x85\r\n" +
 	"\x19OrderableDBInstanceOption\x12J\n" +
-	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\v2\x19.neptune.AvailabilityZoneR\x11availabilityzones\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x12;\n" +
-	"\x14maxiopsperdbinstance\x18\xa3\xe6\xca\xc2\x01 \x01(\x05H\x00R\x14maxiopsperdbinstance\x88\x01\x01\x12'\n" +
-	"\rmaxiopspergib\x18ػ\xd7u \x01(\x01R\rmaxiopspergib\x12/\n" +
-	"\x0emaxstoragesize\x18\x8c\xa7\xce\xea\x01 \x01(\x05H\x01R\x0emaxstoragesize\x88\x01\x01\x12;\n" +
-	"\x14miniopsperdbinstance\x18\xad\xb1\x94\xed\x01 \x01(\x05H\x02R\x14miniopsperdbinstance\x88\x01\x01\x12(\n" +
-	"\rminiopspergib\x18\xe2\x96\xd8\xf3\x01 \x01(\x01R\rminiopspergib\x12.\n" +
-	"\x0eminstoragesize\x18\xe6\xe2\xc7c \x01(\x05H\x03R\x0eminstoragesize\x88\x01\x01\x12/\n" +
-	"\x0emultiazcapable\x18\x84\xe7\x9e\xf1\x01 \x01(\bH\x04R\x0emultiazcapable\x88\x01\x01\x126\n" +
-	"\x12readreplicacapable\x18\xd6\xc1\xa1n \x01(\bH\x05R\x12readreplicacapable\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x128\n" +
+	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\v2\x19.neptune.AvailabilityZoneR\x11availabilityzones\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x00R\x0fdbinstanceclass\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x01R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x02R\rengineversion\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\x03R\flicensemodel\x88\x01\x01\x12;\n" +
+	"\x14maxiopsperdbinstance\x18\xa3\xe6\xca\xc2\x01 \x01(\x05H\x04R\x14maxiopsperdbinstance\x88\x01\x01\x12,\n" +
+	"\rmaxiopspergib\x18ػ\xd7u \x01(\x01H\x05R\rmaxiopspergib\x88\x01\x01\x12/\n" +
+	"\x0emaxstoragesize\x18\x8c\xa7\xce\xea\x01 \x01(\x05H\x06R\x0emaxstoragesize\x88\x01\x01\x12;\n" +
+	"\x14miniopsperdbinstance\x18\xad\xb1\x94\xed\x01 \x01(\x05H\aR\x14miniopsperdbinstance\x88\x01\x01\x12-\n" +
+	"\rminiopspergib\x18\xe2\x96\xd8\xf3\x01 \x01(\x01H\bR\rminiopspergib\x88\x01\x01\x12.\n" +
+	"\x0eminstoragesize\x18\xe6\xe2\xc7c \x01(\x05H\tR\x0eminstoragesize\x88\x01\x01\x12/\n" +
+	"\x0emultiazcapable\x18\x84\xe7\x9e\xf1\x01 \x01(\bH\n" +
+	"R\x0emultiazcapable\x88\x01\x01\x126\n" +
+	"\x12readreplicacapable\x18\xd6\xc1\xa1n \x01(\bH\vR\x12readreplicacapable\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\fR\vstoragetype\x88\x01\x01\x128\n" +
 	"\x15supportednetworktypes\x18\xd7\xf6Ɋ\x01 \x03(\tR\x15supportednetworktypes\x12G\n" +
-	"\x1asupportsenhancedmonitoring\x18\xde\xf0\x9d\xd9\x01 \x01(\bH\x06R\x1asupportsenhancedmonitoring\x88\x01\x01\x12@\n" +
-	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\aR\x17supportsglobaldatabases\x88\x01\x01\x12U\n" +
-	"!supportsiamdatabaseauthentication\x18\xf4\xf2\xca\xe6\x01 \x01(\bH\bR!supportsiamdatabaseauthentication\x88\x01\x01\x12+\n" +
-	"\fsupportsiops\x18ś\xea\xb5\x01 \x01(\bH\tR\fsupportsiops\x88\x01\x01\x12I\n" +
-	"\x1bsupportsperformanceinsights\x18\xc5ɲ\xee\x01 \x01(\bH\n" +
-	"R\x1bsupportsperformanceinsights\x88\x01\x01\x12D\n" +
-	"\x19supportsstorageencryption\x18\xe8\xff\xdf' \x01(\bH\vR\x19supportsstorageencryption\x88\x01\x01\x12\x19\n" +
-	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\fR\x03vpc\x88\x01\x01B\x17\n" +
-	"\x15_maxiopsperdbinstanceB\x11\n" +
+	"\x1asupportsenhancedmonitoring\x18\xde\xf0\x9d\xd9\x01 \x01(\bH\rR\x1asupportsenhancedmonitoring\x88\x01\x01\x12@\n" +
+	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\x0eR\x17supportsglobaldatabases\x88\x01\x01\x12U\n" +
+	"!supportsiamdatabaseauthentication\x18\xf4\xf2\xca\xe6\x01 \x01(\bH\x0fR!supportsiamdatabaseauthentication\x88\x01\x01\x12+\n" +
+	"\fsupportsiops\x18ś\xea\xb5\x01 \x01(\bH\x10R\fsupportsiops\x88\x01\x01\x12I\n" +
+	"\x1bsupportsperformanceinsights\x18\xc5ɲ\xee\x01 \x01(\bH\x11R\x1bsupportsperformanceinsights\x88\x01\x01\x12D\n" +
+	"\x19supportsstorageencryption\x18\xe8\xff\xdf' \x01(\bH\x12R\x19supportsstorageencryption\x88\x01\x01\x12\x19\n" +
+	"\x03vpc\x18\xa9\xf6\xed\xee\x01 \x01(\bH\x13R\x03vpc\x88\x01\x01B\x12\n" +
+	"\x10_dbinstanceclassB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x0f\n" +
+	"\r_licensemodelB\x17\n" +
+	"\x15_maxiopsperdbinstanceB\x10\n" +
+	"\x0e_maxiopspergibB\x11\n" +
 	"\x0f_maxstoragesizeB\x17\n" +
-	"\x15_miniopsperdbinstanceB\x11\n" +
+	"\x15_miniopsperdbinstanceB\x10\n" +
+	"\x0e_miniopspergibB\x11\n" +
 	"\x0f_minstoragesizeB\x11\n" +
 	"\x0f_multiazcapableB\x15\n" +
-	"\x13_readreplicacapableB\x1d\n" +
+	"\x13_readreplicacapableB\x0e\n" +
+	"\f_storagetypeB\x1d\n" +
 	"\x1b_supportsenhancedmonitoringB\x1a\n" +
 	"\x18_supportsglobaldatabasesB$\n" +
 	"\"_supportsiamdatabaseauthenticationB\x0f\n" +
 	"\r_supportsiopsB\x1e\n" +
 	"\x1c_supportsperformanceinsightsB\x1c\n" +
 	"\x1a_supportsstorageencryptionB\x06\n" +
-	"\x04_vpc\"\xa5\x01\n" +
-	"!OrderableDBInstanceOptionsMessage\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12e\n" +
-	"\x1aorderabledbinstanceoptions\x18\x8d\xca\xfd\r \x03(\v2\".neptune.OrderableDBInstanceOptionR\x1aorderabledbinstanceoptions\"\xbd\x03\n" +
-	"\tParameter\x12(\n" +
-	"\rallowedvalues\x18\xcaշ\x8c\x01 \x01(\tR\rallowedvalues\x12:\n" +
-	"\vapplymethod\x18\x9b\xae\xce\xf8\x01 \x01(\x0e2\x14.neptune.ApplyMethodR\vapplymethod\x12\x1f\n" +
-	"\tapplytype\x18\xe4\xe1\x96\x1f \x01(\tR\tapplytype\x12\x1d\n" +
-	"\bdatatype\x18\xeeص  \x01(\tR\bdatatype\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12+\n" +
-	"\fismodifiable\x18\xe0\xf5\xc1\xb4\x01 \x01(\bH\x00R\fismodifiable\x88\x01\x01\x126\n" +
-	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tR\x14minimumengineversion\x12(\n" +
-	"\rparametername\x18\x94\x8e\xf4\x97\x01 \x01(\tR\rparametername\x12*\n" +
-	"\x0eparametervalue\x18\xc2\xf4\xe1\xe0\x01 \x01(\tR\x0eparametervalue\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06sourceB\x0f\n" +
-	"\r_ismodifiable\"\x7f\n" +
+	"\x04_vpc\"\xb5\x01\n" +
+	"!OrderableDBInstanceOptionsMessage\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12e\n" +
+	"\x1aorderabledbinstanceoptions\x18\x8d\xca\xfd\r \x03(\v2\".neptune.OrderableDBInstanceOptionR\x1aorderabledbinstanceoptionsB\t\n" +
+	"\a_marker\"\xeb\x04\n" +
+	"\tParameter\x12-\n" +
+	"\rallowedvalues\x18\xcaշ\x8c\x01 \x01(\tH\x00R\rallowedvalues\x88\x01\x01\x12:\n" +
+	"\vapplymethod\x18\x9b\xae\xce\xf8\x01 \x01(\x0e2\x14.neptune.ApplyMethodR\vapplymethod\x12$\n" +
+	"\tapplytype\x18\xe4\xe1\x96\x1f \x01(\tH\x01R\tapplytype\x88\x01\x01\x12\"\n" +
+	"\bdatatype\x18\xeeص  \x01(\tH\x02R\bdatatype\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12+\n" +
+	"\fismodifiable\x18\xe0\xf5\xc1\xb4\x01 \x01(\bH\x04R\fismodifiable\x88\x01\x01\x12;\n" +
+	"\x14minimumengineversion\x18\x94\xef\xba\xd5\x01 \x01(\tH\x05R\x14minimumengineversion\x88\x01\x01\x12-\n" +
+	"\rparametername\x18\x94\x8e\xf4\x97\x01 \x01(\tH\x06R\rparametername\x88\x01\x01\x12/\n" +
+	"\x0eparametervalue\x18\xc2\xf4\xe1\xe0\x01 \x01(\tH\aR\x0eparametervalue\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\bR\x06source\x88\x01\x01B\x10\n" +
+	"\x0e_allowedvaluesB\f\n" +
+	"\n" +
+	"_applytypeB\v\n" +
+	"\t_datatypeB\x0e\n" +
+	"\f_descriptionB\x0f\n" +
+	"\r_ismodifiableB\x17\n" +
+	"\x15_minimumengineversionB\x10\n" +
+	"\x0e_parameternameB\x11\n" +
+	"\x0f_parametervalueB\t\n" +
+	"\a_source\"\x7f\n" +
 	"\x1cPendingCloudwatchLogsExports\x12/\n" +
 	"\x11logtypestodisable\x18\xc6\xf0\xe3\x14 \x03(\tR\x11logtypestodisable\x12.\n" +
-	"\x10logtypestoenable\x18\x8d\x93\xf2\xa2\x01 \x03(\tR\x10logtypestoenable\"\x94\x02\n" +
-	"\x18PendingMaintenanceAction\x12\x19\n" +
-	"\x06action\x18\xa0\xd2\xdeS \x01(\tR\x06action\x126\n" +
-	"\x14autoappliedafterdate\x18\xd4\xcd\xca\xc2\x01 \x01(\tR\x14autoappliedafterdate\x12-\n" +
-	"\x10currentapplydate\x18\xf7ğ, \x01(\tR\x10currentapplydate\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12+\n" +
-	"\x0fforcedapplydate\x18\x91\xbb\xed' \x01(\tR\x0fforcedapplydate\x12$\n" +
-	"\voptinstatus\x18\x90\x81\xd6\xff\x01 \x01(\tR\voptinstatus\"\xab\x01\n" +
-	" PendingMaintenanceActionsMessage\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12l\n" +
-	"\x19pendingmaintenanceactions\x18׳\x8a\x8f\x01 \x03(\v2*.neptune.ResourcePendingMaintenanceActionsR\x19pendingmaintenanceactions\"\x9e\x06\n" +
+	"\x10logtypestoenable\x18\x8d\x93\xf2\xa2\x01 \x03(\tR\x10logtypestoenable\"\x9f\x03\n" +
+	"\x18PendingMaintenanceAction\x12\x1e\n" +
+	"\x06action\x18\xa0\xd2\xdeS \x01(\tH\x00R\x06action\x88\x01\x01\x12;\n" +
+	"\x14autoappliedafterdate\x18\xd4\xcd\xca\xc2\x01 \x01(\tH\x01R\x14autoappliedafterdate\x88\x01\x01\x122\n" +
+	"\x10currentapplydate\x18\xf7ğ, \x01(\tH\x02R\x10currentapplydate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x120\n" +
+	"\x0fforcedapplydate\x18\x91\xbb\xed' \x01(\tH\x04R\x0fforcedapplydate\x88\x01\x01\x12)\n" +
+	"\voptinstatus\x18\x90\x81\xd6\xff\x01 \x01(\tH\x05R\voptinstatus\x88\x01\x01B\t\n" +
+	"\a_actionB\x17\n" +
+	"\x15_autoappliedafterdateB\x13\n" +
+	"\x11_currentapplydateB\x0e\n" +
+	"\f_descriptionB\x12\n" +
+	"\x10_forcedapplydateB\x0e\n" +
+	"\f_optinstatus\"\xbb\x01\n" +
+	" PendingMaintenanceActionsMessage\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x00R\x06marker\x88\x01\x01\x12l\n" +
+	"\x19pendingmaintenanceactions\x18׳\x8a\x8f\x01 \x03(\v2*.neptune.ResourcePendingMaintenanceActionsR\x19pendingmaintenanceactionsB\t\n" +
+	"\a_marker\"\xef\a\n" +
 	"\x15PendingModifiedValues\x123\n" +
 	"\x10allocatedstorage\x18\xb8\x84\xf2\xdc\x01 \x01(\x05H\x00R\x10allocatedstorage\x88\x01\x01\x12=\n" +
-	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12<\n" +
-	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tR\x17cacertificateidentifier\x12,\n" +
-	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tR\x0fdbinstanceclass\x126\n" +
-	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tR\x14dbinstanceidentifier\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x19\n" +
-	"\x04iops\x18\x81\xd9? \x01(\x05H\x02R\x04iops\x88\x01\x01\x12%\n" +
-	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tR\flicensemodel\x122\n" +
-	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tR\x12masteruserpassword\x12!\n" +
-	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\x03R\amultiaz\x88\x01\x01\x12l\n" +
+	"\x15backupretentionperiod\x18\xf7\xa1\x84\xc4\x01 \x01(\x05H\x01R\x15backupretentionperiod\x88\x01\x01\x12A\n" +
+	"\x17cacertificateidentifier\x18\x98\xc2\xef\xe0\x01 \x01(\tH\x02R\x17cacertificateidentifier\x88\x01\x01\x121\n" +
+	"\x0fdbinstanceclass\x18\xd9\xdc\xef\xc9\x01 \x01(\tH\x03R\x0fdbinstanceclass\x88\x01\x01\x12;\n" +
+	"\x14dbinstanceidentifier\x18\x94χ\x82\x01 \x01(\tH\x04R\x14dbinstanceidentifier\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x05R\x11dbsubnetgroupname\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x06R\rengineversion\x88\x01\x01\x12\x19\n" +
+	"\x04iops\x18\x81\xd9? \x01(\x05H\aR\x04iops\x88\x01\x01\x12*\n" +
+	"\flicensemodel\x18\xb2\x99\xb8\x1c \x01(\tH\bR\flicensemodel\x88\x01\x01\x127\n" +
+	"\x12masteruserpassword\x18\xfa\x9aě\x01 \x01(\tH\tR\x12masteruserpassword\x88\x01\x01\x12!\n" +
+	"\amultiaz\x18ʫ\x91\xa9\x01 \x01(\bH\n" +
+	"R\amultiaz\x88\x01\x01\x12l\n" +
 	"\x1cpendingcloudwatchlogsexports\x18\xa7\xa8\xe1Y \x01(\v2%.neptune.PendingCloudwatchLogsExportsR\x1cpendingcloudwatchlogsexports\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x04R\x04port\x88\x01\x01\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetypeB\x13\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\vR\x04port\x88\x01\x01\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\fR\vstoragetype\x88\x01\x01B\x13\n" +
 	"\x11_allocatedstorageB\x18\n" +
-	"\x16_backupretentionperiodB\a\n" +
-	"\x05_iopsB\n" +
+	"\x16_backupretentionperiodB\x1a\n" +
+	"\x18_cacertificateidentifierB\x12\n" +
+	"\x10_dbinstanceclassB\x17\n" +
+	"\x15_dbinstanceidentifierB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x10\n" +
+	"\x0e_engineversionB\a\n" +
+	"\x05_iopsB\x0f\n" +
+	"\r_licensemodelB\x15\n" +
+	"\x13_masteruserpasswordB\n" +
 	"\n" +
 	"\b_multiazB\a\n" +
-	"\x05_port\"Z\n" +
+	"\x05_portB\x0e\n" +
+	"\f_storagetype\"Z\n" +
 	"\"PromoteReadReplicaDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"Y\n" +
 	"!PromoteReadReplicaDBClusterResult\x124\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"C\n" +
-	"$ProvisionedIopsNotAvailableInAZFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"q\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"T\n" +
+	"$ProvisionedIopsNotAvailableInAZFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"q\n" +
 	"\x05Range\x12\x1b\n" +
 	"\x04from\x18\x96\xeb\xd0\xc3\x01 \x01(\x05H\x00R\x04from\x88\x01\x01\x12\x1a\n" +
 	"\x04step\x18\xb0\xf2\xc7; \x01(\x05H\x01R\x04step\x88\x01\x01\x12\x16\n" +
@@ -17403,11 +17875,12 @@ const file_neptune_proto_rawDesc = "" +
 	"\x13dbclusteridentifier\x18\xb1\xdf\xc9\x03 \x01(\tR\x13dbclusteridentifier\x12;\n" +
 	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\"a\n" +
 	"\x1dRemoveFromGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\x99\x01\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"\xae\x01\n" +
 	"\x1eRemoveRoleFromDBClusterMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12#\n" +
-	"\vfeaturename\x18\xff\x97\x90h \x01(\tR\vfeaturename\x12\x1c\n" +
-	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\"\x8d\x01\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12(\n" +
+	"\vfeaturename\x18\xff\x97\x90h \x01(\tH\x00R\vfeaturename\x88\x01\x01\x12\x1c\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearnB\x0e\n" +
+	"\f_featurename\"\x8d\x01\n" +
 	"-RemoveSourceIdentifierFromSubscriptionMessage\x12-\n" +
 	"\x10sourceidentifier\x18\x8c\xd2\xcdZ \x01(\tR\x10sourceidentifier\x12-\n" +
 	"\x10subscriptionname\x18\x90\xad\xdeV \x01(\tR\x10subscriptionname\"|\n" +
@@ -17429,82 +17902,121 @@ const file_neptune_proto_rawDesc = "" +
 	"parameters\x18\xfa\xa7\xfe\xeb\x01 \x03(\v2\x12.neptune.ParameterR\n" +
 	"parameters\x127\n" +
 	"\x12resetallparameters\x18\xec\x9a\xc5\xf9\x01 \x01(\bH\x00R\x12resetallparameters\x88\x01\x01B\x15\n" +
-	"\x13_resetallparameters\"4\n" +
-	"\x15ResourceNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc8\x01\n" +
+	"\x13_resetallparameters\"E\n" +
+	"\x15ResourceNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe4\x01\n" +
 	"!ResourcePendingMaintenanceActions\x12o\n" +
-	"\x1fpendingmaintenanceactiondetails\x18\xda\xc2\xfd\xaa\x01 \x03(\v2!.neptune.PendingMaintenanceActionR\x1fpendingmaintenanceactiondetails\x122\n" +
-	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tR\x12resourceidentifier\"\x93\t\n" +
+	"\x1fpendingmaintenanceactiondetails\x18\xda\xc2\xfd\xaa\x01 \x03(\v2!.neptune.PendingMaintenanceActionR\x1fpendingmaintenanceactiondetails\x127\n" +
+	"\x12resourceidentifier\x18\xaf\xbe\x92\x85\x01 \x01(\tH\x00R\x12resourceidentifier\x88\x01\x01B\x15\n" +
+	"\x13_resourceidentifier\"\xd5\n" +
+	"\n" +
 	"#RestoreDBClusterFromSnapshotMessage\x12/\n" +
 	"\x11availabilityzones\x18Ҁ\x9d4 \x03(\tR\x11availabilityzones\x127\n" +
 	"\x12copytagstosnapshot\x18\x99Ʌ\xda\x01 \x01(\bH\x00R\x12copytagstosnapshot\x88\x01\x01\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x01R\x12deletionprotection\x88\x01\x01\x12D\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x01R\x1bdbclusterparametergroupname\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x02R\x11dbsubnetgroupname\x88\x01\x01\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x03R\fdatabasename\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x04R\x12deletionprotection\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x02R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x03R\x04port\x88\x01\x01\x12y\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x05R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1a\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x06R\rengineversion\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\aR\bkmskeyid\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\bR\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\tR\x0foptiongroupname\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\n" +
+	"R\x04port\x88\x01\x01\x12y\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).neptune.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x122\n" +
-	"\x12snapshotidentifier\x18\xc7\u07b6\xbe\x01 \x01(\tR\x12snapshotidentifier\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12$\n" +
+	"\x12snapshotidentifier\x18\xc7\u07b6\xbe\x01 \x01(\tR\x12snapshotidentifier\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\vR\vstoragetype\x88\x01\x01\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x123\n" +
 	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x15\n" +
-	"\x13_copytagstosnapshotB\x15\n" +
+	"\x13_copytagstosnapshotB\x1e\n" +
+	"\x1c_dbclusterparametergroupnameB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x0f\n" +
+	"\r_databasenameB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
-	" _enableiamdatabaseauthenticationB\a\n" +
-	"\x05_port\"Z\n" +
+	" _enableiamdatabaseauthenticationB\x10\n" +
+	"\x0e_engineversionB\v\n" +
+	"\t_kmskeyidB\x0e\n" +
+	"\f_networktypeB\x12\n" +
+	"\x10_optiongroupnameB\a\n" +
+	"\x05_portB\x0e\n" +
+	"\f_storagetype\"Z\n" +
 	"\"RestoreDBClusterFromSnapshotResult\x124\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"\xe3\b\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"\xa4\n" +
+	"\n" +
 	"$RestoreDBClusterToPointInTimeMessage\x124\n" +
-	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12D\n" +
-	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tR\x1bdbclusterparametergroupname\x12/\n" +
-	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tR\x11dbsubnetgroupname\x127\n" +
-	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x00R\x12deletionprotection\x88\x01\x01\x12D\n" +
+	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\x12I\n" +
+	"\x1bdbclusterparametergroupname\x18צ\xe8\xb7\x01 \x01(\tH\x00R\x1bdbclusterparametergroupname\x88\x01\x01\x124\n" +
+	"\x11dbsubnetgroupname\x18\xaf\xa7\x92( \x01(\tH\x01R\x11dbsubnetgroupname\x88\x01\x01\x127\n" +
+	"\x12deletionprotection\x18Ѹ\xd9\xf0\x01 \x01(\bH\x02R\x12deletionprotection\x88\x01\x01\x12D\n" +
 	"\x1benablecloudwatchlogsexports\x18\x85\xed\xa2\xb9\x01 \x03(\tR\x1benablecloudwatchlogsexports\x12Q\n" +
-	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x01R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12$\n" +
-	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tR\vnetworktype\x12,\n" +
-	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tR\x0foptiongroupname\x12\x1a\n" +
-	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\x02R\x04port\x88\x01\x01\x12'\n" +
-	"\rrestoretotime\x18\xea\xfe\xdb7 \x01(\tR\rrestoretotime\x12$\n" +
-	"\vrestoretype\x18\xba\xfc\xf1\xb4\x01 \x01(\tR\vrestoretype\x12y\n" +
+	"\x1fenableiamdatabaseauthentication\x18\xfb\x91\xf5\xdc\x01 \x01(\bH\x03R\x1fenableiamdatabaseauthentication\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x04R\bkmskeyid\x88\x01\x01\x12)\n" +
+	"\vnetworktype\x18\xce\xf1Ŧ\x01 \x01(\tH\x05R\vnetworktype\x88\x01\x01\x121\n" +
+	"\x0foptiongroupname\x18Ńڐ\x01 \x01(\tH\x06R\x0foptiongroupname\x88\x01\x01\x12\x1a\n" +
+	"\x04port\x18\xc7\xf9\x94\x16 \x01(\x05H\aR\x04port\x88\x01\x01\x12,\n" +
+	"\rrestoretotime\x18\xea\xfe\xdb7 \x01(\tH\bR\rrestoretotime\x88\x01\x01\x12)\n" +
+	"\vrestoretype\x18\xba\xfc\xf1\xb4\x01 \x01(\tH\tR\vrestoretype\x88\x01\x01\x12y\n" +
 	" serverlessv2scalingconfiguration\x18\xbb\xae\xbe\xaa\x01 \x01(\v2).neptune.ServerlessV2ScalingConfigurationR serverlessv2scalingconfiguration\x12@\n" +
-	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tR\x19sourcedbclusteridentifier\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\x12$\n" +
+	"\x19sourcedbclusteridentifier\x18\xf8\xb4\xaa\x98\x01 \x01(\tR\x19sourcedbclusteridentifier\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\n" +
+	"R\vstoragetype\x88\x01\x01\x12$\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\f.neptune.TagR\x04tags\x12A\n" +
-	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\x03R\x17uselatestrestorabletime\x88\x01\x01\x123\n" +
-	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x15\n" +
+	"\x17uselatestrestorabletime\x18\xeaŘ\xcf\x01 \x01(\bH\vR\x17uselatestrestorabletime\x88\x01\x01\x123\n" +
+	"\x13vpcsecuritygroupids\x18\x96\xae\xbbH \x03(\tR\x13vpcsecuritygroupidsB\x1e\n" +
+	"\x1c_dbclusterparametergroupnameB\x14\n" +
+	"\x12_dbsubnetgroupnameB\x15\n" +
 	"\x13_deletionprotectionB\"\n" +
-	" _enableiamdatabaseauthenticationB\a\n" +
-	"\x05_portB\x1a\n" +
+	" _enableiamdatabaseauthenticationB\v\n" +
+	"\t_kmskeyidB\x0e\n" +
+	"\f_networktypeB\x12\n" +
+	"\x10_optiongroupnameB\a\n" +
+	"\x05_portB\x10\n" +
+	"\x0e_restoretotimeB\x0e\n" +
+	"\f_restoretypeB\x0e\n" +
+	"\f_storagetypeB\x1a\n" +
 	"\x18_uselatestrestorabletime\"[\n" +
 	"#RestoreDBClusterToPointInTimeResult\x124\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"3\n" +
-	"\x14SNSInvalidTopicFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"6\n" +
-	"\x17SNSNoAuthorizationFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18SNSTopicArnNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"m\n" +
-	" ServerlessV2ScalingConfiguration\x12$\n" +
-	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01R\vmaxcapacity\x12#\n" +
-	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\"q\n" +
-	"$ServerlessV2ScalingConfigurationInfo\x12$\n" +
-	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01R\vmaxcapacity\x12#\n" +
-	"\vmincapacity\x18ĩ\x9b] \x01(\x01R\vmincapacity\"?\n" +
-	" SharedSnapshotQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aSnapshotQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13SourceNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"M\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"D\n" +
+	"\x14SNSInvalidTopicFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17SNSNoAuthorizationFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18SNSTopicArnNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x97\x01\n" +
+	" ServerlessV2ScalingConfiguration\x12)\n" +
+	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01H\x00R\vmaxcapacity\x88\x01\x01\x12(\n" +
+	"\vmincapacity\x18ĩ\x9b] \x01(\x01H\x01R\vmincapacity\x88\x01\x01B\x0e\n" +
+	"\f_maxcapacityB\x0e\n" +
+	"\f_mincapacity\"\x9b\x01\n" +
+	"$ServerlessV2ScalingConfigurationInfo\x12)\n" +
+	"\vmaxcapacity\x18ַ\xb0\xd8\x01 \x01(\x01H\x00R\vmaxcapacity\x88\x01\x01\x12(\n" +
+	"\vmincapacity\x18ĩ\x9b] \x01(\x01H\x01R\vmincapacity\x88\x01\x01B\x0e\n" +
+	"\f_maxcapacityB\x0e\n" +
+	"\f_mincapacity\"P\n" +
+	" SharedSnapshotQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aSnapshotQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13SourceNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
 	"\x15StartDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"L\n" +
 	"\x14StartDBClusterResult\x124\n" +
@@ -17512,55 +18024,78 @@ const file_neptune_proto_rawDesc = "" +
 	"\x14StopDBClusterMessage\x124\n" +
 	"\x13dbclusteridentifier\x18\xd1娢\x01 \x01(\tR\x13dbclusteridentifier\"K\n" +
 	"\x13StopDBClusterResult\x124\n" +
-	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"8\n" +
-	"\x19StorageQuotaExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cStorageTypeNotSupportedFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb7\x01\n" +
+	"\tdbcluster\x18\xfc\xc6\xe8\xe3\x01 \x01(\v2\x12.neptune.DBClusterR\tdbcluster\"I\n" +
+	"\x19StorageQuotaExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cStorageTypeNotSupportedFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe7\x01\n" +
 	"\x06Subnet\x12U\n" +
-	"\x16subnetavailabilityzone\x18ⵦ\xd3\x01 \x01(\v2\x19.neptune.AvailabilityZoneR\x16subnetavailabilityzone\x12.\n" +
-	"\x10subnetidentifier\x18\xdcƨ\xfc\x01 \x01(\tR\x10subnetidentifier\x12&\n" +
-	"\fsubnetstatus\x18\x8b\xaeð\x01 \x01(\tR\fsubnetstatus\"1\n" +
-	"\x12SubnetAlreadyInUse\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
-	"\x1dSubscriptionAlreadyExistFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"@\n" +
-	"!SubscriptionCategoryNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19SubscriptionNotFoundFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9e\x01\n" +
+	"\x16subnetavailabilityzone\x18ⵦ\xd3\x01 \x01(\v2\x19.neptune.AvailabilityZoneR\x16subnetavailabilityzone\x123\n" +
+	"\x10subnetidentifier\x18\xdcƨ\xfc\x01 \x01(\tH\x00R\x10subnetidentifier\x88\x01\x01\x12+\n" +
+	"\fsubnetstatus\x18\x8b\xaeð\x01 \x01(\tH\x01R\fsubnetstatus\x88\x01\x01B\x13\n" +
+	"\x11_subnetidentifierB\x0f\n" +
+	"\r_subnetstatus\"B\n" +
+	"\x12SubnetAlreadyInUse\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dSubscriptionAlreadyExistFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Q\n" +
+	"!SubscriptionCategoryNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19SubscriptionNotFoundFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9e\x01\n" +
 	"\x1eSwitchoverGlobalClusterMessage\x12;\n" +
 	"\x17globalclusteridentifier\x18\xfc\xe9\xe96 \x01(\tR\x17globalclusteridentifier\x12?\n" +
 	"\x19targetdbclusteridentifier\x18覅D \x01(\tR\x19targetdbclusteridentifier\"a\n" +
 	"\x1dSwitchoverGlobalClusterResult\x12@\n" +
-	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"4\n" +
-	"\x03Tag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"<\n" +
+	"\rglobalcluster\x18\xe9ȫ\xad\x01 \x01(\v2\x16.neptune.GlobalClusterR\rglobalcluster\"P\n" +
+	"\x03Tag\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x00R\x03key\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\x06\n" +
+	"\x04_keyB\b\n" +
+	"\x06_value\"<\n" +
 	"\x0eTagListMessage\x12*\n" +
-	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\f.neptune.TagR\ataglist\"1\n" +
-	"\bTimezone\x12%\n" +
-	"\ftimezonename\x18\xaa\x98\xcbP \x01(\tR\ftimezonename\"\xeb\x02\n" +
+	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\f.neptune.TagR\ataglist\"G\n" +
+	"\bTimezone\x12*\n" +
+	"\ftimezonename\x18\xaa\x98\xcbP \x01(\tH\x00R\ftimezonename\x88\x01\x01B\x0f\n" +
+	"\r_timezonename\"\xa7\x03\n" +
 	"\rUpgradeTarget\x12)\n" +
-	"\vautoupgrade\x18\x87\xe0\xa1\xdb\x01 \x01(\bH\x00R\vautoupgrade\x88\x01\x01\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1a\n" +
-	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tR\x06engine\x12'\n" +
-	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tR\rengineversion\x12=\n" +
-	"\x15ismajorversionupgrade\x18\x9f\x83\x8b\xb1\x01 \x01(\bH\x01R\x15ismajorversionupgrade\x88\x01\x01\x12@\n" +
-	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\x02R\x17supportsglobaldatabases\x88\x01\x01B\x0e\n" +
-	"\f_autoupgradeB\x18\n" +
+	"\vautoupgrade\x18\x87\xe0\xa1\xdb\x01 \x01(\bH\x00R\vautoupgrade\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x1f\n" +
+	"\x06engine\x18ܪ\x84\xdb\x01 \x01(\tH\x02R\x06engine\x88\x01\x01\x12,\n" +
+	"\rengineversion\x18\xf6\u07b7\x15 \x01(\tH\x03R\rengineversion\x88\x01\x01\x12=\n" +
+	"\x15ismajorversionupgrade\x18\x9f\x83\x8b\xb1\x01 \x01(\bH\x04R\x15ismajorversionupgrade\x88\x01\x01\x12@\n" +
+	"\x17supportsglobaldatabases\x18\xed\xf6\xfaP \x01(\bH\x05R\x17supportsglobaldatabases\x88\x01\x01B\x0e\n" +
+	"\f_autoupgradeB\x0e\n" +
+	"\f_descriptionB\t\n" +
+	"\a_engineB\x10\n" +
+	"\x0e_engineversionB\x18\n" +
 	"\x16_ismajorversionupgradeB\x1a\n" +
 	"\x18_supportsglobaldatabases\"a\n" +
 	"#ValidDBInstanceModificationsMessage\x12:\n" +
-	"\astorage\x18\x87\xbe\xb7\xa7\x01 \x03(\v2\x1c.neptune.ValidStorageOptionsR\astorage\"\xf6\x01\n" +
+	"\astorage\x18\x87\xbe\xb7\xa7\x01 \x03(\v2\x1c.neptune.ValidStorageOptionsR\astorage\"\x8b\x02\n" +
 	"\x13ValidStorageOptions\x12G\n" +
 	"\x12iopstostorageratio\x18\xf2\x9e\xfbu \x03(\v2\x14.neptune.DoubleRangeR\x12iopstostorageratio\x12;\n" +
 	"\x0fprovisionediops\x18\x85\xea\x81/ \x03(\v2\x0e.neptune.RangeR\x0fprovisionediops\x124\n" +
-	"\vstoragesize\x18\xa8ȉ\xb0\x01 \x03(\v2\x0e.neptune.RangeR\vstoragesize\x12#\n" +
-	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tR\vstoragetype\"k\n" +
-	"\x1aVpcSecurityGroupMembership\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x122\n" +
-	"\x12vpcsecuritygroupid\x18ś\xa7\xb7\x01 \x01(\tR\x12vpcsecuritygroupid*J\n" +
+	"\vstoragesize\x18\xa8ȉ\xb0\x01 \x03(\v2\x0e.neptune.RangeR\vstoragesize\x12(\n" +
+	"\vstoragetype\x18\x97\xd1\xd4I \x01(\tH\x00R\vstoragetype\x88\x01\x01B\x0e\n" +
+	"\f_storagetype\"\x97\x01\n" +
+	"\x1aVpcSecurityGroupMembership\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x00R\x06status\x88\x01\x01\x127\n" +
+	"\x12vpcsecuritygroupid\x18ś\xa7\xb7\x01 \x01(\tH\x01R\x12vpcsecuritygroupid\x88\x01\x01B\t\n" +
+	"\a_statusB\x15\n" +
+	"\x13_vpcsecuritygroupid*J\n" +
 	"\vApplyMethod\x12\x1f\n" +
 	"\x1bAPPLY_METHOD_PENDING_REBOOT\x10\x00\x12\x1a\n" +
 	"\x16APPLY_METHOD_IMMEDIATE\x10\x01*o\n" +
@@ -18205,18 +18740,73 @@ func file_neptune_proto_init() {
 	if File_neptune_proto != nil {
 		return
 	}
+	file_neptune_proto_msgTypes[0].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[6].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[7].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[8].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[9].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[11].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[14].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[19].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[20].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[26].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[32].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[34].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[36].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[37].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[38].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[39].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[40].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[41].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[42].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[43].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[44].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[45].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[46].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[47].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[48].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[49].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[50].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[51].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[52].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[53].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[54].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[55].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[56].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[57].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[58].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[59].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[60].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[61].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[62].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[63].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[64].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[65].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[66].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[67].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[68].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[69].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[70].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[71].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[72].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[73].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[74].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[75].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[76].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[77].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[78].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[79].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[80].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[81].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[82].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[83].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[84].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[85].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[86].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[87].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[88].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[89].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[91].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[92].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[97].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[105].OneofWrappers = []any{}
@@ -18231,31 +18821,97 @@ func file_neptune_proto_init() {
 	file_neptune_proto_msgTypes[116].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[117].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[119].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[121].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[122].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[123].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[124].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[125].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[126].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[129].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[130].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[131].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[132].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[133].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[134].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[135].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[137].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[138].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[139].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[140].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[141].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[143].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[145].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[147].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[148].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[149].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[150].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[151].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[152].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[153].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[154].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[155].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[156].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[157].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[158].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[159].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[160].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[161].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[162].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[163].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[164].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[165].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[166].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[167].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[168].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[169].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[170].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[171].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[173].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[174].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[175].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[180].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[183].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[185].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[187].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[189].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[190].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[191].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[192].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[193].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[194].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[196].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[197].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[198].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[201].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[202].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[203].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[207].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[211].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[212].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[213].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[214].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[215].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[217].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[219].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[220].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[221].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[222].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[223].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[224].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[225].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[226].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[231].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[232].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[233].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[234].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[235].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[236].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[237].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[240].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[242].OneofWrappers = []any{}
 	file_neptune_proto_msgTypes[243].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[245].OneofWrappers = []any{}
+	file_neptune_proto_msgTypes[246].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

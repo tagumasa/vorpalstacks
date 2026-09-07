@@ -22,6 +22,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	SESv2Service_AssociateEmailIdentityCertificate_FullMethodName           = "/sesv2.SESv2Service/AssociateEmailIdentityCertificate"
 	SESv2Service_BatchGetMetricData_FullMethodName                          = "/sesv2.SESv2Service/BatchGetMetricData"
 	SESv2Service_CancelExportJob_FullMethodName                             = "/sesv2.SESv2Service/CancelExportJob"
 	SESv2Service_CreateConfigurationSet_FullMethodName                      = "/sesv2.SESv2Service/CreateConfigurationSet"
@@ -52,6 +53,7 @@ const (
 	SESv2Service_DeleteSuppressedDestination_FullMethodName                 = "/sesv2.SESv2Service/DeleteSuppressedDestination"
 	SESv2Service_DeleteTenant_FullMethodName                                = "/sesv2.SESv2Service/DeleteTenant"
 	SESv2Service_DeleteTenantResourceAssociation_FullMethodName             = "/sesv2.SESv2Service/DeleteTenantResourceAssociation"
+	SESv2Service_DisassociateEmailIdentityCertificate_FullMethodName        = "/sesv2.SESv2Service/DisassociateEmailIdentityCertificate"
 	SESv2Service_GetAccount_FullMethodName                                  = "/sesv2.SESv2Service/GetAccount"
 	SESv2Service_GetBlacklistReports_FullMethodName                         = "/sesv2.SESv2Service/GetBlacklistReports"
 	SESv2Service_GetConfigurationSet_FullMethodName                         = "/sesv2.SESv2Service/GetConfigurationSet"
@@ -85,6 +87,7 @@ const (
 	SESv2Service_ListDeliverabilityTestReports_FullMethodName               = "/sesv2.SESv2Service/ListDeliverabilityTestReports"
 	SESv2Service_ListDomainDeliverabilityCampaigns_FullMethodName           = "/sesv2.SESv2Service/ListDomainDeliverabilityCampaigns"
 	SESv2Service_ListEmailIdentities_FullMethodName                         = "/sesv2.SESv2Service/ListEmailIdentities"
+	SESv2Service_ListEmailIdentityCertificates_FullMethodName               = "/sesv2.SESv2Service/ListEmailIdentityCertificates"
 	SESv2Service_ListEmailTemplates_FullMethodName                          = "/sesv2.SESv2Service/ListEmailTemplates"
 	SESv2Service_ListExportJobs_FullMethodName                              = "/sesv2.SESv2Service/ListExportJobs"
 	SESv2Service_ListImportJobs_FullMethodName                              = "/sesv2.SESv2Service/ListImportJobs"
@@ -98,6 +101,7 @@ const (
 	SESv2Service_ListTenants_FullMethodName                                 = "/sesv2.SESv2Service/ListTenants"
 	SESv2Service_PutAccountDedicatedIpWarmupAttributes_FullMethodName       = "/sesv2.SESv2Service/PutAccountDedicatedIpWarmupAttributes"
 	SESv2Service_PutAccountDetails_FullMethodName                           = "/sesv2.SESv2Service/PutAccountDetails"
+	SESv2Service_PutAccountPricingAttributes_FullMethodName                 = "/sesv2.SESv2Service/PutAccountPricingAttributes"
 	SESv2Service_PutAccountSendingAttributes_FullMethodName                 = "/sesv2.SESv2Service/PutAccountSendingAttributes"
 	SESv2Service_PutAccountSuppressionAttributes_FullMethodName             = "/sesv2.SESv2Service/PutAccountSuppressionAttributes"
 	SESv2Service_PutAccountVdmAttributes_FullMethodName                     = "/sesv2.SESv2Service/PutAccountVdmAttributes"
@@ -125,6 +129,7 @@ const (
 	SESv2Service_TagResource_FullMethodName                                 = "/sesv2.SESv2Service/TagResource"
 	SESv2Service_TestRenderEmailTemplate_FullMethodName                     = "/sesv2.SESv2Service/TestRenderEmailTemplate"
 	SESv2Service_UntagResource_FullMethodName                               = "/sesv2.SESv2Service/UntagResource"
+	SESv2Service_UpdateConfigurationSet_FullMethodName                      = "/sesv2.SESv2Service/UpdateConfigurationSet"
 	SESv2Service_UpdateConfigurationSetEventDestination_FullMethodName      = "/sesv2.SESv2Service/UpdateConfigurationSetEventDestination"
 	SESv2Service_UpdateContact_FullMethodName                               = "/sesv2.SESv2Service/UpdateContact"
 	SESv2Service_UpdateContactList_FullMethodName                           = "/sesv2.SESv2Service/UpdateContactList"
@@ -141,6 +146,10 @@ const (
 //
 // SESv2Service provides sesv2 API operations.
 type SESv2ServiceClient interface {
+	// Associates an S/MIME certificate with an email identity. After the certificate is active, Amazon SES API v2 can add an S/MIME signature to messages that you send from the associated address when si...
+	// HTTP: POST /v2/email/identity/certificates
+	// Protocol: restJson1
+	AssociateEmailIdentityCertificate(ctx context.Context, in *AssociateEmailIdentityCertificateRequest, opts ...grpc.CallOption) (*AssociateEmailIdentityCertificateResponse, error)
 	// Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second ...
 	// HTTP: POST /v2/email/metrics/batch
 	// Protocol: restJson1
@@ -261,6 +270,10 @@ type SESv2ServiceClient interface {
 	// HTTP: POST /v2/email/tenants/resources/delete
 	// Protocol: restJson1
 	DeleteTenantResourceAssociation(ctx context.Context, in *DeleteTenantResourceAssociationRequest, opts ...grpc.CallOption) (*DeleteTenantResourceAssociationResponse, error)
+	// Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address....
+	// HTTP: POST /v2/email/identity/certificates/delete
+	// Protocol: restJson1
+	DisassociateEmailIdentityCertificate(ctx context.Context, in *DisassociateEmailIdentityCertificateRequest, opts ...grpc.CallOption) (*DisassociateEmailIdentityCertificateResponse, error)
 	// Obtain information about the email-sending status and capabilities of your Amazon SES account in the current Amazon Web Services Region.
 	// HTTP: GET /v2/email/account
 	// Protocol: restJson1
@@ -393,6 +406,10 @@ type SESv2ServiceClient interface {
 	// HTTP: GET /v2/email/identities
 	// Protocol: restJson1
 	ListEmailIdentities(ctx context.Context, in *ListEmailIdentitiesRequest, opts ...grpc.CallOption) (*ListEmailIdentitiesResponse, error)
+	// Lists the S/MIME certificates that are associated with the specified email identity. The results include certificates in all states, such as PROVISIONING, ACTIVE, INACTIVE, DEPROVISIONING, and FAIL...
+	// HTTP: POST /v2/email/identity/certificates/list
+	// Protocol: restJson1
+	ListEmailIdentityCertificates(ctx context.Context, in *ListEmailIdentityCertificatesRequest, opts ...grpc.CallOption) (*ListEmailIdentityCertificatesResponse, error)
 	// Lists the email templates present in your Amazon SES account in the current Amazon Web Services Region. You can execute this operation no more than once per second.
 	// HTTP: GET /v2/email/templates
 	// Protocol: restJson1
@@ -445,6 +462,10 @@ type SESv2ServiceClient interface {
 	// HTTP: POST /v2/email/account/details
 	// Protocol: restJson1
 	PutAccountDetails(ctx context.Context, in *PutAccountDetailsRequest, opts ...grpc.CallOption) (*PutAccountDetailsResponse, error)
+	// Set the pricing plan for your Amazon SES account.
+	// HTTP: PUT /v2/email/account/pricing-attributes
+	// Protocol: restJson1
+	PutAccountPricingAttributes(ctx context.Context, in *PutAccountPricingAttributesRequest, opts ...grpc.CallOption) (*PutAccountPricingAttributesResponse, error)
 	// Enable or disable the ability of your account to send email.
 	// HTTP: PUT /v2/email/account/sending
 	// Protocol: restJson1
@@ -552,6 +573,10 @@ type SESv2ServiceClient interface {
 	// HTTP: DELETE /v2/email/tags
 	// Protocol: restJson1
 	UntagResource(ctx context.Context, in *UntagResourceRequest, opts ...grpc.CallOption) (*UntagResourceResponse, error)
+	// Updates an existing configuration set. This operation performs a partial update. Only the attributes that you include in the request are updated; any omitted attribute is left unchanged.
+	// HTTP: POST /v2/email/update-configuration-sets
+	// Protocol: restJson1
+	UpdateConfigurationSet(ctx context.Context, in *UpdateConfigurationSetRequest, opts ...grpc.CallOption) (*UpdateConfigurationSetResponse, error)
 	// Update the configuration of an event destination for a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you ca...
 	// HTTP: PUT /v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}
 	// Protocol: restJson1
@@ -592,6 +617,16 @@ type sESv2ServiceClient struct {
 
 func NewSESv2ServiceClient(cc grpc.ClientConnInterface) SESv2ServiceClient {
 	return &sESv2ServiceClient{cc}
+}
+
+func (c *sESv2ServiceClient) AssociateEmailIdentityCertificate(ctx context.Context, in *AssociateEmailIdentityCertificateRequest, opts ...grpc.CallOption) (*AssociateEmailIdentityCertificateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AssociateEmailIdentityCertificateResponse)
+	err := c.cc.Invoke(ctx, SESv2Service_AssociateEmailIdentityCertificate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *sESv2ServiceClient) BatchGetMetricData(ctx context.Context, in *BatchGetMetricDataRequest, opts ...grpc.CallOption) (*BatchGetMetricDataResponse, error) {
@@ -888,6 +923,16 @@ func (c *sESv2ServiceClient) DeleteTenantResourceAssociation(ctx context.Context
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteTenantResourceAssociationResponse)
 	err := c.cc.Invoke(ctx, SESv2Service_DeleteTenantResourceAssociation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sESv2ServiceClient) DisassociateEmailIdentityCertificate(ctx context.Context, in *DisassociateEmailIdentityCertificateRequest, opts ...grpc.CallOption) (*DisassociateEmailIdentityCertificateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DisassociateEmailIdentityCertificateResponse)
+	err := c.cc.Invoke(ctx, SESv2Service_DisassociateEmailIdentityCertificate_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1224,6 +1269,16 @@ func (c *sESv2ServiceClient) ListEmailIdentities(ctx context.Context, in *ListEm
 	return out, nil
 }
 
+func (c *sESv2ServiceClient) ListEmailIdentityCertificates(ctx context.Context, in *ListEmailIdentityCertificatesRequest, opts ...grpc.CallOption) (*ListEmailIdentityCertificatesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListEmailIdentityCertificatesResponse)
+	err := c.cc.Invoke(ctx, SESv2Service_ListEmailIdentityCertificates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sESv2ServiceClient) ListEmailTemplates(ctx context.Context, in *ListEmailTemplatesRequest, opts ...grpc.CallOption) (*ListEmailTemplatesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListEmailTemplatesResponse)
@@ -1348,6 +1403,16 @@ func (c *sESv2ServiceClient) PutAccountDetails(ctx context.Context, in *PutAccou
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PutAccountDetailsResponse)
 	err := c.cc.Invoke(ctx, SESv2Service_PutAccountDetails_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *sESv2ServiceClient) PutAccountPricingAttributes(ctx context.Context, in *PutAccountPricingAttributesRequest, opts ...grpc.CallOption) (*PutAccountPricingAttributesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PutAccountPricingAttributesResponse)
+	err := c.cc.Invoke(ctx, SESv2Service_PutAccountPricingAttributes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1624,6 +1689,16 @@ func (c *sESv2ServiceClient) UntagResource(ctx context.Context, in *UntagResourc
 	return out, nil
 }
 
+func (c *sESv2ServiceClient) UpdateConfigurationSet(ctx context.Context, in *UpdateConfigurationSetRequest, opts ...grpc.CallOption) (*UpdateConfigurationSetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateConfigurationSetResponse)
+	err := c.cc.Invoke(ctx, SESv2Service_UpdateConfigurationSet_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *sESv2ServiceClient) UpdateConfigurationSetEventDestination(ctx context.Context, in *UpdateConfigurationSetEventDestinationRequest, opts ...grpc.CallOption) (*UpdateConfigurationSetEventDestinationResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateConfigurationSetEventDestinationResponse)
@@ -1710,6 +1785,10 @@ func (c *sESv2ServiceClient) UpdateReputationEntityPolicy(ctx context.Context, i
 //
 // SESv2Service provides sesv2 API operations.
 type SESv2ServiceServer interface {
+	// Associates an S/MIME certificate with an email identity. After the certificate is active, Amazon SES API v2 can add an S/MIME signature to messages that you send from the associated address when si...
+	// HTTP: POST /v2/email/identity/certificates
+	// Protocol: restJson1
+	AssociateEmailIdentityCertificate(context.Context, *AssociateEmailIdentityCertificateRequest) (*AssociateEmailIdentityCertificateResponse, error)
 	// Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second ...
 	// HTTP: POST /v2/email/metrics/batch
 	// Protocol: restJson1
@@ -1830,6 +1909,10 @@ type SESv2ServiceServer interface {
 	// HTTP: POST /v2/email/tenants/resources/delete
 	// Protocol: restJson1
 	DeleteTenantResourceAssociation(context.Context, *DeleteTenantResourceAssociationRequest) (*DeleteTenantResourceAssociationResponse, error)
+	// Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address....
+	// HTTP: POST /v2/email/identity/certificates/delete
+	// Protocol: restJson1
+	DisassociateEmailIdentityCertificate(context.Context, *DisassociateEmailIdentityCertificateRequest) (*DisassociateEmailIdentityCertificateResponse, error)
 	// Obtain information about the email-sending status and capabilities of your Amazon SES account in the current Amazon Web Services Region.
 	// HTTP: GET /v2/email/account
 	// Protocol: restJson1
@@ -1962,6 +2045,10 @@ type SESv2ServiceServer interface {
 	// HTTP: GET /v2/email/identities
 	// Protocol: restJson1
 	ListEmailIdentities(context.Context, *ListEmailIdentitiesRequest) (*ListEmailIdentitiesResponse, error)
+	// Lists the S/MIME certificates that are associated with the specified email identity. The results include certificates in all states, such as PROVISIONING, ACTIVE, INACTIVE, DEPROVISIONING, and FAIL...
+	// HTTP: POST /v2/email/identity/certificates/list
+	// Protocol: restJson1
+	ListEmailIdentityCertificates(context.Context, *ListEmailIdentityCertificatesRequest) (*ListEmailIdentityCertificatesResponse, error)
 	// Lists the email templates present in your Amazon SES account in the current Amazon Web Services Region. You can execute this operation no more than once per second.
 	// HTTP: GET /v2/email/templates
 	// Protocol: restJson1
@@ -2014,6 +2101,10 @@ type SESv2ServiceServer interface {
 	// HTTP: POST /v2/email/account/details
 	// Protocol: restJson1
 	PutAccountDetails(context.Context, *PutAccountDetailsRequest) (*PutAccountDetailsResponse, error)
+	// Set the pricing plan for your Amazon SES account.
+	// HTTP: PUT /v2/email/account/pricing-attributes
+	// Protocol: restJson1
+	PutAccountPricingAttributes(context.Context, *PutAccountPricingAttributesRequest) (*PutAccountPricingAttributesResponse, error)
 	// Enable or disable the ability of your account to send email.
 	// HTTP: PUT /v2/email/account/sending
 	// Protocol: restJson1
@@ -2121,6 +2212,10 @@ type SESv2ServiceServer interface {
 	// HTTP: DELETE /v2/email/tags
 	// Protocol: restJson1
 	UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error)
+	// Updates an existing configuration set. This operation performs a partial update. Only the attributes that you include in the request are updated; any omitted attribute is left unchanged.
+	// HTTP: POST /v2/email/update-configuration-sets
+	// Protocol: restJson1
+	UpdateConfigurationSet(context.Context, *UpdateConfigurationSetRequest) (*UpdateConfigurationSetResponse, error)
 	// Update the configuration of an event destination for a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you ca...
 	// HTTP: PUT /v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}
 	// Protocol: restJson1
@@ -2163,6 +2258,9 @@ type SESv2ServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedSESv2ServiceServer struct{}
 
+func (UnimplementedSESv2ServiceServer) AssociateEmailIdentityCertificate(context.Context, *AssociateEmailIdentityCertificateRequest) (*AssociateEmailIdentityCertificateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AssociateEmailIdentityCertificate not implemented")
+}
 func (UnimplementedSESv2ServiceServer) BatchGetMetricData(context.Context, *BatchGetMetricDataRequest) (*BatchGetMetricDataResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method BatchGetMetricData not implemented")
 }
@@ -2252,6 +2350,9 @@ func (UnimplementedSESv2ServiceServer) DeleteTenant(context.Context, *DeleteTena
 }
 func (UnimplementedSESv2ServiceServer) DeleteTenantResourceAssociation(context.Context, *DeleteTenantResourceAssociationRequest) (*DeleteTenantResourceAssociationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteTenantResourceAssociation not implemented")
+}
+func (UnimplementedSESv2ServiceServer) DisassociateEmailIdentityCertificate(context.Context, *DisassociateEmailIdentityCertificateRequest) (*DisassociateEmailIdentityCertificateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisassociateEmailIdentityCertificate not implemented")
 }
 func (UnimplementedSESv2ServiceServer) GetAccount(context.Context, *GetAccountRequest) (*GetAccountResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAccount not implemented")
@@ -2352,6 +2453,9 @@ func (UnimplementedSESv2ServiceServer) ListDomainDeliverabilityCampaigns(context
 func (UnimplementedSESv2ServiceServer) ListEmailIdentities(context.Context, *ListEmailIdentitiesRequest) (*ListEmailIdentitiesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListEmailIdentities not implemented")
 }
+func (UnimplementedSESv2ServiceServer) ListEmailIdentityCertificates(context.Context, *ListEmailIdentityCertificatesRequest) (*ListEmailIdentityCertificatesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListEmailIdentityCertificates not implemented")
+}
 func (UnimplementedSESv2ServiceServer) ListEmailTemplates(context.Context, *ListEmailTemplatesRequest) (*ListEmailTemplatesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListEmailTemplates not implemented")
 }
@@ -2390,6 +2494,9 @@ func (UnimplementedSESv2ServiceServer) PutAccountDedicatedIpWarmupAttributes(con
 }
 func (UnimplementedSESv2ServiceServer) PutAccountDetails(context.Context, *PutAccountDetailsRequest) (*PutAccountDetailsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutAccountDetails not implemented")
+}
+func (UnimplementedSESv2ServiceServer) PutAccountPricingAttributes(context.Context, *PutAccountPricingAttributesRequest) (*PutAccountPricingAttributesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutAccountPricingAttributes not implemented")
 }
 func (UnimplementedSESv2ServiceServer) PutAccountSendingAttributes(context.Context, *PutAccountSendingAttributesRequest) (*PutAccountSendingAttributesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutAccountSendingAttributes not implemented")
@@ -2472,6 +2579,9 @@ func (UnimplementedSESv2ServiceServer) TestRenderEmailTemplate(context.Context, 
 func (UnimplementedSESv2ServiceServer) UntagResource(context.Context, *UntagResourceRequest) (*UntagResourceResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UntagResource not implemented")
 }
+func (UnimplementedSESv2ServiceServer) UpdateConfigurationSet(context.Context, *UpdateConfigurationSetRequest) (*UpdateConfigurationSetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateConfigurationSet not implemented")
+}
 func (UnimplementedSESv2ServiceServer) UpdateConfigurationSetEventDestination(context.Context, *UpdateConfigurationSetEventDestinationRequest) (*UpdateConfigurationSetEventDestinationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateConfigurationSetEventDestination not implemented")
 }
@@ -2515,6 +2625,24 @@ func RegisterSESv2ServiceServer(s grpc.ServiceRegistrar, srv SESv2ServiceServer)
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&SESv2Service_ServiceDesc, srv)
+}
+
+func _SESv2Service_AssociateEmailIdentityCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AssociateEmailIdentityCertificateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SESv2ServiceServer).AssociateEmailIdentityCertificate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SESv2Service_AssociateEmailIdentityCertificate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SESv2ServiceServer).AssociateEmailIdentityCertificate(ctx, req.(*AssociateEmailIdentityCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _SESv2Service_BatchGetMetricData_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -3053,6 +3181,24 @@ func _SESv2Service_DeleteTenantResourceAssociation_Handler(srv interface{}, ctx 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SESv2ServiceServer).DeleteTenantResourceAssociation(ctx, req.(*DeleteTenantResourceAssociationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SESv2Service_DisassociateEmailIdentityCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisassociateEmailIdentityCertificateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SESv2ServiceServer).DisassociateEmailIdentityCertificate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SESv2Service_DisassociateEmailIdentityCertificate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SESv2ServiceServer).DisassociateEmailIdentityCertificate(ctx, req.(*DisassociateEmailIdentityCertificateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3651,6 +3797,24 @@ func _SESv2Service_ListEmailIdentities_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SESv2Service_ListEmailIdentityCertificates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListEmailIdentityCertificatesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SESv2ServiceServer).ListEmailIdentityCertificates(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SESv2Service_ListEmailIdentityCertificates_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SESv2ServiceServer).ListEmailIdentityCertificates(ctx, req.(*ListEmailIdentityCertificatesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SESv2Service_ListEmailTemplates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListEmailTemplatesRequest)
 	if err := dec(in); err != nil {
@@ -3881,6 +4045,24 @@ func _SESv2Service_PutAccountDetails_Handler(srv interface{}, ctx context.Contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(SESv2ServiceServer).PutAccountDetails(ctx, req.(*PutAccountDetailsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SESv2Service_PutAccountPricingAttributes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutAccountPricingAttributesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SESv2ServiceServer).PutAccountPricingAttributes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SESv2Service_PutAccountPricingAttributes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SESv2ServiceServer).PutAccountPricingAttributes(ctx, req.(*PutAccountPricingAttributesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4371,6 +4553,24 @@ func _SESv2Service_UntagResource_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SESv2Service_UpdateConfigurationSet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateConfigurationSetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SESv2ServiceServer).UpdateConfigurationSet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SESv2Service_UpdateConfigurationSet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SESv2ServiceServer).UpdateConfigurationSet(ctx, req.(*UpdateConfigurationSetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _SESv2Service_UpdateConfigurationSetEventDestination_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateConfigurationSetEventDestinationRequest)
 	if err := dec(in); err != nil {
@@ -4523,6 +4723,10 @@ var SESv2Service_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*SESv2ServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "AssociateEmailIdentityCertificate",
+			Handler:    _SESv2Service_AssociateEmailIdentityCertificate_Handler,
+		},
+		{
 			MethodName: "BatchGetMetricData",
 			Handler:    _SESv2Service_BatchGetMetricData_Handler,
 		},
@@ -4641,6 +4845,10 @@ var SESv2Service_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteTenantResourceAssociation",
 			Handler:    _SESv2Service_DeleteTenantResourceAssociation_Handler,
+		},
+		{
+			MethodName: "DisassociateEmailIdentityCertificate",
+			Handler:    _SESv2Service_DisassociateEmailIdentityCertificate_Handler,
 		},
 		{
 			MethodName: "GetAccount",
@@ -4775,6 +4983,10 @@ var SESv2Service_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SESv2Service_ListEmailIdentities_Handler,
 		},
 		{
+			MethodName: "ListEmailIdentityCertificates",
+			Handler:    _SESv2Service_ListEmailIdentityCertificates_Handler,
+		},
+		{
 			MethodName: "ListEmailTemplates",
 			Handler:    _SESv2Service_ListEmailTemplates_Handler,
 		},
@@ -4825,6 +5037,10 @@ var SESv2Service_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PutAccountDetails",
 			Handler:    _SESv2Service_PutAccountDetails_Handler,
+		},
+		{
+			MethodName: "PutAccountPricingAttributes",
+			Handler:    _SESv2Service_PutAccountPricingAttributes_Handler,
 		},
 		{
 			MethodName: "PutAccountSendingAttributes",
@@ -4933,6 +5149,10 @@ var SESv2Service_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UntagResource",
 			Handler:    _SESv2Service_UntagResource_Handler,
+		},
+		{
+			MethodName: "UpdateConfigurationSet",
+			Handler:    _SESv2Service_UpdateConfigurationSet_Handler,
 		},
 		{
 			MethodName: "UpdateConfigurationSetEventDestination",

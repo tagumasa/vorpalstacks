@@ -9,6 +9,7 @@ package neptunedata
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -53,8 +54,8 @@ func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request
 	s.mu.RUnlock()
 
 	return connect.NewResponse(&pb.GetEngineStatusOutput{
-		Status:    "healthy",
-		Starttime: startTime,
+		Status:    proto.String("healthy"),
+		Starttime: proto.String(startTime),
 		Gremlin: &pb.QueryLanguageVersion{
 			Version: "3.7.x",
 		},
@@ -68,7 +69,7 @@ func (h *AdminHandler) GetEngineStatus(ctx context.Context, req *connect.Request
 		Settings: map[string]string{
 			"neptune lab mode": "DISABLED",
 		},
-		Role: "writer",
+		Role: proto.String("writer"),
 	}), nil
 }
 
@@ -102,8 +103,8 @@ func (h *AdminHandler) ListGremlinQueries(ctx context.Context, req *connect.Requ
 	}
 	return connect.NewResponse(&pb.ListGremlinQueriesOutput{
 		Queries:            queries,
-		Acceptedquerycount: fmt.Sprintf("%d", accepted),
-		Runningquerycount:  fmt.Sprintf("%d", running),
+		Acceptedquerycount: proto.String(fmt.Sprintf("%d", accepted)),
+		Runningquerycount:  proto.String(fmt.Sprintf("%d", running)),
 	}), nil
 }
 
@@ -115,8 +116,8 @@ func (h *AdminHandler) ListOpenCypherQueries(ctx context.Context, req *connect.R
 	}
 	return connect.NewResponse(&pb.ListOpenCypherQueriesOutput{
 		Queries:            queries,
-		Acceptedquerycount: fmt.Sprintf("%d", accepted),
-		Runningquerycount:  fmt.Sprintf("%d", running),
+		Acceptedquerycount: proto.String(fmt.Sprintf("%d", accepted)),
+		Runningquerycount:  proto.String(fmt.Sprintf("%d", running)),
 	}), nil
 }
 

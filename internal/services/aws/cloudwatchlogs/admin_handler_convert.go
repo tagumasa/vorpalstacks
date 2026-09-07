@@ -11,8 +11,8 @@ import (
 // representation used by the admin console.
 func toPbLogGroupSummary(lg *logsstore.LogGroup) *pb.LogGroupSummary {
 	summary := &pb.LogGroupSummary{
-		Loggroupname: lg.Name,
-		Loggrouparn:  lg.ARN,
+		Loggroupname: proto.String(lg.Name),
+		Loggrouparn:  proto.String(lg.ARN),
 	}
 	switch lg.LogGroupClass {
 	case "DELIVERY":
@@ -29,13 +29,13 @@ func toPbLogGroupSummary(lg *logsstore.LogGroup) *pb.LogGroupSummary {
 // representation used by the admin console.
 func toPbLogStream(ls *logsstore.LogStream) *pb.LogStream {
 	return &pb.LogStream{
-		Logstreamname:       ls.Name,
-		Arn:                 ls.ARN,
+		Logstreamname:       proto.String(ls.Name),
+		Arn:                 proto.String(ls.ARN),
 		Creationtime:        proto.Int64(ls.CreatedAt.UnixMilli()),
 		Firsteventtimestamp: proto.Int64(ls.FirstEventTs),
 		Lasteventtimestamp:  proto.Int64(ls.LastEventTs),
 		Lastingestiontime:   proto.Int64(ls.LastIngestionTs),
-		Uploadsequencetoken: ls.UploadSequenceToken,
+		Uploadsequencetoken: proto.String(ls.UploadSequenceToken),
 	}
 }
 

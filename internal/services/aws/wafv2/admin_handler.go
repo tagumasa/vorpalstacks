@@ -2,6 +2,7 @@ package wafv2
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -48,7 +49,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 	result, err := h.service.listWebACLsCore(stores, ListWebACLsInput{
 		Scope:      scope,
 		Limit:      int(req.Msg.GetLimit()),
-		NextMarker: req.Msg.Nextmarker,
+		NextMarker: req.Msg.GetNextmarker(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -61,7 +62,7 @@ func (h *AdminHandler) ListWebACLs(ctx context.Context, req *connect.Request[pb.
 
 	return connect.NewResponse(&pb.ListWebACLsResponse{
 		Webacls:    summaries,
-		Nextmarker: result.NextMarker,
+		Nextmarker: proto.String(result.NextMarker),
 	}), nil
 }
 

@@ -2,6 +2,7 @@ package timestreamwrite
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -40,7 +41,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 	}
 
 	result, err := h.service.listDatabasesCore(ctx, stores, ListDatabasesInput{
-		NextToken: req.Msg.Nexttoken,
+		NextToken: req.Msg.GetNexttoken(),
 		MaxItems:  int(req.Msg.GetMaxresults()),
 	})
 	if err != nil {
@@ -54,7 +55,7 @@ func (h *AdminHandler) ListDatabases(ctx context.Context, req *connect.Request[p
 
 	return connect.NewResponse(&pb.ListDatabasesResponse{
 		Databases: databases,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -67,8 +68,8 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 	}
 
 	result, err := h.service.listTablesCore(ctx, stores, ListTablesInput{
-		DatabaseName: req.Msg.Databasename,
-		NextToken:    req.Msg.Nexttoken,
+		DatabaseName: req.Msg.GetDatabasename(),
+		NextToken:    req.Msg.GetNexttoken(),
 		MaxItems:     int(req.Msg.GetMaxresults()),
 	})
 	if err != nil {
@@ -82,7 +83,7 @@ func (h *AdminHandler) ListTables(ctx context.Context, req *connect.Request[pb.L
 
 	return connect.NewResponse(&pb.ListTablesResponse{
 		Tables:    tables,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 

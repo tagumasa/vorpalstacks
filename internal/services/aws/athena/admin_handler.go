@@ -2,6 +2,7 @@ package athena
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -64,14 +65,14 @@ func (h *AdminHandler) ListWorkGroups(ctx context.Context, req *connect.Request[
 
 	maxResults := clampMaxResults(int(req.Msg.GetMaxresults()), athenaMaxWorkGroupsResults, athenaMaxWorkGroupsResults)
 
-	result, err := listWorkGroupsCore(stores, maxResults, req.Msg.Nexttoken)
+	result, err := listWorkGroupsCore(stores, maxResults, req.Msg.GetNexttoken())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	return connect.NewResponse(&pb.ListWorkGroupsOutput{
 		Workgroups: toPbWorkGroupSummaries(result.Items),
-		Nexttoken:  result.NextMarker,
+		Nexttoken:  proto.String(result.NextMarker),
 	}), nil
 }
 

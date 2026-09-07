@@ -25,7 +25,7 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 	}
 	if z.Config != nil {
 		pbZone.Config = &pb.HostedZoneConfig{
-			Comment:     z.Config.Comment,
+			Comment:     proto.String(z.Config.Comment),
 			Privatezone: proto.Bool(z.Config.PrivateZone),
 		}
 	}
@@ -33,7 +33,7 @@ func toPbHostedZone(z *route53store.HostedZone) *pb.HostedZone {
 		pbZone.Vpcs = make([]*pb.VPC, len(z.VPCs))
 		for i, vpc := range z.VPCs {
 			pbZone.Vpcs[i] = &pb.VPC{
-				Vpcid:     vpc.VPCID,
+				Vpcid:     proto.String(vpc.VPCID),
 				Vpcregion: awsVPCRegionToProto(vpc.VPCRegion),
 			}
 		}

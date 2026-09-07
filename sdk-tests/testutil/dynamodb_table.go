@@ -533,6 +533,107 @@ func (r *TestRunner) dynamoDBTableEdgeCaseTests(ctx context.Context, client *dyn
 		return nil
 	}))
 
+	results = append(results, r.RunTest("dynamodb", "UpdateTable_DeleteGSI_CleansEntriesForRecreate", func() error {
+		gdTable := fmt.Sprintf("GsiDel-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, gdTable, func(input *dynamodb.CreateTableInput) {
+			input.AttributeDefinitions = append(input.AttributeDefinitions, types.AttributeDefinition{
+				AttributeName: aws.String("gsi_pk"), AttributeType: types.ScalarAttributeTypeS,
+			})
+		})
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		put := func(id string) error {
+			_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(gdTable),
+				Item: map[string]types.AttributeValue{
+					"id":     &types.AttributeValueMemberS{Value: id},
+					"gsi_pk": &types.AttributeValueMemberS{Value: "shared"},
+				},
+			})
+			return err
+		}
+		if err := put("k1"); err != nil {
+			return fmt.Errorf("put k1: %v", err)
+		}
+		if err := put("k2"); err != nil {
+			return fmt.Errorf("put k2: %v", err)
+		}
+
+		addGSI := func() error {
+			_, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
+				TableName: aws.String(gdTable),
+				GlobalSecondaryIndexUpdates: []types.GlobalSecondaryIndexUpdate{
+					{
+						Create: &types.CreateGlobalSecondaryIndexAction{
+							IndexName: aws.String("lifecycle_gsi"),
+							KeySchema: []types.KeySchemaElement{
+								{AttributeName: aws.String("gsi_pk"), KeyType: types.KeyTypeHash},
+							},
+							Projection: &types.Projection{ProjectionType: types.ProjectionTypeAll},
+						},
+					},
+				},
+			})
+			return err
+		}
+		if err := addGSI(); err != nil {
+			return fmt.Errorf("add GSI: %v", err)
+		}
+		queryIndex := func() (int, error) {
+			out, err := client.Query(ctx, &dynamodb.QueryInput{
+				TableName:              aws.String(gdTable),
+				IndexName:              aws.String("lifecycle_gsi"),
+				KeyConditionExpression: aws.String("gsi_pk = :v"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":v": &types.AttributeValueMemberS{Value: "shared"},
+				},
+			})
+			if err != nil {
+				return 0, err
+			}
+			return int(out.Count), nil
+		}
+		if count, err := queryIndex(); err != nil {
+			return fmt.Errorf("query after add: %v", err)
+		} else if count != 2 {
+			return fmt.Errorf("index after add holds %d items, want 2", count)
+		}
+
+		if _, err := client.UpdateTable(ctx, &dynamodb.UpdateTableInput{
+			TableName: aws.String(gdTable),
+			GlobalSecondaryIndexUpdates: []types.GlobalSecondaryIndexUpdate{
+				{Delete: &types.DeleteGlobalSecondaryIndexAction{IndexName: aws.String("lifecycle_gsi")}},
+			},
+		}); err != nil {
+			return fmt.Errorf("delete GSI: %v", err)
+		}
+
+		// k1 loses the index key attribute after the deletion; a re-created
+		// same-name index must not serve it through a leftover entry.
+		if _, err := client.UpdateItem(ctx, &dynamodb.UpdateItemInput{
+			TableName:        aws.String(gdTable),
+			Key:              map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "k1"}},
+			UpdateExpression: aws.String("REMOVE gsi_pk"),
+		}); err != nil {
+			return fmt.Errorf("remove gsi_pk from k1: %v", err)
+		}
+
+		if err := addGSI(); err != nil {
+			return fmt.Errorf("re-add GSI: %v", err)
+		}
+		count, err := queryIndex()
+		if err != nil {
+			return fmt.Errorf("query after re-add: %v", err)
+		}
+		if count != 1 {
+			return fmt.Errorf("re-created index holds %d items, want 1 (only the item still carrying gsi_pk)", count)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("dynamodb", "UpdateTimeToLive_Disable", func() error {
 		ttlTable := fmt.Sprintf("TTLDis-%d", time.Now().UnixNano())
 		cleanupTable, err := createDynamoTestTable(ctx, client, ttlTable)

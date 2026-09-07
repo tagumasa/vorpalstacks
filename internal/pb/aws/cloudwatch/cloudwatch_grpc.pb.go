@@ -61,6 +61,7 @@ const (
 	CloudWatchService_PutCompositeAlarm_FullMethodName         = "/cloudwatch.CloudWatchService/PutCompositeAlarm"
 	CloudWatchService_PutDashboard_FullMethodName              = "/cloudwatch.CloudWatchService/PutDashboard"
 	CloudWatchService_PutInsightRule_FullMethodName            = "/cloudwatch.CloudWatchService/PutInsightRule"
+	CloudWatchService_PutLogAlarm_FullMethodName               = "/cloudwatch.CloudWatchService/PutLogAlarm"
 	CloudWatchService_PutManagedInsightRules_FullMethodName    = "/cloudwatch.CloudWatchService/PutManagedInsightRules"
 	CloudWatchService_PutMetricAlarm_FullMethodName            = "/cloudwatch.CloudWatchService/PutMetricAlarm"
 	CloudWatchService_PutMetricData_FullMethodName             = "/cloudwatch.CloudWatchService/PutMetricData"
@@ -232,6 +233,10 @@ type CloudWatchServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	PutInsightRule(ctx context.Context, in *PutInsightRuleInput, opts ...grpc.CallOption) (*PutInsightRuleOutput, error)
+	// Creates or updates a log alarm. A log alarm evaluates the results of a CloudWatch Logs scheduled query against the configured threshold and comparison operator to determine its state. When you crea...
+	// HTTP:
+	// Protocol: awsJson1_0
+	PutLogAlarm(ctx context.Context, in *PutLogAlarmInput, opts ...grpc.CallOption) (*common.Empty, error)
 	// Creates a managed Contributor Insights rule for a specified Amazon Web Services resource. When you enable a managed rule, you create a Contributor Insights rule that collects data from Amazon Web S...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -666,6 +671,16 @@ func (c *cloudWatchServiceClient) PutInsightRule(ctx context.Context, in *PutIns
 	return out, nil
 }
 
+func (c *cloudWatchServiceClient) PutLogAlarm(ctx context.Context, in *PutLogAlarmInput, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, CloudWatchService_PutLogAlarm_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cloudWatchServiceClient) PutManagedInsightRules(ctx context.Context, in *PutManagedInsightRulesInput, opts ...grpc.CallOption) (*PutManagedInsightRulesOutput, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PutManagedInsightRulesOutput)
@@ -934,6 +949,10 @@ type CloudWatchServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	PutInsightRule(context.Context, *PutInsightRuleInput) (*PutInsightRuleOutput, error)
+	// Creates or updates a log alarm. A log alarm evaluates the results of a CloudWatch Logs scheduled query against the configured threshold and comparison operator to determine its state. When you crea...
+	// HTTP:
+	// Protocol: awsJson1_0
+	PutLogAlarm(context.Context, *PutLogAlarmInput) (*common.Empty, error)
 	// Creates a managed Contributor Insights rule for a specified Amazon Web Services resource. When you enable a managed rule, you create a Contributor Insights rule that collects data from Amazon Web S...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -1101,6 +1120,9 @@ func (UnimplementedCloudWatchServiceServer) PutDashboard(context.Context, *PutDa
 }
 func (UnimplementedCloudWatchServiceServer) PutInsightRule(context.Context, *PutInsightRuleInput) (*PutInsightRuleOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutInsightRule not implemented")
+}
+func (UnimplementedCloudWatchServiceServer) PutLogAlarm(context.Context, *PutLogAlarmInput) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutLogAlarm not implemented")
 }
 func (UnimplementedCloudWatchServiceServer) PutManagedInsightRules(context.Context, *PutManagedInsightRulesInput) (*PutManagedInsightRulesOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutManagedInsightRules not implemented")
@@ -1840,6 +1862,24 @@ func _CloudWatchService_PutInsightRule_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CloudWatchService_PutLogAlarm_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutLogAlarmInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudWatchServiceServer).PutLogAlarm(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CloudWatchService_PutLogAlarm_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudWatchServiceServer).PutLogAlarm(ctx, req.(*PutLogAlarmInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CloudWatchService_PutManagedInsightRules_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PutManagedInsightRulesInput)
 	if err := dec(in); err != nil {
@@ -2196,6 +2236,10 @@ var CloudWatchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PutInsightRule",
 			Handler:    _CloudWatchService_PutInsightRule_Handler,
+		},
+		{
+			MethodName: "PutLogAlarm",
+			Handler:    _CloudWatchService_PutLogAlarm_Handler,
 		},
 		{
 			MethodName: "PutManagedInsightRules",

@@ -257,6 +257,29 @@ func (b *PebbleDBTransactionBucket) ScanPrefix(prefix []byte) Iterator {
 	return newPrefixedDBIterator(b.txn.NewLazyIterator(start, end), b.prefixL)
 }
 
+// ScanPrefixReverse returns a descending iterator over the keys with the
+// given prefix in the transaction bucket, starting at the largest key
+// strictly less than before (or the largest key in the prefix when before
+// is nil).
+func (b *PebbleDBTransactionBucket) ScanPrefixReverse(prefix, before []byte) Iterator {
+	start := make([]byte, len(b.prefix)+len(prefix))
+	copy(start, b.prefix)
+	copy(start[len(b.prefix):], prefix)
+
+	end := make([]byte, len(b.prefix)+len(prefix)+1)
+	copy(end, b.prefix)
+	copy(end[len(b.prefix):], prefix)
+	end[len(b.prefix)+len(prefix)] = 0xFF
+
+	var beforeKey []byte
+	if before != nil {
+		beforeKey = make([]byte, len(b.prefix)+len(before))
+		copy(beforeKey, b.prefix)
+		copy(beforeKey[len(b.prefix):], before)
+	}
+	return newPrefixedDBIterator(b.txn.NewReverseLazyIterator(start, end, beforeKey), b.prefixL)
+}
+
 // ScanRange returns an iterator for keys within the given range in the transaction bucket.
 // If end is nil, the iterator scans from start to the end of the bucket namespace.
 func (b *PebbleDBTransactionBucket) ScanRange(start, end []byte) Iterator {

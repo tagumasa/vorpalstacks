@@ -1,12 +1,13 @@
 package dynamodb
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync/atomic"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/storage"
+	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -32,22 +33,22 @@ const (
 	journalSeqWidth  = 10
 )
 
-// journalRecord is the persisted form of one item mutation on a table with
+// journalRecord is the in-memory form of one item mutation on a table with
 // point-in-time recovery enabled. BeforeImage holds the complete attribute
 // map of the item as it was before the mutation (nil when the key did not
 // exist), which is exactly the state needed to undo the change.
 type journalRecord struct {
-	Timestamp   int64                      `json:"timestamp"`
-	Operation   string                     `json:"operation"`
-	Key         map[string]*AttributeValue `json:"key"`
-	BeforeImage map[string]*AttributeValue `json:"before_image,omitempty"`
+	Timestamp   int64
+	Operation   string
+	Key         map[string]*AttributeValue
+	BeforeImage map[string]*AttributeValue
 }
 
 // journalRecordKey builds the bucket key for a record: table, the append
 // time, and the tie-breaking sequence, all ordered so a prefix scan of the
 // table yields records oldest-first.
 func journalRecordKey(tableName string, at time.Time) string {
-	return tableName + keySep + fmt.Sprintf("%0*d%0*d",
+	return tableName + KeySep + fmt.Sprintf("%0*d%0*d",
 		journalTimeWidth, at.UnixNano(), journalSeqWidth, journalSequence.Add(1))
 }
 
@@ -55,13 +56,12 @@ func journalRecordKey(tableName string, at time.Time) string {
 // so the journal entry commits atomically with the item mutation it
 // describes. The append time is injected for testability.
 func appendJournalTxnAt(txn storage.Transaction, region, tableName, operation string, key, beforeImage map[string]*AttributeValue, at time.Time) error {
-	record := journalRecord{
+	data, err := proto.Marshal(journalRecordToProto(&journalRecord{
 		Timestamp:   at.UnixNano(),
 		Operation:   operation,
 		Key:         key,
 		BeforeImage: beforeImage,
-	}
-	data, err := json.Marshal(record)
+	}))
 	if err != nil {
 		return fmt.Errorf("marshal journal record for table %s: %w", tableName, err)
 	}
@@ -89,13 +89,13 @@ func NewJournalStore(store storage.BasicStorage, region string) *JournalStore {
 	}
 }
 
-// journalRecordFromJSON decodes a persisted journal record.
-func journalRecordFromJSON(data []byte) (*journalRecord, error) {
-	var record journalRecord
-	if err := json.Unmarshal(data, &record); err != nil {
+// journalRecordFromBytes decodes a persisted journal record.
+func journalRecordFromBytes(data []byte) (*journalRecord, error) {
+	var pbRecord pb.JournalRecord
+	if err := proto.Unmarshal(data, &pbRecord); err != nil {
 		return nil, fmt.Errorf("unmarshal journal record: %w", err)
 	}
-	return &record, nil
+	return protoToJournalRecord(&pbRecord), nil
 }
 
 // ReverseReplay hands the caller every journaled mutation of the table that
@@ -104,12 +104,12 @@ func journalRecordFromJSON(data []byte) (*journalRecord, error) {
 // reconstructs the table state at the given time when applied over the
 // current state in that order.
 func (s *JournalStore) ReverseReplay(tableName string, from time.Time, fn func(record *JournalChange) error) error {
-	prefix := tableName + keySep
+	prefix := tableName + KeySep
 	fromNanos := from.UnixNano()
 
 	var records []*journalRecord
 	if err := s.BaseStore.ScanPrefix(prefix, func(_ string, value []byte) error {
-		record, err := journalRecordFromJSON(value)
+		record, err := journalRecordFromBytes(value)
 		if err != nil {
 			return err
 		}
@@ -141,12 +141,12 @@ func (s *JournalStore) ReverseReplay(tableName string, from time.Time, fn func(r
 // the table's EarliestRestorableDateTime can never be replayed by a
 // restore, so pruning them keeps the journal bounded.
 func (s *JournalStore) DeleteOlderThan(tableName string, cutoff time.Time) (int, error) {
-	prefix := tableName + keySep
+	prefix := tableName + KeySep
 	cutoffNanos := cutoff.UnixNano()
 
 	var stale []string
 	if err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		record, err := journalRecordFromJSON(value)
+		record, err := journalRecordFromBytes(value)
 		if err != nil {
 			return err
 		}
@@ -170,7 +170,7 @@ func (s *JournalStore) DeleteOlderThan(tableName string, cutoff time.Time) (int,
 // point-in-time recovery invalidates the journal because re-enabling starts
 // a new restorable window at the re-enable time.
 func (s *JournalStore) DeleteAllForTable(tableName string) error {
-	return s.BaseStore.DeleteByPrefix(tableName + keySep)
+	return s.BaseStore.DeleteByPrefix(tableName + KeySep)
 }
 
 // JournalChange is the caller-facing form of one journaled mutation.

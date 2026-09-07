@@ -43,7 +43,7 @@ func (h *AdminHandler) ListFunctions(ctx context.Context, req *connect.Request[p
 	}
 
 	items, nextMarker, err := h.service.listFunctionsCore(stores, &ListFunctionsInput{
-		Marker:   req.Msg.Marker,
+		Marker:   req.Msg.GetMarker(),
 		MaxItems: int(req.Msg.GetMaxitems()),
 	})
 	if err != nil {
@@ -57,7 +57,7 @@ func (h *AdminHandler) ListFunctions(ctx context.Context, req *connect.Request[p
 
 	resp := &pb.ListFunctionsResponse{Functions: functions}
 	if nextMarker != "" {
-		resp.Nextmarker = nextMarker
+		resp.Nextmarker = proto.String(nextMarker)
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -76,8 +76,8 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		FunctionName: req.Msg.Functionname,
 		Runtime:      protoToStoreRuntime(req.Msg.Runtime),
 		Role:         req.Msg.Role,
-		Handler:      req.Msg.Handler,
-		Description:  req.Msg.Description,
+		Handler:      req.Msg.GetHandler(),
+		Description:  req.Msg.GetDescription(),
 		PackageType:  protoToPackageType(req.Msg.Packagetype),
 		MemorySize:   req.Msg.GetMemorysize(),
 		Timeout:      req.Msg.GetTimeout(),

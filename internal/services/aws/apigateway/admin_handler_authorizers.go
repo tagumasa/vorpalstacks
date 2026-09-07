@@ -3,6 +3,7 @@ package apigateway
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 
 	"connectrpc.com/connect"
 
@@ -22,11 +23,11 @@ func (h *AdminHandler) CreateAuthorizer(ctx context.Context, req *connect.Reques
 	in := &AuthorizerInput{
 		Name:                         req.Msg.Name,
 		Type:                         fromPbAuthorizerType(req.Msg.Type),
-		AuthType:                     req.Msg.Authtype,
-		AuthorizerUri:                req.Msg.Authorizeruri,
-		AuthorizerCredentials:        req.Msg.Authorizercredentials,
-		IdentitySource:               req.Msg.Identitysource,
-		IdentityValidationExpression: req.Msg.Identityvalidationexpression,
+		AuthType:                     req.Msg.GetAuthtype(),
+		AuthorizerUri:                req.Msg.GetAuthorizeruri(),
+		AuthorizerCredentials:        req.Msg.GetAuthorizercredentials(),
+		IdentitySource:               req.Msg.GetIdentitysource(),
+		IdentityValidationExpression: req.Msg.GetIdentityvalidationexpression(),
 		ProviderArns:                 req.Msg.Providerarns,
 	}
 	if req.Msg.Authorizerresultttlinseconds != nil {
@@ -53,9 +54,9 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 	}
 
 	limit := int(req.Msg.GetLimit())
-	start, end, nextPos, ok := paginateAdminList(len(authorizers), req.Msg.Position, limit)
+	start, end, nextPos, ok := paginateAdminList(len(authorizers), req.Msg.GetPosition(), limit)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.GetPosition()))
 	}
 
 	items := make([]*pb.Authorizer, 0, end-start)
@@ -64,7 +65,7 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 	}
 	resp := &pb.Authorizers{Items: items}
 	if nextPos != "" {
-		resp.Position = nextPos
+		resp.Position = proto.String(nextPos)
 	}
 	return connect.NewResponse(resp), nil
 }

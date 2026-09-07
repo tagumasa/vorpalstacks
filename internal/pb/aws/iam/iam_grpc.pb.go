@@ -24,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	IAMService_AcceptDelegationRequest_FullMethodName                       = "/iam.IAMService/AcceptDelegationRequest"
+	IAMService_AcquireRole_FullMethodName                                   = "/iam.IAMService/AcquireRole"
 	IAMService_AddClientIDToOpenIDConnectProvider_FullMethodName            = "/iam.IAMService/AddClientIDToOpenIDConnectProvider"
 	IAMService_AddRoleToInstanceProfile_FullMethodName                      = "/iam.IAMService/AddRoleToInstanceProfile"
 	IAMService_AddUserToGroup_FullMethodName                                = "/iam.IAMService/AddUserToGroup"
@@ -87,6 +88,7 @@ const (
 	IAMService_GetAccessKeyLastUsed_FullMethodName                          = "/iam.IAMService/GetAccessKeyLastUsed"
 	IAMService_GetAccountAuthorizationDetails_FullMethodName                = "/iam.IAMService/GetAccountAuthorizationDetails"
 	IAMService_GetAccountPasswordPolicy_FullMethodName                      = "/iam.IAMService/GetAccountPasswordPolicy"
+	IAMService_GetAccountProperties_FullMethodName                          = "/iam.IAMService/GetAccountProperties"
 	IAMService_GetAccountSummary_FullMethodName                             = "/iam.IAMService/GetAccountSummary"
 	IAMService_GetContextKeysForCustomPolicy_FullMethodName                 = "/iam.IAMService/GetContextKeysForCustomPolicy"
 	IAMService_GetContextKeysForPrincipalPolicy_FullMethodName              = "/iam.IAMService/GetContextKeysForPrincipalPolicy"
@@ -105,6 +107,7 @@ const (
 	IAMService_GetPolicyVersion_FullMethodName                              = "/iam.IAMService/GetPolicyVersion"
 	IAMService_GetRole_FullMethodName                                       = "/iam.IAMService/GetRole"
 	IAMService_GetRolePolicy_FullMethodName                                 = "/iam.IAMService/GetRolePolicy"
+	IAMService_GetRoleTemplateVersion_FullMethodName                        = "/iam.IAMService/GetRoleTemplateVersion"
 	IAMService_GetSAMLProvider_FullMethodName                               = "/iam.IAMService/GetSAMLProvider"
 	IAMService_GetServerCertificate_FullMethodName                          = "/iam.IAMService/GetServerCertificate"
 	IAMService_GetServiceLastAccessedDetails_FullMethodName                 = "/iam.IAMService/GetServiceLastAccessedDetails"
@@ -149,6 +152,7 @@ const (
 	IAMService_ListUsers_FullMethodName                                     = "/iam.IAMService/ListUsers"
 	IAMService_ListUserTags_FullMethodName                                  = "/iam.IAMService/ListUserTags"
 	IAMService_ListVirtualMFADevices_FullMethodName                         = "/iam.IAMService/ListVirtualMFADevices"
+	IAMService_PutAccountProperties_FullMethodName                          = "/iam.IAMService/PutAccountProperties"
 	IAMService_PutGroupPolicy_FullMethodName                                = "/iam.IAMService/PutGroupPolicy"
 	IAMService_PutRolePermissionsBoundary_FullMethodName                    = "/iam.IAMService/PutRolePermissionsBoundary"
 	IAMService_PutRolePolicy_FullMethodName                                 = "/iam.IAMService/PutRolePolicy"
@@ -211,6 +215,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	AcceptDelegationRequest(ctx context.Context, in *AcceptDelegationRequestRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Creates an IAM role from the specified role template. The new role takes its configuration—including its name, path, trust policy, inline and managed policies, permissions boundary, tags, and max...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	AcquireRole(ctx context.Context, in *AcquireRoleRequest, opts ...grpc.CallOption) (*AcquireRoleResponse, error)
 	// Adds a new client ID (also known as audience) to the list of client IDs already registered for the specified IAM OpenID Connect (OIDC) provider resource. This operation is idempotent; it does not f...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -463,6 +471,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetAccountPasswordPolicy(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*GetAccountPasswordPolicyResponse, error)
+	// Retrieves the account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. The s...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetAccountProperties(ctx context.Context, in *GetAccountPropertiesRequest, opts ...grpc.CallOption) (*GetAccountPropertiesResponse, error)
 	// Retrieves information about IAM entity usage and IAM quotas in the Amazon Web Services account. For information about IAM quotas, see IAM and STS quotas in the IAM User Guide.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -535,6 +547,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetRolePolicy(ctx context.Context, in *GetRolePolicyRequest, opts ...grpc.CallOption) (*GetRolePolicyResponse, error)
+	// Retrieves information about a version of the specified role template. Role templates define a reusable configuration—including role name and path patterns, trust policy, inline and managed polici...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetRoleTemplateVersion(ctx context.Context, in *GetRoleTemplateVersionRequest, opts ...grpc.CallOption) (*GetRoleTemplateVersionResponse, error)
 	// Returns the SAML provider metadocument that was uploaded when the IAM SAML provider resource object was created or updated. This operation requires Signature Version 4.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -711,6 +727,10 @@ type IAMServiceClient interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	ListVirtualMFADevices(ctx context.Context, in *ListVirtualMFADevicesRequest, opts ...grpc.CallOption) (*ListVirtualMFADevicesResponse, error)
+	// Sets account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. Specify proper...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	PutAccountProperties(ctx context.Context, in *PutAccountPropertiesRequest, opts ...grpc.CallOption) (*PutAccountPropertiesResponse, error)
 	// Adds or updates an inline policy document that is embedded in the specified IAM group. A user can also have managed policies attached to it. To attach a managed policy to a group, use AttachGroupPo...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -925,6 +945,16 @@ func (c *iAMServiceClient) AcceptDelegationRequest(ctx context.Context, in *Acce
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
 	err := c.cc.Invoke(ctx, IAMService_AcceptDelegationRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *iAMServiceClient) AcquireRole(ctx context.Context, in *AcquireRoleRequest, opts ...grpc.CallOption) (*AcquireRoleResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AcquireRoleResponse)
+	err := c.cc.Invoke(ctx, IAMService_AcquireRole_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1561,6 +1591,16 @@ func (c *iAMServiceClient) GetAccountPasswordPolicy(ctx context.Context, in *com
 	return out, nil
 }
 
+func (c *iAMServiceClient) GetAccountProperties(ctx context.Context, in *GetAccountPropertiesRequest, opts ...grpc.CallOption) (*GetAccountPropertiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAccountPropertiesResponse)
+	err := c.cc.Invoke(ctx, IAMService_GetAccountProperties_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *iAMServiceClient) GetAccountSummary(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*GetAccountSummaryResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAccountSummaryResponse)
@@ -1735,6 +1775,16 @@ func (c *iAMServiceClient) GetRolePolicy(ctx context.Context, in *GetRolePolicyR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetRolePolicyResponse)
 	err := c.cc.Invoke(ctx, IAMService_GetRolePolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *iAMServiceClient) GetRoleTemplateVersion(ctx context.Context, in *GetRoleTemplateVersionRequest, opts ...grpc.CallOption) (*GetRoleTemplateVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetRoleTemplateVersionResponse)
+	err := c.cc.Invoke(ctx, IAMService_GetRoleTemplateVersion_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2175,6 +2225,16 @@ func (c *iAMServiceClient) ListVirtualMFADevices(ctx context.Context, in *ListVi
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListVirtualMFADevicesResponse)
 	err := c.cc.Invoke(ctx, IAMService_ListVirtualMFADevices_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *iAMServiceClient) PutAccountProperties(ctx context.Context, in *PutAccountPropertiesRequest, opts ...grpc.CallOption) (*PutAccountPropertiesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PutAccountPropertiesResponse)
+	err := c.cc.Invoke(ctx, IAMService_PutAccountProperties_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2691,6 +2751,10 @@ type IAMServiceServer interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	AcceptDelegationRequest(context.Context, *AcceptDelegationRequestRequest) (*common.Empty, error)
+	// Creates an IAM role from the specified role template. The new role takes its configuration—including its name, path, trust policy, inline and managed policies, permissions boundary, tags, and max...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	AcquireRole(context.Context, *AcquireRoleRequest) (*AcquireRoleResponse, error)
 	// Adds a new client ID (also known as audience) to the list of client IDs already registered for the specified IAM OpenID Connect (OIDC) provider resource. This operation is idempotent; it does not f...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -2943,6 +3007,10 @@ type IAMServiceServer interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetAccountPasswordPolicy(context.Context, *common.Empty) (*GetAccountPasswordPolicyResponse, error)
+	// Retrieves the account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. The s...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetAccountProperties(context.Context, *GetAccountPropertiesRequest) (*GetAccountPropertiesResponse, error)
 	// Retrieves information about IAM entity usage and IAM quotas in the Amazon Web Services account. For information about IAM quotas, see IAM and STS quotas in the IAM User Guide.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -3015,6 +3083,10 @@ type IAMServiceServer interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	GetRolePolicy(context.Context, *GetRolePolicyRequest) (*GetRolePolicyResponse, error)
+	// Retrieves information about a version of the specified role template. Role templates define a reusable configuration—including role name and path patterns, trust policy, inline and managed polici...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	GetRoleTemplateVersion(context.Context, *GetRoleTemplateVersionRequest) (*GetRoleTemplateVersionResponse, error)
 	// Returns the SAML provider metadocument that was uploaded when the IAM SAML provider resource object was created or updated. This operation requires Signature Version 4.
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -3191,6 +3263,10 @@ type IAMServiceServer interface {
 	// HTTP: POST /
 	// Protocol: awsQuery
 	ListVirtualMFADevices(context.Context, *ListVirtualMFADevicesRequest) (*ListVirtualMFADevicesResponse, error)
+	// Sets account-level properties for the caller's Amazon Web Services account. Account properties are configuration settings that control account-wide IAM features such as Role Manager. Specify proper...
+	// HTTP: POST /
+	// Protocol: awsQuery
+	PutAccountProperties(context.Context, *PutAccountPropertiesRequest) (*PutAccountPropertiesResponse, error)
 	// Adds or updates an inline policy document that is embedded in the specified IAM group. A user can also have managed policies attached to it. To attach a managed policy to a group, use AttachGroupPo...
 	// HTTP: POST /
 	// Protocol: awsQuery
@@ -3404,6 +3480,9 @@ type UnimplementedIAMServiceServer struct{}
 func (UnimplementedIAMServiceServer) AcceptDelegationRequest(context.Context, *AcceptDelegationRequestRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method AcceptDelegationRequest not implemented")
 }
+func (UnimplementedIAMServiceServer) AcquireRole(context.Context, *AcquireRoleRequest) (*AcquireRoleResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AcquireRole not implemented")
+}
 func (UnimplementedIAMServiceServer) AddClientIDToOpenIDConnectProvider(context.Context, *AddClientIDToOpenIDConnectProviderRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddClientIDToOpenIDConnectProvider not implemented")
 }
@@ -3593,6 +3672,9 @@ func (UnimplementedIAMServiceServer) GetAccountAuthorizationDetails(context.Cont
 func (UnimplementedIAMServiceServer) GetAccountPasswordPolicy(context.Context, *common.Empty) (*GetAccountPasswordPolicyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAccountPasswordPolicy not implemented")
 }
+func (UnimplementedIAMServiceServer) GetAccountProperties(context.Context, *GetAccountPropertiesRequest) (*GetAccountPropertiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAccountProperties not implemented")
+}
 func (UnimplementedIAMServiceServer) GetAccountSummary(context.Context, *common.Empty) (*GetAccountSummaryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAccountSummary not implemented")
 }
@@ -3646,6 +3728,9 @@ func (UnimplementedIAMServiceServer) GetRole(context.Context, *GetRoleRequest) (
 }
 func (UnimplementedIAMServiceServer) GetRolePolicy(context.Context, *GetRolePolicyRequest) (*GetRolePolicyResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRolePolicy not implemented")
+}
+func (UnimplementedIAMServiceServer) GetRoleTemplateVersion(context.Context, *GetRoleTemplateVersionRequest) (*GetRoleTemplateVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetRoleTemplateVersion not implemented")
 }
 func (UnimplementedIAMServiceServer) GetSAMLProvider(context.Context, *GetSAMLProviderRequest) (*GetSAMLProviderResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSAMLProvider not implemented")
@@ -3778,6 +3863,9 @@ func (UnimplementedIAMServiceServer) ListUserTags(context.Context, *ListUserTags
 }
 func (UnimplementedIAMServiceServer) ListVirtualMFADevices(context.Context, *ListVirtualMFADevicesRequest) (*ListVirtualMFADevicesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListVirtualMFADevices not implemented")
+}
+func (UnimplementedIAMServiceServer) PutAccountProperties(context.Context, *PutAccountPropertiesRequest) (*PutAccountPropertiesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutAccountProperties not implemented")
 }
 func (UnimplementedIAMServiceServer) PutGroupPolicy(context.Context, *PutGroupPolicyRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutGroupPolicy not implemented")
@@ -3964,6 +4052,24 @@ func _IAMService_AcceptDelegationRequest_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IAMServiceServer).AcceptDelegationRequest(ctx, req.(*AcceptDelegationRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IAMService_AcquireRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AcquireRoleRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IAMServiceServer).AcquireRole(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IAMService_AcquireRole_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IAMServiceServer).AcquireRole(ctx, req.(*AcquireRoleRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5102,6 +5208,24 @@ func _IAMService_GetAccountPasswordPolicy_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IAMService_GetAccountProperties_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAccountPropertiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IAMServiceServer).GetAccountProperties(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IAMService_GetAccountProperties_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IAMServiceServer).GetAccountProperties(ctx, req.(*GetAccountPropertiesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _IAMService_GetAccountSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(common.Empty)
 	if err := dec(in); err != nil {
@@ -5422,6 +5546,24 @@ func _IAMService_GetRolePolicy_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IAMServiceServer).GetRolePolicy(ctx, req.(*GetRolePolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IAMService_GetRoleTemplateVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetRoleTemplateVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IAMServiceServer).GetRoleTemplateVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IAMService_GetRoleTemplateVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IAMServiceServer).GetRoleTemplateVersion(ctx, req.(*GetRoleTemplateVersionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -6214,6 +6356,24 @@ func _IAMService_ListVirtualMFADevices_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IAMServiceServer).ListVirtualMFADevices(ctx, req.(*ListVirtualMFADevicesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IAMService_PutAccountProperties_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutAccountPropertiesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IAMServiceServer).PutAccountProperties(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IAMService_PutAccountProperties_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IAMServiceServer).PutAccountProperties(ctx, req.(*PutAccountPropertiesRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -7130,6 +7290,10 @@ var IAMService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _IAMService_AcceptDelegationRequest_Handler,
 		},
 		{
+			MethodName: "AcquireRole",
+			Handler:    _IAMService_AcquireRole_Handler,
+		},
+		{
 			MethodName: "AddClientIDToOpenIDConnectProvider",
 			Handler:    _IAMService_AddClientIDToOpenIDConnectProvider_Handler,
 		},
@@ -7382,6 +7546,10 @@ var IAMService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _IAMService_GetAccountPasswordPolicy_Handler,
 		},
 		{
+			MethodName: "GetAccountProperties",
+			Handler:    _IAMService_GetAccountProperties_Handler,
+		},
+		{
 			MethodName: "GetAccountSummary",
 			Handler:    _IAMService_GetAccountSummary_Handler,
 		},
@@ -7452,6 +7620,10 @@ var IAMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRolePolicy",
 			Handler:    _IAMService_GetRolePolicy_Handler,
+		},
+		{
+			MethodName: "GetRoleTemplateVersion",
+			Handler:    _IAMService_GetRoleTemplateVersion_Handler,
 		},
 		{
 			MethodName: "GetSAMLProvider",
@@ -7628,6 +7800,10 @@ var IAMService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListVirtualMFADevices",
 			Handler:    _IAMService_ListVirtualMFADevices_Handler,
+		},
+		{
+			MethodName: "PutAccountProperties",
+			Handler:    _IAMService_PutAccountProperties_Handler,
 		},
 		{
 			MethodName: "PutGroupPolicy",

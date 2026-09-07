@@ -207,6 +207,45 @@ type PointInTimeRecoveryDescription struct {
 	RecoveryPeriodInDays       int                       `json:"recovery_period_in_days,omitempty"`
 }
 
+// SearchSchemaElement defines an attribute's role in a vector index search
+// schema: HASH partitions the index, INLINE_FILTER is projected for filtering.
+type SearchSchemaElement struct {
+	AttributeName           string `json:"attribute_name"`
+	SearchSchemaElementType string `json:"search_schema_element_type,omitempty"` // HASH | INLINE_FILTER
+}
+
+// VectorIndex represents a vector index on a table. A vector index enables
+// similarity search over one vector attribute, whose item value is a list of
+// numbers.
+type VectorIndex struct {
+	IndexName           string                 `json:"index_name"`
+	IndexArn            string                 `json:"index_arn,omitempty"`
+	VectorAttributeName string                 `json:"vector_attribute_name"`
+	Dimensions          int64                  `json:"dimensions"`
+	DistanceFunction    string                 `json:"distance_function"` // COSINE | EUCLIDEAN | DOT_PRODUCT
+	Projection          *Projection            `json:"projection"`
+	SearchSchema        []*SearchSchemaElement `json:"search_schema,omitempty"`
+	IndexStatus         IndexStatus            `json:"index_status,omitempty"`
+	Backfilling         bool                   `json:"backfilling,omitempty"`
+	IndexSizeBytes      int64                  `json:"index_size_bytes,omitempty"`
+	ItemCount           int64                  `json:"item_count,omitempty"`
+}
+
+// Vector index bounds. The quotas are documented in the DynamoDB quotas
+// page's Vector indexes table: dimensions 1..4096 (not adjustable), at most
+// 5 vector indexes per table, at most 18 inline-filter elements per index,
+// and one partition key (HASH) per index; the TopK range is documented
+// 1..100 on the SearchVectors API reference.
+const (
+	VectorDimensionsMin    = 1
+	VectorDimensionsMax    = 4096
+	VectorAttributeNameMax = 255
+	VectorSearchTopKMin    = 1
+	VectorSearchTopKMax    = 100
+	VectorIndexesPerTable  = 5
+	VectorInlineFiltersMax = 18
+)
+
 // Table represents a DynamoDB table.
 type Table struct {
 	Name                          string                          `json:"name"`
@@ -220,6 +259,7 @@ type Table struct {
 	BillingMode                   BillingMode                     `json:"billing_mode"`
 	GlobalSecondaryIndexes        []*GlobalSecondaryIndex         `json:"global_secondary_indexes,omitempty"`
 	LocalSecondaryIndexes         []*LocalSecondaryIndex          `json:"local_secondary_indexes,omitempty"`
+	VectorIndexes                 []*VectorIndex                  `json:"vector_indexes,omitempty"`
 	StreamSpecification           *StreamSpecification            `json:"stream_specification,omitempty"`
 	SSEDescription                *SSEDescription                 `json:"sse_description,omitempty"`
 	TableSizeBytes                int64                           `json:"table_size_bytes"`
@@ -234,7 +274,6 @@ type Table struct {
 	ResourcePolicyRevisionId      int                             `json:"resource_policy_revision_id,omitempty"`
 	KinesisDataStreamDestinations []*KinesisDataStreamDestination `json:"kinesis_data_stream_destinations,omitempty"`
 	ContributorInsightsEnabled    bool                            `json:"contributor_insights_enabled,omitempty"`
-	ContributorInsightsAction     string                          `json:"contributor_insights_action,omitempty"`
 	ContributorInsightsMode       string                          `json:"contributor_insights_mode,omitempty"`
 	ContributorInsightsUpdatedAt  time.Time                       `json:"contributor_insights_updated_at,omitempty"`
 	WarmThroughput                *WarmThroughput                 `json:"warm_throughput,omitempty"`
@@ -272,6 +311,7 @@ type Backup struct {
 	ProvisionedThroughput   *ProvisionedThroughput  `json:"provisioned_throughput,omitempty"`
 	GlobalSecondaryIndexes  []*GlobalSecondaryIndex `json:"global_secondary_indexes,omitempty"`
 	LocalSecondaryIndexes   []*LocalSecondaryIndex  `json:"local_secondary_indexes,omitempty"`
+	VectorIndexes           []*VectorIndex          `json:"vector_indexes,omitempty"`
 }
 
 // GlobalTable represents a global table in DynamoDB.
@@ -283,10 +323,10 @@ type GlobalTable struct {
 	ReplicationGroup  []*Replica `json:"replication_group"`
 	// Write-capacity auto-scaling applied at the global level; echoed on
 	// every replica description.
-	WriteAutoScalingSettings map[string]interface{} `json:"write_auto_scaling_settings,omitempty"`
+	WriteAutoScalingSettings *AutoScalingSettingsDescription `json:"write_auto_scaling_settings,omitempty"`
 	// Per-index write-capacity settings applied at the global level; they
 	// merge with each replica's per-index read settings at echo time.
-	GlobalSecondaryIndexWriteSettings []map[string]interface{} `json:"global_secondary_index_write_settings,omitempty"`
+	GlobalSecondaryIndexWriteSettings []IndexAutoScalingSettings `json:"global_secondary_index_write_settings,omitempty"`
 }
 
 // Replica represents a replica of a global table in a specific region.
@@ -298,14 +338,66 @@ type Replica struct {
 	ProvisionedWriteCapacityUnits int64  `json:"provisioned_write_capacity_units,omitempty"`
 	// Read-capacity auto-scaling applied per replica, echoed through
 	// ReplicaProvisionedReadCapacityAutoScalingSettings.
-	ReadAutoScalingSettings map[string]interface{} `json:"read_auto_scaling_settings,omitempty"`
+	ReadAutoScalingSettings *AutoScalingSettingsDescription `json:"read_auto_scaling_settings,omitempty"`
 	// Per-index read-capacity settings applied per replica; the write side
 	// lives on the global table and the two merge at echo time.
-	GlobalSecondaryIndexReadSettings []map[string]interface{} `json:"global_secondary_index_read_settings,omitempty"`
+	GlobalSecondaryIndexReadSettings []IndexAutoScalingSettings `json:"global_secondary_index_read_settings,omitempty"`
 	// ReplicaTableClass and its update time, echoed through
 	// ReplicaTableClassSummary.
 	TableClass            string     `json:"table_class,omitempty"`
 	TableClassLastUpdated *time.Time `json:"table_class_last_updated,omitempty"`
+}
+
+// TargetTrackingScalingPolicyConfiguration mirrors the model's
+// AutoScalingTargetTrackingScalingPolicyConfigurationDescription.
+type TargetTrackingScalingPolicyConfiguration struct {
+	DisableScaleIn   *bool
+	ScaleInCooldown  *int32
+	ScaleOutCooldown *int32
+	TargetValue      float64
+}
+
+// AutoScalingPolicyDescription mirrors the model's AutoScalingPolicyDescription.
+type AutoScalingPolicyDescription struct {
+	PolicyName                               *string
+	TargetTrackingScalingPolicyConfiguration *TargetTrackingScalingPolicyConfiguration
+}
+
+// AutoScalingSettingsDescription mirrors the model's
+// AutoScalingSettingsDescription: one capacity dimension's auto-scaling
+// state. Members are pointers because absence is meaningful on the wire.
+type AutoScalingSettingsDescription struct {
+	MinimumUnits        *int64
+	MaximumUnits        *int64
+	AutoScalingDisabled *bool
+	AutoScalingRoleArn  *string
+	ScalingPolicies     []AutoScalingPolicyDescription
+}
+
+// IndexAutoScalingSettings is one index's stored settings: capacity units
+// plus the read and write auto-scaling descriptions. A write-side entry
+// leaves the read members nil and vice versa.
+type IndexAutoScalingSettings struct {
+	IndexName                     string
+	ProvisionedReadCapacityUnits  *int64
+	ProvisionedWriteCapacityUnits *int64
+	Read                          *AutoScalingSettingsDescription
+	Write                         *AutoScalingSettingsDescription
+}
+
+// ReplicaAutoScalingDescription is one replica's stored auto-scaling state
+// for UpdateTableReplicaAutoScaling / DescribeTableReplicaAutoScaling.
+type ReplicaAutoScalingDescription struct {
+	RegionName             string
+	Read                   *AutoScalingSettingsDescription
+	Write                  *AutoScalingSettingsDescription
+	GlobalSecondaryIndexes []IndexAutoScalingSettings
+}
+
+// TableReplicaAutoScalingSettings is the stored table-level auto-scaling
+// record: the per-replica descriptions keyed by region.
+type TableReplicaAutoScalingSettings struct {
+	Replicas []ReplicaAutoScalingDescription
 }
 
 // KinesisDataStreamDestination represents a Kinesis data stream destination for a table.
@@ -473,33 +565,24 @@ type TableListResult struct {
 	IsTruncated bool
 }
 
-// TTLSpecification represents the TTL specification for a DynamoDB table.
-type TTLSpecification struct {
-	TableName     string `json:"table_name"`
-	Enabled       bool   `json:"enabled"`
-	AttributeName string `json:"attribute_name,omitempty"`
-}
-
-// Endpoint represents a DynamoDB endpoint.
-type Endpoint struct {
-	Address              string `json:"address"`
-	CachePeriodInMinutes int64  `json:"cache_period_in_minutes"`
-}
-
 // ImportTableDescription represents the description of a table import.
 type ImportTableDescription struct {
-	ImportArn          string          `json:"import_arn"`
-	ImportStatus       string          `json:"import_status"`
-	TableArn           string          `json:"table_arn,omitempty"`
-	TableId            string          `json:"table_id,omitempty"`
-	StartTime          time.Time       `json:"start_time,omitempty"`
-	EndTime            time.Time       `json:"end_time,omitempty"`
-	ProcessedItemCount int64           `json:"processed_item_count,omitempty"`
-	ProcessedSizeBytes int64           `json:"processed_size_bytes,omitempty"`
-	InputFormat        string          `json:"input_format,omitempty"`
-	S3BucketSource     *S3BucketSource `json:"s3_bucket_source,omitempty"`
-	FailureCode        string          `json:"failure_code,omitempty"`
-	FailureMessage     string          `json:"failure_message,omitempty"`
+	ImportArn            string          `json:"import_arn"`
+	ImportStatus         string          `json:"import_status"`
+	TableArn             string          `json:"table_arn,omitempty"`
+	TableId              string          `json:"table_id,omitempty"`
+	StartTime            time.Time       `json:"start_time,omitempty"`
+	EndTime              time.Time       `json:"end_time,omitempty"`
+	ProcessedItemCount   int64           `json:"processed_item_count,omitempty"`
+	ProcessedSizeBytes   int64           `json:"processed_size_bytes,omitempty"`
+	ImportedItemCount    int64           `json:"imported_item_count,omitempty"`
+	ErrorCount           int64           `json:"error_count,omitempty"`
+	InputFormat          string          `json:"input_format,omitempty"`
+	S3BucketSource       *S3BucketSource `json:"s3_bucket_source,omitempty"`
+	FailureCode          string          `json:"failure_code,omitempty"`
+	FailureMessage       string          `json:"failure_message,omitempty"`
+	ClientToken          string          `json:"client_token,omitempty"`
+	InputCompressionType string          `json:"input_compression_type,omitempty"`
 }
 
 // S3BucketSource represents an S3 bucket source for table import.
@@ -526,6 +609,11 @@ type ExportDescription struct {
 	S3Prefix          string    `json:"s3_prefix,omitempty"`
 	FailureCode       string    `json:"failure_code,omitempty"`
 	FailureMessage    string    `json:"failure_message,omitempty"`
+	ClientToken       string    `json:"client_token,omitempty"`
+	S3BucketOwner     string    `json:"s3_bucket_owner,omitempty"`
+	S3SseKmsKeyId     string    `json:"s3_sse_kms_key_id,omitempty"`
+	ExportManifest    string    `json:"export_manifest,omitempty"`
+	ExportType        string    `json:"export_type,omitempty"`
 }
 
 // ContributorInsightsSummary represents the contributor insights summary for a table or index.

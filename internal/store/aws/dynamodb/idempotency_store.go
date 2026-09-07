@@ -1,11 +1,12 @@
 package dynamodb
 
 import (
-	"encoding/json"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/storage"
-	"vorpalstacks/internal/store/aws/common"
+	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
+	commonstore "vorpalstacks/internal/store/aws/common"
 )
 
 func idempotencyBucketName(region string) string {
@@ -17,13 +18,13 @@ func idempotencyBucketName(region string) string {
 // is recognised without re-executing the transaction. A token replayed with
 // a different payload is a client error the service layer reports.
 type IdempotencyStore struct {
-	*common.BaseStore
+	*commonstore.BaseStore
 }
 
 // NewIdempotencyStore creates an IdempotencyStore for the given region.
 func NewIdempotencyStore(store storage.BasicStorage, region string) *IdempotencyStore {
 	return &IdempotencyStore{
-		BaseStore: common.NewBaseStore(store.Bucket(idempotencyBucketName(region)), "dynamodb_idempotency"),
+		BaseStore: commonstore.NewBaseStore(store.Bucket(idempotencyBucketName(region)), "dynamodb_idempotency"),
 	}
 }
 
@@ -34,41 +35,71 @@ const (
 	IdempotencyStateCompleted  = "completed"
 )
 
-// idempotencyRecord is the persisted form of one token: the hash of the
-// request the token was first used with, the claim state, and when the
-// record lapses.
+// idempotencyRecord is the in-memory form of one token: the hash of the
+// request the token was first used with, the claim state, when the record
+// lapses, and — on a completed TransactWriteItems record — the per-table
+// read capacity units a same-token replay reports.
 type idempotencyRecord struct {
-	RequestHash string `json:"request_hash"`
-	State       string `json:"state,omitempty"`
-	ExpiresAt   int64  `json:"expires_at"`
+	RequestHash string
+	State       string
+	ExpiresAt   int64
+	ReadUnits   map[string]float64
 }
 
-// Lookup returns the request hash and state recorded for the token when a
-// live record exists. Expired records are treated as absent and removed.
-func (s *IdempotencyStore) Lookup(token string) (string, string, bool, error) {
+// idempotencyRecordFromBytes decodes a persisted token record; undecodable
+// bytes are treated as no record.
+func idempotencyRecordFromBytes(data []byte) (*idempotencyRecord, error) {
+	var pbRecord pb.IdempotencyRecord
+	if err := proto.Unmarshal(data, &pbRecord); err != nil {
+		return nil, err
+	}
+	return &idempotencyRecord{
+		RequestHash: pbRecord.RequestHash,
+		State:       pbRecord.State,
+		ExpiresAt:   pbRecord.ExpiresAt,
+		ReadUnits:   pbRecord.ReplayReadUnits,
+	}, nil
+}
+
+// Lookup returns the request hash, state, and recorded read units for the
+// token when a live record exists. A missing record is reported as absent;
+// expired records are treated as absent and removed. Any other storage
+// failure — and undecodable record bytes — is returned as an error: treating
+// corruption as absence would silently re-execute a request the caller
+// believes is deduplicated.
+func (s *IdempotencyStore) Lookup(token string) (string, string, map[string]float64, bool, error) {
 	data, err := s.BaseStore.GetRaw(token)
 	if err != nil {
-		return "", "", false, nil
+		if commonstore.IsNotFound(err) {
+			return "", "", nil, false, nil
+		}
+		return "", "", nil, false, err
 	}
-	var record idempotencyRecord
-	if jsonErr := json.Unmarshal(data, &record); jsonErr != nil {
-		return "", "", false, nil
+	record, err := idempotencyRecordFromBytes(data)
+	if err != nil {
+		return "", "", nil, false, err
 	}
 	if record.ExpiresAt <= time.Now().Unix() {
 		_ = s.BaseStore.Delete(token)
-		return "", "", false, nil
+		return "", "", nil, false, nil
 	}
-	return record.RequestHash, record.State, true, nil
+	return record.RequestHash, record.State, record.ReadUnits, true, nil
 }
 
-// Record stores the token with its request hash, claim state, and expiry.
-func (s *IdempotencyStore) Record(token, requestHash, state string, expiresAt time.Time) error {
-	record := idempotencyRecord{
-		RequestHash: requestHash,
-		State:       state,
-		ExpiresAt:   expiresAt.Unix(),
+// Record stores the token with its request hash, claim state, expiry, and —
+// for completed TransactWriteItems records — the per-table read units a
+// replay reports (nil leaves the record without replay units).
+func (s *IdempotencyStore) Record(token, requestHash, state string, expiresAt time.Time, readUnits map[string]float64) error {
+	data, err := proto.Marshal(&pb.IdempotencyRecord{
+		RequestHash:     requestHash,
+		State:           state,
+		ExpiresAt:       expiresAt.Unix(),
+		ReplayReadUnits: readUnits,
+	})
+	if err != nil {
+		return err
 	}
-	return s.BaseStore.Put(token, record)
+	return s.BaseStore.PutRaw(token, data)
 }
 
 // SweepExpired removes every record whose idempotency window has lapsed and
@@ -78,13 +109,11 @@ func (s *IdempotencyStore) Record(token, requestHash, state string, expiresAt ti
 func (s *IdempotencyStore) SweepExpired(now time.Time) (int, error) {
 	var expired []string
 	if eachErr := s.BaseStore.ForEach(func(token string, data []byte) error {
-		var record idempotencyRecord
-		if jsonErr := json.Unmarshal(data, &record); jsonErr != nil {
+		record, err := idempotencyRecordFromBytes(data)
+		if err != nil || record.ExpiresAt > now.Unix() {
 			return nil
 		}
-		if record.ExpiresAt <= now.Unix() {
-			expired = append(expired, token)
-		}
+		expired = append(expired, token)
 		return nil
 	}); eachErr != nil {
 		return 0, eachErr

@@ -116,7 +116,7 @@ func (s *RDSService) describeDBSubnetGroupsCore(stores *rdsStores, in DescribeDB
 	for _, g := range groups {
 		pbGroups = append(pbGroups, subnetGroupToPb(g))
 	}
-	return &pb.DBSubnetGroupMessage{Dbsubnetgroups: pbGroups, Marker: nextMarker}, nil
+	return &pb.DBSubnetGroupMessage{Dbsubnetgroups: pbGroups, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeGlobalClustersCore(stores *rdsStores, in DescribeGlobalClustersInput) (*pb.GlobalClustersMessage, error) {
@@ -128,7 +128,7 @@ func (s *RDSService) describeGlobalClustersCore(stores *rdsStores, in DescribeGl
 	for _, c := range clusters {
 		pbClusters = append(pbClusters, globalClusterToPb(c))
 	}
-	return &pb.GlobalClustersMessage{Globalclusters: pbClusters, Marker: nextMarker}, nil
+	return &pb.GlobalClustersMessage{Globalclusters: pbClusters, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeEventSubscriptionsCore(stores *rdsStores, in DescribeEventSubscriptionsInput) (*pb.EventSubscriptionsMessage, error) {
@@ -140,7 +140,7 @@ func (s *RDSService) describeEventSubscriptionsCore(stores *rdsStores, in Descri
 	for _, sub := range subs {
 		pbSubs = append(pbSubs, eventSubscriptionToPb(sub))
 	}
-	return &pb.EventSubscriptionsMessage{Eventsubscriptionslist: pbSubs, Marker: nextMarker}, nil
+	return &pb.EventSubscriptionsMessage{Eventsubscriptionslist: pbSubs, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeEventsCore(stores *rdsStores, in DescribeEventsInput) (*pb.EventsMessage, error) {
@@ -212,10 +212,10 @@ func (s *RDSService) describeEventsCore(stores *rdsStores, in DescribeEventsInpu
 			continue
 		}
 		events = append(events, &pb.Event{
-			Date:             evt.Date.UTC().Format(timeutils.ISO8601UTCFormat),
-			Message:          evt.Message,
-			Sourcearn:        evt.SourceArn,
-			Sourceidentifier: evt.SourceIdentifier,
+			Date:             proto.String(evt.Date.UTC().Format(timeutils.ISO8601UTCFormat)),
+			Message:          proto.String(evt.Message),
+			Sourcearn:        proto.String(evt.SourceArn),
+			Sourceidentifier: proto.String(evt.SourceIdentifier),
 			Sourcetype:       st,
 			Eventcategories:  evt.EventCategories,
 		})
@@ -223,7 +223,7 @@ func (s *RDSService) describeEventsCore(stores *rdsStores, in DescribeEventsInpu
 
 	resp := &pb.EventsMessage{Events: events}
 	if result.IsTruncated && result.Marker != "" {
-		resp.Marker = result.Marker
+		resp.Marker = proto.String(result.Marker)
 	}
 	return resp, nil
 }
@@ -236,7 +236,7 @@ func (s *RDSService) listTagsForResourceCore(stores *rdsStores, in ListTagsForRe
 
 	pbTags := make([]*pb.Tag, len(tags))
 	for i, t := range tags {
-		pbTags[i] = &pb.Tag{Key: t.Key, Value: t.Value}
+		pbTags[i] = &pb.Tag{Key: proto.String(t.Key), Value: proto.String(t.Value)}
 	}
 
 	return &pb.TagListMessage{Taglist: pbTags}, nil
@@ -245,7 +245,7 @@ func (s *RDSService) listTagsForResourceCore(stores *rdsStores, in ListTagsForRe
 func (s *RDSService) addTagsToResourceCore(stores *rdsStores, in AddTagsToResourceInput) (*pbcommon.Empty, error) {
 	tags := make([]types.Tag, len(in.Tags))
 	for i, t := range in.Tags {
-		tags[i] = types.Tag{Key: t.Key, Value: t.Value}
+		tags[i] = types.Tag{Key: t.GetKey(), Value: t.GetValue()}
 	}
 
 	if err := stores.store.AddTags(in.ResourceName, tags); err != nil {
@@ -269,17 +269,17 @@ func (s *RDSService) removeTagsFromResourceCore(stores *rdsStores, in RemoveTags
 
 func subnetGroupToPb(g *storerds.DBSubnetGroup) *pb.DBSubnetGroup {
 	p := &pb.DBSubnetGroup{
-		Dbsubnetgroupname:        g.DBSubnetGroupName,
-		Dbsubnetgroupdescription: g.DBSubnetGroupDescription,
-		Vpcid:                    g.VpcId,
-		Subnetgroupstatus:        g.SubnetGroupStatus,
-		Dbsubnetgrouparn:         g.ARN,
+		Dbsubnetgroupname:        proto.String(g.DBSubnetGroupName),
+		Dbsubnetgroupdescription: proto.String(g.DBSubnetGroupDescription),
+		Vpcid:                    proto.String(g.VpcId),
+		Subnetgroupstatus:        proto.String(g.SubnetGroupStatus),
+		Dbsubnetgrouparn:         proto.String(g.ARN),
 	}
 	for _, s := range g.Subnets {
 		p.Subnets = append(p.Subnets, &pb.Subnet{
-			Subnetidentifier:       s.SubnetIdentifier,
-			Subnetavailabilityzone: &pb.AvailabilityZone{Name: s.SubnetAvailabilityZone},
-			Subnetstatus:           s.SubnetStatus,
+			Subnetidentifier:       proto.String(s.SubnetIdentifier),
+			Subnetavailabilityzone: &pb.AvailabilityZone{Name: proto.String(s.SubnetAvailabilityZone)},
+			Subnetstatus:           proto.String(s.SubnetStatus),
 		})
 	}
 	return p
@@ -287,18 +287,18 @@ func subnetGroupToPb(g *storerds.DBSubnetGroup) *pb.DBSubnetGroup {
 
 func globalClusterToPb(c *storerds.GlobalCluster) *pb.GlobalCluster {
 	p := &pb.GlobalCluster{
-		Globalclusteridentifier: c.GlobalClusterIdentifier,
-		Globalclusterresourceid: c.GlobalClusterResourceId,
-		Globalclusterarn:        c.GlobalClusterArn,
-		Engine:                  c.Engine,
-		Engineversion:           c.EngineVersion,
-		Status:                  c.Status,
+		Globalclusteridentifier: proto.String(c.GlobalClusterIdentifier),
+		Globalclusterresourceid: proto.String(c.GlobalClusterResourceId),
+		Globalclusterarn:        proto.String(c.GlobalClusterArn),
+		Engine:                  proto.String(c.Engine),
+		Engineversion:           proto.String(c.EngineVersion),
+		Status:                  proto.String(c.Status),
 		Storageencrypted:        proto.Bool(c.StorageEncrypted),
 		Deletionprotection:      proto.Bool(c.DeletionProtection),
 	}
 	for _, m := range c.GlobalClusterMembers {
 		p.Globalclustermembers = append(p.Globalclustermembers, &pb.GlobalClusterMember{
-			Dbclusterarn: m.DBClusterArn,
+			Dbclusterarn: proto.String(m.DBClusterArn),
 			Iswriter:     proto.Bool(m.IsWriter),
 			Readers:      m.Readers,
 		})
@@ -308,14 +308,14 @@ func globalClusterToPb(c *storerds.GlobalCluster) *pb.GlobalCluster {
 
 func eventSubscriptionToPb(sub *storerds.EventSubscription) *pb.EventSubscription {
 	return &pb.EventSubscription{
-		Custsubscriptionid:   sub.CustSubscriptionId,
-		Snstopicarn:          sub.SnsTopicArn,
-		Status:               sub.Status,
-		Sourcetype:           sub.SourceType,
+		Custsubscriptionid:   proto.String(sub.CustSubscriptionId),
+		Snstopicarn:          proto.String(sub.SnsTopicArn),
+		Status:               proto.String(sub.Status),
+		Sourcetype:           proto.String(sub.SourceType),
 		Sourceidslist:        sub.SourceIdsList,
 		Eventcategorieslist:  sub.EventCategoriesList,
 		Enabled:              proto.Bool(sub.Enabled),
-		Eventsubscriptionarn: sub.CustSubscriptionArn,
+		Eventsubscriptionarn: proto.String(sub.CustSubscriptionArn),
 	}
 }
 

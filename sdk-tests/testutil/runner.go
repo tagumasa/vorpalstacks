@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"runtime/debug"
 	"sort"
 	"strings"
@@ -31,12 +32,35 @@ type TestResult struct {
 	Duration time.Duration
 }
 
+// PendingTest is one RunTest/SkipTest registration captured in
+// register-only mode, in registration order.
+type PendingTest struct {
+	Service  string
+	TestName string
+	Fn       func() error
+	Skip     string // non-empty when registered via SkipTest; holds the reason
+}
+
 type TestRunner struct {
 	endpoint  string
 	region    string
 	accountID string
 	client    *http.Client
 	verbose   bool
+
+	// seen maps "service/testName" to the registration site of the first
+	// RunTest/SkipTest call for that pair. seenMu is required because
+	// service builders run concurrently on the shared runner under
+	// RunServicesParallel.
+	seen   map[string]string
+	seenMu sync.Mutex
+
+	// registerOnly captures RunTest/SkipTest registrations in pending
+	// instead of executing them; the go test facade builds its subtest
+	// tree this way. Single-threaded: only the facade sets it, one
+	// service at a time.
+	registerOnly bool
+	pending      []PendingTest
 }
 
 type ServiceFactory func(*TestRunner) []TestResult
@@ -328,7 +352,42 @@ func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map
 // the first invocation one full interval after creation.
 const perTestTimeout = 150 * time.Second
 
+// rejectDuplicateRegistration panics when (service, testName) has already
+// been registered, naming both registration sites. A duplicate registration
+// double-counts the suite and runs the same scenario twice, so the run stops
+// instead of silently executing both. The map is lazily initialised so that
+// any future TestRunner literal stays safe.
+func (r *TestRunner) rejectDuplicateRegistration(service, testName string) {
+	_, file, line, ok := runtime.Caller(2)
+	site := "unknown site"
+	if ok {
+		site = fmt.Sprintf("%s:%d", file, line)
+	}
+	key := service + "/" + testName
+	r.seenMu.Lock()
+	defer r.seenMu.Unlock()
+	if r.seen == nil {
+		r.seen = make(map[string]string)
+	}
+	if first, dup := r.seen[key]; dup {
+		panic(fmt.Sprintf("duplicate test registration %q: first registered at %s, duplicate at %s", key, first, site))
+	}
+	r.seen[key] = site
+}
+
 func (r *TestRunner) RunTest(service, testName string, testFunc func() error) TestResult {
+	r.rejectDuplicateRegistration(service, testName)
+	if r.registerOnly {
+		r.pending = append(r.pending, PendingTest{Service: service, TestName: testName, Fn: testFunc})
+		return TestResult{Service: service, TestName: testName, Status: "SKIP", Error: "not executed (register-only mode)"}
+	}
+	return r.executeWithTimeout(service, testName, testFunc)
+}
+
+// executeWithTimeout runs one test function under perTestTimeout with
+// panic recovery. Shared by RunTest (binary mode) and the go test facade's
+// ExecuteRegistered.
+func (r *TestRunner) executeWithTimeout(service, testName string, testFunc func() error) TestResult {
 	if r.verbose {
 		fmt.Printf("  Running: %s...\n", testName)
 	}
@@ -375,7 +434,33 @@ func (r *TestRunner) RunTest(service, testName string, testFunc func() error) Te
 	return result
 }
 
+// SetRegisterOnly switches RunTest/SkipTest between eager execution (the
+// binary) and registration-only capture (the go test facade).
+func (r *TestRunner) SetRegisterOnly(registerOnly bool) {
+	r.registerOnly = registerOnly
+}
+
+// PendingTests returns the registrations captured in register-only mode,
+// in registration order.
+func (r *TestRunner) PendingTests() []PendingTest {
+	return r.pending
+}
+
+// ExecuteRegistered runs one captured registration to completion under the
+// standard per-test timeout. The facade calls this instead of RunTest so
+// the duplicate-registration table is consulted once, at registration.
+func (r *TestRunner) ExecuteRegistered(p PendingTest) TestResult {
+	if p.Skip != "" {
+		return TestResult{Service: p.Service, TestName: p.TestName, Status: "SKIP", Error: p.Skip}
+	}
+	return r.executeWithTimeout(p.Service, p.TestName, p.Fn)
+}
+
 func (r *TestRunner) SkipTest(service, testName, reason string) TestResult {
+	r.rejectDuplicateRegistration(service, testName)
+	if r.registerOnly {
+		r.pending = append(r.pending, PendingTest{Service: service, TestName: testName, Skip: reason})
+	}
 	if r.verbose {
 		fmt.Printf("  - %s (skipped: %s)\n", testName, reason)
 	}
@@ -514,7 +599,7 @@ func (r *TestRunner) printJSONReport(results map[string][]TestResult) {
 }
 
 func (r *TestRunner) CheckServerHealth() error {
-	resp, err := r.client.Get(r.endpoint + "/health")
+	resp, err := r.client.Get(r.endpoint + "/.well-known/health")
 	if err != nil {
 		return fmt.Errorf("failed to connect to server: %w", err)
 	}

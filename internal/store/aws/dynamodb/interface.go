@@ -3,7 +3,6 @@ package dynamodb
 import (
 	"context"
 
-	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -12,19 +11,10 @@ import (
 // TableStoreInterface defines operations for managing DynamoDB tables.
 type TableStoreInterface interface {
 	Get(name string) (*Table, error)
-	Create(
-		name string,
-		keySchema []*KeySchemaElement,
-		attributeDefinitions []*AttributeDefinition,
-		billingMode BillingMode,
-		provisionedThroughput *ProvisionedThroughput,
-		gsi []*GlobalSecondaryIndex,
-		lsi []*LocalSecondaryIndex,
-		streamSpec *StreamSpecification,
-		tags []types.Tag,
-		deletionProtectionEnabled bool,
-	) (*Table, error)
+	Create(params CreateTableParams) (*Table, error)
 	Put(table *Table) error
+	Update(name string, mutate func(*Table) error) (*Table, error)
+	WithTableLock(name string, fn func() error) error
 	Delete(name string) error
 	Exists(name string) bool
 	List(marker string, limit int) ([]*Table, string, error)
@@ -32,8 +22,6 @@ type TableStoreInterface interface {
 	UpdateTableSize(name string, delta int64) error
 	Tags() *common.TagStore
 	ARNBuilder() *svcarn.DynamoDBBuilder
-	GetPartitionKey(table *Table) string
-	GetSortKey(table *Table) string
 	SetTimeToLive(name string, ttl *TimeToLiveSpecification) error
 	GetTimeToLive(name string) (*TimeToLiveSpecification, error)
 	SetPointInTimeRecovery(name string, pitr *PointInTimeRecoveryDescription) error
@@ -44,8 +32,8 @@ type TableStoreInterface interface {
 	DeleteResourcePolicy(name string) error
 	SetKinesisStreamingDestination(name string, destinations []*KinesisDataStreamDestination) error
 	SetContributorInsights(name string, enabled bool, mode string) error
-	SetAutoScalingSettings(name string, settings map[string]interface{}) error
-	GetAutoScalingSettings(name string) (map[string]interface{}, error)
+	SetAutoScalingSettings(name string, settings *TableReplicaAutoScalingSettings) error
+	GetAutoScalingSettings(name string) (*TableReplicaAutoScalingSettings, error)
 }
 
 // ItemStoreInterface defines operations for managing DynamoDB items. Item
@@ -60,7 +48,6 @@ type ItemStoreInterface interface {
 	ScanByPartitionKey(tableName, partitionKeyValue string, fn func(item *Item) error) error
 	ScanByPartitionKeyWithTable(tableName string, table *Table, partitionKeyValue string, opts ScanOptions, fn func(item *Item) error) (string, error)
 	Count(tableName string) (int64, error)
-	DeleteAllForTable(tableName string) error
 }
 
 // BackupStoreInterface defines operations for managing DynamoDB backups.
@@ -83,6 +70,7 @@ type GlobalTableStoreInterface interface {
 	Get(name string) (*GlobalTable, error)
 	Create(name string, replicationGroup []*Replica) (*GlobalTable, error)
 	Put(globalTable *GlobalTable) error
+	Update(name string, mutate func(*GlobalTable) error) (*GlobalTable, error)
 	Delete(name string) error
 	Exists(name string) bool
 	List(marker string, limit int) ([]*GlobalTable, string, error)
@@ -103,25 +91,6 @@ type ImportStoreInterface interface {
 	Create(tableArn, tableId string) (*ImportTableDescription, error)
 	Put(imp *ImportTableDescription) error
 	List(tableArn, marker string, maxItems int) ([]*ImportTableDescription, string, error)
-}
-
-// DynamoDBTxnInterface defines operations for DynamoDB transactions.
-type DynamoDBTxnInterface interface {
-	GetTable(name string) (*Table, error)
-	PutTable(table *Table) error
-	GetItem(tableName string, key map[string]*AttributeValue) (*Item, error)
-	PutItem(tableName string, key map[string]*AttributeValue, attributes map[string]*AttributeValue) error
-	DeleteItem(tableName string, key map[string]*AttributeValue) error
-	ItemExists(tableName string, key map[string]*AttributeValue) (bool, error)
-	UpdateItemCount(tableName string, delta int64) error
-	UpdateTableSize(tableName string, delta int64) error
-	PutIndexEntries(tableName string, item *Item) error
-	DeleteIndexEntries(tableName string, item *Item) error
-	QueryByGSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error)
-	QueryByLSI(tableName, indexName, hashKeyValue string, opts IndexQueryOptions) ([]*Item, error)
-	Scan(tableName string, fn func(item *Item) error) error
-	ScanByPartitionKey(tableName, partitionKeyValue string, fn func(item *Item) error) error
-	DeleteTableCascade(name string) error
 }
 
 // DynamoDBStoreInterface defines access to all DynamoDB stores.
@@ -145,6 +114,7 @@ type DynamoDBStoreInterface interface {
 	RecordContributorReads(ctx context.Context, tableName string, keys []map[string]*AttributeValue) error
 	RecordContributorQuery(ctx context.Context, tableName string, key map[string]*AttributeValue) error
 	FlushContributorWrites(ctx context.Context, events []ContributorWriteEvent)
+	FlushTableMetrics(deltas map[string]TableMetricDelta)
 }
 
 var (
@@ -154,6 +124,5 @@ var (
 	_ GlobalTableStoreInterface = (*GlobalTableStore)(nil)
 	_ ExportStoreInterface      = (*ExportStore)(nil)
 	_ ImportStoreInterface      = (*ImportStore)(nil)
-	_ DynamoDBTxnInterface      = (*DynamoDBTxn)(nil)
 	_ DynamoDBStoreInterface    = (*DynamoDBStore)(nil)
 )

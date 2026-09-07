@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"fmt"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -33,6 +34,65 @@ func parsePartiQLParams(params map[string]interface{}) *partiQLParams {
 	return p
 }
 
+// preparePartiQLStatement rewrites every top-level `?` placeholder into its
+// explicit :vN form — N is the 1-based position of the placeholder within
+// the statement — and reports how many placeholders it rewrote. The
+// explicit indices survive every later parse, including the per-segment
+// re-parses of the manual UPDATE path, whose segment-local tokenisation
+// restarts numbering at :v1 and would otherwise bind two placeholders from
+// different clauses to the same parameter. The rewrite skips string
+// literals and quoted identifiers, and is idempotent: an already-numbered
+// statement carries no `?`.
+func preparePartiQLStatement(statement string) (string, int) {
+	var b strings.Builder
+	count := 0
+	n := len(statement)
+	for i := 0; i < n; {
+		c := statement[i]
+		if c == '\'' || c == '"' {
+			quote := c
+			b.WriteByte(c)
+			i++
+			for i < n {
+				if statement[i] == '\\' && i+1 < n {
+					b.WriteByte(statement[i])
+					b.WriteByte(statement[i+1])
+					i += 2
+					continue
+				}
+				ch := statement[i]
+				b.WriteByte(ch)
+				i++
+				if ch == quote {
+					break
+				}
+			}
+			continue
+		}
+		if c == '?' {
+			count++
+			fmt.Fprintf(&b, ":v%d", count)
+			i++
+			continue
+		}
+		b.WriteByte(c)
+		i++
+	}
+	return b.String(), count
+}
+
+// validateParameterCount enforces the rule every statement engine shares:
+// the request carries exactly one parameter value per placeholder. The
+// under-count direction is additionally rejected when a placeholder fails
+// to resolve; this check closes the over-count direction, which AWS
+// answers with a ValidationException.
+func validateParameterCount(placeholders int, params *partiQLParams) error {
+	if placeholders != len(params.Parameters) {
+		return ErrInvalidParameter
+	}
+	return nil
+}
+
 func parseSelectStatement(statement string) (tableName string, whereExpr sqlparser.Expr) {
 	stmt, err := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
 	if err != nil {
@@ -54,19 +114,15 @@ func parseSelectStatement(statement string) (tableName string, whereExpr sqlpars
 	return tableName, whereExpr
 }
 
-func parseInsertStatement(statement string) (tableName string, itemData map[string]*dbstore.AttributeValue) {
-	return parseInsertStatementWithParams(statement, nil)
-}
-
-func parseInsertStatementWithParams(statement string, params *partiQLParams) (tableName string, itemData map[string]*dbstore.AttributeValue) {
+func parseInsertStatementWithParams(statement string, params *partiQLParams) (tableName string, itemData map[string]*dbstore.AttributeValue, err error) {
 	stmt, err := sqlparser.ParseWithOptions(statement, sqlparser.ParserOptions{Dialect: sqlparser.DialectPartiQL})
 	if err != nil {
-		return "", nil
+		return "", nil, ErrInvalidParameter
 	}
 
 	ins, ok := stmt.(*sqlparser.Insert)
 	if !ok {
-		return "", nil
+		return "", nil, ErrInvalidParameter
 	}
 
 	tableName = sqlparser.String(ins.Table)
@@ -74,16 +130,19 @@ func parseInsertStatementWithParams(statement string, params *partiQLParams) (ta
 
 	values, ok := ins.Rows.(sqlparser.Values)
 	if !ok || len(values) != 1 || len(values[0]) != 1 {
-		return "", nil
+		return "", nil, ErrInvalidParameter
 	}
 
 	obj, ok := values[0][0].(*sqlparser.ObjectLiteral)
 	if !ok {
-		return "", nil
+		return "", nil, ErrInvalidParameter
 	}
 
-	itemData = objectLiteralToAttributesWithParams(obj, params)
-	return tableName, itemData
+	itemData, err = objectLiteralToAttributesWithParams(obj, params)
+	if err != nil {
+		return "", nil, err
+	}
+	return tableName, itemData, nil
 }
 
 // findClauseKeywordPositions scans s for top-level (non-quoted) occurrences

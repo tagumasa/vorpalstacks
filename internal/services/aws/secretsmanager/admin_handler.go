@@ -2,6 +2,7 @@ package secretsmanager
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -47,7 +48,7 @@ func (h *AdminHandler) ListSecrets(ctx context.Context, req *connect.Request[pb.
 
 	return connect.NewResponse(&pb.ListSecretsResponse{
 		Secretlist: entries,
-		Nexttoken:  result.NextToken,
+		Nexttoken:  proto.String(result.NextToken),
 	}), nil
 }
 

@@ -176,6 +176,72 @@ func (r *TestRunner) dynamoDBMainAdvancedTests(ctx context.Context, client *dyna
 		return nil
 	}))
 
+	results = append(results, r.RunTest("dynamodb", "ListBackups_BackupTypeFilter_Pagination", func() error {
+		bpTable := fmt.Sprintf("BkPag-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, bpTable)
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		backupArnSet := map[string]bool{}
+		defer func() {
+			for arn := range backupArnSet {
+				client.DeleteBackup(ctx, &dynamodb.DeleteBackupInput{BackupArn: aws.String(arn)})
+			}
+		}()
+		for i := 0; i < 3; i++ {
+			resp, err := client.CreateBackup(ctx, &dynamodb.CreateBackupInput{
+				TableName:  aws.String(bpTable),
+				BackupName: aws.String(fmt.Sprintf("%s-%d", bpTable, i)),
+			})
+			if err != nil {
+				return fmt.Errorf("create backup %d: %v", i, err)
+			}
+			backupArnSet[*resp.BackupDetails.BackupArn] = true
+		}
+
+		// BackupTypeFilter ALL lists every on-demand backup type, so the
+		// walk must reach all three backups even though each page is limited
+		// to one entry.
+		var listed []string
+		var startArn *string
+		pageCount := 0
+		for {
+			resp, err := client.ListBackups(ctx, &dynamodb.ListBackupsInput{
+				TableName:               aws.String(bpTable),
+				BackupType:              types.BackupTypeFilterAll,
+				Limit:                   aws.Int32(1),
+				ExclusiveStartBackupArn: startArn,
+			})
+			if err != nil {
+				return fmt.Errorf("list backups page: %v", err)
+			}
+			pageCount++
+			for _, bs := range resp.BackupSummaries {
+				if bs.BackupArn == nil {
+					return fmt.Errorf("backup summary without BackupArn")
+				}
+				listed = append(listed, *bs.BackupArn)
+			}
+			if resp.LastEvaluatedBackupArn == nil || *resp.LastEvaluatedBackupArn == "" {
+				break
+			}
+			startArn = resp.LastEvaluatedBackupArn
+			if pageCount > 10 {
+				return fmt.Errorf("pagination did not terminate after %d pages", pageCount)
+			}
+		}
+
+		if len(listed) != 3 {
+			return fmt.Errorf("expected 3 backups through the ALL filter, got %d (%v)", len(listed), listed)
+		}
+		if pageCount < 3 {
+			return fmt.Errorf("expected at least 3 pages with Limit=1, got %d", pageCount)
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("dynamodb", "DescribeContinuousBackups", func() error {
 		resp, err := client.DescribeContinuousBackups(ctx, &dynamodb.DescribeContinuousBackupsInput{
 			TableName: aws.String(tableName),

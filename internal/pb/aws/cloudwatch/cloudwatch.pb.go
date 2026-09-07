@@ -128,18 +128,21 @@ type AlarmType int32
 
 const (
 	AlarmType_ALARM_TYPE_COMPOSITEALARM AlarmType = 0
-	AlarmType_ALARM_TYPE_METRICALARM    AlarmType = 1
+	AlarmType_ALARM_TYPE_LOGALARM       AlarmType = 1
+	AlarmType_ALARM_TYPE_METRICALARM    AlarmType = 2
 )
 
 // Enum value maps for AlarmType.
 var (
 	AlarmType_name = map[int32]string{
 		0: "ALARM_TYPE_COMPOSITEALARM",
-		1: "ALARM_TYPE_METRICALARM",
+		1: "ALARM_TYPE_LOGALARM",
+		2: "ALARM_TYPE_METRICALARM",
 	}
 	AlarmType_value = map[string]int32{
 		"ALARM_TYPE_COMPOSITEALARM": 0,
-		"ALARM_TYPE_METRICALARM":    1,
+		"ALARM_TYPE_LOGALARM":       1,
+		"ALARM_TYPE_METRICALARM":    2,
 	}
 )
 
@@ -896,7 +899,7 @@ type AlarmContributor struct {
 	Contributorattributes      map[string]string      `protobuf:"bytes,82097856,rep,name=contributorattributes,proto3" json:"contributorattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Contributorid              string                 `protobuf:"bytes,33454376,opt,name=contributorid,proto3" json:"contributorid,omitempty"`
 	Statereason                string                 `protobuf:"bytes,376138483,opt,name=statereason,proto3" json:"statereason,omitempty"`
-	Statetransitionedtimestamp string                 `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3" json:"statetransitionedtimestamp,omitempty"`
+	Statetransitionedtimestamp *string                `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3,oneof" json:"statetransitionedtimestamp,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -953,8 +956,8 @@ func (x *AlarmContributor) GetStatereason() string {
 }
 
 func (x *AlarmContributor) GetStatetransitionedtimestamp() string {
-	if x != nil {
-		return x.Statetransitionedtimestamp
+	if x != nil && x.Statetransitionedtimestamp != nil {
+		return *x.Statetransitionedtimestamp
 	}
 	return ""
 }
@@ -962,13 +965,13 @@ func (x *AlarmContributor) GetStatetransitionedtimestamp() string {
 type AlarmHistoryItem struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Alarmcontributorattributes map[string]string      `protobuf:"bytes,34317575,rep,name=alarmcontributorattributes,proto3" json:"alarmcontributorattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Alarmcontributorid         string                 `protobuf:"bytes,305558919,opt,name=alarmcontributorid,proto3" json:"alarmcontributorid,omitempty"`
-	Alarmname                  string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
+	Alarmcontributorid         *string                `protobuf:"bytes,305558919,opt,name=alarmcontributorid,proto3,oneof" json:"alarmcontributorid,omitempty"`
+	Alarmname                  *string                `protobuf:"bytes,54095842,opt,name=alarmname,proto3,oneof" json:"alarmname,omitempty"`
 	Alarmtype                  AlarmType              `protobuf:"varint,301805339,opt,name=alarmtype,proto3,enum=cloudwatch.AlarmType" json:"alarmtype,omitempty"`
-	Historydata                string                 `protobuf:"bytes,30118600,opt,name=historydata,proto3" json:"historydata,omitempty"`
+	Historydata                *string                `protobuf:"bytes,30118600,opt,name=historydata,proto3,oneof" json:"historydata,omitempty"`
 	Historyitemtype            HistoryItemType        `protobuf:"varint,442439537,opt,name=historyitemtype,proto3,enum=cloudwatch.HistoryItemType" json:"historyitemtype,omitempty"`
-	Historysummary             string                 `protobuf:"bytes,53483226,opt,name=historysummary,proto3" json:"historysummary,omitempty"`
-	Timestamp                  string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Historysummary             *string                `protobuf:"bytes,53483226,opt,name=historysummary,proto3,oneof" json:"historysummary,omitempty"`
+	Timestamp                  *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1011,15 +1014,15 @@ func (x *AlarmHistoryItem) GetAlarmcontributorattributes() map[string]string {
 }
 
 func (x *AlarmHistoryItem) GetAlarmcontributorid() string {
-	if x != nil {
-		return x.Alarmcontributorid
+	if x != nil && x.Alarmcontributorid != nil {
+		return *x.Alarmcontributorid
 	}
 	return ""
 }
 
 func (x *AlarmHistoryItem) GetAlarmname() string {
-	if x != nil {
-		return x.Alarmname
+	if x != nil && x.Alarmname != nil {
+		return *x.Alarmname
 	}
 	return ""
 }
@@ -1032,8 +1035,8 @@ func (x *AlarmHistoryItem) GetAlarmtype() AlarmType {
 }
 
 func (x *AlarmHistoryItem) GetHistorydata() string {
-	if x != nil {
-		return x.Historydata
+	if x != nil && x.Historydata != nil {
+		return *x.Historydata
 	}
 	return ""
 }
@@ -1046,25 +1049,25 @@ func (x *AlarmHistoryItem) GetHistoryitemtype() HistoryItemType {
 }
 
 func (x *AlarmHistoryItem) GetHistorysummary() string {
-	if x != nil {
-		return x.Historysummary
+	if x != nil && x.Historysummary != nil {
+		return *x.Historysummary
 	}
 	return ""
 }
 
 func (x *AlarmHistoryItem) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
 
 type AlarmMuteRuleSummary struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Alarmmuterulearn     string                 `protobuf:"bytes,493590237,opt,name=alarmmuterulearn,proto3" json:"alarmmuterulearn,omitempty"`
-	Expiredate           string                 `protobuf:"bytes,454143207,opt,name=expiredate,proto3" json:"expiredate,omitempty"`
-	Lastupdatedtimestamp string                 `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3" json:"lastupdatedtimestamp,omitempty"`
-	Mutetype             string                 `protobuf:"bytes,111213245,opt,name=mutetype,proto3" json:"mutetype,omitempty"`
+	Alarmmuterulearn     *string                `protobuf:"bytes,493590237,opt,name=alarmmuterulearn,proto3,oneof" json:"alarmmuterulearn,omitempty"`
+	Expiredate           *string                `protobuf:"bytes,454143207,opt,name=expiredate,proto3,oneof" json:"expiredate,omitempty"`
+	Lastupdatedtimestamp *string                `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3,oneof" json:"lastupdatedtimestamp,omitempty"`
+	Mutetype             *string                `protobuf:"bytes,111213245,opt,name=mutetype,proto3,oneof" json:"mutetype,omitempty"`
 	Status               AlarmMuteRuleStatus    `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudwatch.AlarmMuteRuleStatus" json:"status,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -1101,29 +1104,29 @@ func (*AlarmMuteRuleSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *AlarmMuteRuleSummary) GetAlarmmuterulearn() string {
-	if x != nil {
-		return x.Alarmmuterulearn
+	if x != nil && x.Alarmmuterulearn != nil {
+		return *x.Alarmmuterulearn
 	}
 	return ""
 }
 
 func (x *AlarmMuteRuleSummary) GetExpiredate() string {
-	if x != nil {
-		return x.Expiredate
+	if x != nil && x.Expiredate != nil {
+		return *x.Expiredate
 	}
 	return ""
 }
 
 func (x *AlarmMuteRuleSummary) GetLastupdatedtimestamp() string {
-	if x != nil {
-		return x.Lastupdatedtimestamp
+	if x != nil && x.Lastupdatedtimestamp != nil {
+		return *x.Lastupdatedtimestamp
 	}
 	return ""
 }
 
 func (x *AlarmMuteRuleSummary) GetMutetype() string {
-	if x != nil {
-		return x.Mutetype
+	if x != nil && x.Mutetype != nil {
+		return *x.Mutetype
 	}
 	return ""
 }
@@ -1197,14 +1200,15 @@ func (x *AlarmPromQLCriteria) GetRecoveryperiod() int32 {
 
 type AnomalyDetector struct {
 	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Anomalydetectorid           *string                       `protobuf:"bytes,390762170,opt,name=anomalydetectorid,proto3,oneof" json:"anomalydetectorid,omitempty"`
 	Configuration               *AnomalyDetectorConfiguration `protobuf:"bytes,442426458,opt,name=configuration,proto3" json:"configuration,omitempty"`
 	Dimensions                  []*Dimension                  `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Metriccharacteristics       *MetricCharacteristics        `protobuf:"bytes,129404842,opt,name=metriccharacteristics,proto3" json:"metriccharacteristics,omitempty"`
 	Metricmathanomalydetector   *MetricMathAnomalyDetector    `protobuf:"bytes,439381475,opt,name=metricmathanomalydetector,proto3" json:"metricmathanomalydetector,omitempty"`
-	Metricname                  string                        `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace                   string                        `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Metricname                  *string                       `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace                   *string                       `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	Singlemetricanomalydetector *SingleMetricAnomalyDetector  `protobuf:"bytes,418531933,opt,name=singlemetricanomalydetector,proto3" json:"singlemetricanomalydetector,omitempty"`
-	Stat                        string                        `protobuf:"bytes,325549752,opt,name=stat,proto3" json:"stat,omitempty"`
+	Stat                        *string                       `protobuf:"bytes,325549752,opt,name=stat,proto3,oneof" json:"stat,omitempty"`
 	Statevalue                  AnomalyDetectorStateValue     `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.AnomalyDetectorStateValue" json:"statevalue,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -1240,6 +1244,13 @@ func (*AnomalyDetector) Descriptor() ([]byte, []int) {
 	return file_cloudwatch_proto_rawDescGZIP(), []int{4}
 }
 
+func (x *AnomalyDetector) GetAnomalydetectorid() string {
+	if x != nil && x.Anomalydetectorid != nil {
+		return *x.Anomalydetectorid
+	}
+	return ""
+}
+
 func (x *AnomalyDetector) GetConfiguration() *AnomalyDetectorConfiguration {
 	if x != nil {
 		return x.Configuration
@@ -1269,15 +1280,15 @@ func (x *AnomalyDetector) GetMetricmathanomalydetector() *MetricMathAnomalyDetec
 }
 
 func (x *AnomalyDetector) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *AnomalyDetector) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -1290,8 +1301,8 @@ func (x *AnomalyDetector) GetSinglemetricanomalydetector() *SingleMetricAnomalyD
 }
 
 func (x *AnomalyDetector) GetStat() string {
-	if x != nil {
-		return x.Stat
+	if x != nil && x.Stat != nil {
+		return *x.Stat
 	}
 	return ""
 }
@@ -1306,7 +1317,7 @@ func (x *AnomalyDetector) GetStatevalue() AnomalyDetectorStateValue {
 type AnomalyDetectorConfiguration struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Excludedtimeranges []*Range               `protobuf:"bytes,31303297,rep,name=excludedtimeranges,proto3" json:"excludedtimeranges,omitempty"`
-	Metrictimezone     string                 `protobuf:"bytes,528921359,opt,name=metrictimezone,proto3" json:"metrictimezone,omitempty"`
+	Metrictimezone     *string                `protobuf:"bytes,528921359,opt,name=metrictimezone,proto3,oneof" json:"metrictimezone,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1349,8 +1360,8 @@ func (x *AnomalyDetectorConfiguration) GetExcludedtimeranges() []*Range {
 }
 
 func (x *AnomalyDetectorConfiguration) GetMetrictimezone() string {
-	if x != nil {
-		return x.Metrictimezone
+	if x != nil && x.Metrictimezone != nil {
+		return *x.Metrictimezone
 	}
 	return ""
 }
@@ -1447,22 +1458,22 @@ type CompositeAlarm struct {
 	state                              protoimpl.MessageState `protogen:"open.v1"`
 	Actionsenabled                     *bool                  `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
 	Actionssuppressedby                ActionsSuppressedBy    `protobuf:"varint,377750064,opt,name=actionssuppressedby,proto3,enum=cloudwatch.ActionsSuppressedBy" json:"actionssuppressedby,omitempty"`
-	Actionssuppressedreason            string                 `protobuf:"bytes,20815779,opt,name=actionssuppressedreason,proto3" json:"actionssuppressedreason,omitempty"`
-	Actionssuppressor                  string                 `protobuf:"bytes,486417535,opt,name=actionssuppressor,proto3" json:"actionssuppressor,omitempty"`
+	Actionssuppressedreason            *string                `protobuf:"bytes,20815779,opt,name=actionssuppressedreason,proto3,oneof" json:"actionssuppressedreason,omitempty"`
+	Actionssuppressor                  *string                `protobuf:"bytes,486417535,opt,name=actionssuppressor,proto3,oneof" json:"actionssuppressor,omitempty"`
 	Actionssuppressorextensionperiod   *int32                 `protobuf:"varint,183723543,opt,name=actionssuppressorextensionperiod,proto3,oneof" json:"actionssuppressorextensionperiod,omitempty"`
 	Actionssuppressorwaitperiod        *int32                 `protobuf:"varint,80227275,opt,name=actionssuppressorwaitperiod,proto3,oneof" json:"actionssuppressorwaitperiod,omitempty"`
 	Alarmactions                       []string               `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
-	Alarmarn                           string                 `protobuf:"bytes,276019462,opt,name=alarmarn,proto3" json:"alarmarn,omitempty"`
-	Alarmconfigurationupdatedtimestamp string                 `protobuf:"bytes,51935494,opt,name=alarmconfigurationupdatedtimestamp,proto3" json:"alarmconfigurationupdatedtimestamp,omitempty"`
-	Alarmdescription                   string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
-	Alarmname                          string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
-	Alarmrule                          string                 `protobuf:"bytes,516996973,opt,name=alarmrule,proto3" json:"alarmrule,omitempty"`
+	Alarmarn                           *string                `protobuf:"bytes,276019462,opt,name=alarmarn,proto3,oneof" json:"alarmarn,omitempty"`
+	Alarmconfigurationupdatedtimestamp *string                `protobuf:"bytes,51935494,opt,name=alarmconfigurationupdatedtimestamp,proto3,oneof" json:"alarmconfigurationupdatedtimestamp,omitempty"`
+	Alarmdescription                   *string                `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3,oneof" json:"alarmdescription,omitempty"`
+	Alarmname                          *string                `protobuf:"bytes,54095842,opt,name=alarmname,proto3,oneof" json:"alarmname,omitempty"`
+	Alarmrule                          *string                `protobuf:"bytes,516996973,opt,name=alarmrule,proto3,oneof" json:"alarmrule,omitempty"`
 	Insufficientdataactions            []string               `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
 	Okactions                          []string               `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
-	Statereason                        string                 `protobuf:"bytes,376138483,opt,name=statereason,proto3" json:"statereason,omitempty"`
-	Statereasondata                    string                 `protobuf:"bytes,262771075,opt,name=statereasondata,proto3" json:"statereasondata,omitempty"`
-	Statetransitionedtimestamp         string                 `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3" json:"statetransitionedtimestamp,omitempty"`
-	Stateupdatedtimestamp              string                 `protobuf:"bytes,375406848,opt,name=stateupdatedtimestamp,proto3" json:"stateupdatedtimestamp,omitempty"`
+	Statereason                        *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
+	Statereasondata                    *string                `protobuf:"bytes,262771075,opt,name=statereasondata,proto3,oneof" json:"statereasondata,omitempty"`
+	Statetransitionedtimestamp         *string                `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3,oneof" json:"statetransitionedtimestamp,omitempty"`
+	Stateupdatedtimestamp              *string                `protobuf:"bytes,375406848,opt,name=stateupdatedtimestamp,proto3,oneof" json:"stateupdatedtimestamp,omitempty"`
 	Statevalue                         StateValue             `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.StateValue" json:"statevalue,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
@@ -1513,15 +1524,15 @@ func (x *CompositeAlarm) GetActionssuppressedby() ActionsSuppressedBy {
 }
 
 func (x *CompositeAlarm) GetActionssuppressedreason() string {
-	if x != nil {
-		return x.Actionssuppressedreason
+	if x != nil && x.Actionssuppressedreason != nil {
+		return *x.Actionssuppressedreason
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetActionssuppressor() string {
-	if x != nil {
-		return x.Actionssuppressor
+	if x != nil && x.Actionssuppressor != nil {
+		return *x.Actionssuppressor
 	}
 	return ""
 }
@@ -1548,36 +1559,36 @@ func (x *CompositeAlarm) GetAlarmactions() []string {
 }
 
 func (x *CompositeAlarm) GetAlarmarn() string {
-	if x != nil {
-		return x.Alarmarn
+	if x != nil && x.Alarmarn != nil {
+		return *x.Alarmarn
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetAlarmconfigurationupdatedtimestamp() string {
-	if x != nil {
-		return x.Alarmconfigurationupdatedtimestamp
+	if x != nil && x.Alarmconfigurationupdatedtimestamp != nil {
+		return *x.Alarmconfigurationupdatedtimestamp
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetAlarmdescription() string {
-	if x != nil {
-		return x.Alarmdescription
+	if x != nil && x.Alarmdescription != nil {
+		return *x.Alarmdescription
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetAlarmname() string {
-	if x != nil {
-		return x.Alarmname
+	if x != nil && x.Alarmname != nil {
+		return *x.Alarmname
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetAlarmrule() string {
-	if x != nil {
-		return x.Alarmrule
+	if x != nil && x.Alarmrule != nil {
+		return *x.Alarmrule
 	}
 	return ""
 }
@@ -1597,29 +1608,29 @@ func (x *CompositeAlarm) GetOkactions() []string {
 }
 
 func (x *CompositeAlarm) GetStatereason() string {
-	if x != nil {
-		return x.Statereason
+	if x != nil && x.Statereason != nil {
+		return *x.Statereason
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetStatereasondata() string {
-	if x != nil {
-		return x.Statereasondata
+	if x != nil && x.Statereasondata != nil {
+		return *x.Statereasondata
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetStatetransitionedtimestamp() string {
-	if x != nil {
-		return x.Statetransitionedtimestamp
+	if x != nil && x.Statetransitionedtimestamp != nil {
+		return *x.Statetransitionedtimestamp
 	}
 	return ""
 }
 
 func (x *CompositeAlarm) GetStateupdatedtimestamp() string {
-	if x != nil {
-		return x.Stateupdatedtimestamp
+	if x != nil && x.Stateupdatedtimestamp != nil {
+		return *x.Stateupdatedtimestamp
 	}
 	return ""
 }
@@ -1633,7 +1644,7 @@ func (x *CompositeAlarm) GetStatevalue() StateValue {
 
 type ConcurrentModificationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1669,15 +1680,15 @@ func (*ConcurrentModificationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConcurrentModificationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1713,17 +1724,17 @@ func (*ConflictException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DashboardEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dashboardarn  string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
-	Dashboardname string                 `protobuf:"bytes,506599873,opt,name=dashboardname,proto3" json:"dashboardname,omitempty"`
-	Lastmodified  string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Dashboardarn  *string                `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3,oneof" json:"dashboardarn,omitempty"`
+	Dashboardname *string                `protobuf:"bytes,506599873,opt,name=dashboardname,proto3,oneof" json:"dashboardname,omitempty"`
+	Lastmodified  *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Size          *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1760,22 +1771,22 @@ func (*DashboardEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *DashboardEntry) GetDashboardarn() string {
-	if x != nil {
-		return x.Dashboardarn
+	if x != nil && x.Dashboardarn != nil {
+		return *x.Dashboardarn
 	}
 	return ""
 }
 
 func (x *DashboardEntry) GetDashboardname() string {
-	if x != nil {
-		return x.Dashboardname
+	if x != nil && x.Dashboardname != nil {
+		return *x.Dashboardname
 	}
 	return ""
 }
 
 func (x *DashboardEntry) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -1790,7 +1801,7 @@ func (x *DashboardEntry) GetSize() int64 {
 type DashboardInvalidInputError struct {
 	state                       protoimpl.MessageState        `protogen:"open.v1"`
 	Dashboardvalidationmessages []*DashboardValidationMessage `protobuf:"bytes,36455465,rep,name=dashboardvalidationmessages,proto3" json:"dashboardvalidationmessages,omitempty"`
-	Message                     string                        `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message                     *string                       `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -1833,15 +1844,15 @@ func (x *DashboardInvalidInputError) GetDashboardvalidationmessages() []*Dashboa
 }
 
 func (x *DashboardInvalidInputError) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DashboardNotFoundError struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1877,16 +1888,16 @@ func (*DashboardNotFoundError) Descriptor() ([]byte, []int) {
 }
 
 func (x *DashboardNotFoundError) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type DashboardValidationMessage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Datapath      string                 `protobuf:"bytes,505315415,opt,name=datapath,proto3" json:"datapath,omitempty"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Datapath      *string                `protobuf:"bytes,505315415,opt,name=datapath,proto3,oneof" json:"datapath,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1922,28 +1933,28 @@ func (*DashboardValidationMessage) Descriptor() ([]byte, []int) {
 }
 
 func (x *DashboardValidationMessage) GetDatapath() string {
-	if x != nil {
-		return x.Datapath
+	if x != nil && x.Datapath != nil {
+		return *x.Datapath
 	}
 	return ""
 }
 
 func (x *DashboardValidationMessage) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type Datapoint struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Average            float64                `protobuf:"fixed64,134712777,opt,name=average,proto3" json:"average,omitempty"`
+	Average            *float64               `protobuf:"fixed64,134712777,opt,name=average,proto3,oneof" json:"average,omitempty"`
 	Extendedstatistics map[string]float64     `protobuf:"bytes,365818700,rep,name=extendedstatistics,proto3" json:"extendedstatistics,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"`
-	Maximum            float64                `protobuf:"fixed64,43343394,opt,name=maximum,proto3" json:"maximum,omitempty"`
-	Minimum            float64                `protobuf:"fixed64,438536856,opt,name=minimum,proto3" json:"minimum,omitempty"`
-	Samplecount        float64                `protobuf:"fixed64,384919839,opt,name=samplecount,proto3" json:"samplecount,omitempty"`
-	Sum                float64                `protobuf:"fixed64,534303305,opt,name=sum,proto3" json:"sum,omitempty"`
-	Timestamp          string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Maximum            *float64               `protobuf:"fixed64,43343394,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	Minimum            *float64               `protobuf:"fixed64,438536856,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Samplecount        *float64               `protobuf:"fixed64,384919839,opt,name=samplecount,proto3,oneof" json:"samplecount,omitempty"`
+	Sum                *float64               `protobuf:"fixed64,534303305,opt,name=sum,proto3,oneof" json:"sum,omitempty"`
+	Timestamp          *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	Unit               StandardUnit           `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudwatch.StandardUnit" json:"unit,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -1980,8 +1991,8 @@ func (*Datapoint) Descriptor() ([]byte, []int) {
 }
 
 func (x *Datapoint) GetAverage() float64 {
-	if x != nil {
-		return x.Average
+	if x != nil && x.Average != nil {
+		return *x.Average
 	}
 	return 0
 }
@@ -1994,36 +2005,36 @@ func (x *Datapoint) GetExtendedstatistics() map[string]float64 {
 }
 
 func (x *Datapoint) GetMaximum() float64 {
-	if x != nil {
-		return x.Maximum
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
 	}
 	return 0
 }
 
 func (x *Datapoint) GetMinimum() float64 {
-	if x != nil {
-		return x.Minimum
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
 	}
 	return 0
 }
 
 func (x *Datapoint) GetSamplecount() float64 {
-	if x != nil {
-		return x.Samplecount
+	if x != nil && x.Samplecount != nil {
+		return *x.Samplecount
 	}
 	return 0
 }
 
 func (x *Datapoint) GetSum() float64 {
-	if x != nil {
-		return x.Sum
+	if x != nil && x.Sum != nil {
+		return *x.Sum
 	}
 	return 0
 }
 
 func (x *Datapoint) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
@@ -2125,12 +2136,13 @@ func (x *DeleteAlarmsInput) GetAlarmnames() []string {
 
 type DeleteAnomalyDetectorInput struct {
 	state                       protoimpl.MessageState       `protogen:"open.v1"`
+	Anomalydetectorid           *string                      `protobuf:"bytes,390762170,opt,name=anomalydetectorid,proto3,oneof" json:"anomalydetectorid,omitempty"`
 	Dimensions                  []*Dimension                 `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Metricmathanomalydetector   *MetricMathAnomalyDetector   `protobuf:"bytes,439381475,opt,name=metricmathanomalydetector,proto3" json:"metricmathanomalydetector,omitempty"`
-	Metricname                  string                       `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace                   string                       `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Metricname                  *string                      `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace                   *string                      `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	Singlemetricanomalydetector *SingleMetricAnomalyDetector `protobuf:"bytes,418531933,opt,name=singlemetricanomalydetector,proto3" json:"singlemetricanomalydetector,omitempty"`
-	Stat                        string                       `protobuf:"bytes,325549752,opt,name=stat,proto3" json:"stat,omitempty"`
+	Stat                        *string                      `protobuf:"bytes,325549752,opt,name=stat,proto3,oneof" json:"stat,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -2165,6 +2177,13 @@ func (*DeleteAnomalyDetectorInput) Descriptor() ([]byte, []int) {
 	return file_cloudwatch_proto_rawDescGZIP(), []int{18}
 }
 
+func (x *DeleteAnomalyDetectorInput) GetAnomalydetectorid() string {
+	if x != nil && x.Anomalydetectorid != nil {
+		return *x.Anomalydetectorid
+	}
+	return ""
+}
+
 func (x *DeleteAnomalyDetectorInput) GetDimensions() []*Dimension {
 	if x != nil {
 		return x.Dimensions
@@ -2180,15 +2199,15 @@ func (x *DeleteAnomalyDetectorInput) GetMetricmathanomalydetector() *MetricMathA
 }
 
 func (x *DeleteAnomalyDetectorInput) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *DeleteAnomalyDetectorInput) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -2201,8 +2220,8 @@ func (x *DeleteAnomalyDetectorInput) GetSinglemetricanomalydetector() *SingleMet
 }
 
 func (x *DeleteAnomalyDetectorInput) GetStat() string {
-	if x != nil {
-		return x.Stat
+	if x != nil && x.Stat != nil {
+		return *x.Stat
 	}
 	return ""
 }
@@ -2494,7 +2513,7 @@ func (*DeleteMetricStreamOutput) Descriptor() ([]byte, []int) {
 type DescribeAlarmContributorsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Alarmname     string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2537,8 +2556,8 @@ func (x *DescribeAlarmContributorsInput) GetAlarmname() string {
 }
 
 func (x *DescribeAlarmContributorsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2546,7 +2565,7 @@ func (x *DescribeAlarmContributorsInput) GetNexttoken() string {
 type DescribeAlarmContributorsOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Alarmcontributors []*AlarmContributor    `protobuf:"bytes,265859209,rep,name=alarmcontributors,proto3" json:"alarmcontributors,omitempty"`
-	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken         *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2589,23 +2608,23 @@ func (x *DescribeAlarmContributorsOutput) GetAlarmcontributors() []*AlarmContrib
 }
 
 func (x *DescribeAlarmContributorsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type DescribeAlarmHistoryInput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Alarmcontributorid string                 `protobuf:"bytes,305558919,opt,name=alarmcontributorid,proto3" json:"alarmcontributorid,omitempty"`
-	Alarmname          string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
+	Alarmcontributorid *string                `protobuf:"bytes,305558919,opt,name=alarmcontributorid,proto3,oneof" json:"alarmcontributorid,omitempty"`
+	Alarmname          *string                `protobuf:"bytes,54095842,opt,name=alarmname,proto3,oneof" json:"alarmname,omitempty"`
 	Alarmtypes         []AlarmType            `protobuf:"varint,445751884,rep,packed,name=alarmtypes,proto3,enum=cloudwatch.AlarmType" json:"alarmtypes,omitempty"`
-	Enddate            string                 `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
+	Enddate            *string                `protobuf:"bytes,77486543,opt,name=enddate,proto3,oneof" json:"enddate,omitempty"`
 	Historyitemtype    HistoryItemType        `protobuf:"varint,442439537,opt,name=historyitemtype,proto3,enum=cloudwatch.HistoryItemType" json:"historyitemtype,omitempty"`
 	Maxrecords         *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Nexttoken          string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken          *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Scanby             ScanBy                 `protobuf:"varint,344142854,opt,name=scanby,proto3,enum=cloudwatch.ScanBy" json:"scanby,omitempty"`
-	Startdate          string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
+	Startdate          *string                `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2641,15 +2660,15 @@ func (*DescribeAlarmHistoryInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeAlarmHistoryInput) GetAlarmcontributorid() string {
-	if x != nil {
-		return x.Alarmcontributorid
+	if x != nil && x.Alarmcontributorid != nil {
+		return *x.Alarmcontributorid
 	}
 	return ""
 }
 
 func (x *DescribeAlarmHistoryInput) GetAlarmname() string {
-	if x != nil {
-		return x.Alarmname
+	if x != nil && x.Alarmname != nil {
+		return *x.Alarmname
 	}
 	return ""
 }
@@ -2662,8 +2681,8 @@ func (x *DescribeAlarmHistoryInput) GetAlarmtypes() []AlarmType {
 }
 
 func (x *DescribeAlarmHistoryInput) GetEnddate() string {
-	if x != nil {
-		return x.Enddate
+	if x != nil && x.Enddate != nil {
+		return *x.Enddate
 	}
 	return ""
 }
@@ -2683,8 +2702,8 @@ func (x *DescribeAlarmHistoryInput) GetMaxrecords() int32 {
 }
 
 func (x *DescribeAlarmHistoryInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2697,8 +2716,8 @@ func (x *DescribeAlarmHistoryInput) GetScanby() ScanBy {
 }
 
 func (x *DescribeAlarmHistoryInput) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
@@ -2706,7 +2725,7 @@ func (x *DescribeAlarmHistoryInput) GetStartdate() string {
 type DescribeAlarmHistoryOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Alarmhistoryitems []*AlarmHistoryItem    `protobuf:"bytes,152760951,rep,name=alarmhistoryitems,proto3" json:"alarmhistoryitems,omitempty"`
-	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken         *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2749,8 +2768,8 @@ func (x *DescribeAlarmHistoryOutput) GetAlarmhistoryitems() []*AlarmHistoryItem 
 }
 
 func (x *DescribeAlarmHistoryOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2758,7 +2777,7 @@ func (x *DescribeAlarmHistoryOutput) GetNexttoken() string {
 type DescribeAlarmsForMetricInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Dimensions        []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
-	Extendedstatistic string                 `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3" json:"extendedstatistic,omitempty"`
+	Extendedstatistic *string                `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3,oneof" json:"extendedstatistic,omitempty"`
 	Metricname        string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Namespace         string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	Period            *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
@@ -2806,8 +2825,8 @@ func (x *DescribeAlarmsForMetricInput) GetDimensions() []*Dimension {
 }
 
 func (x *DescribeAlarmsForMetricInput) GetExtendedstatistic() string {
-	if x != nil {
-		return x.Extendedstatistic
+	if x != nil && x.Extendedstatistic != nil {
+		return *x.Extendedstatistic
 	}
 	return ""
 }
@@ -2893,14 +2912,14 @@ func (x *DescribeAlarmsForMetricOutput) GetMetricalarms() []*MetricAlarm {
 
 type DescribeAlarmsInput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Actionprefix        string                 `protobuf:"bytes,67679956,opt,name=actionprefix,proto3" json:"actionprefix,omitempty"`
-	Alarmnameprefix     string                 `protobuf:"bytes,96412406,opt,name=alarmnameprefix,proto3" json:"alarmnameprefix,omitempty"`
+	Actionprefix        *string                `protobuf:"bytes,67679956,opt,name=actionprefix,proto3,oneof" json:"actionprefix,omitempty"`
+	Alarmnameprefix     *string                `protobuf:"bytes,96412406,opt,name=alarmnameprefix,proto3,oneof" json:"alarmnameprefix,omitempty"`
 	Alarmnames          []string               `protobuf:"bytes,90874583,rep,name=alarmnames,proto3" json:"alarmnames,omitempty"`
 	Alarmtypes          []AlarmType            `protobuf:"varint,445751884,rep,packed,name=alarmtypes,proto3,enum=cloudwatch.AlarmType" json:"alarmtypes,omitempty"`
-	Childrenofalarmname string                 `protobuf:"bytes,204127700,opt,name=childrenofalarmname,proto3" json:"childrenofalarmname,omitempty"`
+	Childrenofalarmname *string                `protobuf:"bytes,204127700,opt,name=childrenofalarmname,proto3,oneof" json:"childrenofalarmname,omitempty"`
 	Maxrecords          *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Parentsofalarmname  string                 `protobuf:"bytes,512433260,opt,name=parentsofalarmname,proto3" json:"parentsofalarmname,omitempty"`
+	Nexttoken           *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Parentsofalarmname  *string                `protobuf:"bytes,512433260,opt,name=parentsofalarmname,proto3,oneof" json:"parentsofalarmname,omitempty"`
 	Statevalue          StateValue             `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.StateValue" json:"statevalue,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -2937,15 +2956,15 @@ func (*DescribeAlarmsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeAlarmsInput) GetActionprefix() string {
-	if x != nil {
-		return x.Actionprefix
+	if x != nil && x.Actionprefix != nil {
+		return *x.Actionprefix
 	}
 	return ""
 }
 
 func (x *DescribeAlarmsInput) GetAlarmnameprefix() string {
-	if x != nil {
-		return x.Alarmnameprefix
+	if x != nil && x.Alarmnameprefix != nil {
+		return *x.Alarmnameprefix
 	}
 	return ""
 }
@@ -2965,8 +2984,8 @@ func (x *DescribeAlarmsInput) GetAlarmtypes() []AlarmType {
 }
 
 func (x *DescribeAlarmsInput) GetChildrenofalarmname() string {
-	if x != nil {
-		return x.Childrenofalarmname
+	if x != nil && x.Childrenofalarmname != nil {
+		return *x.Childrenofalarmname
 	}
 	return ""
 }
@@ -2979,15 +2998,15 @@ func (x *DescribeAlarmsInput) GetMaxrecords() int32 {
 }
 
 func (x *DescribeAlarmsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *DescribeAlarmsInput) GetParentsofalarmname() string {
-	if x != nil {
-		return x.Parentsofalarmname
+	if x != nil && x.Parentsofalarmname != nil {
+		return *x.Parentsofalarmname
 	}
 	return ""
 }
@@ -3002,8 +3021,9 @@ func (x *DescribeAlarmsInput) GetStatevalue() StateValue {
 type DescribeAlarmsOutput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Compositealarms []*CompositeAlarm      `protobuf:"bytes,214076095,rep,name=compositealarms,proto3" json:"compositealarms,omitempty"`
+	Logalarms       []*LogAlarm            `protobuf:"bytes,238482392,rep,name=logalarms,proto3" json:"logalarms,omitempty"`
 	Metricalarms    []*MetricAlarm         `protobuf:"bytes,117806408,rep,name=metricalarms,proto3" json:"metricalarms,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -3045,6 +3065,13 @@ func (x *DescribeAlarmsOutput) GetCompositealarms() []*CompositeAlarm {
 	return nil
 }
 
+func (x *DescribeAlarmsOutput) GetLogalarms() []*LogAlarm {
+	if x != nil {
+		return x.Logalarms
+	}
+	return nil
+}
+
 func (x *DescribeAlarmsOutput) GetMetricalarms() []*MetricAlarm {
 	if x != nil {
 		return x.Metricalarms
@@ -3053,20 +3080,21 @@ func (x *DescribeAlarmsOutput) GetMetricalarms() []*MetricAlarm {
 }
 
 func (x *DescribeAlarmsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type DescribeAnomalyDetectorsInput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
+	Anomalydetectorids   []string               `protobuf:"bytes,341755903,rep,name=anomalydetectorids,proto3" json:"anomalydetectorids,omitempty"`
 	Anomalydetectortypes []AnomalyDetectorType  `protobuf:"varint,274334014,rep,packed,name=anomalydetectortypes,proto3,enum=cloudwatch.AnomalyDetectorType" json:"anomalydetectortypes,omitempty"`
 	Dimensions           []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Maxresults           *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Metricname           string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace            string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Nexttoken            string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Metricname           *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace            *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
+	Nexttoken            *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -3101,6 +3129,13 @@ func (*DescribeAnomalyDetectorsInput) Descriptor() ([]byte, []int) {
 	return file_cloudwatch_proto_rawDescGZIP(), []int{34}
 }
 
+func (x *DescribeAnomalyDetectorsInput) GetAnomalydetectorids() []string {
+	if x != nil {
+		return x.Anomalydetectorids
+	}
+	return nil
+}
+
 func (x *DescribeAnomalyDetectorsInput) GetAnomalydetectortypes() []AnomalyDetectorType {
 	if x != nil {
 		return x.Anomalydetectortypes
@@ -3123,22 +3158,22 @@ func (x *DescribeAnomalyDetectorsInput) GetMaxresults() int32 {
 }
 
 func (x *DescribeAnomalyDetectorsInput) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *DescribeAnomalyDetectorsInput) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
 
 func (x *DescribeAnomalyDetectorsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3146,7 +3181,7 @@ func (x *DescribeAnomalyDetectorsInput) GetNexttoken() string {
 type DescribeAnomalyDetectorsOutput struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Anomalydetectors []*AnomalyDetector     `protobuf:"bytes,399089190,rep,name=anomalydetectors,proto3" json:"anomalydetectors,omitempty"`
-	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken        *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3189,8 +3224,8 @@ func (x *DescribeAnomalyDetectorsOutput) GetAnomalydetectors() []*AnomalyDetecto
 }
 
 func (x *DescribeAnomalyDetectorsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3198,7 +3233,7 @@ func (x *DescribeAnomalyDetectorsOutput) GetNexttoken() string {
 type DescribeInsightRulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3241,8 +3276,8 @@ func (x *DescribeInsightRulesInput) GetMaxresults() int32 {
 }
 
 func (x *DescribeInsightRulesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3250,7 +3285,7 @@ func (x *DescribeInsightRulesInput) GetNexttoken() string {
 type DescribeInsightRulesOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Insightrules  []*InsightRule         `protobuf:"bytes,87263475,rep,name=insightrules,proto3" json:"insightrules,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3293,8 +3328,8 @@ func (x *DescribeInsightRulesOutput) GetInsightrules() []*InsightRule {
 }
 
 func (x *DescribeInsightRulesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3354,7 +3389,7 @@ func (x *Dimension) GetValue() string {
 type DimensionFilter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3397,8 +3432,8 @@ func (x *DimensionFilter) GetName() string {
 }
 
 func (x *DimensionFilter) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -3895,6 +3930,58 @@ func (x *EvaluationCriteria) GetPromqlcriteria() *AlarmPromQLCriteria {
 	return nil
 }
 
+type EvaluationWindow struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Slidingwindow   *SlidingWindow         `protobuf:"bytes,45916946,opt,name=slidingwindow,proto3" json:"slidingwindow,omitempty"`
+	Wallclockwindow *WallClockWindow       `protobuf:"bytes,323548406,opt,name=wallclockwindow,proto3" json:"wallclockwindow,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *EvaluationWindow) Reset() {
+	*x = EvaluationWindow{}
+	mi := &file_cloudwatch_proto_msgTypes[51]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EvaluationWindow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EvaluationWindow) ProtoMessage() {}
+
+func (x *EvaluationWindow) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[51]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EvaluationWindow.ProtoReflect.Descriptor instead.
+func (*EvaluationWindow) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{51}
+}
+
+func (x *EvaluationWindow) GetSlidingwindow() *SlidingWindow {
+	if x != nil {
+		return x.Slidingwindow
+	}
+	return nil
+}
+
+func (x *EvaluationWindow) GetWallclockwindow() *WallClockWindow {
+	if x != nil {
+		return x.Wallclockwindow
+	}
+	return nil
+}
+
 type GetAlarmMuteRuleInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Alarmmuterulename string                 `protobuf:"bytes,530877511,opt,name=alarmmuterulename,proto3" json:"alarmmuterulename,omitempty"`
@@ -3904,7 +3991,7 @@ type GetAlarmMuteRuleInput struct {
 
 func (x *GetAlarmMuteRuleInput) Reset() {
 	*x = GetAlarmMuteRuleInput{}
-	mi := &file_cloudwatch_proto_msgTypes[51]
+	mi := &file_cloudwatch_proto_msgTypes[52]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3916,7 +4003,7 @@ func (x *GetAlarmMuteRuleInput) String() string {
 func (*GetAlarmMuteRuleInput) ProtoMessage() {}
 
 func (x *GetAlarmMuteRuleInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[51]
+	mi := &file_cloudwatch_proto_msgTypes[52]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3929,7 +4016,7 @@ func (x *GetAlarmMuteRuleInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAlarmMuteRuleInput.ProtoReflect.Descriptor instead.
 func (*GetAlarmMuteRuleInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{51}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{52}
 }
 
 func (x *GetAlarmMuteRuleInput) GetAlarmmuterulename() string {
@@ -3941,15 +4028,15 @@ func (x *GetAlarmMuteRuleInput) GetAlarmmuterulename() string {
 
 type GetAlarmMuteRuleOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Alarmmuterulearn     string                 `protobuf:"bytes,493590237,opt,name=alarmmuterulearn,proto3" json:"alarmmuterulearn,omitempty"`
-	Description          string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Expiredate           string                 `protobuf:"bytes,454143207,opt,name=expiredate,proto3" json:"expiredate,omitempty"`
-	Lastupdatedtimestamp string                 `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3" json:"lastupdatedtimestamp,omitempty"`
+	Alarmmuterulearn     *string                `protobuf:"bytes,493590237,opt,name=alarmmuterulearn,proto3,oneof" json:"alarmmuterulearn,omitempty"`
+	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Expiredate           *string                `protobuf:"bytes,454143207,opt,name=expiredate,proto3,oneof" json:"expiredate,omitempty"`
+	Lastupdatedtimestamp *string                `protobuf:"bytes,133309845,opt,name=lastupdatedtimestamp,proto3,oneof" json:"lastupdatedtimestamp,omitempty"`
 	Mutetargets          *MuteTargets           `protobuf:"bytes,356717131,opt,name=mutetargets,proto3" json:"mutetargets,omitempty"`
-	Mutetype             string                 `protobuf:"bytes,111213245,opt,name=mutetype,proto3" json:"mutetype,omitempty"`
-	Name                 string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Mutetype             *string                `protobuf:"bytes,111213245,opt,name=mutetype,proto3,oneof" json:"mutetype,omitempty"`
+	Name                 *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Rule                 *Rule                  `protobuf:"bytes,475696372,opt,name=rule,proto3" json:"rule,omitempty"`
-	Startdate            string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
+	Startdate            *string                `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
 	Status               AlarmMuteRuleStatus    `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudwatch.AlarmMuteRuleStatus" json:"status,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -3957,7 +4044,7 @@ type GetAlarmMuteRuleOutput struct {
 
 func (x *GetAlarmMuteRuleOutput) Reset() {
 	*x = GetAlarmMuteRuleOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[52]
+	mi := &file_cloudwatch_proto_msgTypes[53]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3969,7 +4056,7 @@ func (x *GetAlarmMuteRuleOutput) String() string {
 func (*GetAlarmMuteRuleOutput) ProtoMessage() {}
 
 func (x *GetAlarmMuteRuleOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[52]
+	mi := &file_cloudwatch_proto_msgTypes[53]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3982,33 +4069,33 @@ func (x *GetAlarmMuteRuleOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetAlarmMuteRuleOutput.ProtoReflect.Descriptor instead.
 func (*GetAlarmMuteRuleOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{52}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{53}
 }
 
 func (x *GetAlarmMuteRuleOutput) GetAlarmmuterulearn() string {
-	if x != nil {
-		return x.Alarmmuterulearn
+	if x != nil && x.Alarmmuterulearn != nil {
+		return *x.Alarmmuterulearn
 	}
 	return ""
 }
 
 func (x *GetAlarmMuteRuleOutput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *GetAlarmMuteRuleOutput) GetExpiredate() string {
-	if x != nil {
-		return x.Expiredate
+	if x != nil && x.Expiredate != nil {
+		return *x.Expiredate
 	}
 	return ""
 }
 
 func (x *GetAlarmMuteRuleOutput) GetLastupdatedtimestamp() string {
-	if x != nil {
-		return x.Lastupdatedtimestamp
+	if x != nil && x.Lastupdatedtimestamp != nil {
+		return *x.Lastupdatedtimestamp
 	}
 	return ""
 }
@@ -4021,15 +4108,15 @@ func (x *GetAlarmMuteRuleOutput) GetMutetargets() *MuteTargets {
 }
 
 func (x *GetAlarmMuteRuleOutput) GetMutetype() string {
-	if x != nil {
-		return x.Mutetype
+	if x != nil && x.Mutetype != nil {
+		return *x.Mutetype
 	}
 	return ""
 }
 
 func (x *GetAlarmMuteRuleOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -4042,8 +4129,8 @@ func (x *GetAlarmMuteRuleOutput) GetRule() *Rule {
 }
 
 func (x *GetAlarmMuteRuleOutput) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
@@ -4064,7 +4151,7 @@ type GetDashboardInput struct {
 
 func (x *GetDashboardInput) Reset() {
 	*x = GetDashboardInput{}
-	mi := &file_cloudwatch_proto_msgTypes[53]
+	mi := &file_cloudwatch_proto_msgTypes[54]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4076,7 +4163,7 @@ func (x *GetDashboardInput) String() string {
 func (*GetDashboardInput) ProtoMessage() {}
 
 func (x *GetDashboardInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[53]
+	mi := &file_cloudwatch_proto_msgTypes[54]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4089,7 +4176,7 @@ func (x *GetDashboardInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDashboardInput.ProtoReflect.Descriptor instead.
 func (*GetDashboardInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{53}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{54}
 }
 
 func (x *GetDashboardInput) GetDashboardname() string {
@@ -4101,16 +4188,16 @@ func (x *GetDashboardInput) GetDashboardname() string {
 
 type GetDashboardOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dashboardarn  string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
-	Dashboardbody string                 `protobuf:"bytes,3403236,opt,name=dashboardbody,proto3" json:"dashboardbody,omitempty"`
-	Dashboardname string                 `protobuf:"bytes,506599873,opt,name=dashboardname,proto3" json:"dashboardname,omitempty"`
+	Dashboardarn  *string                `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3,oneof" json:"dashboardarn,omitempty"`
+	Dashboardbody *string                `protobuf:"bytes,3403236,opt,name=dashboardbody,proto3,oneof" json:"dashboardbody,omitempty"`
+	Dashboardname *string                `protobuf:"bytes,506599873,opt,name=dashboardname,proto3,oneof" json:"dashboardname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetDashboardOutput) Reset() {
 	*x = GetDashboardOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[54]
+	mi := &file_cloudwatch_proto_msgTypes[55]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4122,7 +4209,7 @@ func (x *GetDashboardOutput) String() string {
 func (*GetDashboardOutput) ProtoMessage() {}
 
 func (x *GetDashboardOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[54]
+	mi := &file_cloudwatch_proto_msgTypes[55]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4135,26 +4222,26 @@ func (x *GetDashboardOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDashboardOutput.ProtoReflect.Descriptor instead.
 func (*GetDashboardOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{54}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{55}
 }
 
 func (x *GetDashboardOutput) GetDashboardarn() string {
-	if x != nil {
-		return x.Dashboardarn
+	if x != nil && x.Dashboardarn != nil {
+		return *x.Dashboardarn
 	}
 	return ""
 }
 
 func (x *GetDashboardOutput) GetDashboardbody() string {
-	if x != nil {
-		return x.Dashboardbody
+	if x != nil && x.Dashboardbody != nil {
+		return *x.Dashboardbody
 	}
 	return ""
 }
 
 func (x *GetDashboardOutput) GetDashboardname() string {
-	if x != nil {
-		return x.Dashboardname
+	if x != nil && x.Dashboardname != nil {
+		return *x.Dashboardname
 	}
 	return ""
 }
@@ -4168,7 +4255,7 @@ type GetDatasetInput struct {
 
 func (x *GetDatasetInput) Reset() {
 	*x = GetDatasetInput{}
-	mi := &file_cloudwatch_proto_msgTypes[55]
+	mi := &file_cloudwatch_proto_msgTypes[56]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4180,7 +4267,7 @@ func (x *GetDatasetInput) String() string {
 func (*GetDatasetInput) ProtoMessage() {}
 
 func (x *GetDatasetInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[55]
+	mi := &file_cloudwatch_proto_msgTypes[56]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4193,7 +4280,7 @@ func (x *GetDatasetInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatasetInput.ProtoReflect.Descriptor instead.
 func (*GetDatasetInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{55}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{56}
 }
 
 func (x *GetDatasetInput) GetDatasetidentifier() string {
@@ -4207,14 +4294,14 @@ type GetDatasetOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
 	Datasetid     string                 `protobuf:"bytes,488191983,opt,name=datasetid,proto3" json:"datasetid,omitempty"`
-	Kmskeyarn     string                 `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
+	Kmskeyarn     *string                `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3,oneof" json:"kmskeyarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetDatasetOutput) Reset() {
 	*x = GetDatasetOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[56]
+	mi := &file_cloudwatch_proto_msgTypes[57]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4226,7 +4313,7 @@ func (x *GetDatasetOutput) String() string {
 func (*GetDatasetOutput) ProtoMessage() {}
 
 func (x *GetDatasetOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[56]
+	mi := &file_cloudwatch_proto_msgTypes[57]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4239,7 +4326,7 @@ func (x *GetDatasetOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDatasetOutput.ProtoReflect.Descriptor instead.
 func (*GetDatasetOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{56}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{57}
 }
 
 func (x *GetDatasetOutput) GetArn() string {
@@ -4257,8 +4344,8 @@ func (x *GetDatasetOutput) GetDatasetid() string {
 }
 
 func (x *GetDatasetOutput) GetKmskeyarn() string {
-	if x != nil {
-		return x.Kmskeyarn
+	if x != nil && x.Kmskeyarn != nil {
+		return *x.Kmskeyarn
 	}
 	return ""
 }
@@ -4268,7 +4355,7 @@ type GetInsightRuleReportInput struct {
 	Endtime             string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
 	Maxcontributorcount *int32                 `protobuf:"varint,272640614,opt,name=maxcontributorcount,proto3,oneof" json:"maxcontributorcount,omitempty"`
 	Metrics             []string               `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
-	Orderby             string                 `protobuf:"bytes,353010019,opt,name=orderby,proto3" json:"orderby,omitempty"`
+	Orderby             *string                `protobuf:"bytes,353010019,opt,name=orderby,proto3,oneof" json:"orderby,omitempty"`
 	Period              int32                  `protobuf:"varint,119833637,opt,name=period,proto3" json:"period,omitempty"`
 	Rulename            string                 `protobuf:"bytes,214688793,opt,name=rulename,proto3" json:"rulename,omitempty"`
 	Starttime           string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
@@ -4278,7 +4365,7 @@ type GetInsightRuleReportInput struct {
 
 func (x *GetInsightRuleReportInput) Reset() {
 	*x = GetInsightRuleReportInput{}
-	mi := &file_cloudwatch_proto_msgTypes[57]
+	mi := &file_cloudwatch_proto_msgTypes[58]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4290,7 +4377,7 @@ func (x *GetInsightRuleReportInput) String() string {
 func (*GetInsightRuleReportInput) ProtoMessage() {}
 
 func (x *GetInsightRuleReportInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[57]
+	mi := &file_cloudwatch_proto_msgTypes[58]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4303,7 +4390,7 @@ func (x *GetInsightRuleReportInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInsightRuleReportInput.ProtoReflect.Descriptor instead.
 func (*GetInsightRuleReportInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{57}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{58}
 }
 
 func (x *GetInsightRuleReportInput) GetEndtime() string {
@@ -4328,8 +4415,8 @@ func (x *GetInsightRuleReportInput) GetMetrics() []string {
 }
 
 func (x *GetInsightRuleReportInput) GetOrderby() string {
-	if x != nil {
-		return x.Orderby
+	if x != nil && x.Orderby != nil {
+		return *x.Orderby
 	}
 	return ""
 }
@@ -4357,8 +4444,8 @@ func (x *GetInsightRuleReportInput) GetStarttime() string {
 
 type GetInsightRuleReportOutput struct {
 	state                  protoimpl.MessageState        `protogen:"open.v1"`
-	Aggregatevalue         float64                       `protobuf:"fixed64,225313242,opt,name=aggregatevalue,proto3" json:"aggregatevalue,omitempty"`
-	Aggregationstatistic   string                        `protobuf:"bytes,333233758,opt,name=aggregationstatistic,proto3" json:"aggregationstatistic,omitempty"`
+	Aggregatevalue         *float64                      `protobuf:"fixed64,225313242,opt,name=aggregatevalue,proto3,oneof" json:"aggregatevalue,omitempty"`
+	Aggregationstatistic   *string                       `protobuf:"bytes,333233758,opt,name=aggregationstatistic,proto3,oneof" json:"aggregationstatistic,omitempty"`
 	Approximateuniquecount *int64                        `protobuf:"varint,55617722,opt,name=approximateuniquecount,proto3,oneof" json:"approximateuniquecount,omitempty"`
 	Contributors           []*InsightRuleContributor     `protobuf:"bytes,168168444,rep,name=contributors,proto3" json:"contributors,omitempty"`
 	Keylabels              []string                      `protobuf:"bytes,16074444,rep,name=keylabels,proto3" json:"keylabels,omitempty"`
@@ -4369,7 +4456,7 @@ type GetInsightRuleReportOutput struct {
 
 func (x *GetInsightRuleReportOutput) Reset() {
 	*x = GetInsightRuleReportOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[58]
+	mi := &file_cloudwatch_proto_msgTypes[59]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4381,7 +4468,7 @@ func (x *GetInsightRuleReportOutput) String() string {
 func (*GetInsightRuleReportOutput) ProtoMessage() {}
 
 func (x *GetInsightRuleReportOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[58]
+	mi := &file_cloudwatch_proto_msgTypes[59]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4394,19 +4481,19 @@ func (x *GetInsightRuleReportOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInsightRuleReportOutput.ProtoReflect.Descriptor instead.
 func (*GetInsightRuleReportOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{58}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{59}
 }
 
 func (x *GetInsightRuleReportOutput) GetAggregatevalue() float64 {
-	if x != nil {
-		return x.Aggregatevalue
+	if x != nil && x.Aggregatevalue != nil {
+		return *x.Aggregatevalue
 	}
 	return 0
 }
 
 func (x *GetInsightRuleReportOutput) GetAggregationstatistic() string {
-	if x != nil {
-		return x.Aggregationstatistic
+	if x != nil && x.Aggregationstatistic != nil {
+		return *x.Aggregationstatistic
 	}
 	return ""
 }
@@ -4445,7 +4532,7 @@ type GetMetricDataInput struct {
 	Labeloptions      *LabelOptions          `protobuf:"bytes,184949902,opt,name=labeloptions,proto3" json:"labeloptions,omitempty"`
 	Maxdatapoints     *int32                 `protobuf:"varint,97504835,opt,name=maxdatapoints,proto3,oneof" json:"maxdatapoints,omitempty"`
 	Metricdataqueries []*MetricDataQuery     `protobuf:"bytes,92209504,rep,name=metricdataqueries,proto3" json:"metricdataqueries,omitempty"`
-	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken         *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Scanby            ScanBy                 `protobuf:"varint,344142854,opt,name=scanby,proto3,enum=cloudwatch.ScanBy" json:"scanby,omitempty"`
 	Starttime         string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -4454,7 +4541,7 @@ type GetMetricDataInput struct {
 
 func (x *GetMetricDataInput) Reset() {
 	*x = GetMetricDataInput{}
-	mi := &file_cloudwatch_proto_msgTypes[59]
+	mi := &file_cloudwatch_proto_msgTypes[60]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4466,7 +4553,7 @@ func (x *GetMetricDataInput) String() string {
 func (*GetMetricDataInput) ProtoMessage() {}
 
 func (x *GetMetricDataInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[59]
+	mi := &file_cloudwatch_proto_msgTypes[60]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4479,7 +4566,7 @@ func (x *GetMetricDataInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricDataInput.ProtoReflect.Descriptor instead.
 func (*GetMetricDataInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{59}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{60}
 }
 
 func (x *GetMetricDataInput) GetEndtime() string {
@@ -4511,8 +4598,8 @@ func (x *GetMetricDataInput) GetMetricdataqueries() []*MetricDataQuery {
 }
 
 func (x *GetMetricDataInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -4535,14 +4622,14 @@ type GetMetricDataOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Messages          []*MessageData         `protobuf:"bytes,409018326,rep,name=messages,proto3" json:"messages,omitempty"`
 	Metricdataresults []*MetricDataResult    `protobuf:"bytes,373784842,rep,name=metricdataresults,proto3" json:"metricdataresults,omitempty"`
-	Nexttoken         string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken         *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetMetricDataOutput) Reset() {
 	*x = GetMetricDataOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[60]
+	mi := &file_cloudwatch_proto_msgTypes[61]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4554,7 +4641,7 @@ func (x *GetMetricDataOutput) String() string {
 func (*GetMetricDataOutput) ProtoMessage() {}
 
 func (x *GetMetricDataOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[60]
+	mi := &file_cloudwatch_proto_msgTypes[61]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4567,7 +4654,7 @@ func (x *GetMetricDataOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricDataOutput.ProtoReflect.Descriptor instead.
 func (*GetMetricDataOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{60}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{61}
 }
 
 func (x *GetMetricDataOutput) GetMessages() []*MessageData {
@@ -4585,8 +4672,8 @@ func (x *GetMetricDataOutput) GetMetricdataresults() []*MetricDataResult {
 }
 
 func (x *GetMetricDataOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -4608,7 +4695,7 @@ type GetMetricStatisticsInput struct {
 
 func (x *GetMetricStatisticsInput) Reset() {
 	*x = GetMetricStatisticsInput{}
-	mi := &file_cloudwatch_proto_msgTypes[61]
+	mi := &file_cloudwatch_proto_msgTypes[62]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4620,7 +4707,7 @@ func (x *GetMetricStatisticsInput) String() string {
 func (*GetMetricStatisticsInput) ProtoMessage() {}
 
 func (x *GetMetricStatisticsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[61]
+	mi := &file_cloudwatch_proto_msgTypes[62]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4633,7 +4720,7 @@ func (x *GetMetricStatisticsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricStatisticsInput.ProtoReflect.Descriptor instead.
 func (*GetMetricStatisticsInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{61}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{62}
 }
 
 func (x *GetMetricStatisticsInput) GetDimensions() []*Dimension {
@@ -4702,14 +4789,14 @@ func (x *GetMetricStatisticsInput) GetUnit() StandardUnit {
 type GetMetricStatisticsOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Datapoints    []*Datapoint           `protobuf:"bytes,37512135,rep,name=datapoints,proto3" json:"datapoints,omitempty"`
-	Label         string                 `protobuf:"bytes,516747934,opt,name=label,proto3" json:"label,omitempty"`
+	Label         *string                `protobuf:"bytes,516747934,opt,name=label,proto3,oneof" json:"label,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetMetricStatisticsOutput) Reset() {
 	*x = GetMetricStatisticsOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[62]
+	mi := &file_cloudwatch_proto_msgTypes[63]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4721,7 +4808,7 @@ func (x *GetMetricStatisticsOutput) String() string {
 func (*GetMetricStatisticsOutput) ProtoMessage() {}
 
 func (x *GetMetricStatisticsOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[62]
+	mi := &file_cloudwatch_proto_msgTypes[63]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4734,7 +4821,7 @@ func (x *GetMetricStatisticsOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricStatisticsOutput.ProtoReflect.Descriptor instead.
 func (*GetMetricStatisticsOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{62}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{63}
 }
 
 func (x *GetMetricStatisticsOutput) GetDatapoints() []*Datapoint {
@@ -4745,8 +4832,8 @@ func (x *GetMetricStatisticsOutput) GetDatapoints() []*Datapoint {
 }
 
 func (x *GetMetricStatisticsOutput) GetLabel() string {
-	if x != nil {
-		return x.Label
+	if x != nil && x.Label != nil {
+		return *x.Label
 	}
 	return ""
 }
@@ -4760,7 +4847,7 @@ type GetMetricStreamInput struct {
 
 func (x *GetMetricStreamInput) Reset() {
 	*x = GetMetricStreamInput{}
-	mi := &file_cloudwatch_proto_msgTypes[63]
+	mi := &file_cloudwatch_proto_msgTypes[64]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4772,7 +4859,7 @@ func (x *GetMetricStreamInput) String() string {
 func (*GetMetricStreamInput) ProtoMessage() {}
 
 func (x *GetMetricStreamInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[63]
+	mi := &file_cloudwatch_proto_msgTypes[64]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4785,7 +4872,7 @@ func (x *GetMetricStreamInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricStreamInput.ProtoReflect.Descriptor instead.
 func (*GetMetricStreamInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{63}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{64}
 }
 
 func (x *GetMetricStreamInput) GetName() string {
@@ -4797,17 +4884,17 @@ func (x *GetMetricStreamInput) GetName() string {
 
 type GetMetricStreamOutput struct {
 	state                        protoimpl.MessageState                 `protogen:"open.v1"`
-	Arn                          string                                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationdate                 string                                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
+	Arn                          *string                                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationdate                 *string                                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
 	Excludefilters               []*MetricStreamFilter                  `protobuf:"bytes,426990841,rep,name=excludefilters,proto3" json:"excludefilters,omitempty"`
-	Firehosearn                  string                                 `protobuf:"bytes,55494200,opt,name=firehosearn,proto3" json:"firehosearn,omitempty"`
+	Firehosearn                  *string                                `protobuf:"bytes,55494200,opt,name=firehosearn,proto3,oneof" json:"firehosearn,omitempty"`
 	Includefilters               []*MetricStreamFilter                  `protobuf:"bytes,90967031,rep,name=includefilters,proto3" json:"includefilters,omitempty"`
 	Includelinkedaccountsmetrics *bool                                  `protobuf:"varint,356901952,opt,name=includelinkedaccountsmetrics,proto3,oneof" json:"includelinkedaccountsmetrics,omitempty"`
-	Lastupdatedate               string                                 `protobuf:"bytes,65755725,opt,name=lastupdatedate,proto3" json:"lastupdatedate,omitempty"`
-	Name                         string                                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Lastupdatedate               *string                                `protobuf:"bytes,65755725,opt,name=lastupdatedate,proto3,oneof" json:"lastupdatedate,omitempty"`
+	Name                         *string                                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Outputformat                 MetricStreamOutputFormat               `protobuf:"varint,519139704,opt,name=outputformat,proto3,enum=cloudwatch.MetricStreamOutputFormat" json:"outputformat,omitempty"`
-	Rolearn                      string                                 `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
-	State                        string                                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Rolearn                      *string                                `protobuf:"bytes,322567169,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
+	State                        *string                                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	Statisticsconfigurations     []*MetricStreamStatisticsConfiguration `protobuf:"bytes,175876178,rep,name=statisticsconfigurations,proto3" json:"statisticsconfigurations,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -4815,7 +4902,7 @@ type GetMetricStreamOutput struct {
 
 func (x *GetMetricStreamOutput) Reset() {
 	*x = GetMetricStreamOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[64]
+	mi := &file_cloudwatch_proto_msgTypes[65]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4827,7 +4914,7 @@ func (x *GetMetricStreamOutput) String() string {
 func (*GetMetricStreamOutput) ProtoMessage() {}
 
 func (x *GetMetricStreamOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[64]
+	mi := &file_cloudwatch_proto_msgTypes[65]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4840,19 +4927,19 @@ func (x *GetMetricStreamOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricStreamOutput.ProtoReflect.Descriptor instead.
 func (*GetMetricStreamOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{64}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{65}
 }
 
 func (x *GetMetricStreamOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetMetricStreamOutput) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
@@ -4865,8 +4952,8 @@ func (x *GetMetricStreamOutput) GetExcludefilters() []*MetricStreamFilter {
 }
 
 func (x *GetMetricStreamOutput) GetFirehosearn() string {
-	if x != nil {
-		return x.Firehosearn
+	if x != nil && x.Firehosearn != nil {
+		return *x.Firehosearn
 	}
 	return ""
 }
@@ -4886,15 +4973,15 @@ func (x *GetMetricStreamOutput) GetIncludelinkedaccountsmetrics() bool {
 }
 
 func (x *GetMetricStreamOutput) GetLastupdatedate() string {
-	if x != nil {
-		return x.Lastupdatedate
+	if x != nil && x.Lastupdatedate != nil {
+		return *x.Lastupdatedate
 	}
 	return ""
 }
 
 func (x *GetMetricStreamOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -4907,15 +4994,15 @@ func (x *GetMetricStreamOutput) GetOutputformat() MetricStreamOutputFormat {
 }
 
 func (x *GetMetricStreamOutput) GetRolearn() string {
-	if x != nil {
-		return x.Rolearn
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
 	}
 	return ""
 }
 
 func (x *GetMetricStreamOutput) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
@@ -4930,14 +5017,14 @@ func (x *GetMetricStreamOutput) GetStatisticsconfigurations() []*MetricStreamSta
 type GetMetricWidgetImageInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Metricwidget  string                 `protobuf:"bytes,283026730,opt,name=metricwidget,proto3" json:"metricwidget,omitempty"`
-	Outputformat  string                 `protobuf:"bytes,519139704,opt,name=outputformat,proto3" json:"outputformat,omitempty"`
+	Outputformat  *string                `protobuf:"bytes,519139704,opt,name=outputformat,proto3,oneof" json:"outputformat,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetMetricWidgetImageInput) Reset() {
 	*x = GetMetricWidgetImageInput{}
-	mi := &file_cloudwatch_proto_msgTypes[65]
+	mi := &file_cloudwatch_proto_msgTypes[66]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -4949,7 +5036,7 @@ func (x *GetMetricWidgetImageInput) String() string {
 func (*GetMetricWidgetImageInput) ProtoMessage() {}
 
 func (x *GetMetricWidgetImageInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[65]
+	mi := &file_cloudwatch_proto_msgTypes[66]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4962,7 +5049,7 @@ func (x *GetMetricWidgetImageInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricWidgetImageInput.ProtoReflect.Descriptor instead.
 func (*GetMetricWidgetImageInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{65}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{66}
 }
 
 func (x *GetMetricWidgetImageInput) GetMetricwidget() string {
@@ -4973,22 +5060,22 @@ func (x *GetMetricWidgetImageInput) GetMetricwidget() string {
 }
 
 func (x *GetMetricWidgetImageInput) GetOutputformat() string {
-	if x != nil {
-		return x.Outputformat
+	if x != nil && x.Outputformat != nil {
+		return *x.Outputformat
 	}
 	return ""
 }
 
 type GetMetricWidgetImageOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Metricwidgetimage []byte                 `protobuf:"bytes,484815311,opt,name=metricwidgetimage,proto3" json:"metricwidgetimage,omitempty"`
+	Metricwidgetimage []byte                 `protobuf:"bytes,484815311,opt,name=metricwidgetimage,proto3,oneof" json:"metricwidgetimage,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
 
 func (x *GetMetricWidgetImageOutput) Reset() {
 	*x = GetMetricWidgetImageOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[66]
+	mi := &file_cloudwatch_proto_msgTypes[67]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5000,7 +5087,7 @@ func (x *GetMetricWidgetImageOutput) String() string {
 func (*GetMetricWidgetImageOutput) ProtoMessage() {}
 
 func (x *GetMetricWidgetImageOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[66]
+	mi := &file_cloudwatch_proto_msgTypes[67]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5013,7 +5100,7 @@ func (x *GetMetricWidgetImageOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetMetricWidgetImageOutput.ProtoReflect.Descriptor instead.
 func (*GetMetricWidgetImageOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{66}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{67}
 }
 
 func (x *GetMetricWidgetImageOutput) GetMetricwidgetimage() []byte {
@@ -5031,7 +5118,7 @@ type GetOTelEnrichmentInput struct {
 
 func (x *GetOTelEnrichmentInput) Reset() {
 	*x = GetOTelEnrichmentInput{}
-	mi := &file_cloudwatch_proto_msgTypes[67]
+	mi := &file_cloudwatch_proto_msgTypes[68]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5043,7 +5130,7 @@ func (x *GetOTelEnrichmentInput) String() string {
 func (*GetOTelEnrichmentInput) ProtoMessage() {}
 
 func (x *GetOTelEnrichmentInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[67]
+	mi := &file_cloudwatch_proto_msgTypes[68]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5056,7 +5143,7 @@ func (x *GetOTelEnrichmentInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOTelEnrichmentInput.ProtoReflect.Descriptor instead.
 func (*GetOTelEnrichmentInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{67}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{68}
 }
 
 type GetOTelEnrichmentOutput struct {
@@ -5068,7 +5155,7 @@ type GetOTelEnrichmentOutput struct {
 
 func (x *GetOTelEnrichmentOutput) Reset() {
 	*x = GetOTelEnrichmentOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[68]
+	mi := &file_cloudwatch_proto_msgTypes[69]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5080,7 +5167,7 @@ func (x *GetOTelEnrichmentOutput) String() string {
 func (*GetOTelEnrichmentOutput) ProtoMessage() {}
 
 func (x *GetOTelEnrichmentOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[68]
+	mi := &file_cloudwatch_proto_msgTypes[69]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5093,7 +5180,7 @@ func (x *GetOTelEnrichmentOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetOTelEnrichmentOutput.ProtoReflect.Descriptor instead.
 func (*GetOTelEnrichmentOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{68}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{69}
 }
 
 func (x *GetOTelEnrichmentOutput) GetStatus() OTelEnrichmentStatus {
@@ -5117,7 +5204,7 @@ type InsightRule struct {
 
 func (x *InsightRule) Reset() {
 	*x = InsightRule{}
-	mi := &file_cloudwatch_proto_msgTypes[69]
+	mi := &file_cloudwatch_proto_msgTypes[70]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5129,7 +5216,7 @@ func (x *InsightRule) String() string {
 func (*InsightRule) ProtoMessage() {}
 
 func (x *InsightRule) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[69]
+	mi := &file_cloudwatch_proto_msgTypes[70]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5142,7 +5229,7 @@ func (x *InsightRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsightRule.ProtoReflect.Descriptor instead.
 func (*InsightRule) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{69}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{70}
 }
 
 func (x *InsightRule) GetApplyontransformedlogs() bool {
@@ -5198,7 +5285,7 @@ type InsightRuleContributor struct {
 
 func (x *InsightRuleContributor) Reset() {
 	*x = InsightRuleContributor{}
-	mi := &file_cloudwatch_proto_msgTypes[70]
+	mi := &file_cloudwatch_proto_msgTypes[71]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5210,7 +5297,7 @@ func (x *InsightRuleContributor) String() string {
 func (*InsightRuleContributor) ProtoMessage() {}
 
 func (x *InsightRuleContributor) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[70]
+	mi := &file_cloudwatch_proto_msgTypes[71]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5223,7 +5310,7 @@ func (x *InsightRuleContributor) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsightRuleContributor.ProtoReflect.Descriptor instead.
 func (*InsightRuleContributor) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{70}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{71}
 }
 
 func (x *InsightRuleContributor) GetApproximateaggregatevalue() float64 {
@@ -5257,7 +5344,7 @@ type InsightRuleContributorDatapoint struct {
 
 func (x *InsightRuleContributorDatapoint) Reset() {
 	*x = InsightRuleContributorDatapoint{}
-	mi := &file_cloudwatch_proto_msgTypes[71]
+	mi := &file_cloudwatch_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5269,7 +5356,7 @@ func (x *InsightRuleContributorDatapoint) String() string {
 func (*InsightRuleContributorDatapoint) ProtoMessage() {}
 
 func (x *InsightRuleContributorDatapoint) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[71]
+	mi := &file_cloudwatch_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5282,7 +5369,7 @@ func (x *InsightRuleContributorDatapoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsightRuleContributorDatapoint.ProtoReflect.Descriptor instead.
 func (*InsightRuleContributorDatapoint) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{71}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{72}
 }
 
 func (x *InsightRuleContributorDatapoint) GetApproximatevalue() float64 {
@@ -5301,21 +5388,21 @@ func (x *InsightRuleContributorDatapoint) GetTimestamp() string {
 
 type InsightRuleMetricDatapoint struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Average             float64                `protobuf:"fixed64,134712777,opt,name=average,proto3" json:"average,omitempty"`
-	Maxcontributorvalue float64                `protobuf:"fixed64,389006680,opt,name=maxcontributorvalue,proto3" json:"maxcontributorvalue,omitempty"`
-	Maximum             float64                `protobuf:"fixed64,43343394,opt,name=maximum,proto3" json:"maximum,omitempty"`
-	Minimum             float64                `protobuf:"fixed64,438536856,opt,name=minimum,proto3" json:"minimum,omitempty"`
-	Samplecount         float64                `protobuf:"fixed64,384919839,opt,name=samplecount,proto3" json:"samplecount,omitempty"`
-	Sum                 float64                `protobuf:"fixed64,534303305,opt,name=sum,proto3" json:"sum,omitempty"`
+	Average             *float64               `protobuf:"fixed64,134712777,opt,name=average,proto3,oneof" json:"average,omitempty"`
+	Maxcontributorvalue *float64               `protobuf:"fixed64,389006680,opt,name=maxcontributorvalue,proto3,oneof" json:"maxcontributorvalue,omitempty"`
+	Maximum             *float64               `protobuf:"fixed64,43343394,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	Minimum             *float64               `protobuf:"fixed64,438536856,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Samplecount         *float64               `protobuf:"fixed64,384919839,opt,name=samplecount,proto3,oneof" json:"samplecount,omitempty"`
+	Sum                 *float64               `protobuf:"fixed64,534303305,opt,name=sum,proto3,oneof" json:"sum,omitempty"`
 	Timestamp           string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Uniquecontributors  float64                `protobuf:"fixed64,504374565,opt,name=uniquecontributors,proto3" json:"uniquecontributors,omitempty"`
+	Uniquecontributors  *float64               `protobuf:"fixed64,504374565,opt,name=uniquecontributors,proto3,oneof" json:"uniquecontributors,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
 func (x *InsightRuleMetricDatapoint) Reset() {
 	*x = InsightRuleMetricDatapoint{}
-	mi := &file_cloudwatch_proto_msgTypes[72]
+	mi := &file_cloudwatch_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5327,7 +5414,7 @@ func (x *InsightRuleMetricDatapoint) String() string {
 func (*InsightRuleMetricDatapoint) ProtoMessage() {}
 
 func (x *InsightRuleMetricDatapoint) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[72]
+	mi := &file_cloudwatch_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5340,47 +5427,47 @@ func (x *InsightRuleMetricDatapoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InsightRuleMetricDatapoint.ProtoReflect.Descriptor instead.
 func (*InsightRuleMetricDatapoint) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{72}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *InsightRuleMetricDatapoint) GetAverage() float64 {
-	if x != nil {
-		return x.Average
+	if x != nil && x.Average != nil {
+		return *x.Average
 	}
 	return 0
 }
 
 func (x *InsightRuleMetricDatapoint) GetMaxcontributorvalue() float64 {
-	if x != nil {
-		return x.Maxcontributorvalue
+	if x != nil && x.Maxcontributorvalue != nil {
+		return *x.Maxcontributorvalue
 	}
 	return 0
 }
 
 func (x *InsightRuleMetricDatapoint) GetMaximum() float64 {
-	if x != nil {
-		return x.Maximum
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
 	}
 	return 0
 }
 
 func (x *InsightRuleMetricDatapoint) GetMinimum() float64 {
-	if x != nil {
-		return x.Minimum
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
 	}
 	return 0
 }
 
 func (x *InsightRuleMetricDatapoint) GetSamplecount() float64 {
-	if x != nil {
-		return x.Samplecount
+	if x != nil && x.Samplecount != nil {
+		return *x.Samplecount
 	}
 	return 0
 }
 
 func (x *InsightRuleMetricDatapoint) GetSum() float64 {
-	if x != nil {
-		return x.Sum
+	if x != nil && x.Sum != nil {
+		return *x.Sum
 	}
 	return 0
 }
@@ -5393,22 +5480,22 @@ func (x *InsightRuleMetricDatapoint) GetTimestamp() string {
 }
 
 func (x *InsightRuleMetricDatapoint) GetUniquecontributors() float64 {
-	if x != nil {
-		return x.Uniquecontributors
+	if x != nil && x.Uniquecontributors != nil {
+		return *x.Uniquecontributors
 	}
 	return 0
 }
 
 type InternalServiceFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InternalServiceFault) Reset() {
 	*x = InternalServiceFault{}
-	mi := &file_cloudwatch_proto_msgTypes[73]
+	mi := &file_cloudwatch_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5420,7 +5507,7 @@ func (x *InternalServiceFault) String() string {
 func (*InternalServiceFault) ProtoMessage() {}
 
 func (x *InternalServiceFault) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[73]
+	mi := &file_cloudwatch_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5433,26 +5520,26 @@ func (x *InternalServiceFault) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InternalServiceFault.ProtoReflect.Descriptor instead.
 func (*InternalServiceFault) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{73}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{74}
 }
 
 func (x *InternalServiceFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidFormatFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidFormatFault) Reset() {
 	*x = InvalidFormatFault{}
-	mi := &file_cloudwatch_proto_msgTypes[74]
+	mi := &file_cloudwatch_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5464,7 +5551,7 @@ func (x *InvalidFormatFault) String() string {
 func (*InvalidFormatFault) ProtoMessage() {}
 
 func (x *InvalidFormatFault) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[74]
+	mi := &file_cloudwatch_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5477,26 +5564,26 @@ func (x *InvalidFormatFault) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidFormatFault.ProtoReflect.Descriptor instead.
 func (*InvalidFormatFault) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{74}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *InvalidFormatFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidNextToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidNextToken) Reset() {
 	*x = InvalidNextToken{}
-	mi := &file_cloudwatch_proto_msgTypes[75]
+	mi := &file_cloudwatch_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5508,7 +5595,7 @@ func (x *InvalidNextToken) String() string {
 func (*InvalidNextToken) ProtoMessage() {}
 
 func (x *InvalidNextToken) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[75]
+	mi := &file_cloudwatch_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5521,26 +5608,26 @@ func (x *InvalidNextToken) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidNextToken.ProtoReflect.Descriptor instead.
 func (*InvalidNextToken) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{75}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *InvalidNextToken) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterCombinationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidParameterCombinationException) Reset() {
 	*x = InvalidParameterCombinationException{}
-	mi := &file_cloudwatch_proto_msgTypes[76]
+	mi := &file_cloudwatch_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5552,7 +5639,7 @@ func (x *InvalidParameterCombinationException) String() string {
 func (*InvalidParameterCombinationException) ProtoMessage() {}
 
 func (x *InvalidParameterCombinationException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[76]
+	mi := &file_cloudwatch_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5565,26 +5652,26 @@ func (x *InvalidParameterCombinationException) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use InvalidParameterCombinationException.ProtoReflect.Descriptor instead.
 func (*InvalidParameterCombinationException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{76}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *InvalidParameterCombinationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterValueException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *InvalidParameterValueException) Reset() {
 	*x = InvalidParameterValueException{}
-	mi := &file_cloudwatch_proto_msgTypes[77]
+	mi := &file_cloudwatch_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5596,7 +5683,7 @@ func (x *InvalidParameterValueException) String() string {
 func (*InvalidParameterValueException) ProtoMessage() {}
 
 func (x *InvalidParameterValueException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[77]
+	mi := &file_cloudwatch_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5609,12 +5696,12 @@ func (x *InvalidParameterValueException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use InvalidParameterValueException.ProtoReflect.Descriptor instead.
 func (*InvalidParameterValueException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{77}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *InvalidParameterValueException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5628,7 +5715,7 @@ type KmsAccessDeniedException struct {
 
 func (x *KmsAccessDeniedException) Reset() {
 	*x = KmsAccessDeniedException{}
-	mi := &file_cloudwatch_proto_msgTypes[78]
+	mi := &file_cloudwatch_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5640,7 +5727,7 @@ func (x *KmsAccessDeniedException) String() string {
 func (*KmsAccessDeniedException) ProtoMessage() {}
 
 func (x *KmsAccessDeniedException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[78]
+	mi := &file_cloudwatch_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5653,7 +5740,7 @@ func (x *KmsAccessDeniedException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KmsAccessDeniedException.ProtoReflect.Descriptor instead.
 func (*KmsAccessDeniedException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{78}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *KmsAccessDeniedException) GetMessage() string {
@@ -5672,7 +5759,7 @@ type KmsKeyDisabledException struct {
 
 func (x *KmsKeyDisabledException) Reset() {
 	*x = KmsKeyDisabledException{}
-	mi := &file_cloudwatch_proto_msgTypes[79]
+	mi := &file_cloudwatch_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5684,7 +5771,7 @@ func (x *KmsKeyDisabledException) String() string {
 func (*KmsKeyDisabledException) ProtoMessage() {}
 
 func (x *KmsKeyDisabledException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[79]
+	mi := &file_cloudwatch_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5697,7 +5784,7 @@ func (x *KmsKeyDisabledException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KmsKeyDisabledException.ProtoReflect.Descriptor instead.
 func (*KmsKeyDisabledException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{79}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *KmsKeyDisabledException) GetMessage() string {
@@ -5716,7 +5803,7 @@ type KmsKeyNotFoundException struct {
 
 func (x *KmsKeyNotFoundException) Reset() {
 	*x = KmsKeyNotFoundException{}
-	mi := &file_cloudwatch_proto_msgTypes[80]
+	mi := &file_cloudwatch_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5728,7 +5815,7 @@ func (x *KmsKeyNotFoundException) String() string {
 func (*KmsKeyNotFoundException) ProtoMessage() {}
 
 func (x *KmsKeyNotFoundException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[80]
+	mi := &file_cloudwatch_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5741,7 +5828,7 @@ func (x *KmsKeyNotFoundException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KmsKeyNotFoundException.ProtoReflect.Descriptor instead.
 func (*KmsKeyNotFoundException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{80}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *KmsKeyNotFoundException) GetMessage() string {
@@ -5753,14 +5840,14 @@ func (x *KmsKeyNotFoundException) GetMessage() string {
 
 type LabelOptions struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timezone      string                 `protobuf:"bytes,246302531,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	Timezone      *string                `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LabelOptions) Reset() {
 	*x = LabelOptions{}
-	mi := &file_cloudwatch_proto_msgTypes[81]
+	mi := &file_cloudwatch_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5772,7 +5859,7 @@ func (x *LabelOptions) String() string {
 func (*LabelOptions) ProtoMessage() {}
 
 func (x *LabelOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[81]
+	mi := &file_cloudwatch_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5785,26 +5872,26 @@ func (x *LabelOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LabelOptions.ProtoReflect.Descriptor instead.
 func (*LabelOptions) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{81}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{82}
 }
 
 func (x *LabelOptions) GetTimezone() string {
-	if x != nil {
-		return x.Timezone
+	if x != nil && x.Timezone != nil {
+		return *x.Timezone
 	}
 	return ""
 }
 
 type LimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LimitExceededException) Reset() {
 	*x = LimitExceededException{}
-	mi := &file_cloudwatch_proto_msgTypes[82]
+	mi := &file_cloudwatch_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5816,7 +5903,7 @@ func (x *LimitExceededException) String() string {
 func (*LimitExceededException) ProtoMessage() {}
 
 func (x *LimitExceededException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[82]
+	mi := &file_cloudwatch_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5829,26 +5916,26 @@ func (x *LimitExceededException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LimitExceededException.ProtoReflect.Descriptor instead.
 func (*LimitExceededException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{82}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *LimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LimitExceededFault struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *LimitExceededFault) Reset() {
 	*x = LimitExceededFault{}
-	mi := &file_cloudwatch_proto_msgTypes[83]
+	mi := &file_cloudwatch_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5860,7 +5947,7 @@ func (x *LimitExceededFault) String() string {
 func (*LimitExceededFault) ProtoMessage() {}
 
 func (x *LimitExceededFault) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[83]
+	mi := &file_cloudwatch_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5873,21 +5960,21 @@ func (x *LimitExceededFault) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LimitExceededFault.ProtoReflect.Descriptor instead.
 func (*LimitExceededFault) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{83}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *LimitExceededFault) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ListAlarmMuteRulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Alarmname     string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
+	Alarmname     *string                `protobuf:"bytes,54095842,opt,name=alarmname,proto3,oneof" json:"alarmname,omitempty"`
 	Maxrecords    *int32                 `protobuf:"varint,220314370,opt,name=maxrecords,proto3,oneof" json:"maxrecords,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Statuses      []AlarmMuteRuleStatus  `protobuf:"varint,374056024,rep,packed,name=statuses,proto3,enum=cloudwatch.AlarmMuteRuleStatus" json:"statuses,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5895,7 +5982,7 @@ type ListAlarmMuteRulesInput struct {
 
 func (x *ListAlarmMuteRulesInput) Reset() {
 	*x = ListAlarmMuteRulesInput{}
-	mi := &file_cloudwatch_proto_msgTypes[84]
+	mi := &file_cloudwatch_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5907,7 +5994,7 @@ func (x *ListAlarmMuteRulesInput) String() string {
 func (*ListAlarmMuteRulesInput) ProtoMessage() {}
 
 func (x *ListAlarmMuteRulesInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[84]
+	mi := &file_cloudwatch_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5920,12 +6007,12 @@ func (x *ListAlarmMuteRulesInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAlarmMuteRulesInput.ProtoReflect.Descriptor instead.
 func (*ListAlarmMuteRulesInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{84}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *ListAlarmMuteRulesInput) GetAlarmname() string {
-	if x != nil {
-		return x.Alarmname
+	if x != nil && x.Alarmname != nil {
+		return *x.Alarmname
 	}
 	return ""
 }
@@ -5938,8 +6025,8 @@ func (x *ListAlarmMuteRulesInput) GetMaxrecords() int32 {
 }
 
 func (x *ListAlarmMuteRulesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -5954,14 +6041,14 @@ func (x *ListAlarmMuteRulesInput) GetStatuses() []AlarmMuteRuleStatus {
 type ListAlarmMuteRulesOutput struct {
 	state                  protoimpl.MessageState  `protogen:"open.v1"`
 	Alarmmuterulesummaries []*AlarmMuteRuleSummary `protobuf:"bytes,440906836,rep,name=alarmmuterulesummaries,proto3" json:"alarmmuterulesummaries,omitempty"`
-	Nexttoken              string                  `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken              *string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
 
 func (x *ListAlarmMuteRulesOutput) Reset() {
 	*x = ListAlarmMuteRulesOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[85]
+	mi := &file_cloudwatch_proto_msgTypes[86]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5973,7 +6060,7 @@ func (x *ListAlarmMuteRulesOutput) String() string {
 func (*ListAlarmMuteRulesOutput) ProtoMessage() {}
 
 func (x *ListAlarmMuteRulesOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[85]
+	mi := &file_cloudwatch_proto_msgTypes[86]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5986,7 +6073,7 @@ func (x *ListAlarmMuteRulesOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListAlarmMuteRulesOutput.ProtoReflect.Descriptor instead.
 func (*ListAlarmMuteRulesOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{85}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{86}
 }
 
 func (x *ListAlarmMuteRulesOutput) GetAlarmmuterulesummaries() []*AlarmMuteRuleSummary {
@@ -5997,23 +6084,23 @@ func (x *ListAlarmMuteRulesOutput) GetAlarmmuterulesummaries() []*AlarmMuteRuleS
 }
 
 func (x *ListAlarmMuteRulesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListDashboardsInput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Dashboardnameprefix string                 `protobuf:"bytes,301015421,opt,name=dashboardnameprefix,proto3" json:"dashboardnameprefix,omitempty"`
-	Nexttoken           string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Dashboardnameprefix *string                `protobuf:"bytes,301015421,opt,name=dashboardnameprefix,proto3,oneof" json:"dashboardnameprefix,omitempty"`
+	Nexttoken           *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
 func (x *ListDashboardsInput) Reset() {
 	*x = ListDashboardsInput{}
-	mi := &file_cloudwatch_proto_msgTypes[86]
+	mi := &file_cloudwatch_proto_msgTypes[87]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6025,7 +6112,7 @@ func (x *ListDashboardsInput) String() string {
 func (*ListDashboardsInput) ProtoMessage() {}
 
 func (x *ListDashboardsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[86]
+	mi := &file_cloudwatch_proto_msgTypes[87]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6038,19 +6125,19 @@ func (x *ListDashboardsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDashboardsInput.ProtoReflect.Descriptor instead.
 func (*ListDashboardsInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{86}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{87}
 }
 
 func (x *ListDashboardsInput) GetDashboardnameprefix() string {
-	if x != nil {
-		return x.Dashboardnameprefix
+	if x != nil && x.Dashboardnameprefix != nil {
+		return *x.Dashboardnameprefix
 	}
 	return ""
 }
 
 func (x *ListDashboardsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6058,14 +6145,14 @@ func (x *ListDashboardsInput) GetNexttoken() string {
 type ListDashboardsOutput struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Dashboardentries []*DashboardEntry      `protobuf:"bytes,281104826,rep,name=dashboardentries,proto3" json:"dashboardentries,omitempty"`
-	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken        *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ListDashboardsOutput) Reset() {
 	*x = ListDashboardsOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[87]
+	mi := &file_cloudwatch_proto_msgTypes[88]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6077,7 +6164,7 @@ func (x *ListDashboardsOutput) String() string {
 func (*ListDashboardsOutput) ProtoMessage() {}
 
 func (x *ListDashboardsOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[87]
+	mi := &file_cloudwatch_proto_msgTypes[88]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6090,7 +6177,7 @@ func (x *ListDashboardsOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDashboardsOutput.ProtoReflect.Descriptor instead.
 func (*ListDashboardsOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{87}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{88}
 }
 
 func (x *ListDashboardsOutput) GetDashboardentries() []*DashboardEntry {
@@ -6101,8 +6188,8 @@ func (x *ListDashboardsOutput) GetDashboardentries() []*DashboardEntry {
 }
 
 func (x *ListDashboardsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6110,7 +6197,7 @@ func (x *ListDashboardsOutput) GetNexttoken() string {
 type ListManagedInsightRulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6118,7 +6205,7 @@ type ListManagedInsightRulesInput struct {
 
 func (x *ListManagedInsightRulesInput) Reset() {
 	*x = ListManagedInsightRulesInput{}
-	mi := &file_cloudwatch_proto_msgTypes[88]
+	mi := &file_cloudwatch_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6130,7 +6217,7 @@ func (x *ListManagedInsightRulesInput) String() string {
 func (*ListManagedInsightRulesInput) ProtoMessage() {}
 
 func (x *ListManagedInsightRulesInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[88]
+	mi := &file_cloudwatch_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6143,7 +6230,7 @@ func (x *ListManagedInsightRulesInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListManagedInsightRulesInput.ProtoReflect.Descriptor instead.
 func (*ListManagedInsightRulesInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{88}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{89}
 }
 
 func (x *ListManagedInsightRulesInput) GetMaxresults() int32 {
@@ -6154,8 +6241,8 @@ func (x *ListManagedInsightRulesInput) GetMaxresults() int32 {
 }
 
 func (x *ListManagedInsightRulesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6170,14 +6257,14 @@ func (x *ListManagedInsightRulesInput) GetResourcearn() string {
 type ListManagedInsightRulesOutput struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Managedrules  []*ManagedRuleDescription `protobuf:"bytes,347090906,rep,name=managedrules,proto3" json:"managedrules,omitempty"`
-	Nexttoken     string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                   `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListManagedInsightRulesOutput) Reset() {
 	*x = ListManagedInsightRulesOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[89]
+	mi := &file_cloudwatch_proto_msgTypes[90]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6189,7 +6276,7 @@ func (x *ListManagedInsightRulesOutput) String() string {
 func (*ListManagedInsightRulesOutput) ProtoMessage() {}
 
 func (x *ListManagedInsightRulesOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[89]
+	mi := &file_cloudwatch_proto_msgTypes[90]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6202,7 +6289,7 @@ func (x *ListManagedInsightRulesOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListManagedInsightRulesOutput.ProtoReflect.Descriptor instead.
 func (*ListManagedInsightRulesOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{89}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{90}
 }
 
 func (x *ListManagedInsightRulesOutput) GetManagedrules() []*ManagedRuleDescription {
@@ -6213,8 +6300,8 @@ func (x *ListManagedInsightRulesOutput) GetManagedrules() []*ManagedRuleDescript
 }
 
 func (x *ListManagedInsightRulesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6222,14 +6309,14 @@ func (x *ListManagedInsightRulesOutput) GetNexttoken() string {
 type ListMetricStreamsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListMetricStreamsInput) Reset() {
 	*x = ListMetricStreamsInput{}
-	mi := &file_cloudwatch_proto_msgTypes[90]
+	mi := &file_cloudwatch_proto_msgTypes[91]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6241,7 +6328,7 @@ func (x *ListMetricStreamsInput) String() string {
 func (*ListMetricStreamsInput) ProtoMessage() {}
 
 func (x *ListMetricStreamsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[90]
+	mi := &file_cloudwatch_proto_msgTypes[91]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6254,7 +6341,7 @@ func (x *ListMetricStreamsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMetricStreamsInput.ProtoReflect.Descriptor instead.
 func (*ListMetricStreamsInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{90}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{91}
 }
 
 func (x *ListMetricStreamsInput) GetMaxresults() int32 {
@@ -6265,8 +6352,8 @@ func (x *ListMetricStreamsInput) GetMaxresults() int32 {
 }
 
 func (x *ListMetricStreamsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6274,14 +6361,14 @@ func (x *ListMetricStreamsInput) GetNexttoken() string {
 type ListMetricStreamsOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Entries       []*MetricStreamEntry   `protobuf:"bytes,481075860,rep,name=entries,proto3" json:"entries,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListMetricStreamsOutput) Reset() {
 	*x = ListMetricStreamsOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[91]
+	mi := &file_cloudwatch_proto_msgTypes[92]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6293,7 +6380,7 @@ func (x *ListMetricStreamsOutput) String() string {
 func (*ListMetricStreamsOutput) ProtoMessage() {}
 
 func (x *ListMetricStreamsOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[91]
+	mi := &file_cloudwatch_proto_msgTypes[92]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6306,7 +6393,7 @@ func (x *ListMetricStreamsOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMetricStreamsOutput.ProtoReflect.Descriptor instead.
 func (*ListMetricStreamsOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{91}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{92}
 }
 
 func (x *ListMetricStreamsOutput) GetEntries() []*MetricStreamEntry {
@@ -6317,8 +6404,8 @@ func (x *ListMetricStreamsOutput) GetEntries() []*MetricStreamEntry {
 }
 
 func (x *ListMetricStreamsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6327,10 +6414,10 @@ type ListMetricsInput struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Dimensions            []*DimensionFilter     `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Includelinkedaccounts *bool                  `protobuf:"varint,228605043,opt,name=includelinkedaccounts,proto3,oneof" json:"includelinkedaccounts,omitempty"`
-	Metricname            string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace             string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Nexttoken             string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Owningaccount         string                 `protobuf:"bytes,339968073,opt,name=owningaccount,proto3" json:"owningaccount,omitempty"`
+	Metricname            *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace             *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
+	Nexttoken             *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Owningaccount         *string                `protobuf:"bytes,339968073,opt,name=owningaccount,proto3,oneof" json:"owningaccount,omitempty"`
 	Recentlyactive        RecentlyActive         `protobuf:"varint,179617336,opt,name=recentlyactive,proto3,enum=cloudwatch.RecentlyActive" json:"recentlyactive,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -6338,7 +6425,7 @@ type ListMetricsInput struct {
 
 func (x *ListMetricsInput) Reset() {
 	*x = ListMetricsInput{}
-	mi := &file_cloudwatch_proto_msgTypes[92]
+	mi := &file_cloudwatch_proto_msgTypes[93]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6350,7 +6437,7 @@ func (x *ListMetricsInput) String() string {
 func (*ListMetricsInput) ProtoMessage() {}
 
 func (x *ListMetricsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[92]
+	mi := &file_cloudwatch_proto_msgTypes[93]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6363,7 +6450,7 @@ func (x *ListMetricsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMetricsInput.ProtoReflect.Descriptor instead.
 func (*ListMetricsInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{92}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{93}
 }
 
 func (x *ListMetricsInput) GetDimensions() []*DimensionFilter {
@@ -6381,29 +6468,29 @@ func (x *ListMetricsInput) GetIncludelinkedaccounts() bool {
 }
 
 func (x *ListMetricsInput) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *ListMetricsInput) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
 
 func (x *ListMetricsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *ListMetricsInput) GetOwningaccount() string {
-	if x != nil {
-		return x.Owningaccount
+	if x != nil && x.Owningaccount != nil {
+		return *x.Owningaccount
 	}
 	return ""
 }
@@ -6418,7 +6505,7 @@ func (x *ListMetricsInput) GetRecentlyactive() RecentlyActive {
 type ListMetricsOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Metrics        []*Metric              `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
-	Nexttoken      string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Owningaccounts []string               `protobuf:"bytes,21159138,rep,name=owningaccounts,proto3" json:"owningaccounts,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -6426,7 +6513,7 @@ type ListMetricsOutput struct {
 
 func (x *ListMetricsOutput) Reset() {
 	*x = ListMetricsOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[93]
+	mi := &file_cloudwatch_proto_msgTypes[94]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6438,7 +6525,7 @@ func (x *ListMetricsOutput) String() string {
 func (*ListMetricsOutput) ProtoMessage() {}
 
 func (x *ListMetricsOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[93]
+	mi := &file_cloudwatch_proto_msgTypes[94]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6451,7 +6538,7 @@ func (x *ListMetricsOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListMetricsOutput.ProtoReflect.Descriptor instead.
 func (*ListMetricsOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{93}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{94}
 }
 
 func (x *ListMetricsOutput) GetMetrics() []*Metric {
@@ -6462,8 +6549,8 @@ func (x *ListMetricsOutput) GetMetrics() []*Metric {
 }
 
 func (x *ListMetricsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6484,7 +6571,7 @@ type ListTagsForResourceInput struct {
 
 func (x *ListTagsForResourceInput) Reset() {
 	*x = ListTagsForResourceInput{}
-	mi := &file_cloudwatch_proto_msgTypes[94]
+	mi := &file_cloudwatch_proto_msgTypes[95]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6496,7 +6583,7 @@ func (x *ListTagsForResourceInput) String() string {
 func (*ListTagsForResourceInput) ProtoMessage() {}
 
 func (x *ListTagsForResourceInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[94]
+	mi := &file_cloudwatch_proto_msgTypes[95]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6509,7 +6596,7 @@ func (x *ListTagsForResourceInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTagsForResourceInput.ProtoReflect.Descriptor instead.
 func (*ListTagsForResourceInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{94}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{95}
 }
 
 func (x *ListTagsForResourceInput) GetResourcearn() string {
@@ -6528,7 +6615,7 @@ type ListTagsForResourceOutput struct {
 
 func (x *ListTagsForResourceOutput) Reset() {
 	*x = ListTagsForResourceOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[95]
+	mi := &file_cloudwatch_proto_msgTypes[96]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6540,7 +6627,7 @@ func (x *ListTagsForResourceOutput) String() string {
 func (*ListTagsForResourceOutput) ProtoMessage() {}
 
 func (x *ListTagsForResourceOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[95]
+	mi := &file_cloudwatch_proto_msgTypes[96]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6553,12 +6640,232 @@ func (x *ListTagsForResourceOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListTagsForResourceOutput.ProtoReflect.Descriptor instead.
 func (*ListTagsForResourceOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{95}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{96}
 }
 
 func (x *ListTagsForResourceOutput) GetTags() []*Tag {
 	if x != nil {
 		return x.Tags
+	}
+	return nil
+}
+
+type LogAlarm struct {
+	state                              protoimpl.MessageState       `protogen:"open.v1"`
+	Actionloglinecount                 *int32                       `protobuf:"varint,505597453,opt,name=actionloglinecount,proto3,oneof" json:"actionloglinecount,omitempty"`
+	Actionloglinerolearn               *string                      `protobuf:"bytes,673897,opt,name=actionloglinerolearn,proto3,oneof" json:"actionloglinerolearn,omitempty"`
+	Actionsenabled                     *bool                        `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
+	Alarmactions                       []string                     `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
+	Alarmarn                           *string                      `protobuf:"bytes,276019462,opt,name=alarmarn,proto3,oneof" json:"alarmarn,omitempty"`
+	Alarmconfigurationupdatedtimestamp *string                      `protobuf:"bytes,51935494,opt,name=alarmconfigurationupdatedtimestamp,proto3,oneof" json:"alarmconfigurationupdatedtimestamp,omitempty"`
+	Alarmdescription                   *string                      `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3,oneof" json:"alarmdescription,omitempty"`
+	Alarmname                          *string                      `protobuf:"bytes,54095842,opt,name=alarmname,proto3,oneof" json:"alarmname,omitempty"`
+	Comparisonoperator                 ComparisonOperator           `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=cloudwatch.ComparisonOperator" json:"comparisonoperator,omitempty"`
+	Evaluationstate                    EvaluationState              `protobuf:"varint,338863857,opt,name=evaluationstate,proto3,enum=cloudwatch.EvaluationState" json:"evaluationstate,omitempty"`
+	Insufficientdataactions            []string                     `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
+	Okactions                          []string                     `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
+	Queryresultstoalarm                *int32                       `protobuf:"varint,188456732,opt,name=queryresultstoalarm,proto3,oneof" json:"queryresultstoalarm,omitempty"`
+	Queryresultstoevaluate             *int32                       `protobuf:"varint,315639558,opt,name=queryresultstoevaluate,proto3,oneof" json:"queryresultstoevaluate,omitempty"`
+	Scheduledqueryconfiguration        *ScheduledQueryConfiguration `protobuf:"bytes,48313143,opt,name=scheduledqueryconfiguration,proto3" json:"scheduledqueryconfiguration,omitempty"`
+	Statereason                        *string                      `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
+	Statereasondata                    *string                      `protobuf:"bytes,262771075,opt,name=statereasondata,proto3,oneof" json:"statereasondata,omitempty"`
+	Statetransitionedtimestamp         *string                      `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3,oneof" json:"statetransitionedtimestamp,omitempty"`
+	Stateupdatedtimestamp              *string                      `protobuf:"bytes,375406848,opt,name=stateupdatedtimestamp,proto3,oneof" json:"stateupdatedtimestamp,omitempty"`
+	Statevalue                         StateValue                   `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.StateValue" json:"statevalue,omitempty"`
+	Threshold                          *float64                     `protobuf:"fixed64,394884505,opt,name=threshold,proto3,oneof" json:"threshold,omitempty"`
+	Treatmissingdata                   *string                      `protobuf:"bytes,226418150,opt,name=treatmissingdata,proto3,oneof" json:"treatmissingdata,omitempty"`
+	Warmupconfiguration                *WarmUpConfiguration         `protobuf:"bytes,439442074,opt,name=warmupconfiguration,proto3" json:"warmupconfiguration,omitempty"`
+	unknownFields                      protoimpl.UnknownFields
+	sizeCache                          protoimpl.SizeCache
+}
+
+func (x *LogAlarm) Reset() {
+	*x = LogAlarm{}
+	mi := &file_cloudwatch_proto_msgTypes[97]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogAlarm) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogAlarm) ProtoMessage() {}
+
+func (x *LogAlarm) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[97]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogAlarm.ProtoReflect.Descriptor instead.
+func (*LogAlarm) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{97}
+}
+
+func (x *LogAlarm) GetActionloglinecount() int32 {
+	if x != nil && x.Actionloglinecount != nil {
+		return *x.Actionloglinecount
+	}
+	return 0
+}
+
+func (x *LogAlarm) GetActionloglinerolearn() string {
+	if x != nil && x.Actionloglinerolearn != nil {
+		return *x.Actionloglinerolearn
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetActionsenabled() bool {
+	if x != nil && x.Actionsenabled != nil {
+		return *x.Actionsenabled
+	}
+	return false
+}
+
+func (x *LogAlarm) GetAlarmactions() []string {
+	if x != nil {
+		return x.Alarmactions
+	}
+	return nil
+}
+
+func (x *LogAlarm) GetAlarmarn() string {
+	if x != nil && x.Alarmarn != nil {
+		return *x.Alarmarn
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetAlarmconfigurationupdatedtimestamp() string {
+	if x != nil && x.Alarmconfigurationupdatedtimestamp != nil {
+		return *x.Alarmconfigurationupdatedtimestamp
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetAlarmdescription() string {
+	if x != nil && x.Alarmdescription != nil {
+		return *x.Alarmdescription
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetAlarmname() string {
+	if x != nil && x.Alarmname != nil {
+		return *x.Alarmname
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetComparisonoperator() ComparisonOperator {
+	if x != nil {
+		return x.Comparisonoperator
+	}
+	return ComparisonOperator_COMPARISON_OPERATOR_LESSTHANLOWERORGREATERTHANUPPERTHRESHOLD
+}
+
+func (x *LogAlarm) GetEvaluationstate() EvaluationState {
+	if x != nil {
+		return x.Evaluationstate
+	}
+	return EvaluationState_EVALUATION_STATE_PARTIAL_DATA
+}
+
+func (x *LogAlarm) GetInsufficientdataactions() []string {
+	if x != nil {
+		return x.Insufficientdataactions
+	}
+	return nil
+}
+
+func (x *LogAlarm) GetOkactions() []string {
+	if x != nil {
+		return x.Okactions
+	}
+	return nil
+}
+
+func (x *LogAlarm) GetQueryresultstoalarm() int32 {
+	if x != nil && x.Queryresultstoalarm != nil {
+		return *x.Queryresultstoalarm
+	}
+	return 0
+}
+
+func (x *LogAlarm) GetQueryresultstoevaluate() int32 {
+	if x != nil && x.Queryresultstoevaluate != nil {
+		return *x.Queryresultstoevaluate
+	}
+	return 0
+}
+
+func (x *LogAlarm) GetScheduledqueryconfiguration() *ScheduledQueryConfiguration {
+	if x != nil {
+		return x.Scheduledqueryconfiguration
+	}
+	return nil
+}
+
+func (x *LogAlarm) GetStatereason() string {
+	if x != nil && x.Statereason != nil {
+		return *x.Statereason
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetStatereasondata() string {
+	if x != nil && x.Statereasondata != nil {
+		return *x.Statereasondata
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetStatetransitionedtimestamp() string {
+	if x != nil && x.Statetransitionedtimestamp != nil {
+		return *x.Statetransitionedtimestamp
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetStateupdatedtimestamp() string {
+	if x != nil && x.Stateupdatedtimestamp != nil {
+		return *x.Stateupdatedtimestamp
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetStatevalue() StateValue {
+	if x != nil {
+		return x.Statevalue
+	}
+	return StateValue_STATE_VALUE_ALARM
+}
+
+func (x *LogAlarm) GetThreshold() float64 {
+	if x != nil && x.Threshold != nil {
+		return *x.Threshold
+	}
+	return 0
+}
+
+func (x *LogAlarm) GetTreatmissingdata() string {
+	if x != nil && x.Treatmissingdata != nil {
+		return *x.Treatmissingdata
+	}
+	return ""
+}
+
+func (x *LogAlarm) GetWarmupconfiguration() *WarmUpConfiguration {
+	if x != nil {
+		return x.Warmupconfiguration
 	}
 	return nil
 }
@@ -6574,7 +6881,7 @@ type ManagedRule struct {
 
 func (x *ManagedRule) Reset() {
 	*x = ManagedRule{}
-	mi := &file_cloudwatch_proto_msgTypes[96]
+	mi := &file_cloudwatch_proto_msgTypes[98]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6586,7 +6893,7 @@ func (x *ManagedRule) String() string {
 func (*ManagedRule) ProtoMessage() {}
 
 func (x *ManagedRule) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[96]
+	mi := &file_cloudwatch_proto_msgTypes[98]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6599,7 +6906,7 @@ func (x *ManagedRule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagedRule.ProtoReflect.Descriptor instead.
 func (*ManagedRule) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{96}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{98}
 }
 
 func (x *ManagedRule) GetResourcearn() string {
@@ -6625,16 +6932,16 @@ func (x *ManagedRule) GetTemplatename() string {
 
 type ManagedRuleDescription struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
+	Resourcearn   *string                `protobuf:"bytes,369516653,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
 	Rulestate     *ManagedRuleState      `protobuf:"bytes,419921189,opt,name=rulestate,proto3" json:"rulestate,omitempty"`
-	Templatename  string                 `protobuf:"bytes,480529457,opt,name=templatename,proto3" json:"templatename,omitempty"`
+	Templatename  *string                `protobuf:"bytes,480529457,opt,name=templatename,proto3,oneof" json:"templatename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ManagedRuleDescription) Reset() {
 	*x = ManagedRuleDescription{}
-	mi := &file_cloudwatch_proto_msgTypes[97]
+	mi := &file_cloudwatch_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6646,7 +6953,7 @@ func (x *ManagedRuleDescription) String() string {
 func (*ManagedRuleDescription) ProtoMessage() {}
 
 func (x *ManagedRuleDescription) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[97]
+	mi := &file_cloudwatch_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6659,12 +6966,12 @@ func (x *ManagedRuleDescription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagedRuleDescription.ProtoReflect.Descriptor instead.
 func (*ManagedRuleDescription) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{97}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{99}
 }
 
 func (x *ManagedRuleDescription) GetResourcearn() string {
-	if x != nil {
-		return x.Resourcearn
+	if x != nil && x.Resourcearn != nil {
+		return *x.Resourcearn
 	}
 	return ""
 }
@@ -6677,8 +6984,8 @@ func (x *ManagedRuleDescription) GetRulestate() *ManagedRuleState {
 }
 
 func (x *ManagedRuleDescription) GetTemplatename() string {
-	if x != nil {
-		return x.Templatename
+	if x != nil && x.Templatename != nil {
+		return *x.Templatename
 	}
 	return ""
 }
@@ -6693,7 +7000,7 @@ type ManagedRuleState struct {
 
 func (x *ManagedRuleState) Reset() {
 	*x = ManagedRuleState{}
-	mi := &file_cloudwatch_proto_msgTypes[98]
+	mi := &file_cloudwatch_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6705,7 +7012,7 @@ func (x *ManagedRuleState) String() string {
 func (*ManagedRuleState) ProtoMessage() {}
 
 func (x *ManagedRuleState) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[98]
+	mi := &file_cloudwatch_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6718,7 +7025,7 @@ func (x *ManagedRuleState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ManagedRuleState.ProtoReflect.Descriptor instead.
 func (*ManagedRuleState) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{98}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{100}
 }
 
 func (x *ManagedRuleState) GetRulename() string {
@@ -6737,15 +7044,15 @@ func (x *ManagedRuleState) GetState() string {
 
 type MessageData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,425572629,opt,name=code,proto3" json:"code,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Code          *string                `protobuf:"bytes,425572629,opt,name=code,proto3,oneof" json:"code,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MessageData) Reset() {
 	*x = MessageData{}
-	mi := &file_cloudwatch_proto_msgTypes[99]
+	mi := &file_cloudwatch_proto_msgTypes[101]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6757,7 +7064,7 @@ func (x *MessageData) String() string {
 func (*MessageData) ProtoMessage() {}
 
 func (x *MessageData) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[99]
+	mi := &file_cloudwatch_proto_msgTypes[101]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6770,19 +7077,19 @@ func (x *MessageData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageData.ProtoReflect.Descriptor instead.
 func (*MessageData) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{99}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{101}
 }
 
 func (x *MessageData) GetCode() string {
-	if x != nil {
-		return x.Code
+	if x != nil && x.Code != nil {
+		return *x.Code
 	}
 	return ""
 }
 
 func (x *MessageData) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -6790,15 +7097,15 @@ func (x *MessageData) GetValue() string {
 type Metric struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dimensions    []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
-	Metricname    string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace     string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Metricname    *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace     *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Metric) Reset() {
 	*x = Metric{}
-	mi := &file_cloudwatch_proto_msgTypes[100]
+	mi := &file_cloudwatch_proto_msgTypes[102]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6810,7 +7117,7 @@ func (x *Metric) String() string {
 func (*Metric) ProtoMessage() {}
 
 func (x *Metric) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[100]
+	mi := &file_cloudwatch_proto_msgTypes[102]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6823,7 +7130,7 @@ func (x *Metric) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Metric.ProtoReflect.Descriptor instead.
 func (*Metric) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{100}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{102}
 }
 
 func (x *Metric) GetDimensions() []*Dimension {
@@ -6834,15 +7141,15 @@ func (x *Metric) GetDimensions() []*Dimension {
 }
 
 func (x *Metric) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *Metric) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -6851,42 +7158,44 @@ type MetricAlarm struct {
 	state                              protoimpl.MessageState `protogen:"open.v1"`
 	Actionsenabled                     *bool                  `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
 	Alarmactions                       []string               `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
-	Alarmarn                           string                 `protobuf:"bytes,276019462,opt,name=alarmarn,proto3" json:"alarmarn,omitempty"`
-	Alarmconfigurationupdatedtimestamp string                 `protobuf:"bytes,51935494,opt,name=alarmconfigurationupdatedtimestamp,proto3" json:"alarmconfigurationupdatedtimestamp,omitempty"`
-	Alarmdescription                   string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
-	Alarmname                          string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
+	Alarmarn                           *string                `protobuf:"bytes,276019462,opt,name=alarmarn,proto3,oneof" json:"alarmarn,omitempty"`
+	Alarmconfigurationupdatedtimestamp *string                `protobuf:"bytes,51935494,opt,name=alarmconfigurationupdatedtimestamp,proto3,oneof" json:"alarmconfigurationupdatedtimestamp,omitempty"`
+	Alarmdescription                   *string                `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3,oneof" json:"alarmdescription,omitempty"`
+	Alarmname                          *string                `protobuf:"bytes,54095842,opt,name=alarmname,proto3,oneof" json:"alarmname,omitempty"`
 	Comparisonoperator                 ComparisonOperator     `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=cloudwatch.ComparisonOperator" json:"comparisonoperator,omitempty"`
 	Datapointstoalarm                  *int32                 `protobuf:"varint,146378889,opt,name=datapointstoalarm,proto3,oneof" json:"datapointstoalarm,omitempty"`
 	Dimensions                         []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
-	Evaluatelowsamplecountpercentile   string                 `protobuf:"bytes,64366323,opt,name=evaluatelowsamplecountpercentile,proto3" json:"evaluatelowsamplecountpercentile,omitempty"`
+	Evaluatelowsamplecountpercentile   *string                `protobuf:"bytes,64366323,opt,name=evaluatelowsamplecountpercentile,proto3,oneof" json:"evaluatelowsamplecountpercentile,omitempty"`
 	Evaluationcriteria                 *EvaluationCriteria    `protobuf:"bytes,307988387,opt,name=evaluationcriteria,proto3" json:"evaluationcriteria,omitempty"`
 	Evaluationinterval                 *int32                 `protobuf:"varint,78014495,opt,name=evaluationinterval,proto3,oneof" json:"evaluationinterval,omitempty"`
 	Evaluationperiods                  *int32                 `protobuf:"varint,214794856,opt,name=evaluationperiods,proto3,oneof" json:"evaluationperiods,omitempty"`
 	Evaluationstate                    EvaluationState        `protobuf:"varint,338863857,opt,name=evaluationstate,proto3,enum=cloudwatch.EvaluationState" json:"evaluationstate,omitempty"`
-	Extendedstatistic                  string                 `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3" json:"extendedstatistic,omitempty"`
+	Evaluationwindow                   *EvaluationWindow      `protobuf:"bytes,269053504,opt,name=evaluationwindow,proto3" json:"evaluationwindow,omitempty"`
+	Extendedstatistic                  *string                `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3,oneof" json:"extendedstatistic,omitempty"`
 	Insufficientdataactions            []string               `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
-	Metricname                         string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
+	Metricname                         *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
 	Metrics                            []*MetricDataQuery     `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
-	Namespace                          string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace                          *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	Okactions                          []string               `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
 	Period                             *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
-	Statereason                        string                 `protobuf:"bytes,376138483,opt,name=statereason,proto3" json:"statereason,omitempty"`
-	Statereasondata                    string                 `protobuf:"bytes,262771075,opt,name=statereasondata,proto3" json:"statereasondata,omitempty"`
-	Statetransitionedtimestamp         string                 `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3" json:"statetransitionedtimestamp,omitempty"`
-	Stateupdatedtimestamp              string                 `protobuf:"bytes,375406848,opt,name=stateupdatedtimestamp,proto3" json:"stateupdatedtimestamp,omitempty"`
+	Statereason                        *string                `protobuf:"bytes,376138483,opt,name=statereason,proto3,oneof" json:"statereason,omitempty"`
+	Statereasondata                    *string                `protobuf:"bytes,262771075,opt,name=statereasondata,proto3,oneof" json:"statereasondata,omitempty"`
+	Statetransitionedtimestamp         *string                `protobuf:"bytes,46811093,opt,name=statetransitionedtimestamp,proto3,oneof" json:"statetransitionedtimestamp,omitempty"`
+	Stateupdatedtimestamp              *string                `protobuf:"bytes,375406848,opt,name=stateupdatedtimestamp,proto3,oneof" json:"stateupdatedtimestamp,omitempty"`
 	Statevalue                         StateValue             `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.StateValue" json:"statevalue,omitempty"`
 	Statistic                          Statistic              `protobuf:"varint,67293470,opt,name=statistic,proto3,enum=cloudwatch.Statistic" json:"statistic,omitempty"`
-	Threshold                          float64                `protobuf:"fixed64,394884505,opt,name=threshold,proto3" json:"threshold,omitempty"`
-	Thresholdmetricid                  string                 `protobuf:"bytes,41342194,opt,name=thresholdmetricid,proto3" json:"thresholdmetricid,omitempty"`
-	Treatmissingdata                   string                 `protobuf:"bytes,226418150,opt,name=treatmissingdata,proto3" json:"treatmissingdata,omitempty"`
+	Threshold                          *float64               `protobuf:"fixed64,394884505,opt,name=threshold,proto3,oneof" json:"threshold,omitempty"`
+	Thresholdmetricid                  *string                `protobuf:"bytes,41342194,opt,name=thresholdmetricid,proto3,oneof" json:"thresholdmetricid,omitempty"`
+	Treatmissingdata                   *string                `protobuf:"bytes,226418150,opt,name=treatmissingdata,proto3,oneof" json:"treatmissingdata,omitempty"`
 	Unit                               StandardUnit           `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudwatch.StandardUnit" json:"unit,omitempty"`
+	Warmupconfiguration                *WarmUpConfiguration   `protobuf:"bytes,439442074,opt,name=warmupconfiguration,proto3" json:"warmupconfiguration,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
 }
 
 func (x *MetricAlarm) Reset() {
 	*x = MetricAlarm{}
-	mi := &file_cloudwatch_proto_msgTypes[101]
+	mi := &file_cloudwatch_proto_msgTypes[103]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6898,7 +7207,7 @@ func (x *MetricAlarm) String() string {
 func (*MetricAlarm) ProtoMessage() {}
 
 func (x *MetricAlarm) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[101]
+	mi := &file_cloudwatch_proto_msgTypes[103]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6911,7 +7220,7 @@ func (x *MetricAlarm) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricAlarm.ProtoReflect.Descriptor instead.
 func (*MetricAlarm) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{101}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{103}
 }
 
 func (x *MetricAlarm) GetActionsenabled() bool {
@@ -6929,29 +7238,29 @@ func (x *MetricAlarm) GetAlarmactions() []string {
 }
 
 func (x *MetricAlarm) GetAlarmarn() string {
-	if x != nil {
-		return x.Alarmarn
+	if x != nil && x.Alarmarn != nil {
+		return *x.Alarmarn
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetAlarmconfigurationupdatedtimestamp() string {
-	if x != nil {
-		return x.Alarmconfigurationupdatedtimestamp
+	if x != nil && x.Alarmconfigurationupdatedtimestamp != nil {
+		return *x.Alarmconfigurationupdatedtimestamp
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetAlarmdescription() string {
-	if x != nil {
-		return x.Alarmdescription
+	if x != nil && x.Alarmdescription != nil {
+		return *x.Alarmdescription
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetAlarmname() string {
-	if x != nil {
-		return x.Alarmname
+	if x != nil && x.Alarmname != nil {
+		return *x.Alarmname
 	}
 	return ""
 }
@@ -6978,8 +7287,8 @@ func (x *MetricAlarm) GetDimensions() []*Dimension {
 }
 
 func (x *MetricAlarm) GetEvaluatelowsamplecountpercentile() string {
-	if x != nil {
-		return x.Evaluatelowsamplecountpercentile
+	if x != nil && x.Evaluatelowsamplecountpercentile != nil {
+		return *x.Evaluatelowsamplecountpercentile
 	}
 	return ""
 }
@@ -7012,9 +7321,16 @@ func (x *MetricAlarm) GetEvaluationstate() EvaluationState {
 	return EvaluationState_EVALUATION_STATE_PARTIAL_DATA
 }
 
-func (x *MetricAlarm) GetExtendedstatistic() string {
+func (x *MetricAlarm) GetEvaluationwindow() *EvaluationWindow {
 	if x != nil {
-		return x.Extendedstatistic
+		return x.Evaluationwindow
+	}
+	return nil
+}
+
+func (x *MetricAlarm) GetExtendedstatistic() string {
+	if x != nil && x.Extendedstatistic != nil {
+		return *x.Extendedstatistic
 	}
 	return ""
 }
@@ -7027,8 +7343,8 @@ func (x *MetricAlarm) GetInsufficientdataactions() []string {
 }
 
 func (x *MetricAlarm) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
@@ -7041,8 +7357,8 @@ func (x *MetricAlarm) GetMetrics() []*MetricDataQuery {
 }
 
 func (x *MetricAlarm) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -7062,29 +7378,29 @@ func (x *MetricAlarm) GetPeriod() int32 {
 }
 
 func (x *MetricAlarm) GetStatereason() string {
-	if x != nil {
-		return x.Statereason
+	if x != nil && x.Statereason != nil {
+		return *x.Statereason
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetStatereasondata() string {
-	if x != nil {
-		return x.Statereasondata
+	if x != nil && x.Statereasondata != nil {
+		return *x.Statereasondata
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetStatetransitionedtimestamp() string {
-	if x != nil {
-		return x.Statetransitionedtimestamp
+	if x != nil && x.Statetransitionedtimestamp != nil {
+		return *x.Statetransitionedtimestamp
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetStateupdatedtimestamp() string {
-	if x != nil {
-		return x.Stateupdatedtimestamp
+	if x != nil && x.Stateupdatedtimestamp != nil {
+		return *x.Stateupdatedtimestamp
 	}
 	return ""
 }
@@ -7104,22 +7420,22 @@ func (x *MetricAlarm) GetStatistic() Statistic {
 }
 
 func (x *MetricAlarm) GetThreshold() float64 {
-	if x != nil {
-		return x.Threshold
+	if x != nil && x.Threshold != nil {
+		return *x.Threshold
 	}
 	return 0
 }
 
 func (x *MetricAlarm) GetThresholdmetricid() string {
-	if x != nil {
-		return x.Thresholdmetricid
+	if x != nil && x.Thresholdmetricid != nil {
+		return *x.Thresholdmetricid
 	}
 	return ""
 }
 
 func (x *MetricAlarm) GetTreatmissingdata() string {
-	if x != nil {
-		return x.Treatmissingdata
+	if x != nil && x.Treatmissingdata != nil {
+		return *x.Treatmissingdata
 	}
 	return ""
 }
@@ -7131,6 +7447,13 @@ func (x *MetricAlarm) GetUnit() StandardUnit {
 	return StandardUnit_STANDARD_UNIT_MEGABITS_SECOND
 }
 
+func (x *MetricAlarm) GetWarmupconfiguration() *WarmUpConfiguration {
+	if x != nil {
+		return x.Warmupconfiguration
+	}
+	return nil
+}
+
 type MetricCharacteristics struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Periodicspikes *bool                  `protobuf:"varint,454095604,opt,name=periodicspikes,proto3,oneof" json:"periodicspikes,omitempty"`
@@ -7140,7 +7463,7 @@ type MetricCharacteristics struct {
 
 func (x *MetricCharacteristics) Reset() {
 	*x = MetricCharacteristics{}
-	mi := &file_cloudwatch_proto_msgTypes[102]
+	mi := &file_cloudwatch_proto_msgTypes[104]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7152,7 +7475,7 @@ func (x *MetricCharacteristics) String() string {
 func (*MetricCharacteristics) ProtoMessage() {}
 
 func (x *MetricCharacteristics) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[102]
+	mi := &file_cloudwatch_proto_msgTypes[104]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7165,7 +7488,7 @@ func (x *MetricCharacteristics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricCharacteristics.ProtoReflect.Descriptor instead.
 func (*MetricCharacteristics) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{102}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{104}
 }
 
 func (x *MetricCharacteristics) GetPeriodicspikes() bool {
@@ -7177,10 +7500,10 @@ func (x *MetricCharacteristics) GetPeriodicspikes() bool {
 
 type MetricDataQuery struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accountid     string                 `protobuf:"bytes,65954002,opt,name=accountid,proto3" json:"accountid,omitempty"`
-	Expression    string                 `protobuf:"bytes,193051916,opt,name=expression,proto3" json:"expression,omitempty"`
+	Accountid     *string                `protobuf:"bytes,65954002,opt,name=accountid,proto3,oneof" json:"accountid,omitempty"`
+	Expression    *string                `protobuf:"bytes,193051916,opt,name=expression,proto3,oneof" json:"expression,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Label         string                 `protobuf:"bytes,516747934,opt,name=label,proto3" json:"label,omitempty"`
+	Label         *string                `protobuf:"bytes,516747934,opt,name=label,proto3,oneof" json:"label,omitempty"`
 	Metricstat    *MetricStat            `protobuf:"bytes,167166628,opt,name=metricstat,proto3" json:"metricstat,omitempty"`
 	Period        *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Returndata    *bool                  `protobuf:"varint,512985704,opt,name=returndata,proto3,oneof" json:"returndata,omitempty"`
@@ -7190,7 +7513,7 @@ type MetricDataQuery struct {
 
 func (x *MetricDataQuery) Reset() {
 	*x = MetricDataQuery{}
-	mi := &file_cloudwatch_proto_msgTypes[103]
+	mi := &file_cloudwatch_proto_msgTypes[105]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7202,7 +7525,7 @@ func (x *MetricDataQuery) String() string {
 func (*MetricDataQuery) ProtoMessage() {}
 
 func (x *MetricDataQuery) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[103]
+	mi := &file_cloudwatch_proto_msgTypes[105]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7215,19 +7538,19 @@ func (x *MetricDataQuery) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricDataQuery.ProtoReflect.Descriptor instead.
 func (*MetricDataQuery) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{103}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{105}
 }
 
 func (x *MetricDataQuery) GetAccountid() string {
-	if x != nil {
-		return x.Accountid
+	if x != nil && x.Accountid != nil {
+		return *x.Accountid
 	}
 	return ""
 }
 
 func (x *MetricDataQuery) GetExpression() string {
-	if x != nil {
-		return x.Expression
+	if x != nil && x.Expression != nil {
+		return *x.Expression
 	}
 	return ""
 }
@@ -7240,8 +7563,8 @@ func (x *MetricDataQuery) GetId() string {
 }
 
 func (x *MetricDataQuery) GetLabel() string {
-	if x != nil {
-		return x.Label
+	if x != nil && x.Label != nil {
+		return *x.Label
 	}
 	return ""
 }
@@ -7269,8 +7592,8 @@ func (x *MetricDataQuery) GetReturndata() bool {
 
 type MetricDataResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Label         string                 `protobuf:"bytes,516747934,opt,name=label,proto3" json:"label,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Label         *string                `protobuf:"bytes,516747934,opt,name=label,proto3,oneof" json:"label,omitempty"`
 	Messages      []*MessageData         `protobuf:"bytes,409018326,rep,name=messages,proto3" json:"messages,omitempty"`
 	Statuscode    StatusCode             `protobuf:"varint,303830783,opt,name=statuscode,proto3,enum=cloudwatch.StatusCode" json:"statuscode,omitempty"`
 	Timestamps    []string               `protobuf:"bytes,213534737,rep,name=timestamps,proto3" json:"timestamps,omitempty"`
@@ -7281,7 +7604,7 @@ type MetricDataResult struct {
 
 func (x *MetricDataResult) Reset() {
 	*x = MetricDataResult{}
-	mi := &file_cloudwatch_proto_msgTypes[104]
+	mi := &file_cloudwatch_proto_msgTypes[106]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7293,7 +7616,7 @@ func (x *MetricDataResult) String() string {
 func (*MetricDataResult) ProtoMessage() {}
 
 func (x *MetricDataResult) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[104]
+	mi := &file_cloudwatch_proto_msgTypes[106]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7306,19 +7629,19 @@ func (x *MetricDataResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricDataResult.ProtoReflect.Descriptor instead.
 func (*MetricDataResult) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{104}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{106}
 }
 
 func (x *MetricDataResult) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *MetricDataResult) GetLabel() string {
-	if x != nil {
-		return x.Label
+	if x != nil && x.Label != nil {
+		return *x.Label
 	}
 	return ""
 }
@@ -7358,9 +7681,9 @@ type MetricDatum struct {
 	Metricname        string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
 	Statisticvalues   *StatisticSet          `protobuf:"bytes,92623908,opt,name=statisticvalues,proto3" json:"statisticvalues,omitempty"`
 	Storageresolution *int32                 `protobuf:"varint,194430293,opt,name=storageresolution,proto3,oneof" json:"storageresolution,omitempty"`
-	Timestamp         string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp         *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	Unit              StandardUnit           `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudwatch.StandardUnit" json:"unit,omitempty"`
-	Value             float64                `protobuf:"fixed64,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Value             *float64               `protobuf:"fixed64,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	Values            []float64              `protobuf:"fixed64,223158876,rep,packed,name=values,proto3" json:"values,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -7368,7 +7691,7 @@ type MetricDatum struct {
 
 func (x *MetricDatum) Reset() {
 	*x = MetricDatum{}
-	mi := &file_cloudwatch_proto_msgTypes[105]
+	mi := &file_cloudwatch_proto_msgTypes[107]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7380,7 +7703,7 @@ func (x *MetricDatum) String() string {
 func (*MetricDatum) ProtoMessage() {}
 
 func (x *MetricDatum) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[105]
+	mi := &file_cloudwatch_proto_msgTypes[107]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7393,7 +7716,7 @@ func (x *MetricDatum) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricDatum.ProtoReflect.Descriptor instead.
 func (*MetricDatum) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{105}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{107}
 }
 
 func (x *MetricDatum) GetCounts() []float64 {
@@ -7432,8 +7755,8 @@ func (x *MetricDatum) GetStorageresolution() int32 {
 }
 
 func (x *MetricDatum) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
@@ -7446,8 +7769,8 @@ func (x *MetricDatum) GetUnit() StandardUnit {
 }
 
 func (x *MetricDatum) GetValue() float64 {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return 0
 }
@@ -7468,7 +7791,7 @@ type MetricMathAnomalyDetector struct {
 
 func (x *MetricMathAnomalyDetector) Reset() {
 	*x = MetricMathAnomalyDetector{}
-	mi := &file_cloudwatch_proto_msgTypes[106]
+	mi := &file_cloudwatch_proto_msgTypes[108]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7480,7 +7803,7 @@ func (x *MetricMathAnomalyDetector) String() string {
 func (*MetricMathAnomalyDetector) ProtoMessage() {}
 
 func (x *MetricMathAnomalyDetector) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[106]
+	mi := &file_cloudwatch_proto_msgTypes[108]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7493,7 +7816,7 @@ func (x *MetricMathAnomalyDetector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricMathAnomalyDetector.ProtoReflect.Descriptor instead.
 func (*MetricMathAnomalyDetector) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{106}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{108}
 }
 
 func (x *MetricMathAnomalyDetector) GetMetricdataqueries() []*MetricDataQuery {
@@ -7515,7 +7838,7 @@ type MetricStat struct {
 
 func (x *MetricStat) Reset() {
 	*x = MetricStat{}
-	mi := &file_cloudwatch_proto_msgTypes[107]
+	mi := &file_cloudwatch_proto_msgTypes[109]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7527,7 +7850,7 @@ func (x *MetricStat) String() string {
 func (*MetricStat) ProtoMessage() {}
 
 func (x *MetricStat) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[107]
+	mi := &file_cloudwatch_proto_msgTypes[109]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7540,7 +7863,7 @@ func (x *MetricStat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricStat.ProtoReflect.Descriptor instead.
 func (*MetricStat) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{107}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{109}
 }
 
 func (x *MetricStat) GetMetric() *Metric {
@@ -7573,20 +7896,20 @@ func (x *MetricStat) GetUnit() StandardUnit {
 
 type MetricStreamEntry struct {
 	state          protoimpl.MessageState   `protogen:"open.v1"`
-	Arn            string                   `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationdate   string                   `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Firehosearn    string                   `protobuf:"bytes,55494200,opt,name=firehosearn,proto3" json:"firehosearn,omitempty"`
-	Lastupdatedate string                   `protobuf:"bytes,65755725,opt,name=lastupdatedate,proto3" json:"lastupdatedate,omitempty"`
-	Name           string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn            *string                  `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationdate   *string                  `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Firehosearn    *string                  `protobuf:"bytes,55494200,opt,name=firehosearn,proto3,oneof" json:"firehosearn,omitempty"`
+	Lastupdatedate *string                  `protobuf:"bytes,65755725,opt,name=lastupdatedate,proto3,oneof" json:"lastupdatedate,omitempty"`
+	Name           *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Outputformat   MetricStreamOutputFormat `protobuf:"varint,519139704,opt,name=outputformat,proto3,enum=cloudwatch.MetricStreamOutputFormat" json:"outputformat,omitempty"`
-	State          string                   `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	State          *string                  `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *MetricStreamEntry) Reset() {
 	*x = MetricStreamEntry{}
-	mi := &file_cloudwatch_proto_msgTypes[108]
+	mi := &file_cloudwatch_proto_msgTypes[110]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7598,7 +7921,7 @@ func (x *MetricStreamEntry) String() string {
 func (*MetricStreamEntry) ProtoMessage() {}
 
 func (x *MetricStreamEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[108]
+	mi := &file_cloudwatch_proto_msgTypes[110]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7611,40 +7934,40 @@ func (x *MetricStreamEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricStreamEntry.ProtoReflect.Descriptor instead.
 func (*MetricStreamEntry) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{108}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{110}
 }
 
 func (x *MetricStreamEntry) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *MetricStreamEntry) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *MetricStreamEntry) GetFirehosearn() string {
-	if x != nil {
-		return x.Firehosearn
+	if x != nil && x.Firehosearn != nil {
+		return *x.Firehosearn
 	}
 	return ""
 }
 
 func (x *MetricStreamEntry) GetLastupdatedate() string {
-	if x != nil {
-		return x.Lastupdatedate
+	if x != nil && x.Lastupdatedate != nil {
+		return *x.Lastupdatedate
 	}
 	return ""
 }
 
 func (x *MetricStreamEntry) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -7657,8 +7980,8 @@ func (x *MetricStreamEntry) GetOutputformat() MetricStreamOutputFormat {
 }
 
 func (x *MetricStreamEntry) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
@@ -7666,14 +7989,14 @@ func (x *MetricStreamEntry) GetState() string {
 type MetricStreamFilter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Metricnames   []string               `protobuf:"bytes,56384300,rep,name=metricnames,proto3" json:"metricnames,omitempty"`
-	Namespace     string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace     *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MetricStreamFilter) Reset() {
 	*x = MetricStreamFilter{}
-	mi := &file_cloudwatch_proto_msgTypes[109]
+	mi := &file_cloudwatch_proto_msgTypes[111]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7685,7 +8008,7 @@ func (x *MetricStreamFilter) String() string {
 func (*MetricStreamFilter) ProtoMessage() {}
 
 func (x *MetricStreamFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[109]
+	mi := &file_cloudwatch_proto_msgTypes[111]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7698,7 +8021,7 @@ func (x *MetricStreamFilter) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricStreamFilter.ProtoReflect.Descriptor instead.
 func (*MetricStreamFilter) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{109}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{111}
 }
 
 func (x *MetricStreamFilter) GetMetricnames() []string {
@@ -7709,8 +8032,8 @@ func (x *MetricStreamFilter) GetMetricnames() []string {
 }
 
 func (x *MetricStreamFilter) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -7725,7 +8048,7 @@ type MetricStreamStatisticsConfiguration struct {
 
 func (x *MetricStreamStatisticsConfiguration) Reset() {
 	*x = MetricStreamStatisticsConfiguration{}
-	mi := &file_cloudwatch_proto_msgTypes[110]
+	mi := &file_cloudwatch_proto_msgTypes[112]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7737,7 +8060,7 @@ func (x *MetricStreamStatisticsConfiguration) String() string {
 func (*MetricStreamStatisticsConfiguration) ProtoMessage() {}
 
 func (x *MetricStreamStatisticsConfiguration) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[110]
+	mi := &file_cloudwatch_proto_msgTypes[112]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7750,7 +8073,7 @@ func (x *MetricStreamStatisticsConfiguration) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use MetricStreamStatisticsConfiguration.ProtoReflect.Descriptor instead.
 func (*MetricStreamStatisticsConfiguration) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{110}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{112}
 }
 
 func (x *MetricStreamStatisticsConfiguration) GetAdditionalstatistics() []string {
@@ -7777,7 +8100,7 @@ type MetricStreamStatisticsMetric struct {
 
 func (x *MetricStreamStatisticsMetric) Reset() {
 	*x = MetricStreamStatisticsMetric{}
-	mi := &file_cloudwatch_proto_msgTypes[111]
+	mi := &file_cloudwatch_proto_msgTypes[113]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7789,7 +8112,7 @@ func (x *MetricStreamStatisticsMetric) String() string {
 func (*MetricStreamStatisticsMetric) ProtoMessage() {}
 
 func (x *MetricStreamStatisticsMetric) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[111]
+	mi := &file_cloudwatch_proto_msgTypes[113]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7802,7 +8125,7 @@ func (x *MetricStreamStatisticsMetric) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MetricStreamStatisticsMetric.ProtoReflect.Descriptor instead.
 func (*MetricStreamStatisticsMetric) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{111}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{113}
 }
 
 func (x *MetricStreamStatisticsMetric) GetMetricname() string {
@@ -7821,14 +8144,14 @@ func (x *MetricStreamStatisticsMetric) GetNamespace() string {
 
 type MissingRequiredParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *MissingRequiredParameterException) Reset() {
 	*x = MissingRequiredParameterException{}
-	mi := &file_cloudwatch_proto_msgTypes[112]
+	mi := &file_cloudwatch_proto_msgTypes[114]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7840,7 +8163,7 @@ func (x *MissingRequiredParameterException) String() string {
 func (*MissingRequiredParameterException) ProtoMessage() {}
 
 func (x *MissingRequiredParameterException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[112]
+	mi := &file_cloudwatch_proto_msgTypes[114]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7853,12 +8176,12 @@ func (x *MissingRequiredParameterException) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use MissingRequiredParameterException.ProtoReflect.Descriptor instead.
 func (*MissingRequiredParameterException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{112}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{114}
 }
 
 func (x *MissingRequiredParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -7872,7 +8195,7 @@ type MuteTargets struct {
 
 func (x *MuteTargets) Reset() {
 	*x = MuteTargets{}
-	mi := &file_cloudwatch_proto_msgTypes[113]
+	mi := &file_cloudwatch_proto_msgTypes[115]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7884,7 +8207,7 @@ func (x *MuteTargets) String() string {
 func (*MuteTargets) ProtoMessage() {}
 
 func (x *MuteTargets) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[113]
+	mi := &file_cloudwatch_proto_msgTypes[115]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7897,7 +8220,7 @@ func (x *MuteTargets) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MuteTargets.ProtoReflect.Descriptor instead.
 func (*MuteTargets) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{113}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{115}
 }
 
 func (x *MuteTargets) GetAlarmnames() []string {
@@ -7909,17 +8232,17 @@ func (x *MuteTargets) GetAlarmnames() []string {
 
 type PartialFailure struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Exceptiontype      string                 `protobuf:"bytes,176478087,opt,name=exceptiontype,proto3" json:"exceptiontype,omitempty"`
-	Failurecode        string                 `protobuf:"bytes,84707897,opt,name=failurecode,proto3" json:"failurecode,omitempty"`
-	Failuredescription string                 `protobuf:"bytes,249093686,opt,name=failuredescription,proto3" json:"failuredescription,omitempty"`
-	Failureresource    string                 `protobuf:"bytes,315801394,opt,name=failureresource,proto3" json:"failureresource,omitempty"`
+	Exceptiontype      *string                `protobuf:"bytes,176478087,opt,name=exceptiontype,proto3,oneof" json:"exceptiontype,omitempty"`
+	Failurecode        *string                `protobuf:"bytes,84707897,opt,name=failurecode,proto3,oneof" json:"failurecode,omitempty"`
+	Failuredescription *string                `protobuf:"bytes,249093686,opt,name=failuredescription,proto3,oneof" json:"failuredescription,omitempty"`
+	Failureresource    *string                `protobuf:"bytes,315801394,opt,name=failureresource,proto3,oneof" json:"failureresource,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *PartialFailure) Reset() {
 	*x = PartialFailure{}
-	mi := &file_cloudwatch_proto_msgTypes[114]
+	mi := &file_cloudwatch_proto_msgTypes[116]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -7931,7 +8254,7 @@ func (x *PartialFailure) String() string {
 func (*PartialFailure) ProtoMessage() {}
 
 func (x *PartialFailure) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[114]
+	mi := &file_cloudwatch_proto_msgTypes[116]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -7944,45 +8267,45 @@ func (x *PartialFailure) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PartialFailure.ProtoReflect.Descriptor instead.
 func (*PartialFailure) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{114}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{116}
 }
 
 func (x *PartialFailure) GetExceptiontype() string {
-	if x != nil {
-		return x.Exceptiontype
+	if x != nil && x.Exceptiontype != nil {
+		return *x.Exceptiontype
 	}
 	return ""
 }
 
 func (x *PartialFailure) GetFailurecode() string {
-	if x != nil {
-		return x.Failurecode
+	if x != nil && x.Failurecode != nil {
+		return *x.Failurecode
 	}
 	return ""
 }
 
 func (x *PartialFailure) GetFailuredescription() string {
-	if x != nil {
-		return x.Failuredescription
+	if x != nil && x.Failuredescription != nil {
+		return *x.Failuredescription
 	}
 	return ""
 }
 
 func (x *PartialFailure) GetFailureresource() string {
-	if x != nil {
-		return x.Failureresource
+	if x != nil && x.Failureresource != nil {
+		return *x.Failureresource
 	}
 	return ""
 }
 
 type PutAlarmMuteRuleInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Expiredate    string                 `protobuf:"bytes,454143207,opt,name=expiredate,proto3" json:"expiredate,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Expiredate    *string                `protobuf:"bytes,454143207,opt,name=expiredate,proto3,oneof" json:"expiredate,omitempty"`
 	Mutetargets   *MuteTargets           `protobuf:"bytes,356717131,opt,name=mutetargets,proto3" json:"mutetargets,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Rule          *Rule                  `protobuf:"bytes,475696372,opt,name=rule,proto3" json:"rule,omitempty"`
-	Startdate     string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
+	Startdate     *string                `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7990,7 +8313,7 @@ type PutAlarmMuteRuleInput struct {
 
 func (x *PutAlarmMuteRuleInput) Reset() {
 	*x = PutAlarmMuteRuleInput{}
-	mi := &file_cloudwatch_proto_msgTypes[115]
+	mi := &file_cloudwatch_proto_msgTypes[117]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8002,7 +8325,7 @@ func (x *PutAlarmMuteRuleInput) String() string {
 func (*PutAlarmMuteRuleInput) ProtoMessage() {}
 
 func (x *PutAlarmMuteRuleInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[115]
+	mi := &file_cloudwatch_proto_msgTypes[117]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8015,19 +8338,19 @@ func (x *PutAlarmMuteRuleInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutAlarmMuteRuleInput.ProtoReflect.Descriptor instead.
 func (*PutAlarmMuteRuleInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{115}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{117}
 }
 
 func (x *PutAlarmMuteRuleInput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *PutAlarmMuteRuleInput) GetExpiredate() string {
-	if x != nil {
-		return x.Expiredate
+	if x != nil && x.Expiredate != nil {
+		return *x.Expiredate
 	}
 	return ""
 }
@@ -8054,8 +8377,8 @@ func (x *PutAlarmMuteRuleInput) GetRule() *Rule {
 }
 
 func (x *PutAlarmMuteRuleInput) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
@@ -8073,17 +8396,17 @@ type PutAnomalyDetectorInput struct {
 	Dimensions                  []*Dimension                  `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
 	Metriccharacteristics       *MetricCharacteristics        `protobuf:"bytes,129404842,opt,name=metriccharacteristics,proto3" json:"metriccharacteristics,omitempty"`
 	Metricmathanomalydetector   *MetricMathAnomalyDetector    `protobuf:"bytes,439381475,opt,name=metricmathanomalydetector,proto3" json:"metricmathanomalydetector,omitempty"`
-	Metricname                  string                        `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace                   string                        `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Metricname                  *string                       `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace                   *string                       `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	Singlemetricanomalydetector *SingleMetricAnomalyDetector  `protobuf:"bytes,418531933,opt,name=singlemetricanomalydetector,proto3" json:"singlemetricanomalydetector,omitempty"`
-	Stat                        string                        `protobuf:"bytes,325549752,opt,name=stat,proto3" json:"stat,omitempty"`
+	Stat                        *string                       `protobuf:"bytes,325549752,opt,name=stat,proto3,oneof" json:"stat,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *PutAnomalyDetectorInput) Reset() {
 	*x = PutAnomalyDetectorInput{}
-	mi := &file_cloudwatch_proto_msgTypes[116]
+	mi := &file_cloudwatch_proto_msgTypes[118]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8095,7 +8418,7 @@ func (x *PutAnomalyDetectorInput) String() string {
 func (*PutAnomalyDetectorInput) ProtoMessage() {}
 
 func (x *PutAnomalyDetectorInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[116]
+	mi := &file_cloudwatch_proto_msgTypes[118]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8108,7 +8431,7 @@ func (x *PutAnomalyDetectorInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutAnomalyDetectorInput.ProtoReflect.Descriptor instead.
 func (*PutAnomalyDetectorInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{116}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{118}
 }
 
 func (x *PutAnomalyDetectorInput) GetConfiguration() *AnomalyDetectorConfiguration {
@@ -8140,15 +8463,15 @@ func (x *PutAnomalyDetectorInput) GetMetricmathanomalydetector() *MetricMathAnom
 }
 
 func (x *PutAnomalyDetectorInput) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *PutAnomalyDetectorInput) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -8161,21 +8484,22 @@ func (x *PutAnomalyDetectorInput) GetSinglemetricanomalydetector() *SingleMetric
 }
 
 func (x *PutAnomalyDetectorInput) GetStat() string {
-	if x != nil {
-		return x.Stat
+	if x != nil && x.Stat != nil {
+		return *x.Stat
 	}
 	return ""
 }
 
 type PutAnomalyDetectorOutput struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Anomalydetectorid *string                `protobuf:"bytes,390762170,opt,name=anomalydetectorid,proto3,oneof" json:"anomalydetectorid,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *PutAnomalyDetectorOutput) Reset() {
 	*x = PutAnomalyDetectorOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[117]
+	mi := &file_cloudwatch_proto_msgTypes[119]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8187,7 +8511,7 @@ func (x *PutAnomalyDetectorOutput) String() string {
 func (*PutAnomalyDetectorOutput) ProtoMessage() {}
 
 func (x *PutAnomalyDetectorOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[117]
+	mi := &file_cloudwatch_proto_msgTypes[119]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8200,17 +8524,24 @@ func (x *PutAnomalyDetectorOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutAnomalyDetectorOutput.ProtoReflect.Descriptor instead.
 func (*PutAnomalyDetectorOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{117}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{119}
+}
+
+func (x *PutAnomalyDetectorOutput) GetAnomalydetectorid() string {
+	if x != nil && x.Anomalydetectorid != nil {
+		return *x.Anomalydetectorid
+	}
+	return ""
 }
 
 type PutCompositeAlarmInput struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
 	Actionsenabled                   *bool                  `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
-	Actionssuppressor                string                 `protobuf:"bytes,486417535,opt,name=actionssuppressor,proto3" json:"actionssuppressor,omitempty"`
+	Actionssuppressor                *string                `protobuf:"bytes,486417535,opt,name=actionssuppressor,proto3,oneof" json:"actionssuppressor,omitempty"`
 	Actionssuppressorextensionperiod *int32                 `protobuf:"varint,183723543,opt,name=actionssuppressorextensionperiod,proto3,oneof" json:"actionssuppressorextensionperiod,omitempty"`
 	Actionssuppressorwaitperiod      *int32                 `protobuf:"varint,80227275,opt,name=actionssuppressorwaitperiod,proto3,oneof" json:"actionssuppressorwaitperiod,omitempty"`
 	Alarmactions                     []string               `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
-	Alarmdescription                 string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
+	Alarmdescription                 *string                `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3,oneof" json:"alarmdescription,omitempty"`
 	Alarmname                        string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
 	Alarmrule                        string                 `protobuf:"bytes,516996973,opt,name=alarmrule,proto3" json:"alarmrule,omitempty"`
 	Insufficientdataactions          []string               `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
@@ -8222,7 +8553,7 @@ type PutCompositeAlarmInput struct {
 
 func (x *PutCompositeAlarmInput) Reset() {
 	*x = PutCompositeAlarmInput{}
-	mi := &file_cloudwatch_proto_msgTypes[118]
+	mi := &file_cloudwatch_proto_msgTypes[120]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8234,7 +8565,7 @@ func (x *PutCompositeAlarmInput) String() string {
 func (*PutCompositeAlarmInput) ProtoMessage() {}
 
 func (x *PutCompositeAlarmInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[118]
+	mi := &file_cloudwatch_proto_msgTypes[120]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8247,7 +8578,7 @@ func (x *PutCompositeAlarmInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutCompositeAlarmInput.ProtoReflect.Descriptor instead.
 func (*PutCompositeAlarmInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{118}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{120}
 }
 
 func (x *PutCompositeAlarmInput) GetActionsenabled() bool {
@@ -8258,8 +8589,8 @@ func (x *PutCompositeAlarmInput) GetActionsenabled() bool {
 }
 
 func (x *PutCompositeAlarmInput) GetActionssuppressor() string {
-	if x != nil {
-		return x.Actionssuppressor
+	if x != nil && x.Actionssuppressor != nil {
+		return *x.Actionssuppressor
 	}
 	return ""
 }
@@ -8286,8 +8617,8 @@ func (x *PutCompositeAlarmInput) GetAlarmactions() []string {
 }
 
 func (x *PutCompositeAlarmInput) GetAlarmdescription() string {
-	if x != nil {
-		return x.Alarmdescription
+	if x != nil && x.Alarmdescription != nil {
+		return *x.Alarmdescription
 	}
 	return ""
 }
@@ -8338,7 +8669,7 @@ type PutDashboardInput struct {
 
 func (x *PutDashboardInput) Reset() {
 	*x = PutDashboardInput{}
-	mi := &file_cloudwatch_proto_msgTypes[119]
+	mi := &file_cloudwatch_proto_msgTypes[121]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8350,7 +8681,7 @@ func (x *PutDashboardInput) String() string {
 func (*PutDashboardInput) ProtoMessage() {}
 
 func (x *PutDashboardInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[119]
+	mi := &file_cloudwatch_proto_msgTypes[121]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8363,7 +8694,7 @@ func (x *PutDashboardInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutDashboardInput.ProtoReflect.Descriptor instead.
 func (*PutDashboardInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{119}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{121}
 }
 
 func (x *PutDashboardInput) GetDashboardbody() string {
@@ -8396,7 +8727,7 @@ type PutDashboardOutput struct {
 
 func (x *PutDashboardOutput) Reset() {
 	*x = PutDashboardOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[120]
+	mi := &file_cloudwatch_proto_msgTypes[122]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8408,7 +8739,7 @@ func (x *PutDashboardOutput) String() string {
 func (*PutDashboardOutput) ProtoMessage() {}
 
 func (x *PutDashboardOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[120]
+	mi := &file_cloudwatch_proto_msgTypes[122]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8421,7 +8752,7 @@ func (x *PutDashboardOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutDashboardOutput.ProtoReflect.Descriptor instead.
 func (*PutDashboardOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{120}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{122}
 }
 
 func (x *PutDashboardOutput) GetDashboardvalidationmessages() []*DashboardValidationMessage {
@@ -8436,7 +8767,7 @@ type PutInsightRuleInput struct {
 	Applyontransformedlogs *bool                  `protobuf:"varint,30966533,opt,name=applyontransformedlogs,proto3,oneof" json:"applyontransformedlogs,omitempty"`
 	Ruledefinition         string                 `protobuf:"bytes,188932559,opt,name=ruledefinition,proto3" json:"ruledefinition,omitempty"`
 	Rulename               string                 `protobuf:"bytes,214688793,opt,name=rulename,proto3" json:"rulename,omitempty"`
-	Rulestate              string                 `protobuf:"bytes,419921189,opt,name=rulestate,proto3" json:"rulestate,omitempty"`
+	Rulestate              *string                `protobuf:"bytes,419921189,opt,name=rulestate,proto3,oneof" json:"rulestate,omitempty"`
 	Tags                   []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -8444,7 +8775,7 @@ type PutInsightRuleInput struct {
 
 func (x *PutInsightRuleInput) Reset() {
 	*x = PutInsightRuleInput{}
-	mi := &file_cloudwatch_proto_msgTypes[121]
+	mi := &file_cloudwatch_proto_msgTypes[123]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8456,7 +8787,7 @@ func (x *PutInsightRuleInput) String() string {
 func (*PutInsightRuleInput) ProtoMessage() {}
 
 func (x *PutInsightRuleInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[121]
+	mi := &file_cloudwatch_proto_msgTypes[123]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8469,7 +8800,7 @@ func (x *PutInsightRuleInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutInsightRuleInput.ProtoReflect.Descriptor instead.
 func (*PutInsightRuleInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{121}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{123}
 }
 
 func (x *PutInsightRuleInput) GetApplyontransformedlogs() bool {
@@ -8494,8 +8825,8 @@ func (x *PutInsightRuleInput) GetRulename() string {
 }
 
 func (x *PutInsightRuleInput) GetRulestate() string {
-	if x != nil {
-		return x.Rulestate
+	if x != nil && x.Rulestate != nil {
+		return *x.Rulestate
 	}
 	return ""
 }
@@ -8515,7 +8846,7 @@ type PutInsightRuleOutput struct {
 
 func (x *PutInsightRuleOutput) Reset() {
 	*x = PutInsightRuleOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[122]
+	mi := &file_cloudwatch_proto_msgTypes[124]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8527,7 +8858,7 @@ func (x *PutInsightRuleOutput) String() string {
 func (*PutInsightRuleOutput) ProtoMessage() {}
 
 func (x *PutInsightRuleOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[122]
+	mi := &file_cloudwatch_proto_msgTypes[124]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8540,7 +8871,171 @@ func (x *PutInsightRuleOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutInsightRuleOutput.ProtoReflect.Descriptor instead.
 func (*PutInsightRuleOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{122}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{124}
+}
+
+type PutLogAlarmInput struct {
+	state                       protoimpl.MessageState       `protogen:"open.v1"`
+	Actionloglinecount          *int32                       `protobuf:"varint,505597453,opt,name=actionloglinecount,proto3,oneof" json:"actionloglinecount,omitempty"`
+	Actionloglinerolearn        *string                      `protobuf:"bytes,673897,opt,name=actionloglinerolearn,proto3,oneof" json:"actionloglinerolearn,omitempty"`
+	Actionsenabled              *bool                        `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
+	Alarmactions                []string                     `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
+	Alarmdescription            *string                      `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3,oneof" json:"alarmdescription,omitempty"`
+	Alarmname                   string                       `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
+	Comparisonoperator          ComparisonOperator           `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=cloudwatch.ComparisonOperator" json:"comparisonoperator,omitempty"`
+	Insufficientdataactions     []string                     `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
+	Okactions                   []string                     `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
+	Queryresultstoalarm         int32                        `protobuf:"varint,188456732,opt,name=queryresultstoalarm,proto3" json:"queryresultstoalarm,omitempty"`
+	Queryresultstoevaluate      int32                        `protobuf:"varint,315639558,opt,name=queryresultstoevaluate,proto3" json:"queryresultstoevaluate,omitempty"`
+	Scheduledqueryconfiguration *ScheduledQueryConfiguration `protobuf:"bytes,48313143,opt,name=scheduledqueryconfiguration,proto3" json:"scheduledqueryconfiguration,omitempty"`
+	Tags                        []*Tag                       `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	Threshold                   float64                      `protobuf:"fixed64,394884505,opt,name=threshold,proto3" json:"threshold,omitempty"`
+	Treatmissingdata            *string                      `protobuf:"bytes,226418150,opt,name=treatmissingdata,proto3,oneof" json:"treatmissingdata,omitempty"`
+	Warmupconfiguration         *WarmUpConfiguration         `protobuf:"bytes,439442074,opt,name=warmupconfiguration,proto3" json:"warmupconfiguration,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
+}
+
+func (x *PutLogAlarmInput) Reset() {
+	*x = PutLogAlarmInput{}
+	mi := &file_cloudwatch_proto_msgTypes[125]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PutLogAlarmInput) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PutLogAlarmInput) ProtoMessage() {}
+
+func (x *PutLogAlarmInput) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[125]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PutLogAlarmInput.ProtoReflect.Descriptor instead.
+func (*PutLogAlarmInput) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{125}
+}
+
+func (x *PutLogAlarmInput) GetActionloglinecount() int32 {
+	if x != nil && x.Actionloglinecount != nil {
+		return *x.Actionloglinecount
+	}
+	return 0
+}
+
+func (x *PutLogAlarmInput) GetActionloglinerolearn() string {
+	if x != nil && x.Actionloglinerolearn != nil {
+		return *x.Actionloglinerolearn
+	}
+	return ""
+}
+
+func (x *PutLogAlarmInput) GetActionsenabled() bool {
+	if x != nil && x.Actionsenabled != nil {
+		return *x.Actionsenabled
+	}
+	return false
+}
+
+func (x *PutLogAlarmInput) GetAlarmactions() []string {
+	if x != nil {
+		return x.Alarmactions
+	}
+	return nil
+}
+
+func (x *PutLogAlarmInput) GetAlarmdescription() string {
+	if x != nil && x.Alarmdescription != nil {
+		return *x.Alarmdescription
+	}
+	return ""
+}
+
+func (x *PutLogAlarmInput) GetAlarmname() string {
+	if x != nil {
+		return x.Alarmname
+	}
+	return ""
+}
+
+func (x *PutLogAlarmInput) GetComparisonoperator() ComparisonOperator {
+	if x != nil {
+		return x.Comparisonoperator
+	}
+	return ComparisonOperator_COMPARISON_OPERATOR_LESSTHANLOWERORGREATERTHANUPPERTHRESHOLD
+}
+
+func (x *PutLogAlarmInput) GetInsufficientdataactions() []string {
+	if x != nil {
+		return x.Insufficientdataactions
+	}
+	return nil
+}
+
+func (x *PutLogAlarmInput) GetOkactions() []string {
+	if x != nil {
+		return x.Okactions
+	}
+	return nil
+}
+
+func (x *PutLogAlarmInput) GetQueryresultstoalarm() int32 {
+	if x != nil {
+		return x.Queryresultstoalarm
+	}
+	return 0
+}
+
+func (x *PutLogAlarmInput) GetQueryresultstoevaluate() int32 {
+	if x != nil {
+		return x.Queryresultstoevaluate
+	}
+	return 0
+}
+
+func (x *PutLogAlarmInput) GetScheduledqueryconfiguration() *ScheduledQueryConfiguration {
+	if x != nil {
+		return x.Scheduledqueryconfiguration
+	}
+	return nil
+}
+
+func (x *PutLogAlarmInput) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+func (x *PutLogAlarmInput) GetThreshold() float64 {
+	if x != nil {
+		return x.Threshold
+	}
+	return 0
+}
+
+func (x *PutLogAlarmInput) GetTreatmissingdata() string {
+	if x != nil && x.Treatmissingdata != nil {
+		return *x.Treatmissingdata
+	}
+	return ""
+}
+
+func (x *PutLogAlarmInput) GetWarmupconfiguration() *WarmUpConfiguration {
+	if x != nil {
+		return x.Warmupconfiguration
+	}
+	return nil
 }
 
 type PutManagedInsightRulesInput struct {
@@ -8552,7 +9047,7 @@ type PutManagedInsightRulesInput struct {
 
 func (x *PutManagedInsightRulesInput) Reset() {
 	*x = PutManagedInsightRulesInput{}
-	mi := &file_cloudwatch_proto_msgTypes[123]
+	mi := &file_cloudwatch_proto_msgTypes[126]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8564,7 +9059,7 @@ func (x *PutManagedInsightRulesInput) String() string {
 func (*PutManagedInsightRulesInput) ProtoMessage() {}
 
 func (x *PutManagedInsightRulesInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[123]
+	mi := &file_cloudwatch_proto_msgTypes[126]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8577,7 +9072,7 @@ func (x *PutManagedInsightRulesInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutManagedInsightRulesInput.ProtoReflect.Descriptor instead.
 func (*PutManagedInsightRulesInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{123}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{126}
 }
 
 func (x *PutManagedInsightRulesInput) GetManagedrules() []*ManagedRule {
@@ -8596,7 +9091,7 @@ type PutManagedInsightRulesOutput struct {
 
 func (x *PutManagedInsightRulesOutput) Reset() {
 	*x = PutManagedInsightRulesOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[124]
+	mi := &file_cloudwatch_proto_msgTypes[127]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8608,7 +9103,7 @@ func (x *PutManagedInsightRulesOutput) String() string {
 func (*PutManagedInsightRulesOutput) ProtoMessage() {}
 
 func (x *PutManagedInsightRulesOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[124]
+	mi := &file_cloudwatch_proto_msgTypes[127]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8621,7 +9116,7 @@ func (x *PutManagedInsightRulesOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutManagedInsightRulesOutput.ProtoReflect.Descriptor instead.
 func (*PutManagedInsightRulesOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{124}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{127}
 }
 
 func (x *PutManagedInsightRulesOutput) GetFailures() []*PartialFailure {
@@ -8635,35 +9130,37 @@ type PutMetricAlarmInput struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
 	Actionsenabled                   *bool                  `protobuf:"varint,126027878,opt,name=actionsenabled,proto3,oneof" json:"actionsenabled,omitempty"`
 	Alarmactions                     []string               `protobuf:"bytes,355779506,rep,name=alarmactions,proto3" json:"alarmactions,omitempty"`
-	Alarmdescription                 string                 `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3" json:"alarmdescription,omitempty"`
+	Alarmdescription                 *string                `protobuf:"bytes,30583613,opt,name=alarmdescription,proto3,oneof" json:"alarmdescription,omitempty"`
 	Alarmname                        string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
 	Comparisonoperator               ComparisonOperator     `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=cloudwatch.ComparisonOperator" json:"comparisonoperator,omitempty"`
 	Datapointstoalarm                *int32                 `protobuf:"varint,146378889,opt,name=datapointstoalarm,proto3,oneof" json:"datapointstoalarm,omitempty"`
 	Dimensions                       []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
-	Evaluatelowsamplecountpercentile string                 `protobuf:"bytes,64366323,opt,name=evaluatelowsamplecountpercentile,proto3" json:"evaluatelowsamplecountpercentile,omitempty"`
+	Evaluatelowsamplecountpercentile *string                `protobuf:"bytes,64366323,opt,name=evaluatelowsamplecountpercentile,proto3,oneof" json:"evaluatelowsamplecountpercentile,omitempty"`
 	Evaluationcriteria               *EvaluationCriteria    `protobuf:"bytes,307988387,opt,name=evaluationcriteria,proto3" json:"evaluationcriteria,omitempty"`
 	Evaluationinterval               *int32                 `protobuf:"varint,78014495,opt,name=evaluationinterval,proto3,oneof" json:"evaluationinterval,omitempty"`
 	Evaluationperiods                *int32                 `protobuf:"varint,214794856,opt,name=evaluationperiods,proto3,oneof" json:"evaluationperiods,omitempty"`
-	Extendedstatistic                string                 `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3" json:"extendedstatistic,omitempty"`
+	Evaluationwindow                 *EvaluationWindow      `protobuf:"bytes,269053504,opt,name=evaluationwindow,proto3" json:"evaluationwindow,omitempty"`
+	Extendedstatistic                *string                `protobuf:"bytes,285620763,opt,name=extendedstatistic,proto3,oneof" json:"extendedstatistic,omitempty"`
 	Insufficientdataactions          []string               `protobuf:"bytes,498450778,rep,name=insufficientdataactions,proto3" json:"insufficientdataactions,omitempty"`
-	Metricname                       string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
+	Metricname                       *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
 	Metrics                          []*MetricDataQuery     `protobuf:"bytes,436365847,rep,name=metrics,proto3" json:"metrics,omitempty"`
-	Namespace                        string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Namespace                        *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
 	Okactions                        []string               `protobuf:"bytes,377443763,rep,name=okactions,proto3" json:"okactions,omitempty"`
 	Period                           *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
 	Statistic                        Statistic              `protobuf:"varint,67293470,opt,name=statistic,proto3,enum=cloudwatch.Statistic" json:"statistic,omitempty"`
 	Tags                             []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Threshold                        float64                `protobuf:"fixed64,394884505,opt,name=threshold,proto3" json:"threshold,omitempty"`
-	Thresholdmetricid                string                 `protobuf:"bytes,41342194,opt,name=thresholdmetricid,proto3" json:"thresholdmetricid,omitempty"`
-	Treatmissingdata                 string                 `protobuf:"bytes,226418150,opt,name=treatmissingdata,proto3" json:"treatmissingdata,omitempty"`
+	Threshold                        *float64               `protobuf:"fixed64,394884505,opt,name=threshold,proto3,oneof" json:"threshold,omitempty"`
+	Thresholdmetricid                *string                `protobuf:"bytes,41342194,opt,name=thresholdmetricid,proto3,oneof" json:"thresholdmetricid,omitempty"`
+	Treatmissingdata                 *string                `protobuf:"bytes,226418150,opt,name=treatmissingdata,proto3,oneof" json:"treatmissingdata,omitempty"`
 	Unit                             StandardUnit           `protobuf:"varint,148989480,opt,name=unit,proto3,enum=cloudwatch.StandardUnit" json:"unit,omitempty"`
+	Warmupconfiguration              *WarmUpConfiguration   `protobuf:"bytes,439442074,opt,name=warmupconfiguration,proto3" json:"warmupconfiguration,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
 
 func (x *PutMetricAlarmInput) Reset() {
 	*x = PutMetricAlarmInput{}
-	mi := &file_cloudwatch_proto_msgTypes[125]
+	mi := &file_cloudwatch_proto_msgTypes[128]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8675,7 +9172,7 @@ func (x *PutMetricAlarmInput) String() string {
 func (*PutMetricAlarmInput) ProtoMessage() {}
 
 func (x *PutMetricAlarmInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[125]
+	mi := &file_cloudwatch_proto_msgTypes[128]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8688,7 +9185,7 @@ func (x *PutMetricAlarmInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutMetricAlarmInput.ProtoReflect.Descriptor instead.
 func (*PutMetricAlarmInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{125}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{128}
 }
 
 func (x *PutMetricAlarmInput) GetActionsenabled() bool {
@@ -8706,8 +9203,8 @@ func (x *PutMetricAlarmInput) GetAlarmactions() []string {
 }
 
 func (x *PutMetricAlarmInput) GetAlarmdescription() string {
-	if x != nil {
-		return x.Alarmdescription
+	if x != nil && x.Alarmdescription != nil {
+		return *x.Alarmdescription
 	}
 	return ""
 }
@@ -8741,8 +9238,8 @@ func (x *PutMetricAlarmInput) GetDimensions() []*Dimension {
 }
 
 func (x *PutMetricAlarmInput) GetEvaluatelowsamplecountpercentile() string {
-	if x != nil {
-		return x.Evaluatelowsamplecountpercentile
+	if x != nil && x.Evaluatelowsamplecountpercentile != nil {
+		return *x.Evaluatelowsamplecountpercentile
 	}
 	return ""
 }
@@ -8768,9 +9265,16 @@ func (x *PutMetricAlarmInput) GetEvaluationperiods() int32 {
 	return 0
 }
 
-func (x *PutMetricAlarmInput) GetExtendedstatistic() string {
+func (x *PutMetricAlarmInput) GetEvaluationwindow() *EvaluationWindow {
 	if x != nil {
-		return x.Extendedstatistic
+		return x.Evaluationwindow
+	}
+	return nil
+}
+
+func (x *PutMetricAlarmInput) GetExtendedstatistic() string {
+	if x != nil && x.Extendedstatistic != nil {
+		return *x.Extendedstatistic
 	}
 	return ""
 }
@@ -8783,8 +9287,8 @@ func (x *PutMetricAlarmInput) GetInsufficientdataactions() []string {
 }
 
 func (x *PutMetricAlarmInput) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
@@ -8797,8 +9301,8 @@ func (x *PutMetricAlarmInput) GetMetrics() []*MetricDataQuery {
 }
 
 func (x *PutMetricAlarmInput) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
@@ -8832,22 +9336,22 @@ func (x *PutMetricAlarmInput) GetTags() []*Tag {
 }
 
 func (x *PutMetricAlarmInput) GetThreshold() float64 {
-	if x != nil {
-		return x.Threshold
+	if x != nil && x.Threshold != nil {
+		return *x.Threshold
 	}
 	return 0
 }
 
 func (x *PutMetricAlarmInput) GetThresholdmetricid() string {
-	if x != nil {
-		return x.Thresholdmetricid
+	if x != nil && x.Thresholdmetricid != nil {
+		return *x.Thresholdmetricid
 	}
 	return ""
 }
 
 func (x *PutMetricAlarmInput) GetTreatmissingdata() string {
-	if x != nil {
-		return x.Treatmissingdata
+	if x != nil && x.Treatmissingdata != nil {
+		return *x.Treatmissingdata
 	}
 	return ""
 }
@@ -8857,6 +9361,13 @@ func (x *PutMetricAlarmInput) GetUnit() StandardUnit {
 		return x.Unit
 	}
 	return StandardUnit_STANDARD_UNIT_MEGABITS_SECOND
+}
+
+func (x *PutMetricAlarmInput) GetWarmupconfiguration() *WarmUpConfiguration {
+	if x != nil {
+		return x.Warmupconfiguration
+	}
+	return nil
 }
 
 type PutMetricDataInput struct {
@@ -8871,7 +9382,7 @@ type PutMetricDataInput struct {
 
 func (x *PutMetricDataInput) Reset() {
 	*x = PutMetricDataInput{}
-	mi := &file_cloudwatch_proto_msgTypes[126]
+	mi := &file_cloudwatch_proto_msgTypes[129]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8883,7 +9394,7 @@ func (x *PutMetricDataInput) String() string {
 func (*PutMetricDataInput) ProtoMessage() {}
 
 func (x *PutMetricDataInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[126]
+	mi := &file_cloudwatch_proto_msgTypes[129]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8896,7 +9407,7 @@ func (x *PutMetricDataInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutMetricDataInput.ProtoReflect.Descriptor instead.
 func (*PutMetricDataInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{126}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{129}
 }
 
 func (x *PutMetricDataInput) GetEntitymetricdata() []*EntityMetricData {
@@ -8944,7 +9455,7 @@ type PutMetricStreamInput struct {
 
 func (x *PutMetricStreamInput) Reset() {
 	*x = PutMetricStreamInput{}
-	mi := &file_cloudwatch_proto_msgTypes[127]
+	mi := &file_cloudwatch_proto_msgTypes[130]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -8956,7 +9467,7 @@ func (x *PutMetricStreamInput) String() string {
 func (*PutMetricStreamInput) ProtoMessage() {}
 
 func (x *PutMetricStreamInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[127]
+	mi := &file_cloudwatch_proto_msgTypes[130]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -8969,7 +9480,7 @@ func (x *PutMetricStreamInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutMetricStreamInput.ProtoReflect.Descriptor instead.
 func (*PutMetricStreamInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{127}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{130}
 }
 
 func (x *PutMetricStreamInput) GetExcludefilters() []*MetricStreamFilter {
@@ -9037,14 +9548,14 @@ func (x *PutMetricStreamInput) GetTags() []*Tag {
 
 type PutMetricStreamOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
+	Arn           *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PutMetricStreamOutput) Reset() {
 	*x = PutMetricStreamOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[128]
+	mi := &file_cloudwatch_proto_msgTypes[131]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9056,7 +9567,7 @@ func (x *PutMetricStreamOutput) String() string {
 func (*PutMetricStreamOutput) ProtoMessage() {}
 
 func (x *PutMetricStreamOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[128]
+	mi := &file_cloudwatch_proto_msgTypes[131]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9069,12 +9580,12 @@ func (x *PutMetricStreamOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutMetricStreamOutput.ProtoReflect.Descriptor instead.
 func (*PutMetricStreamOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{128}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{131}
 }
 
 func (x *PutMetricStreamOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
@@ -9089,7 +9600,7 @@ type Range struct {
 
 func (x *Range) Reset() {
 	*x = Range{}
-	mi := &file_cloudwatch_proto_msgTypes[129]
+	mi := &file_cloudwatch_proto_msgTypes[132]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9101,7 +9612,7 @@ func (x *Range) String() string {
 func (*Range) ProtoMessage() {}
 
 func (x *Range) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[129]
+	mi := &file_cloudwatch_proto_msgTypes[132]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9114,7 +9625,7 @@ func (x *Range) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Range.ProtoReflect.Descriptor instead.
 func (*Range) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{129}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{132}
 }
 
 func (x *Range) GetEndtime() string {
@@ -9131,16 +9642,60 @@ func (x *Range) GetStarttime() string {
 	return ""
 }
 
+type ResourceConflict struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ResourceConflict) Reset() {
+	*x = ResourceConflict{}
+	mi := &file_cloudwatch_proto_msgTypes[133]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResourceConflict) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResourceConflict) ProtoMessage() {}
+
+func (x *ResourceConflict) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[133]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResourceConflict.ProtoReflect.Descriptor instead.
+func (*ResourceConflict) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{133}
+}
+
+func (x *ResourceConflict) GetMessage() string {
+	if x != nil && x.Message != nil {
+		return *x.Message
+	}
+	return ""
+}
+
 type ResourceNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ResourceNotFound) Reset() {
 	*x = ResourceNotFound{}
-	mi := &file_cloudwatch_proto_msgTypes[130]
+	mi := &file_cloudwatch_proto_msgTypes[134]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9152,7 +9707,7 @@ func (x *ResourceNotFound) String() string {
 func (*ResourceNotFound) ProtoMessage() {}
 
 func (x *ResourceNotFound) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[130]
+	mi := &file_cloudwatch_proto_msgTypes[134]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9165,28 +9720,28 @@ func (x *ResourceNotFound) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceNotFound.ProtoReflect.Descriptor instead.
 func (*ResourceNotFound) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{130}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{134}
 }
 
 func (x *ResourceNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Resourceid    string                 `protobuf:"bytes,526146833,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
-	Resourcetype  string                 `protobuf:"bytes,301342558,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Resourceid    *string                `protobuf:"bytes,526146833,opt,name=resourceid,proto3,oneof" json:"resourceid,omitempty"`
+	Resourcetype  *string                `protobuf:"bytes,301342558,opt,name=resourcetype,proto3,oneof" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ResourceNotFoundException) Reset() {
 	*x = ResourceNotFoundException{}
-	mi := &file_cloudwatch_proto_msgTypes[131]
+	mi := &file_cloudwatch_proto_msgTypes[135]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9198,7 +9753,7 @@ func (x *ResourceNotFoundException) String() string {
 func (*ResourceNotFoundException) ProtoMessage() {}
 
 func (x *ResourceNotFoundException) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[131]
+	mi := &file_cloudwatch_proto_msgTypes[135]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9211,26 +9766,26 @@ func (x *ResourceNotFoundException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceNotFoundException.ProtoReflect.Descriptor instead.
 func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{131}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{135}
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *ResourceNotFoundException) GetResourceid() string {
-	if x != nil {
-		return x.Resourceid
+	if x != nil && x.Resourceid != nil {
+		return *x.Resourceid
 	}
 	return ""
 }
 
 func (x *ResourceNotFoundException) GetResourcetype() string {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ""
 }
@@ -9244,7 +9799,7 @@ type Rule struct {
 
 func (x *Rule) Reset() {
 	*x = Rule{}
-	mi := &file_cloudwatch_proto_msgTypes[132]
+	mi := &file_cloudwatch_proto_msgTypes[136]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9256,7 +9811,7 @@ func (x *Rule) String() string {
 func (*Rule) ProtoMessage() {}
 
 func (x *Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[132]
+	mi := &file_cloudwatch_proto_msgTypes[136]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9269,7 +9824,7 @@ func (x *Rule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rule.ProtoReflect.Descriptor instead.
 func (*Rule) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{132}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{136}
 }
 
 func (x *Rule) GetSchedule() *Schedule {
@@ -9283,14 +9838,14 @@ type Schedule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Duration      string                 `protobuf:"bytes,348604718,opt,name=duration,proto3" json:"duration,omitempty"`
 	Expression    string                 `protobuf:"bytes,193051916,opt,name=expression,proto3" json:"expression,omitempty"`
-	Timezone      string                 `protobuf:"bytes,246302531,opt,name=timezone,proto3" json:"timezone,omitempty"`
+	Timezone      *string                `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Schedule) Reset() {
 	*x = Schedule{}
-	mi := &file_cloudwatch_proto_msgTypes[133]
+	mi := &file_cloudwatch_proto_msgTypes[137]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9302,7 +9857,7 @@ func (x *Schedule) String() string {
 func (*Schedule) ProtoMessage() {}
 
 func (x *Schedule) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[133]
+	mi := &file_cloudwatch_proto_msgTypes[137]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9315,7 +9870,7 @@ func (x *Schedule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Schedule.ProtoReflect.Descriptor instead.
 func (*Schedule) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{133}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{137}
 }
 
 func (x *Schedule) GetDuration() string {
@@ -9333,17 +9888,169 @@ func (x *Schedule) GetExpression() string {
 }
 
 func (x *Schedule) GetTimezone() string {
-	if x != nil {
-		return x.Timezone
+	if x != nil && x.Timezone != nil {
+		return *x.Timezone
 	}
 	return ""
+}
+
+type ScheduleConfiguration struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	Endtimeoffset      *int64                 `protobuf:"varint,47768649,opt,name=endtimeoffset,proto3,oneof" json:"endtimeoffset,omitempty"`
+	Scheduleexpression string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
+	Starttimeoffset    int64                  `protobuf:"varint,452053242,opt,name=starttimeoffset,proto3" json:"starttimeoffset,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *ScheduleConfiguration) Reset() {
+	*x = ScheduleConfiguration{}
+	mi := &file_cloudwatch_proto_msgTypes[138]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScheduleConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScheduleConfiguration) ProtoMessage() {}
+
+func (x *ScheduleConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[138]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScheduleConfiguration.ProtoReflect.Descriptor instead.
+func (*ScheduleConfiguration) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{138}
+}
+
+func (x *ScheduleConfiguration) GetEndtimeoffset() int64 {
+	if x != nil && x.Endtimeoffset != nil {
+		return *x.Endtimeoffset
+	}
+	return 0
+}
+
+func (x *ScheduleConfiguration) GetScheduleexpression() string {
+	if x != nil {
+		return x.Scheduleexpression
+	}
+	return ""
+}
+
+func (x *ScheduleConfiguration) GetStarttimeoffset() int64 {
+	if x != nil {
+		return x.Starttimeoffset
+	}
+	return 0
+}
+
+type ScheduledQueryConfiguration struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Aggregationexpression string                 `protobuf:"bytes,224713548,opt,name=aggregationexpression,proto3" json:"aggregationexpression,omitempty"`
+	Loggroupidentifiers   []string               `protobuf:"bytes,163339673,rep,name=loggroupidentifiers,proto3" json:"loggroupidentifiers,omitempty"`
+	Queryarn              *string                `protobuf:"bytes,490942167,opt,name=queryarn,proto3,oneof" json:"queryarn,omitempty"`
+	Querystring           string                 `protobuf:"bytes,435938663,opt,name=querystring,proto3" json:"querystring,omitempty"`
+	Scheduleconfiguration *ScheduleConfiguration `protobuf:"bytes,526075047,opt,name=scheduleconfiguration,proto3" json:"scheduleconfiguration,omitempty"`
+	Scheduledqueryrolearn string                 `protobuf:"bytes,532331068,opt,name=scheduledqueryrolearn,proto3" json:"scheduledqueryrolearn,omitempty"`
+	Tags                  []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *ScheduledQueryConfiguration) Reset() {
+	*x = ScheduledQueryConfiguration{}
+	mi := &file_cloudwatch_proto_msgTypes[139]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ScheduledQueryConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ScheduledQueryConfiguration) ProtoMessage() {}
+
+func (x *ScheduledQueryConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[139]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ScheduledQueryConfiguration.ProtoReflect.Descriptor instead.
+func (*ScheduledQueryConfiguration) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{139}
+}
+
+func (x *ScheduledQueryConfiguration) GetAggregationexpression() string {
+	if x != nil {
+		return x.Aggregationexpression
+	}
+	return ""
+}
+
+func (x *ScheduledQueryConfiguration) GetLoggroupidentifiers() []string {
+	if x != nil {
+		return x.Loggroupidentifiers
+	}
+	return nil
+}
+
+func (x *ScheduledQueryConfiguration) GetQueryarn() string {
+	if x != nil && x.Queryarn != nil {
+		return *x.Queryarn
+	}
+	return ""
+}
+
+func (x *ScheduledQueryConfiguration) GetQuerystring() string {
+	if x != nil {
+		return x.Querystring
+	}
+	return ""
+}
+
+func (x *ScheduledQueryConfiguration) GetScheduleconfiguration() *ScheduleConfiguration {
+	if x != nil {
+		return x.Scheduleconfiguration
+	}
+	return nil
+}
+
+func (x *ScheduledQueryConfiguration) GetScheduledqueryrolearn() string {
+	if x != nil {
+		return x.Scheduledqueryrolearn
+	}
+	return ""
+}
+
+func (x *ScheduledQueryConfiguration) GetTags() []*Tag {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
 }
 
 type SetAlarmStateInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Alarmname       string                 `protobuf:"bytes,54095842,opt,name=alarmname,proto3" json:"alarmname,omitempty"`
 	Statereason     string                 `protobuf:"bytes,376138483,opt,name=statereason,proto3" json:"statereason,omitempty"`
-	Statereasondata string                 `protobuf:"bytes,262771075,opt,name=statereasondata,proto3" json:"statereasondata,omitempty"`
+	Statereasondata *string                `protobuf:"bytes,262771075,opt,name=statereasondata,proto3,oneof" json:"statereasondata,omitempty"`
 	Statevalue      StateValue             `protobuf:"varint,334526008,opt,name=statevalue,proto3,enum=cloudwatch.StateValue" json:"statevalue,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -9351,7 +10058,7 @@ type SetAlarmStateInput struct {
 
 func (x *SetAlarmStateInput) Reset() {
 	*x = SetAlarmStateInput{}
-	mi := &file_cloudwatch_proto_msgTypes[134]
+	mi := &file_cloudwatch_proto_msgTypes[140]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9363,7 +10070,7 @@ func (x *SetAlarmStateInput) String() string {
 func (*SetAlarmStateInput) ProtoMessage() {}
 
 func (x *SetAlarmStateInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[134]
+	mi := &file_cloudwatch_proto_msgTypes[140]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9376,7 +10083,7 @@ func (x *SetAlarmStateInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetAlarmStateInput.ProtoReflect.Descriptor instead.
 func (*SetAlarmStateInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{134}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{140}
 }
 
 func (x *SetAlarmStateInput) GetAlarmname() string {
@@ -9394,8 +10101,8 @@ func (x *SetAlarmStateInput) GetStatereason() string {
 }
 
 func (x *SetAlarmStateInput) GetStatereasondata() string {
-	if x != nil {
-		return x.Statereasondata
+	if x != nil && x.Statereasondata != nil {
+		return *x.Statereasondata
 	}
 	return ""
 }
@@ -9409,18 +10116,18 @@ func (x *SetAlarmStateInput) GetStatevalue() StateValue {
 
 type SingleMetricAnomalyDetector struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accountid     string                 `protobuf:"bytes,65954002,opt,name=accountid,proto3" json:"accountid,omitempty"`
+	Accountid     *string                `protobuf:"bytes,65954002,opt,name=accountid,proto3,oneof" json:"accountid,omitempty"`
 	Dimensions    []*Dimension           `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty"`
-	Metricname    string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Namespace     string                 `protobuf:"bytes,355353153,opt,name=namespace,proto3" json:"namespace,omitempty"`
-	Stat          string                 `protobuf:"bytes,325549752,opt,name=stat,proto3" json:"stat,omitempty"`
+	Metricname    *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Namespace     *string                `protobuf:"bytes,355353153,opt,name=namespace,proto3,oneof" json:"namespace,omitempty"`
+	Stat          *string                `protobuf:"bytes,325549752,opt,name=stat,proto3,oneof" json:"stat,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SingleMetricAnomalyDetector) Reset() {
 	*x = SingleMetricAnomalyDetector{}
-	mi := &file_cloudwatch_proto_msgTypes[135]
+	mi := &file_cloudwatch_proto_msgTypes[141]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9432,7 +10139,7 @@ func (x *SingleMetricAnomalyDetector) String() string {
 func (*SingleMetricAnomalyDetector) ProtoMessage() {}
 
 func (x *SingleMetricAnomalyDetector) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[135]
+	mi := &file_cloudwatch_proto_msgTypes[141]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9445,12 +10152,12 @@ func (x *SingleMetricAnomalyDetector) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SingleMetricAnomalyDetector.ProtoReflect.Descriptor instead.
 func (*SingleMetricAnomalyDetector) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{135}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{141}
 }
 
 func (x *SingleMetricAnomalyDetector) GetAccountid() string {
-	if x != nil {
-		return x.Accountid
+	if x != nil && x.Accountid != nil {
+		return *x.Accountid
 	}
 	return ""
 }
@@ -9463,24 +10170,60 @@ func (x *SingleMetricAnomalyDetector) GetDimensions() []*Dimension {
 }
 
 func (x *SingleMetricAnomalyDetector) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *SingleMetricAnomalyDetector) GetNamespace() string {
-	if x != nil {
-		return x.Namespace
+	if x != nil && x.Namespace != nil {
+		return *x.Namespace
 	}
 	return ""
 }
 
 func (x *SingleMetricAnomalyDetector) GetStat() string {
-	if x != nil {
-		return x.Stat
+	if x != nil && x.Stat != nil {
+		return *x.Stat
 	}
 	return ""
+}
+
+type SlidingWindow struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SlidingWindow) Reset() {
+	*x = SlidingWindow{}
+	mi := &file_cloudwatch_proto_msgTypes[142]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SlidingWindow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SlidingWindow) ProtoMessage() {}
+
+func (x *SlidingWindow) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[142]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SlidingWindow.ProtoReflect.Descriptor instead.
+func (*SlidingWindow) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{142}
 }
 
 type StartMetricStreamsInput struct {
@@ -9492,7 +10235,7 @@ type StartMetricStreamsInput struct {
 
 func (x *StartMetricStreamsInput) Reset() {
 	*x = StartMetricStreamsInput{}
-	mi := &file_cloudwatch_proto_msgTypes[136]
+	mi := &file_cloudwatch_proto_msgTypes[143]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9504,7 +10247,7 @@ func (x *StartMetricStreamsInput) String() string {
 func (*StartMetricStreamsInput) ProtoMessage() {}
 
 func (x *StartMetricStreamsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[136]
+	mi := &file_cloudwatch_proto_msgTypes[143]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9517,7 +10260,7 @@ func (x *StartMetricStreamsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartMetricStreamsInput.ProtoReflect.Descriptor instead.
 func (*StartMetricStreamsInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{136}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{143}
 }
 
 func (x *StartMetricStreamsInput) GetNames() []string {
@@ -9535,7 +10278,7 @@ type StartMetricStreamsOutput struct {
 
 func (x *StartMetricStreamsOutput) Reset() {
 	*x = StartMetricStreamsOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[137]
+	mi := &file_cloudwatch_proto_msgTypes[144]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9547,7 +10290,7 @@ func (x *StartMetricStreamsOutput) String() string {
 func (*StartMetricStreamsOutput) ProtoMessage() {}
 
 func (x *StartMetricStreamsOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[137]
+	mi := &file_cloudwatch_proto_msgTypes[144]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9560,7 +10303,7 @@ func (x *StartMetricStreamsOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartMetricStreamsOutput.ProtoReflect.Descriptor instead.
 func (*StartMetricStreamsOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{137}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{144}
 }
 
 type StartOTelEnrichmentInput struct {
@@ -9571,7 +10314,7 @@ type StartOTelEnrichmentInput struct {
 
 func (x *StartOTelEnrichmentInput) Reset() {
 	*x = StartOTelEnrichmentInput{}
-	mi := &file_cloudwatch_proto_msgTypes[138]
+	mi := &file_cloudwatch_proto_msgTypes[145]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9583,7 +10326,7 @@ func (x *StartOTelEnrichmentInput) String() string {
 func (*StartOTelEnrichmentInput) ProtoMessage() {}
 
 func (x *StartOTelEnrichmentInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[138]
+	mi := &file_cloudwatch_proto_msgTypes[145]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9596,7 +10339,7 @@ func (x *StartOTelEnrichmentInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartOTelEnrichmentInput.ProtoReflect.Descriptor instead.
 func (*StartOTelEnrichmentInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{138}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{145}
 }
 
 type StartOTelEnrichmentOutput struct {
@@ -9607,7 +10350,7 @@ type StartOTelEnrichmentOutput struct {
 
 func (x *StartOTelEnrichmentOutput) Reset() {
 	*x = StartOTelEnrichmentOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[139]
+	mi := &file_cloudwatch_proto_msgTypes[146]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9619,7 +10362,7 @@ func (x *StartOTelEnrichmentOutput) String() string {
 func (*StartOTelEnrichmentOutput) ProtoMessage() {}
 
 func (x *StartOTelEnrichmentOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[139]
+	mi := &file_cloudwatch_proto_msgTypes[146]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9632,7 +10375,7 @@ func (x *StartOTelEnrichmentOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StartOTelEnrichmentOutput.ProtoReflect.Descriptor instead.
 func (*StartOTelEnrichmentOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{139}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{146}
 }
 
 type StatisticSet struct {
@@ -9647,7 +10390,7 @@ type StatisticSet struct {
 
 func (x *StatisticSet) Reset() {
 	*x = StatisticSet{}
-	mi := &file_cloudwatch_proto_msgTypes[140]
+	mi := &file_cloudwatch_proto_msgTypes[147]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9659,7 +10402,7 @@ func (x *StatisticSet) String() string {
 func (*StatisticSet) ProtoMessage() {}
 
 func (x *StatisticSet) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[140]
+	mi := &file_cloudwatch_proto_msgTypes[147]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9672,7 +10415,7 @@ func (x *StatisticSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StatisticSet.ProtoReflect.Descriptor instead.
 func (*StatisticSet) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{140}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{147}
 }
 
 func (x *StatisticSet) GetMaximum() float64 {
@@ -9712,7 +10455,7 @@ type StopMetricStreamsInput struct {
 
 func (x *StopMetricStreamsInput) Reset() {
 	*x = StopMetricStreamsInput{}
-	mi := &file_cloudwatch_proto_msgTypes[141]
+	mi := &file_cloudwatch_proto_msgTypes[148]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9724,7 +10467,7 @@ func (x *StopMetricStreamsInput) String() string {
 func (*StopMetricStreamsInput) ProtoMessage() {}
 
 func (x *StopMetricStreamsInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[141]
+	mi := &file_cloudwatch_proto_msgTypes[148]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9737,7 +10480,7 @@ func (x *StopMetricStreamsInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopMetricStreamsInput.ProtoReflect.Descriptor instead.
 func (*StopMetricStreamsInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{141}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{148}
 }
 
 func (x *StopMetricStreamsInput) GetNames() []string {
@@ -9755,7 +10498,7 @@ type StopMetricStreamsOutput struct {
 
 func (x *StopMetricStreamsOutput) Reset() {
 	*x = StopMetricStreamsOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[142]
+	mi := &file_cloudwatch_proto_msgTypes[149]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9767,7 +10510,7 @@ func (x *StopMetricStreamsOutput) String() string {
 func (*StopMetricStreamsOutput) ProtoMessage() {}
 
 func (x *StopMetricStreamsOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[142]
+	mi := &file_cloudwatch_proto_msgTypes[149]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9780,7 +10523,7 @@ func (x *StopMetricStreamsOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopMetricStreamsOutput.ProtoReflect.Descriptor instead.
 func (*StopMetricStreamsOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{142}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{149}
 }
 
 type StopOTelEnrichmentInput struct {
@@ -9791,7 +10534,7 @@ type StopOTelEnrichmentInput struct {
 
 func (x *StopOTelEnrichmentInput) Reset() {
 	*x = StopOTelEnrichmentInput{}
-	mi := &file_cloudwatch_proto_msgTypes[143]
+	mi := &file_cloudwatch_proto_msgTypes[150]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9803,7 +10546,7 @@ func (x *StopOTelEnrichmentInput) String() string {
 func (*StopOTelEnrichmentInput) ProtoMessage() {}
 
 func (x *StopOTelEnrichmentInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[143]
+	mi := &file_cloudwatch_proto_msgTypes[150]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9816,7 +10559,7 @@ func (x *StopOTelEnrichmentInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopOTelEnrichmentInput.ProtoReflect.Descriptor instead.
 func (*StopOTelEnrichmentInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{143}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{150}
 }
 
 type StopOTelEnrichmentOutput struct {
@@ -9827,7 +10570,7 @@ type StopOTelEnrichmentOutput struct {
 
 func (x *StopOTelEnrichmentOutput) Reset() {
 	*x = StopOTelEnrichmentOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[144]
+	mi := &file_cloudwatch_proto_msgTypes[151]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9839,7 +10582,7 @@ func (x *StopOTelEnrichmentOutput) String() string {
 func (*StopOTelEnrichmentOutput) ProtoMessage() {}
 
 func (x *StopOTelEnrichmentOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[144]
+	mi := &file_cloudwatch_proto_msgTypes[151]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9852,7 +10595,7 @@ func (x *StopOTelEnrichmentOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StopOTelEnrichmentOutput.ProtoReflect.Descriptor instead.
 func (*StopOTelEnrichmentOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{144}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{151}
 }
 
 type Tag struct {
@@ -9865,7 +10608,7 @@ type Tag struct {
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_cloudwatch_proto_msgTypes[145]
+	mi := &file_cloudwatch_proto_msgTypes[152]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9877,7 +10620,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[145]
+	mi := &file_cloudwatch_proto_msgTypes[152]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9890,7 +10633,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{145}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{152}
 }
 
 func (x *Tag) GetKey() string {
@@ -9917,7 +10660,7 @@ type TagResourceInput struct {
 
 func (x *TagResourceInput) Reset() {
 	*x = TagResourceInput{}
-	mi := &file_cloudwatch_proto_msgTypes[146]
+	mi := &file_cloudwatch_proto_msgTypes[153]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9929,7 +10672,7 @@ func (x *TagResourceInput) String() string {
 func (*TagResourceInput) ProtoMessage() {}
 
 func (x *TagResourceInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[146]
+	mi := &file_cloudwatch_proto_msgTypes[153]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9942,7 +10685,7 @@ func (x *TagResourceInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagResourceInput.ProtoReflect.Descriptor instead.
 func (*TagResourceInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{146}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{153}
 }
 
 func (x *TagResourceInput) GetResourcearn() string {
@@ -9967,7 +10710,7 @@ type TagResourceOutput struct {
 
 func (x *TagResourceOutput) Reset() {
 	*x = TagResourceOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[147]
+	mi := &file_cloudwatch_proto_msgTypes[154]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -9979,7 +10722,7 @@ func (x *TagResourceOutput) String() string {
 func (*TagResourceOutput) ProtoMessage() {}
 
 func (x *TagResourceOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[147]
+	mi := &file_cloudwatch_proto_msgTypes[154]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -9992,7 +10735,7 @@ func (x *TagResourceOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagResourceOutput.ProtoReflect.Descriptor instead.
 func (*TagResourceOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{147}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{154}
 }
 
 type UntagResourceInput struct {
@@ -10005,7 +10748,7 @@ type UntagResourceInput struct {
 
 func (x *UntagResourceInput) Reset() {
 	*x = UntagResourceInput{}
-	mi := &file_cloudwatch_proto_msgTypes[148]
+	mi := &file_cloudwatch_proto_msgTypes[155]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10017,7 +10760,7 @@ func (x *UntagResourceInput) String() string {
 func (*UntagResourceInput) ProtoMessage() {}
 
 func (x *UntagResourceInput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[148]
+	mi := &file_cloudwatch_proto_msgTypes[155]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10030,7 +10773,7 @@ func (x *UntagResourceInput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UntagResourceInput.ProtoReflect.Descriptor instead.
 func (*UntagResourceInput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{148}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{155}
 }
 
 func (x *UntagResourceInput) GetResourcearn() string {
@@ -10055,7 +10798,7 @@ type UntagResourceOutput struct {
 
 func (x *UntagResourceOutput) Reset() {
 	*x = UntagResourceOutput{}
-	mi := &file_cloudwatch_proto_msgTypes[149]
+	mi := &file_cloudwatch_proto_msgTypes[156]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -10067,7 +10810,7 @@ func (x *UntagResourceOutput) String() string {
 func (*UntagResourceOutput) ProtoMessage() {}
 
 func (x *UntagResourceOutput) ProtoReflect() protoreflect.Message {
-	mi := &file_cloudwatch_proto_msgTypes[149]
+	mi := &file_cloudwatch_proto_msgTypes[156]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -10080,7 +10823,103 @@ func (x *UntagResourceOutput) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UntagResourceOutput.ProtoReflect.Descriptor instead.
 func (*UntagResourceOutput) Descriptor() ([]byte, []int) {
-	return file_cloudwatch_proto_rawDescGZIP(), []int{149}
+	return file_cloudwatch_proto_rawDescGZIP(), []int{156}
+}
+
+type WallClockWindow struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Timezone      *string                `protobuf:"bytes,246302531,opt,name=timezone,proto3,oneof" json:"timezone,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WallClockWindow) Reset() {
+	*x = WallClockWindow{}
+	mi := &file_cloudwatch_proto_msgTypes[157]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WallClockWindow) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WallClockWindow) ProtoMessage() {}
+
+func (x *WallClockWindow) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[157]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WallClockWindow.ProtoReflect.Descriptor instead.
+func (*WallClockWindow) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{157}
+}
+
+func (x *WallClockWindow) GetTimezone() string {
+	if x != nil && x.Timezone != nil {
+		return *x.Timezone
+	}
+	return ""
+}
+
+type WarmUpConfiguration struct {
+	state                                    protoimpl.MessageState `protogen:"open.v1"`
+	Onlystartevaluatingafterwarmupperiodends *bool                  `protobuf:"varint,42457515,opt,name=onlystartevaluatingafterwarmupperiodends,proto3,oneof" json:"onlystartevaluatingafterwarmupperiodends,omitempty"`
+	Warmupperioddurationinminutes            int32                  `protobuf:"varint,143115257,opt,name=warmupperioddurationinminutes,proto3" json:"warmupperioddurationinminutes,omitempty"`
+	unknownFields                            protoimpl.UnknownFields
+	sizeCache                                protoimpl.SizeCache
+}
+
+func (x *WarmUpConfiguration) Reset() {
+	*x = WarmUpConfiguration{}
+	mi := &file_cloudwatch_proto_msgTypes[158]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WarmUpConfiguration) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WarmUpConfiguration) ProtoMessage() {}
+
+func (x *WarmUpConfiguration) ProtoReflect() protoreflect.Message {
+	mi := &file_cloudwatch_proto_msgTypes[158]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WarmUpConfiguration.ProtoReflect.Descriptor instead.
+func (*WarmUpConfiguration) Descriptor() ([]byte, []int) {
+	return file_cloudwatch_proto_rawDescGZIP(), []int{158}
+}
+
+func (x *WarmUpConfiguration) GetOnlystartevaluatingafterwarmupperiodends() bool {
+	if x != nil && x.Onlystartevaluatingafterwarmupperiodends != nil {
+		return *x.Onlystartevaluatingafterwarmupperiodends
+	}
+	return false
+}
+
+func (x *WarmUpConfiguration) GetWarmupperioddurationinminutes() int32 {
+	if x != nil {
+		return x.Warmupperioddurationinminutes
+	}
+	return 0
 }
 
 var File_cloudwatch_proto protoreflect.FileDescriptor
@@ -10088,136 +10927,199 @@ var File_cloudwatch_proto protoreflect.FileDescriptor
 const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"\x10cloudwatch.proto\x12\n" +
-	"cloudwatch\x1a\fcommon.proto\x1a\taws.proto\"\xe0\x02\n" +
+	"cloudwatch\x1a\fcommon.proto\x1a\taws.proto\"\x84\x03\n" +
 	"\x10AlarmContributor\x12p\n" +
 	"\x15contributorattributes\x18\xc0\xed\x92' \x03(\v27.cloudwatch.AlarmContributor.ContributorattributesEntryR\x15contributorattributes\x12'\n" +
 	"\rcontributorid\x18\xa8\xf2\xf9\x0f \x01(\tR\rcontributorid\x12$\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12A\n" +
-	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tR\x1astatetransitionedtimestamp\x1aH\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12F\n" +
+	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tH\x00R\x1astatetransitionedtimestamp\x88\x01\x01\x1aH\n" +
 	"\x1aContributorattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xac\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1d\n" +
+	"\x1b_statetransitionedtimestamp\"\x9b\x05\n" +
 	"\x10AlarmHistoryItem\x12\x7f\n" +
-	"\x1aalarmcontributorattributes\x18\x87ʮ\x10 \x03(\v2<.cloudwatch.AlarmHistoryItem.AlarmcontributorattributesEntryR\x1aalarmcontributorattributes\x122\n" +
-	"\x12alarmcontributorid\x18\x87\xebّ\x01 \x01(\tR\x12alarmcontributorid\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x127\n" +
-	"\talarmtype\x18\x9b\xde\xf4\x8f\x01 \x01(\x0e2\x15.cloudwatch.AlarmTypeR\talarmtype\x12#\n" +
-	"\vhistorydata\x18ȥ\xae\x0e \x01(\tR\vhistorydata\x12I\n" +
-	"\x0fhistoryitemtype\x18\xf1\xae\xfc\xd2\x01 \x01(\x0e2\x1b.cloudwatch.HistoryItemTypeR\x0fhistoryitemtype\x12)\n" +
-	"\x0ehistorysummary\x18ڭ\xc0\x19 \x01(\tR\x0ehistorysummary\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x1aM\n" +
+	"\x1aalarmcontributorattributes\x18\x87ʮ\x10 \x03(\v2<.cloudwatch.AlarmHistoryItem.AlarmcontributorattributesEntryR\x1aalarmcontributorattributes\x127\n" +
+	"\x12alarmcontributorid\x18\x87\xebّ\x01 \x01(\tH\x00R\x12alarmcontributorid\x88\x01\x01\x12$\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tH\x01R\talarmname\x88\x01\x01\x127\n" +
+	"\talarmtype\x18\x9b\xde\xf4\x8f\x01 \x01(\x0e2\x15.cloudwatch.AlarmTypeR\talarmtype\x12(\n" +
+	"\vhistorydata\x18ȥ\xae\x0e \x01(\tH\x02R\vhistorydata\x88\x01\x01\x12I\n" +
+	"\x0fhistoryitemtype\x18\xf1\xae\xfc\xd2\x01 \x01(\x0e2\x1b.cloudwatch.HistoryItemTypeR\x0fhistoryitemtype\x12.\n" +
+	"\x0ehistorysummary\x18ڭ\xc0\x19 \x01(\tH\x03R\x0ehistorysummary\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x04R\ttimestamp\x88\x01\x01\x1aM\n" +
 	"\x1fAlarmcontributorattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfc\x01\n" +
-	"\x14AlarmMuteRuleSummary\x12.\n" +
-	"\x10alarmmuterulearn\x18ݭ\xae\xeb\x01 \x01(\tR\x10alarmmuterulearn\x12\"\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x15\n" +
+	"\x13_alarmcontributoridB\f\n" +
 	"\n" +
-	"expiredate\x18\xe7\xd9\xc6\xd8\x01 \x01(\tR\n" +
-	"expiredate\x125\n" +
-	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tR\x14lastupdatedtimestamp\x12\x1d\n" +
-	"\bmutetype\x18\xbd\xf5\x835 \x01(\tR\bmutetype\x12:\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\x06status\"\xb4\x01\n" +
+	"_alarmnameB\x0e\n" +
+	"\f_historydataB\x11\n" +
+	"\x0f_historysummaryB\f\n" +
+	"\n" +
+	"_timestamp\"\xda\x02\n" +
+	"\x14AlarmMuteRuleSummary\x123\n" +
+	"\x10alarmmuterulearn\x18ݭ\xae\xeb\x01 \x01(\tH\x00R\x10alarmmuterulearn\x88\x01\x01\x12'\n" +
+	"\n" +
+	"expiredate\x18\xe7\xd9\xc6\xd8\x01 \x01(\tH\x01R\n" +
+	"expiredate\x88\x01\x01\x12:\n" +
+	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x02R\x14lastupdatedtimestamp\x88\x01\x01\x12\"\n" +
+	"\bmutetype\x18\xbd\xf5\x835 \x01(\tH\x03R\bmutetype\x88\x01\x01\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\x06statusB\x13\n" +
+	"\x11_alarmmuterulearnB\r\n" +
+	"\v_expiredateB\x17\n" +
+	"\x15_lastupdatedtimestampB\v\n" +
+	"\t_mutetype\"\xb4\x01\n" +
 	"\x13AlarmPromQLCriteria\x12-\n" +
 	"\rpendingperiod\x18\x96\x88\x9e\x93\x01 \x01(\x05H\x00R\rpendingperiod\x88\x01\x01\x12\x18\n" +
 	"\x05query\x18\x84ϧ\xf4\x01 \x01(\tR\x05query\x12/\n" +
 	"\x0erecoveryperiod\x18\xe0\xbe\xd1\xc0\x01 \x01(\x05H\x01R\x0erecoveryperiod\x88\x01\x01B\x10\n" +
 	"\x0e_pendingperiodB\x11\n" +
-	"\x0f_recoveryperiod\"\xfc\x04\n" +
-	"\x0fAnomalyDetector\x12R\n" +
+	"\x0f_recoveryperiod\"\xfe\x05\n" +
+	"\x0fAnomalyDetector\x125\n" +
+	"\x11anomalydetectorid\x18\xba\x9d\xaa\xba\x01 \x01(\tH\x00R\x11anomalydetectorid\x88\x01\x01\x12R\n" +
 	"\rconfiguration\x18\xda\xc8\xfb\xd2\x01 \x01(\v2(.cloudwatch.AnomalyDetectorConfigurationR\rconfiguration\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
 	"dimensions\x12Z\n" +
 	"\x15metriccharacteristics\x18\xaa\x9f\xda= \x01(\v2!.cloudwatch.MetricCharacteristicsR\x15metriccharacteristics\x12g\n" +
-	"\x19metricmathanomalydetector\x18\xe3\xdb\xc1\xd1\x01 \x01(\v2%.cloudwatch.MetricMathAnomalyDetectorR\x19metricmathanomalydetector\x12!\n" +
+	"\x19metricmathanomalydetector\x18\xe3\xdb\xc1\xd1\x01 \x01(\v2%.cloudwatch.MetricMathAnomalyDetectorR\x19metricmathanomalydetector\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12m\n" +
-	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x16\n" +
-	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tR\x04stat\x12I\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x01R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x02R\tnamespace\x88\x01\x01\x12m\n" +
+	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x1b\n" +
+	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tH\x03R\x04stat\x88\x01\x01\x12I\n" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2%.cloudwatch.AnomalyDetectorStateValueR\n" +
-	"statevalue\"\x90\x01\n" +
+	"statevalueB\x14\n" +
+	"\x12_anomalydetectoridB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\a\n" +
+	"\x05_stat\"\xa8\x01\n" +
 	"\x1cAnomalyDetectorConfiguration\x12D\n" +
-	"\x12excludedtimeranges\x18\x81\xcd\xf6\x0e \x03(\v2\x11.cloudwatch.RangeR\x12excludedtimeranges\x12*\n" +
-	"\x0emetrictimezone\x18\x8f\xe6\x9a\xfc\x01 \x01(\tR\x0emetrictimezone\"p\n" +
+	"\x12excludedtimeranges\x18\x81\xcd\xf6\x0e \x03(\v2\x11.cloudwatch.RangeR\x12excludedtimeranges\x12/\n" +
+	"\x0emetrictimezone\x18\x8f\xe6\x9a\xfc\x01 \x01(\tH\x00R\x0emetrictimezone\x88\x01\x01B\x11\n" +
+	"\x0f_metrictimezone\"p\n" +
 	"\x1bAssociateDatasetKmsKeyInput\x120\n" +
 	"\x11datasetidentifier\x18\xf9\xa8\xb7\xe3\x01 \x01(\tR\x11datasetidentifier\x12\x1f\n" +
 	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\"\x1e\n" +
-	"\x1cAssociateDatasetKmsKeyOutput\"\xf5\b\n" +
+	"\x1cAssociateDatasetKmsKeyOutput\"\xa0\v\n" +
 	"\x0eCompositeAlarm\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x12U\n" +
-	"\x13actionssuppressedby\x18\xb0\x84\x90\xb4\x01 \x01(\x0e2\x1f.cloudwatch.ActionsSuppressedByR\x13actionssuppressedby\x12;\n" +
-	"\x17actionssuppressedreason\x18\xa3\xbf\xf6\t \x01(\tR\x17actionssuppressedreason\x120\n" +
-	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tR\x11actionssuppressor\x12R\n" +
-	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05H\x01R actionssuppressorextensionperiod\x88\x01\x01\x12H\n" +
-	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05H\x02R\x1bactionssuppressorwaitperiod\x88\x01\x01\x12&\n" +
-	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12\x1e\n" +
-	"\balarmarn\x18\x86\xf2\u0383\x01 \x01(\tR\balarmarn\x12Q\n" +
-	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tR\"alarmconfigurationupdatedtimestamp\x12-\n" +
-	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12 \n" +
-	"\talarmrule\x18\xed\xfe\xc2\xf6\x01 \x01(\tR\talarmrule\x12<\n" +
+	"\x13actionssuppressedby\x18\xb0\x84\x90\xb4\x01 \x01(\x0e2\x1f.cloudwatch.ActionsSuppressedByR\x13actionssuppressedby\x12@\n" +
+	"\x17actionssuppressedreason\x18\xa3\xbf\xf6\t \x01(\tH\x01R\x17actionssuppressedreason\x88\x01\x01\x125\n" +
+	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tH\x02R\x11actionssuppressor\x88\x01\x01\x12R\n" +
+	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05H\x03R actionssuppressorextensionperiod\x88\x01\x01\x12H\n" +
+	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05H\x04R\x1bactionssuppressorwaitperiod\x88\x01\x01\x12&\n" +
+	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12#\n" +
+	"\balarmarn\x18\x86\xf2\u0383\x01 \x01(\tH\x05R\balarmarn\x88\x01\x01\x12V\n" +
+	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tH\x06R\"alarmconfigurationupdatedtimestamp\x88\x01\x01\x122\n" +
+	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tH\aR\x10alarmdescription\x88\x01\x01\x12$\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tH\bR\talarmname\x88\x01\x01\x12%\n" +
+	"\talarmrule\x18\xed\xfe\xc2\xf6\x01 \x01(\tH\tR\talarmrule\x88\x01\x01\x12<\n" +
 	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12 \n" +
-	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12$\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12+\n" +
-	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tR\x0fstatereasondata\x12A\n" +
-	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tR\x1astatetransitionedtimestamp\x128\n" +
-	"\x15stateupdatedtimestamp\x18\x80\x82\x81\xb3\x01 \x01(\tR\x15stateupdatedtimestamp\x12:\n" +
+	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\n" +
+	"R\vstatereason\x88\x01\x01\x120\n" +
+	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tH\vR\x0fstatereasondata\x88\x01\x01\x12F\n" +
+	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tH\fR\x1astatetransitionedtimestamp\x88\x01\x01\x12=\n" +
+	"\x15stateupdatedtimestamp\x18\x80\x82\x81\xb3\x01 \x01(\tH\rR\x15stateupdatedtimestamp\x88\x01\x01\x12:\n" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
 	"statevalueB\x11\n" +
-	"\x0f_actionsenabledB#\n" +
+	"\x0f_actionsenabledB\x1a\n" +
+	"\x18_actionssuppressedreasonB\x14\n" +
+	"\x12_actionssuppressorB#\n" +
 	"!_actionssuppressorextensionperiodB\x1e\n" +
-	"\x1c_actionssuppressorwaitperiod\">\n" +
-	"\x1fConcurrentModificationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"0\n" +
-	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xae\x01\n" +
-	"\x0eDashboardEntry\x12%\n" +
-	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x12(\n" +
-	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x00R\x04size\x88\x01\x01B\a\n" +
-	"\x05_size\"\xa6\x01\n" +
+	"\x1c_actionssuppressorwaitperiodB\v\n" +
+	"\t_alarmarnB%\n" +
+	"#_alarmconfigurationupdatedtimestampB\x13\n" +
+	"\x11_alarmdescriptionB\f\n" +
+	"\n" +
+	"_alarmnameB\f\n" +
+	"\n" +
+	"_alarmruleB\x0e\n" +
+	"\f_statereasonB\x12\n" +
+	"\x10_statereasondataB\x1d\n" +
+	"\x1b_statetransitionedtimestampB\x18\n" +
+	"\x16_stateupdatedtimestamp\"O\n" +
+	"\x1fConcurrentModificationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11ConflictException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xf1\x01\n" +
+	"\x0eDashboardEntry\x12*\n" +
+	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tH\x00R\fdashboardarn\x88\x01\x01\x12-\n" +
+	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tH\x01R\rdashboardname\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x02R\flastmodified\x88\x01\x01\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x03R\x04size\x88\x01\x01B\x0f\n" +
+	"\r_dashboardarnB\x10\n" +
+	"\x0e_dashboardnameB\x0f\n" +
+	"\r_lastmodifiedB\a\n" +
+	"\x05_size\"\xb7\x01\n" +
 	"\x1aDashboardInvalidInputError\x12k\n" +
-	"\x1bdashboardvalidationmessages\x18\xa9\x88\xb1\x11 \x03(\v2&.cloudwatch.DashboardValidationMessageR\x1bdashboardvalidationmessages\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16DashboardNotFoundError\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"Y\n" +
-	"\x1aDashboardValidationMessage\x12\x1e\n" +
-	"\bdatapath\x18׀\xfa\xf0\x01 \x01(\tR\bdatapath\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9b\x03\n" +
-	"\tDatapoint\x12\x1b\n" +
-	"\aaverage\x18ɛ\x9e@ \x01(\x01R\aaverage\x12a\n" +
-	"\x12extendedstatistics\x18\xcc淮\x01 \x03(\v2-.cloudwatch.Datapoint.ExtendedstatisticsEntryR\x12extendedstatistics\x12\x1b\n" +
-	"\amaximum\x18\xa2\xbc\xd5\x14 \x01(\x01R\amaximum\x12\x1c\n" +
-	"\aminimum\x18\x98\x95\x8e\xd1\x01 \x01(\x01R\aminimum\x12$\n" +
-	"\vsamplecount\x18\x9f\xd2ŷ\x01 \x01(\x01R\vsamplecount\x12\x14\n" +
-	"\x03sum\x18ɤ\xe3\xfe\x01 \x01(\x01R\x03sum\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12/\n" +
+	"\x1bdashboardvalidationmessages\x18\xa9\x88\xb1\x11 \x03(\v2&.cloudwatch.DashboardValidationMessageR\x1bdashboardvalidationmessages\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16DashboardNotFoundError\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"|\n" +
+	"\x1aDashboardValidationMessage\x12#\n" +
+	"\bdatapath\x18׀\xfa\xf0\x01 \x01(\tH\x00R\bdatapath\x88\x01\x01\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x01R\amessage\x88\x01\x01B\v\n" +
+	"\t_datapathB\n" +
+	"\n" +
+	"\b_message\"\x83\x04\n" +
+	"\tDatapoint\x12 \n" +
+	"\aaverage\x18ɛ\x9e@ \x01(\x01H\x00R\aaverage\x88\x01\x01\x12a\n" +
+	"\x12extendedstatistics\x18\xcc淮\x01 \x03(\v2-.cloudwatch.Datapoint.ExtendedstatisticsEntryR\x12extendedstatistics\x12 \n" +
+	"\amaximum\x18\xa2\xbc\xd5\x14 \x01(\x01H\x01R\amaximum\x88\x01\x01\x12!\n" +
+	"\aminimum\x18\x98\x95\x8e\xd1\x01 \x01(\x01H\x02R\aminimum\x88\x01\x01\x12)\n" +
+	"\vsamplecount\x18\x9f\xd2ŷ\x01 \x01(\x01H\x03R\vsamplecount\x88\x01\x01\x12\x19\n" +
+	"\x03sum\x18ɤ\xe3\xfe\x01 \x01(\x01H\x04R\x03sum\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x05R\ttimestamp\x88\x01\x01\x12/\n" +
 	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\x1aE\n" +
 	"\x17ExtendedstatisticsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"L\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01B\n" +
+	"\n" +
+	"\b_averageB\n" +
+	"\n" +
+	"\b_maximumB\n" +
+	"\n" +
+	"\b_minimumB\x0e\n" +
+	"\f_samplecountB\x06\n" +
+	"\x04_sumB\f\n" +
+	"\n" +
+	"_timestamp\"L\n" +
 	"\x18DeleteAlarmMuteRuleInput\x120\n" +
 	"\x11alarmmuterulename\x18ǘ\x92\xfd\x01 \x01(\tR\x11alarmmuterulename\"6\n" +
 	"\x11DeleteAlarmsInput\x12!\n" +
 	"\n" +
 	"alarmnames\x18\xd7Ū+ \x03(\tR\n" +
-	"alarmnames\"\x8c\x03\n" +
-	"\x1aDeleteAnomalyDetectorInput\x129\n" +
+	"alarmnames\"\x8e\x04\n" +
+	"\x1aDeleteAnomalyDetectorInput\x125\n" +
+	"\x11anomalydetectorid\x18\xba\x9d\xaa\xba\x01 \x01(\tH\x00R\x11anomalydetectorid\x88\x01\x01\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
 	"dimensions\x12g\n" +
-	"\x19metricmathanomalydetector\x18\xe3\xdb\xc1\xd1\x01 \x01(\v2%.cloudwatch.MetricMathAnomalyDetectorR\x19metricmathanomalydetector\x12!\n" +
+	"\x19metricmathanomalydetector\x18\xe3\xdb\xc1\xd1\x01 \x01(\v2%.cloudwatch.MetricMathAnomalyDetectorR\x19metricmathanomalydetector\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12m\n" +
-	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x16\n" +
-	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tR\x04stat\"\x1d\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x01R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x02R\tnamespace\x88\x01\x01\x12m\n" +
+	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x1b\n" +
+	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tH\x03R\x04stat\x88\x01\x01B\x14\n" +
+	"\x12_anomalydetectoridB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\a\n" +
+	"\x05_stat\"\x1d\n" +
 	"\x1bDeleteAnomalyDetectorOutput\"C\n" +
 	"\x15DeleteDashboardsInput\x12*\n" +
 	"\x0edashboardnames\x18\xca\xe9\xf9\xde\x01 \x03(\tR\x0edashboardnames\"\x18\n" +
@@ -10228,101 +11130,139 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2\x1a.cloudwatch.PartialFailureR\bfailures\"0\n" +
 	"\x17DeleteMetricStreamInput\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x1a\n" +
-	"\x18DeleteMetricStreamOutput\"b\n" +
+	"\x18DeleteMetricStreamOutput\"u\n" +
 	"\x1eDescribeAlarmContributorsInput\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x91\x01\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xa4\x01\n" +
 	"\x1fDescribeAlarmContributorsOutput\x12M\n" +
-	"\x11alarmcontributors\x18\x89\xe1\xe2~ \x03(\v2\x1c.cloudwatch.AlarmContributorR\x11alarmcontributors\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xbd\x03\n" +
-	"\x19DescribeAlarmHistoryInput\x122\n" +
-	"\x12alarmcontributorid\x18\x87\xebّ\x01 \x01(\tR\x12alarmcontributorid\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x129\n" +
+	"\x11alarmcontributors\x18\x89\xe1\xe2~ \x03(\v2\x1c.cloudwatch.AlarmContributorR\x11alarmcontributors\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xa3\x04\n" +
+	"\x19DescribeAlarmHistoryInput\x127\n" +
+	"\x12alarmcontributorid\x18\x87\xebّ\x01 \x01(\tH\x00R\x12alarmcontributorid\x88\x01\x01\x12$\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tH\x01R\talarmname\x88\x01\x01\x129\n" +
 	"\n" +
 	"alarmtypes\x18\xcc\xc4\xc6\xd4\x01 \x03(\x0e2\x15.cloudwatch.AlarmTypeR\n" +
-	"alarmtypes\x12\x1b\n" +
-	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12I\n" +
+	"alarmtypes\x12 \n" +
+	"\aenddate\x18ϳ\xf9$ \x01(\tH\x02R\aenddate\x88\x01\x01\x12I\n" +
 	"\x0fhistoryitemtype\x18\xf1\xae\xfc\xd2\x01 \x01(\x0e2\x1b.cloudwatch.HistoryItemTypeR\x0fhistoryitemtype\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12.\n" +
-	"\x06scanby\x18\x86茤\x01 \x01(\x0e2\x12.cloudwatch.ScanByR\x06scanby\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdateB\r\n" +
-	"\v_maxrecords\"\x8c\x01\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
+	"maxrecords\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x04R\tnexttoken\x88\x01\x01\x12.\n" +
+	"\x06scanby\x18\x86茤\x01 \x01(\x0e2\x12.cloudwatch.ScanByR\x06scanby\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\x05R\tstartdate\x88\x01\x01B\x15\n" +
+	"\x13_alarmcontributoridB\f\n" +
+	"\n" +
+	"_alarmnameB\n" +
+	"\n" +
+	"\b_enddateB\r\n" +
+	"\v_maxrecordsB\f\n" +
+	"\n" +
+	"_nexttokenB\f\n" +
+	"\n" +
+	"_startdate\"\x9f\x01\n" +
 	"\x1aDescribeAlarmHistoryOutput\x12M\n" +
-	"\x11alarmhistoryitems\x18\xf7\xe4\xebH \x03(\v2\x1c.cloudwatch.AlarmHistoryItemR\x11alarmhistoryitems\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xe4\x02\n" +
+	"\x11alarmhistoryitems\x18\xf7\xe4\xebH \x03(\v2\x1c.cloudwatch.AlarmHistoryItemR\x11alarmhistoryitems\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xff\x02\n" +
 	"\x1cDescribeAlarmsForMetricInput\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
-	"dimensions\x120\n" +
-	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tR\x11extendedstatistic\x12!\n" +
+	"dimensions\x125\n" +
+	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tH\x00R\x11extendedstatistic\x88\x01\x01\x12!\n" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12 \n" +
 	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x1e\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x00R\x06period\x88\x01\x01\x126\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x01R\x06period\x88\x01\x01\x126\n" +
 	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x15.cloudwatch.StatisticR\tstatistic\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\t\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\x14\n" +
+	"\x12_extendedstatisticB\t\n" +
 	"\a_period\"_\n" +
 	"\x1dDescribeAlarmsForMetricOutput\x12>\n" +
-	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\"\xc4\x03\n" +
-	"\x13DescribeAlarmsInput\x12%\n" +
-	"\factionprefix\x18\xd4\xed\xa2  \x01(\tR\factionprefix\x12+\n" +
-	"\x0falarmnameprefix\x18\xf6\xc5\xfc- \x01(\tR\x0falarmnameprefix\x12!\n" +
+	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\"\xbf\x04\n" +
+	"\x13DescribeAlarmsInput\x12*\n" +
+	"\factionprefix\x18\xd4\xed\xa2  \x01(\tH\x00R\factionprefix\x88\x01\x01\x120\n" +
+	"\x0falarmnameprefix\x18\xf6\xc5\xfc- \x01(\tH\x01R\x0falarmnameprefix\x88\x01\x01\x12!\n" +
 	"\n" +
 	"alarmnames\x18\xd7Ū+ \x03(\tR\n" +
 	"alarmnames\x129\n" +
 	"\n" +
 	"alarmtypes\x18\xcc\xc4\xc6\xd4\x01 \x03(\x0e2\x15.cloudwatch.AlarmTypeR\n" +
-	"alarmtypes\x123\n" +
-	"\x13childrenofalarmname\x18\xd4\xfb\xaaa \x01(\tR\x13childrenofalarmname\x12&\n" +
+	"alarmtypes\x128\n" +
+	"\x13childrenofalarmname\x18\xd4\xfb\xaaa \x01(\tH\x02R\x13childrenofalarmname\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x122\n" +
-	"\x12parentsofalarmname\x18츬\xf4\x01 \x01(\tR\x12parentsofalarmname\x12:\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x03R\n" +
+	"maxrecords\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x04R\tnexttoken\x88\x01\x01\x127\n" +
+	"\x12parentsofalarmname\x18츬\xf4\x01 \x01(\tH\x05R\x12parentsofalarmname\x88\x01\x01\x12:\n" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
-	"statevalueB\r\n" +
-	"\v_maxrecords\"\xc0\x01\n" +
+	"statevalueB\x0f\n" +
+	"\r_actionprefixB\x12\n" +
+	"\x10_alarmnameprefixB\x16\n" +
+	"\x14_childrenofalarmnameB\r\n" +
+	"\v_maxrecordsB\f\n" +
+	"\n" +
+	"_nexttokenB\x15\n" +
+	"\x13_parentsofalarmname\"\x8a\x02\n" +
 	"\x14DescribeAlarmsOutput\x12G\n" +
-	"\x0fcompositealarms\x18\xbf\x95\x8af \x03(\v2\x1a.cloudwatch.CompositeAlarmR\x0fcompositealarms\x12>\n" +
-	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd1\x02\n" +
-	"\x1dDescribeAnomalyDetectorsInput\x12W\n" +
+	"\x0fcompositealarms\x18\xbf\x95\x8af \x03(\v2\x1a.cloudwatch.CompositeAlarmR\x0fcompositealarms\x125\n" +
+	"\tlogalarms\x18\xd8\xe7\xdbq \x03(\v2\x14.cloudwatch.LogAlarmR\tlogalarms\x12>\n" +
+	"\fmetricalarms\x18Ȫ\x968 \x03(\v2\x17.cloudwatch.MetricAlarmR\fmetricalarms\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xbf\x03\n" +
+	"\x1dDescribeAnomalyDetectorsInput\x122\n" +
+	"\x12anomalydetectorids\x18\xff\x8f\xfb\xa2\x01 \x03(\tR\x12anomalydetectorids\x12W\n" +
 	"\x14anomalydetectortypes\x18\xbe\x82\xe8\x82\x01 \x03(\x0e2\x1f.cloudwatch.AnomalyDetectorTypeR\x14anomalydetectortypes\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
 	"dimensions\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12!\n" +
+	"maxresults\x88\x01\x01\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x8e\x01\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x01R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x02R\tnamespace\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa1\x01\n" +
 	"\x1eDescribeAnomalyDetectorsOutput\x12K\n" +
-	"\x10anomalydetectors\x18\xa6\xbc\xa6\xbe\x01 \x03(\v2\x1b.cloudwatch.AnomalyDetectorR\x10anomalydetectors\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"t\n" +
+	"\x10anomalydetectors\x18\xa6\xbc\xa6\xbe\x01 \x03(\v2\x1b.cloudwatch.AnomalyDetectorR\x10anomalydetectors\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x87\x01\n" +
 	"\x19DescribeInsightRulesInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"}\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x90\x01\n" +
 	"\x1aDescribeInsightRulesOutput\x12>\n" +
-	"\finsightrules\x18\xf3\x91\xce) \x03(\v2\x17.cloudwatch.InsightRuleR\finsightrules\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"<\n" +
+	"\finsightrules\x18\xf3\x91\xce) \x03(\v2\x17.cloudwatch.InsightRuleR\finsightrules\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"<\n" +
 	"\tDimension\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"B\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"Q\n" +
 	"\x0fDimensionFilter\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"=\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"=\n" +
 	"\x18DisableAlarmActionsInput\x12!\n" +
 	"\n" +
 	"alarmnames\x18\xd7Ū+ \x03(\tR\n" +
@@ -10359,64 +11299,88 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"metricdata\x18\xb2\xa9\xdaM \x03(\v2\x17.cloudwatch.MetricDatumR\n" +
 	"metricdata\"`\n" +
 	"\x12EvaluationCriteria\x12J\n" +
-	"\x0epromqlcriteria\x18\xa4\xd7\xf9: \x01(\v2\x1f.cloudwatch.AlarmPromQLCriteriaR\x0epromqlcriteria\"I\n" +
+	"\x0epromqlcriteria\x18\xa4\xd7\xf9: \x01(\v2\x1f.cloudwatch.AlarmPromQLCriteriaR\x0epromqlcriteria\"\xa1\x01\n" +
+	"\x10EvaluationWindow\x12B\n" +
+	"\rslidingwindow\x18\x92\xc6\xf2\x15 \x01(\v2\x19.cloudwatch.SlidingWindowR\rslidingwindow\x12I\n" +
+	"\x0fwallclockwindow\x18\xf6飚\x01 \x01(\v2\x1b.cloudwatch.WallClockWindowR\x0fwallclockwindow\"I\n" +
 	"\x15GetAlarmMuteRuleInput\x120\n" +
-	"\x11alarmmuterulename\x18ǘ\x92\xfd\x01 \x01(\tR\x11alarmmuterulename\"\xc5\x03\n" +
-	"\x16GetAlarmMuteRuleOutput\x12.\n" +
-	"\x10alarmmuterulearn\x18ݭ\xae\xeb\x01 \x01(\tR\x10alarmmuterulearn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\"\n" +
+	"\x11alarmmuterulename\x18ǘ\x92\xfd\x01 \x01(\tR\x11alarmmuterulename\"\xd9\x04\n" +
+	"\x16GetAlarmMuteRuleOutput\x123\n" +
+	"\x10alarmmuterulearn\x18ݭ\xae\xeb\x01 \x01(\tH\x00R\x10alarmmuterulearn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12'\n" +
 	"\n" +
-	"expiredate\x18\xe7\xd9\xc6\xd8\x01 \x01(\tR\n" +
-	"expiredate\x125\n" +
-	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tR\x14lastupdatedtimestamp\x12=\n" +
-	"\vmutetargets\x18ˤ\x8c\xaa\x01 \x01(\v2\x17.cloudwatch.MuteTargetsR\vmutetargets\x12\x1d\n" +
-	"\bmutetype\x18\xbd\xf5\x835 \x01(\tR\bmutetype\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
-	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x10.cloudwatch.RuleR\x04rule\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12:\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\x06status\"=\n" +
+	"expiredate\x18\xe7\xd9\xc6\xd8\x01 \x01(\tH\x02R\n" +
+	"expiredate\x88\x01\x01\x12:\n" +
+	"\x14lastupdatedtimestamp\x18\x95\xcb\xc8? \x01(\tH\x03R\x14lastupdatedtimestamp\x88\x01\x01\x12=\n" +
+	"\vmutetargets\x18ˤ\x8c\xaa\x01 \x01(\v2\x17.cloudwatch.MuteTargetsR\vmutetargets\x12\"\n" +
+	"\bmutetype\x18\xbd\xf5\x835 \x01(\tH\x04R\bmutetype\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12(\n" +
+	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x10.cloudwatch.RuleR\x04rule\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\x06R\tstartdate\x88\x01\x01\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\x06statusB\x13\n" +
+	"\x11_alarmmuterulearnB\x0e\n" +
+	"\f_descriptionB\r\n" +
+	"\v_expiredateB\x17\n" +
+	"\x15_lastupdatedtimestampB\v\n" +
+	"\t_mutetypeB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_startdate\"=\n" +
 	"\x11GetDashboardInput\x12(\n" +
-	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\"\x8e\x01\n" +
-	"\x12GetDashboardOutput\x12%\n" +
-	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x12'\n" +
-	"\rdashboardbody\x18\xe4\xdb\xcf\x01 \x01(\tR\rdashboardbody\x12(\n" +
-	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\"C\n" +
+	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\"\xd2\x01\n" +
+	"\x12GetDashboardOutput\x12*\n" +
+	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tH\x00R\fdashboardarn\x88\x01\x01\x12,\n" +
+	"\rdashboardbody\x18\xe4\xdb\xcf\x01 \x01(\tH\x01R\rdashboardbody\x88\x01\x01\x12-\n" +
+	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tH\x02R\rdashboardname\x88\x01\x01B\x0f\n" +
+	"\r_dashboardarnB\x10\n" +
+	"\x0e_dashboardbodyB\x10\n" +
+	"\x0e_dashboardname\"C\n" +
 	"\x0fGetDatasetInput\x120\n" +
-	"\x11datasetidentifier\x18\xf9\xa8\xb7\xe3\x01 \x01(\tR\x11datasetidentifier\"k\n" +
+	"\x11datasetidentifier\x18\xf9\xa8\xb7\xe3\x01 \x01(\tR\x11datasetidentifier\"~\n" +
 	"\x10GetDatasetOutput\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12 \n" +
-	"\tdatasetid\x18\xef\xef\xe4\xe8\x01 \x01(\tR\tdatasetid\x12\x1f\n" +
-	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\"\xa3\x02\n" +
+	"\tdatasetid\x18\xef\xef\xe4\xe8\x01 \x01(\tR\tdatasetid\x12$\n" +
+	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tH\x00R\tkmskeyarn\x88\x01\x01B\f\n" +
+	"\n" +
+	"_kmskeyarn\"\xb4\x02\n" +
 	"\x19GetInsightRuleReportInput\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x129\n" +
 	"\x13maxcontributorcount\x18\xe6Ԁ\x82\x01 \x01(\x05H\x00R\x13maxcontributorcount\x88\x01\x01\x12\x1c\n" +
-	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\tR\ametrics\x12\x1c\n" +
-	"\aorderby\x18オ\xa8\x01 \x01(\tR\aorderby\x12\x19\n" +
+	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\tR\ametrics\x12!\n" +
+	"\aorderby\x18オ\xa8\x01 \x01(\tH\x01R\aorderby\x88\x01\x01\x12\x19\n" +
 	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x12\x1d\n" +
 	"\brulename\x18\x99ȯf \x01(\tR\brulename\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\x16\n" +
-	"\x14_maxcontributorcount\"\x9d\x03\n" +
-	"\x1aGetInsightRuleReportOutput\x12)\n" +
-	"\x0eaggregatevalue\x18ڃ\xb8k \x01(\x01R\x0eaggregatevalue\x126\n" +
-	"\x14aggregationstatistic\x18\xde\xfc\xf2\x9e\x01 \x01(\tR\x14aggregationstatistic\x12>\n" +
-	"\x16approximateuniquecount\x18\xba\xd1\xc2\x1a \x01(\x03H\x00R\x16approximateuniquecount\x88\x01\x01\x12I\n" +
+	"\x14_maxcontributorcountB\n" +
+	"\n" +
+	"\b_orderby\"\xd3\x03\n" +
+	"\x1aGetInsightRuleReportOutput\x12.\n" +
+	"\x0eaggregatevalue\x18ڃ\xb8k \x01(\x01H\x00R\x0eaggregatevalue\x88\x01\x01\x12;\n" +
+	"\x14aggregationstatistic\x18\xde\xfc\xf2\x9e\x01 \x01(\tH\x01R\x14aggregationstatistic\x88\x01\x01\x12>\n" +
+	"\x16approximateuniquecount\x18\xba\xd1\xc2\x1a \x01(\x03H\x02R\x16approximateuniquecount\x88\x01\x01\x12I\n" +
 	"\fcontributors\x18\xfc\x97\x98P \x03(\v2\".cloudwatch.InsightRuleContributorR\fcontributors\x12\x1f\n" +
 	"\tkeylabels\x18̍\xd5\a \x03(\tR\tkeylabels\x12U\n" +
-	"\x10metricdatapoints\x18\x9b͡8 \x03(\v2&.cloudwatch.InsightRuleMetricDatapointR\x10metricdatapointsB\x19\n" +
-	"\x17_approximateuniquecount\"\xf3\x02\n" +
+	"\x10metricdatapoints\x18\x9b͡8 \x03(\v2&.cloudwatch.InsightRuleMetricDatapointR\x10metricdatapointsB\x11\n" +
+	"\x0f_aggregatevalueB\x17\n" +
+	"\x15_aggregationstatisticB\x19\n" +
+	"\x17_approximateuniquecount\"\x86\x03\n" +
 	"\x12GetMetricDataInput\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12?\n" +
 	"\flabeloptions\x18\x8e\xb9\x98X \x01(\v2\x18.cloudwatch.LabelOptionsR\flabeloptions\x12,\n" +
 	"\rmaxdatapoints\x18Ü\xbf. \x01(\x05H\x00R\rmaxdatapoints\x88\x01\x01\x12L\n" +
-	"\x11metricdataqueries\x18\xe0\x82\xfc+ \x03(\v2\x1b.cloudwatch.MetricDataQueryR\x11metricdataqueries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12.\n" +
+	"\x11metricdataqueries\x18\xe0\x82\xfc+ \x03(\v2\x1b.cloudwatch.MetricDataQueryR\x11metricdataqueries\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12.\n" +
 	"\x06scanby\x18\x86茤\x01 \x01(\x0e2\x12.cloudwatch.ScanByR\x06scanby\x12 \n" +
 	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\x10\n" +
-	"\x0e_maxdatapoints\"\xbf\x01\n" +
+	"\x0e_maxdatapointsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xd2\x01\n" +
 	"\x13GetMetricDataOutput\x127\n" +
 	"\bmessages\x18ֿ\x84\xc3\x01 \x03(\v2\x17.cloudwatch.MessageDataR\bmessages\x12N\n" +
-	"\x11metricdataresults\x18\x8a\x82\x9e\xb2\x01 \x03(\v2\x1c.cloudwatch.MetricDataResultR\x11metricdataresults\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x03\n" +
+	"\x11metricdataresults\x18\x8a\x82\x9e\xb2\x01 \x03(\v2\x1c.cloudwatch.MetricDataResultR\x11metricdataresults\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x94\x03\n" +
 	"\x18GetMetricStatisticsInput\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
@@ -10432,33 +11396,44 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"statistics\x18\xab\xe0\xbe\xf3\x01 \x03(\x0e2\x15.cloudwatch.StatisticR\n" +
 	"statistics\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\"o\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\"~\n" +
 	"\x19GetMetricStatisticsOutput\x128\n" +
 	"\n" +
 	"datapoints\x18\xc7\xc7\xf1\x11 \x03(\v2\x15.cloudwatch.DatapointR\n" +
-	"datapoints\x12\x18\n" +
-	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\"-\n" +
+	"datapoints\x12\x1d\n" +
+	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tH\x00R\x05label\x88\x01\x01B\b\n" +
+	"\x06_label\"-\n" +
 	"\x14GetMetricStreamInput\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xb7\x05\n" +
-	"\x15GetMetricStreamOutput\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12J\n" +
-	"\x0eexcludefilters\x18\xf9\xb9\xcd\xcb\x01 \x03(\v2\x1e.cloudwatch.MetricStreamFilterR\x0eexcludefilters\x12#\n" +
-	"\vfirehosearn\x18\xb8\x8c\xbb\x1a \x01(\tR\vfirehosearn\x12I\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xb5\x06\n" +
+	"\x15GetMetricStreamOutput\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x01R\fcreationdate\x88\x01\x01\x12J\n" +
+	"\x0eexcludefilters\x18\xf9\xb9\xcd\xcb\x01 \x03(\v2\x1e.cloudwatch.MetricStreamFilterR\x0eexcludefilters\x12(\n" +
+	"\vfirehosearn\x18\xb8\x8c\xbb\x1a \x01(\tH\x02R\vfirehosearn\x88\x01\x01\x12I\n" +
 	"\x0eincludefilters\x18\xf7\x97\xb0+ \x03(\v2\x1e.cloudwatch.MetricStreamFilterR\x0eincludefilters\x12K\n" +
-	"\x1cincludelinkedaccountsmetrics\x18\xc0ȗ\xaa\x01 \x01(\bH\x00R\x1cincludelinkedaccountsmetrics\x88\x01\x01\x12)\n" +
-	"\x0elastupdatedate\x18ʹ\xad\x1f \x01(\tR\x0elastupdatedate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12L\n" +
-	"\foutputformat\x18\xf8\xe2\xc5\xf7\x01 \x01(\x0e2$.cloudwatch.MetricStreamOutputFormatR\foutputformat\x12\x1c\n" +
-	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x12n\n" +
-	"\x18statisticsconfigurations\x18\xd2\xd0\xeeS \x03(\v2/.cloudwatch.MetricStreamStatisticsConfigurationR\x18statisticsconfigurationsB\x1f\n" +
-	"\x1d_includelinkedaccountsmetrics\"k\n" +
+	"\x1cincludelinkedaccountsmetrics\x18\xc0ȗ\xaa\x01 \x01(\bH\x03R\x1cincludelinkedaccountsmetrics\x88\x01\x01\x12.\n" +
+	"\x0elastupdatedate\x18ʹ\xad\x1f \x01(\tH\x04R\x0elastupdatedate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12L\n" +
+	"\foutputformat\x18\xf8\xe2\xc5\xf7\x01 \x01(\x0e2$.cloudwatch.MetricStreamOutputFormatR\foutputformat\x12!\n" +
+	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tH\x06R\arolearn\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\aR\x05state\x88\x01\x01\x12n\n" +
+	"\x18statisticsconfigurations\x18\xd2\xd0\xeeS \x03(\v2/.cloudwatch.MetricStreamStatisticsConfigurationR\x18statisticsconfigurationsB\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_creationdateB\x0e\n" +
+	"\f_firehosearnB\x1f\n" +
+	"\x1d_includelinkedaccountsmetricsB\x11\n" +
+	"\x0f_lastupdatedateB\a\n" +
+	"\x05_nameB\n" +
+	"\n" +
+	"\b_rolearnB\b\n" +
+	"\x06_state\"\x81\x01\n" +
 	"\x19GetMetricWidgetImageInput\x12&\n" +
-	"\fmetricwidget\x18\xaa\xca\xfa\x86\x01 \x01(\tR\fmetricwidget\x12&\n" +
-	"\foutputformat\x18\xf8\xe2\xc5\xf7\x01 \x01(\tR\foutputformat\"N\n" +
-	"\x1aGetMetricWidgetImageOutput\x120\n" +
-	"\x11metricwidgetimage\x18\xcf\xe3\x96\xe7\x01 \x01(\fR\x11metricwidgetimage\"\x18\n" +
+	"\fmetricwidget\x18\xaa\xca\xfa\x86\x01 \x01(\tR\fmetricwidget\x12+\n" +
+	"\foutputformat\x18\xf8\xe2\xc5\xf7\x01 \x01(\tH\x00R\foutputformat\x88\x01\x01B\x0f\n" +
+	"\r_outputformat\"i\n" +
+	"\x1aGetMetricWidgetImageOutput\x125\n" +
+	"\x11metricwidgetimage\x18\xcf\xe3\x96\xe7\x01 \x01(\fH\x00R\x11metricwidgetimage\x88\x01\x01B\x14\n" +
+	"\x12_metricwidgetimage\"\x18\n" +
 	"\x16GetOTelEnrichmentInput\"V\n" +
 	"\x17GetOTelEnrichmentOutput\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudwatch.OTelEnrichmentStatusR\x06status\"\x92\x02\n" +
@@ -10481,183 +11456,311 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x04keys\x18\xee\xe5\xac\x01 \x03(\tR\x04keys\"r\n" +
 	"\x1fInsightRuleContributorDatapoint\x12.\n" +
 	"\x10approximatevalue\x18\xffŹ\xcc\x01 \x01(\x01R\x10approximatevalue\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\"\xbb\x02\n" +
-	"\x1aInsightRuleMetricDatapoint\x12\x1b\n" +
-	"\aaverage\x18ɛ\x9e@ \x01(\x01R\aaverage\x124\n" +
-	"\x13maxcontributorvalue\x18؊\xbf\xb9\x01 \x01(\x01R\x13maxcontributorvalue\x12\x1b\n" +
-	"\amaximum\x18\xa2\xbc\xd5\x14 \x01(\x01R\amaximum\x12\x1c\n" +
-	"\aminimum\x18\x98\x95\x8e\xd1\x01 \x01(\x01R\aminimum\x12$\n" +
-	"\vsamplecount\x18\x9f\xd2ŷ\x01 \x01(\x01R\vsamplecount\x12\x14\n" +
-	"\x03sum\x18ɤ\xe3\xfe\x01 \x01(\x01R\x03sum\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x122\n" +
-	"\x12uniquecontributors\x18\xa5\xca\xc0\xf0\x01 \x01(\x01R\x12uniquecontributors\"3\n" +
-	"\x14InternalServiceFault\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"1\n" +
-	"\x12InvalidFormatFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"/\n" +
-	"\x10InvalidNextToken\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"C\n" +
-	"$InvalidParameterCombinationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidParameterValueException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\"\xc9\x03\n" +
+	"\x1aInsightRuleMetricDatapoint\x12 \n" +
+	"\aaverage\x18ɛ\x9e@ \x01(\x01H\x00R\aaverage\x88\x01\x01\x129\n" +
+	"\x13maxcontributorvalue\x18؊\xbf\xb9\x01 \x01(\x01H\x01R\x13maxcontributorvalue\x88\x01\x01\x12 \n" +
+	"\amaximum\x18\xa2\xbc\xd5\x14 \x01(\x01H\x02R\amaximum\x88\x01\x01\x12!\n" +
+	"\aminimum\x18\x98\x95\x8e\xd1\x01 \x01(\x01H\x03R\aminimum\x88\x01\x01\x12)\n" +
+	"\vsamplecount\x18\x9f\xd2ŷ\x01 \x01(\x01H\x04R\vsamplecount\x88\x01\x01\x12\x19\n" +
+	"\x03sum\x18ɤ\xe3\xfe\x01 \x01(\x01H\x05R\x03sum\x88\x01\x01\x12\x1f\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x127\n" +
+	"\x12uniquecontributors\x18\xa5\xca\xc0\xf0\x01 \x01(\x01H\x06R\x12uniquecontributors\x88\x01\x01B\n" +
+	"\n" +
+	"\b_averageB\x16\n" +
+	"\x14_maxcontributorvalueB\n" +
+	"\n" +
+	"\b_maximumB\n" +
+	"\n" +
+	"\b_minimumB\x0e\n" +
+	"\f_samplecountB\x06\n" +
+	"\x04_sumB\x15\n" +
+	"\x13_uniquecontributors\"D\n" +
+	"\x14InternalServiceFault\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12InvalidFormatFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"@\n" +
+	"\x10InvalidNextToken\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"T\n" +
+	"$InvalidParameterCombinationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidParameterValueException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"7\n" +
 	"\x18KmsAccessDeniedException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
 	"\x17KmsKeyDisabledException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
 	"\x17KmsKeyNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"-\n" +
-	"\fLabelOptions\x12\x1d\n" +
-	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\"5\n" +
-	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"1\n" +
-	"\x12LimitExceededFault\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xd3\x01\n" +
-	"\x17ListAlarmMuteRulesInput\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12&\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"?\n" +
+	"\fLabelOptions\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH\x00R\btimezone\x88\x01\x01B\v\n" +
+	"\t_timezone\"F\n" +
+	"\x16LimitExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x00R\n" +
-	"maxrecords\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12?\n" +
-	"\bstatuses\x18\xd8Ȯ\xb2\x01 \x03(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\bstatusesB\r\n" +
-	"\v_maxrecords\"\x99\x01\n" +
+	"\b_message\"B\n" +
+	"\x12LimitExceededFault\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xf9\x01\n" +
+	"\x17ListAlarmMuteRulesInput\x12$\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tH\x00R\talarmname\x88\x01\x01\x12&\n" +
+	"\n" +
+	"maxrecords\x18\x82\xf6\x86i \x01(\x05H\x01R\n" +
+	"maxrecords\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12?\n" +
+	"\bstatuses\x18\xd8Ȯ\xb2\x01 \x03(\x0e2\x1f.cloudwatch.AlarmMuteRuleStatusR\bstatusesB\f\n" +
+	"\n" +
+	"_alarmnameB\r\n" +
+	"\v_maxrecordsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xac\x01\n" +
 	"\x18ListAlarmMuteRulesOutput\x12\\\n" +
-	"\x16alarmmuterulesummaries\x18\xd4\xe8\x9e\xd2\x01 \x03(\v2 .cloudwatch.AlarmMuteRuleSummaryR\x16alarmmuterulesummaries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"l\n" +
-	"\x13ListDashboardsInput\x124\n" +
-	"\x13dashboardnameprefix\x18\xfd\xc2ď\x01 \x01(\tR\x13dashboardnameprefix\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x83\x01\n" +
+	"\x16alarmmuterulesummaries\x18\xd4\xe8\x9e\xd2\x01 \x03(\v2 .cloudwatch.AlarmMuteRuleSummaryR\x16alarmmuterulesummaries\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x9c\x01\n" +
+	"\x13ListDashboardsInput\x129\n" +
+	"\x13dashboardnameprefix\x18\xfd\xc2ď\x01 \x01(\tH\x00R\x13dashboardnameprefix\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\x16\n" +
+	"\x14_dashboardnameprefixB\f\n" +
+	"\n" +
+	"_nexttoken\"\x96\x01\n" +
 	"\x14ListDashboardsOutput\x12J\n" +
-	"\x10dashboardentries\x18\xba\xa3\x85\x86\x01 \x03(\v2\x1a.cloudwatch.DashboardEntryR\x10dashboardentries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x9d\x01\n" +
+	"\x10dashboardentries\x18\xba\xa3\x85\x86\x01 \x03(\v2\x1a.cloudwatch.DashboardEntryR\x10dashboardentries\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xb0\x01\n" +
 	"\x1cListManagedInsightRulesInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12$\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\r\n" +
-	"\v_maxresults\"\x8c\x01\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x9f\x01\n" +
 	"\x1dListManagedInsightRulesOutput\x12J\n" +
-	"\fmanagedrules\x18\xda\xdf\xc0\xa5\x01 \x03(\v2\".cloudwatch.ManagedRuleDescriptionR\fmanagedrules\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"q\n" +
+	"\fmanagedrules\x18\xda\xdf\xc0\xa5\x01 \x03(\v2\".cloudwatch.ManagedRuleDescriptionR\fmanagedrules\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x84\x01\n" +
 	"\x16ListMetricStreamsInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"w\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8a\x01\n" +
 	"\x17ListMetricStreamsOutput\x12;\n" +
-	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2\x1d.cloudwatch.MetricStreamEntryR\aentries\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x82\x03\n" +
+	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2\x1d.cloudwatch.MetricStreamEntryR\aentries\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xd3\x03\n" +
 	"\x10ListMetricsInput\x12?\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x1b.cloudwatch.DimensionFilterR\n" +
 	"dimensions\x12<\n" +
-	"\x15includelinkedaccounts\x18\xf3\xf8\x80m \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12!\n" +
+	"\x15includelinkedaccounts\x18\xf3\xf8\x80m \x01(\bH\x00R\x15includelinkedaccounts\x88\x01\x01\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12(\n" +
-	"\rowningaccount\x18ɀ\x8e\xa2\x01 \x01(\tR\rowningaccount\x12E\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x01R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x02R\tnamespace\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12-\n" +
+	"\rowningaccount\x18ɀ\x8e\xa2\x01 \x01(\tH\x04R\rowningaccount\x88\x01\x01\x12E\n" +
 	"\x0erecentlyactive\x18\xb8\xfc\xd2U \x01(\x0e2\x1a.cloudwatch.RecentlyActiveR\x0erecentlyactiveB\x18\n" +
-	"\x16_includelinkedaccounts\"\x91\x01\n" +
+	"\x16_includelinkedaccountsB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\f\n" +
+	"\n" +
+	"_nexttokenB\x10\n" +
+	"\x0e_owningaccount\"\xa4\x01\n" +
 	"\x11ListMetricsOutput\x120\n" +
-	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x12.cloudwatch.MetricR\ametrics\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12)\n" +
+	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x12.cloudwatch.MetricR\ametrics\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12)\n" +
 	"\x0eowningaccounts\x18⹋\n" +
-	" \x03(\tR\x0eowningaccounts\"@\n" +
+	" \x03(\tR\x0eowningaccountsB\f\n" +
+	"\n" +
+	"_nexttoken\"@\n" +
 	"\x18ListTagsForResourceInput\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\"D\n" +
 	"\x19ListTagsForResourceOutput\x12'\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"\x84\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"\xb3\r\n" +
+	"\bLogAlarm\x127\n" +
+	"\x12actionloglinecount\x18\x8d\x9c\x8b\xf1\x01 \x01(\x05H\x00R\x12actionloglinecount\x88\x01\x01\x129\n" +
+	"\x14actionloglinerolearn\x18\xe9\x90) \x01(\tH\x01R\x14actionloglinerolearn\x88\x01\x01\x12.\n" +
+	"\x0eactionsenabled\x18搌< \x01(\bH\x02R\x0eactionsenabled\x88\x01\x01\x12&\n" +
+	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12#\n" +
+	"\balarmarn\x18\x86\xf2\u0383\x01 \x01(\tH\x03R\balarmarn\x88\x01\x01\x12V\n" +
+	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tH\x04R\"alarmconfigurationupdatedtimestamp\x88\x01\x01\x122\n" +
+	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tH\x05R\x10alarmdescription\x88\x01\x01\x12$\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tH\x06R\talarmname\x88\x01\x01\x12Q\n" +
+	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x12I\n" +
+	"\x0fevaluationstate\x18\xf1\xcdʡ\x01 \x01(\x0e2\x1b.cloudwatch.EvaluationStateR\x0fevaluationstate\x12<\n" +
+	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12 \n" +
+	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x128\n" +
+	"\x13queryresultstoalarm\x18\x9c\xbe\xeeY \x01(\x05H\aR\x13queryresultstoalarm\x88\x01\x01\x12?\n" +
+	"\x16queryresultstoevaluate\x18\x86\x8e\xc1\x96\x01 \x01(\x05H\bR\x16queryresultstoevaluate\x88\x01\x01\x12l\n" +
+	"\x1bscheduledqueryconfiguration\x18\xb7\xe6\x84\x17 \x01(\v2'.cloudwatch.ScheduledQueryConfigurationR\x1bscheduledqueryconfiguration\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\tR\vstatereason\x88\x01\x01\x120\n" +
+	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tH\n" +
+	"R\x0fstatereasondata\x88\x01\x01\x12F\n" +
+	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tH\vR\x1astatetransitionedtimestamp\x88\x01\x01\x12=\n" +
+	"\x15stateupdatedtimestamp\x18\x80\x82\x81\xb3\x01 \x01(\tH\fR\x15stateupdatedtimestamp\x88\x01\x01\x12:\n" +
+	"\n" +
+	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
+	"statevalue\x12%\n" +
+	"\tthreshold\x18\x99를\x01 \x01(\x01H\rR\tthreshold\x88\x01\x01\x122\n" +
+	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tH\x0eR\x10treatmissingdata\x88\x01\x01\x12U\n" +
+	"\x13warmupconfiguration\x18\x9a\xb5\xc5\xd1\x01 \x01(\v2\x1f.cloudwatch.WarmUpConfigurationR\x13warmupconfigurationB\x15\n" +
+	"\x13_actionloglinecountB\x17\n" +
+	"\x15_actionloglinerolearnB\x11\n" +
+	"\x0f_actionsenabledB\v\n" +
+	"\t_alarmarnB%\n" +
+	"#_alarmconfigurationupdatedtimestampB\x13\n" +
+	"\x11_alarmdescriptionB\f\n" +
+	"\n" +
+	"_alarmnameB\x16\n" +
+	"\x14_queryresultstoalarmB\x19\n" +
+	"\x17_queryresultstoevaluateB\x0e\n" +
+	"\f_statereasonB\x12\n" +
+	"\x10_statereasondataB\x1d\n" +
+	"\x1b_statetransitionedtimestampB\x18\n" +
+	"\x16_stateupdatedtimestampB\f\n" +
+	"\n" +
+	"_thresholdB\x13\n" +
+	"\x11_treatmissingdata\"\x84\x01\n" +
 	"\vManagedRule\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\x12&\n" +
-	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\"\xa6\x01\n" +
-	"\x16ManagedRuleDescription\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12>\n" +
-	"\trulestate\x18\xa5\xfa\x9d\xc8\x01 \x01(\v2\x1c.cloudwatch.ManagedRuleStateR\trulestate\x12&\n" +
-	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\"K\n" +
+	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tR\ftemplatename\"\xd1\x01\n" +
+	"\x16ManagedRuleDescription\x12)\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tH\x00R\vresourcearn\x88\x01\x01\x12>\n" +
+	"\trulestate\x18\xa5\xfa\x9d\xc8\x01 \x01(\v2\x1c.cloudwatch.ManagedRuleStateR\trulestate\x12+\n" +
+	"\ftemplatename\x18\xb1\x98\x91\xe5\x01 \x01(\tH\x01R\ftemplatename\x88\x01\x01B\x0e\n" +
+	"\f_resourcearnB\x0f\n" +
+	"\r_templatename\"K\n" +
 	"\x10ManagedRuleState\x12\x1d\n" +
 	"\brulename\x18\x99ȯf \x01(\tR\brulename\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\"?\n" +
-	"\vMessageData\x12\x16\n" +
-	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tR\x04code\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\x88\x01\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\"\\\n" +
+	"\vMessageData\x12\x1b\n" +
+	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tH\x00R\x04code\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\a\n" +
+	"\x05_codeB\b\n" +
+	"\x06_value\"\xaf\x01\n" +
 	"\x06Metric\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
-	"dimensions\x12!\n" +
+	"dimensions\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\"\xd2\r\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x00R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x01R\tnamespace\x88\x01\x01B\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespace\"\x87\x12\n" +
 	"\vMetricAlarm\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x12&\n" +
-	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12\x1e\n" +
-	"\balarmarn\x18\x86\xf2\u0383\x01 \x01(\tR\balarmarn\x12Q\n" +
-	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tR\"alarmconfigurationupdatedtimestamp\x12-\n" +
-	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
-	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12Q\n" +
+	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12#\n" +
+	"\balarmarn\x18\x86\xf2\u0383\x01 \x01(\tH\x01R\balarmarn\x88\x01\x01\x12V\n" +
+	"\"alarmconfigurationupdatedtimestamp\x18\x86\xf2\xe1\x18 \x01(\tH\x02R\"alarmconfigurationupdatedtimestamp\x88\x01\x01\x122\n" +
+	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tH\x03R\x10alarmdescription\x88\x01\x01\x12$\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tH\x04R\talarmname\x88\x01\x01\x12Q\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x124\n" +
-	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05H\x01R\x11datapointstoalarm\x88\x01\x01\x129\n" +
+	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05H\x05R\x11datapointstoalarm\x88\x01\x01\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
-	"dimensions\x12M\n" +
-	" evaluatelowsamplecountpercentile\x18\xf3\xcd\xd8\x1e \x01(\tR evaluatelowsamplecountpercentile\x12R\n" +
+	"dimensions\x12R\n" +
+	" evaluatelowsamplecountpercentile\x18\xf3\xcd\xd8\x1e \x01(\tH\x06R evaluatelowsamplecountpercentile\x88\x01\x01\x12R\n" +
 	"\x12evaluationcriteria\x18\xa3\x8f\xee\x92\x01 \x01(\v2\x1e.cloudwatch.EvaluationCriteriaR\x12evaluationcriteria\x126\n" +
-	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05H\x02R\x12evaluationinterval\x88\x01\x01\x124\n" +
-	"\x11evaluationperiods\x18脶f \x01(\x05H\x03R\x11evaluationperiods\x88\x01\x01\x12I\n" +
-	"\x0fevaluationstate\x18\xf1\xcdʡ\x01 \x01(\x0e2\x1b.cloudwatch.EvaluationStateR\x0fevaluationstate\x120\n" +
-	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tR\x11extendedstatistic\x12<\n" +
-	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12!\n" +
+	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05H\aR\x12evaluationinterval\x88\x01\x01\x124\n" +
+	"\x11evaluationperiods\x18脶f \x01(\x05H\bR\x11evaluationperiods\x88\x01\x01\x12I\n" +
+	"\x0fevaluationstate\x18\xf1\xcdʡ\x01 \x01(\x0e2\x1b.cloudwatch.EvaluationStateR\x0fevaluationstate\x12L\n" +
+	"\x10evaluationwindow\x18\xc0ܥ\x80\x01 \x01(\v2\x1c.cloudwatch.EvaluationWindowR\x10evaluationwindow\x125\n" +
+	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tH\tR\x11extendedstatistic\x88\x01\x01\x12<\n" +
+	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x129\n" +
-	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x1b.cloudwatch.MetricDataQueryR\ametrics\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12 \n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\n" +
+	"R\n" +
+	"metricname\x88\x01\x01\x129\n" +
+	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x1b.cloudwatch.MetricDataQueryR\ametrics\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\vR\tnamespace\x88\x01\x01\x12 \n" +
 	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12\x1e\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x04R\x06period\x88\x01\x01\x12$\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12+\n" +
-	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tR\x0fstatereasondata\x12A\n" +
-	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tR\x1astatetransitionedtimestamp\x128\n" +
-	"\x15stateupdatedtimestamp\x18\x80\x82\x81\xb3\x01 \x01(\tR\x15stateupdatedtimestamp\x12:\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\fR\x06period\x88\x01\x01\x12)\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tH\rR\vstatereason\x88\x01\x01\x120\n" +
+	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tH\x0eR\x0fstatereasondata\x88\x01\x01\x12F\n" +
+	"\x1astatetransitionedtimestamp\x18Տ\xa9\x16 \x01(\tH\x0fR\x1astatetransitionedtimestamp\x88\x01\x01\x12=\n" +
+	"\x15stateupdatedtimestamp\x18\x80\x82\x81\xb3\x01 \x01(\tH\x10R\x15stateupdatedtimestamp\x88\x01\x01\x12:\n" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
 	"statevalue\x126\n" +
-	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x15.cloudwatch.StatisticR\tstatistic\x12 \n" +
-	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\x12/\n" +
-	"\x11thresholdmetricid\x18\xf2\xa9\xdb\x13 \x01(\tR\x11thresholdmetricid\x12-\n" +
-	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tR\x10treatmissingdata\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\x11\n" +
-	"\x0f_actionsenabledB\x14\n" +
-	"\x12_datapointstoalarmB\x15\n" +
+	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x15.cloudwatch.StatisticR\tstatistic\x12%\n" +
+	"\tthreshold\x18\x99를\x01 \x01(\x01H\x11R\tthreshold\x88\x01\x01\x124\n" +
+	"\x11thresholdmetricid\x18\xf2\xa9\xdb\x13 \x01(\tH\x12R\x11thresholdmetricid\x88\x01\x01\x122\n" +
+	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tH\x13R\x10treatmissingdata\x88\x01\x01\x12/\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\x12U\n" +
+	"\x13warmupconfiguration\x18\x9a\xb5\xc5\xd1\x01 \x01(\v2\x1f.cloudwatch.WarmUpConfigurationR\x13warmupconfigurationB\x11\n" +
+	"\x0f_actionsenabledB\v\n" +
+	"\t_alarmarnB%\n" +
+	"#_alarmconfigurationupdatedtimestampB\x13\n" +
+	"\x11_alarmdescriptionB\f\n" +
+	"\n" +
+	"_alarmnameB\x14\n" +
+	"\x12_datapointstoalarmB#\n" +
+	"!_evaluatelowsamplecountpercentileB\x15\n" +
 	"\x13_evaluationintervalB\x14\n" +
-	"\x12_evaluationperiodsB\t\n" +
-	"\a_period\"[\n" +
+	"\x12_evaluationperiodsB\x14\n" +
+	"\x12_extendedstatisticB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\t\n" +
+	"\a_periodB\x0e\n" +
+	"\f_statereasonB\x12\n" +
+	"\x10_statereasondataB\x1d\n" +
+	"\x1b_statetransitionedtimestampB\x18\n" +
+	"\x16_stateupdatedtimestampB\f\n" +
+	"\n" +
+	"_thresholdB\x14\n" +
+	"\x12_thresholdmetricidB\x13\n" +
+	"\x11_treatmissingdata\"[\n" +
 	"\x15MetricCharacteristics\x12/\n" +
 	"\x0eperiodicspikes\x18\xf4\xe5\xc3\xd8\x01 \x01(\bH\x00R\x0eperiodicspikes\x88\x01\x01B\x11\n" +
-	"\x0f_periodicspikes\"\xa1\x02\n" +
-	"\x0fMetricDataQuery\x12\x1f\n" +
-	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tR\taccountid\x12!\n" +
+	"\x0f_periodicspikes\"\xd7\x02\n" +
+	"\x0fMetricDataQuery\x12$\n" +
+	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tH\x00R\taccountid\x88\x01\x01\x12&\n" +
 	"\n" +
-	"expression\x18\x8c\xfa\x86\\ \x01(\tR\n" +
-	"expression\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x129\n" +
+	"expression\x18\x8c\xfa\x86\\ \x01(\tH\x01R\n" +
+	"expression\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1d\n" +
+	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tH\x02R\x05label\x88\x01\x01\x129\n" +
 	"\n" +
 	"metricstat\x18\xa4\x85\xdbO \x01(\v2\x16.cloudwatch.MetricStatR\n" +
 	"metricstat\x12\x1e\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x00R\x06period\x88\x01\x01\x12'\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x03R\x06period\x88\x01\x01\x12'\n" +
 	"\n" +
-	"returndata\x18\xe8\x94\xce\xf4\x01 \x01(\bH\x01R\n" +
-	"returndata\x88\x01\x01B\t\n" +
+	"returndata\x18\xe8\x94\xce\xf4\x01 \x01(\bH\x04R\n" +
+	"returndata\x88\x01\x01B\f\n" +
+	"\n" +
+	"_accountidB\r\n" +
+	"\v_expressionB\b\n" +
+	"\x06_labelB\t\n" +
 	"\a_periodB\r\n" +
-	"\v_returndata\"\xf3\x01\n" +
-	"\x10MetricDataResult\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x18\n" +
-	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x127\n" +
+	"\v_returndata\"\x8e\x02\n" +
+	"\x10MetricDataResult\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1d\n" +
+	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tH\x01R\x05label\x88\x01\x01\x127\n" +
 	"\bmessages\x18ֿ\x84\xc3\x01 \x03(\v2\x17.cloudwatch.MessageDataR\bmessages\x12:\n" +
 	"\n" +
 	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x0e2\x16.cloudwatch.StatusCodeR\n" +
@@ -10665,7 +11768,9 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"timestamps\x18\x91\x90\xe9e \x03(\tR\n" +
 	"timestamps\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\x01R\x06values\"\xa0\x03\n" +
+	"\x06values\x18\xdcĴj \x03(\x01R\x06valuesB\x05\n" +
+	"\x03_idB\b\n" +
+	"\x06_label\"\xc2\x03\n" +
 	"\vMetricDatum\x12\x19\n" +
 	"\x06counts\x18\xa6\xa7\xa06 \x03(\x01R\x06counts\x129\n" +
 	"\n" +
@@ -10675,12 +11780,15 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12E\n" +
 	"\x0fstatisticvalues\x18\xa4\xa8\x95, \x01(\v2\x18.cloudwatch.StatisticSetR\x0fstatisticvalues\x124\n" +
-	"\x11storageresolution\x18Պ\xdb\\ \x01(\x05H\x00R\x11storageresolution\x88\x01\x01\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01R\x05value\x12\x19\n" +
+	"\x11storageresolution\x18Պ\xdb\\ \x01(\x05H\x00R\x11storageresolution\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x01R\ttimestamp\x88\x01\x01\x12/\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01H\x02R\x05value\x88\x01\x01\x12\x19\n" +
 	"\x06values\x18\xdcĴj \x03(\x01R\x06valuesB\x14\n" +
-	"\x12_storageresolution\"i\n" +
+	"\x12_storageresolutionB\f\n" +
+	"\n" +
+	"_timestampB\b\n" +
+	"\x06_value\"i\n" +
 	"\x19MetricMathAnomalyDetector\x12L\n" +
 	"\x11metricdataqueries\x18\xe0\x82\xfc+ \x03(\v2\x1b.cloudwatch.MetricDataQueryR\x11metricdataqueries\"\xa0\x01\n" +
 	"\n" +
@@ -10688,18 +11796,26 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x06metric\x18\xa2\xa6\xb0\xb8\x01 \x01(\v2\x12.cloudwatch.MetricR\x06metric\x12\x19\n" +
 	"\x06period\x18\xa5\x88\x929 \x01(\x05R\x06period\x12\x16\n" +
 	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tR\x04stat\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\"\xa0\x02\n" +
-	"\x11MetricStreamEntry\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12#\n" +
-	"\vfirehosearn\x18\xb8\x8c\xbb\x1a \x01(\tR\vfirehosearn\x12)\n" +
-	"\x0elastupdatedate\x18ʹ\xad\x1f \x01(\tR\x0elastupdatedate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12L\n" +
-	"\foutputformat\x18\xf8\xe2\xc5\xf7\x01 \x01(\x0e2$.cloudwatch.MetricStreamOutputFormatR\foutputformat\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\"[\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\"\x8d\x03\n" +
+	"\x11MetricStreamEntry\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x01R\fcreationdate\x88\x01\x01\x12(\n" +
+	"\vfirehosearn\x18\xb8\x8c\xbb\x1a \x01(\tH\x02R\vfirehosearn\x88\x01\x01\x12.\n" +
+	"\x0elastupdatedate\x18ʹ\xad\x1f \x01(\tH\x03R\x0elastupdatedate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12L\n" +
+	"\foutputformat\x18\xf8\xe2\xc5\xf7\x01 \x01(\x0e2$.cloudwatch.MetricStreamOutputFormatR\foutputformat\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\x05R\x05state\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_creationdateB\x0e\n" +
+	"\f_firehosearnB\x11\n" +
+	"\x0f_lastupdatedateB\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state\"n\n" +
 	"\x12MetricStreamFilter\x12#\n" +
-	"\vmetricnames\x18\xac\xb6\xf1\x1a \x03(\tR\vmetricnames\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\"\xb1\x01\n" +
+	"\vmetricnames\x18\xac\xb6\xf1\x1a \x03(\tR\vmetricnames\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x00R\tnamespace\x88\x01\x01B\f\n" +
+	"\n" +
+	"_namespace\"\xb1\x01\n" +
 	"#MetricStreamStatisticsConfiguration\x125\n" +
 	"\x14additionalstatistics\x18\xb0\x85\x9e\x18 \x03(\tR\x14additionalstatistics\x12S\n" +
 	"\x0eincludemetrics\x18\xa9\xc1\xdcP \x03(\v2(.cloudwatch.MetricStreamStatisticsMetricR\x0eincludemetrics\"c\n" +
@@ -10707,110 +11823,164 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\"@\n" +
-	"!MissingRequiredParameterException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"0\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\"Q\n" +
+	"!MissingRequiredParameterException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"0\n" +
 	"\vMuteTargets\x12!\n" +
 	"\n" +
 	"alarmnames\x18\xd7Ū+ \x03(\tR\n" +
-	"alarmnames\"\xbf\x01\n" +
-	"\x0ePartialFailure\x12'\n" +
-	"\rexceptiontype\x18\x87\xaf\x93T \x01(\tR\rexceptiontype\x12#\n" +
-	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tR\vfailurecode\x121\n" +
-	"\x12failuredescription\x18\xb6\xbc\xe3v \x01(\tR\x12failuredescription\x12,\n" +
-	"\x0ffailureresource\x18\xb2\xfeʖ\x01 \x01(\tR\x0ffailureresource\"\xab\x02\n" +
-	"\x15PutAlarmMuteRuleInput\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\"\n" +
+	"alarmnames\"\xa0\x02\n" +
+	"\x0ePartialFailure\x12,\n" +
+	"\rexceptiontype\x18\x87\xaf\x93T \x01(\tH\x00R\rexceptiontype\x88\x01\x01\x12(\n" +
+	"\vfailurecode\x18\xb9\x94\xb2( \x01(\tH\x01R\vfailurecode\x88\x01\x01\x126\n" +
+	"\x12failuredescription\x18\xb6\xbc\xe3v \x01(\tH\x02R\x12failuredescription\x88\x01\x01\x121\n" +
+	"\x0ffailureresource\x18\xb2\xfeʖ\x01 \x01(\tH\x03R\x0ffailureresource\x88\x01\x01B\x10\n" +
+	"\x0e_exceptiontypeB\x0e\n" +
+	"\f_failurecodeB\x15\n" +
+	"\x13_failuredescriptionB\x12\n" +
+	"\x10_failureresource\"\xe7\x02\n" +
+	"\x15PutAlarmMuteRuleInput\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12'\n" +
 	"\n" +
-	"expiredate\x18\xe7\xd9\xc6\xd8\x01 \x01(\tR\n" +
-	"expiredate\x12=\n" +
+	"expiredate\x18\xe7\xd9\xc6\xd8\x01 \x01(\tH\x01R\n" +
+	"expiredate\x88\x01\x01\x12=\n" +
 	"\vmutetargets\x18ˤ\x8c\xaa\x01 \x01(\v2\x17.cloudwatch.MuteTargetsR\vmutetargets\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
-	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x10.cloudwatch.RuleR\x04rule\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12'\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"\xb9\x04\n" +
+	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x10.cloudwatch.RuleR\x04rule\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\x02R\tstartdate\x88\x01\x01\x12'\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tagsB\x0e\n" +
+	"\f_descriptionB\r\n" +
+	"\v_expiredateB\f\n" +
+	"\n" +
+	"_startdate\"\xee\x04\n" +
 	"\x17PutAnomalyDetectorInput\x12R\n" +
 	"\rconfiguration\x18\xda\xc8\xfb\xd2\x01 \x01(\v2(.cloudwatch.AnomalyDetectorConfigurationR\rconfiguration\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
 	"dimensions\x12Z\n" +
 	"\x15metriccharacteristics\x18\xaa\x9f\xda= \x01(\v2!.cloudwatch.MetricCharacteristicsR\x15metriccharacteristics\x12g\n" +
-	"\x19metricmathanomalydetector\x18\xe3\xdb\xc1\xd1\x01 \x01(\v2%.cloudwatch.MetricMathAnomalyDetectorR\x19metricmathanomalydetector\x12!\n" +
+	"\x19metricmathanomalydetector\x18\xe3\xdb\xc1\xd1\x01 \x01(\v2%.cloudwatch.MetricMathAnomalyDetectorR\x19metricmathanomalydetector\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12m\n" +
-	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x16\n" +
-	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tR\x04stat\"\x1a\n" +
-	"\x18PutAnomalyDetectorOutput\"\x93\x05\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x00R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x01R\tnamespace\x88\x01\x01\x12m\n" +
+	"\x1bsinglemetricanomalydetector\x18ݔ\xc9\xc7\x01 \x01(\v2'.cloudwatch.SingleMetricAnomalyDetectorR\x1bsinglemetricanomalydetector\x12\x1b\n" +
+	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tH\x02R\x04stat\x88\x01\x01B\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\a\n" +
+	"\x05_stat\"g\n" +
+	"\x18PutAnomalyDetectorOutput\x125\n" +
+	"\x11anomalydetectorid\x18\xba\x9d\xaa\xba\x01 \x01(\tH\x00R\x11anomalydetectorid\x88\x01\x01B\x14\n" +
+	"\x12_anomalydetectorid\"\xc8\x05\n" +
 	"\x16PutCompositeAlarmInput\x12.\n" +
-	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x120\n" +
-	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tR\x11actionssuppressor\x12R\n" +
-	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05H\x01R actionssuppressorextensionperiod\x88\x01\x01\x12H\n" +
-	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05H\x02R\x1bactionssuppressorwaitperiod\x88\x01\x01\x12&\n" +
-	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12-\n" +
-	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
+	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x125\n" +
+	"\x11actionssuppressor\x18\xff\xc8\xf8\xe7\x01 \x01(\tH\x01R\x11actionssuppressor\x88\x01\x01\x12R\n" +
+	" actionssuppressorextensionperiod\x18\x97\xcc\xcdW \x01(\x05H\x02R actionssuppressorextensionperiod\x88\x01\x01\x12H\n" +
+	"\x1bactionssuppressorwaitperiod\x18\xcbנ& \x01(\x05H\x03R\x1bactionssuppressorwaitperiod\x88\x01\x01\x12&\n" +
+	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x122\n" +
+	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tH\x04R\x10alarmdescription\x88\x01\x01\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12 \n" +
 	"\talarmrule\x18\xed\xfe\xc2\xf6\x01 \x01(\tR\talarmrule\x12<\n" +
 	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12 \n" +
 	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tagsB\x11\n" +
-	"\x0f_actionsenabledB#\n" +
+	"\x0f_actionsenabledB\x14\n" +
+	"\x12_actionssuppressorB#\n" +
 	"!_actionssuppressorextensionperiodB\x1e\n" +
-	"\x1c_actionssuppressorwaitperiod\"\x8f\x01\n" +
+	"\x1c_actionssuppressorwaitperiodB\x13\n" +
+	"\x11_alarmdescription\"\x8f\x01\n" +
 	"\x11PutDashboardInput\x12'\n" +
 	"\rdashboardbody\x18\xe4\xdb\xcf\x01 \x01(\tR\rdashboardbody\x12(\n" +
 	"\rdashboardname\x18\xc1\xb3\xc8\xf1\x01 \x01(\tR\rdashboardname\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\"\x82\x01\n" +
 	"\x12PutDashboardOutput\x12l\n" +
-	"\x1bdashboardvalidationmessages\x18\xc9\xcb\xd9\xf5\x01 \x03(\v2&.cloudwatch.DashboardValidationMessageR\x1bdashboardvalidationmessages\"\x85\x02\n" +
+	"\x1bdashboardvalidationmessages\x18\xc9\xcb\xd9\xf5\x01 \x03(\v2&.cloudwatch.DashboardValidationMessageR\x1bdashboardvalidationmessages\"\x98\x02\n" +
 	"\x13PutInsightRuleInput\x12>\n" +
 	"\x16applyontransformedlogs\x18\x85\x86\xe2\x0e \x01(\bH\x00R\x16applyontransformedlogs\x88\x01\x01\x12)\n" +
 	"\x0eruledefinition\x18\xcfËZ \x01(\tR\x0eruledefinition\x12\x1d\n" +
-	"\brulename\x18\x99ȯf \x01(\tR\brulename\x12 \n" +
-	"\trulestate\x18\xa5\xfa\x9d\xc8\x01 \x01(\tR\trulestate\x12'\n" +
+	"\brulename\x18\x99ȯf \x01(\tR\brulename\x12%\n" +
+	"\trulestate\x18\xa5\xfa\x9d\xc8\x01 \x01(\tH\x01R\trulestate\x88\x01\x01\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tagsB\x19\n" +
-	"\x17_applyontransformedlogs\"\x16\n" +
-	"\x14PutInsightRuleOutput\"^\n" +
+	"\x17_applyontransformedlogsB\f\n" +
+	"\n" +
+	"_rulestate\"\x16\n" +
+	"\x14PutInsightRuleOutput\"\x88\b\n" +
+	"\x10PutLogAlarmInput\x127\n" +
+	"\x12actionloglinecount\x18\x8d\x9c\x8b\xf1\x01 \x01(\x05H\x00R\x12actionloglinecount\x88\x01\x01\x129\n" +
+	"\x14actionloglinerolearn\x18\xe9\x90) \x01(\tH\x01R\x14actionloglinerolearn\x88\x01\x01\x12.\n" +
+	"\x0eactionsenabled\x18搌< \x01(\bH\x02R\x0eactionsenabled\x88\x01\x01\x12&\n" +
+	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x122\n" +
+	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tH\x03R\x10alarmdescription\x88\x01\x01\x12\x1f\n" +
+	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12Q\n" +
+	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x12<\n" +
+	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12 \n" +
+	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x123\n" +
+	"\x13queryresultstoalarm\x18\x9c\xbe\xeeY \x01(\x05R\x13queryresultstoalarm\x12:\n" +
+	"\x16queryresultstoevaluate\x18\x86\x8e\xc1\x96\x01 \x01(\x05R\x16queryresultstoevaluate\x12l\n" +
+	"\x1bscheduledqueryconfiguration\x18\xb7\xe6\x84\x17 \x01(\v2'.cloudwatch.ScheduledQueryConfigurationR\x1bscheduledqueryconfiguration\x12'\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\x12 \n" +
+	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\x122\n" +
+	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tH\x04R\x10treatmissingdata\x88\x01\x01\x12U\n" +
+	"\x13warmupconfiguration\x18\x9a\xb5\xc5\xd1\x01 \x01(\v2\x1f.cloudwatch.WarmUpConfigurationR\x13warmupconfigurationB\x15\n" +
+	"\x13_actionloglinecountB\x17\n" +
+	"\x15_actionloglinerolearnB\x11\n" +
+	"\x0f_actionsenabledB\x13\n" +
+	"\x11_alarmdescriptionB\x13\n" +
+	"\x11_treatmissingdata\"^\n" +
 	"\x1bPutManagedInsightRulesInput\x12?\n" +
 	"\fmanagedrules\x18\xda\xdf\xc0\xa5\x01 \x03(\v2\x17.cloudwatch.ManagedRuleR\fmanagedrules\"Z\n" +
 	"\x1cPutManagedInsightRulesOutput\x12:\n" +
-	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2\x1a.cloudwatch.PartialFailureR\bfailures\"\xb9\n" +
-	"\n" +
+	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2\x1a.cloudwatch.PartialFailureR\bfailures\"\xac\r\n" +
 	"\x13PutMetricAlarmInput\x12.\n" +
 	"\x0eactionsenabled\x18搌< \x01(\bH\x00R\x0eactionsenabled\x88\x01\x01\x12&\n" +
-	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x12-\n" +
-	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tR\x10alarmdescription\x12\x1f\n" +
+	"\falarmactions\x18\xb2\x87ө\x01 \x03(\tR\falarmactions\x122\n" +
+	"\x10alarmdescription\x18\xbd\xd6\xca\x0e \x01(\tH\x01R\x10alarmdescription\x88\x01\x01\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12Q\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x1e.cloudwatch.ComparisonOperatorR\x12comparisonoperator\x124\n" +
-	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05H\x01R\x11datapointstoalarm\x88\x01\x01\x129\n" +
+	"\x11datapointstoalarm\x18\x89\xa1\xe6E \x01(\x05H\x02R\x11datapointstoalarm\x88\x01\x01\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
-	"dimensions\x12M\n" +
-	" evaluatelowsamplecountpercentile\x18\xf3\xcd\xd8\x1e \x01(\tR evaluatelowsamplecountpercentile\x12R\n" +
+	"dimensions\x12R\n" +
+	" evaluatelowsamplecountpercentile\x18\xf3\xcd\xd8\x1e \x01(\tH\x03R evaluatelowsamplecountpercentile\x88\x01\x01\x12R\n" +
 	"\x12evaluationcriteria\x18\xa3\x8f\xee\x92\x01 \x01(\v2\x1e.cloudwatch.EvaluationCriteriaR\x12evaluationcriteria\x126\n" +
-	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05H\x02R\x12evaluationinterval\x88\x01\x01\x124\n" +
-	"\x11evaluationperiods\x18脶f \x01(\x05H\x03R\x11evaluationperiods\x88\x01\x01\x120\n" +
-	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tR\x11extendedstatistic\x12<\n" +
-	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12!\n" +
+	"\x12evaluationinterval\x18\x9fЙ% \x01(\x05H\x04R\x12evaluationinterval\x88\x01\x01\x124\n" +
+	"\x11evaluationperiods\x18脶f \x01(\x05H\x05R\x11evaluationperiods\x88\x01\x01\x12L\n" +
+	"\x10evaluationwindow\x18\xc0ܥ\x80\x01 \x01(\v2\x1c.cloudwatch.EvaluationWindowR\x10evaluationwindow\x125\n" +
+	"\x11extendedstatistic\x18\x9b\xf4\x98\x88\x01 \x01(\tH\x06R\x11extendedstatistic\x88\x01\x01\x12<\n" +
+	"\x17insufficientdataactions\x18ڂ\xd7\xed\x01 \x03(\tR\x17insufficientdataactions\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x129\n" +
-	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x1b.cloudwatch.MetricDataQueryR\ametrics\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12 \n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\aR\n" +
+	"metricname\x88\x01\x01\x129\n" +
+	"\ametrics\x18\x97ԉ\xd0\x01 \x03(\v2\x1b.cloudwatch.MetricDataQueryR\ametrics\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\bR\tnamespace\x88\x01\x01\x12 \n" +
 	"\tokactions\x18\xb3\xab\xfd\xb3\x01 \x03(\tR\tokactions\x12\x1e\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x04R\x06period\x88\x01\x01\x126\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\tR\x06period\x88\x01\x01\x126\n" +
 	"\tstatistic\x18\x9e\xa2\x8b  \x01(\x0e2\x15.cloudwatch.StatisticR\tstatistic\x12'\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\x12 \n" +
-	"\tthreshold\x18\x99를\x01 \x01(\x01R\tthreshold\x12/\n" +
-	"\x11thresholdmetricid\x18\xf2\xa9\xdb\x13 \x01(\tR\x11thresholdmetricid\x12-\n" +
-	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tR\x10treatmissingdata\x12/\n" +
-	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unitB\x11\n" +
-	"\x0f_actionsenabledB\x14\n" +
-	"\x12_datapointstoalarmB\x15\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tags\x12%\n" +
+	"\tthreshold\x18\x99를\x01 \x01(\x01H\n" +
+	"R\tthreshold\x88\x01\x01\x124\n" +
+	"\x11thresholdmetricid\x18\xf2\xa9\xdb\x13 \x01(\tH\vR\x11thresholdmetricid\x88\x01\x01\x122\n" +
+	"\x10treatmissingdata\x18\xe6\xbb\xfbk \x01(\tH\fR\x10treatmissingdata\x88\x01\x01\x12/\n" +
+	"\x04unit\x18\xa8̅G \x01(\x0e2\x18.cloudwatch.StandardUnitR\x04unit\x12U\n" +
+	"\x13warmupconfiguration\x18\x9a\xb5\xc5\xd1\x01 \x01(\v2\x1f.cloudwatch.WarmUpConfigurationR\x13warmupconfigurationB\x11\n" +
+	"\x0f_actionsenabledB\x13\n" +
+	"\x11_alarmdescriptionB\x14\n" +
+	"\x12_datapointstoalarmB#\n" +
+	"!_evaluatelowsamplecountpercentileB\x15\n" +
 	"\x13_evaluationintervalB\x14\n" +
-	"\x12_evaluationperiodsB\t\n" +
-	"\a_period\"\x9c\x02\n" +
+	"\x12_evaluationperiodsB\x14\n" +
+	"\x12_extendedstatisticB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\t\n" +
+	"\a_periodB\f\n" +
+	"\n" +
+	"_thresholdB\x14\n" +
+	"\x12_thresholdmetricidB\x13\n" +
+	"\x11_treatmissingdata\"\x9c\x02\n" +
 	"\x12PutMetricDataInput\x12L\n" +
 	"\x10entitymetricdata\x18\xbf\xa1\xeb\x91\x01 \x03(\v2\x1c.cloudwatch.EntityMetricDataR\x10entitymetricdata\x12:\n" +
 	"\n" +
@@ -10829,45 +11999,79 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12n\n" +
 	"\x18statisticsconfigurations\x18\xd2\xd0\xeeS \x03(\v2/.cloudwatch.MetricStreamStatisticsConfigurationR\x18statisticsconfigurations\x12'\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tagsB\x1f\n" +
-	"\x1d_includelinkedaccountsmetrics\"-\n" +
-	"\x15PutMetricStreamOutput\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\"F\n" +
+	"\x1d_includelinkedaccountsmetrics\":\n" +
+	"\x15PutMetricStreamOutput\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01B\x06\n" +
+	"\x04_arn\"F\n" +
 	"\x05Range\x12\x1b\n" +
 	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"/\n" +
-	"\x10ResourceNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x84\x01\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12\"\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"@\n" +
+	"\x10ResourceConflict\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
-	"resourceid\x12&\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\tR\fresourcetype\";\n" +
+	"\b_message\"@\n" +
+	"\x10ResourceNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xbf\x01\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12'\n" +
+	"\n" +
+	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x01R\n" +
+	"resourceid\x88\x01\x01\x12+\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x02R\fresourcetype\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\r\n" +
+	"\v_resourceidB\x0f\n" +
+	"\r_resourcetype\";\n" +
 	"\x04Rule\x123\n" +
-	"\bschedule\x18\xed\xf5\xe6\x1f \x01(\v2\x14.cloudwatch.ScheduleR\bschedule\"l\n" +
+	"\bschedule\x18\xed\xf5\xe6\x1f \x01(\v2\x14.cloudwatch.ScheduleR\bschedule\"~\n" +
 	"\bSchedule\x12\x1e\n" +
 	"\bduration\x18\xae\x92\x9d\xa6\x01 \x01(\tR\bduration\x12!\n" +
 	"\n" +
 	"expression\x18\x8c\xfa\x86\\ \x01(\tR\n" +
-	"expression\x12\x1d\n" +
-	"\btimezone\x18Î\xb9u \x01(\tR\btimezone\"\xc4\x01\n" +
+	"expression\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH\x00R\btimezone\x88\x01\x01B\v\n" +
+	"\t_timezone\"\xb9\x01\n" +
+	"\x15ScheduleConfiguration\x12,\n" +
+	"\rendtimeoffset\x18\xc9\xc8\xe3\x16 \x01(\x03H\x00R\rendtimeoffset\x88\x01\x01\x122\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12,\n" +
+	"\x0fstarttimeoffset\x18\xfa\x91\xc7\xd7\x01 \x01(\x03R\x0fstarttimeoffsetB\x10\n" +
+	"\x0e_endtimeoffset\"\xa3\x03\n" +
+	"\x1bScheduledQueryConfiguration\x127\n" +
+	"\x15aggregationexpression\x18̶\x93k \x01(\tR\x15aggregationexpression\x123\n" +
+	"\x13loggroupidentifiers\x18\x99\xbb\xf1M \x03(\tR\x13loggroupidentifiers\x12#\n" +
+	"\bqueryarn\x18\xd7\u074c\xea\x01 \x01(\tH\x00R\bqueryarn\x88\x01\x01\x12$\n" +
+	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tR\vquerystring\x12[\n" +
+	"\x15scheduleconfiguration\x18\xa7\x89\xed\xfa\x01 \x01(\v2!.cloudwatch.ScheduleConfigurationR\x15scheduleconfiguration\x128\n" +
+	"\x15scheduledqueryrolearn\x18\xbc\xf4\xea\xfd\x01 \x01(\tR\x15scheduledqueryrolearn\x12'\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudwatch.TagR\x04tagsB\v\n" +
+	"\t_queryarn\"\xdd\x01\n" +
 	"\x12SetAlarmStateInput\x12\x1f\n" +
 	"\talarmname\x18\xe2\xdf\xe5\x19 \x01(\tR\talarmname\x12$\n" +
-	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x12+\n" +
-	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tR\x0fstatereasondata\x12:\n" +
+	"\vstatereason\x18\xf3խ\xb3\x01 \x01(\tR\vstatereason\x120\n" +
+	"\x0fstatereasondata\x18\x83\xa3\xa6} \x01(\tH\x00R\x0fstatereasondata\x88\x01\x01\x12:\n" +
 	"\n" +
 	"statevalue\x18\xb8\xec\xc1\x9f\x01 \x01(\x0e2\x16.cloudwatch.StateValueR\n" +
-	"statevalue\"\xd6\x01\n" +
-	"\x1bSingleMetricAnomalyDetector\x12\x1f\n" +
-	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tR\taccountid\x129\n" +
+	"statevalueB\x12\n" +
+	"\x10_statereasondata\"\x9e\x02\n" +
+	"\x1bSingleMetricAnomalyDetector\x12$\n" +
+	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tH\x00R\taccountid\x88\x01\x01\x129\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v2\x15.cloudwatch.DimensionR\n" +
-	"dimensions\x12!\n" +
+	"dimensions\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12 \n" +
-	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tR\tnamespace\x12\x16\n" +
-	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tR\x04stat\"3\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x01R\n" +
+	"metricname\x88\x01\x01\x12%\n" +
+	"\tnamespace\x18\xc1\x84\xb9\xa9\x01 \x01(\tH\x02R\tnamespace\x88\x01\x01\x12\x1b\n" +
+	"\x04stat\x18\xb8\xfd\x9d\x9b\x01 \x01(\tH\x03R\x04stat\x88\x01\x01B\f\n" +
+	"\n" +
+	"_accountidB\r\n" +
+	"\v_metricnameB\f\n" +
+	"\n" +
+	"_namespaceB\a\n" +
+	"\x05_stat\"\x0f\n" +
+	"\rSlidingWindow\"3\n" +
 	"\x17StartMetricStreamsInput\x12\x18\n" +
 	"\x05names\x18\xb0\x82ך\x01 \x03(\tR\x05names\"\x1a\n" +
 	"\x18StartMetricStreamsOutput\"\x1a\n" +
@@ -10893,7 +12097,14 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x12UntagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x15\n" +
-	"\x13UntagResourceOutput*\x87\x01\n" +
+	"\x13UntagResourceOutput\"B\n" +
+	"\x0fWallClockWindow\x12\"\n" +
+	"\btimezone\x18Î\xb9u \x01(\tH\x00R\btimezone\x88\x01\x01B\v\n" +
+	"\t_timezone\"\xef\x01\n" +
+	"\x13WarmUpConfiguration\x12b\n" +
+	"(onlystartevaluatingafterwarmupperiodends\x18\xab\xb3\x9f\x14 \x01(\bH\x00R(onlystartevaluatingafterwarmupperiodends\x88\x01\x01\x12G\n" +
+	"\x1dwarmupperioddurationinminutes\x18\xf9\x87\x9fD \x01(\x05R\x1dwarmupperioddurationinminutesB+\n" +
+	")_onlystartevaluatingafterwarmupperiodends*\x87\x01\n" +
 	"\x13ActionsSuppressedBy\x12$\n" +
 	" ACTIONS_SUPPRESSED_BY_WAITPERIOD\x10\x00\x12\x1f\n" +
 	"\x1bACTIONS_SUPPRESSED_BY_ALARM\x10\x01\x12)\n" +
@@ -10901,10 +12112,11 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x13AlarmMuteRuleStatus\x12!\n" +
 	"\x1dALARM_MUTE_RULE_STATUS_ACTIVE\x10\x00\x12$\n" +
 	" ALARM_MUTE_RULE_STATUS_SCHEDULED\x10\x01\x12\"\n" +
-	"\x1eALARM_MUTE_RULE_STATUS_EXPIRED\x10\x02*F\n" +
+	"\x1eALARM_MUTE_RULE_STATUS_EXPIRED\x10\x02*_\n" +
 	"\tAlarmType\x12\x1d\n" +
-	"\x19ALARM_TYPE_COMPOSITEALARM\x10\x00\x12\x1a\n" +
-	"\x16ALARM_TYPE_METRICALARM\x10\x01*\xb4\x01\n" +
+	"\x19ALARM_TYPE_COMPOSITEALARM\x10\x00\x12\x17\n" +
+	"\x13ALARM_TYPE_LOGALARM\x10\x01\x12\x1a\n" +
+	"\x16ALARM_TYPE_METRICALARM\x10\x02*\xb4\x01\n" +
 	"\x19AnomalyDetectorStateValue\x12(\n" +
 	"$ANOMALY_DETECTOR_STATE_VALUE_TRAINED\x10\x00\x121\n" +
 	"-ANOMALY_DETECTOR_STATE_VALUE_PENDING_TRAINING\x10\x01\x12:\n" +
@@ -10987,7 +12199,7 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x18STATUS_CODE_PARTIAL_DATA\x10\x00\x12\x19\n" +
 	"\x15STATUS_CODE_FORBIDDEN\x10\x01\x12\x18\n" +
 	"\x14STATUS_CODE_COMPLETE\x10\x02\x12\x1e\n" +
-	"\x1aSTATUS_CODE_INTERNAL_ERROR\x10\x032\xfb\"\n" +
+	"\x1aSTATUS_CODE_INTERNAL_ERROR\x10\x032\xb7#\n" +
 	"\x11CloudWatchService\x12k\n" +
 	"\x16AssociateDatasetKmsKey\x12'.cloudwatch.AssociateDatasetKmsKeyInput\x1a(.cloudwatch.AssociateDatasetKmsKeyOutput\x12J\n" +
 	"\x13DeleteAlarmMuteRule\x12$.cloudwatch.DeleteAlarmMuteRuleInput\x1a\r.common.Empty\x12<\n" +
@@ -11027,7 +12239,8 @@ const file_cloudwatch_proto_rawDesc = "" +
 	"\x12PutAnomalyDetector\x12#.cloudwatch.PutAnomalyDetectorInput\x1a$.cloudwatch.PutAnomalyDetectorOutput\x12F\n" +
 	"\x11PutCompositeAlarm\x12\".cloudwatch.PutCompositeAlarmInput\x1a\r.common.Empty\x12M\n" +
 	"\fPutDashboard\x12\x1d.cloudwatch.PutDashboardInput\x1a\x1e.cloudwatch.PutDashboardOutput\x12S\n" +
-	"\x0ePutInsightRule\x12\x1f.cloudwatch.PutInsightRuleInput\x1a .cloudwatch.PutInsightRuleOutput\x12k\n" +
+	"\x0ePutInsightRule\x12\x1f.cloudwatch.PutInsightRuleInput\x1a .cloudwatch.PutInsightRuleOutput\x12:\n" +
+	"\vPutLogAlarm\x12\x1c.cloudwatch.PutLogAlarmInput\x1a\r.common.Empty\x12k\n" +
 	"\x16PutManagedInsightRules\x12'.cloudwatch.PutManagedInsightRulesInput\x1a(.cloudwatch.PutManagedInsightRulesOutput\x12@\n" +
 	"\x0ePutMetricAlarm\x12\x1f.cloudwatch.PutMetricAlarmInput\x1a\r.common.Empty\x12>\n" +
 	"\rPutMetricData\x12\x1e.cloudwatch.PutMetricDataInput\x1a\r.common.Empty\x12V\n" +
@@ -11053,7 +12266,7 @@ func file_cloudwatch_proto_rawDescGZIP() []byte {
 }
 
 var file_cloudwatch_proto_enumTypes = make([]protoimpl.EnumInfo, 16)
-var file_cloudwatch_proto_msgTypes = make([]protoimpl.MessageInfo, 155)
+var file_cloudwatch_proto_msgTypes = make([]protoimpl.MessageInfo, 164)
 var file_cloudwatch_proto_goTypes = []any{
 	(ActionsSuppressedBy)(0),                     // 0: cloudwatch.ActionsSuppressedBy
 	(AlarmMuteRuleStatus)(0),                     // 1: cloudwatch.AlarmMuteRuleStatus
@@ -11122,134 +12335,143 @@ var file_cloudwatch_proto_goTypes = []any{
 	(*Entity)(nil),                               // 64: cloudwatch.Entity
 	(*EntityMetricData)(nil),                     // 65: cloudwatch.EntityMetricData
 	(*EvaluationCriteria)(nil),                   // 66: cloudwatch.EvaluationCriteria
-	(*GetAlarmMuteRuleInput)(nil),                // 67: cloudwatch.GetAlarmMuteRuleInput
-	(*GetAlarmMuteRuleOutput)(nil),               // 68: cloudwatch.GetAlarmMuteRuleOutput
-	(*GetDashboardInput)(nil),                    // 69: cloudwatch.GetDashboardInput
-	(*GetDashboardOutput)(nil),                   // 70: cloudwatch.GetDashboardOutput
-	(*GetDatasetInput)(nil),                      // 71: cloudwatch.GetDatasetInput
-	(*GetDatasetOutput)(nil),                     // 72: cloudwatch.GetDatasetOutput
-	(*GetInsightRuleReportInput)(nil),            // 73: cloudwatch.GetInsightRuleReportInput
-	(*GetInsightRuleReportOutput)(nil),           // 74: cloudwatch.GetInsightRuleReportOutput
-	(*GetMetricDataInput)(nil),                   // 75: cloudwatch.GetMetricDataInput
-	(*GetMetricDataOutput)(nil),                  // 76: cloudwatch.GetMetricDataOutput
-	(*GetMetricStatisticsInput)(nil),             // 77: cloudwatch.GetMetricStatisticsInput
-	(*GetMetricStatisticsOutput)(nil),            // 78: cloudwatch.GetMetricStatisticsOutput
-	(*GetMetricStreamInput)(nil),                 // 79: cloudwatch.GetMetricStreamInput
-	(*GetMetricStreamOutput)(nil),                // 80: cloudwatch.GetMetricStreamOutput
-	(*GetMetricWidgetImageInput)(nil),            // 81: cloudwatch.GetMetricWidgetImageInput
-	(*GetMetricWidgetImageOutput)(nil),           // 82: cloudwatch.GetMetricWidgetImageOutput
-	(*GetOTelEnrichmentInput)(nil),               // 83: cloudwatch.GetOTelEnrichmentInput
-	(*GetOTelEnrichmentOutput)(nil),              // 84: cloudwatch.GetOTelEnrichmentOutput
-	(*InsightRule)(nil),                          // 85: cloudwatch.InsightRule
-	(*InsightRuleContributor)(nil),               // 86: cloudwatch.InsightRuleContributor
-	(*InsightRuleContributorDatapoint)(nil),      // 87: cloudwatch.InsightRuleContributorDatapoint
-	(*InsightRuleMetricDatapoint)(nil),           // 88: cloudwatch.InsightRuleMetricDatapoint
-	(*InternalServiceFault)(nil),                 // 89: cloudwatch.InternalServiceFault
-	(*InvalidFormatFault)(nil),                   // 90: cloudwatch.InvalidFormatFault
-	(*InvalidNextToken)(nil),                     // 91: cloudwatch.InvalidNextToken
-	(*InvalidParameterCombinationException)(nil), // 92: cloudwatch.InvalidParameterCombinationException
-	(*InvalidParameterValueException)(nil),       // 93: cloudwatch.InvalidParameterValueException
-	(*KmsAccessDeniedException)(nil),             // 94: cloudwatch.KmsAccessDeniedException
-	(*KmsKeyDisabledException)(nil),              // 95: cloudwatch.KmsKeyDisabledException
-	(*KmsKeyNotFoundException)(nil),              // 96: cloudwatch.KmsKeyNotFoundException
-	(*LabelOptions)(nil),                         // 97: cloudwatch.LabelOptions
-	(*LimitExceededException)(nil),               // 98: cloudwatch.LimitExceededException
-	(*LimitExceededFault)(nil),                   // 99: cloudwatch.LimitExceededFault
-	(*ListAlarmMuteRulesInput)(nil),              // 100: cloudwatch.ListAlarmMuteRulesInput
-	(*ListAlarmMuteRulesOutput)(nil),             // 101: cloudwatch.ListAlarmMuteRulesOutput
-	(*ListDashboardsInput)(nil),                  // 102: cloudwatch.ListDashboardsInput
-	(*ListDashboardsOutput)(nil),                 // 103: cloudwatch.ListDashboardsOutput
-	(*ListManagedInsightRulesInput)(nil),         // 104: cloudwatch.ListManagedInsightRulesInput
-	(*ListManagedInsightRulesOutput)(nil),        // 105: cloudwatch.ListManagedInsightRulesOutput
-	(*ListMetricStreamsInput)(nil),               // 106: cloudwatch.ListMetricStreamsInput
-	(*ListMetricStreamsOutput)(nil),              // 107: cloudwatch.ListMetricStreamsOutput
-	(*ListMetricsInput)(nil),                     // 108: cloudwatch.ListMetricsInput
-	(*ListMetricsOutput)(nil),                    // 109: cloudwatch.ListMetricsOutput
-	(*ListTagsForResourceInput)(nil),             // 110: cloudwatch.ListTagsForResourceInput
-	(*ListTagsForResourceOutput)(nil),            // 111: cloudwatch.ListTagsForResourceOutput
-	(*ManagedRule)(nil),                          // 112: cloudwatch.ManagedRule
-	(*ManagedRuleDescription)(nil),               // 113: cloudwatch.ManagedRuleDescription
-	(*ManagedRuleState)(nil),                     // 114: cloudwatch.ManagedRuleState
-	(*MessageData)(nil),                          // 115: cloudwatch.MessageData
-	(*Metric)(nil),                               // 116: cloudwatch.Metric
-	(*MetricAlarm)(nil),                          // 117: cloudwatch.MetricAlarm
-	(*MetricCharacteristics)(nil),                // 118: cloudwatch.MetricCharacteristics
-	(*MetricDataQuery)(nil),                      // 119: cloudwatch.MetricDataQuery
-	(*MetricDataResult)(nil),                     // 120: cloudwatch.MetricDataResult
-	(*MetricDatum)(nil),                          // 121: cloudwatch.MetricDatum
-	(*MetricMathAnomalyDetector)(nil),            // 122: cloudwatch.MetricMathAnomalyDetector
-	(*MetricStat)(nil),                           // 123: cloudwatch.MetricStat
-	(*MetricStreamEntry)(nil),                    // 124: cloudwatch.MetricStreamEntry
-	(*MetricStreamFilter)(nil),                   // 125: cloudwatch.MetricStreamFilter
-	(*MetricStreamStatisticsConfiguration)(nil),  // 126: cloudwatch.MetricStreamStatisticsConfiguration
-	(*MetricStreamStatisticsMetric)(nil),         // 127: cloudwatch.MetricStreamStatisticsMetric
-	(*MissingRequiredParameterException)(nil),    // 128: cloudwatch.MissingRequiredParameterException
-	(*MuteTargets)(nil),                          // 129: cloudwatch.MuteTargets
-	(*PartialFailure)(nil),                       // 130: cloudwatch.PartialFailure
-	(*PutAlarmMuteRuleInput)(nil),                // 131: cloudwatch.PutAlarmMuteRuleInput
-	(*PutAnomalyDetectorInput)(nil),              // 132: cloudwatch.PutAnomalyDetectorInput
-	(*PutAnomalyDetectorOutput)(nil),             // 133: cloudwatch.PutAnomalyDetectorOutput
-	(*PutCompositeAlarmInput)(nil),               // 134: cloudwatch.PutCompositeAlarmInput
-	(*PutDashboardInput)(nil),                    // 135: cloudwatch.PutDashboardInput
-	(*PutDashboardOutput)(nil),                   // 136: cloudwatch.PutDashboardOutput
-	(*PutInsightRuleInput)(nil),                  // 137: cloudwatch.PutInsightRuleInput
-	(*PutInsightRuleOutput)(nil),                 // 138: cloudwatch.PutInsightRuleOutput
-	(*PutManagedInsightRulesInput)(nil),          // 139: cloudwatch.PutManagedInsightRulesInput
-	(*PutManagedInsightRulesOutput)(nil),         // 140: cloudwatch.PutManagedInsightRulesOutput
-	(*PutMetricAlarmInput)(nil),                  // 141: cloudwatch.PutMetricAlarmInput
-	(*PutMetricDataInput)(nil),                   // 142: cloudwatch.PutMetricDataInput
-	(*PutMetricStreamInput)(nil),                 // 143: cloudwatch.PutMetricStreamInput
-	(*PutMetricStreamOutput)(nil),                // 144: cloudwatch.PutMetricStreamOutput
-	(*Range)(nil),                                // 145: cloudwatch.Range
-	(*ResourceNotFound)(nil),                     // 146: cloudwatch.ResourceNotFound
-	(*ResourceNotFoundException)(nil),            // 147: cloudwatch.ResourceNotFoundException
-	(*Rule)(nil),                                 // 148: cloudwatch.Rule
-	(*Schedule)(nil),                             // 149: cloudwatch.Schedule
-	(*SetAlarmStateInput)(nil),                   // 150: cloudwatch.SetAlarmStateInput
-	(*SingleMetricAnomalyDetector)(nil),          // 151: cloudwatch.SingleMetricAnomalyDetector
-	(*StartMetricStreamsInput)(nil),              // 152: cloudwatch.StartMetricStreamsInput
-	(*StartMetricStreamsOutput)(nil),             // 153: cloudwatch.StartMetricStreamsOutput
-	(*StartOTelEnrichmentInput)(nil),             // 154: cloudwatch.StartOTelEnrichmentInput
-	(*StartOTelEnrichmentOutput)(nil),            // 155: cloudwatch.StartOTelEnrichmentOutput
-	(*StatisticSet)(nil),                         // 156: cloudwatch.StatisticSet
-	(*StopMetricStreamsInput)(nil),               // 157: cloudwatch.StopMetricStreamsInput
-	(*StopMetricStreamsOutput)(nil),              // 158: cloudwatch.StopMetricStreamsOutput
-	(*StopOTelEnrichmentInput)(nil),              // 159: cloudwatch.StopOTelEnrichmentInput
-	(*StopOTelEnrichmentOutput)(nil),             // 160: cloudwatch.StopOTelEnrichmentOutput
-	(*Tag)(nil),                                  // 161: cloudwatch.Tag
-	(*TagResourceInput)(nil),                     // 162: cloudwatch.TagResourceInput
-	(*TagResourceOutput)(nil),                    // 163: cloudwatch.TagResourceOutput
-	(*UntagResourceInput)(nil),                   // 164: cloudwatch.UntagResourceInput
-	(*UntagResourceOutput)(nil),                  // 165: cloudwatch.UntagResourceOutput
-	nil,                                          // 166: cloudwatch.AlarmContributor.ContributorattributesEntry
-	nil,                                          // 167: cloudwatch.AlarmHistoryItem.AlarmcontributorattributesEntry
-	nil,                                          // 168: cloudwatch.Datapoint.ExtendedstatisticsEntry
-	nil,                                          // 169: cloudwatch.Entity.AttributesEntry
-	nil,                                          // 170: cloudwatch.Entity.KeyattributesEntry
-	(*common.Empty)(nil),                         // 171: common.Empty
+	(*EvaluationWindow)(nil),                     // 67: cloudwatch.EvaluationWindow
+	(*GetAlarmMuteRuleInput)(nil),                // 68: cloudwatch.GetAlarmMuteRuleInput
+	(*GetAlarmMuteRuleOutput)(nil),               // 69: cloudwatch.GetAlarmMuteRuleOutput
+	(*GetDashboardInput)(nil),                    // 70: cloudwatch.GetDashboardInput
+	(*GetDashboardOutput)(nil),                   // 71: cloudwatch.GetDashboardOutput
+	(*GetDatasetInput)(nil),                      // 72: cloudwatch.GetDatasetInput
+	(*GetDatasetOutput)(nil),                     // 73: cloudwatch.GetDatasetOutput
+	(*GetInsightRuleReportInput)(nil),            // 74: cloudwatch.GetInsightRuleReportInput
+	(*GetInsightRuleReportOutput)(nil),           // 75: cloudwatch.GetInsightRuleReportOutput
+	(*GetMetricDataInput)(nil),                   // 76: cloudwatch.GetMetricDataInput
+	(*GetMetricDataOutput)(nil),                  // 77: cloudwatch.GetMetricDataOutput
+	(*GetMetricStatisticsInput)(nil),             // 78: cloudwatch.GetMetricStatisticsInput
+	(*GetMetricStatisticsOutput)(nil),            // 79: cloudwatch.GetMetricStatisticsOutput
+	(*GetMetricStreamInput)(nil),                 // 80: cloudwatch.GetMetricStreamInput
+	(*GetMetricStreamOutput)(nil),                // 81: cloudwatch.GetMetricStreamOutput
+	(*GetMetricWidgetImageInput)(nil),            // 82: cloudwatch.GetMetricWidgetImageInput
+	(*GetMetricWidgetImageOutput)(nil),           // 83: cloudwatch.GetMetricWidgetImageOutput
+	(*GetOTelEnrichmentInput)(nil),               // 84: cloudwatch.GetOTelEnrichmentInput
+	(*GetOTelEnrichmentOutput)(nil),              // 85: cloudwatch.GetOTelEnrichmentOutput
+	(*InsightRule)(nil),                          // 86: cloudwatch.InsightRule
+	(*InsightRuleContributor)(nil),               // 87: cloudwatch.InsightRuleContributor
+	(*InsightRuleContributorDatapoint)(nil),      // 88: cloudwatch.InsightRuleContributorDatapoint
+	(*InsightRuleMetricDatapoint)(nil),           // 89: cloudwatch.InsightRuleMetricDatapoint
+	(*InternalServiceFault)(nil),                 // 90: cloudwatch.InternalServiceFault
+	(*InvalidFormatFault)(nil),                   // 91: cloudwatch.InvalidFormatFault
+	(*InvalidNextToken)(nil),                     // 92: cloudwatch.InvalidNextToken
+	(*InvalidParameterCombinationException)(nil), // 93: cloudwatch.InvalidParameterCombinationException
+	(*InvalidParameterValueException)(nil),       // 94: cloudwatch.InvalidParameterValueException
+	(*KmsAccessDeniedException)(nil),             // 95: cloudwatch.KmsAccessDeniedException
+	(*KmsKeyDisabledException)(nil),              // 96: cloudwatch.KmsKeyDisabledException
+	(*KmsKeyNotFoundException)(nil),              // 97: cloudwatch.KmsKeyNotFoundException
+	(*LabelOptions)(nil),                         // 98: cloudwatch.LabelOptions
+	(*LimitExceededException)(nil),               // 99: cloudwatch.LimitExceededException
+	(*LimitExceededFault)(nil),                   // 100: cloudwatch.LimitExceededFault
+	(*ListAlarmMuteRulesInput)(nil),              // 101: cloudwatch.ListAlarmMuteRulesInput
+	(*ListAlarmMuteRulesOutput)(nil),             // 102: cloudwatch.ListAlarmMuteRulesOutput
+	(*ListDashboardsInput)(nil),                  // 103: cloudwatch.ListDashboardsInput
+	(*ListDashboardsOutput)(nil),                 // 104: cloudwatch.ListDashboardsOutput
+	(*ListManagedInsightRulesInput)(nil),         // 105: cloudwatch.ListManagedInsightRulesInput
+	(*ListManagedInsightRulesOutput)(nil),        // 106: cloudwatch.ListManagedInsightRulesOutput
+	(*ListMetricStreamsInput)(nil),               // 107: cloudwatch.ListMetricStreamsInput
+	(*ListMetricStreamsOutput)(nil),              // 108: cloudwatch.ListMetricStreamsOutput
+	(*ListMetricsInput)(nil),                     // 109: cloudwatch.ListMetricsInput
+	(*ListMetricsOutput)(nil),                    // 110: cloudwatch.ListMetricsOutput
+	(*ListTagsForResourceInput)(nil),             // 111: cloudwatch.ListTagsForResourceInput
+	(*ListTagsForResourceOutput)(nil),            // 112: cloudwatch.ListTagsForResourceOutput
+	(*LogAlarm)(nil),                             // 113: cloudwatch.LogAlarm
+	(*ManagedRule)(nil),                          // 114: cloudwatch.ManagedRule
+	(*ManagedRuleDescription)(nil),               // 115: cloudwatch.ManagedRuleDescription
+	(*ManagedRuleState)(nil),                     // 116: cloudwatch.ManagedRuleState
+	(*MessageData)(nil),                          // 117: cloudwatch.MessageData
+	(*Metric)(nil),                               // 118: cloudwatch.Metric
+	(*MetricAlarm)(nil),                          // 119: cloudwatch.MetricAlarm
+	(*MetricCharacteristics)(nil),                // 120: cloudwatch.MetricCharacteristics
+	(*MetricDataQuery)(nil),                      // 121: cloudwatch.MetricDataQuery
+	(*MetricDataResult)(nil),                     // 122: cloudwatch.MetricDataResult
+	(*MetricDatum)(nil),                          // 123: cloudwatch.MetricDatum
+	(*MetricMathAnomalyDetector)(nil),            // 124: cloudwatch.MetricMathAnomalyDetector
+	(*MetricStat)(nil),                           // 125: cloudwatch.MetricStat
+	(*MetricStreamEntry)(nil),                    // 126: cloudwatch.MetricStreamEntry
+	(*MetricStreamFilter)(nil),                   // 127: cloudwatch.MetricStreamFilter
+	(*MetricStreamStatisticsConfiguration)(nil),  // 128: cloudwatch.MetricStreamStatisticsConfiguration
+	(*MetricStreamStatisticsMetric)(nil),         // 129: cloudwatch.MetricStreamStatisticsMetric
+	(*MissingRequiredParameterException)(nil),    // 130: cloudwatch.MissingRequiredParameterException
+	(*MuteTargets)(nil),                          // 131: cloudwatch.MuteTargets
+	(*PartialFailure)(nil),                       // 132: cloudwatch.PartialFailure
+	(*PutAlarmMuteRuleInput)(nil),                // 133: cloudwatch.PutAlarmMuteRuleInput
+	(*PutAnomalyDetectorInput)(nil),              // 134: cloudwatch.PutAnomalyDetectorInput
+	(*PutAnomalyDetectorOutput)(nil),             // 135: cloudwatch.PutAnomalyDetectorOutput
+	(*PutCompositeAlarmInput)(nil),               // 136: cloudwatch.PutCompositeAlarmInput
+	(*PutDashboardInput)(nil),                    // 137: cloudwatch.PutDashboardInput
+	(*PutDashboardOutput)(nil),                   // 138: cloudwatch.PutDashboardOutput
+	(*PutInsightRuleInput)(nil),                  // 139: cloudwatch.PutInsightRuleInput
+	(*PutInsightRuleOutput)(nil),                 // 140: cloudwatch.PutInsightRuleOutput
+	(*PutLogAlarmInput)(nil),                     // 141: cloudwatch.PutLogAlarmInput
+	(*PutManagedInsightRulesInput)(nil),          // 142: cloudwatch.PutManagedInsightRulesInput
+	(*PutManagedInsightRulesOutput)(nil),         // 143: cloudwatch.PutManagedInsightRulesOutput
+	(*PutMetricAlarmInput)(nil),                  // 144: cloudwatch.PutMetricAlarmInput
+	(*PutMetricDataInput)(nil),                   // 145: cloudwatch.PutMetricDataInput
+	(*PutMetricStreamInput)(nil),                 // 146: cloudwatch.PutMetricStreamInput
+	(*PutMetricStreamOutput)(nil),                // 147: cloudwatch.PutMetricStreamOutput
+	(*Range)(nil),                                // 148: cloudwatch.Range
+	(*ResourceConflict)(nil),                     // 149: cloudwatch.ResourceConflict
+	(*ResourceNotFound)(nil),                     // 150: cloudwatch.ResourceNotFound
+	(*ResourceNotFoundException)(nil),            // 151: cloudwatch.ResourceNotFoundException
+	(*Rule)(nil),                                 // 152: cloudwatch.Rule
+	(*Schedule)(nil),                             // 153: cloudwatch.Schedule
+	(*ScheduleConfiguration)(nil),                // 154: cloudwatch.ScheduleConfiguration
+	(*ScheduledQueryConfiguration)(nil),          // 155: cloudwatch.ScheduledQueryConfiguration
+	(*SetAlarmStateInput)(nil),                   // 156: cloudwatch.SetAlarmStateInput
+	(*SingleMetricAnomalyDetector)(nil),          // 157: cloudwatch.SingleMetricAnomalyDetector
+	(*SlidingWindow)(nil),                        // 158: cloudwatch.SlidingWindow
+	(*StartMetricStreamsInput)(nil),              // 159: cloudwatch.StartMetricStreamsInput
+	(*StartMetricStreamsOutput)(nil),             // 160: cloudwatch.StartMetricStreamsOutput
+	(*StartOTelEnrichmentInput)(nil),             // 161: cloudwatch.StartOTelEnrichmentInput
+	(*StartOTelEnrichmentOutput)(nil),            // 162: cloudwatch.StartOTelEnrichmentOutput
+	(*StatisticSet)(nil),                         // 163: cloudwatch.StatisticSet
+	(*StopMetricStreamsInput)(nil),               // 164: cloudwatch.StopMetricStreamsInput
+	(*StopMetricStreamsOutput)(nil),              // 165: cloudwatch.StopMetricStreamsOutput
+	(*StopOTelEnrichmentInput)(nil),              // 166: cloudwatch.StopOTelEnrichmentInput
+	(*StopOTelEnrichmentOutput)(nil),             // 167: cloudwatch.StopOTelEnrichmentOutput
+	(*Tag)(nil),                                  // 168: cloudwatch.Tag
+	(*TagResourceInput)(nil),                     // 169: cloudwatch.TagResourceInput
+	(*TagResourceOutput)(nil),                    // 170: cloudwatch.TagResourceOutput
+	(*UntagResourceInput)(nil),                   // 171: cloudwatch.UntagResourceInput
+	(*UntagResourceOutput)(nil),                  // 172: cloudwatch.UntagResourceOutput
+	(*WallClockWindow)(nil),                      // 173: cloudwatch.WallClockWindow
+	(*WarmUpConfiguration)(nil),                  // 174: cloudwatch.WarmUpConfiguration
+	nil,                                          // 175: cloudwatch.AlarmContributor.ContributorattributesEntry
+	nil,                                          // 176: cloudwatch.AlarmHistoryItem.AlarmcontributorattributesEntry
+	nil,                                          // 177: cloudwatch.Datapoint.ExtendedstatisticsEntry
+	nil,                                          // 178: cloudwatch.Entity.AttributesEntry
+	nil,                                          // 179: cloudwatch.Entity.KeyattributesEntry
+	(*common.Empty)(nil),                         // 180: common.Empty
 }
 var file_cloudwatch_proto_depIdxs = []int32{
-	166, // 0: cloudwatch.AlarmContributor.contributorattributes:type_name -> cloudwatch.AlarmContributor.ContributorattributesEntry
-	167, // 1: cloudwatch.AlarmHistoryItem.alarmcontributorattributes:type_name -> cloudwatch.AlarmHistoryItem.AlarmcontributorattributesEntry
+	175, // 0: cloudwatch.AlarmContributor.contributorattributes:type_name -> cloudwatch.AlarmContributor.ContributorattributesEntry
+	176, // 1: cloudwatch.AlarmHistoryItem.alarmcontributorattributes:type_name -> cloudwatch.AlarmHistoryItem.AlarmcontributorattributesEntry
 	2,   // 2: cloudwatch.AlarmHistoryItem.alarmtype:type_name -> cloudwatch.AlarmType
 	7,   // 3: cloudwatch.AlarmHistoryItem.historyitemtype:type_name -> cloudwatch.HistoryItemType
 	1,   // 4: cloudwatch.AlarmMuteRuleSummary.status:type_name -> cloudwatch.AlarmMuteRuleStatus
 	21,  // 5: cloudwatch.AnomalyDetector.configuration:type_name -> cloudwatch.AnomalyDetectorConfiguration
 	54,  // 6: cloudwatch.AnomalyDetector.dimensions:type_name -> cloudwatch.Dimension
-	118, // 7: cloudwatch.AnomalyDetector.metriccharacteristics:type_name -> cloudwatch.MetricCharacteristics
-	122, // 8: cloudwatch.AnomalyDetector.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
-	151, // 9: cloudwatch.AnomalyDetector.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
+	120, // 7: cloudwatch.AnomalyDetector.metriccharacteristics:type_name -> cloudwatch.MetricCharacteristics
+	124, // 8: cloudwatch.AnomalyDetector.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
+	157, // 9: cloudwatch.AnomalyDetector.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
 	3,   // 10: cloudwatch.AnomalyDetector.statevalue:type_name -> cloudwatch.AnomalyDetectorStateValue
-	145, // 11: cloudwatch.AnomalyDetectorConfiguration.excludedtimeranges:type_name -> cloudwatch.Range
+	148, // 11: cloudwatch.AnomalyDetectorConfiguration.excludedtimeranges:type_name -> cloudwatch.Range
 	0,   // 12: cloudwatch.CompositeAlarm.actionssuppressedby:type_name -> cloudwatch.ActionsSuppressedBy
 	13,  // 13: cloudwatch.CompositeAlarm.statevalue:type_name -> cloudwatch.StateValue
 	30,  // 14: cloudwatch.DashboardInvalidInputError.dashboardvalidationmessages:type_name -> cloudwatch.DashboardValidationMessage
-	168, // 15: cloudwatch.Datapoint.extendedstatistics:type_name -> cloudwatch.Datapoint.ExtendedstatisticsEntry
+	177, // 15: cloudwatch.Datapoint.extendedstatistics:type_name -> cloudwatch.Datapoint.ExtendedstatisticsEntry
 	12,  // 16: cloudwatch.Datapoint.unit:type_name -> cloudwatch.StandardUnit
 	54,  // 17: cloudwatch.DeleteAnomalyDetectorInput.dimensions:type_name -> cloudwatch.Dimension
-	122, // 18: cloudwatch.DeleteAnomalyDetectorInput.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
-	151, // 19: cloudwatch.DeleteAnomalyDetectorInput.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
-	130, // 20: cloudwatch.DeleteInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
+	124, // 18: cloudwatch.DeleteAnomalyDetectorInput.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
+	157, // 19: cloudwatch.DeleteAnomalyDetectorInput.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
+	132, // 20: cloudwatch.DeleteInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
 	16,  // 21: cloudwatch.DescribeAlarmContributorsOutput.alarmcontributors:type_name -> cloudwatch.AlarmContributor
 	2,   // 22: cloudwatch.DescribeAlarmHistoryInput.alarmtypes:type_name -> cloudwatch.AlarmType
 	7,   // 23: cloudwatch.DescribeAlarmHistoryInput.historyitemtype:type_name -> cloudwatch.HistoryItemType
@@ -11258,208 +12480,228 @@ var file_cloudwatch_proto_depIdxs = []int32{
 	54,  // 26: cloudwatch.DescribeAlarmsForMetricInput.dimensions:type_name -> cloudwatch.Dimension
 	14,  // 27: cloudwatch.DescribeAlarmsForMetricInput.statistic:type_name -> cloudwatch.Statistic
 	12,  // 28: cloudwatch.DescribeAlarmsForMetricInput.unit:type_name -> cloudwatch.StandardUnit
-	117, // 29: cloudwatch.DescribeAlarmsForMetricOutput.metricalarms:type_name -> cloudwatch.MetricAlarm
+	119, // 29: cloudwatch.DescribeAlarmsForMetricOutput.metricalarms:type_name -> cloudwatch.MetricAlarm
 	2,   // 30: cloudwatch.DescribeAlarmsInput.alarmtypes:type_name -> cloudwatch.AlarmType
 	13,  // 31: cloudwatch.DescribeAlarmsInput.statevalue:type_name -> cloudwatch.StateValue
 	24,  // 32: cloudwatch.DescribeAlarmsOutput.compositealarms:type_name -> cloudwatch.CompositeAlarm
-	117, // 33: cloudwatch.DescribeAlarmsOutput.metricalarms:type_name -> cloudwatch.MetricAlarm
-	4,   // 34: cloudwatch.DescribeAnomalyDetectorsInput.anomalydetectortypes:type_name -> cloudwatch.AnomalyDetectorType
-	54,  // 35: cloudwatch.DescribeAnomalyDetectorsInput.dimensions:type_name -> cloudwatch.Dimension
-	20,  // 36: cloudwatch.DescribeAnomalyDetectorsOutput.anomalydetectors:type_name -> cloudwatch.AnomalyDetector
-	85,  // 37: cloudwatch.DescribeInsightRulesOutput.insightrules:type_name -> cloudwatch.InsightRule
-	130, // 38: cloudwatch.DisableInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
-	130, // 39: cloudwatch.EnableInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
-	169, // 40: cloudwatch.Entity.attributes:type_name -> cloudwatch.Entity.AttributesEntry
-	170, // 41: cloudwatch.Entity.keyattributes:type_name -> cloudwatch.Entity.KeyattributesEntry
-	64,  // 42: cloudwatch.EntityMetricData.entity:type_name -> cloudwatch.Entity
-	121, // 43: cloudwatch.EntityMetricData.metricdata:type_name -> cloudwatch.MetricDatum
-	19,  // 44: cloudwatch.EvaluationCriteria.promqlcriteria:type_name -> cloudwatch.AlarmPromQLCriteria
-	129, // 45: cloudwatch.GetAlarmMuteRuleOutput.mutetargets:type_name -> cloudwatch.MuteTargets
-	148, // 46: cloudwatch.GetAlarmMuteRuleOutput.rule:type_name -> cloudwatch.Rule
-	1,   // 47: cloudwatch.GetAlarmMuteRuleOutput.status:type_name -> cloudwatch.AlarmMuteRuleStatus
-	86,  // 48: cloudwatch.GetInsightRuleReportOutput.contributors:type_name -> cloudwatch.InsightRuleContributor
-	88,  // 49: cloudwatch.GetInsightRuleReportOutput.metricdatapoints:type_name -> cloudwatch.InsightRuleMetricDatapoint
-	97,  // 50: cloudwatch.GetMetricDataInput.labeloptions:type_name -> cloudwatch.LabelOptions
-	119, // 51: cloudwatch.GetMetricDataInput.metricdataqueries:type_name -> cloudwatch.MetricDataQuery
-	11,  // 52: cloudwatch.GetMetricDataInput.scanby:type_name -> cloudwatch.ScanBy
-	115, // 53: cloudwatch.GetMetricDataOutput.messages:type_name -> cloudwatch.MessageData
-	120, // 54: cloudwatch.GetMetricDataOutput.metricdataresults:type_name -> cloudwatch.MetricDataResult
-	54,  // 55: cloudwatch.GetMetricStatisticsInput.dimensions:type_name -> cloudwatch.Dimension
-	14,  // 56: cloudwatch.GetMetricStatisticsInput.statistics:type_name -> cloudwatch.Statistic
-	12,  // 57: cloudwatch.GetMetricStatisticsInput.unit:type_name -> cloudwatch.StandardUnit
-	31,  // 58: cloudwatch.GetMetricStatisticsOutput.datapoints:type_name -> cloudwatch.Datapoint
-	125, // 59: cloudwatch.GetMetricStreamOutput.excludefilters:type_name -> cloudwatch.MetricStreamFilter
-	125, // 60: cloudwatch.GetMetricStreamOutput.includefilters:type_name -> cloudwatch.MetricStreamFilter
-	8,   // 61: cloudwatch.GetMetricStreamOutput.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
-	126, // 62: cloudwatch.GetMetricStreamOutput.statisticsconfigurations:type_name -> cloudwatch.MetricStreamStatisticsConfiguration
-	9,   // 63: cloudwatch.GetOTelEnrichmentOutput.status:type_name -> cloudwatch.OTelEnrichmentStatus
-	87,  // 64: cloudwatch.InsightRuleContributor.datapoints:type_name -> cloudwatch.InsightRuleContributorDatapoint
-	1,   // 65: cloudwatch.ListAlarmMuteRulesInput.statuses:type_name -> cloudwatch.AlarmMuteRuleStatus
-	18,  // 66: cloudwatch.ListAlarmMuteRulesOutput.alarmmuterulesummaries:type_name -> cloudwatch.AlarmMuteRuleSummary
-	27,  // 67: cloudwatch.ListDashboardsOutput.dashboardentries:type_name -> cloudwatch.DashboardEntry
-	113, // 68: cloudwatch.ListManagedInsightRulesOutput.managedrules:type_name -> cloudwatch.ManagedRuleDescription
-	124, // 69: cloudwatch.ListMetricStreamsOutput.entries:type_name -> cloudwatch.MetricStreamEntry
-	55,  // 70: cloudwatch.ListMetricsInput.dimensions:type_name -> cloudwatch.DimensionFilter
-	10,  // 71: cloudwatch.ListMetricsInput.recentlyactive:type_name -> cloudwatch.RecentlyActive
-	116, // 72: cloudwatch.ListMetricsOutput.metrics:type_name -> cloudwatch.Metric
-	161, // 73: cloudwatch.ListTagsForResourceOutput.tags:type_name -> cloudwatch.Tag
-	161, // 74: cloudwatch.ManagedRule.tags:type_name -> cloudwatch.Tag
-	114, // 75: cloudwatch.ManagedRuleDescription.rulestate:type_name -> cloudwatch.ManagedRuleState
-	54,  // 76: cloudwatch.Metric.dimensions:type_name -> cloudwatch.Dimension
-	5,   // 77: cloudwatch.MetricAlarm.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
-	54,  // 78: cloudwatch.MetricAlarm.dimensions:type_name -> cloudwatch.Dimension
-	66,  // 79: cloudwatch.MetricAlarm.evaluationcriteria:type_name -> cloudwatch.EvaluationCriteria
-	6,   // 80: cloudwatch.MetricAlarm.evaluationstate:type_name -> cloudwatch.EvaluationState
-	119, // 81: cloudwatch.MetricAlarm.metrics:type_name -> cloudwatch.MetricDataQuery
-	13,  // 82: cloudwatch.MetricAlarm.statevalue:type_name -> cloudwatch.StateValue
-	14,  // 83: cloudwatch.MetricAlarm.statistic:type_name -> cloudwatch.Statistic
-	12,  // 84: cloudwatch.MetricAlarm.unit:type_name -> cloudwatch.StandardUnit
-	123, // 85: cloudwatch.MetricDataQuery.metricstat:type_name -> cloudwatch.MetricStat
-	115, // 86: cloudwatch.MetricDataResult.messages:type_name -> cloudwatch.MessageData
-	15,  // 87: cloudwatch.MetricDataResult.statuscode:type_name -> cloudwatch.StatusCode
-	54,  // 88: cloudwatch.MetricDatum.dimensions:type_name -> cloudwatch.Dimension
-	156, // 89: cloudwatch.MetricDatum.statisticvalues:type_name -> cloudwatch.StatisticSet
-	12,  // 90: cloudwatch.MetricDatum.unit:type_name -> cloudwatch.StandardUnit
-	119, // 91: cloudwatch.MetricMathAnomalyDetector.metricdataqueries:type_name -> cloudwatch.MetricDataQuery
-	116, // 92: cloudwatch.MetricStat.metric:type_name -> cloudwatch.Metric
-	12,  // 93: cloudwatch.MetricStat.unit:type_name -> cloudwatch.StandardUnit
-	8,   // 94: cloudwatch.MetricStreamEntry.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
-	127, // 95: cloudwatch.MetricStreamStatisticsConfiguration.includemetrics:type_name -> cloudwatch.MetricStreamStatisticsMetric
-	129, // 96: cloudwatch.PutAlarmMuteRuleInput.mutetargets:type_name -> cloudwatch.MuteTargets
-	148, // 97: cloudwatch.PutAlarmMuteRuleInput.rule:type_name -> cloudwatch.Rule
-	161, // 98: cloudwatch.PutAlarmMuteRuleInput.tags:type_name -> cloudwatch.Tag
-	21,  // 99: cloudwatch.PutAnomalyDetectorInput.configuration:type_name -> cloudwatch.AnomalyDetectorConfiguration
-	54,  // 100: cloudwatch.PutAnomalyDetectorInput.dimensions:type_name -> cloudwatch.Dimension
-	118, // 101: cloudwatch.PutAnomalyDetectorInput.metriccharacteristics:type_name -> cloudwatch.MetricCharacteristics
-	122, // 102: cloudwatch.PutAnomalyDetectorInput.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
-	151, // 103: cloudwatch.PutAnomalyDetectorInput.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
-	161, // 104: cloudwatch.PutCompositeAlarmInput.tags:type_name -> cloudwatch.Tag
-	161, // 105: cloudwatch.PutDashboardInput.tags:type_name -> cloudwatch.Tag
-	30,  // 106: cloudwatch.PutDashboardOutput.dashboardvalidationmessages:type_name -> cloudwatch.DashboardValidationMessage
-	161, // 107: cloudwatch.PutInsightRuleInput.tags:type_name -> cloudwatch.Tag
-	112, // 108: cloudwatch.PutManagedInsightRulesInput.managedrules:type_name -> cloudwatch.ManagedRule
-	130, // 109: cloudwatch.PutManagedInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
-	5,   // 110: cloudwatch.PutMetricAlarmInput.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
-	54,  // 111: cloudwatch.PutMetricAlarmInput.dimensions:type_name -> cloudwatch.Dimension
-	66,  // 112: cloudwatch.PutMetricAlarmInput.evaluationcriteria:type_name -> cloudwatch.EvaluationCriteria
-	119, // 113: cloudwatch.PutMetricAlarmInput.metrics:type_name -> cloudwatch.MetricDataQuery
-	14,  // 114: cloudwatch.PutMetricAlarmInput.statistic:type_name -> cloudwatch.Statistic
-	161, // 115: cloudwatch.PutMetricAlarmInput.tags:type_name -> cloudwatch.Tag
-	12,  // 116: cloudwatch.PutMetricAlarmInput.unit:type_name -> cloudwatch.StandardUnit
-	65,  // 117: cloudwatch.PutMetricDataInput.entitymetricdata:type_name -> cloudwatch.EntityMetricData
-	121, // 118: cloudwatch.PutMetricDataInput.metricdata:type_name -> cloudwatch.MetricDatum
-	125, // 119: cloudwatch.PutMetricStreamInput.excludefilters:type_name -> cloudwatch.MetricStreamFilter
-	125, // 120: cloudwatch.PutMetricStreamInput.includefilters:type_name -> cloudwatch.MetricStreamFilter
-	8,   // 121: cloudwatch.PutMetricStreamInput.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
-	126, // 122: cloudwatch.PutMetricStreamInput.statisticsconfigurations:type_name -> cloudwatch.MetricStreamStatisticsConfiguration
-	161, // 123: cloudwatch.PutMetricStreamInput.tags:type_name -> cloudwatch.Tag
-	149, // 124: cloudwatch.Rule.schedule:type_name -> cloudwatch.Schedule
-	13,  // 125: cloudwatch.SetAlarmStateInput.statevalue:type_name -> cloudwatch.StateValue
-	54,  // 126: cloudwatch.SingleMetricAnomalyDetector.dimensions:type_name -> cloudwatch.Dimension
-	161, // 127: cloudwatch.TagResourceInput.tags:type_name -> cloudwatch.Tag
-	22,  // 128: cloudwatch.CloudWatchService.AssociateDatasetKmsKey:input_type -> cloudwatch.AssociateDatasetKmsKeyInput
-	32,  // 129: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:input_type -> cloudwatch.DeleteAlarmMuteRuleInput
-	33,  // 130: cloudwatch.CloudWatchService.DeleteAlarms:input_type -> cloudwatch.DeleteAlarmsInput
-	34,  // 131: cloudwatch.CloudWatchService.DeleteAnomalyDetector:input_type -> cloudwatch.DeleteAnomalyDetectorInput
-	36,  // 132: cloudwatch.CloudWatchService.DeleteDashboards:input_type -> cloudwatch.DeleteDashboardsInput
-	38,  // 133: cloudwatch.CloudWatchService.DeleteInsightRules:input_type -> cloudwatch.DeleteInsightRulesInput
-	40,  // 134: cloudwatch.CloudWatchService.DeleteMetricStream:input_type -> cloudwatch.DeleteMetricStreamInput
-	42,  // 135: cloudwatch.CloudWatchService.DescribeAlarmContributors:input_type -> cloudwatch.DescribeAlarmContributorsInput
-	44,  // 136: cloudwatch.CloudWatchService.DescribeAlarmHistory:input_type -> cloudwatch.DescribeAlarmHistoryInput
-	48,  // 137: cloudwatch.CloudWatchService.DescribeAlarms:input_type -> cloudwatch.DescribeAlarmsInput
-	46,  // 138: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:input_type -> cloudwatch.DescribeAlarmsForMetricInput
-	50,  // 139: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:input_type -> cloudwatch.DescribeAnomalyDetectorsInput
-	52,  // 140: cloudwatch.CloudWatchService.DescribeInsightRules:input_type -> cloudwatch.DescribeInsightRulesInput
-	56,  // 141: cloudwatch.CloudWatchService.DisableAlarmActions:input_type -> cloudwatch.DisableAlarmActionsInput
-	57,  // 142: cloudwatch.CloudWatchService.DisableInsightRules:input_type -> cloudwatch.DisableInsightRulesInput
-	59,  // 143: cloudwatch.CloudWatchService.DisassociateDatasetKmsKey:input_type -> cloudwatch.DisassociateDatasetKmsKeyInput
-	61,  // 144: cloudwatch.CloudWatchService.EnableAlarmActions:input_type -> cloudwatch.EnableAlarmActionsInput
-	62,  // 145: cloudwatch.CloudWatchService.EnableInsightRules:input_type -> cloudwatch.EnableInsightRulesInput
-	67,  // 146: cloudwatch.CloudWatchService.GetAlarmMuteRule:input_type -> cloudwatch.GetAlarmMuteRuleInput
-	69,  // 147: cloudwatch.CloudWatchService.GetDashboard:input_type -> cloudwatch.GetDashboardInput
-	71,  // 148: cloudwatch.CloudWatchService.GetDataset:input_type -> cloudwatch.GetDatasetInput
-	73,  // 149: cloudwatch.CloudWatchService.GetInsightRuleReport:input_type -> cloudwatch.GetInsightRuleReportInput
-	75,  // 150: cloudwatch.CloudWatchService.GetMetricData:input_type -> cloudwatch.GetMetricDataInput
-	77,  // 151: cloudwatch.CloudWatchService.GetMetricStatistics:input_type -> cloudwatch.GetMetricStatisticsInput
-	79,  // 152: cloudwatch.CloudWatchService.GetMetricStream:input_type -> cloudwatch.GetMetricStreamInput
-	81,  // 153: cloudwatch.CloudWatchService.GetMetricWidgetImage:input_type -> cloudwatch.GetMetricWidgetImageInput
-	83,  // 154: cloudwatch.CloudWatchService.GetOTelEnrichment:input_type -> cloudwatch.GetOTelEnrichmentInput
-	100, // 155: cloudwatch.CloudWatchService.ListAlarmMuteRules:input_type -> cloudwatch.ListAlarmMuteRulesInput
-	102, // 156: cloudwatch.CloudWatchService.ListDashboards:input_type -> cloudwatch.ListDashboardsInput
-	104, // 157: cloudwatch.CloudWatchService.ListManagedInsightRules:input_type -> cloudwatch.ListManagedInsightRulesInput
-	108, // 158: cloudwatch.CloudWatchService.ListMetrics:input_type -> cloudwatch.ListMetricsInput
-	106, // 159: cloudwatch.CloudWatchService.ListMetricStreams:input_type -> cloudwatch.ListMetricStreamsInput
-	110, // 160: cloudwatch.CloudWatchService.ListTagsForResource:input_type -> cloudwatch.ListTagsForResourceInput
-	131, // 161: cloudwatch.CloudWatchService.PutAlarmMuteRule:input_type -> cloudwatch.PutAlarmMuteRuleInput
-	132, // 162: cloudwatch.CloudWatchService.PutAnomalyDetector:input_type -> cloudwatch.PutAnomalyDetectorInput
-	134, // 163: cloudwatch.CloudWatchService.PutCompositeAlarm:input_type -> cloudwatch.PutCompositeAlarmInput
-	135, // 164: cloudwatch.CloudWatchService.PutDashboard:input_type -> cloudwatch.PutDashboardInput
-	137, // 165: cloudwatch.CloudWatchService.PutInsightRule:input_type -> cloudwatch.PutInsightRuleInput
-	139, // 166: cloudwatch.CloudWatchService.PutManagedInsightRules:input_type -> cloudwatch.PutManagedInsightRulesInput
-	141, // 167: cloudwatch.CloudWatchService.PutMetricAlarm:input_type -> cloudwatch.PutMetricAlarmInput
-	142, // 168: cloudwatch.CloudWatchService.PutMetricData:input_type -> cloudwatch.PutMetricDataInput
-	143, // 169: cloudwatch.CloudWatchService.PutMetricStream:input_type -> cloudwatch.PutMetricStreamInput
-	150, // 170: cloudwatch.CloudWatchService.SetAlarmState:input_type -> cloudwatch.SetAlarmStateInput
-	152, // 171: cloudwatch.CloudWatchService.StartMetricStreams:input_type -> cloudwatch.StartMetricStreamsInput
-	154, // 172: cloudwatch.CloudWatchService.StartOTelEnrichment:input_type -> cloudwatch.StartOTelEnrichmentInput
-	157, // 173: cloudwatch.CloudWatchService.StopMetricStreams:input_type -> cloudwatch.StopMetricStreamsInput
-	159, // 174: cloudwatch.CloudWatchService.StopOTelEnrichment:input_type -> cloudwatch.StopOTelEnrichmentInput
-	162, // 175: cloudwatch.CloudWatchService.TagResource:input_type -> cloudwatch.TagResourceInput
-	164, // 176: cloudwatch.CloudWatchService.UntagResource:input_type -> cloudwatch.UntagResourceInput
-	23,  // 177: cloudwatch.CloudWatchService.AssociateDatasetKmsKey:output_type -> cloudwatch.AssociateDatasetKmsKeyOutput
-	171, // 178: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:output_type -> common.Empty
-	171, // 179: cloudwatch.CloudWatchService.DeleteAlarms:output_type -> common.Empty
-	35,  // 180: cloudwatch.CloudWatchService.DeleteAnomalyDetector:output_type -> cloudwatch.DeleteAnomalyDetectorOutput
-	37,  // 181: cloudwatch.CloudWatchService.DeleteDashboards:output_type -> cloudwatch.DeleteDashboardsOutput
-	39,  // 182: cloudwatch.CloudWatchService.DeleteInsightRules:output_type -> cloudwatch.DeleteInsightRulesOutput
-	41,  // 183: cloudwatch.CloudWatchService.DeleteMetricStream:output_type -> cloudwatch.DeleteMetricStreamOutput
-	43,  // 184: cloudwatch.CloudWatchService.DescribeAlarmContributors:output_type -> cloudwatch.DescribeAlarmContributorsOutput
-	45,  // 185: cloudwatch.CloudWatchService.DescribeAlarmHistory:output_type -> cloudwatch.DescribeAlarmHistoryOutput
-	49,  // 186: cloudwatch.CloudWatchService.DescribeAlarms:output_type -> cloudwatch.DescribeAlarmsOutput
-	47,  // 187: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:output_type -> cloudwatch.DescribeAlarmsForMetricOutput
-	51,  // 188: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:output_type -> cloudwatch.DescribeAnomalyDetectorsOutput
-	53,  // 189: cloudwatch.CloudWatchService.DescribeInsightRules:output_type -> cloudwatch.DescribeInsightRulesOutput
-	171, // 190: cloudwatch.CloudWatchService.DisableAlarmActions:output_type -> common.Empty
-	58,  // 191: cloudwatch.CloudWatchService.DisableInsightRules:output_type -> cloudwatch.DisableInsightRulesOutput
-	60,  // 192: cloudwatch.CloudWatchService.DisassociateDatasetKmsKey:output_type -> cloudwatch.DisassociateDatasetKmsKeyOutput
-	171, // 193: cloudwatch.CloudWatchService.EnableAlarmActions:output_type -> common.Empty
-	63,  // 194: cloudwatch.CloudWatchService.EnableInsightRules:output_type -> cloudwatch.EnableInsightRulesOutput
-	68,  // 195: cloudwatch.CloudWatchService.GetAlarmMuteRule:output_type -> cloudwatch.GetAlarmMuteRuleOutput
-	70,  // 196: cloudwatch.CloudWatchService.GetDashboard:output_type -> cloudwatch.GetDashboardOutput
-	72,  // 197: cloudwatch.CloudWatchService.GetDataset:output_type -> cloudwatch.GetDatasetOutput
-	74,  // 198: cloudwatch.CloudWatchService.GetInsightRuleReport:output_type -> cloudwatch.GetInsightRuleReportOutput
-	76,  // 199: cloudwatch.CloudWatchService.GetMetricData:output_type -> cloudwatch.GetMetricDataOutput
-	78,  // 200: cloudwatch.CloudWatchService.GetMetricStatistics:output_type -> cloudwatch.GetMetricStatisticsOutput
-	80,  // 201: cloudwatch.CloudWatchService.GetMetricStream:output_type -> cloudwatch.GetMetricStreamOutput
-	82,  // 202: cloudwatch.CloudWatchService.GetMetricWidgetImage:output_type -> cloudwatch.GetMetricWidgetImageOutput
-	84,  // 203: cloudwatch.CloudWatchService.GetOTelEnrichment:output_type -> cloudwatch.GetOTelEnrichmentOutput
-	101, // 204: cloudwatch.CloudWatchService.ListAlarmMuteRules:output_type -> cloudwatch.ListAlarmMuteRulesOutput
-	103, // 205: cloudwatch.CloudWatchService.ListDashboards:output_type -> cloudwatch.ListDashboardsOutput
-	105, // 206: cloudwatch.CloudWatchService.ListManagedInsightRules:output_type -> cloudwatch.ListManagedInsightRulesOutput
-	109, // 207: cloudwatch.CloudWatchService.ListMetrics:output_type -> cloudwatch.ListMetricsOutput
-	107, // 208: cloudwatch.CloudWatchService.ListMetricStreams:output_type -> cloudwatch.ListMetricStreamsOutput
-	111, // 209: cloudwatch.CloudWatchService.ListTagsForResource:output_type -> cloudwatch.ListTagsForResourceOutput
-	171, // 210: cloudwatch.CloudWatchService.PutAlarmMuteRule:output_type -> common.Empty
-	133, // 211: cloudwatch.CloudWatchService.PutAnomalyDetector:output_type -> cloudwatch.PutAnomalyDetectorOutput
-	171, // 212: cloudwatch.CloudWatchService.PutCompositeAlarm:output_type -> common.Empty
-	136, // 213: cloudwatch.CloudWatchService.PutDashboard:output_type -> cloudwatch.PutDashboardOutput
-	138, // 214: cloudwatch.CloudWatchService.PutInsightRule:output_type -> cloudwatch.PutInsightRuleOutput
-	140, // 215: cloudwatch.CloudWatchService.PutManagedInsightRules:output_type -> cloudwatch.PutManagedInsightRulesOutput
-	171, // 216: cloudwatch.CloudWatchService.PutMetricAlarm:output_type -> common.Empty
-	171, // 217: cloudwatch.CloudWatchService.PutMetricData:output_type -> common.Empty
-	144, // 218: cloudwatch.CloudWatchService.PutMetricStream:output_type -> cloudwatch.PutMetricStreamOutput
-	171, // 219: cloudwatch.CloudWatchService.SetAlarmState:output_type -> common.Empty
-	153, // 220: cloudwatch.CloudWatchService.StartMetricStreams:output_type -> cloudwatch.StartMetricStreamsOutput
-	155, // 221: cloudwatch.CloudWatchService.StartOTelEnrichment:output_type -> cloudwatch.StartOTelEnrichmentOutput
-	158, // 222: cloudwatch.CloudWatchService.StopMetricStreams:output_type -> cloudwatch.StopMetricStreamsOutput
-	160, // 223: cloudwatch.CloudWatchService.StopOTelEnrichment:output_type -> cloudwatch.StopOTelEnrichmentOutput
-	163, // 224: cloudwatch.CloudWatchService.TagResource:output_type -> cloudwatch.TagResourceOutput
-	165, // 225: cloudwatch.CloudWatchService.UntagResource:output_type -> cloudwatch.UntagResourceOutput
-	177, // [177:226] is the sub-list for method output_type
-	128, // [128:177] is the sub-list for method input_type
-	128, // [128:128] is the sub-list for extension type_name
-	128, // [128:128] is the sub-list for extension extendee
-	0,   // [0:128] is the sub-list for field type_name
+	113, // 33: cloudwatch.DescribeAlarmsOutput.logalarms:type_name -> cloudwatch.LogAlarm
+	119, // 34: cloudwatch.DescribeAlarmsOutput.metricalarms:type_name -> cloudwatch.MetricAlarm
+	4,   // 35: cloudwatch.DescribeAnomalyDetectorsInput.anomalydetectortypes:type_name -> cloudwatch.AnomalyDetectorType
+	54,  // 36: cloudwatch.DescribeAnomalyDetectorsInput.dimensions:type_name -> cloudwatch.Dimension
+	20,  // 37: cloudwatch.DescribeAnomalyDetectorsOutput.anomalydetectors:type_name -> cloudwatch.AnomalyDetector
+	86,  // 38: cloudwatch.DescribeInsightRulesOutput.insightrules:type_name -> cloudwatch.InsightRule
+	132, // 39: cloudwatch.DisableInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
+	132, // 40: cloudwatch.EnableInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
+	178, // 41: cloudwatch.Entity.attributes:type_name -> cloudwatch.Entity.AttributesEntry
+	179, // 42: cloudwatch.Entity.keyattributes:type_name -> cloudwatch.Entity.KeyattributesEntry
+	64,  // 43: cloudwatch.EntityMetricData.entity:type_name -> cloudwatch.Entity
+	123, // 44: cloudwatch.EntityMetricData.metricdata:type_name -> cloudwatch.MetricDatum
+	19,  // 45: cloudwatch.EvaluationCriteria.promqlcriteria:type_name -> cloudwatch.AlarmPromQLCriteria
+	158, // 46: cloudwatch.EvaluationWindow.slidingwindow:type_name -> cloudwatch.SlidingWindow
+	173, // 47: cloudwatch.EvaluationWindow.wallclockwindow:type_name -> cloudwatch.WallClockWindow
+	131, // 48: cloudwatch.GetAlarmMuteRuleOutput.mutetargets:type_name -> cloudwatch.MuteTargets
+	152, // 49: cloudwatch.GetAlarmMuteRuleOutput.rule:type_name -> cloudwatch.Rule
+	1,   // 50: cloudwatch.GetAlarmMuteRuleOutput.status:type_name -> cloudwatch.AlarmMuteRuleStatus
+	87,  // 51: cloudwatch.GetInsightRuleReportOutput.contributors:type_name -> cloudwatch.InsightRuleContributor
+	89,  // 52: cloudwatch.GetInsightRuleReportOutput.metricdatapoints:type_name -> cloudwatch.InsightRuleMetricDatapoint
+	98,  // 53: cloudwatch.GetMetricDataInput.labeloptions:type_name -> cloudwatch.LabelOptions
+	121, // 54: cloudwatch.GetMetricDataInput.metricdataqueries:type_name -> cloudwatch.MetricDataQuery
+	11,  // 55: cloudwatch.GetMetricDataInput.scanby:type_name -> cloudwatch.ScanBy
+	117, // 56: cloudwatch.GetMetricDataOutput.messages:type_name -> cloudwatch.MessageData
+	122, // 57: cloudwatch.GetMetricDataOutput.metricdataresults:type_name -> cloudwatch.MetricDataResult
+	54,  // 58: cloudwatch.GetMetricStatisticsInput.dimensions:type_name -> cloudwatch.Dimension
+	14,  // 59: cloudwatch.GetMetricStatisticsInput.statistics:type_name -> cloudwatch.Statistic
+	12,  // 60: cloudwatch.GetMetricStatisticsInput.unit:type_name -> cloudwatch.StandardUnit
+	31,  // 61: cloudwatch.GetMetricStatisticsOutput.datapoints:type_name -> cloudwatch.Datapoint
+	127, // 62: cloudwatch.GetMetricStreamOutput.excludefilters:type_name -> cloudwatch.MetricStreamFilter
+	127, // 63: cloudwatch.GetMetricStreamOutput.includefilters:type_name -> cloudwatch.MetricStreamFilter
+	8,   // 64: cloudwatch.GetMetricStreamOutput.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
+	128, // 65: cloudwatch.GetMetricStreamOutput.statisticsconfigurations:type_name -> cloudwatch.MetricStreamStatisticsConfiguration
+	9,   // 66: cloudwatch.GetOTelEnrichmentOutput.status:type_name -> cloudwatch.OTelEnrichmentStatus
+	88,  // 67: cloudwatch.InsightRuleContributor.datapoints:type_name -> cloudwatch.InsightRuleContributorDatapoint
+	1,   // 68: cloudwatch.ListAlarmMuteRulesInput.statuses:type_name -> cloudwatch.AlarmMuteRuleStatus
+	18,  // 69: cloudwatch.ListAlarmMuteRulesOutput.alarmmuterulesummaries:type_name -> cloudwatch.AlarmMuteRuleSummary
+	27,  // 70: cloudwatch.ListDashboardsOutput.dashboardentries:type_name -> cloudwatch.DashboardEntry
+	115, // 71: cloudwatch.ListManagedInsightRulesOutput.managedrules:type_name -> cloudwatch.ManagedRuleDescription
+	126, // 72: cloudwatch.ListMetricStreamsOutput.entries:type_name -> cloudwatch.MetricStreamEntry
+	55,  // 73: cloudwatch.ListMetricsInput.dimensions:type_name -> cloudwatch.DimensionFilter
+	10,  // 74: cloudwatch.ListMetricsInput.recentlyactive:type_name -> cloudwatch.RecentlyActive
+	118, // 75: cloudwatch.ListMetricsOutput.metrics:type_name -> cloudwatch.Metric
+	168, // 76: cloudwatch.ListTagsForResourceOutput.tags:type_name -> cloudwatch.Tag
+	5,   // 77: cloudwatch.LogAlarm.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
+	6,   // 78: cloudwatch.LogAlarm.evaluationstate:type_name -> cloudwatch.EvaluationState
+	155, // 79: cloudwatch.LogAlarm.scheduledqueryconfiguration:type_name -> cloudwatch.ScheduledQueryConfiguration
+	13,  // 80: cloudwatch.LogAlarm.statevalue:type_name -> cloudwatch.StateValue
+	174, // 81: cloudwatch.LogAlarm.warmupconfiguration:type_name -> cloudwatch.WarmUpConfiguration
+	168, // 82: cloudwatch.ManagedRule.tags:type_name -> cloudwatch.Tag
+	116, // 83: cloudwatch.ManagedRuleDescription.rulestate:type_name -> cloudwatch.ManagedRuleState
+	54,  // 84: cloudwatch.Metric.dimensions:type_name -> cloudwatch.Dimension
+	5,   // 85: cloudwatch.MetricAlarm.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
+	54,  // 86: cloudwatch.MetricAlarm.dimensions:type_name -> cloudwatch.Dimension
+	66,  // 87: cloudwatch.MetricAlarm.evaluationcriteria:type_name -> cloudwatch.EvaluationCriteria
+	6,   // 88: cloudwatch.MetricAlarm.evaluationstate:type_name -> cloudwatch.EvaluationState
+	67,  // 89: cloudwatch.MetricAlarm.evaluationwindow:type_name -> cloudwatch.EvaluationWindow
+	121, // 90: cloudwatch.MetricAlarm.metrics:type_name -> cloudwatch.MetricDataQuery
+	13,  // 91: cloudwatch.MetricAlarm.statevalue:type_name -> cloudwatch.StateValue
+	14,  // 92: cloudwatch.MetricAlarm.statistic:type_name -> cloudwatch.Statistic
+	12,  // 93: cloudwatch.MetricAlarm.unit:type_name -> cloudwatch.StandardUnit
+	174, // 94: cloudwatch.MetricAlarm.warmupconfiguration:type_name -> cloudwatch.WarmUpConfiguration
+	125, // 95: cloudwatch.MetricDataQuery.metricstat:type_name -> cloudwatch.MetricStat
+	117, // 96: cloudwatch.MetricDataResult.messages:type_name -> cloudwatch.MessageData
+	15,  // 97: cloudwatch.MetricDataResult.statuscode:type_name -> cloudwatch.StatusCode
+	54,  // 98: cloudwatch.MetricDatum.dimensions:type_name -> cloudwatch.Dimension
+	163, // 99: cloudwatch.MetricDatum.statisticvalues:type_name -> cloudwatch.StatisticSet
+	12,  // 100: cloudwatch.MetricDatum.unit:type_name -> cloudwatch.StandardUnit
+	121, // 101: cloudwatch.MetricMathAnomalyDetector.metricdataqueries:type_name -> cloudwatch.MetricDataQuery
+	118, // 102: cloudwatch.MetricStat.metric:type_name -> cloudwatch.Metric
+	12,  // 103: cloudwatch.MetricStat.unit:type_name -> cloudwatch.StandardUnit
+	8,   // 104: cloudwatch.MetricStreamEntry.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
+	129, // 105: cloudwatch.MetricStreamStatisticsConfiguration.includemetrics:type_name -> cloudwatch.MetricStreamStatisticsMetric
+	131, // 106: cloudwatch.PutAlarmMuteRuleInput.mutetargets:type_name -> cloudwatch.MuteTargets
+	152, // 107: cloudwatch.PutAlarmMuteRuleInput.rule:type_name -> cloudwatch.Rule
+	168, // 108: cloudwatch.PutAlarmMuteRuleInput.tags:type_name -> cloudwatch.Tag
+	21,  // 109: cloudwatch.PutAnomalyDetectorInput.configuration:type_name -> cloudwatch.AnomalyDetectorConfiguration
+	54,  // 110: cloudwatch.PutAnomalyDetectorInput.dimensions:type_name -> cloudwatch.Dimension
+	120, // 111: cloudwatch.PutAnomalyDetectorInput.metriccharacteristics:type_name -> cloudwatch.MetricCharacteristics
+	124, // 112: cloudwatch.PutAnomalyDetectorInput.metricmathanomalydetector:type_name -> cloudwatch.MetricMathAnomalyDetector
+	157, // 113: cloudwatch.PutAnomalyDetectorInput.singlemetricanomalydetector:type_name -> cloudwatch.SingleMetricAnomalyDetector
+	168, // 114: cloudwatch.PutCompositeAlarmInput.tags:type_name -> cloudwatch.Tag
+	168, // 115: cloudwatch.PutDashboardInput.tags:type_name -> cloudwatch.Tag
+	30,  // 116: cloudwatch.PutDashboardOutput.dashboardvalidationmessages:type_name -> cloudwatch.DashboardValidationMessage
+	168, // 117: cloudwatch.PutInsightRuleInput.tags:type_name -> cloudwatch.Tag
+	5,   // 118: cloudwatch.PutLogAlarmInput.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
+	155, // 119: cloudwatch.PutLogAlarmInput.scheduledqueryconfiguration:type_name -> cloudwatch.ScheduledQueryConfiguration
+	168, // 120: cloudwatch.PutLogAlarmInput.tags:type_name -> cloudwatch.Tag
+	174, // 121: cloudwatch.PutLogAlarmInput.warmupconfiguration:type_name -> cloudwatch.WarmUpConfiguration
+	114, // 122: cloudwatch.PutManagedInsightRulesInput.managedrules:type_name -> cloudwatch.ManagedRule
+	132, // 123: cloudwatch.PutManagedInsightRulesOutput.failures:type_name -> cloudwatch.PartialFailure
+	5,   // 124: cloudwatch.PutMetricAlarmInput.comparisonoperator:type_name -> cloudwatch.ComparisonOperator
+	54,  // 125: cloudwatch.PutMetricAlarmInput.dimensions:type_name -> cloudwatch.Dimension
+	66,  // 126: cloudwatch.PutMetricAlarmInput.evaluationcriteria:type_name -> cloudwatch.EvaluationCriteria
+	67,  // 127: cloudwatch.PutMetricAlarmInput.evaluationwindow:type_name -> cloudwatch.EvaluationWindow
+	121, // 128: cloudwatch.PutMetricAlarmInput.metrics:type_name -> cloudwatch.MetricDataQuery
+	14,  // 129: cloudwatch.PutMetricAlarmInput.statistic:type_name -> cloudwatch.Statistic
+	168, // 130: cloudwatch.PutMetricAlarmInput.tags:type_name -> cloudwatch.Tag
+	12,  // 131: cloudwatch.PutMetricAlarmInput.unit:type_name -> cloudwatch.StandardUnit
+	174, // 132: cloudwatch.PutMetricAlarmInput.warmupconfiguration:type_name -> cloudwatch.WarmUpConfiguration
+	65,  // 133: cloudwatch.PutMetricDataInput.entitymetricdata:type_name -> cloudwatch.EntityMetricData
+	123, // 134: cloudwatch.PutMetricDataInput.metricdata:type_name -> cloudwatch.MetricDatum
+	127, // 135: cloudwatch.PutMetricStreamInput.excludefilters:type_name -> cloudwatch.MetricStreamFilter
+	127, // 136: cloudwatch.PutMetricStreamInput.includefilters:type_name -> cloudwatch.MetricStreamFilter
+	8,   // 137: cloudwatch.PutMetricStreamInput.outputformat:type_name -> cloudwatch.MetricStreamOutputFormat
+	128, // 138: cloudwatch.PutMetricStreamInput.statisticsconfigurations:type_name -> cloudwatch.MetricStreamStatisticsConfiguration
+	168, // 139: cloudwatch.PutMetricStreamInput.tags:type_name -> cloudwatch.Tag
+	153, // 140: cloudwatch.Rule.schedule:type_name -> cloudwatch.Schedule
+	154, // 141: cloudwatch.ScheduledQueryConfiguration.scheduleconfiguration:type_name -> cloudwatch.ScheduleConfiguration
+	168, // 142: cloudwatch.ScheduledQueryConfiguration.tags:type_name -> cloudwatch.Tag
+	13,  // 143: cloudwatch.SetAlarmStateInput.statevalue:type_name -> cloudwatch.StateValue
+	54,  // 144: cloudwatch.SingleMetricAnomalyDetector.dimensions:type_name -> cloudwatch.Dimension
+	168, // 145: cloudwatch.TagResourceInput.tags:type_name -> cloudwatch.Tag
+	22,  // 146: cloudwatch.CloudWatchService.AssociateDatasetKmsKey:input_type -> cloudwatch.AssociateDatasetKmsKeyInput
+	32,  // 147: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:input_type -> cloudwatch.DeleteAlarmMuteRuleInput
+	33,  // 148: cloudwatch.CloudWatchService.DeleteAlarms:input_type -> cloudwatch.DeleteAlarmsInput
+	34,  // 149: cloudwatch.CloudWatchService.DeleteAnomalyDetector:input_type -> cloudwatch.DeleteAnomalyDetectorInput
+	36,  // 150: cloudwatch.CloudWatchService.DeleteDashboards:input_type -> cloudwatch.DeleteDashboardsInput
+	38,  // 151: cloudwatch.CloudWatchService.DeleteInsightRules:input_type -> cloudwatch.DeleteInsightRulesInput
+	40,  // 152: cloudwatch.CloudWatchService.DeleteMetricStream:input_type -> cloudwatch.DeleteMetricStreamInput
+	42,  // 153: cloudwatch.CloudWatchService.DescribeAlarmContributors:input_type -> cloudwatch.DescribeAlarmContributorsInput
+	44,  // 154: cloudwatch.CloudWatchService.DescribeAlarmHistory:input_type -> cloudwatch.DescribeAlarmHistoryInput
+	48,  // 155: cloudwatch.CloudWatchService.DescribeAlarms:input_type -> cloudwatch.DescribeAlarmsInput
+	46,  // 156: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:input_type -> cloudwatch.DescribeAlarmsForMetricInput
+	50,  // 157: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:input_type -> cloudwatch.DescribeAnomalyDetectorsInput
+	52,  // 158: cloudwatch.CloudWatchService.DescribeInsightRules:input_type -> cloudwatch.DescribeInsightRulesInput
+	56,  // 159: cloudwatch.CloudWatchService.DisableAlarmActions:input_type -> cloudwatch.DisableAlarmActionsInput
+	57,  // 160: cloudwatch.CloudWatchService.DisableInsightRules:input_type -> cloudwatch.DisableInsightRulesInput
+	59,  // 161: cloudwatch.CloudWatchService.DisassociateDatasetKmsKey:input_type -> cloudwatch.DisassociateDatasetKmsKeyInput
+	61,  // 162: cloudwatch.CloudWatchService.EnableAlarmActions:input_type -> cloudwatch.EnableAlarmActionsInput
+	62,  // 163: cloudwatch.CloudWatchService.EnableInsightRules:input_type -> cloudwatch.EnableInsightRulesInput
+	68,  // 164: cloudwatch.CloudWatchService.GetAlarmMuteRule:input_type -> cloudwatch.GetAlarmMuteRuleInput
+	70,  // 165: cloudwatch.CloudWatchService.GetDashboard:input_type -> cloudwatch.GetDashboardInput
+	72,  // 166: cloudwatch.CloudWatchService.GetDataset:input_type -> cloudwatch.GetDatasetInput
+	74,  // 167: cloudwatch.CloudWatchService.GetInsightRuleReport:input_type -> cloudwatch.GetInsightRuleReportInput
+	76,  // 168: cloudwatch.CloudWatchService.GetMetricData:input_type -> cloudwatch.GetMetricDataInput
+	78,  // 169: cloudwatch.CloudWatchService.GetMetricStatistics:input_type -> cloudwatch.GetMetricStatisticsInput
+	80,  // 170: cloudwatch.CloudWatchService.GetMetricStream:input_type -> cloudwatch.GetMetricStreamInput
+	82,  // 171: cloudwatch.CloudWatchService.GetMetricWidgetImage:input_type -> cloudwatch.GetMetricWidgetImageInput
+	84,  // 172: cloudwatch.CloudWatchService.GetOTelEnrichment:input_type -> cloudwatch.GetOTelEnrichmentInput
+	101, // 173: cloudwatch.CloudWatchService.ListAlarmMuteRules:input_type -> cloudwatch.ListAlarmMuteRulesInput
+	103, // 174: cloudwatch.CloudWatchService.ListDashboards:input_type -> cloudwatch.ListDashboardsInput
+	105, // 175: cloudwatch.CloudWatchService.ListManagedInsightRules:input_type -> cloudwatch.ListManagedInsightRulesInput
+	109, // 176: cloudwatch.CloudWatchService.ListMetrics:input_type -> cloudwatch.ListMetricsInput
+	107, // 177: cloudwatch.CloudWatchService.ListMetricStreams:input_type -> cloudwatch.ListMetricStreamsInput
+	111, // 178: cloudwatch.CloudWatchService.ListTagsForResource:input_type -> cloudwatch.ListTagsForResourceInput
+	133, // 179: cloudwatch.CloudWatchService.PutAlarmMuteRule:input_type -> cloudwatch.PutAlarmMuteRuleInput
+	134, // 180: cloudwatch.CloudWatchService.PutAnomalyDetector:input_type -> cloudwatch.PutAnomalyDetectorInput
+	136, // 181: cloudwatch.CloudWatchService.PutCompositeAlarm:input_type -> cloudwatch.PutCompositeAlarmInput
+	137, // 182: cloudwatch.CloudWatchService.PutDashboard:input_type -> cloudwatch.PutDashboardInput
+	139, // 183: cloudwatch.CloudWatchService.PutInsightRule:input_type -> cloudwatch.PutInsightRuleInput
+	141, // 184: cloudwatch.CloudWatchService.PutLogAlarm:input_type -> cloudwatch.PutLogAlarmInput
+	142, // 185: cloudwatch.CloudWatchService.PutManagedInsightRules:input_type -> cloudwatch.PutManagedInsightRulesInput
+	144, // 186: cloudwatch.CloudWatchService.PutMetricAlarm:input_type -> cloudwatch.PutMetricAlarmInput
+	145, // 187: cloudwatch.CloudWatchService.PutMetricData:input_type -> cloudwatch.PutMetricDataInput
+	146, // 188: cloudwatch.CloudWatchService.PutMetricStream:input_type -> cloudwatch.PutMetricStreamInput
+	156, // 189: cloudwatch.CloudWatchService.SetAlarmState:input_type -> cloudwatch.SetAlarmStateInput
+	159, // 190: cloudwatch.CloudWatchService.StartMetricStreams:input_type -> cloudwatch.StartMetricStreamsInput
+	161, // 191: cloudwatch.CloudWatchService.StartOTelEnrichment:input_type -> cloudwatch.StartOTelEnrichmentInput
+	164, // 192: cloudwatch.CloudWatchService.StopMetricStreams:input_type -> cloudwatch.StopMetricStreamsInput
+	166, // 193: cloudwatch.CloudWatchService.StopOTelEnrichment:input_type -> cloudwatch.StopOTelEnrichmentInput
+	169, // 194: cloudwatch.CloudWatchService.TagResource:input_type -> cloudwatch.TagResourceInput
+	171, // 195: cloudwatch.CloudWatchService.UntagResource:input_type -> cloudwatch.UntagResourceInput
+	23,  // 196: cloudwatch.CloudWatchService.AssociateDatasetKmsKey:output_type -> cloudwatch.AssociateDatasetKmsKeyOutput
+	180, // 197: cloudwatch.CloudWatchService.DeleteAlarmMuteRule:output_type -> common.Empty
+	180, // 198: cloudwatch.CloudWatchService.DeleteAlarms:output_type -> common.Empty
+	35,  // 199: cloudwatch.CloudWatchService.DeleteAnomalyDetector:output_type -> cloudwatch.DeleteAnomalyDetectorOutput
+	37,  // 200: cloudwatch.CloudWatchService.DeleteDashboards:output_type -> cloudwatch.DeleteDashboardsOutput
+	39,  // 201: cloudwatch.CloudWatchService.DeleteInsightRules:output_type -> cloudwatch.DeleteInsightRulesOutput
+	41,  // 202: cloudwatch.CloudWatchService.DeleteMetricStream:output_type -> cloudwatch.DeleteMetricStreamOutput
+	43,  // 203: cloudwatch.CloudWatchService.DescribeAlarmContributors:output_type -> cloudwatch.DescribeAlarmContributorsOutput
+	45,  // 204: cloudwatch.CloudWatchService.DescribeAlarmHistory:output_type -> cloudwatch.DescribeAlarmHistoryOutput
+	49,  // 205: cloudwatch.CloudWatchService.DescribeAlarms:output_type -> cloudwatch.DescribeAlarmsOutput
+	47,  // 206: cloudwatch.CloudWatchService.DescribeAlarmsForMetric:output_type -> cloudwatch.DescribeAlarmsForMetricOutput
+	51,  // 207: cloudwatch.CloudWatchService.DescribeAnomalyDetectors:output_type -> cloudwatch.DescribeAnomalyDetectorsOutput
+	53,  // 208: cloudwatch.CloudWatchService.DescribeInsightRules:output_type -> cloudwatch.DescribeInsightRulesOutput
+	180, // 209: cloudwatch.CloudWatchService.DisableAlarmActions:output_type -> common.Empty
+	58,  // 210: cloudwatch.CloudWatchService.DisableInsightRules:output_type -> cloudwatch.DisableInsightRulesOutput
+	60,  // 211: cloudwatch.CloudWatchService.DisassociateDatasetKmsKey:output_type -> cloudwatch.DisassociateDatasetKmsKeyOutput
+	180, // 212: cloudwatch.CloudWatchService.EnableAlarmActions:output_type -> common.Empty
+	63,  // 213: cloudwatch.CloudWatchService.EnableInsightRules:output_type -> cloudwatch.EnableInsightRulesOutput
+	69,  // 214: cloudwatch.CloudWatchService.GetAlarmMuteRule:output_type -> cloudwatch.GetAlarmMuteRuleOutput
+	71,  // 215: cloudwatch.CloudWatchService.GetDashboard:output_type -> cloudwatch.GetDashboardOutput
+	73,  // 216: cloudwatch.CloudWatchService.GetDataset:output_type -> cloudwatch.GetDatasetOutput
+	75,  // 217: cloudwatch.CloudWatchService.GetInsightRuleReport:output_type -> cloudwatch.GetInsightRuleReportOutput
+	77,  // 218: cloudwatch.CloudWatchService.GetMetricData:output_type -> cloudwatch.GetMetricDataOutput
+	79,  // 219: cloudwatch.CloudWatchService.GetMetricStatistics:output_type -> cloudwatch.GetMetricStatisticsOutput
+	81,  // 220: cloudwatch.CloudWatchService.GetMetricStream:output_type -> cloudwatch.GetMetricStreamOutput
+	83,  // 221: cloudwatch.CloudWatchService.GetMetricWidgetImage:output_type -> cloudwatch.GetMetricWidgetImageOutput
+	85,  // 222: cloudwatch.CloudWatchService.GetOTelEnrichment:output_type -> cloudwatch.GetOTelEnrichmentOutput
+	102, // 223: cloudwatch.CloudWatchService.ListAlarmMuteRules:output_type -> cloudwatch.ListAlarmMuteRulesOutput
+	104, // 224: cloudwatch.CloudWatchService.ListDashboards:output_type -> cloudwatch.ListDashboardsOutput
+	106, // 225: cloudwatch.CloudWatchService.ListManagedInsightRules:output_type -> cloudwatch.ListManagedInsightRulesOutput
+	110, // 226: cloudwatch.CloudWatchService.ListMetrics:output_type -> cloudwatch.ListMetricsOutput
+	108, // 227: cloudwatch.CloudWatchService.ListMetricStreams:output_type -> cloudwatch.ListMetricStreamsOutput
+	112, // 228: cloudwatch.CloudWatchService.ListTagsForResource:output_type -> cloudwatch.ListTagsForResourceOutput
+	180, // 229: cloudwatch.CloudWatchService.PutAlarmMuteRule:output_type -> common.Empty
+	135, // 230: cloudwatch.CloudWatchService.PutAnomalyDetector:output_type -> cloudwatch.PutAnomalyDetectorOutput
+	180, // 231: cloudwatch.CloudWatchService.PutCompositeAlarm:output_type -> common.Empty
+	138, // 232: cloudwatch.CloudWatchService.PutDashboard:output_type -> cloudwatch.PutDashboardOutput
+	140, // 233: cloudwatch.CloudWatchService.PutInsightRule:output_type -> cloudwatch.PutInsightRuleOutput
+	180, // 234: cloudwatch.CloudWatchService.PutLogAlarm:output_type -> common.Empty
+	143, // 235: cloudwatch.CloudWatchService.PutManagedInsightRules:output_type -> cloudwatch.PutManagedInsightRulesOutput
+	180, // 236: cloudwatch.CloudWatchService.PutMetricAlarm:output_type -> common.Empty
+	180, // 237: cloudwatch.CloudWatchService.PutMetricData:output_type -> common.Empty
+	147, // 238: cloudwatch.CloudWatchService.PutMetricStream:output_type -> cloudwatch.PutMetricStreamOutput
+	180, // 239: cloudwatch.CloudWatchService.SetAlarmState:output_type -> common.Empty
+	160, // 240: cloudwatch.CloudWatchService.StartMetricStreams:output_type -> cloudwatch.StartMetricStreamsOutput
+	162, // 241: cloudwatch.CloudWatchService.StartOTelEnrichment:output_type -> cloudwatch.StartOTelEnrichmentOutput
+	165, // 242: cloudwatch.CloudWatchService.StopMetricStreams:output_type -> cloudwatch.StopMetricStreamsOutput
+	167, // 243: cloudwatch.CloudWatchService.StopOTelEnrichment:output_type -> cloudwatch.StopOTelEnrichmentOutput
+	170, // 244: cloudwatch.CloudWatchService.TagResource:output_type -> cloudwatch.TagResourceOutput
+	172, // 245: cloudwatch.CloudWatchService.UntagResource:output_type -> cloudwatch.UntagResourceOutput
+	196, // [196:246] is the sub-list for method output_type
+	146, // [146:196] is the sub-list for method input_type
+	146, // [146:146] is the sub-list for extension type_name
+	146, // [146:146] is the sub-list for extension extendee
+	0,   // [0:146] is the sub-list for field type_name
 }
 
 func init() { file_cloudwatch_proto_init() }
@@ -11467,39 +12709,104 @@ func file_cloudwatch_proto_init() {
 	if File_cloudwatch_proto != nil {
 		return
 	}
+	file_cloudwatch_proto_msgTypes[0].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[1].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[2].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[3].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[4].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[5].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[8].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[9].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[10].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[11].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[12].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[13].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[14].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[15].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[18].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[26].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[27].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[28].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[29].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[30].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[32].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[33].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[34].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[35].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[36].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[37].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[39].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[53].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[55].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[57].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[58].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[59].OneofWrappers = []any{}
-	file_cloudwatch_proto_msgTypes[64].OneofWrappers = []any{}
-	file_cloudwatch_proto_msgTypes[69].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[60].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[61].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[63].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[65].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[66].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[67].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[70].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[73].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[74].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[75].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[76].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[77].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[78].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[82].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[83].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[84].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[85].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[86].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[87].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[88].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[89].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[90].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[91].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[92].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[93].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[94].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[97].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[99].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[101].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[102].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[103].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[104].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[105].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[106].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[107].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[110].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[111].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[114].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[116].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[117].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[118].OneofWrappers = []any{}
-	file_cloudwatch_proto_msgTypes[121].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[119].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[120].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[123].OneofWrappers = []any{}
 	file_cloudwatch_proto_msgTypes[125].OneofWrappers = []any{}
-	file_cloudwatch_proto_msgTypes[126].OneofWrappers = []any{}
-	file_cloudwatch_proto_msgTypes[127].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[128].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[129].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[130].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[131].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[133].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[134].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[135].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[137].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[138].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[139].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[140].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[141].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[157].OneofWrappers = []any{}
+	file_cloudwatch_proto_msgTypes[158].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_cloudwatch_proto_rawDesc), len(file_cloudwatch_proto_rawDesc)),
 			NumEnums:      16,
-			NumMessages:   155,
+			NumMessages:   164,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

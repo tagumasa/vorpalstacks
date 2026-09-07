@@ -29,16 +29,16 @@ const (
 type AssumeRoleRequest struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
 	Durationseconds   *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
-	Externalid        string                  `protobuf:"bytes,271401992,opt,name=externalid,proto3" json:"externalid,omitempty"`
-	Policy            string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Externalid        *string                 `protobuf:"bytes,271401992,opt,name=externalid,proto3,oneof" json:"externalid,omitempty"`
+	Policy            *string                 `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Policyarns        []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
 	Providedcontexts  []*ProvidedContext      `protobuf:"bytes,228510151,rep,name=providedcontexts,proto3" json:"providedcontexts,omitempty"`
 	Rolearn           string                  `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Rolesessionname   string                  `protobuf:"bytes,315098849,opt,name=rolesessionname,proto3" json:"rolesessionname,omitempty"`
-	Serialnumber      string                  `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
-	Sourceidentity    string                  `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
+	Serialnumber      *string                 `protobuf:"bytes,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
+	Sourceidentity    *string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3,oneof" json:"sourceidentity,omitempty"`
 	Tags              []*Tag                  `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Tokencode         string                  `protobuf:"bytes,300671456,opt,name=tokencode,proto3" json:"tokencode,omitempty"`
+	Tokencode         *string                 `protobuf:"bytes,300671456,opt,name=tokencode,proto3,oneof" json:"tokencode,omitempty"`
 	Transitivetagkeys []string                `protobuf:"bytes,452608727,rep,name=transitivetagkeys,proto3" json:"transitivetagkeys,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -82,15 +82,15 @@ func (x *AssumeRoleRequest) GetDurationseconds() int32 {
 }
 
 func (x *AssumeRoleRequest) GetExternalid() string {
-	if x != nil {
-		return x.Externalid
+	if x != nil && x.Externalid != nil {
+		return *x.Externalid
 	}
 	return ""
 }
 
 func (x *AssumeRoleRequest) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
@@ -124,15 +124,15 @@ func (x *AssumeRoleRequest) GetRolesessionname() string {
 }
 
 func (x *AssumeRoleRequest) GetSerialnumber() string {
-	if x != nil {
-		return x.Serialnumber
+	if x != nil && x.Serialnumber != nil {
+		return *x.Serialnumber
 	}
 	return ""
 }
 
 func (x *AssumeRoleRequest) GetSourceidentity() string {
-	if x != nil {
-		return x.Sourceidentity
+	if x != nil && x.Sourceidentity != nil {
+		return *x.Sourceidentity
 	}
 	return ""
 }
@@ -145,8 +145,8 @@ func (x *AssumeRoleRequest) GetTags() []*Tag {
 }
 
 func (x *AssumeRoleRequest) GetTokencode() string {
-	if x != nil {
-		return x.Tokencode
+	if x != nil && x.Tokencode != nil {
+		return *x.Tokencode
 	}
 	return ""
 }
@@ -163,7 +163,7 @@ type AssumeRoleResponse struct {
 	Assumedroleuser  *AssumedRoleUser       `protobuf:"bytes,314673579,opt,name=assumedroleuser,proto3" json:"assumedroleuser,omitempty"`
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
-	Sourceidentity   string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
+	Sourceidentity   *string                `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3,oneof" json:"sourceidentity,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -220,8 +220,8 @@ func (x *AssumeRoleResponse) GetPackedpolicysize() int32 {
 }
 
 func (x *AssumeRoleResponse) GetSourceidentity() string {
-	if x != nil {
-		return x.Sourceidentity
+	if x != nil && x.Sourceidentity != nil {
+		return *x.Sourceidentity
 	}
 	return ""
 }
@@ -229,7 +229,7 @@ func (x *AssumeRoleResponse) GetSourceidentity() string {
 type AssumeRoleWithSAMLRequest struct {
 	state           protoimpl.MessageState  `protogen:"open.v1"`
 	Durationseconds *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
-	Policy          string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy          *string                 `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Policyarns      []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
 	Principalarn    string                  `protobuf:"bytes,93469969,opt,name=principalarn,proto3" json:"principalarn,omitempty"`
 	Rolearn         string                  `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
@@ -276,8 +276,8 @@ func (x *AssumeRoleWithSAMLRequest) GetDurationseconds() int32 {
 }
 
 func (x *AssumeRoleWithSAMLRequest) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
@@ -313,14 +313,14 @@ func (x *AssumeRoleWithSAMLRequest) GetSamlassertion() string {
 type AssumeRoleWithSAMLResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Assumedroleuser  *AssumedRoleUser       `protobuf:"bytes,314673579,opt,name=assumedroleuser,proto3" json:"assumedroleuser,omitempty"`
-	Audience         string                 `protobuf:"bytes,284892548,opt,name=audience,proto3" json:"audience,omitempty"`
+	Audience         *string                `protobuf:"bytes,284892548,opt,name=audience,proto3,oneof" json:"audience,omitempty"`
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Issuer           string                 `protobuf:"bytes,528708823,opt,name=issuer,proto3" json:"issuer,omitempty"`
-	Namequalifier    string                 `protobuf:"bytes,521907559,opt,name=namequalifier,proto3" json:"namequalifier,omitempty"`
+	Issuer           *string                `protobuf:"bytes,528708823,opt,name=issuer,proto3,oneof" json:"issuer,omitempty"`
+	Namequalifier    *string                `protobuf:"bytes,521907559,opt,name=namequalifier,proto3,oneof" json:"namequalifier,omitempty"`
 	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
-	Sourceidentity   string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
-	Subject          string                 `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
-	Subjecttype      string                 `protobuf:"bytes,222881976,opt,name=subjecttype,proto3" json:"subjecttype,omitempty"`
+	Sourceidentity   *string                `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3,oneof" json:"sourceidentity,omitempty"`
+	Subject          *string                `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
+	Subjecttype      *string                `protobuf:"bytes,222881976,opt,name=subjecttype,proto3,oneof" json:"subjecttype,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -363,8 +363,8 @@ func (x *AssumeRoleWithSAMLResponse) GetAssumedroleuser() *AssumedRoleUser {
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetAudience() string {
-	if x != nil {
-		return x.Audience
+	if x != nil && x.Audience != nil {
+		return *x.Audience
 	}
 	return ""
 }
@@ -377,15 +377,15 @@ func (x *AssumeRoleWithSAMLResponse) GetCredentials() *Credentials {
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetIssuer() string {
-	if x != nil {
-		return x.Issuer
+	if x != nil && x.Issuer != nil {
+		return *x.Issuer
 	}
 	return ""
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetNamequalifier() string {
-	if x != nil {
-		return x.Namequalifier
+	if x != nil && x.Namequalifier != nil {
+		return *x.Namequalifier
 	}
 	return ""
 }
@@ -398,22 +398,22 @@ func (x *AssumeRoleWithSAMLResponse) GetPackedpolicysize() int32 {
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetSourceidentity() string {
-	if x != nil {
-		return x.Sourceidentity
+	if x != nil && x.Sourceidentity != nil {
+		return *x.Sourceidentity
 	}
 	return ""
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetSubject() string {
-	if x != nil {
-		return x.Subject
+	if x != nil && x.Subject != nil {
+		return *x.Subject
 	}
 	return ""
 }
 
 func (x *AssumeRoleWithSAMLResponse) GetSubjecttype() string {
-	if x != nil {
-		return x.Subjecttype
+	if x != nil && x.Subjecttype != nil {
+		return *x.Subjecttype
 	}
 	return ""
 }
@@ -421,9 +421,9 @@ func (x *AssumeRoleWithSAMLResponse) GetSubjecttype() string {
 type AssumeRoleWithWebIdentityRequest struct {
 	state            protoimpl.MessageState  `protogen:"open.v1"`
 	Durationseconds  *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
-	Policy           string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy           *string                 `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Policyarns       []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
-	Providerid       string                  `protobuf:"bytes,509712370,opt,name=providerid,proto3" json:"providerid,omitempty"`
+	Providerid       *string                 `protobuf:"bytes,509712370,opt,name=providerid,proto3,oneof" json:"providerid,omitempty"`
 	Rolearn          string                  `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Rolesessionname  string                  `protobuf:"bytes,315098849,opt,name=rolesessionname,proto3" json:"rolesessionname,omitempty"`
 	Webidentitytoken string                  `protobuf:"bytes,234014869,opt,name=webidentitytoken,proto3" json:"webidentitytoken,omitempty"`
@@ -469,8 +469,8 @@ func (x *AssumeRoleWithWebIdentityRequest) GetDurationseconds() int32 {
 }
 
 func (x *AssumeRoleWithWebIdentityRequest) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
@@ -483,8 +483,8 @@ func (x *AssumeRoleWithWebIdentityRequest) GetPolicyarns() []*PolicyDescriptorTy
 }
 
 func (x *AssumeRoleWithWebIdentityRequest) GetProviderid() string {
-	if x != nil {
-		return x.Providerid
+	if x != nil && x.Providerid != nil {
+		return *x.Providerid
 	}
 	return ""
 }
@@ -513,12 +513,12 @@ func (x *AssumeRoleWithWebIdentityRequest) GetWebidentitytoken() string {
 type AssumeRoleWithWebIdentityResponse struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
 	Assumedroleuser             *AssumedRoleUser       `protobuf:"bytes,314673579,opt,name=assumedroleuser,proto3" json:"assumedroleuser,omitempty"`
-	Audience                    string                 `protobuf:"bytes,284892548,opt,name=audience,proto3" json:"audience,omitempty"`
+	Audience                    *string                `protobuf:"bytes,284892548,opt,name=audience,proto3,oneof" json:"audience,omitempty"`
 	Credentials                 *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	Packedpolicysize            *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
-	Provider                    string                 `protobuf:"bytes,363366621,opt,name=provider,proto3" json:"provider,omitempty"`
-	Sourceidentity              string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
-	Subjectfromwebidentitytoken string                 `protobuf:"bytes,96354739,opt,name=subjectfromwebidentitytoken,proto3" json:"subjectfromwebidentitytoken,omitempty"`
+	Provider                    *string                `protobuf:"bytes,363366621,opt,name=provider,proto3,oneof" json:"provider,omitempty"`
+	Sourceidentity              *string                `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3,oneof" json:"sourceidentity,omitempty"`
+	Subjectfromwebidentitytoken *string                `protobuf:"bytes,96354739,opt,name=subjectfromwebidentitytoken,proto3,oneof" json:"subjectfromwebidentitytoken,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -561,8 +561,8 @@ func (x *AssumeRoleWithWebIdentityResponse) GetAssumedroleuser() *AssumedRoleUse
 }
 
 func (x *AssumeRoleWithWebIdentityResponse) GetAudience() string {
-	if x != nil {
-		return x.Audience
+	if x != nil && x.Audience != nil {
+		return *x.Audience
 	}
 	return ""
 }
@@ -582,22 +582,22 @@ func (x *AssumeRoleWithWebIdentityResponse) GetPackedpolicysize() int32 {
 }
 
 func (x *AssumeRoleWithWebIdentityResponse) GetProvider() string {
-	if x != nil {
-		return x.Provider
+	if x != nil && x.Provider != nil {
+		return *x.Provider
 	}
 	return ""
 }
 
 func (x *AssumeRoleWithWebIdentityResponse) GetSourceidentity() string {
-	if x != nil {
-		return x.Sourceidentity
+	if x != nil && x.Sourceidentity != nil {
+		return *x.Sourceidentity
 	}
 	return ""
 }
 
 func (x *AssumeRoleWithWebIdentityResponse) GetSubjectfromwebidentitytoken() string {
-	if x != nil {
-		return x.Subjectfromwebidentitytoken
+	if x != nil && x.Subjectfromwebidentitytoken != nil {
+		return *x.Subjectfromwebidentitytoken
 	}
 	return ""
 }
@@ -665,7 +665,7 @@ func (x *AssumeRootRequest) GetTaskpolicyarn() *PolicyDescriptorType {
 type AssumeRootResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Credentials    *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Sourceidentity string                 `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3" json:"sourceidentity,omitempty"`
+	Sourceidentity *string                `protobuf:"bytes,466635355,opt,name=sourceidentity,proto3,oneof" json:"sourceidentity,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -708,8 +708,8 @@ func (x *AssumeRootResponse) GetCredentials() *Credentials {
 }
 
 func (x *AssumeRootResponse) GetSourceidentity() string {
-	if x != nil {
-		return x.Sourceidentity
+	if x != nil && x.Sourceidentity != nil {
+		return *x.Sourceidentity
 	}
 	return ""
 }
@@ -880,7 +880,7 @@ func (x *DecodeAuthorizationMessageRequest) GetEncodedmessage() string {
 
 type DecodeAuthorizationMessageResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Decodedmessage string                 `protobuf:"bytes,475373641,opt,name=decodedmessage,proto3" json:"decodedmessage,omitempty"`
+	Decodedmessage *string                `protobuf:"bytes,475373641,opt,name=decodedmessage,proto3,oneof" json:"decodedmessage,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -916,15 +916,15 @@ func (*DecodeAuthorizationMessageResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DecodeAuthorizationMessageResponse) GetDecodedmessage() string {
-	if x != nil {
-		return x.Decodedmessage
+	if x != nil && x.Decodedmessage != nil {
+		return *x.Decodedmessage
 	}
 	return ""
 }
 
 type ExpiredTokenException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -960,15 +960,15 @@ func (*ExpiredTokenException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExpiredTokenException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ExpiredTradeInTokenException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1004,8 +1004,8 @@ func (*ExpiredTradeInTokenException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExpiredTradeInTokenException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1108,7 +1108,7 @@ func (x *GetAccessKeyInfoRequest) GetAccesskeyid() string {
 
 type GetAccessKeyInfoResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Account       string                 `protobuf:"bytes,435725053,opt,name=account,proto3" json:"account,omitempty"`
+	Account       *string                `protobuf:"bytes,435725053,opt,name=account,proto3,oneof" json:"account,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1144,8 +1144,8 @@ func (*GetAccessKeyInfoResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetAccessKeyInfoResponse) GetAccount() string {
-	if x != nil {
-		return x.Account
+	if x != nil && x.Account != nil {
+		return *x.Account
 	}
 	return ""
 }
@@ -1188,9 +1188,9 @@ func (*GetCallerIdentityRequest) Descriptor() ([]byte, []int) {
 
 type GetCallerIdentityResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Account       string                 `protobuf:"bytes,435725053,opt,name=account,proto3" json:"account,omitempty"`
-	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Userid        string                 `protobuf:"bytes,10274112,opt,name=userid,proto3" json:"userid,omitempty"`
+	Account       *string                `protobuf:"bytes,435725053,opt,name=account,proto3,oneof" json:"account,omitempty"`
+	Arn           *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Userid        *string                `protobuf:"bytes,10274112,opt,name=userid,proto3,oneof" json:"userid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1226,22 +1226,22 @@ func (*GetCallerIdentityResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetCallerIdentityResponse) GetAccount() string {
-	if x != nil {
-		return x.Account
+	if x != nil && x.Account != nil {
+		return *x.Account
 	}
 	return ""
 }
 
 func (x *GetCallerIdentityResponse) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetCallerIdentityResponse) GetUserid() string {
-	if x != nil {
-		return x.Userid
+	if x != nil && x.Userid != nil {
+		return *x.Userid
 	}
 	return ""
 }
@@ -1292,7 +1292,7 @@ func (x *GetDelegatedAccessTokenRequest) GetTradeintoken() string {
 
 type GetDelegatedAccessTokenResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Assumedprincipal string                 `protobuf:"bytes,359093742,opt,name=assumedprincipal,proto3" json:"assumedprincipal,omitempty"`
+	Assumedprincipal *string                `protobuf:"bytes,359093742,opt,name=assumedprincipal,proto3,oneof" json:"assumedprincipal,omitempty"`
 	Credentials      *Credentials           `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
 	Packedpolicysize *int32                 `protobuf:"varint,511234267,opt,name=packedpolicysize,proto3,oneof" json:"packedpolicysize,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -1330,8 +1330,8 @@ func (*GetDelegatedAccessTokenResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDelegatedAccessTokenResponse) GetAssumedprincipal() string {
-	if x != nil {
-		return x.Assumedprincipal
+	if x != nil && x.Assumedprincipal != nil {
+		return *x.Assumedprincipal
 	}
 	return ""
 }
@@ -1354,7 +1354,7 @@ type GetFederationTokenRequest struct {
 	state           protoimpl.MessageState  `protogen:"open.v1"`
 	Durationseconds *int32                  `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
 	Name            string                  `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Policy          string                  `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy          *string                 `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Policyarns      []*PolicyDescriptorType `protobuf:"bytes,183785508,rep,name=policyarns,proto3" json:"policyarns,omitempty"`
 	Tags            []*Tag                  `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields   protoimpl.UnknownFields
@@ -1406,8 +1406,8 @@ func (x *GetFederationTokenRequest) GetName() string {
 }
 
 func (x *GetFederationTokenRequest) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
@@ -1489,8 +1489,8 @@ func (x *GetFederationTokenResponse) GetPackedpolicysize() int32 {
 type GetSessionTokenRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Durationseconds *int32                 `protobuf:"varint,451873635,opt,name=durationseconds,proto3,oneof" json:"durationseconds,omitempty"`
-	Serialnumber    string                 `protobuf:"bytes,418274661,opt,name=serialnumber,proto3" json:"serialnumber,omitempty"`
-	Tokencode       string                 `protobuf:"bytes,300671456,opt,name=tokencode,proto3" json:"tokencode,omitempty"`
+	Serialnumber    *string                `protobuf:"bytes,418274661,opt,name=serialnumber,proto3,oneof" json:"serialnumber,omitempty"`
+	Tokencode       *string                `protobuf:"bytes,300671456,opt,name=tokencode,proto3,oneof" json:"tokencode,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1533,15 +1533,15 @@ func (x *GetSessionTokenRequest) GetDurationseconds() int32 {
 }
 
 func (x *GetSessionTokenRequest) GetSerialnumber() string {
-	if x != nil {
-		return x.Serialnumber
+	if x != nil && x.Serialnumber != nil {
+		return *x.Serialnumber
 	}
 	return ""
 }
 
 func (x *GetSessionTokenRequest) GetTokencode() string {
-	if x != nil {
-		return x.Tokencode
+	if x != nil && x.Tokencode != nil {
+		return *x.Tokencode
 	}
 	return ""
 }
@@ -1660,8 +1660,8 @@ func (x *GetWebIdentityTokenRequest) GetTags() []*Tag {
 
 type GetWebIdentityTokenResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Expiration       string                 `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Webidentitytoken string                 `protobuf:"bytes,234014869,opt,name=webidentitytoken,proto3" json:"webidentitytoken,omitempty"`
+	Expiration       *string                `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
+	Webidentitytoken *string                `protobuf:"bytes,234014869,opt,name=webidentitytoken,proto3,oneof" json:"webidentitytoken,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -1697,22 +1697,22 @@ func (*GetWebIdentityTokenResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetWebIdentityTokenResponse) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
 
 func (x *GetWebIdentityTokenResponse) GetWebidentitytoken() string {
-	if x != nil {
-		return x.Webidentitytoken
+	if x != nil && x.Webidentitytoken != nil {
+		return *x.Webidentitytoken
 	}
 	return ""
 }
 
 type IDPCommunicationErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1748,15 +1748,15 @@ func (*IDPCommunicationErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *IDPCommunicationErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type IDPRejectedClaimException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1792,15 +1792,15 @@ func (*IDPRejectedClaimException) Descriptor() ([]byte, []int) {
 }
 
 func (x *IDPRejectedClaimException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidAuthorizationMessageException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1836,15 +1836,15 @@ func (*InvalidAuthorizationMessageException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidAuthorizationMessageException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidIdentityTokenException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1880,15 +1880,15 @@ func (*InvalidIdentityTokenException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidIdentityTokenException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type JWTPayloadSizeExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1924,15 +1924,15 @@ func (*JWTPayloadSizeExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *JWTPayloadSizeExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type MalformedPolicyDocumentException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1968,15 +1968,15 @@ func (*MalformedPolicyDocumentException) Descriptor() ([]byte, []int) {
 }
 
 func (x *MalformedPolicyDocumentException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type OutboundWebIdentityFederationDisabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2012,15 +2012,15 @@ func (*OutboundWebIdentityFederationDisabledException) Descriptor() ([]byte, []i
 }
 
 func (x *OutboundWebIdentityFederationDisabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PackedPolicyTooLargeException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2056,15 +2056,15 @@ func (*PackedPolicyTooLargeException) Descriptor() ([]byte, []int) {
 }
 
 func (x *PackedPolicyTooLargeException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PolicyDescriptorType struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,359604989,opt,name=arn,proto3" json:"arn,omitempty"`
+	Arn           *string                `protobuf:"bytes,359604989,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2100,16 +2100,16 @@ func (*PolicyDescriptorType) Descriptor() ([]byte, []int) {
 }
 
 func (x *PolicyDescriptorType) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 type ProvidedContext struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Contextassertion string                 `protobuf:"bytes,351907089,opt,name=contextassertion,proto3" json:"contextassertion,omitempty"`
-	Providerarn      string                 `protobuf:"bytes,426083188,opt,name=providerarn,proto3" json:"providerarn,omitempty"`
+	Contextassertion *string                `protobuf:"bytes,351907089,opt,name=contextassertion,proto3,oneof" json:"contextassertion,omitempty"`
+	Providerarn      *string                `protobuf:"bytes,426083188,opt,name=providerarn,proto3,oneof" json:"providerarn,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2145,22 +2145,22 @@ func (*ProvidedContext) Descriptor() ([]byte, []int) {
 }
 
 func (x *ProvidedContext) GetContextassertion() string {
-	if x != nil {
-		return x.Contextassertion
+	if x != nil && x.Contextassertion != nil {
+		return *x.Contextassertion
 	}
 	return ""
 }
 
 func (x *ProvidedContext) GetProviderarn() string {
-	if x != nil {
-		return x.Providerarn
+	if x != nil && x.Providerarn != nil {
+		return *x.Providerarn
 	}
 	return ""
 }
 
 type RegionDisabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2196,15 +2196,15 @@ func (*RegionDisabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *RegionDisabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SessionDurationEscalationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2240,8 +2240,8 @@ func (*SessionDurationEscalationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *SessionDurationEscalationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2302,82 +2302,104 @@ var File_sts_proto protoreflect.FileDescriptor
 
 const file_sts_proto_rawDesc = "" +
 	"\n" +
-	"\tsts.proto\x12\x03sts\x1a\fcommon.proto\x1a\taws.proto\"\xb3\x04\n" +
+	"\tsts.proto\x12\x03sts\x1a\fcommon.proto\x1a\taws.proto\"\x98\x05\n" +
 	"\x11AssumeRoleRequest\x121\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\"\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12'\n" +
 	"\n" +
-	"externalid\x18\x88\x88\xb5\x81\x01 \x01(\tR\n" +
-	"externalid\x12\x1a\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
+	"externalid\x18\x88\x88\xb5\x81\x01 \x01(\tH\x01R\n" +
+	"externalid\x88\x01\x01\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x02R\x06policy\x88\x01\x01\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
 	"policyarns\x12C\n" +
 	"\x10providedcontexts\x18Ǔ\xfbl \x03(\v2\x14.sts.ProvidedContextR\x10providedcontexts\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12,\n" +
-	"\x0frolesessionname\x18፠\x96\x01 \x01(\tR\x0frolesessionname\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x12*\n" +
-	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tags\x12 \n" +
-	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tR\ttokencode\x120\n" +
+	"\x0frolesessionname\x18፠\x96\x01 \x01(\tR\x0frolesessionname\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x03R\fserialnumber\x88\x01\x01\x12/\n" +
+	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tH\x04R\x0esourceidentity\x88\x01\x01\x12 \n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tags\x12%\n" +
+	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tH\x05R\ttokencode\x88\x01\x01\x120\n" +
 	"\x11transitivetagkeys\x18ׅ\xe9\xd7\x01 \x03(\tR\x11transitivetagkeysB\x12\n" +
-	"\x10_durationseconds\"\x86\x02\n" +
+	"\x10_durationsecondsB\r\n" +
+	"\v_externalidB\t\n" +
+	"\a_policyB\x0f\n" +
+	"\r_serialnumberB\x11\n" +
+	"\x0f_sourceidentityB\f\n" +
+	"\n" +
+	"_tokencode\"\x9e\x02\n" +
 	"\x12AssumeRoleResponse\x12B\n" +
 	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x123\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12*\n" +
-	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentityB\x13\n" +
-	"\x11_packedpolicysize\"\xaa\x02\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12/\n" +
+	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tH\x01R\x0esourceidentity\x88\x01\x01B\x13\n" +
+	"\x11_packedpolicysizeB\x11\n" +
+	"\x0f_sourceidentity\"\xba\x02\n" +
 	"\x19AssumeRoleWithSAMLRequest\x121\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x1a\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x01R\x06policy\x88\x01\x01\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
 	"policyarns\x12%\n" +
 	"\fprincipalarn\x18\x91\xfa\xc8, \x01(\tR\fprincipalarn\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12'\n" +
 	"\rsamlassertion\x18ͯ\xe1` \x01(\tR\rsamlassertionB\x12\n" +
-	"\x10_durationseconds\"\xb6\x03\n" +
+	"\x10_durationsecondsB\t\n" +
+	"\a_policy\"\xad\x04\n" +
 	"\x1aAssumeRoleWithSAMLResponse\x12B\n" +
-	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x12\x1e\n" +
-	"\baudience\x18\x84\xbb\xec\x87\x01 \x01(\tR\baudience\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12\x1a\n" +
-	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tR\x06issuer\x12(\n" +
-	"\rnamequalifier\x18\xe7\xda\xee\xf8\x01 \x01(\tR\rnamequalifier\x123\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12*\n" +
-	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\x12#\n" +
-	"\vsubjecttype\x18\xb8ѣj \x01(\tR\vsubjecttypeB\x13\n" +
-	"\x11_packedpolicysize\"\xe2\x02\n" +
+	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x12#\n" +
+	"\baudience\x18\x84\xbb\xec\x87\x01 \x01(\tH\x00R\baudience\x88\x01\x01\x126\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12\x1f\n" +
+	"\x06issuer\x18\xd7\xe9\x8d\xfc\x01 \x01(\tH\x01R\x06issuer\x88\x01\x01\x12-\n" +
+	"\rnamequalifier\x18\xe7\xda\xee\xf8\x01 \x01(\tH\x02R\rnamequalifier\x88\x01\x01\x123\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x03R\x10packedpolicysize\x88\x01\x01\x12/\n" +
+	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tH\x04R\x0esourceidentity\x88\x01\x01\x12 \n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x05R\asubject\x88\x01\x01\x12(\n" +
+	"\vsubjecttype\x18\xb8ѣj \x01(\tH\x06R\vsubjecttype\x88\x01\x01B\v\n" +
+	"\t_audienceB\t\n" +
+	"\a_issuerB\x10\n" +
+	"\x0e_namequalifierB\x13\n" +
+	"\x11_packedpolicysizeB\x11\n" +
+	"\x0f_sourceidentityB\n" +
+	"\n" +
+	"\b_subjectB\x0e\n" +
+	"\f_subjecttype\"\x86\x03\n" +
 	" AssumeRoleWithWebIdentityRequest\x121\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x1a\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x01R\x06policy\x88\x01\x01\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
-	"policyarns\x12\"\n" +
+	"policyarns\x12'\n" +
 	"\n" +
-	"providerid\x18\xf2\xaf\x86\xf3\x01 \x01(\tR\n" +
-	"providerid\x12\x1c\n" +
+	"providerid\x18\xf2\xaf\x86\xf3\x01 \x01(\tH\x02R\n" +
+	"providerid\x88\x01\x01\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12,\n" +
 	"\x0frolesessionname\x18፠\x96\x01 \x01(\tR\x0frolesessionname\x12-\n" +
 	"\x10webidentitytoken\x18\x95\x91\xcbo \x01(\tR\x10webidentitytokenB\x12\n" +
-	"\x10_durationseconds\"\x9a\x03\n" +
+	"\x10_durationsecondsB\t\n" +
+	"\a_policyB\r\n" +
+	"\v_providerid\"\xfb\x03\n" +
 	"!AssumeRoleWithWebIdentityResponse\x12B\n" +
-	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x12\x1e\n" +
-	"\baudience\x18\x84\xbb\xec\x87\x01 \x01(\tR\baudience\x126\n" +
+	"\x0fassumedroleuser\x18\xab\x93\x86\x96\x01 \x01(\v2\x14.sts.AssumedRoleUserR\x0fassumedroleuser\x12#\n" +
+	"\baudience\x18\x84\xbb\xec\x87\x01 \x01(\tH\x00R\baudience\x88\x01\x01\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x123\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01\x12\x1e\n" +
-	"\bprovider\x18ݑ\xa2\xad\x01 \x01(\tR\bprovider\x12*\n" +
-	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\x12C\n" +
-	"\x1bsubjectfromwebidentitytoken\x18\xb3\x83\xf9- \x01(\tR\x1bsubjectfromwebidentitytokenB\x13\n" +
-	"\x11_packedpolicysize\"\xcc\x01\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x01R\x10packedpolicysize\x88\x01\x01\x12#\n" +
+	"\bprovider\x18ݑ\xa2\xad\x01 \x01(\tH\x02R\bprovider\x88\x01\x01\x12/\n" +
+	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tH\x03R\x0esourceidentity\x88\x01\x01\x12H\n" +
+	"\x1bsubjectfromwebidentitytoken\x18\xb3\x83\xf9- \x01(\tH\x04R\x1bsubjectfromwebidentitytoken\x88\x01\x01B\v\n" +
+	"\t_audienceB\x13\n" +
+	"\x11_packedpolicysizeB\v\n" +
+	"\t_providerB\x11\n" +
+	"\x0f_sourceidentityB\x1e\n" +
+	"\x1c_subjectfromwebidentitytoken\"\xcc\x01\n" +
 	"\x11AssumeRootRequest\x121\n" +
 	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12+\n" +
 	"\x0ftargetprincipal\x18\xfb\xc0\xfaf \x01(\tR\x0ftargetprincipal\x12C\n" +
 	"\rtaskpolicyarn\x18\xe2\xbc\xc0\x9e\x01 \x01(\v2\x19.sts.PolicyDescriptorTypeR\rtaskpolicyarnB\x12\n" +
-	"\x10_durationseconds\"x\n" +
+	"\x10_durationseconds\"\x90\x01\n" +
 	"\x12AssumeRootResponse\x126\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12*\n" +
-	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tR\x0esourceidentity\"P\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12/\n" +
+	"\x0esourceidentity\x18۔\xc1\xde\x01 \x01(\tH\x00R\x0esourceidentity\x88\x01\x01B\x11\n" +
+	"\x0f_sourceidentity\"P\n" +
 	"\x0fAssumedRoleUser\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12'\n" +
 	"\rassumedroleid\x18\xe9\xb1\xdct \x01(\tR\rassumedroleid\"\xaa\x01\n" +
@@ -2389,51 +2411,67 @@ const file_sts_proto_rawDesc = "" +
 	"\x0fsecretaccesskey\x18\xe7ӓR \x01(\tR\x0fsecretaccesskey\x12%\n" +
 	"\fsessiontoken\x18\xed\x9f\xd8d \x01(\tR\fsessiontoken\"N\n" +
 	"!DecodeAuthorizationMessageRequest\x12)\n" +
-	"\x0eencodedmessage\x18\xf1\xe1\x9cT \x01(\tR\x0eencodedmessage\"P\n" +
-	"\"DecodeAuthorizationMessageResponse\x12*\n" +
-	"\x0edecodedmessage\x18\xc9\xc0\xd6\xe2\x01 \x01(\tR\x0edecodedmessage\"4\n" +
-	"\x15ExpiredTokenException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cExpiredTradeInTokenException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"S\n" +
+	"\x0eencodedmessage\x18\xf1\xe1\x9cT \x01(\tR\x0eencodedmessage\"h\n" +
+	"\"DecodeAuthorizationMessageResponse\x12/\n" +
+	"\x0edecodedmessage\x18\xc9\xc0\xd6\xe2\x01 \x01(\tH\x00R\x0edecodedmessage\x88\x01\x01B\x11\n" +
+	"\x0f_decodedmessage\"E\n" +
+	"\x15ExpiredTokenException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cExpiredTradeInTokenException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
 	"\rFederatedUser\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12,\n" +
 	"\x0ffederateduserid\x18\xbe\xdfӮ\x01 \x01(\tR\x0ffederateduserid\"?\n" +
 	"\x17GetAccessKeyInfoRequest\x12$\n" +
-	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\"8\n" +
-	"\x18GetAccessKeyInfoResponse\x12\x1c\n" +
-	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tR\aaccount\"\x1a\n" +
-	"\x18GetCallerIdentityRequest\"j\n" +
-	"\x19GetCallerIdentityResponse\x12\x1c\n" +
-	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tR\aaccount\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12\x19\n" +
-	"\x06userid\x18\xc0\x8a\xf3\x04 \x01(\tR\x06userid\"G\n" +
+	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\"I\n" +
+	"\x18GetAccessKeyInfoResponse\x12!\n" +
+	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tH\x00R\aaccount\x88\x01\x01B\n" +
+	"\n" +
+	"\b_account\"\x1a\n" +
+	"\x18GetCallerIdentityRequest\"\x98\x01\n" +
+	"\x19GetCallerIdentityResponse\x12!\n" +
+	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tH\x00R\aaccount\x88\x01\x01\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x01R\x03arn\x88\x01\x01\x12\x1e\n" +
+	"\x06userid\x18\xc0\x8a\xf3\x04 \x01(\tH\x02R\x06userid\x88\x01\x01B\n" +
+	"\n" +
+	"\b_accountB\x06\n" +
+	"\x04_arnB\t\n" +
+	"\a_userid\"G\n" +
 	"\x1eGetDelegatedAccessTokenRequest\x12%\n" +
-	"\ftradeintoken\x18\xf0\xf1\xe2\x04 \x01(\tR\ftradeintoken\"\xd3\x01\n" +
-	"\x1fGetDelegatedAccessTokenResponse\x12.\n" +
-	"\x10assumedprincipal\x18\ueadd\xab\x01 \x01(\tR\x10assumedprincipal\x126\n" +
+	"\ftradeintoken\x18\xf0\xf1\xe2\x04 \x01(\tR\ftradeintoken\"\xed\x01\n" +
+	"\x1fGetDelegatedAccessTokenResponse\x123\n" +
+	"\x10assumedprincipal\x18\ueadd\xab\x01 \x01(\tH\x00R\x10assumedprincipal\x88\x01\x01\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x123\n" +
-	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01B\x13\n" +
-	"\x11_packedpolicysize\"\xf5\x01\n" +
+	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x01R\x10packedpolicysize\x88\x01\x01B\x13\n" +
+	"\x11_assumedprincipalB\x13\n" +
+	"\x11_packedpolicysize\"\x85\x02\n" +
 	"\x19GetFederationTokenRequest\x121\n" +
 	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1a\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12<\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x01R\x06policy\x88\x01\x01\x12<\n" +
 	"\n" +
 	"policyarns\x18\xa4\xb0\xd1W \x03(\v2\x19.sts.PolicyDescriptorTypeR\n" +
 	"policyarns\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tagsB\x12\n" +
-	"\x10_durationseconds\"\xdc\x01\n" +
+	"\x10_durationsecondsB\t\n" +
+	"\a_policy\"\xdc\x01\n" +
 	"\x1aGetFederationTokenResponse\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\x12<\n" +
 	"\rfederateduser\x18\xe1\x97ܜ\x01 \x01(\v2\x12.sts.FederatedUserR\rfederateduser\x123\n" +
 	"\x10packedpolicysize\x18ۡ\xe3\xf3\x01 \x01(\x05H\x00R\x10packedpolicysize\x88\x01\x01B\x13\n" +
-	"\x11_packedpolicysize\"\xa9\x01\n" +
+	"\x11_packedpolicysize\"\xd2\x01\n" +
 	"\x16GetSessionTokenRequest\x121\n" +
-	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12&\n" +
-	"\fserialnumber\x18庹\xc7\x01 \x01(\tR\fserialnumber\x12 \n" +
-	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tR\ttokencodeB\x12\n" +
-	"\x10_durationseconds\"Q\n" +
+	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12+\n" +
+	"\fserialnumber\x18庹\xc7\x01 \x01(\tH\x01R\fserialnumber\x88\x01\x01\x12%\n" +
+	"\ttokencode\x18\xe0ï\x8f\x01 \x01(\tH\x02R\ttokencode\x88\x01\x01B\x12\n" +
+	"\x10_durationsecondsB\x0f\n" +
+	"\r_serialnumberB\f\n" +
+	"\n" +
+	"_tokencode\"Q\n" +
 	"\x17GetSessionTokenResponse\x126\n" +
 	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x10.sts.CredentialsR\vcredentials\"\xd5\x01\n" +
 	"\x1aGetWebIdentityTokenRequest\x12\x1e\n" +
@@ -2441,37 +2479,62 @@ const file_sts_proto_rawDesc = "" +
 	"\x0fdurationseconds\x18㖼\xd7\x01 \x01(\x05H\x00R\x0fdurationseconds\x88\x01\x01\x12.\n" +
 	"\x10signingalgorithm\x18\xc2\xe1\xde\xe8\x01 \x01(\tR\x10signingalgorithm\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sts.TagR\x04tagsB\x12\n" +
-	"\x10_durationseconds\"o\n" +
-	"\x1bGetWebIdentityTokenResponse\x12!\n" +
+	"\x10_durationseconds\"\x9d\x01\n" +
+	"\x1bGetWebIdentityTokenResponse\x12&\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12-\n" +
-	"\x10webidentitytoken\x18\x95\x91\xcbo \x01(\tR\x10webidentitytoken\"=\n" +
-	"\x1eIDPCommunicationErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19IDPRejectedClaimException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"C\n" +
-	"$InvalidAuthorizationMessageException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
-	"\x1dInvalidIdentityTokenException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
-	"\x1fJWTPayloadSizeExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"?\n" +
-	" MalformedPolicyDocumentException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"M\n" +
-	".OutboundWebIdentityFederationDisabledException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
-	"\x1dPackedPolicyTooLargeException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\",\n" +
-	"\x14PolicyDescriptorType\x12\x14\n" +
-	"\x03arn\x18\xfdż\xab\x01 \x01(\tR\x03arn\"g\n" +
-	"\x0fProvidedContext\x12.\n" +
-	"\x10contextassertion\x18\x91\xda\xe6\xa7\x01 \x01(\tR\x10contextassertion\x12$\n" +
-	"\vproviderarn\x18\xf4\x86\x96\xcb\x01 \x01(\tR\vproviderarn\"6\n" +
-	"\x17RegionDisabledException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"SessionDurationEscalationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\x00R\n" +
+	"expiration\x88\x01\x01\x122\n" +
+	"\x10webidentitytoken\x18\x95\x91\xcbo \x01(\tH\x01R\x10webidentitytoken\x88\x01\x01B\r\n" +
+	"\v_expirationB\x13\n" +
+	"\x11_webidentitytoken\"N\n" +
+	"\x1eIDPCommunicationErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19IDPRejectedClaimException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"T\n" +
+	"$InvalidAuthorizationMessageException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dInvalidIdentityTokenException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fJWTPayloadSizeExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" MalformedPolicyDocumentException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"^\n" +
+	".OutboundWebIdentityFederationDisabledException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dPackedPolicyTooLargeException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"9\n" +
+	"\x14PolicyDescriptorType\x12\x19\n" +
+	"\x03arn\x18\xfdż\xab\x01 \x01(\tH\x00R\x03arn\x88\x01\x01B\x06\n" +
+	"\x04_arn\"\x96\x01\n" +
+	"\x0fProvidedContext\x123\n" +
+	"\x10contextassertion\x18\x91\xda\xe6\xa7\x01 \x01(\tH\x00R\x10contextassertion\x88\x01\x01\x12)\n" +
+	"\vproviderarn\x18\xf4\x86\x96\xcb\x01 \x01(\tH\x01R\vproviderarn\x88\x01\x01B\x13\n" +
+	"\x11_contextassertionB\x0e\n" +
+	"\f_providerarn\"G\n" +
+	"\x17RegionDisabledException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"SessionDurationEscalationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value2\xc6\a\n" +
@@ -2608,11 +2671,30 @@ func file_sts_proto_init() {
 	file_sts_proto_msgTypes[4].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[5].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[6].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[7].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[11].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[12].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[13].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[16].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[18].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[20].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[21].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[22].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[23].OneofWrappers = []any{}
 	file_sts_proto_msgTypes[25].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[26].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[27].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[28].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[29].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[30].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[31].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[32].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[33].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[34].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[35].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[36].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[37].OneofWrappers = []any{}
+	file_sts_proto_msgTypes[38].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -28,7 +28,7 @@ func (h *AdminHandler) GetItem(ctx context.Context, req *connect.Request[pb.GetI
 // Scan returns all items in a DynamoDB table with optional pagination.
 func (h *AdminHandler) Scan(ctx context.Context, req *connect.Request[pb.ScanInput]) (*connect.Response[pb.ScanOutput], error) {
 	region := defaults.GetRegionFromHeader(req.Header())
-	result, err := h.service.adminScan(region, req.Msg.GetTablename(), req.Msg.GetLimit(), req.Msg.GetExclusivestartkey())
+	result, err := h.service.adminScan(ctx, region, req.Msg.GetTablename(), req.Msg.GetLimit(), req.Msg.GetExclusivestartkey())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

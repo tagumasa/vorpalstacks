@@ -381,7 +381,7 @@ message AclConfiguration {
 
 message ApplicationDPUSizes {
 
-  string applicationruntimeid = 300478599;
+  optional string applicationruntimeid = 300478599;
 
   repeated int32 supporteddpusizes = 227874103;
 
@@ -395,7 +395,7 @@ message AthenaError {
 
   optional int32 errorcategory = 315958414;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
   optional int32 errortype = 398848954;
 
@@ -477,7 +477,7 @@ message BatchGetQueryExecutionOutput {
 
 message CalculationConfiguration {
 
-  string codeblock = 23945838;
+  optional string codeblock = 23945838;
 
 }
 
@@ -509,13 +509,13 @@ enum CalculationExecutionState {
 
 message CalculationResult {
 
-  string results3uri = 120920277;
+  optional string results3uri = 120920277;
 
-  string resulttype = 261078637;
+  optional string resulttype = 261078637;
 
-  string stderrors3uri = 227945541;
+  optional string stderrors3uri = 227945541;
 
-  string stdouts3uri = 100477551;
+  optional string stdouts3uri = 100477551;
 
 }
 
@@ -527,7 +527,7 @@ message CalculationStatistics {
 
   optional int64 dpuexecutioninmillis = 174857936;
 
-  string progress = 439787879;
+  optional string progress = 439787879;
 
 }
 
@@ -537,13 +537,13 @@ message CalculationStatistics {
 
 message CalculationStatus {
 
-  string completiondatetime = 175822779;
+  optional string completiondatetime = 175822779;
 
   CalculationExecutionState state = 502047895;
 
-  string statechangereason = 228940439;
+  optional string statechangereason = 228940439;
 
-  string submissiondatetime = 449650437;
+  optional string submissiondatetime = 449650437;
 
 }
 
@@ -553,9 +553,9 @@ message CalculationStatus {
 
 message CalculationSummary {
 
-  string calculationexecutionid = 80028050;
+  optional string calculationexecutionid = 80028050;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   CalculationStatus status = 6222352;
 
@@ -581,13 +581,13 @@ message CancelCapacityReservationOutput {
 
 message CapacityAllocation {
 
-  string requestcompletiontime = 324037826;
+  optional string requestcompletiontime = 324037826;
 
   string requesttime = 507812148;
 
   CapacityAllocationStatus status = 6222352;
 
-  string statusmessage = 72590095;
+  optional string statusmessage = 72590095;
 
 }
 
@@ -621,7 +621,7 @@ message CapacityAssignmentConfiguration {
 
   repeated CapacityAssignment capacityassignments = 345772294;
 
-  string capacityreservationname = 327567687;
+  optional string capacityreservationname = 327567687;
 
 }
 
@@ -637,7 +637,7 @@ message CapacityReservation {
 
   CapacityAllocation lastallocation = 274654476;
 
-  string lastsuccessfulallocationtime = 383368641;
+  optional string lastsuccessfulallocationtime = 383368641;
 
   string name = 266367751;
 
@@ -671,7 +671,7 @@ enum CapacityReservationStatus {
 
 message Classification {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   map<string, string> properties = 29886973;
 
@@ -685,9 +685,9 @@ message CloudWatchLoggingConfiguration {
 
   optional bool enabled = 478602303;
 
-  string loggroup = 148580073;
+  optional string loggroup = 148580073;
 
-  string logstreamnameprefix = 437213671;
+  optional string logstreamnameprefix = 437213671;
 
   map<string, string> logtypes = 491693055;
 
@@ -699,11 +699,11 @@ message CloudWatchLoggingConfiguration {
 
 message Column {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string name = 266367751;
 
-  string type = 290836590;
+  optional string type = 290836590;
 
 }
 
@@ -715,9 +715,9 @@ message ColumnInfo {
 
   optional bool casesensitive = 258546956;
 
-  string catalogname = 518825212;
+  optional string catalogname = 518825212;
 
-  string label = 516747934;
+  optional string label = 516747934;
 
   string name = 266367751;
 
@@ -727,9 +727,9 @@ message ColumnInfo {
 
   optional int32 scale = 139628050;
 
-  string schemaname = 443785942;
+  optional string schemaname = 443785942;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
   string type = 290836590;
 
@@ -815,7 +815,7 @@ message CreateCapacityReservationOutput {
 
 message CreateDataCatalogInput {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -839,17 +839,17 @@ message CreateDataCatalogOutput {
 
 message CreateNamedQueryInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   string database = 278147289;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
   string querystring = 435938663;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -857,7 +857,7 @@ message CreateNamedQueryInput {
 
 message CreateNamedQueryOutput {
 
-  string namedqueryid = 330896872;
+  optional string namedqueryid = 330896872;
 
 }
 
@@ -865,7 +865,7 @@ message CreateNamedQueryOutput {
 
 message CreateNotebookInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   string name = 266367751;
 
@@ -877,7 +877,7 @@ message CreateNotebookInput {
 
 message CreateNotebookOutput {
 
-  string notebookid = 157637214;
+  optional string notebookid = 157637214;
 
 }
 
@@ -885,7 +885,7 @@ message CreateNotebookOutput {
 
 message CreatePreparedStatementInput {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string querystatement = 340852217;
 
@@ -927,7 +927,7 @@ message CreateWorkGroupInput {
 
   WorkGroupConfiguration configuration = 442426458;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -959,9 +959,9 @@ message DataCatalog {
 
   ConnectionType connectiontype = 489507282;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string error = 328047858;
+  optional string error = 328047858;
 
   string name = 266367751;
 
@@ -1003,11 +1003,11 @@ enum DataCatalogStatus {
 
 message DataCatalogSummary {
 
-  string catalogname = 518825212;
+  optional string catalogname = 518825212;
 
   ConnectionType connectiontype = 489507282;
 
-  string error = 328047858;
+  optional string error = 328047858;
 
   DataCatalogStatus status = 6222352;
 
@@ -1035,7 +1035,7 @@ enum DataCatalogType {
 
 message Database {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -1049,7 +1049,7 @@ message Database {
 
 message Datum {
 
-  string varcharvalue = 286740796;
+  optional string varcharvalue = 286740796;
 
 }
 
@@ -1153,7 +1153,7 @@ message EncryptionConfiguration {
 
   EncryptionOption encryptionoption = 160833062;
 
-  string kmskey = 114561194;
+  optional string kmskey = 114561194;
 
 }
 
@@ -1195,9 +1195,9 @@ message EngineConfiguration {
 
 message EngineVersion {
 
-  string effectiveengineversion = 382949365;
+  optional string effectiveengineversion = 382949365;
 
-  string selectedengineversion = 199609827;
+  optional string selectedengineversion = 199609827;
 
 }
 
@@ -1265,7 +1265,7 @@ message ExportNotebookOutput {
 
   NotebookMetadata notebookmetadata = 77536390;
 
-  string payload = 6526790;
+  optional string payload = 6526790;
 
 }
 
@@ -1275,7 +1275,7 @@ message ExportNotebookOutput {
 
 message FilterDefinition {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1291,7 +1291,7 @@ message GetCalculationExecutionCodeRequest {
 
 message GetCalculationExecutionCodeResponse {
 
-  string codeblock = 23945838;
+  optional string codeblock = 23945838;
 
 }
 
@@ -1307,19 +1307,19 @@ message GetCalculationExecutionRequest {
 
 message GetCalculationExecutionResponse {
 
-  string calculationexecutionid = 80028050;
+  optional string calculationexecutionid = 80028050;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   CalculationResult result = 273346629;
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
   CalculationStatistics statistics = 510636075;
 
   CalculationStatus status = 6222352;
 
-  string workingdirectory = 478970252;
+  optional string workingdirectory = 478970252;
 
 }
 
@@ -1379,7 +1379,7 @@ message GetDataCatalogInput {
 
   string name = 266367751;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1399,7 +1399,7 @@ message GetDatabaseInput {
 
   string databasename = 89545052;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1483,7 +1483,7 @@ message GetQueryResultsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string queryexecutionid = 467615503;
 
@@ -1495,7 +1495,7 @@ message GetQueryResultsInput {
 
 message GetQueryResultsOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   ResultSet resultset = 146844365;
 
@@ -1567,25 +1567,25 @@ message GetSessionRequest {
 
 message GetSessionResponse {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   EngineConfiguration engineconfiguration = 341629412;
 
-  string engineversion = 44953462;
+  optional string engineversion = 44953462;
 
   MonitoringConfiguration monitoringconfiguration = 364891928;
 
-  string notebookversion = 528689837;
+  optional string notebookversion = 528689837;
 
   SessionConfiguration sessionconfiguration = 211592776;
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
   SessionStatistics statistics = 510636075;
 
   SessionStatus status = 6222352;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1601,7 +1601,7 @@ message GetSessionStatusRequest {
 
 message GetSessionStatusResponse {
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
   SessionStatus status = 6222352;
 
@@ -1617,7 +1617,7 @@ message GetTableMetadataInput {
 
   string tablename = 272020061;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1653,7 +1653,7 @@ message IdentityCenterConfiguration {
 
   optional bool enableidentitycenter = 418515238;
 
-  string identitycenterinstancearn = 469575873;
+  optional string identitycenterinstancearn = 469575873;
 
 }
 
@@ -1661,13 +1661,13 @@ message IdentityCenterConfiguration {
 
 message ImportNotebookInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   string name = 266367751;
 
-  string notebooks3locationuri = 460333982;
+  optional string notebooks3locationuri = 460333982;
 
-  string payload = 6526790;
+  optional string payload = 6526790;
 
   NotebookType type = 290836590;
 
@@ -1679,7 +1679,7 @@ message ImportNotebookInput {
 
 message ImportNotebookOutput {
 
-  string notebookid = 157637214;
+  optional string notebookid = 157637214;
 
 }
 
@@ -1689,7 +1689,7 @@ message ImportNotebookOutput {
 
 message InternalServerException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1699,9 +1699,9 @@ message InternalServerException {
 
 message InvalidRequestException {
 
-  string athenaerrorcode = 335153222;
+  optional string athenaerrorcode = 335153222;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1711,7 +1711,7 @@ message ListApplicationDPUSizesInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1721,7 +1721,7 @@ message ListApplicationDPUSizesOutput {
 
   repeated ApplicationDPUSizes applicationdpusizes = 60251851;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1731,7 +1731,7 @@ message ListCalculationExecutionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string sessionid = 20529723;
 
@@ -1745,7 +1745,7 @@ message ListCalculationExecutionsResponse {
 
   repeated CalculationSummary calculations = 335028832;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1755,7 +1755,7 @@ message ListCapacityReservationsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1765,7 +1765,7 @@ message ListCapacityReservationsOutput {
 
   repeated CapacityReservation capacityreservations = 473497795;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1775,9 +1775,9 @@ message ListDataCatalogsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1787,7 +1787,7 @@ message ListDataCatalogsOutput {
 
   repeated DataCatalogSummary datacatalogssummary = 499180880;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1799,9 +1799,9 @@ message ListDatabasesInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1811,7 +1811,7 @@ message ListDatabasesOutput {
 
   repeated Database databaselist = 393720897;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1821,7 +1821,7 @@ message ListEngineVersionsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1831,7 +1831,7 @@ message ListEngineVersionsOutput {
 
   repeated EngineVersion engineversions = 500123251;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1843,7 +1843,7 @@ message ListExecutorsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string sessionid = 20529723;
 
@@ -1855,7 +1855,7 @@ message ListExecutorsResponse {
 
   repeated ExecutorsSummary executorssummary = 450697516;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string sessionid = 20529723;
 
@@ -1867,9 +1867,9 @@ message ListNamedQueriesInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1879,7 +1879,7 @@ message ListNamedQueriesOutput {
 
   repeated string namedqueryids = 6092797;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1891,7 +1891,7 @@ message ListNotebookMetadataInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string workgroup = 505960068;
 
@@ -1901,7 +1901,7 @@ message ListNotebookMetadataInput {
 
 message ListNotebookMetadataOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated NotebookMetadata notebookmetadatalist = 319238242;
 
@@ -1913,7 +1913,7 @@ message ListNotebookSessionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string notebookid = 157637214;
 
@@ -1923,7 +1923,7 @@ message ListNotebookSessionsRequest {
 
 message ListNotebookSessionsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated NotebookSessionSummary notebooksessionslist = 247821802;
 
@@ -1935,7 +1935,7 @@ message ListPreparedStatementsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string workgroup = 505960068;
 
@@ -1945,7 +1945,7 @@ message ListPreparedStatementsInput {
 
 message ListPreparedStatementsOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PreparedStatementSummary preparedstatements = 526923667;
 
@@ -1957,9 +1957,9 @@ message ListQueryExecutionsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -1967,7 +1967,7 @@ message ListQueryExecutionsInput {
 
 message ListQueryExecutionsOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string queryexecutionids = 493941192;
 
@@ -1979,7 +1979,7 @@ message ListSessionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   SessionState statefilter = 184693297;
 
@@ -1991,7 +1991,7 @@ message ListSessionsRequest {
 
 message ListSessionsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated SessionSummary sessions = 379226861;
 
@@ -2005,13 +2005,13 @@ message ListTableMetadataInput {
 
   string databasename = 89545052;
 
-  string expression = 193051916;
+  optional string expression = 193051916;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -2019,7 +2019,7 @@ message ListTableMetadataInput {
 
 message ListTableMetadataOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated TableMetadata tablemetadatalist = 532092415;
 
@@ -2031,7 +2031,7 @@ message ListTagsForResourceInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string resourcearn = 369516653;
 
@@ -2041,7 +2041,7 @@ message ListTagsForResourceInput {
 
 message ListTagsForResourceOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Tag tags = 381526209;
 
@@ -2053,7 +2053,7 @@ message ListWorkGroupsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2061,7 +2061,7 @@ message ListWorkGroupsInput {
 
 message ListWorkGroupsOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated WorkGroupSummary workgroups = 159439825;
 
@@ -2075,7 +2075,7 @@ message ManagedLoggingConfiguration {
 
   optional bool enabled = 478602303;
 
-  string kmskey = 114561194;
+  optional string kmskey = 114561194;
 
 }
 
@@ -2121,7 +2121,7 @@ message ManagedQueryResultsEncryptionConfiguration {
 
 message MetadataException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2147,15 +2147,15 @@ message NamedQuery {
 
   string database = 278147289;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
-  string namedqueryid = 330896872;
+  optional string namedqueryid = 330896872;
 
   string querystring = 435938663;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -2165,17 +2165,17 @@ message NamedQuery {
 
 message NotebookMetadata {
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string notebookid = 157637214;
+  optional string notebookid = 157637214;
 
   NotebookType type = 290836590;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -2185,9 +2185,9 @@ message NotebookMetadata {
 
 message NotebookSessionSummary {
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
 }
 
@@ -2205,15 +2205,15 @@ enum NotebookType {
 
 message PreparedStatement {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string querystatement = 340852217;
+  optional string querystatement = 340852217;
 
-  string statementname = 23047926;
+  optional string statementname = 23047926;
 
-  string workgroupname = 258526185;
+  optional string workgroupname = 258526185;
 
 }
 
@@ -2223,9 +2223,9 @@ message PreparedStatement {
 
 message PreparedStatementSummary {
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string statementname = 23047926;
+  optional string statementname = 23047926;
 
 }
 
@@ -2257,11 +2257,11 @@ message QueryExecution {
 
   ManagedQueryResultsConfiguration managedqueryresultsconfiguration = 159215683;
 
-  string query = 512354180;
+  optional string query = 512354180;
 
   QueryExecutionContext queryexecutioncontext = 139302379;
 
-  string queryexecutionid = 467615503;
+  optional string queryexecutionid = 467615503;
 
   QueryResultsS3AccessGrantsConfiguration queryresultss3accessgrantsconfiguration = 264403639;
 
@@ -2275,9 +2275,9 @@ message QueryExecution {
 
   QueryExecutionStatus status = 6222352;
 
-  string substatementtype = 504257527;
+  optional string substatementtype = 504257527;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -2287,9 +2287,9 @@ message QueryExecution {
 
 message QueryExecutionContext {
 
-  string catalog = 111213497;
+  optional string catalog = 111213497;
 
-  string database = 278147289;
+  optional string database = 278147289;
 
 }
 
@@ -2315,11 +2315,11 @@ enum QueryExecutionState {
 
 message QueryExecutionStatistics {
 
-  string datamanifestlocation = 329970068;
+  optional string datamanifestlocation = 329970068;
 
   optional int64 datascannedinbytes = 125540604;
 
-  double dpucount = 296377724;
+  optional double dpucount = 296377724;
 
   optional int64 engineexecutiontimeinmillis = 228680528;
 
@@ -2345,13 +2345,13 @@ message QueryExecutionStatus {
 
   AthenaError athenaerror = 82066385;
 
-  string completiondatetime = 175822779;
+  optional string completiondatetime = 175822779;
 
   QueryExecutionState state = 502047895;
 
-  string statechangereason = 228940439;
+  optional string statechangereason = 228940439;
 
-  string submissiondatetime = 449650437;
+  optional string submissiondatetime = 449650437;
 
 }
 
@@ -2449,7 +2449,7 @@ message QueryStage {
 
   optional int64 stageid = 328165497;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
   repeated QueryStage substages = 114732779;
 
@@ -2463,9 +2463,9 @@ message QueryStagePlanNode {
 
   repeated QueryStagePlanNode children = 188567027;
 
-  string identifier = 41865311;
+  optional string identifier = 41865311;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated string remotesources = 143743504;
 
@@ -2477,9 +2477,9 @@ message QueryStagePlanNode {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string resourcename = 269834071;
+  optional string resourcename = 269834071;
 
 }
 
@@ -2493,9 +2493,9 @@ message ResultConfiguration {
 
   EncryptionConfiguration encryptionconfiguration = 225764215;
 
-  string expectedbucketowner = 132066983;
+  optional string expectedbucketowner = 132066983;
 
-  string outputlocation = 67991028;
+  optional string outputlocation = 67991028;
 
 }
 
@@ -2509,9 +2509,9 @@ message ResultConfigurationUpdates {
 
   EncryptionConfiguration encryptionconfiguration = 225764215;
 
-  string expectedbucketowner = 132066983;
+  optional string expectedbucketowner = 132066983;
 
-  string outputlocation = 67991028;
+  optional string outputlocation = 67991028;
 
   optional bool removeaclconfiguration = 378505796;
 
@@ -2603,9 +2603,9 @@ message S3LoggingConfiguration {
 
   optional bool enabled = 478602303;
 
-  string kmskey = 114561194;
+  optional string kmskey = 114561194;
 
-  string loglocation = 192028619;
+  optional string loglocation = 192028619;
 
 }
 
@@ -2615,7 +2615,7 @@ message S3LoggingConfiguration {
 
 message SessionAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2627,13 +2627,13 @@ message SessionConfiguration {
 
   EncryptionConfiguration encryptionconfiguration = 225764215;
 
-  string executionrole = 253307658;
+  optional string executionrole = 253307658;
 
   optional int64 idletimeoutseconds = 61279260;
 
   optional int32 sessionidletimeoutinminutes = 515304989;
 
-  string workingdirectory = 478970252;
+  optional string workingdirectory = 478970252;
 
 }
 
@@ -2675,17 +2675,17 @@ message SessionStatistics {
 
 message SessionStatus {
 
-  string enddatetime = 372000488;
+  optional string enddatetime = 372000488;
 
-  string idlesincedatetime = 454742375;
+  optional string idlesincedatetime = 454742375;
 
-  string lastmodifieddatetime = 406490164;
+  optional string lastmodifieddatetime = 406490164;
 
-  string startdatetime = 88518355;
+  optional string startdatetime = 88518355;
 
   SessionState state = 502047895;
 
-  string statechangereason = 228940439;
+  optional string statechangereason = 228940439;
 
 }
 
@@ -2695,13 +2695,13 @@ message SessionStatus {
 
 message SessionSummary {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   EngineVersion engineversion = 44953462;
 
-  string notebookversion = 528689837;
+  optional string notebookversion = 528689837;
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
   SessionStatus status = 6222352;
 
@@ -2713,11 +2713,11 @@ message StartCalculationExecutionRequest {
 
   CalculationConfiguration calculationconfiguration = 459676797;
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
-  string codeblock = 23945838;
+  optional string codeblock = 23945838;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string sessionid = 20529723;
 
@@ -2727,7 +2727,7 @@ message StartCalculationExecutionRequest {
 
 message StartCalculationExecutionResponse {
 
-  string calculationexecutionid = 80028050;
+  optional string calculationexecutionid = 80028050;
 
   CalculationExecutionState state = 502047895;
 
@@ -2737,7 +2737,7 @@ message StartCalculationExecutionResponse {
 
 message StartQueryExecutionInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   EngineConfiguration engineconfiguration = 341629412;
 
@@ -2751,7 +2751,7 @@ message StartQueryExecutionInput {
 
   ResultReuseConfiguration resultreuseconfiguration = 482796543;
 
-  string workgroup = 505960068;
+  optional string workgroup = 505960068;
 
 }
 
@@ -2759,7 +2759,7 @@ message StartQueryExecutionInput {
 
 message StartQueryExecutionOutput {
 
-  string queryexecutionid = 467615503;
+  optional string queryexecutionid = 467615503;
 
 }
 
@@ -2767,19 +2767,19 @@ message StartQueryExecutionOutput {
 
 message StartSessionRequest {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   optional bool copyworkgrouptags = 429355506;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   EngineConfiguration engineconfiguration = 341629412;
 
-  string executionrole = 253307658;
+  optional string executionrole = 253307658;
 
   MonitoringConfiguration monitoringconfiguration = 364891928;
 
-  string notebookversion = 528689837;
+  optional string notebookversion = 528689837;
 
   optional int32 sessionidletimeoutinminutes = 515304989;
 
@@ -2793,7 +2793,7 @@ message StartSessionRequest {
 
 message StartSessionResponse {
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
   SessionState state = 502047895;
 
@@ -2849,9 +2849,9 @@ message TableMetadata {
 
   repeated Column columns = 169177053;
 
-  string createtime = 490895933;
+  optional string createtime = 490895933;
 
-  string lastaccesstime = 516574551;
+  optional string lastaccesstime = 516574551;
 
   string name = 266367751;
 
@@ -2859,7 +2859,7 @@ message TableMetadata {
 
   repeated Column partitionkeys = 200562986;
 
-  string tabletype = 476171176;
+  optional string tabletype = 476171176;
 
 }
 
@@ -2869,9 +2869,9 @@ message TableMetadata {
 
 message Tag {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -2921,7 +2921,7 @@ enum ThrottleReason {
 
 message TooManyRequestsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   ThrottleReason reason = 20005178;
 
@@ -2933,11 +2933,11 @@ message TooManyRequestsException {
 
 message UnprocessedNamedQueryId {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string namedqueryid = 330896872;
+  optional string namedqueryid = 330896872;
 
 }
 
@@ -2947,11 +2947,11 @@ message UnprocessedNamedQueryId {
 
 message UnprocessedPreparedStatementName {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string statementname = 23047926;
+  optional string statementname = 23047926;
 
 }
 
@@ -2961,11 +2961,11 @@ message UnprocessedPreparedStatementName {
 
 message UnprocessedQueryExecutionId {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string queryexecutionid = 467615503;
+  optional string queryexecutionid = 467615503;
 
 }
 
@@ -3005,7 +3005,7 @@ message UpdateCapacityReservationOutput {
 
 message UpdateDataCatalogInput {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -3025,7 +3025,7 @@ message UpdateDataCatalogOutput {
 
 message UpdateNamedQueryInput {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -3045,13 +3045,13 @@ message UpdateNamedQueryOutput {
 
 message UpdateNotebookInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   string notebookid = 157637214;
 
   string payload = 6526790;
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
   NotebookType type = 290836590;
 
@@ -3061,7 +3061,7 @@ message UpdateNotebookInput {
 
 message UpdateNotebookMetadataInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   string name = 266367751;
 
@@ -3085,7 +3085,7 @@ message UpdateNotebookOutput {
 
 message UpdatePreparedStatementInput {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string querystatement = 340852217;
 
@@ -3107,7 +3107,7 @@ message UpdateWorkGroupInput {
 
   WorkGroupConfigurationUpdates configurationupdates = 133706738;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   WorkGroupState state = 502047895;
 
@@ -3129,11 +3129,11 @@ message WorkGroup {
 
   WorkGroupConfiguration configuration = 442426458;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string identitycenterapplicationarn = 338293532;
+  optional string identitycenterapplicationarn = 338293532;
 
   string name = 266367751;
 
@@ -3147,7 +3147,7 @@ message WorkGroup {
 
 message WorkGroupConfiguration {
 
-  string additionalconfiguration = 389584375;
+  optional string additionalconfiguration = 389584375;
 
   optional int64 bytesscannedcutoffperquery = 265761289;
 
@@ -3161,7 +3161,7 @@ message WorkGroupConfiguration {
 
   EngineVersion engineversion = 44953462;
 
-  string executionrole = 253307658;
+  optional string executionrole = 253307658;
 
   IdentityCenterConfiguration identitycenterconfiguration = 236974917;
 
@@ -3185,7 +3185,7 @@ message WorkGroupConfiguration {
 
 message WorkGroupConfigurationUpdates {
 
-  string additionalconfiguration = 389584375;
+  optional string additionalconfiguration = 389584375;
 
   optional int64 bytesscannedcutoffperquery = 265761289;
 
@@ -3199,7 +3199,7 @@ message WorkGroupConfigurationUpdates {
 
   EngineVersion engineversion = 44953462;
 
-  string executionrole = 253307658;
+  optional string executionrole = 253307658;
 
   ManagedQueryResultsConfigurationUpdates managedqueryresultsconfigurationupdates = 211421145;
 
@@ -3235,15 +3235,15 @@ enum WorkGroupState {
 
 message WorkGroupSummary {
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   EngineVersion engineversion = 44953462;
 
-  string identitycenterapplicationarn = 338293532;
+  optional string identitycenterapplicationarn = 338293532;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   WorkGroupState state = 502047895;
 

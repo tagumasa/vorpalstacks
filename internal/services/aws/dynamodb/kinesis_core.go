@@ -2,6 +2,8 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -57,24 +59,22 @@ func kinesisPrecisionFromConfig(params map[string]interface{}, member string) (s
 // kinesisStreamExists reports whether the destination stream exists in the
 // table's region. A DynamoDB table may only stream to a Kinesis data stream
 // in the same account and region, so anything else is rejected as a
-// nonexistent resource.
-func (s *DynamoDBService) kinesisStreamExists(reqCtx *request.RequestContext, streamArn string) bool {
+// nonexistent resource. The check is fail-closed: an unavailable invoker or
+// a failed lookup rejects the request instead of letting Enable record a
+// destination that can never receive records.
+func (s *DynamoDBService) kinesisStreamExists(reqCtx *request.RequestContext, streamArn string) (bool, error) {
 	if s.bus == nil {
-		return true
+		return false, errors.New("kinesis invoker unavailable")
 	}
 	invoker := s.bus.KinesisInvoker()
 	if invoker == nil {
-		return true
+		return false, errors.New("kinesis invoker unavailable")
 	}
 	exists, err := invoker.StreamExists(reqCtx.Context, reqCtx.GetRegion(), streamArn)
 	if err != nil {
-		logs.Warn("Kinesis destination existence check failed; allowing request",
-			logs.Err(err),
-			logs.String("streamArn", streamArn),
-		)
-		return true
+		return false, fmt.Errorf("kinesis stream existence check for %s: %w", streamArn, err)
 	}
-	return exists
+	return exists, nil
 }
 
 // copyKinesisDestinations deep-copies a destination slice so handlers and
@@ -176,7 +176,15 @@ func (s *DynamoDBService) enableKinesisStreamingDestinationCore(ctx context.Cont
 		return nil, err
 	}
 
-	if !s.kinesisStreamExists(reqCtx, streamArn) {
+	exists, existsErr := s.kinesisStreamExists(reqCtx, streamArn)
+	if existsErr != nil {
+		logs.Warn("Kinesis destination existence check failed; rejecting",
+			logs.Err(existsErr),
+			logs.String("streamArn", streamArn),
+		)
+		return nil, ErrInternal
+	}
+	if !exists {
 		return nil, ErrResourceNotFound
 	}
 

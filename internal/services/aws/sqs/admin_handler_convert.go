@@ -1,6 +1,7 @@
 package sqs
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -25,7 +26,7 @@ func (h *AdminHandler) getQueueStore(headers http.Header) (sqsstore.SQSStoreInte
 // proto response type.
 func toPbCreateQueueResult(r *CreateQueueResult) *pb.CreateQueueResult {
 	return &pb.CreateQueueResult{
-		Queueurl: r.QueueURL,
+		Queueurl: proto.String(r.QueueURL),
 	}
 }
 
@@ -34,7 +35,7 @@ func toPbCreateQueueResult(r *CreateQueueResult) *pb.CreateQueueResult {
 func toPbListQueuesResult(r *ListQueuesResult) *pb.ListQueuesResult {
 	return &pb.ListQueuesResult{
 		Queueurls: r.QueueURLs,
-		Nexttoken: r.NextToken,
+		Nexttoken: proto.String(r.NextToken),
 	}
 }
 
@@ -42,6 +43,6 @@ func toPbListQueuesResult(r *ListQueuesResult) *pb.ListQueuesResult {
 // proto response type.
 func toPbGetQueueUrlResult(r *GetQueueUrlResult) *pb.GetQueueUrlResult {
 	return &pb.GetQueueUrlResult{
-		Queueurl: r.QueueURL,
+		Queueurl: proto.String(r.QueueURL),
 	}
 }

@@ -34,7 +34,7 @@ func toPbDistributionSummary(d *cloudfrontstore.Distribution) *pb.DistributionSu
 		Status:     d.Status,
 		Enabled:    proto.Bool(d.Enabled),
 		Staging:    proto.Bool(d.Staging),
-		Etag:       d.ETag,
+		Etag:       proto.String(d.ETag),
 		Domainname: d.DomainName,
 	}
 	if d.DistributionConfig != nil {

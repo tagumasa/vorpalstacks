@@ -3,6 +3,7 @@ package apigateway
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/proto"
 
 	"connectrpc.com/connect"
 
@@ -20,9 +21,9 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 	}
 
 	in := &DeploymentInput{
-		Description:         req.Msg.Description,
-		StageName:           req.Msg.Stagename,
-		StageDescription:    req.Msg.Stagedescription,
+		Description:         req.Msg.GetDescription(),
+		StageName:           req.Msg.GetStagename(),
+		StageDescription:    req.Msg.GetStagedescription(),
 		CacheClusterSize:    cacheClusterSizeFromPb(req.Msg.Cacheclustersize),
 		CacheClusterEnabled: req.Msg.GetCacheclusterenabled(),
 		TracingEnabled:      req.Msg.GetTracingenabled(),
@@ -30,7 +31,7 @@ func (h *AdminHandler) CreateDeployment(ctx context.Context, req *connect.Reques
 	}
 	if req.Msg.Canarysettings != nil {
 		in.CanarySettings = &CanarySettingsInput{
-			PercentTraffic:         req.Msg.Canarysettings.Percenttraffic,
+			PercentTraffic:         req.Msg.Canarysettings.GetPercenttraffic(),
 			StageVariableOverrides: req.Msg.Canarysettings.Stagevariableoverrides,
 			UseStageCache:          req.Msg.Canarysettings.GetUsestagecache(),
 		}
@@ -55,9 +56,9 @@ func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[
 	}
 
 	limit := int(req.Msg.GetLimit())
-	start, end, nextPos, ok := paginateAdminList(len(deployments), req.Msg.Position, limit)
+	start, end, nextPos, ok := paginateAdminList(len(deployments), req.Msg.GetPosition(), limit)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.Position))
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.GetPosition()))
 	}
 
 	items := make([]*pb.Deployment, 0, end-start)
@@ -66,7 +67,7 @@ func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[
 	}
 	resp := &pb.Deployments{Items: items}
 	if nextPos != "" {
-		resp.Position = nextPos
+		resp.Position = proto.String(nextPos)
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -104,19 +105,19 @@ func (h *AdminHandler) CreateStage(ctx context.Context, req *connect.Request[pb.
 	}
 
 	in := &StageInput{
-		StageName:            req.Msg.Stagename,
+		StageName:            req.Msg.GetStagename(),
 		DeploymentId:         req.Msg.Deploymentid,
-		Description:          req.Msg.Description,
+		Description:          req.Msg.GetDescription(),
 		CacheClusterSize:     cacheClusterSizeFromPb(req.Msg.Cacheclustersize),
 		CacheClusterEnabled:  req.Msg.GetCacheclusterenabled(),
-		DocumentationVersion: req.Msg.Documentationversion,
+		DocumentationVersion: req.Msg.GetDocumentationversion(),
 		TracingEnabled:       req.Msg.GetTracingenabled(),
 		Variables:            req.Msg.Variables,
 		Tags:                 req.Msg.Tags,
 	}
 	if req.Msg.Canarysettings != nil {
 		in.CanarySettings = &CanarySettingsInput{
-			PercentTraffic:         req.Msg.Canarysettings.Percenttraffic,
+			PercentTraffic:         req.Msg.Canarysettings.GetPercenttraffic(),
 			StageVariableOverrides: req.Msg.Canarysettings.Stagevariableoverrides,
 			UseStageCache:          req.Msg.Canarysettings.GetUsestagecache(),
 		}
@@ -153,7 +154,7 @@ func (h *AdminHandler) GetStage(ctx context.Context, req *connect.Request[pb.Get
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	s, err := h.service.getStageCore(stores, req.Msg.Restapiid, req.Msg.Stagename)
+	s, err := h.service.getStageCore(stores, req.Msg.Restapiid, req.Msg.GetStagename())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -166,7 +167,7 @@ func (h *AdminHandler) DeleteStage(ctx context.Context, req *connect.Request[pb.
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	if err := h.service.deleteStageCore(stores, req.Msg.Restapiid, req.Msg.Stagename); err != nil {
+	if err := h.service.deleteStageCore(stores, req.Msg.Restapiid, req.Msg.GetStagename()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	return connect.NewResponse(&pbcommon.Empty{}), nil

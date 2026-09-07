@@ -206,7 +206,7 @@ service SFNService {
 
 message ActivityAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -216,7 +216,7 @@ message ActivityAlreadyExists {
 
 message ActivityDoesNotExist {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -226,9 +226,9 @@ message ActivityDoesNotExist {
 
 message ActivityFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -238,7 +238,7 @@ message ActivityFailedEventDetails {
 
 message ActivityLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -262,9 +262,9 @@ message ActivityListItem {
 
 message ActivityScheduleFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -276,7 +276,7 @@ message ActivityScheduledEventDetails {
 
   optional int64 heartbeatinseconds = 125718754;
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   HistoryEventExecutionDataDetails inputdetails = 452625788;
 
@@ -292,7 +292,7 @@ message ActivityScheduledEventDetails {
 
 message ActivityStartedEventDetails {
 
-  string workername = 526761781;
+  optional string workername = 526761781;
 
 }
 
@@ -302,7 +302,7 @@ message ActivityStartedEventDetails {
 
 message ActivitySucceededEventDetails {
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   HistoryEventExecutionDataDetails outputdetails = 393734643;
 
@@ -314,9 +314,9 @@ message ActivitySucceededEventDetails {
 
 message ActivityTimedOutEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -326,7 +326,7 @@ message ActivityTimedOutEventDetails {
 
 message ActivityWorkerLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -368,7 +368,7 @@ message CloudWatchEventsExecutionDataDetails {
 
 message CloudWatchLogsLogGroup {
 
-  string loggrouparn = 6742512;
+  optional string loggrouparn = 6742512;
 
 }
 
@@ -378,7 +378,7 @@ message CloudWatchLogsLogGroup {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -408,7 +408,7 @@ message CreateActivityOutput {
 
 message CreateStateMachineAliasInput {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string name = 221887975;
 
@@ -448,7 +448,7 @@ message CreateStateMachineInput {
 
   StateMachineType type = 287830350;
 
-  string versiondescription = 434714300;
+  optional string versiondescription = 434714300;
 
 }
 
@@ -460,7 +460,7 @@ message CreateStateMachineOutput {
 
   string statemachinearn = 393321971;
 
-  string statemachineversionarn = 69976825;
+  optional string statemachineversionarn = 69976825;
 
 }
 
@@ -556,45 +556,45 @@ message DescribeExecutionInput {
 
 message DescribeExecutionOutput {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string executionarn = 314526573;
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   CloudWatchEventsExecutionDataDetails inputdetails = 452625788;
 
-  string maprunarn = 18199994;
+  optional string maprunarn = 18199994;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   CloudWatchEventsExecutionDataDetails outputdetails = 393734643;
 
   optional int32 redrivecount = 473458696;
 
-  string redrivedate = 152812125;
+  optional string redrivedate = 152812125;
 
   ExecutionRedriveStatus redrivestatus = 247102059;
 
-  string redrivestatusreason = 339085215;
+  optional string redrivestatusreason = 339085215;
 
   string startdate = 364840732;
 
-  string statemachinealiasarn = 530344465;
+  optional string statemachinealiasarn = 530344465;
 
   string statemachinearn = 393321971;
 
-  string statemachineversionarn = 69976825;
+  optional string statemachineversionarn = 69976825;
 
   ExecutionStatus status = 441153520;
 
-  string stopdate = 180697434;
+  optional string stopdate = 180697434;
 
-  string traceheader = 219960864;
+  optional string traceheader = 219960864;
 
 }
 
@@ -622,13 +622,13 @@ message DescribeMapRunOutput {
 
   optional int32 redrivecount = 473458696;
 
-  string redrivedate = 152812125;
+  optional string redrivedate = 152812125;
 
   string startdate = 364840732;
 
   MapRunStatus status = 441153520;
 
-  string stopdate = 180697434;
+  optional string stopdate = 180697434;
 
   int64 toleratedfailurecount = 41834811;
 
@@ -648,17 +648,17 @@ message DescribeStateMachineAliasInput {
 
 message DescribeStateMachineAliasOutput {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated RoutingConfigurationListItem routingconfiguration = 372891510;
 
-  string statemachinealiasarn = 530344465;
+  optional string statemachinealiasarn = 530344465;
 
-  string updatedate = 510552561;
+  optional string updatedate = 510552561;
 
 }
 
@@ -680,15 +680,15 @@ message DescribeStateMachineForExecutionOutput {
 
   EncryptionConfiguration encryptionconfiguration = 167857431;
 
-  string label = 379000830;
+  optional string label = 379000830;
 
   LoggingConfiguration loggingconfiguration = 420811605;
 
-  string maprunarn = 18199994;
+  optional string maprunarn = 18199994;
 
   string name = 221887975;
 
-  string revisionid = 369170086;
+  optional string revisionid = 369170086;
 
   string rolearn = 170019745;
 
@@ -720,17 +720,17 @@ message DescribeStateMachineOutput {
 
   string definition = 68443297;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   EncryptionConfiguration encryptionconfiguration = 167857431;
 
-  string label = 379000830;
+  optional string label = 379000830;
 
   LoggingConfiguration loggingconfiguration = 420811605;
 
   string name = 221887975;
 
-  string revisionid = 369170086;
+  optional string revisionid = 369170086;
 
   string rolearn = 170019745;
 
@@ -754,7 +754,7 @@ message EncryptionConfiguration {
 
   optional int32 kmsdatakeyreuseperiodseconds = 440747764;
 
-  string kmskeyid = 510698477;
+  optional string kmskeyid = 510698477;
 
   EncryptionType type = 287830350;
 
@@ -776,11 +776,11 @@ enum EncryptionType {
 
 message EvaluationFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
-  string location = 200649127;
+  optional string location = 200649127;
 
   string state = 405877495;
 
@@ -792,9 +792,9 @@ message EvaluationFailedEventDetails {
 
 message ExecutionAbortedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -804,7 +804,7 @@ message ExecutionAbortedEventDetails {
 
 message ExecutionAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -814,7 +814,7 @@ message ExecutionAlreadyExists {
 
 message ExecutionDoesNotExist {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -824,9 +824,9 @@ message ExecutionDoesNotExist {
 
 message ExecutionFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -836,7 +836,7 @@ message ExecutionFailedEventDetails {
 
 message ExecutionLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -850,25 +850,25 @@ message ExecutionListItem {
 
   optional int32 itemcount = 349613174;
 
-  string maprunarn = 18199994;
+  optional string maprunarn = 18199994;
 
   string name = 221887975;
 
   optional int32 redrivecount = 473458696;
 
-  string redrivedate = 152812125;
+  optional string redrivedate = 152812125;
 
   string startdate = 364840732;
 
-  string statemachinealiasarn = 530344465;
+  optional string statemachinealiasarn = 530344465;
 
   string statemachinearn = 393321971;
 
-  string statemachineversionarn = 69976825;
+  optional string statemachineversionarn = 69976825;
 
   ExecutionStatus status = 441153520;
 
-  string stopdate = 180697434;
+  optional string stopdate = 180697434;
 
 }
 
@@ -878,7 +878,7 @@ message ExecutionListItem {
 
 message ExecutionNotRedrivable {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -920,15 +920,15 @@ message ExecutionRedrivenEventDetails {
 
 message ExecutionStartedEventDetails {
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   HistoryEventExecutionDataDetails inputdetails = 452625788;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
-  string statemachinealiasarn = 530344465;
+  optional string statemachinealiasarn = 530344465;
 
-  string statemachineversionarn = 69976825;
+  optional string statemachineversionarn = 69976825;
 
 }
 
@@ -956,7 +956,7 @@ enum ExecutionStatus {
 
 message ExecutionSucceededEventDetails {
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   HistoryEventExecutionDataDetails outputdetails = 393734643;
 
@@ -968,9 +968,9 @@ message ExecutionSucceededEventDetails {
 
 message ExecutionTimedOutEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -980,7 +980,7 @@ message GetActivityTaskInput {
 
   string activityarn = 327279492;
 
-  string workername = 526761781;
+  optional string workername = 526761781;
 
 }
 
@@ -988,9 +988,9 @@ message GetActivityTaskInput {
 
 message GetActivityTaskOutput {
 
-  string input = 433614716;
+  optional string input = 433614716;
 
-  string tasktoken = 525325834;
+  optional string tasktoken = 525325834;
 
 }
 
@@ -1004,7 +1004,7 @@ message GetExecutionHistoryInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   optional bool reverseorder = 364411768;
 
@@ -1016,7 +1016,7 @@ message GetExecutionHistoryOutput {
 
   repeated HistoryEvent events = 316203909;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1266,27 +1266,27 @@ enum IncludedData {
 
 message InspectionData {
 
-  string afterarguments = 365960236;
+  optional string afterarguments = 365960236;
 
-  string afterinputpath = 355404745;
+  optional string afterinputpath = 355404745;
 
-  string afteritembatcher = 181123354;
+  optional string afteritembatcher = 181123354;
 
-  string afteritemselector = 394258120;
+  optional string afteritemselector = 394258120;
 
-  string afteritemspath = 491034053;
+  optional string afteritemspath = 491034053;
 
-  string afteritemspointer = 194882729;
+  optional string afteritemspointer = 194882729;
 
-  string afterparameters = 328015918;
+  optional string afterparameters = 328015918;
 
-  string afterresultpath = 480099136;
+  optional string afterresultpath = 480099136;
 
-  string afterresultselector = 443240414;
+  optional string afterresultselector = 443240414;
 
   InspectionErrorDetails errordetails = 192899050;
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   optional int32 maxconcurrency = 100901405;
 
@@ -1294,13 +1294,13 @@ message InspectionData {
 
   InspectionDataResponse response = 425574879;
 
-  string result = 171406885;
+  optional string result = 171406885;
 
   optional int32 toleratedfailurecount = 41834811;
 
-  float toleratedfailurepercentage = 116496164;
+  optional float toleratedfailurepercentage = 116496164;
 
-  string variables = 162226883;
+  optional string variables = 162226883;
 
 }
 
@@ -1310,15 +1310,15 @@ message InspectionData {
 
 message InspectionDataRequest {
 
-  string body = 464157046;
+  optional string body = 464157046;
 
-  string headers = 375773674;
+  optional string headers = 375773674;
 
-  string method = 189134641;
+  optional string method = 189134641;
 
-  string protocol = 455607734;
+  optional string protocol = 455607734;
 
-  string url = 311381023;
+  optional string url = 311381023;
 
 }
 
@@ -1328,15 +1328,15 @@ message InspectionDataRequest {
 
 message InspectionDataResponse {
 
-  string body = 464157046;
+  optional string body = 464157046;
 
-  string headers = 375773674;
+  optional string headers = 375773674;
 
-  string protocol = 455607734;
+  optional string protocol = 455607734;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
-  string statusmessage = 474462255;
+  optional string statusmessage = 474462255;
 
 }
 
@@ -1372,7 +1372,7 @@ enum InspectionLevel {
 
 message InvalidArn {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1382,7 +1382,7 @@ message InvalidArn {
 
 message InvalidDefinition {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1392,7 +1392,7 @@ message InvalidDefinition {
 
 message InvalidEncryptionConfiguration {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1402,7 +1402,7 @@ message InvalidEncryptionConfiguration {
 
 message InvalidExecutionInput {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1412,7 +1412,7 @@ message InvalidExecutionInput {
 
 message InvalidLoggingConfiguration {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1422,7 +1422,7 @@ message InvalidLoggingConfiguration {
 
 message InvalidName {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1432,7 +1432,7 @@ message InvalidName {
 
 message InvalidOutput {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1442,7 +1442,7 @@ message InvalidOutput {
 
 message InvalidToken {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1452,7 +1452,7 @@ message InvalidToken {
 
 message InvalidTracingConfiguration {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1462,7 +1462,7 @@ message InvalidTracingConfiguration {
 
 message KmsAccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1474,7 +1474,7 @@ message KmsInvalidStateException {
 
   KmsKeyState kmskeystate = 485859435;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1500,7 +1500,7 @@ enum KmsKeyState {
 
 message KmsThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1510,9 +1510,9 @@ message KmsThrottlingException {
 
 message LambdaFunctionFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -1522,9 +1522,9 @@ message LambdaFunctionFailedEventDetails {
 
 message LambdaFunctionScheduleFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -1534,7 +1534,7 @@ message LambdaFunctionScheduleFailedEventDetails {
 
 message LambdaFunctionScheduledEventDetails {
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   HistoryEventExecutionDataDetails inputdetails = 452625788;
 
@@ -1552,9 +1552,9 @@ message LambdaFunctionScheduledEventDetails {
 
 message LambdaFunctionStartFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -1564,7 +1564,7 @@ message LambdaFunctionStartFailedEventDetails {
 
 message LambdaFunctionSucceededEventDetails {
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   HistoryEventExecutionDataDetails outputdetails = 393734643;
 
@@ -1576,9 +1576,9 @@ message LambdaFunctionSucceededEventDetails {
 
 message LambdaFunctionTimedOutEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -1588,7 +1588,7 @@ message ListActivitiesInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1598,7 +1598,7 @@ message ListActivitiesOutput {
 
   repeated ActivityListItem activities = 164950681;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1606,15 +1606,15 @@ message ListActivitiesOutput {
 
 message ListExecutionsInput {
 
-  string maprunarn = 18199994;
+  optional string maprunarn = 18199994;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ExecutionRedriveFilter redrivefilter = 437804251;
 
-  string statemachinearn = 393321971;
+  optional string statemachinearn = 393321971;
 
   ExecutionStatus statusfilter = 86045418;
 
@@ -1626,7 +1626,7 @@ message ListExecutionsOutput {
 
   repeated ExecutionListItem executions = 113395923;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1638,7 +1638,7 @@ message ListMapRunsInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1648,7 +1648,7 @@ message ListMapRunsOutput {
 
   repeated MapRunListItem mapruns = 34690200;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1658,7 +1658,7 @@ message ListStateMachineAliasesInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string statemachinearn = 393321971;
 
@@ -1668,7 +1668,7 @@ message ListStateMachineAliasesInput {
 
 message ListStateMachineAliasesOutput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated StateMachineAliasListItem statemachinealiases = 452532502;
 
@@ -1680,7 +1680,7 @@ message ListStateMachineVersionsInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string statemachinearn = 393321971;
 
@@ -1690,7 +1690,7 @@ message ListStateMachineVersionsInput {
 
 message ListStateMachineVersionsOutput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated StateMachineVersionListItem statemachineversions = 133258663;
 
@@ -1702,7 +1702,7 @@ message ListStateMachinesInput {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -1710,7 +1710,7 @@ message ListStateMachinesInput {
 
 message ListStateMachinesOutput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated StateMachineListItem statemachines = 432113525;
 
@@ -1778,7 +1778,7 @@ message MapIterationEventDetails {
 
   optional int32 index = 151693740;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
 }
 
@@ -1816,9 +1816,9 @@ message MapRunExecutionCounts {
 
 message MapRunFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -1864,7 +1864,7 @@ message MapRunListItem {
 
   string statemachinearn = 393321971;
 
-  string stopdate = 180697434;
+  optional string stopdate = 180697434;
 
 }
 
@@ -1874,7 +1874,7 @@ message MapRunListItem {
 
 message MapRunRedrivenEventDetails {
 
-  string maprunarn = 18199994;
+  optional string maprunarn = 18199994;
 
   optional int32 redrivecount = 473458696;
 
@@ -1886,7 +1886,7 @@ message MapRunRedrivenEventDetails {
 
 message MapRunStartedEventDetails {
 
-  string maprunarn = 18199994;
+  optional string maprunarn = 18199994;
 
 }
 
@@ -1920,7 +1920,7 @@ message MapStateStartedEventDetails {
 
 message MissingRequiredParameter {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1930,9 +1930,9 @@ message MissingRequiredParameter {
 
 message MockErrorOutput {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
 }
 
@@ -1946,7 +1946,7 @@ message MockInput {
 
   MockResponseValidationMode fieldvalidationmode = 519416556;
 
-  string result = 171406885;
+  optional string result = 171406885;
 
 }
 
@@ -1966,9 +1966,9 @@ enum MockResponseValidationMode {
 
 message PublishStateMachineVersionInput {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string revisionid = 369170086;
+  optional string revisionid = 369170086;
 
   string statemachinearn = 393321971;
 
@@ -1988,7 +1988,7 @@ message PublishStateMachineVersionOutput {
 
 message RedriveExecutionInput {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   string executionarn = 314526573;
 
@@ -2008,9 +2008,9 @@ message RedriveExecutionOutput {
 
 message ResourceNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string resourcename = 17776375;
+  optional string resourcename = 17776375;
 
 }
 
@@ -2030,9 +2030,9 @@ message RoutingConfigurationListItem {
 
 message SendTaskFailureInput {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string tasktoken = 525325834;
 
@@ -2080,7 +2080,7 @@ message SendTaskSuccessOutput {
 
 message ServiceQuotaExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2088,13 +2088,13 @@ message ServiceQuotaExceededException {
 
 message StartExecutionInput {
 
-  string input = 433614716;
+  optional string input = 433614716;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   string statemachinearn = 393321971;
 
-  string traceheader = 219960864;
+  optional string traceheader = 219960864;
 
 }
 
@@ -2114,13 +2114,13 @@ message StartSyncExecutionInput {
 
   IncludedData includeddata = 109719114;
 
-  string input = 433614716;
+  optional string input = 433614716;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   string statemachinearn = 393321971;
 
-  string traceheader = 219960864;
+  optional string traceheader = 219960864;
 
 }
 
@@ -2130,31 +2130,31 @@ message StartSyncExecutionOutput {
 
   BillingDetails billingdetails = 270001723;
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string executionarn = 314526573;
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   CloudWatchEventsExecutionDataDetails inputdetails = 452625788;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   CloudWatchEventsExecutionDataDetails outputdetails = 393734643;
 
   string startdate = 364840732;
 
-  string statemachinearn = 393321971;
+  optional string statemachinearn = 393321971;
 
   SyncExecutionStatus status = 441153520;
 
   string stopdate = 180697434;
 
-  string traceheader = 219960864;
+  optional string traceheader = 219960864;
 
 }
 
@@ -2164,7 +2164,7 @@ message StartSyncExecutionOutput {
 
 message StateEnteredEventDetails {
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   HistoryEventExecutionDataDetails inputdetails = 452625788;
 
@@ -2184,7 +2184,7 @@ message StateExitedEventDetails {
 
   string name = 221887975;
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   HistoryEventExecutionDataDetails outputdetails = 393734643;
 
@@ -2208,7 +2208,7 @@ message StateMachineAliasListItem {
 
 message StateMachineAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2218,7 +2218,7 @@ message StateMachineAlreadyExists {
 
 message StateMachineDeleting {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2228,7 +2228,7 @@ message StateMachineDeleting {
 
 message StateMachineDoesNotExist {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2238,7 +2238,7 @@ message StateMachineDoesNotExist {
 
 message StateMachineLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2284,7 +2284,7 @@ enum StateMachineType {
 
 message StateMachineTypeNotSupported {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2304,9 +2304,9 @@ message StateMachineVersionListItem {
 
 message StopExecutionInput {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string executionarn = 314526573;
 
@@ -2338,9 +2338,9 @@ enum SyncExecutionStatus {
 
 message Tag {
 
-  string key = 135645293;
+  optional string key = 135645293;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -2366,7 +2366,7 @@ message TagResourceOutput {
 
 message TaskCredentials {
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -2376,7 +2376,7 @@ message TaskCredentials {
 
 message TaskDoesNotExist {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2386,9 +2386,9 @@ message TaskDoesNotExist {
 
 message TaskFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string resource = 165642230;
 
@@ -2424,9 +2424,9 @@ message TaskScheduledEventDetails {
 
 message TaskStartFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string resource = 165642230;
 
@@ -2452,9 +2452,9 @@ message TaskStartedEventDetails {
 
 message TaskSubmitFailedEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string resource = 165642230;
 
@@ -2468,7 +2468,7 @@ message TaskSubmitFailedEventDetails {
 
 message TaskSubmittedEventDetails {
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   HistoryEventExecutionDataDetails outputdetails = 393734643;
 
@@ -2484,7 +2484,7 @@ message TaskSubmittedEventDetails {
 
 message TaskSucceededEventDetails {
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   HistoryEventExecutionDataDetails outputdetails = 393734643;
 
@@ -2500,7 +2500,7 @@ message TaskSucceededEventDetails {
 
 message TaskTimedOut {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2510,9 +2510,9 @@ message TaskTimedOut {
 
 message TaskTimedOutEventDetails {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   string resource = 165642230;
 
@@ -2540,9 +2540,9 @@ enum TestExecutionStatus {
 
 message TestStateConfiguration {
 
-  string errorcausedbystate = 313873103;
+  optional string errorcausedbystate = 313873103;
 
-  string mapitemreaderdata = 503260646;
+  optional string mapitemreaderdata = 503260646;
 
   optional int32 mapiterationfailurecount = 419587762;
 
@@ -2554,11 +2554,11 @@ message TestStateConfiguration {
 
 message TestStateInput {
 
-  string context = 210178173;
+  optional string context = 210178173;
 
   string definition = 68443297;
 
-  string input = 433614716;
+  optional string input = 433614716;
 
   InspectionLevel inspectionlevel = 277169476;
 
@@ -2566,13 +2566,13 @@ message TestStateInput {
 
   optional bool revealsecrets = 351839742;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   TestStateConfiguration stateconfiguration = 17002877;
 
-  string statename = 270657590;
+  optional string statename = 270657590;
 
-  string variables = 162226883;
+  optional string variables = 162226883;
 
 }
 
@@ -2580,15 +2580,15 @@ message TestStateInput {
 
 message TestStateOutput {
 
-  string cause = 145674785;
+  optional string cause = 145674785;
 
-  string error = 26314578;
+  optional string error = 26314578;
 
   InspectionData inspectiondata = 113762044;
 
-  string nextstate = 525594702;
+  optional string nextstate = 525594702;
 
-  string output = 430526213;
+  optional string output = 430526213;
 
   TestExecutionStatus status = 441153520;
 
@@ -2600,9 +2600,9 @@ message TestStateOutput {
 
 message TooManyTags {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string resourcename = 17776375;
+  optional string resourcename = 17776375;
 
 }
 
@@ -2642,7 +2642,7 @@ message UpdateMapRunInput {
 
   optional int64 toleratedfailurecount = 41834811;
 
-  float toleratedfailurepercentage = 116496164;
+  optional float toleratedfailurepercentage = 116496164;
 
 }
 
@@ -2656,7 +2656,7 @@ message UpdateMapRunOutput {
 
 message UpdateStateMachineAliasInput {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated RoutingConfigurationListItem routingconfiguration = 372891510;
 
@@ -2676,7 +2676,7 @@ message UpdateStateMachineAliasOutput {
 
 message UpdateStateMachineInput {
 
-  string definition = 68443297;
+  optional string definition = 68443297;
 
   EncryptionConfiguration encryptionconfiguration = 167857431;
 
@@ -2684,13 +2684,13 @@ message UpdateStateMachineInput {
 
   optional bool publish = 264247305;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   string statemachinearn = 393321971;
 
   TracingConfiguration tracingconfiguration = 491315910;
 
-  string versiondescription = 434714300;
+  optional string versiondescription = 434714300;
 
 }
 
@@ -2698,9 +2698,9 @@ message UpdateStateMachineInput {
 
 message UpdateStateMachineOutput {
 
-  string revisionid = 369170086;
+  optional string revisionid = 369170086;
 
-  string statemachineversionarn = 69976825;
+  optional string statemachineversionarn = 69976825;
 
   string updatedate = 510552561;
 
@@ -2714,7 +2714,7 @@ message ValidateStateMachineDefinitionDiagnostic {
 
   string code = 422669557;
 
-  string location = 200649127;
+  optional string location = 200649127;
 
   string message = 82970853;
 
@@ -2774,7 +2774,7 @@ enum ValidateStateMachineDefinitionSeverity {
 
 message ValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   ValidationExceptionReason reason = 413359642;
 

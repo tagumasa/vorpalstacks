@@ -102,7 +102,7 @@ func newInternalError(format string, args ...interface{}) error {
 // DescribeDBClusterParameters and DescribeDBParameters Core methods.
 func sortParameters(params []*pb.Parameter) {
 	sort.Slice(params, func(i, j int) bool {
-		return params[i].Parametername < params[j].Parametername
+		return params[i].GetParametername() < params[j].GetParametername()
 	})
 }
 

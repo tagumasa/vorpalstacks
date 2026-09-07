@@ -2,7 +2,6 @@ package dynamodb
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -95,10 +94,12 @@ var (
 	// ErrInvalidParameter is returned when a request parameter fails validation.
 	ErrInvalidParameter = NewAPIError("com.amazon.coral.validate#ValidationException", "Invalid parameter", http.StatusBadRequest)
 
-	// ErrTypeMismatch is a typed sentinel returned by the expression
-	// evaluator when an ADD or SET operation encounters incompatible
-	// attribute types. Callers should use errors.Is to detect it.
-	ErrTypeMismatch = errors.New("TYPE_MISMATCH: Type mismatch for attribute to update")
+	// ErrTypeMismatch is the ValidationException a clause application
+	// returns when the value's type is incompatible with the existing
+	// attribute (the shared expression evaluator and the ADD/DELETE clause
+	// appliers). Its message is the documented cancellation-reason wording.
+	// Callers should use errors.Is to detect it.
+	ErrTypeMismatch = NewAPIError("com.amazon.coral.validate#ValidationException", "Type mismatch for attribute to update.", http.StatusBadRequest)
 	// ErrInternal is returned when an internal error occurs during stream operations.
 	ErrInternal = NewAPIError("com.amazonaws.dynamodb.v20120810#InternalServerError", "Internal error", http.StatusInternalServerError)
 
@@ -111,6 +112,12 @@ var (
 	// stream record retained by the 24-hour retention window.
 	ErrTrimmedDataAccess = NewAPIError("com.amazonaws.dynamodbstreams#TrimmedDataAccessException",
 		"The operation attempted to read past the oldest stream record in a shard", http.StatusBadRequest)
+
+	// ErrStreamsLimitExceeded is returned when GetRecords is called with a
+	// Limit above the documented upper bound of 1000 — the streams model
+	// documents that rejection as LimitExceededException.
+	ErrStreamsLimitExceeded = NewAPIError("com.amazonaws.dynamodbstreams#LimitExceededException",
+		"GetRecords was called with a value of more than 1000 for the limit request parameter", http.StatusBadRequest)
 	// ErrTableNotFound is returned when the specified table does not exist.
 	// Uses the general ResourceNotFoundException code so that callers checked
 	// against ResourceNotFoundException (the vast majority of DynamoDB ops)
@@ -134,21 +141,6 @@ var (
 	// RestoreTableToPointInTime, whose Smithy models declare it instead of
 	// the general ResourceInUseException.
 	ErrTableAlreadyExistsException = NewAPIError("com.amazonaws.dynamodb.v20120810#TableAlreadyExistsException", "Table already exists", http.StatusBadRequest)
-	// ErrTableInUseException is the Smithy-specific TableInUseException
-	// declared by CreateBackup, RestoreTableFromBackup, and
-	// RestoreTableToPointInTime. It signals that the target table is in a
-	// transitional (CREATING/DELETING/UPDATING) state.
-	ErrTableInUseException = NewAPIError("com.amazonaws.dynamodb.v20120810#TableInUseException", "Table is in use; it is being created or deleted", http.StatusBadRequest)
-	// ErrInvalidEndpoint is the Smithy InvalidEndpointException (declared by
-	// 44 DynamoDB operations). Smithy sets httpError 421 (Misdirected
-	// Request). Currently defined for completeness; the vorpalstacks endpoint
-	// resolver does not yet surface this condition.
-	ErrInvalidEndpoint = NewAPIError("com.amazonaws.dynamodb.v20120810#InvalidEndpointException", "Invalid endpoint", 421)
-	// ErrRequestLimitExceeded is the Smithy RequestLimitExceeded (declared by
-	// 13 data-plane operations). Currently defined for completeness;
-	// throughput-based throttling is handled by ErrThrottling /
-	// ErrProvisionedThroughputExceeded for now.
-	ErrRequestLimitExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#RequestLimitExceeded", "Request limit exceeded; throughput quota for the account has been exceeded", http.StatusBadRequest)
 	// ErrTableNotActive is returned when the table is not in ACTIVE state.
 	ErrTableNotActive = NewAPIError("com.amazonaws.dynamodb.v20120810#ResourceInUseException", "Table is not in ACTIVE state", http.StatusBadRequest)
 	// ErrTableDeletionProtected is returned when deletion protection is enabled on the table.
@@ -181,6 +173,10 @@ var (
 	ErrIdempotentParameterMismatch = NewAPIError("com.amazonaws.dynamodb.v20120810#IdempotentParameterMismatchException", "Idempotent parameter mismatch", http.StatusBadRequest)
 	// ErrExportNotFound is returned when the specified export does not exist.
 	ErrExportNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportNotFoundException", "Export not found", http.StatusBadRequest)
+	// ErrExportConflict is the ExportConflictException a repeated export
+	// ClientToken with a changed payload receives inside the documented
+	// eight-hour idempotency window.
+	ErrExportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportConflictException", "Export conflict", http.StatusBadRequest)
 	// ErrImportNotFound is returned when the specified import does not exist.
 	ErrImportNotFound = NewAPIError("com.amazonaws.dynamodb.v20120810#ImportNotFoundException", "Import not found", http.StatusBadRequest)
 	// ErrPolicyNotFound is returned when a resource-based policy is not found for the specified resource.
@@ -193,25 +189,13 @@ var (
 	// returned by point-in-time restores whose source table does not have
 	// recovery enabled.
 	ErrPITRNotEnabled = NewAPIError("com.amazonaws.dynamodb.v20120810#PointInTimeRecoveryUnavailableException", "Point in time recovery has not yet been enabled for this source table", http.StatusBadRequest)
-	// ErrContinuousBackupsUnavailable is returned when continuous backups are unavailable.
-	ErrContinuousBackupsUnavailable = NewAPIError("com.amazonaws.dynamodb.v20120810#ContinuousBackupsUnavailableException", "Backups are not available for this table", http.StatusBadRequest)
-	// ErrDuplicateItem is returned when a batch write contains duplicate items.
-	ErrDuplicateItem = NewAPIError("com.amazonaws.dynamodb.v20120810#DuplicateItemException", "Duplicate item in request", http.StatusBadRequest)
 	// ErrDuplicateKeys is returned when a batch request names the same
 	// primary key more than once; the whole request is rejected.
 	ErrDuplicateKeys = NewAPIError("com.amazon.coral.validate#ValidationException", "Provided list of item keys contains duplicates", http.StatusBadRequest)
-	// ErrExportConflict is returned when an export operation conflicts with an existing export.
-	ErrExportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ExportConflictException", "Export conflict", http.StatusBadRequest)
-	// ErrImportConflict is returned when an import operation conflicts with an existing import.
-	ErrImportConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ImportConflictException", "Import conflict", http.StatusBadRequest)
-	// ErrItemCollectionSizeLimitExceeded is returned when an item collection exceeds the size limit.
-	ErrItemCollectionSizeLimitExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#ItemCollectionSizeLimitExceededException", "Item collection size limit exceeded", http.StatusBadRequest)
 	// ErrLimitExceeded is returned when a service limit is exceeded.
 	ErrLimitExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#LimitExceededException", "Limit exceeded", http.StatusBadRequest)
 	// ErrProvisionedThroughputExceeded is returned when provisioned throughput is exceeded.
 	ErrProvisionedThroughputExceeded = NewAPIError("com.amazonaws.dynamodb.v20120810#ProvisionedThroughputExceededException", "Provisioned throughput exceeded", http.StatusBadRequest)
-	// ErrReplicatedWriteConflict is returned when a replicated write conflict occurs.
-	ErrReplicatedWriteConflict = NewAPIError("com.amazonaws.dynamodb.v20120810#ReplicatedWriteConflictException", "Replicated write conflict", http.StatusBadRequest)
 	// ErrThrottling is returned when the request is throttled.
 	ErrThrottling = NewAPIError("com.amazonaws.dynamodb.v20120810#ThrottlingException", "Rate of requests exceeds throughput limit", http.StatusBadRequest)
 	// ErrTransactionInProgress is returned when a client request token is retried while the transaction it identifies is already in progress.

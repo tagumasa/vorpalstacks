@@ -2,6 +2,7 @@ package iot
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -96,7 +97,7 @@ func (h *AdminHandler) ListThings(ctx context.Context, req *connect.Request[pb.L
 
 	return connect.NewResponse(&pb.ListThingsResponse{
 		Things:    things,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -171,7 +172,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 
 	return connect.NewResponse(&pb.ListPoliciesResponse{
 		Policies:   policies,
-		Nextmarker: result.NextToken,
+		Nextmarker: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -213,7 +214,7 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 
 	return connect.NewResponse(&pb.ListCertificatesResponse{
 		Certificates: certs,
-		Nextmarker:   result.NextToken,
+		Nextmarker:   proto.String(result.NextToken),
 	}), nil
 }
 
@@ -288,7 +289,7 @@ func (h *AdminHandler) ListTopicRules(ctx context.Context, req *connect.Request[
 
 	return connect.NewResponse(&pb.ListTopicRulesResponse{
 		Rules:     rules,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 

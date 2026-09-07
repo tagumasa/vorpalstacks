@@ -48,7 +48,7 @@ service IoTService {
   // Protocol: restJson1
   rpc AttachPrincipalPolicy(AttachPrincipalPolicyRequest) returns (common.Empty);
 
-  // Associates a Device Defender security profile with a thing group or this account. Each thing group or account can have up to five security profiles associated with it. Requires permission to access...
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: PUT /security-profiles/{securityProfileName}/targets
   // Protocol: restJson1
   rpc AttachSecurityProfile(AttachSecurityProfileRequest) returns (AttachSecurityProfileResponse);
@@ -73,7 +73,7 @@ service IoTService {
   // Protocol: restJson1
   rpc CancelCertificateTransfer(CancelCertificateTransferRequest) returns (common.Empty);
 
-  // Cancels a Device Defender ML Detect mitigation action. Requires permission to access the CancelDetectMitigationActionsTask action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: PUT /detect/mitigationactions/tasks/{taskId}/cancel
   // Protocol: restJson1
   rpc CancelDetectMitigationActionsTask(CancelDetectMitigationActionsTaskRequest) returns (CancelDetectMitigationActionsTaskResponse);
@@ -128,12 +128,12 @@ service IoTService {
   // Protocol: restJson1
   rpc CreateCommand(CreateCommandRequest) returns (CreateCommandResponse);
 
-  // Use this API to define a Custom Metric published by your devices to Device Defender. Requires permission to access the CreateCustomMetric action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: POST /custom-metric/{metricName}
   // Protocol: restJson1
   rpc CreateCustomMetric(CreateCustomMetricRequest) returns (CreateCustomMetricResponse);
 
-  // Create a dimension that you can use to limit the scope of a metric used in a security profile for IoT Device Defender. For example, using a TOPIC_FILTER dimension, you can narrow down the scope of ...
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: POST /dimensions/{name}
   // Protocol: restJson1
   rpc CreateDimension(CreateDimensionRequest) returns (CreateDimensionResponse);
@@ -223,7 +223,7 @@ service IoTService {
   // Protocol: restJson1
   rpc CreateScheduledAudit(CreateScheduledAuditRequest) returns (CreateScheduledAuditResponse);
 
-  // Creates a Device Defender security profile. Requires permission to access the CreateSecurityProfile action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: POST /security-profiles/{securityProfileName}
   // Protocol: restJson1
   rpc CreateSecurityProfile(CreateSecurityProfileRequest) returns (CreateSecurityProfileResponse);
@@ -303,12 +303,12 @@ service IoTService {
   // Protocol: restJson1
   rpc DeleteCommandExecution(DeleteCommandExecutionRequest) returns (DeleteCommandExecutionResponse);
 
-  // Deletes a Device Defender detect custom metric. Requires permission to access the DeleteCustomMetric action. Before you can delete a custom metric, you must first remove the custom metric from all ...
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: DELETE /custom-metric/{metricName}
   // Protocol: restJson1
   rpc DeleteCustomMetric(DeleteCustomMetricRequest) returns (DeleteCustomMetricResponse);
 
-  // Removes the specified dimension from your Amazon Web Services accounts. Requires permission to access the DeleteDimension action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: DELETE /dimensions/{name}
   // Protocol: restJson1
   rpc DeleteDimension(DeleteDimensionRequest) returns (DeleteDimensionResponse);
@@ -398,7 +398,7 @@ service IoTService {
   // Protocol: restJson1
   rpc DeleteScheduledAudit(DeleteScheduledAuditRequest) returns (DeleteScheduledAuditResponse);
 
-  // Deletes a Device Defender security profile. Requires permission to access the DeleteSecurityProfile action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: DELETE /security-profiles/{securityProfileName}
   // Protocol: restJson1
   rpc DeleteSecurityProfile(DeleteSecurityProfileRequest) returns (DeleteSecurityProfileResponse);
@@ -493,7 +493,7 @@ service IoTService {
   // Protocol: restJson1
   rpc DescribeCertificateProvider(DescribeCertificateProviderRequest) returns (DescribeCertificateProviderResponse);
 
-  // Gets information about a Device Defender detect custom metric. Requires permission to access the DescribeCustomMetric action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /custom-metric/{metricName}
   // Protocol: restJson1
   rpc DescribeCustomMetric(DescribeCustomMetricRequest) returns (DescribeCustomMetricResponse);
@@ -503,12 +503,12 @@ service IoTService {
   // Protocol: restJson1
   rpc DescribeDefaultAuthorizer(DescribeDefaultAuthorizerRequest) returns (DescribeDefaultAuthorizerResponse);
 
-  // Gets information about a Device Defender ML Detect mitigation action. Requires permission to access the DescribeDetectMitigationActionsTask action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /detect/mitigationactions/tasks/{taskId}
   // Protocol: restJson1
   rpc DescribeDetectMitigationActionsTask(DescribeDetectMitigationActionsTaskRequest) returns (DescribeDetectMitigationActionsTaskResponse);
 
-  // Provides details about a dimension that is defined in your Amazon Web Services accounts. Requires permission to access the DescribeDimension action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /dimensions/{name}
   // Protocol: restJson1
   rpc DescribeDimension(DescribeDimensionRequest) returns (DescribeDimensionResponse);
@@ -588,7 +588,7 @@ service IoTService {
   // Protocol: restJson1
   rpc DescribeScheduledAudit(DescribeScheduledAuditRequest) returns (DescribeScheduledAuditResponse);
 
-  // Gets information about a Device Defender security profile. Requires permission to access the DescribeSecurityProfile action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /security-profiles/{securityProfileName}
   // Protocol: restJson1
   rpc DescribeSecurityProfile(DescribeSecurityProfileRequest) returns (DescribeSecurityProfileResponse);
@@ -628,7 +628,7 @@ service IoTService {
   // Protocol: restJson1
   rpc DetachPrincipalPolicy(DetachPrincipalPolicyRequest) returns (common.Empty);
 
-  // Disassociates a Device Defender security profile from a thing group or from this account. Requires permission to access the DetachSecurityProfile action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: DELETE /security-profiles/{securityProfileName}/targets
   // Protocol: restJson1
   rpc DetachSecurityProfile(DetachSecurityProfileRequest) returns (DetachSecurityProfileResponse);
@@ -653,7 +653,7 @@ service IoTService {
   // Protocol: restJson1
   rpc EnableTopicRule(EnableTopicRuleRequest) returns (common.Empty);
 
-  // Returns a Device Defender's ML Detect Security Profile training model's status. Requires permission to access the GetBehaviorModelTrainingSummaries action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /behavior-model-training/summaries
   // Protocol: restJson1
   rpc GetBehaviorModelTrainingSummaries(GetBehaviorModelTrainingSummariesRequest) returns (GetBehaviorModelTrainingSummariesResponse);
@@ -763,7 +763,7 @@ service IoTService {
   // Protocol: restJson1
   rpc GetV2LoggingOptions(GetV2LoggingOptionsRequest) returns (GetV2LoggingOptionsResponse);
 
-  // Lists the active violations for a given Device Defender security profile. Requires permission to access the ListActiveViolations action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /active-violations
   // Protocol: restJson1
   rpc ListActiveViolations(ListActiveViolationsRequest) returns (ListActiveViolationsResponse);
@@ -838,22 +838,22 @@ service IoTService {
   // Protocol: restJson1
   rpc ListCommands(ListCommandsRequest) returns (ListCommandsResponse);
 
-  // Lists your Device Defender detect custom metrics. Requires permission to access the ListCustomMetrics action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /custom-metrics
   // Protocol: restJson1
   rpc ListCustomMetrics(ListCustomMetricsRequest) returns (ListCustomMetricsResponse);
 
-  // Lists mitigation actions executions for a Device Defender ML Detect Security Profile. Requires permission to access the ListDetectMitigationActionsExecutions action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /detect/mitigationactions/executions
   // Protocol: restJson1
   rpc ListDetectMitigationActionsExecutions(ListDetectMitigationActionsExecutionsRequest) returns (ListDetectMitigationActionsExecutionsResponse);
 
-  // List of Device Defender ML Detect mitigation actions tasks. Requires permission to access the ListDetectMitigationActionsTasks action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /detect/mitigationactions/tasks
   // Protocol: restJson1
   rpc ListDetectMitigationActionsTasks(ListDetectMitigationActionsTasksRequest) returns (ListDetectMitigationActionsTasksResponse);
 
-  // List the set of dimensions that are defined for your Amazon Web Services accounts. Requires permission to access the ListDimensions action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /dimensions
   // Protocol: restJson1
   rpc ListDimensions(ListDimensionsRequest) returns (ListDimensionsResponse);
@@ -988,12 +988,12 @@ service IoTService {
   // Protocol: restJson1
   rpc ListScheduledAudits(ListScheduledAuditsRequest) returns (ListScheduledAuditsResponse);
 
-  // Lists the Device Defender security profiles you've created. You can filter security profiles by dimension or custom metric. Requires permission to access the ListSecurityProfiles action. dimensionN...
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /security-profiles
   // Protocol: restJson1
   rpc ListSecurityProfiles(ListSecurityProfilesRequest) returns (ListSecurityProfilesResponse);
 
-  // Lists the Device Defender security profiles attached to a target (thing group). Requires permission to access the ListSecurityProfilesForTarget action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /security-profiles-for-target
   // Protocol: restJson1
   rpc ListSecurityProfilesForTarget(ListSecurityProfilesForTargetRequest) returns (ListSecurityProfilesForTargetResponse);
@@ -1013,7 +1013,7 @@ service IoTService {
   // Protocol: restJson1
   rpc ListTargetsForPolicy(ListTargetsForPolicyRequest) returns (ListTargetsForPolicyResponse);
 
-  // Lists the targets (thing groups) associated with a given Device Defender security profile. Requires permission to access the ListTargetsForSecurityProfile action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /security-profiles/{securityProfileName}/targets
   // Protocol: restJson1
   rpc ListTargetsForSecurityProfile(ListTargetsForSecurityProfileRequest) returns (ListTargetsForSecurityProfileResponse);
@@ -1083,12 +1083,12 @@ service IoTService {
   // Protocol: restJson1
   rpc ListV2LoggingLevels(ListV2LoggingLevelsRequest) returns (ListV2LoggingLevelsResponse);
 
-  // Lists the Device Defender security profile violations discovered during the given time period. You can use filters to limit the results to those alerts issued for a particular security profile, beh...
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: GET /violation-events
   // Protocol: restJson1
   rpc ListViolationEvents(ListViolationEventsRequest) returns (ListViolationEventsResponse);
 
-  // Set a verification state and provide a description of that verification state on a violation (detect alarm).
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: POST /violations/verification-state/{violationId}
   // Protocol: restJson1
   rpc PutVerificationStateOnViolation(PutVerificationStateOnViolationRequest) returns (PutVerificationStateOnViolationResponse);
@@ -1168,7 +1168,7 @@ service IoTService {
   // Protocol: restJson1
   rpc StartAuditMitigationActionsTask(StartAuditMitigationActionsTaskRequest) returns (StartAuditMitigationActionsTaskResponse);
 
-  // Starts a Device Defender ML Detect mitigation actions task. Requires permission to access the StartDetectMitigationActionsTask action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: PUT /detect/mitigationactions/tasks/{taskId}
   // Protocol: restJson1
   rpc StartDetectMitigationActionsTask(StartDetectMitigationActionsTaskRequest) returns (StartDetectMitigationActionsTaskResponse);
@@ -1253,12 +1253,12 @@ service IoTService {
   // Protocol: restJson1
   rpc UpdateCommand(UpdateCommandRequest) returns (UpdateCommandResponse);
 
-  // Updates a Device Defender detect custom metric. Requires permission to access the UpdateCustomMetric action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: PATCH /custom-metric/{metricName}
   // Protocol: restJson1
   rpc UpdateCustomMetric(UpdateCustomMetricRequest) returns (UpdateCustomMetricResponse);
 
-  // Updates the definition for a dimension. You cannot change the type of a dimension after it is created (you can delete it and recreate it). Requires permission to access the UpdateDimension action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: PATCH /dimensions/{name}
   // Protocol: restJson1
   rpc UpdateDimension(UpdateDimensionRequest) returns (UpdateDimensionResponse);
@@ -1333,7 +1333,7 @@ service IoTService {
   // Protocol: restJson1
   rpc UpdateScheduledAudit(UpdateScheduledAuditRequest) returns (UpdateScheduledAuditResponse);
 
-  // Updates a Device Defender security profile. Requires permission to access the UpdateSecurityProfile action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: PATCH /security-profiles/{securityProfileName}
   // Protocol: restJson1
   rpc UpdateSecurityProfile(UpdateSecurityProfileRequest) returns (UpdateSecurityProfileResponse);
@@ -1368,7 +1368,7 @@ service IoTService {
   // Protocol: restJson1
   rpc UpdateTopicRuleDestination(UpdateTopicRuleDestinationRequest) returns (UpdateTopicRuleDestinationResponse);
 
-  // Validates a Device Defender security profile behaviors specification. Requires permission to access the ValidateSecurityProfileBehaviors action.
+  // The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
   // HTTP: POST /security-profile-behaviors/validate
   // Protocol: restJson1
   rpc ValidateSecurityProfileBehaviors(ValidateSecurityProfileBehaviorsRequest) returns (ValidateSecurityProfileBehaviorsResponse);
@@ -1443,6 +1443,8 @@ message Action {
 
   HttpAction http = 157567142;
 
+  InfluxDBAction influxdb = 49117216;
+
   IotAnalyticsAction iotanalytics = 65449182;
 
   IotEventsAction iotevents = 502263723;
@@ -1497,23 +1499,23 @@ message ActiveViolation {
 
   Behavior behavior = 266976808;
 
-  string lastviolationtime = 185967910;
+  optional string lastviolationtime = 185967910;
 
   MetricValue lastviolationvalue = 327142014;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
   VerificationState verificationstate = 46156804;
 
-  string verificationstatedescription = 16078040;
+  optional string verificationstatedescription = 16078040;
 
   ViolationEventAdditionalInfo violationeventadditionalinfo = 29091486;
 
-  string violationid = 273917670;
+  optional string violationid = 273917670;
 
-  string violationstarttime = 479170726;
+  optional string violationstarttime = 479170726;
 
 }
 
@@ -1521,13 +1523,13 @@ message ActiveViolation {
 
 message AddThingToBillingGroupRequest {
 
-  string billinggrouparn = 452343283;
+  optional string billinggrouparn = 452343283;
 
-  string billinggroupname = 249899885;
+  optional string billinggroupname = 249899885;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -1543,13 +1545,13 @@ message AddThingToThingGroupRequest {
 
   optional bool overridedynamicgroups = 34147631;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thinggrouparn = 350650610;
+  optional string thinggrouparn = 350650610;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -1645,7 +1647,7 @@ enum ApplicationProtocol {
 
 message AssetPropertyTimestamp {
 
-  string offsetinnanos = 154585477;
+  optional string offsetinnanos = 154585477;
 
   string timeinseconds = 143432177;
 
@@ -1657,7 +1659,7 @@ message AssetPropertyTimestamp {
 
 message AssetPropertyValue {
 
-  string quality = 450187303;
+  optional string quality = 450187303;
 
   AssetPropertyTimestamp timestamp = 310629668;
 
@@ -1671,13 +1673,13 @@ message AssetPropertyValue {
 
 message AssetPropertyVariant {
 
-  string booleanvalue = 30672853;
+  optional string booleanvalue = 30672853;
 
-  string doublevalue = 121874586;
+  optional string doublevalue = 121874586;
 
-  string integervalue = 406113515;
+  optional string integervalue = 406113515;
 
-  string stringvalue = 403156138;
+  optional string stringvalue = 403156138;
 
 }
 
@@ -1685,7 +1687,7 @@ message AssetPropertyVariant {
 
 message AssociateSbomWithPackageVersionRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   string packagename = 474490177;
 
@@ -1699,13 +1701,13 @@ message AssociateSbomWithPackageVersionRequest {
 
 message AssociateSbomWithPackageVersionResponse {
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
   Sbom sbom = 522734353;
 
   SbomValidationStatus sbomvalidationstatus = 502368374;
 
-  string versionname = 508494709;
+  optional string versionname = 508494709;
 
 }
 
@@ -1713,11 +1715,11 @@ message AssociateSbomWithPackageVersionResponse {
 
 message AssociateTargetsWithJobRequest {
 
-  string comment = 128369759;
+  optional string comment = 128369759;
 
   string jobid = 333387506;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
   repeated string targets = 150369506;
 
@@ -1727,11 +1729,11 @@ message AssociateTargetsWithJobRequest {
 
 message AssociateTargetsWithJobResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string jobarn = 234123380;
+  optional string jobarn = 234123380;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
 }
 
@@ -1829,9 +1831,9 @@ message AuditCheckDetails {
 
   AuditCheckRunStatus checkrunstatus = 205905699;
 
-  string errorcode = 355916985;
+  optional string errorcode = 355916985;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   optional int64 noncompliantresourcescount = 113668994;
 
@@ -1865,27 +1867,27 @@ enum AuditCheckRunStatus {
 
 message AuditFinding {
 
-  string checkname = 534449509;
+  optional string checkname = 534449509;
 
-  string findingid = 319355036;
+  optional string findingid = 319355036;
 
-  string findingtime = 231732320;
+  optional string findingtime = 231732320;
 
   optional bool issuppressed = 205531624;
 
   NonCompliantResource noncompliantresource = 460156382;
 
-  string reasonfornoncompliance = 438316965;
+  optional string reasonfornoncompliance = 438316965;
 
-  string reasonfornoncompliancecode = 251692114;
+  optional string reasonfornoncompliancecode = 251692114;
 
   repeated RelatedResource relatedresources = 292628798;
 
   AuditFindingSeverity severity = 268193715;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
-  string taskstarttime = 106092442;
+  optional string taskstarttime = 106092442;
 
 }
 
@@ -1923,23 +1925,23 @@ enum AuditFrequency {
 
 message AuditMitigationActionExecutionMetadata {
 
-  string actionid = 281444883;
+  optional string actionid = 281444883;
 
-  string actionname = 111062493;
+  optional string actionname = 111062493;
 
-  string endtime = 329679852;
+  optional string endtime = 329679852;
 
-  string errorcode = 355916985;
+  optional string errorcode = 355916985;
 
-  string findingid = 319355036;
+  optional string findingid = 319355036;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
   AuditMitigationActionsExecutionStatus status = 441153520;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -1967,9 +1969,9 @@ enum AuditMitigationActionsExecutionStatus {
 
 message AuditMitigationActionsTaskMetadata {
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
   AuditMitigationActionsTaskStatus taskstatus = 91888279;
 
@@ -1997,7 +1999,7 @@ message AuditMitigationActionsTaskTarget {
 
   map<string, string> auditchecktoreasoncodefilter = 5417911;
 
-  string audittaskid = 186616953;
+  optional string audittaskid = 186616953;
 
   repeated string findingids = 522179897;
 
@@ -2011,9 +2013,9 @@ message AuditNotificationTarget {
 
   optional bool enabled = 49525663;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
-  string targetarn = 367964720;
+  optional string targetarn = 367964720;
 
 }
 
@@ -2033,9 +2035,9 @@ message AuditSuppression {
 
   string checkname = 534449509;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string expirationdate = 391033245;
+  optional string expirationdate = 391033245;
 
   ResourceIdentifier resourceidentifier = 309427407;
 
@@ -2049,7 +2051,7 @@ message AuditSuppression {
 
 message AuditTaskMetadata {
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
   AuditTaskStatus taskstatus = 91888279;
 
@@ -2147,7 +2149,7 @@ message AuthorizerConfig {
 
   optional bool allowauthorizeroverride = 146475078;
 
-  string defaultauthorizername = 500028435;
+  optional string defaultauthorizername = 500028435;
 
 }
 
@@ -2157,23 +2159,23 @@ message AuthorizerConfig {
 
 message AuthorizerDescription {
 
-  string authorizerarn = 182378050;
+  optional string authorizerarn = 182378050;
 
-  string authorizerfunctionarn = 386040646;
+  optional string authorizerfunctionarn = 386040646;
 
-  string authorizername = 49871270;
+  optional string authorizername = 49871270;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional bool enablecachingforhttp = 70468675;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
   optional bool signingdisabled = 34955421;
 
   AuthorizerStatus status = 441153520;
 
-  string tokenkeyname = 279325171;
+  optional string tokenkeyname = 279325171;
 
   map<string, string> tokensigningpublickeys = 326945473;
 
@@ -2195,9 +2197,9 @@ enum AuthorizerStatus {
 
 message AuthorizerSummary {
 
-  string authorizerarn = 182378050;
+  optional string authorizerarn = 182378050;
 
-  string authorizername = 49871270;
+  optional string authorizername = 49871270;
 
 }
 
@@ -2353,7 +2355,7 @@ message Behavior {
 
   optional bool exportmetric = 244291072;
 
-  string metric = 162480898;
+  optional string metric = 162480898;
 
   MetricDimension metricdimension = 35507144;
 
@@ -2403,17 +2405,17 @@ enum BehaviorCriteriaType {
 
 message BehaviorModelTrainingSummary {
 
-  string behaviorname = 75735045;
+  optional string behaviorname = 75735045;
 
-  double datapointscollectionpercentage = 284665007;
+  optional double datapointscollectionpercentage = 284665007;
 
-  string lastmodelrefreshdate = 271169450;
+  optional string lastmodelrefreshdate = 271169450;
 
   ModelStatus modelstatus = 39129381;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
-  string trainingdatacollectionstartdate = 117275242;
+  optional string trainingdatacollectionstartdate = 117275242;
 
 }
 
@@ -2423,7 +2425,7 @@ message BehaviorModelTrainingSummary {
 
 message BillingGroupMetadata {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
 }
 
@@ -2433,7 +2435,7 @@ message BillingGroupMetadata {
 
 message BillingGroupProperties {
 
-  string billinggroupdescription = 338899396;
+  optional string billinggroupdescription = 338899396;
 
 }
 
@@ -2445,7 +2447,7 @@ message Bucket {
 
   optional int32 count = 431087093;
 
-  string keyvalue = 86424358;
+  optional string keyvalue = 86424358;
 
 }
 
@@ -2465,11 +2467,11 @@ message BucketsAggregationType {
 
 message CACertificate {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   CACertificateStatus status = 441153520;
 
@@ -2483,23 +2485,23 @@ message CACertificateDescription {
 
   AutoRegistrationStatus autoregistrationstatus = 525144298;
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
   CertificateMode certificatemode = 236877860;
 
-  string certificatepem = 498816311;
+  optional string certificatepem = 498816311;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional int32 customerversion = 175153604;
 
-  string generationid = 416668699;
+  optional string generationid = 416668699;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string ownedby = 331791992;
+  optional string ownedby = 331791992;
 
   CACertificateStatus status = 441153520;
 
@@ -2597,13 +2599,13 @@ message CancelJobExecutionRequest {
 
 message CancelJobRequest {
 
-  string comment = 128369759;
+  optional string comment = 128369759;
 
   optional bool force = 430540933;
 
   string jobid = 333387506;
 
-  string reasoncode = 207873105;
+  optional string reasoncode = 207873105;
 
 }
 
@@ -2611,11 +2613,11 @@ message CancelJobRequest {
 
 message CancelJobResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string jobarn = 234123380;
+  optional string jobarn = 234123380;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
 }
 
@@ -2647,13 +2649,13 @@ enum CannedAccessControlList {
 
 message Certificate {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
   CertificateMode certificatemode = 236877860;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   CertificateStatus status = 441153520;
 
@@ -2665,7 +2667,7 @@ message Certificate {
 
 message CertificateConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2675,27 +2677,27 @@ message CertificateConflictException {
 
 message CertificateDescription {
 
-  string cacertificateid = 510727626;
+  optional string cacertificateid = 510727626;
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
   CertificateMode certificatemode = 236877860;
 
-  string certificatepem = 498816311;
+  optional string certificatepem = 498816311;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional int32 customerversion = 175153604;
 
-  string generationid = 416668699;
+  optional string generationid = 416668699;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string ownedby = 331791992;
+  optional string ownedby = 331791992;
 
-  string previousownedby = 192023001;
+  optional string previousownedby = 192023001;
 
   CertificateStatus status = 441153520;
 
@@ -2729,9 +2731,9 @@ enum CertificateProviderOperation {
 
 message CertificateProviderSummary {
 
-  string certificateproviderarn = 382493445;
+  optional string certificateproviderarn = 382493445;
 
-  string certificateprovidername = 158318159;
+  optional string certificateprovidername = 158318159;
 
 }
 
@@ -2741,7 +2743,7 @@ message CertificateProviderSummary {
 
 message CertificateStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2769,7 +2771,7 @@ enum CertificateStatus {
 
 message CertificateValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2779,9 +2781,9 @@ message CertificateValidationException {
 
 message CertificateValidity {
 
-  string notafter = 420626801;
+  optional string notafter = 420626801;
 
-  string notbefore = 433626774;
+  optional string notbefore = 433626774;
 
 }
 
@@ -2803,7 +2805,7 @@ message ClearDefaultAuthorizerResponse {
 
 message ClientCertificateConfig {
 
-  string clientcertificatecallbackarn = 181768182;
+  optional string clientcertificatecallbackarn = 181768182;
 
 }
 
@@ -2847,7 +2849,7 @@ message CloudwatchMetricAction {
 
   string metricnamespace = 315894261;
 
-  string metrictimestamp = 473647232;
+  optional string metrictimestamp = 473647232;
 
   string metricunit = 58473948;
 
@@ -2863,7 +2865,7 @@ message CloudwatchMetricAction {
 
 message CodeSigning {
 
-  string awssignerjobid = 434199455;
+  optional string awssignerjobid = 434199455;
 
   CustomCodeSigning customcodesigning = 19083251;
 
@@ -2877,9 +2879,9 @@ message CodeSigning {
 
 message CodeSigningCertificateChain {
 
-  string certificatename = 140276948;
+  optional string certificatename = 140276948;
 
-  string inlinedocument = 249150166;
+  optional string inlinedocument = 249150166;
 
 }
 
@@ -2889,7 +2891,7 @@ message CodeSigningCertificateChain {
 
 message CodeSigningSignature {
 
-  bytes inlinedocument = 249150166;
+  optional bytes inlinedocument = 249150166;
 
 }
 
@@ -2901,9 +2903,9 @@ message CommandExecutionResult {
 
   optional bool b = 118225798;
 
-  bytes bin = 528608479;
+  optional bytes bin = 528608479;
 
-  string s = 369890083;
+  optional string s = 369890083;
 
 }
 
@@ -2931,19 +2933,19 @@ enum CommandExecutionStatus {
 
 message CommandExecutionSummary {
 
-  string commandarn = 100510046;
+  optional string commandarn = 100510046;
 
-  string completedat = 303098600;
+  optional string completedat = 303098600;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string executionid = 364931921;
+  optional string executionid = 364931921;
 
-  string startedat = 405642876;
+  optional string startedat = 405642876;
 
   CommandExecutionStatus status = 441153520;
 
-  string targetarn = 367964720;
+  optional string targetarn = 367964720;
 
 }
 
@@ -2965,7 +2967,7 @@ message CommandParameter {
 
   CommandParameterValue defaultvalue = 403858624;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string name = 221887975;
 
@@ -3005,17 +3007,17 @@ message CommandParameterValue {
 
   optional bool b = 118225798;
 
-  bytes bin = 528608479;
+  optional bytes bin = 528608479;
 
-  double d = 17560084;
+  optional double d = 17560084;
 
   optional int32 i = 202113893;
 
   optional int64 l = 151781036;
 
-  string s = 369890083;
+  optional string s = 369890083;
 
-  string ul = 519288757;
+  optional string ul = 519288757;
 
 }
 
@@ -3025,13 +3027,13 @@ message CommandParameterValue {
 
 message CommandParameterValueComparisonOperand {
 
-  string number = 467038369;
+  optional string number = 467038369;
 
   CommandParameterValueNumberRange numberrange = 1656982;
 
   repeated string numbers = 93559850;
 
-  string string = 398550329;
+  optional string string = 398550329;
 
   repeated string strings = 275936530;
 
@@ -3093,9 +3095,9 @@ message CommandParameterValueNumberRange {
 
 message CommandPayload {
 
-  bytes content = 280937411;
+  optional bytes content = 280937411;
 
-  string contenttype = 281764659;
+  optional string contenttype = 281764659;
 
 }
 
@@ -3115,17 +3117,17 @@ message CommandPreprocessor {
 
 message CommandSummary {
 
-  string commandarn = 100510046;
+  optional string commandarn = 100510046;
 
-  string commandid = 424777632;
+  optional string commandid = 424777632;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
   optional bool deprecated = 269356453;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
   optional bool pendingdeletion = 124227855;
 
@@ -3197,9 +3199,9 @@ message ConfigurationDetails {
 
   ConfigurationStatus configurationstatus = 36192732;
 
-  string errorcode = 355916985;
+  optional string errorcode = 355916985;
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
 }
 
@@ -3233,9 +3235,9 @@ message ConfirmTopicRuleDestinationResponse {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string resourceid = 318922417;
+  optional string resourceid = 318922417;
 
 }
 
@@ -3245,7 +3247,7 @@ message ConflictException {
 
 message ConflictingResourceUpdateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3267,9 +3269,9 @@ message CreateAuditSuppressionRequest {
 
   string clientrequesttoken = 395353297;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string expirationdate = 391033245;
+  optional string expirationdate = 391033245;
 
   ResourceIdentifier resourceidentifier = 309427407;
 
@@ -3299,7 +3301,7 @@ message CreateAuthorizerRequest {
 
   repeated Tag tags = 337046433;
 
-  string tokenkeyname = 279325171;
+  optional string tokenkeyname = 279325171;
 
   map<string, string> tokensigningpublickeys = 326945473;
 
@@ -3309,9 +3311,9 @@ message CreateAuthorizerRequest {
 
 message CreateAuthorizerResponse {
 
-  string authorizerarn = 182378050;
+  optional string authorizerarn = 182378050;
 
-  string authorizername = 49871270;
+  optional string authorizername = 49871270;
 
 }
 
@@ -3331,11 +3333,11 @@ message CreateBillingGroupRequest {
 
 message CreateBillingGroupResponse {
 
-  string billinggrouparn = 452343283;
+  optional string billinggrouparn = 452343283;
 
-  string billinggroupid = 415883427;
+  optional string billinggroupid = 415883427;
 
-  string billinggroupname = 249899885;
+  optional string billinggroupname = 249899885;
 
 }
 
@@ -3357,11 +3359,11 @@ message CreateCertificateFromCsrRequest {
 
 message CreateCertificateFromCsrResponse {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
-  string certificatepem = 498816311;
+  optional string certificatepem = 498816311;
 
 }
 
@@ -3373,7 +3375,7 @@ message CreateCertificateProviderRequest {
 
   string certificateprovidername = 158318159;
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   string lambdafunctionarn = 12837978;
 
@@ -3385,9 +3387,9 @@ message CreateCertificateProviderRequest {
 
 message CreateCertificateProviderResponse {
 
-  string certificateproviderarn = 382493445;
+  optional string certificateproviderarn = 382493445;
 
-  string certificateprovidername = 158318159;
+  optional string certificateprovidername = 158318159;
 
 }
 
@@ -3397,9 +3399,9 @@ message CreateCommandRequest {
 
   string commandid = 424777632;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
   repeated CommandParameter mandatoryparameters = 188477117;
 
@@ -3407,11 +3409,11 @@ message CreateCommandRequest {
 
   CommandPayload payload = 319780774;
 
-  string payloadtemplate = 93065676;
+  optional string payloadtemplate = 93065676;
 
   CommandPreprocessor preprocessor = 338810155;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   repeated Tag tags = 337046433;
 
@@ -3421,9 +3423,9 @@ message CreateCommandRequest {
 
 message CreateCommandResponse {
 
-  string commandarn = 100510046;
+  optional string commandarn = 100510046;
 
-  string commandid = 424777632;
+  optional string commandid = 424777632;
 
 }
 
@@ -3433,7 +3435,7 @@ message CreateCustomMetricRequest {
 
   string clientrequesttoken = 395353297;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
   string metricname = 204020635;
 
@@ -3447,9 +3449,9 @@ message CreateCustomMetricRequest {
 
 message CreateCustomMetricResponse {
 
-  string metricarn = 465303433;
+  optional string metricarn = 465303433;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
 }
 
@@ -3473,9 +3475,9 @@ message CreateDimensionRequest {
 
 message CreateDimensionResponse {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
 }
 
@@ -3493,7 +3495,7 @@ message CreateDomainConfigurationRequest {
 
   string domainconfigurationname = 280194767;
 
-  string domainname = 390326667;
+  optional string domainname = 390326667;
 
   repeated string servercertificatearns = 265878182;
 
@@ -3505,7 +3507,7 @@ message CreateDomainConfigurationRequest {
 
   TlsConfig tlsconfig = 108946693;
 
-  string validationcertificatearn = 465015181;
+  optional string validationcertificatearn = 465015181;
 
 }
 
@@ -3513,9 +3515,9 @@ message CreateDomainConfigurationRequest {
 
 message CreateDomainConfigurationResponse {
 
-  string domainconfigurationarn = 95043717;
+  optional string domainconfigurationarn = 95043717;
 
-  string domainconfigurationname = 280194767;
+  optional string domainconfigurationname = 280194767;
 
 }
 
@@ -3523,11 +3525,11 @@ message CreateDomainConfigurationResponse {
 
 message CreateDynamicThingGroupRequest {
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
   repeated Tag tags = 337046433;
 
@@ -3541,17 +3543,17 @@ message CreateDynamicThingGroupRequest {
 
 message CreateDynamicThingGroupResponse {
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
-  string thinggrouparn = 350650610;
+  optional string thinggrouparn = 350650610;
 
-  string thinggroupid = 331425484;
+  optional string thinggroupid = 331425484;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
 }
 
@@ -3563,9 +3565,9 @@ message CreateFleetMetricRequest {
 
   AggregationType aggregationtype = 193702350;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   string metricname = 204020635;
 
@@ -3573,7 +3575,7 @@ message CreateFleetMetricRequest {
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
   repeated Tag tags = 337046433;
 
@@ -3585,9 +3587,9 @@ message CreateFleetMetricRequest {
 
 message CreateFleetMetricResponse {
 
-  string metricarn = 465303433;
+  optional string metricarn = 465303433;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
 }
 
@@ -3597,15 +3599,15 @@ message CreateJobRequest {
 
   AbortConfig abortconfig = 501145356;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated string destinationpackageversions = 509812861;
 
-  string document = 371411925;
+  optional string document = 371411925;
 
   map<string, string> documentparameters = 55452697;
 
-  string documentsource = 58853714;
+  optional string documentsource = 58853714;
 
   JobExecutionsRetryConfig jobexecutionsretryconfig = 535887858;
 
@@ -3613,9 +3615,9 @@ message CreateJobRequest {
 
   string jobid = 333387506;
 
-  string jobtemplatearn = 95979522;
+  optional string jobtemplatearn = 95979522;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
   PresignedUrlConfig presignedurlconfig = 376323594;
 
@@ -3635,11 +3637,11 @@ message CreateJobRequest {
 
 message CreateJobResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string jobarn = 234123380;
+  optional string jobarn = 234123380;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
 }
 
@@ -3653,11 +3655,11 @@ message CreateJobTemplateRequest {
 
   repeated string destinationpackageversions = 509812861;
 
-  string document = 371411925;
+  optional string document = 371411925;
 
-  string documentsource = 58853714;
+  optional string documentsource = 58853714;
 
-  string jobarn = 234123380;
+  optional string jobarn = 234123380;
 
   JobExecutionsRetryConfig jobexecutionsretryconfig = 535887858;
 
@@ -3679,9 +3681,9 @@ message CreateJobTemplateRequest {
 
 message CreateJobTemplateResponse {
 
-  string jobtemplatearn = 95979522;
+  optional string jobtemplatearn = 95979522;
 
-  string jobtemplateid = 176835996;
+  optional string jobtemplateid = 176835996;
 
 }
 
@@ -3701,11 +3703,11 @@ message CreateKeysAndCertificateRequest {
 
 message CreateKeysAndCertificateResponse {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
-  string certificatepem = 498816311;
+  optional string certificatepem = 498816311;
 
   KeyPair keypair = 289708961;
 
@@ -3729,9 +3731,9 @@ message CreateMitigationActionRequest {
 
 message CreateMitigationActionResponse {
 
-  string actionarn = 192808675;
+  optional string actionarn = 192808675;
 
-  string actionid = 281444883;
+  optional string actionid = 281444883;
 
 }
 
@@ -3749,7 +3751,7 @@ message CreateOTAUpdateRequest {
 
   AwsJobTimeoutConfig awsjobtimeoutconfig = 6431731;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated OTAUpdateFile files = 518471825;
 
@@ -3771,13 +3773,13 @@ message CreateOTAUpdateRequest {
 
 message CreateOTAUpdateResponse {
 
-  string awsiotjobarn = 491989121;
+  optional string awsiotjobarn = 491989121;
 
-  string awsiotjobid = 134742365;
+  optional string awsiotjobid = 134742365;
 
-  string otaupdatearn = 258238004;
+  optional string otaupdatearn = 258238004;
 
-  string otaupdateid = 284156338;
+  optional string otaupdateid = 284156338;
 
   OTAUpdateStatus otaupdatestatus = 129588903;
 
@@ -3787,9 +3789,9 @@ message CreateOTAUpdateResponse {
 
 message CreatePackageRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string packagename = 474490177;
 
@@ -3801,11 +3803,11 @@ message CreatePackageRequest {
 
 message CreatePackageResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string packagearn = 450344047;
+  optional string packagearn = 450344047;
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
 }
 
@@ -3817,13 +3819,13 @@ message CreatePackageVersionRequest {
 
   map<string, string> attributes = 33545109;
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string packagename = 474490177;
 
-  string recipe = 209622992;
+  optional string recipe = 209622992;
 
   map<string, string> tags = 337046433;
 
@@ -3837,17 +3839,17 @@ message CreatePackageVersionResponse {
 
   map<string, string> attributes = 33545109;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string errorreason = 528861918;
+  optional string errorreason = 528861918;
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
-  string packageversionarn = 503725677;
+  optional string packageversionarn = 503725677;
 
   PackageVersionStatus status = 441153520;
 
-  string versionname = 508494709;
+  optional string versionname = 508494709;
 
 }
 
@@ -3871,13 +3873,13 @@ message CreatePolicyRequest {
 
 message CreatePolicyResponse {
 
-  string policyarn = 200811875;
+  optional string policyarn = 200811875;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
-  string policyversionid = 206864853;
+  optional string policyversionid = 206864853;
 
 }
 
@@ -3903,11 +3905,11 @@ message CreatePolicyVersionResponse {
 
   optional bool isdefaultversion = 116217651;
 
-  string policyarn = 200811875;
+  optional string policyarn = 200811875;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyversionid = 206864853;
+  optional string policyversionid = 206864853;
 
 }
 
@@ -3923,11 +3925,11 @@ message CreateProvisioningClaimRequest {
 
 message CreateProvisioningClaimResponse {
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
-  string certificatepem = 498816311;
+  optional string certificatepem = 498816311;
 
-  string expiration = 337754217;
+  optional string expiration = 337754217;
 
   KeyPair keypair = 289708961;
 
@@ -3937,7 +3939,7 @@ message CreateProvisioningClaimResponse {
 
 message CreateProvisioningTemplateRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool enabled = 49525663;
 
@@ -3961,9 +3963,9 @@ message CreateProvisioningTemplateResponse {
 
   optional int32 defaultversionid = 292354832;
 
-  string templatearn = 290623807;
+  optional string templatearn = 290623807;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
 }
 
@@ -3985,9 +3987,9 @@ message CreateProvisioningTemplateVersionResponse {
 
   optional bool isdefaultversion = 116217651;
 
-  string templatearn = 290623807;
+  optional string templatearn = 290623807;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
   optional int32 versionid = 129102907;
 
@@ -4011,9 +4013,9 @@ message CreateRoleAliasRequest {
 
 message CreateRoleAliasResponse {
 
-  string rolealias = 126155980;
+  optional string rolealias = 126155980;
 
-  string rolealiasarn = 447309823;
+  optional string rolealiasarn = 447309823;
 
 }
 
@@ -4021,7 +4023,7 @@ message CreateRoleAliasResponse {
 
 message CreateScheduledAuditRequest {
 
-  string dayofmonth = 239383807;
+  optional string dayofmonth = 239383807;
 
   DayOfWeek dayofweek = 99137661;
 
@@ -4039,7 +4041,7 @@ message CreateScheduledAuditRequest {
 
 message CreateScheduledAuditResponse {
 
-  string scheduledauditarn = 244234715;
+  optional string scheduledauditarn = 244234715;
 
 }
 
@@ -4057,7 +4059,7 @@ message CreateSecurityProfileRequest {
 
   MetricsExportConfig metricsexportconfig = 478238987;
 
-  string securityprofiledescription = 313643535;
+  optional string securityprofiledescription = 313643535;
 
   string securityprofilename = 463970880;
 
@@ -4069,9 +4071,9 @@ message CreateSecurityProfileRequest {
 
 message CreateSecurityProfileResponse {
 
-  string securityprofilearn = 279713244;
+  optional string securityprofilearn = 279713244;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
 }
 
@@ -4079,7 +4081,7 @@ message CreateSecurityProfileResponse {
 
 message CreateStreamRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated StreamFile files = 518471825;
 
@@ -4095,11 +4097,11 @@ message CreateStreamRequest {
 
 message CreateStreamResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string streamarn = 197684605;
+  optional string streamarn = 197684605;
 
-  string streamid = 487753313;
+  optional string streamid = 487753313;
 
   optional int32 streamversion = 162865432;
 
@@ -4109,7 +4111,7 @@ message CreateStreamResponse {
 
 message CreateThingGroupRequest {
 
-  string parentgroupname = 80598240;
+  optional string parentgroupname = 80598240;
 
   repeated Tag tags = 337046433;
 
@@ -4123,11 +4125,11 @@ message CreateThingGroupRequest {
 
 message CreateThingGroupResponse {
 
-  string thinggrouparn = 350650610;
+  optional string thinggrouparn = 350650610;
 
-  string thinggroupid = 331425484;
+  optional string thinggroupid = 331425484;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
 }
 
@@ -4139,11 +4141,11 @@ message CreateThingRequest {
 
   AttributePayload attributepayload = 135968928;
 
-  string billinggroupname = 249899885;
+  optional string billinggroupname = 249899885;
 
   string thingname = 526020141;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
 }
 
@@ -4153,11 +4155,11 @@ message CreateThingRequest {
 
 message CreateThingResponse {
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thingid = 235214179;
+  optional string thingid = 235214179;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -4181,11 +4183,11 @@ message CreateThingTypeRequest {
 
 message CreateThingTypeResponse {
 
-  string thingtypearn = 40700411;
+  optional string thingtypearn = 40700411;
 
-  string thingtypeid = 186070459;
+  optional string thingtypeid = 186070459;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
 }
 
@@ -4213,7 +4215,7 @@ message CreateTopicRuleRequest {
 
   string rulename = 324319033;
 
-  string tags = 337046433;
+  optional string tags = 337046433;
 
   TopicRulePayload topicrulepayload = 188817537 [(aws.http_payload) = true];
 
@@ -4227,11 +4229,11 @@ message CustomCodeSigning {
 
   CodeSigningCertificateChain certificatechain = 50547450;
 
-  string hashalgorithm = 479679703;
+  optional string hashalgorithm = 479679703;
 
   CodeSigningSignature signature = 531327342;
 
-  string signaturealgorithm = 165682195;
+  optional string signaturealgorithm = 165682195;
 
 }
 
@@ -4411,7 +4413,7 @@ message DeleteCommandResponse {
 
 message DeleteConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4493,7 +4495,7 @@ message DeleteJobExecutionRequest {
 
   string jobid = 333387506;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
   string thingname = 526020141;
 
@@ -4507,7 +4509,7 @@ message DeleteJobRequest {
 
   string jobid = 333387506;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
 }
 
@@ -4555,7 +4557,7 @@ message DeleteOTAUpdateResponse {
 
 message DeletePackageRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   string packagename = 474490177;
 
@@ -4571,7 +4573,7 @@ message DeletePackageResponse {
 
 message DeletePackageVersionRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   string packagename = 474490177;
 
@@ -4845,7 +4847,7 @@ message DescribeAccountAuditConfigurationResponse {
 
   map<string, AuditNotificationTarget> auditnotificationtargetconfigurations = 410386946;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -4881,9 +4883,9 @@ message DescribeAuditMitigationActionsTaskResponse {
 
   map<string, string> auditchecktoactionsmapping = 417569703;
 
-  string endtime = 329679852;
+  optional string endtime = 329679852;
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
   AuditMitigationActionsTaskTarget target = 308316233;
 
@@ -4907,11 +4909,11 @@ message DescribeAuditSuppressionRequest {
 
 message DescribeAuditSuppressionResponse {
 
-  string checkname = 534449509;
+  optional string checkname = 534449509;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string expirationdate = 391033245;
+  optional string expirationdate = 391033245;
 
   ResourceIdentifier resourceidentifier = 309427407;
 
@@ -4933,9 +4935,9 @@ message DescribeAuditTaskResponse {
 
   map<string, AuditCheckDetails> auditdetails = 476963727;
 
-  string scheduledauditname = 384331605;
+  optional string scheduledauditname = 384331605;
 
-  string taskstarttime = 106092442;
+  optional string taskstarttime = 106092442;
 
   TaskStatistics taskstatistics = 7797856;
 
@@ -4973,13 +4975,13 @@ message DescribeBillingGroupRequest {
 
 message DescribeBillingGroupResponse {
 
-  string billinggrouparn = 452343283;
+  optional string billinggrouparn = 452343283;
 
-  string billinggroupid = 415883427;
+  optional string billinggroupid = 415883427;
 
   BillingGroupMetadata billinggroupmetadata = 411349875;
 
-  string billinggroupname = 249899885;
+  optional string billinggroupname = 249899885;
 
   BillingGroupProperties billinggroupproperties = 139954375;
 
@@ -5023,15 +5025,15 @@ message DescribeCertificateProviderResponse {
 
   repeated CertificateProviderOperation accountdefaultforoperations = 530771515;
 
-  string certificateproviderarn = 382493445;
+  optional string certificateproviderarn = 382493445;
 
-  string certificateprovidername = 158318159;
+  optional string certificateprovidername = 158318159;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lambdafunctionarn = 12837978;
+  optional string lambdafunctionarn = 12837978;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
 }
 
@@ -5067,15 +5069,15 @@ message DescribeCustomMetricRequest {
 
 message DescribeCustomMetricResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string metricarn = 465303433;
+  optional string metricarn = 465303433;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
   CustomMetricType metrictype = 39768938;
 
@@ -5123,13 +5125,13 @@ message DescribeDimensionRequest {
 
 message DescribeDimensionResponse {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated string stringvalues = 236264239;
 
@@ -5157,17 +5159,17 @@ message DescribeDomainConfigurationResponse {
 
   ClientCertificateConfig clientcertificateconfig = 287420460;
 
-  string domainconfigurationarn = 95043717;
+  optional string domainconfigurationarn = 95043717;
 
-  string domainconfigurationname = 280194767;
+  optional string domainconfigurationname = 280194767;
 
   DomainConfigurationStatus domainconfigurationstatus = 60627256;
 
-  string domainname = 390326667;
+  optional string domainname = 390326667;
 
   DomainType domaintype = 149987002;
 
-  string laststatuschangedate = 210467132;
+  optional string laststatuschangedate = 210467132;
 
   ServerCertificateConfig servercertificateconfig = 115239696;
 
@@ -5193,11 +5195,11 @@ message DescribeEncryptionConfigurationResponse {
 
   EncryptionType encryptiontype = 113239253;
 
-  string kmsaccessrolearn = 260591204;
+  optional string kmsaccessrolearn = 260591204;
 
-  string kmskeyarn = 341492497;
+  optional string kmskeyarn = 341492497;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
 }
 
@@ -5207,7 +5209,7 @@ message DescribeEncryptionConfigurationResponse {
 
 message DescribeEndpointRequest {
 
-  string endpointtype = 364479989;
+  optional string endpointtype = 364479989;
 
 }
 
@@ -5217,7 +5219,7 @@ message DescribeEndpointRequest {
 
 message DescribeEndpointResponse {
 
-  string endpointaddress = 247988429;
+  optional string endpointaddress = 247988429;
 
 }
 
@@ -5231,11 +5233,11 @@ message DescribeEventConfigurationsRequest {
 
 message DescribeEventConfigurationsResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   map<string, Configuration> eventconfigurations = 151393605;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
 }
 
@@ -5251,27 +5253,27 @@ message DescribeFleetMetricRequest {
 
 message DescribeFleetMetricResponse {
 
-  string aggregationfield = 310236136;
+  optional string aggregationfield = 310236136;
 
   AggregationType aggregationtype = 193702350;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string metricarn = 465303433;
+  optional string metricarn = 465303433;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
   optional int32 period = 432621317;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
   FleetMetricUnit unit = 146086408;
 
@@ -5291,11 +5293,11 @@ message DescribeIndexRequest {
 
 message DescribeIndexResponse {
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   IndexStatus indexstatus = 5670014;
 
-  string schema = 310182711;
+  optional string schema = 310182711;
 
 }
 
@@ -5333,7 +5335,7 @@ message DescribeJobRequest {
 
 message DescribeJobResponse {
 
-  string documentsource = 58853714;
+  optional string documentsource = 58853714;
 
   Job job = 500445149;
 
@@ -5353,23 +5355,23 @@ message DescribeJobTemplateResponse {
 
   AbortConfig abortconfig = 501145356;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated string destinationpackageversions = 509812861;
 
-  string document = 371411925;
+  optional string document = 371411925;
 
-  string documentsource = 58853714;
+  optional string documentsource = 58853714;
 
   JobExecutionsRetryConfig jobexecutionsretryconfig = 535887858;
 
   JobExecutionsRolloutConfig jobexecutionsrolloutconfig = 103851495;
 
-  string jobtemplatearn = 95979522;
+  optional string jobtemplatearn = 95979522;
 
-  string jobtemplateid = 176835996;
+  optional string jobtemplateid = 176835996;
 
   repeated MaintenanceWindow maintenancewindows = 40861662;
 
@@ -5385,7 +5387,7 @@ message DescribeManagedJobTemplateRequest {
 
   string templatename = 301901137;
 
-  string templateversion = 308521958;
+  optional string templateversion = 308521958;
 
 }
 
@@ -5393,19 +5395,19 @@ message DescribeManagedJobTemplateRequest {
 
 message DescribeManagedJobTemplateResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string document = 371411925;
+  optional string document = 371411925;
 
   repeated DocumentParameter documentparameters = 55452697;
 
   repeated string environments = 216959148;
 
-  string templatearn = 290623807;
+  optional string templatearn = 290623807;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
-  string templateversion = 308521958;
+  optional string templateversion = 308521958;
 
 }
 
@@ -5421,21 +5423,21 @@ message DescribeMitigationActionRequest {
 
 message DescribeMitigationActionResponse {
 
-  string actionarn = 192808675;
+  optional string actionarn = 192808675;
 
-  string actionid = 281444883;
+  optional string actionid = 281444883;
 
-  string actionname = 111062493;
+  optional string actionname = 111062493;
 
   MitigationActionParams actionparams = 111951182;
 
   MitigationActionType actiontype = 315213608;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -5451,25 +5453,25 @@ message DescribeProvisioningTemplateRequest {
 
 message DescribeProvisioningTemplateResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional int32 defaultversionid = 292354832;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool enabled = 49525663;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
   ProvisioningHook preprovisioninghook = 210437497;
 
-  string provisioningrolearn = 456546880;
+  optional string provisioningrolearn = 456546880;
 
-  string templatearn = 290623807;
+  optional string templatearn = 290623807;
 
-  string templatebody = 339554452;
+  optional string templatebody = 339554452;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
   TemplateType type = 287830350;
 
@@ -5489,11 +5491,11 @@ message DescribeProvisioningTemplateVersionRequest {
 
 message DescribeProvisioningTemplateVersionResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional bool isdefaultversion = 116217651;
 
-  string templatebody = 339554452;
+  optional string templatebody = 339554452;
 
   optional int32 versionid = 129102907;
 
@@ -5527,15 +5529,15 @@ message DescribeScheduledAuditRequest {
 
 message DescribeScheduledAuditResponse {
 
-  string dayofmonth = 239383807;
+  optional string dayofmonth = 239383807;
 
   DayOfWeek dayofweek = 99137661;
 
   AuditFrequency frequency = 263396354;
 
-  string scheduledauditarn = 244234715;
+  optional string scheduledauditarn = 244234715;
 
-  string scheduledauditname = 384331605;
+  optional string scheduledauditname = 384331605;
 
   repeated string targetchecknames = 469955521;
 
@@ -5561,17 +5563,17 @@ message DescribeSecurityProfileResponse {
 
   repeated Behavior behaviors = 16162365;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
   MetricsExportConfig metricsexportconfig = 478238987;
 
-  string securityprofilearn = 279713244;
+  optional string securityprofilearn = 279713244;
 
-  string securityprofiledescription = 313643535;
+  optional string securityprofiledescription = 313643535;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
   optional int64 version = 108113560;
 
@@ -5605,21 +5607,21 @@ message DescribeThingGroupRequest {
 
 message DescribeThingGroupResponse {
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
   DynamicGroupStatus status = 441153520;
 
-  string thinggrouparn = 350650610;
+  optional string thinggrouparn = 350650610;
 
-  string thinggroupid = 331425484;
+  optional string thinggroupid = 331425484;
 
   ThingGroupMetadata thinggroupmetadata = 175746772;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
   ThingGroupProperties thinggroupproperties = 361267268;
 
@@ -5639,29 +5641,29 @@ message DescribeThingRegistrationTaskRequest {
 
 message DescribeThingRegistrationTaskResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional int32 failurecount = 476986153;
 
-  string inputfilebucket = 48491528;
+  optional string inputfilebucket = 48491528;
 
-  string inputfilekey = 203485949;
+  optional string inputfilekey = 203485949;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   optional int32 percentageprogress = 356534519;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   Status status = 441153520;
 
   optional int32 successcount = 466832416;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
-  string templatebody = 339554452;
+  optional string templatebody = 339554452;
 
 }
 
@@ -5683,17 +5685,17 @@ message DescribeThingResponse {
 
   map<string, string> attributes = 33545109;
 
-  string billinggroupname = 249899885;
+  optional string billinggroupname = 249899885;
 
-  string defaultclientid = 195645097;
+  optional string defaultclientid = 195645097;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thingid = 235214179;
+  optional string thingid = 235214179;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
   optional int64 version = 108113560;
 
@@ -5715,13 +5717,13 @@ message DescribeThingTypeRequest {
 
 message DescribeThingTypeResponse {
 
-  string thingtypearn = 40700411;
+  optional string thingtypearn = 40700411;
 
-  string thingtypeid = 186070459;
+  optional string thingtypeid = 186070459;
 
   ThingTypeMetadata thingtypemetadata = 294541515;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
   ThingTypeProperties thingtypeproperties = 426962639;
 
@@ -5801,23 +5803,23 @@ message DetachThingPrincipalResponse {
 
 message DetectMitigationActionExecution {
 
-  string actionname = 111062493;
+  optional string actionname = 111062493;
 
-  string errorcode = 355916985;
+  optional string errorcode = 355916985;
 
-  string executionenddate = 17398751;
+  optional string executionenddate = 17398751;
 
-  string executionstartdate = 193691980;
+  optional string executionstartdate = 193691980;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   DetectMitigationActionExecutionStatus status = 441153520;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
-  string violationid = 273917670;
+  optional string violationid = 273917670;
 
 }
 
@@ -5877,11 +5879,11 @@ message DetectMitigationActionsTaskSummary {
 
   DetectMitigationActionsTaskTarget target = 308316233;
 
-  string taskendtime = 518877401;
+  optional string taskendtime = 518877401;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
-  string taskstarttime = 106092442;
+  optional string taskstarttime = 106092442;
 
   DetectMitigationActionsTaskStatistics taskstatistics = 7797856;
 
@@ -5897,9 +5899,9 @@ message DetectMitigationActionsTaskSummary {
 
 message DetectMitigationActionsTaskTarget {
 
-  string behaviorname = 75735045;
+  optional string behaviorname = 75735045;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
   repeated string violationids = 162479651;
 
@@ -5955,7 +5957,7 @@ message DisableTopicRuleRequest {
 
 message DisassociateSbomFromPackageVersionRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   string packagename = 474490177;
 
@@ -6011,15 +6013,15 @@ enum DisconnectReasonValue {
 
 message DocumentParameter {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string example = 200425122;
+  optional string example = 200425122;
 
-  string key = 135645293;
+  optional string key = 135645293;
 
   optional bool optional = 163961082;
 
-  string regex = 184488057;
+  optional string regex = 184488057;
 
 }
 
@@ -6039,9 +6041,9 @@ enum DomainConfigurationStatus {
 
 message DomainConfigurationSummary {
 
-  string domainconfigurationarn = 95043717;
+  optional string domainconfigurationarn = 95043717;
 
-  string domainconfigurationname = 280194767;
+  optional string domainconfigurationname = 280194767;
 
   ServiceType servicetype = 232238413;
 
@@ -6083,15 +6085,15 @@ message DynamoDBAction {
 
   string hashkeyvalue = 346377066;
 
-  string operation = 322863367;
+  optional string operation = 322863367;
 
-  string payloadfield = 205318440;
+  optional string payloadfield = 205318440;
 
-  string rangekeyfield = 185223092;
+  optional string rangekeyfield = 185223092;
 
   DynamoKeyType rangekeytype = 22975218;
 
-  string rangekeyvalue = 125774727;
+  optional string rangekeyvalue = 125774727;
 
   string rolearn = 170019745;
 
@@ -6127,11 +6129,11 @@ enum DynamoKeyType {
 
 message EffectivePolicy {
 
-  string policyarn = 200811875;
+  optional string policyarn = 200811875;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
 }
 
@@ -6191,9 +6193,9 @@ enum EncryptionType {
 
 message ErrorInfo {
 
-  string code = 422669557;
+  optional string code = 422669557;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -6255,7 +6257,7 @@ message ExponentialRolloutRate {
 
 message Field {
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   FieldType type = 287830350;
 
@@ -6297,7 +6299,7 @@ message FirehoseAction {
 
   string rolearn = 170019745;
 
-  string separator = 176746685;
+  optional string separator = 176746685;
 
 }
 
@@ -6315,9 +6317,9 @@ enum FleetIndexingApi {
 
 message FleetMetricNameAndArn {
 
-  string metricarn = 465303433;
+  optional string metricarn = 465303433;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
 }
 
@@ -6387,7 +6389,7 @@ enum FleetMetricUnit {
 
 message GeoLocationTarget {
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   TargetFieldOrder order = 321654936;
 
@@ -6399,9 +6401,9 @@ message GetBehaviorModelTrainingSummariesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
 }
 
@@ -6409,7 +6411,7 @@ message GetBehaviorModelTrainingSummariesRequest {
 
 message GetBehaviorModelTrainingSummariesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated BehaviorModelTrainingSummary summaries = 210321012;
 
@@ -6423,11 +6425,11 @@ message GetBucketsAggregationRequest {
 
   BucketsAggregationType bucketsaggregationtype = 1956559;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
 }
 
@@ -6445,13 +6447,13 @@ message GetBucketsAggregationResponse {
 
 message GetCardinalityRequest {
 
-  string aggregationfield = 310236136;
+  optional string aggregationfield = 310236136;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
 }
 
@@ -6479,31 +6481,31 @@ message GetCommandExecutionRequest {
 
 message GetCommandExecutionResponse {
 
-  string commandarn = 100510046;
+  optional string commandarn = 100510046;
 
-  string completedat = 303098600;
+  optional string completedat = 303098600;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string executionid = 364931921;
+  optional string executionid = 364931921;
 
   optional int64 executiontimeoutseconds = 41370854;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
   map<string, CommandParameterValue> parameters = 145043162;
 
   map<string, CommandExecutionResult> result = 171406885;
 
-  string startedat = 405642876;
+  optional string startedat = 405642876;
 
   CommandExecutionStatus status = 441153520;
 
   StatusReason statusreason = 352592412;
 
-  string targetarn = 367964720;
+  optional string targetarn = 367964720;
 
-  string timetolive = 318112728;
+  optional string timetolive = 318112728;
 
 }
 
@@ -6519,19 +6521,19 @@ message GetCommandRequest {
 
 message GetCommandResponse {
 
-  string commandarn = 100510046;
+  optional string commandarn = 100510046;
 
-  string commandid = 424777632;
+  optional string commandid = 424777632;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
   optional bool deprecated = 269356453;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
   repeated CommandParameter mandatoryparameters = 188477117;
 
@@ -6539,13 +6541,13 @@ message GetCommandResponse {
 
   CommandPayload payload = 319780774;
 
-  string payloadtemplate = 93065676;
+  optional string payloadtemplate = 93065676;
 
   optional bool pendingdeletion = 124227855;
 
   CommandPreprocessor preprocessor = 338810155;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -6553,11 +6555,11 @@ message GetCommandResponse {
 
 message GetEffectivePoliciesRequest {
 
-  string cognitoidentitypoolid = 190932214;
+  optional string cognitoidentitypoolid = 190932214;
 
-  string principal = 262257194;
+  optional string principal = 262257194;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -6599,7 +6601,7 @@ message GetJobDocumentRequest {
 
 message GetJobDocumentResponse {
 
-  string document = 371411925;
+  optional string document = 371411925;
 
 }
 
@@ -6619,7 +6621,7 @@ message GetLoggingOptionsResponse {
 
   LogLevel loglevel = 98610074;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -6665,17 +6667,17 @@ message GetPackageRequest {
 
 message GetPackageResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string defaultversionname = 333866698;
+  optional string defaultversionname = 333866698;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string packagearn = 450344047;
+  optional string packagearn = 450344047;
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
 }
 
@@ -6697,19 +6699,19 @@ message GetPackageVersionResponse {
 
   map<string, string> attributes = 33545109;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string errorreason = 528861918;
+  optional string errorreason = 528861918;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
-  string packageversionarn = 503725677;
+  optional string packageversionarn = 503725677;
 
-  string recipe = 209622992;
+  optional string recipe = 209622992;
 
   Sbom sbom = 522734353;
 
@@ -6717,7 +6719,7 @@ message GetPackageVersionResponse {
 
   PackageVersionStatus status = 441153520;
 
-  string versionname = 508494709;
+  optional string versionname = 508494709;
 
 }
 
@@ -6725,15 +6727,15 @@ message GetPackageVersionResponse {
 
 message GetPercentilesRequest {
 
-  string aggregationfield = 310236136;
+  optional string aggregationfield = 310236136;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   repeated double percents = 25480844;
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
 }
 
@@ -6761,19 +6763,19 @@ message GetPolicyRequest {
 
 message GetPolicyResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string defaultversionid = 292354832;
+  optional string defaultversionid = 292354832;
 
-  string generationid = 416668699;
+  optional string generationid = 416668699;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string policyarn = 200811875;
+  optional string policyarn = 200811875;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
 }
 
@@ -6795,21 +6797,21 @@ message GetPolicyVersionRequest {
 
 message GetPolicyVersionResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string generationid = 416668699;
+  optional string generationid = 416668699;
 
   optional bool isdefaultversion = 116217651;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string policyarn = 200811875;
+  optional string policyarn = 200811875;
 
-  string policydocument = 178107627;
+  optional string policydocument = 178107627;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
-  string policyversionid = 206864853;
+  optional string policyversionid = 206864853;
 
 }
 
@@ -6827,7 +6829,7 @@ message GetRegistrationCodeRequest {
 
 message GetRegistrationCodeResponse {
 
-  string registrationcode = 32074718;
+  optional string registrationcode = 32074718;
 
 }
 
@@ -6835,13 +6837,13 @@ message GetRegistrationCodeResponse {
 
 message GetStatisticsRequest {
 
-  string aggregationfield = 310236136;
+  optional string aggregationfield = 310236136;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
 }
 
@@ -6869,7 +6871,7 @@ message GetThingConnectivityDataResponse {
 
   optional bool cleansession = 498517171;
 
-  string clientid = 5306436;
+  optional string clientid = 5306436;
 
   optional bool connected = 351196369;
 
@@ -6879,19 +6881,19 @@ message GetThingConnectivityDataResponse {
 
   optional int64 sessionexpiry = 332376101;
 
-  string sourceip = 183045450;
+  optional string sourceip = 183045450;
 
   optional int32 sourceport = 109330372;
 
-  string targetip = 275431514;
+  optional string targetip = 275431514;
 
   optional int32 targetport = 428383188;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
-  string timestamp = 310629668;
+  optional string timestamp = 310629668;
 
-  string vpcendpointid = 376719261;
+  optional string vpcendpointid = 376719261;
 
 }
 
@@ -6929,7 +6931,7 @@ message GetTopicRuleResponse {
 
   TopicRule rule = 472793300;
 
-  string rulearn = 23280359;
+  optional string rulearn = 23280359;
 
 }
 
@@ -6951,7 +6953,7 @@ message GetV2LoggingOptionsResponse {
 
   repeated LogEventConfiguration eventconfigurations = 151393605;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -6961,9 +6963,9 @@ message GetV2LoggingOptionsResponse {
 
 message GroupNameAndArn {
 
-  string grouparn = 337022948;
+  optional string grouparn = 337022948;
 
-  string groupname = 328061160;
+  optional string groupname = 328061160;
 
 }
 
@@ -6977,7 +6979,7 @@ message HttpAction {
 
   BatchConfig batchconfig = 450694922;
 
-  string confirmationurl = 524438670;
+  optional string confirmationurl = 524438670;
 
   optional bool enablebatching = 527863591;
 
@@ -7017,7 +7019,7 @@ message HttpContext {
 
   map<string, string> headers = 375773674;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
 }
 
@@ -7037,7 +7039,7 @@ message HttpUrlDestinationConfiguration {
 
 message HttpUrlDestinationProperties {
 
-  string confirmationurl = 524438670;
+  optional string confirmationurl = 524438670;
 
 }
 
@@ -7047,7 +7049,7 @@ message HttpUrlDestinationProperties {
 
 message HttpUrlDestinationSummary {
 
-  string confirmationurl = 524438670;
+  optional string confirmationurl = 524438670;
 
 }
 
@@ -7067,7 +7069,7 @@ message ImplicitDeny {
 
 message IndexNotReadyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7099,11 +7101,139 @@ message IndexingFilter {
 
 
 
+// The InfluxDB rule action converts the message payload into InfluxDB line protocol. It writes the result to a table in an InfluxDB database. The database can be an Amazon Timestream for InfluxDB ins...
+
+message InfluxDBAction {
+
+  InfluxDBBatchConfig batchconfig = 450694922;
+
+  string databasename = 295544572;
+
+  string destinationarn = 427601315;
+
+  optional string organization = 376372203;
+
+  string rolearn = 170019745;
+
+  string tablename = 299343869;
+
+  map<string, string> tags = 337046433;
+
+  InfluxDBTimestampUnit timestampunit = 377781530;
+
+}
+
+
+
+// The batching configuration of an InfluxDB rule action. IoT closes a batch and writes it to InfluxDB when the first of the configured limits is reached.
+
+message InfluxDBBatchConfig {
+
+  optional bool batchacrosstopics = 530056351;
+
+  optional int32 maxbatchopenms = 523903260;
+
+  optional int32 maxbatchsize = 45298679;
+
+  optional int32 maxbatchsizebytes = 327680574;
+
+}
+
+
+
+// The configuration of an InfluxDB topic rule destination.
+
+message InfluxDBDestinationConfiguration {
+
+  string endpoint = 414707837;
+
+  InfluxDBVersion influxdbversion = 482434050;
+
+  string secretid = 434881157;
+
+  optional string secretkey = 474034745;
+
+  InfluxDBSecretType secrettype = 63487002;
+
+}
+
+
+
+// The properties of an existing InfluxDB topic rule destination, as returned by CreateTopicRuleDestination and GetTopicRuleDestination.
+
+message InfluxDBDestinationProperties {
+
+  optional string endpoint = 414707837;
+
+  InfluxDBVersion influxdbversion = 482434050;
+
+  optional string secretid = 434881157;
+
+  optional string secretkey = 474034745;
+
+  InfluxDBSecretType secrettype = 63487002;
+
+}
+
+
+
+// A summary of an InfluxDB topic rule destination, as returned by ListTopicRuleDestinations. For the full set of destination properties, see InfluxDBDestinationProperties.
+
+message InfluxDBDestinationSummary {
+
+  optional string endpoint = 414707837;
+
+  InfluxDBVersion influxdbversion = 482434050;
+
+  optional string secretid = 434881157;
+
+  optional string secretkey = 474034745;
+
+  InfluxDBSecretType secrettype = 63487002;
+
+}
+
+
+
+enum InfluxDBSecretType {
+
+  INFLUX_D_B_SECRET_TYPE_SECRET_STRING = 0;
+
+  INFLUX_D_B_SECRET_TYPE_SECRET_BINARY = 1;
+
+}
+
+
+
+enum InfluxDBTimestampUnit {
+
+  INFLUX_D_B_TIMESTAMP_UNIT_MILLISECONDS = 0;
+
+  INFLUX_D_B_TIMESTAMP_UNIT_SECONDS = 1;
+
+  INFLUX_D_B_TIMESTAMP_UNIT_MICROSECONDS = 2;
+
+  INFLUX_D_B_TIMESTAMP_UNIT_NANOSECONDS = 3;
+
+}
+
+
+
+enum InfluxDBVersion {
+
+  INFLUX_D_B_VERSION_V3 = 0;
+
+  INFLUX_D_B_VERSION_V2 = 1;
+
+}
+
+
+
 // An unexpected error has occurred.
 
 message InternalException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7113,7 +7243,7 @@ message InternalException {
 
 message InternalFailureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7123,7 +7253,7 @@ message InternalFailureException {
 
 message InternalServerException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7133,7 +7263,7 @@ message InternalServerException {
 
 message InvalidAggregationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7143,7 +7273,7 @@ message InvalidAggregationException {
 
 message InvalidQueryException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7153,7 +7283,7 @@ message InvalidQueryException {
 
 message InvalidRequestException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7163,7 +7293,7 @@ message InvalidRequestException {
 
 message InvalidResponseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7173,7 +7303,7 @@ message InvalidResponseException {
 
 message InvalidStateTransitionException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7185,11 +7315,11 @@ message IotAnalyticsAction {
 
   optional bool batchmode = 401157893;
 
-  string channelarn = 143085916;
+  optional string channelarn = 143085916;
 
-  string channelname = 163990720;
+  optional string channelname = 163990720;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -7203,7 +7333,7 @@ message IotEventsAction {
 
   string inputname = 475406529;
 
-  string messageid = 448907338;
+  optional string messageid = 448907338;
 
   string rolearn = 170019745;
 
@@ -7227,11 +7357,11 @@ message IotSiteWiseAction {
 
 message IssuerCertificateIdentifier {
 
-  string issuercertificateserialnumber = 482499505;
+  optional string issuercertificateserialnumber = 482499505;
 
-  string issuercertificatesubject = 94323420;
+  optional string issuercertificatesubject = 94323420;
 
-  string issuerid = 411622188;
+  optional string issuerid = 411622188;
 
 }
 
@@ -7243,13 +7373,13 @@ message Job {
 
   AbortConfig abortconfig = 501145356;
 
-  string comment = 128369759;
+  optional string comment = 128369759;
 
-  string completedat = 303098600;
+  optional string completedat = 303098600;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated string destinationpackageversions = 509812861;
 
@@ -7259,25 +7389,25 @@ message Job {
 
   optional bool isconcurrent = 390158629;
 
-  string jobarn = 234123380;
+  optional string jobarn = 234123380;
 
   JobExecutionsRetryConfig jobexecutionsretryconfig = 535887858;
 
   JobExecutionsRolloutConfig jobexecutionsrolloutconfig = 103851495;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
   JobProcessDetails jobprocessdetails = 251735978;
 
-  string jobtemplatearn = 95979522;
+  optional string jobtemplatearn = 95979522;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
   PresignedUrlConfig presignedurlconfig = 376323594;
 
-  string reasoncode = 207873105;
+  optional string reasoncode = 207873105;
 
   repeated ScheduledJobRollout scheduledjobrollouts = 171400514;
 
@@ -7317,19 +7447,19 @@ message JobExecution {
 
   optional bool forcecanceled = 249428616;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
-  string queuedat = 450463394;
+  optional string queuedat = 450463394;
 
-  string startedat = 405642876;
+  optional string startedat = 405642876;
 
   JobExecutionStatus status = 441153520;
 
   JobExecutionStatusDetails statusdetails = 129369416;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
   optional int64 versionnumber = 261111415;
 
@@ -7389,13 +7519,13 @@ message JobExecutionSummary {
 
   optional int64 executionnumber = 100061969;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
-  string queuedat = 450463394;
+  optional string queuedat = 450463394;
 
   optional int32 retryattempt = 290617331;
 
-  string startedat = 405642876;
+  optional string startedat = 405642876;
 
   JobExecutionStatus status = 441153520;
 
@@ -7409,7 +7539,7 @@ message JobExecutionSummaryForJob {
 
   JobExecutionSummary jobexecutionsummary = 504529047;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
 }
 
@@ -7421,7 +7551,7 @@ message JobExecutionSummaryForThing {
 
   JobExecutionSummary jobexecutionsummary = 504529047;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
 }
 
@@ -7495,23 +7625,23 @@ enum JobStatus {
 
 message JobSummary {
 
-  string completedat = 303098600;
+  optional string completedat = 303098600;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
   optional bool isconcurrent = 390158629;
 
-  string jobarn = 234123380;
+  optional string jobarn = 234123380;
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
   JobStatus status = 441153520;
 
   TargetSelection targetselection = 155321351;
 
-  string thinggroupid = 331425484;
+  optional string thinggroupid = 331425484;
 
 }
 
@@ -7521,13 +7651,13 @@ message JobSummary {
 
 message JobTemplateSummary {
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string jobtemplatearn = 95979522;
+  optional string jobtemplatearn = 95979522;
 
-  string jobtemplateid = 176835996;
+  optional string jobtemplateid = 176835996;
 
 }
 
@@ -7543,9 +7673,9 @@ message KafkaAction {
 
   repeated KafkaActionHeader headers = 375773674;
 
-  string key = 135645293;
+  optional string key = 135645293;
 
-  string partition = 420041738;
+  optional string partition = 420041738;
 
   string topic = 43297221;
 
@@ -7569,9 +7699,9 @@ message KafkaActionHeader {
 
 message KeyPair {
 
-  string privatekey = 173312700;
+  optional string privatekey = 173312700;
 
-  string publickey = 167335776;
+  optional string publickey = 167335776;
 
 }
 
@@ -7581,7 +7711,7 @@ message KeyPair {
 
 message KinesisAction {
 
-  string partitionkey = 519866817;
+  optional string partitionkey = 519866817;
 
   string rolearn = 170019745;
 
@@ -7605,7 +7735,7 @@ message LambdaAction {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -7619,11 +7749,11 @@ message ListActiveViolationsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
   VerificationState verificationstate = 46156804;
 
@@ -7635,7 +7765,7 @@ message ListActiveViolationsResponse {
 
   repeated ActiveViolation activeviolations = 500810808;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7643,7 +7773,7 @@ message ListActiveViolationsResponse {
 
 message ListAttachedPoliciesRequest {
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -7657,7 +7787,7 @@ message ListAttachedPoliciesRequest {
 
 message ListAttachedPoliciesResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated Policy policies = 322088952;
 
@@ -7667,21 +7797,21 @@ message ListAttachedPoliciesResponse {
 
 message ListAuditFindingsRequest {
 
-  string checkname = 534449509;
+  optional string checkname = 534449509;
 
-  string endtime = 329679852;
+  optional string endtime = 329679852;
 
   optional bool listsuppressedfindings = 196055426;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ResourceIdentifier resourceidentifier = 309427407;
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -7691,7 +7821,7 @@ message ListAuditFindingsResponse {
 
   repeated AuditFinding findings = 65767632;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7705,7 +7835,7 @@ message ListAuditMitigationActionsExecutionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string taskid = 216769858;
 
@@ -7717,7 +7847,7 @@ message ListAuditMitigationActionsExecutionsResponse {
 
   repeated AuditMitigationActionExecutionMetadata actionsexecutions = 500426660;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7725,15 +7855,15 @@ message ListAuditMitigationActionsExecutionsResponse {
 
 message ListAuditMitigationActionsTasksRequest {
 
-  string audittaskid = 186616953;
+  optional string audittaskid = 186616953;
 
   string endtime = 329679852;
 
-  string findingid = 319355036;
+  optional string findingid = 319355036;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string starttime = 178154767;
 
@@ -7745,7 +7875,7 @@ message ListAuditMitigationActionsTasksRequest {
 
 message ListAuditMitigationActionsTasksResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated AuditMitigationActionsTaskMetadata tasks = 221137102;
 
@@ -7757,11 +7887,11 @@ message ListAuditSuppressionsRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string checkname = 534449509;
+  optional string checkname = 534449509;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ResourceIdentifier resourceidentifier = 309427407;
 
@@ -7771,7 +7901,7 @@ message ListAuditSuppressionsRequest {
 
 message ListAuditSuppressionsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated AuditSuppression suppressions = 249147250;
 
@@ -7785,7 +7915,7 @@ message ListAuditTasksRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string starttime = 178154767;
 
@@ -7799,7 +7929,7 @@ message ListAuditTasksRequest {
 
 message ListAuditTasksResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated AuditTaskMetadata tasks = 221137102;
 
@@ -7811,7 +7941,7 @@ message ListAuthorizersRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -7825,7 +7955,7 @@ message ListAuthorizersResponse {
 
   repeated AuthorizerSummary authorizers = 514199312;
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
 }
 
@@ -7835,9 +7965,9 @@ message ListBillingGroupsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nameprefixfilter = 246830677;
+  optional string nameprefixfilter = 246830677;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7847,7 +7977,7 @@ message ListBillingGroupsResponse {
 
   repeated GroupNameAndArn billinggroups = 77487989;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7859,11 +7989,11 @@ message ListCACertificatesRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
 }
 
@@ -7875,7 +8005,7 @@ message ListCACertificatesResponse {
 
   repeated CACertificate certificates = 371083962;
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
 }
 
@@ -7885,7 +8015,7 @@ message ListCertificateProvidersRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7895,7 +8025,7 @@ message ListCertificateProvidersResponse {
 
   repeated CertificateProviderSummary certificateproviders = 129319995;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7909,7 +8039,7 @@ message ListCertificatesByCARequest {
 
   string cacertificateid = 510727626;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -7923,7 +8053,7 @@ message ListCertificatesByCAResponse {
 
   repeated Certificate certificates = 371083962;
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
 }
 
@@ -7935,7 +8065,7 @@ message ListCertificatesRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -7949,7 +8079,7 @@ message ListCertificatesResponse {
 
   repeated Certificate certificates = 371083962;
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
 }
 
@@ -7957,7 +8087,7 @@ message ListCertificatesResponse {
 
 message ListCommandExecutionsRequest {
 
-  string commandarn = 100510046;
+  optional string commandarn = 100510046;
 
   TimeFilter completedtimefilter = 503497246;
 
@@ -7965,7 +8095,7 @@ message ListCommandExecutionsRequest {
 
   CommandNamespace namespace = 181303969;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   SortOrder sortorder = 21628452;
 
@@ -7973,7 +8103,7 @@ message ListCommandExecutionsRequest {
 
   CommandExecutionStatus status = 441153520;
 
-  string targetarn = 367964720;
+  optional string targetarn = 367964720;
 
 }
 
@@ -7983,7 +8113,7 @@ message ListCommandExecutionsResponse {
 
   repeated CommandExecutionSummary commandexecutions = 148927162;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -7991,13 +8121,13 @@ message ListCommandExecutionsResponse {
 
 message ListCommandsRequest {
 
-  string commandparametername = 468232295;
+  optional string commandparametername = 468232295;
 
   optional int32 maxresults = 465170002;
 
   CommandNamespace namespace = 181303969;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   SortOrder sortorder = 21628452;
 
@@ -8009,7 +8139,7 @@ message ListCommandsResponse {
 
   repeated CommandSummary commands = 378580436;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8019,7 +8149,7 @@ message ListCustomMetricsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8029,7 +8159,7 @@ message ListCustomMetricsResponse {
 
   repeated string metricnames = 230092748;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8037,19 +8167,19 @@ message ListCustomMetricsResponse {
 
 message ListDetectMitigationActionsExecutionsRequest {
 
-  string endtime = 329679852;
+  optional string endtime = 329679852;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
-  string violationid = 273917670;
+  optional string violationid = 273917670;
 
 }
 
@@ -8059,7 +8189,7 @@ message ListDetectMitigationActionsExecutionsResponse {
 
   repeated DetectMitigationActionExecution actionsexecutions = 500426660;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8071,7 +8201,7 @@ message ListDetectMitigationActionsTasksRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string starttime = 178154767;
 
@@ -8081,7 +8211,7 @@ message ListDetectMitigationActionsTasksRequest {
 
 message ListDetectMitigationActionsTasksResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated DetectMitigationActionsTaskSummary tasks = 221137102;
 
@@ -8093,7 +8223,7 @@ message ListDimensionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8103,7 +8233,7 @@ message ListDimensionsResponse {
 
   repeated string dimensionnames = 351080610;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8111,7 +8241,7 @@ message ListDimensionsResponse {
 
 message ListDomainConfigurationsRequest {
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8125,7 +8255,7 @@ message ListDomainConfigurationsResponse {
 
   repeated DomainConfigurationSummary domainconfigurations = 107054523;
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
 }
 
@@ -8135,7 +8265,7 @@ message ListFleetMetricsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8145,7 +8275,7 @@ message ListFleetMetricsResponse {
 
   repeated FleetMetricNameAndArn fleetmetrics = 482756065;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8155,7 +8285,7 @@ message ListIndicesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8165,7 +8295,7 @@ message ListIndicesResponse {
 
   repeated string indexnames = 503654650;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8177,7 +8307,7 @@ message ListJobExecutionsForJobRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   JobExecutionStatus status = 441153520;
 
@@ -8189,7 +8319,7 @@ message ListJobExecutionsForJobResponse {
 
   repeated JobExecutionSummaryForJob executionsummaries = 483428868;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8197,13 +8327,13 @@ message ListJobExecutionsForJobResponse {
 
 message ListJobExecutionsForThingRequest {
 
-  string jobid = 333387506;
+  optional string jobid = 333387506;
 
   optional int32 maxresults = 465170002;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   JobExecutionStatus status = 441153520;
 
@@ -8217,7 +8347,7 @@ message ListJobExecutionsForThingResponse {
 
   repeated JobExecutionSummaryForThing executionsummaries = 483428868;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8227,7 +8357,7 @@ message ListJobTemplatesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8237,7 +8367,7 @@ message ListJobTemplatesResponse {
 
   repeated JobTemplateSummary jobtemplates = 97386448;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8247,17 +8377,17 @@ message ListJobsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   JobStatus status = 441153520;
 
   TargetSelection targetselection = 155321351;
 
-  string thinggroupid = 331425484;
+  optional string thinggroupid = 331425484;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
 }
 
@@ -8267,7 +8397,7 @@ message ListJobsResponse {
 
   repeated JobSummary jobs = 67571838;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8277,9 +8407,9 @@ message ListManagedJobTemplatesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
 }
 
@@ -8289,7 +8419,7 @@ message ListManagedJobTemplatesResponse {
 
   repeated ManagedJobTemplateSummary managedjobtemplates = 264858213;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8297,7 +8427,7 @@ message ListManagedJobTemplatesResponse {
 
 message ListMetricValuesRequest {
 
-  string dimensionname = 454022409;
+  optional string dimensionname = 454022409;
 
   DimensionValueOperator dimensionvalueoperator = 252502801;
 
@@ -8307,7 +8437,7 @@ message ListMetricValuesRequest {
 
   string metricname = 204020635;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string starttime = 178154767;
 
@@ -8321,7 +8451,7 @@ message ListMetricValuesResponse {
 
   repeated MetricDatum metricdatumlist = 232956041;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8333,7 +8463,7 @@ message ListMitigationActionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8343,7 +8473,7 @@ message ListMitigationActionsResponse {
 
   repeated MitigationActionIdentifier actionidentifiers = 106982198;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8353,7 +8483,7 @@ message ListOTAUpdatesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   OTAUpdateStatus otaupdatestatus = 129588903;
 
@@ -8363,7 +8493,7 @@ message ListOTAUpdatesRequest {
 
 message ListOTAUpdatesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated OTAUpdateSummary otaupdates = 840510;
 
@@ -8377,7 +8507,7 @@ message ListOutgoingCertificatesRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8389,7 +8519,7 @@ message ListOutgoingCertificatesRequest {
 
 message ListOutgoingCertificatesResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated OutgoingCertificate outgoingcertificates = 244029212;
 
@@ -8401,7 +8531,7 @@ message ListPackageVersionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string packagename = 474490177;
 
@@ -8413,7 +8543,7 @@ message ListPackageVersionsRequest {
 
 message ListPackageVersionsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated PackageVersionSummary packageversionsummaries = 407364868;
 
@@ -8425,7 +8555,7 @@ message ListPackagesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8433,7 +8563,7 @@ message ListPackagesRequest {
 
 message ListPackagesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated PackageSummary packagesummaries = 502346058;
 
@@ -8447,7 +8577,7 @@ message ListPoliciesRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8459,7 +8589,7 @@ message ListPoliciesRequest {
 
 message ListPoliciesResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated Policy policies = 322088952;
 
@@ -8473,7 +8603,7 @@ message ListPolicyPrincipalsRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8487,7 +8617,7 @@ message ListPolicyPrincipalsRequest {
 
 message ListPolicyPrincipalsResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated string principals = 362306479;
 
@@ -8521,7 +8651,7 @@ message ListPrincipalPoliciesRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8535,7 +8665,7 @@ message ListPrincipalPoliciesRequest {
 
 message ListPrincipalPoliciesResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated Policy policies = 322088952;
 
@@ -8549,7 +8679,7 @@ message ListPrincipalThingsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string principal = 262257194;
 
@@ -8561,7 +8691,7 @@ message ListPrincipalThingsRequest {
 
 message ListPrincipalThingsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string things = 511332149;
 
@@ -8573,7 +8703,7 @@ message ListPrincipalThingsV2Request {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string principal = 262257194;
 
@@ -8585,7 +8715,7 @@ message ListPrincipalThingsV2Request {
 
 message ListPrincipalThingsV2Response {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated PrincipalThingObject principalthingobjects = 507986418;
 
@@ -8597,7 +8727,7 @@ message ListProvisioningTemplateVersionsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string templatename = 301901137;
 
@@ -8607,7 +8737,7 @@ message ListProvisioningTemplateVersionsRequest {
 
 message ListProvisioningTemplateVersionsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ProvisioningTemplateVersionSummary versions = 150360301;
 
@@ -8619,7 +8749,7 @@ message ListProvisioningTemplatesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8627,7 +8757,7 @@ message ListProvisioningTemplatesRequest {
 
 message ListProvisioningTemplatesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ProvisioningTemplateSummary templates = 411720425;
 
@@ -8641,7 +8771,7 @@ message ListRelatedResourcesForAuditFindingRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8649,7 +8779,7 @@ message ListRelatedResourcesForAuditFindingRequest {
 
 message ListRelatedResourcesForAuditFindingResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated RelatedResource relatedresources = 292628798;
 
@@ -8661,7 +8791,7 @@ message ListRoleAliasesRequest {
 
   optional bool ascendingorder = 531885012;
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8671,7 +8801,7 @@ message ListRoleAliasesRequest {
 
 message ListRoleAliasesResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated string rolealiases = 307367900;
 
@@ -8683,7 +8813,7 @@ message ListSbomValidationResultsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string packagename = 474490177;
 
@@ -8697,7 +8827,7 @@ message ListSbomValidationResultsRequest {
 
 message ListSbomValidationResultsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SbomValidationResultSummary validationresultsummaries = 368868306;
 
@@ -8709,7 +8839,7 @@ message ListScheduledAuditsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8717,7 +8847,7 @@ message ListScheduledAuditsRequest {
 
 message ListScheduledAuditsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ScheduledAuditMetadata scheduledaudits = 272687757;
 
@@ -8729,7 +8859,7 @@ message ListSecurityProfilesForTargetRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   optional bool recursive = 468597880;
 
@@ -8741,7 +8871,7 @@ message ListSecurityProfilesForTargetRequest {
 
 message ListSecurityProfilesForTargetResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SecurityProfileTargetMapping securityprofiletargetmappings = 285420539;
 
@@ -8751,13 +8881,13 @@ message ListSecurityProfilesForTargetResponse {
 
 message ListSecurityProfilesRequest {
 
-  string dimensionname = 454022409;
+  optional string dimensionname = 454022409;
 
   optional int32 maxresults = 465170002;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8765,7 +8895,7 @@ message ListSecurityProfilesRequest {
 
 message ListSecurityProfilesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SecurityProfileIdentifier securityprofileidentifiers = 477040813;
 
@@ -8779,7 +8909,7 @@ message ListStreamsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -8787,7 +8917,7 @@ message ListStreamsRequest {
 
 message ListStreamsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated StreamSummary streams = 308853155;
 
@@ -8797,7 +8927,7 @@ message ListStreamsResponse {
 
 message ListTagsForResourceRequest {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string resourcearn = 67806797;
 
@@ -8807,7 +8937,7 @@ message ListTagsForResourceRequest {
 
 message ListTagsForResourceResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated Tag tags = 337046433;
 
@@ -8817,7 +8947,7 @@ message ListTagsForResourceResponse {
 
 message ListTargetsForPolicyRequest {
 
-  string marker = 402141592;
+  optional string marker = 402141592;
 
   optional int32 pagesize = 355157592;
 
@@ -8829,7 +8959,7 @@ message ListTargetsForPolicyRequest {
 
 message ListTargetsForPolicyResponse {
 
-  string nextmarker = 529029443;
+  optional string nextmarker = 529029443;
 
   repeated string targets = 150369506;
 
@@ -8841,7 +8971,7 @@ message ListTargetsForSecurityProfileRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string securityprofilename = 463970880;
 
@@ -8851,7 +8981,7 @@ message ListTargetsForSecurityProfileRequest {
 
 message ListTargetsForSecurityProfileResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated SecurityProfileTarget securityprofiletargets = 277224027;
 
@@ -8863,7 +8993,7 @@ message ListThingGroupsForThingRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string thingname = 526020141;
 
@@ -8873,7 +9003,7 @@ message ListThingGroupsForThingRequest {
 
 message ListThingGroupsForThingResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated GroupNameAndArn thinggroups = 351564288;
 
@@ -8885,11 +9015,11 @@ message ListThingGroupsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nameprefixfilter = 246830677;
+  optional string nameprefixfilter = 246830677;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string parentgroup = 388091525;
+  optional string parentgroup = 388091525;
 
   optional bool recursive = 468597880;
 
@@ -8899,7 +9029,7 @@ message ListThingGroupsRequest {
 
 message ListThingGroupsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated GroupNameAndArn thinggroups = 351564288;
 
@@ -8913,7 +9043,7 @@ message ListThingPrincipalsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string thingname = 526020141;
 
@@ -8925,7 +9055,7 @@ message ListThingPrincipalsRequest {
 
 message ListThingPrincipalsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string principals = 362306479;
 
@@ -8937,7 +9067,7 @@ message ListThingPrincipalsV2Request {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string thingname = 526020141;
 
@@ -8949,7 +9079,7 @@ message ListThingPrincipalsV2Request {
 
 message ListThingPrincipalsV2Response {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ThingPrincipalObject thingprincipalobjects = 518058170;
 
@@ -8961,7 +9091,7 @@ message ListThingRegistrationTaskReportsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ReportType reporttype = 445294164;
 
@@ -8973,7 +9103,7 @@ message ListThingRegistrationTaskReportsRequest {
 
 message ListThingRegistrationTaskReportsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   ReportType reporttype = 445294164;
 
@@ -8987,7 +9117,7 @@ message ListThingRegistrationTasksRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   Status status = 441153520;
 
@@ -8997,7 +9127,7 @@ message ListThingRegistrationTasksRequest {
 
 message ListThingRegistrationTasksResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string taskids = 150277559;
 
@@ -9011,9 +9141,9 @@ message ListThingTypesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
 }
 
@@ -9023,7 +9153,7 @@ message ListThingTypesRequest {
 
 message ListThingTypesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ThingTypeDefinition thingtypes = 111868269;
 
@@ -9037,7 +9167,7 @@ message ListThingsInBillingGroupRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -9045,7 +9175,7 @@ message ListThingsInBillingGroupRequest {
 
 message ListThingsInBillingGroupResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string things = 511332149;
 
@@ -9057,7 +9187,7 @@ message ListThingsInThingGroupRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   optional bool recursive = 468597880;
 
@@ -9069,7 +9199,7 @@ message ListThingsInThingGroupRequest {
 
 message ListThingsInThingGroupResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string things = 511332149;
 
@@ -9081,15 +9211,15 @@ message ListThingsInThingGroupResponse {
 
 message ListThingsRequest {
 
-  string attributename = 396730573;
+  optional string attributename = 396730573;
 
-  string attributevalue = 117277797;
+  optional string attributevalue = 117277797;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
   optional bool useprefixattributevalue = 217194434;
 
@@ -9101,7 +9231,7 @@ message ListThingsRequest {
 
 message ListThingsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ThingAttribute things = 511332149;
 
@@ -9113,7 +9243,7 @@ message ListTopicRuleDestinationsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -9123,7 +9253,7 @@ message ListTopicRuleDestinationsResponse {
 
   repeated TopicRuleDestinationSummary destinationsummaries = 34342550;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -9135,11 +9265,11 @@ message ListTopicRulesRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   optional bool ruledisabled = 444136068;
 
-  string topic = 43297221;
+  optional string topic = 43297221;
 
 }
 
@@ -9149,7 +9279,7 @@ message ListTopicRulesRequest {
 
 message ListTopicRulesResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated TopicRuleListItem rules = 483376097;
 
@@ -9161,7 +9291,7 @@ message ListV2LoggingLevelsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   LogTargetType targettype = 414363201;
 
@@ -9173,7 +9303,7 @@ message ListV2LoggingLevelsResponse {
 
   repeated LogTargetConfiguration logtargetconfigurations = 277245480;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -9189,13 +9319,13 @@ message ListViolationEventsRequest {
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
   string starttime = 178154767;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
   VerificationState verificationstate = 46156804;
 
@@ -9205,7 +9335,7 @@ message ListViolationEventsRequest {
 
 message ListViolationEventsResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ViolationEvent violationevents = 411170890;
 
@@ -9237,7 +9367,7 @@ message LocationAction {
 
 message LocationTimestamp {
 
-  string unit = 146086408;
+  optional string unit = 146086408;
 
   string value = 39769035;
 
@@ -9251,7 +9381,7 @@ message LogEventConfiguration {
 
   string eventtype = 487734536;
 
-  string logdestination = 13789772;
+  optional string logdestination = 13789772;
 
   LogLevel loglevel = 98610074;
 
@@ -9279,7 +9409,7 @@ enum LogLevel {
 
 message LogTarget {
 
-  string targetname = 22247180;
+  optional string targetname = 22247180;
 
   LogTargetType targettype = 414363201;
 
@@ -9353,7 +9483,7 @@ message MaintenanceWindow {
 
 message MalformedPolicyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9363,15 +9493,15 @@ message MalformedPolicyException {
 
 message ManagedJobTemplateSummary {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated string environments = 216959148;
 
-  string templatearn = 290623807;
+  optional string templatearn = 290623807;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
-  string templateversion = 308521958;
+  optional string templateversion = 308521958;
 
 }
 
@@ -9391,7 +9521,7 @@ enum MessageFormat {
 
 message MetricDatum {
 
-  string timestamp = 310629668;
+  optional string timestamp = 310629668;
 
   MetricValue value = 39769035;
 
@@ -9433,7 +9563,7 @@ message MetricValue {
 
   optional int64 count = 431087093;
 
-  double number = 467038369;
+  optional double number = 467038369;
 
   repeated double numbers = 93559850;
 
@@ -9463,11 +9593,11 @@ message MitigationAction {
 
   MitigationActionParams actionparams = 111951182;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -9477,11 +9607,11 @@ message MitigationAction {
 
 message MitigationActionIdentifier {
 
-  string actionarn = 192808675;
+  optional string actionarn = 192808675;
 
-  string actionname = 111062493;
+  optional string actionname = 111062493;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
 }
 
@@ -9551,11 +9681,11 @@ message Mqtt5Configuration {
 
 message MqttContext {
 
-  string clientid = 5306436;
+  optional string clientid = 5306436;
 
-  bytes password = 374038297;
+  optional bytes password = 374038297;
 
-  string username = 246355386;
+  optional string username = 246355386;
 
 }
 
@@ -9565,15 +9695,15 @@ message MqttContext {
 
 message MqttHeaders {
 
-  string contenttype = 281764659;
+  optional string contenttype = 281764659;
 
-  string correlationdata = 460059320;
+  optional string correlationdata = 460059320;
 
-  string messageexpiry = 15909528;
+  optional string messageexpiry = 15909528;
 
-  string payloadformatindicator = 52745736;
+  optional string payloadformatindicator = 52745736;
 
-  string responsetopic = 372023802;
+  optional string responsetopic = 372023802;
 
   repeated UserProperty userproperties = 285349408;
 
@@ -9609,7 +9739,7 @@ message NonCompliantResource {
 
 message NotConfiguredException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -9625,11 +9755,11 @@ message OTAUpdateFile {
 
   FileLocation filelocation = 457188245;
 
-  string filename = 524113321;
+  optional string filename = 524113321;
 
   optional int32 filetype = 287551132;
 
-  string fileversion = 333350910;
+  optional string fileversion = 333350910;
 
 }
 
@@ -9641,27 +9771,27 @@ message OTAUpdateInfo {
 
   map<string, string> additionalparameters = 72115185;
 
-  string awsiotjobarn = 491989121;
+  optional string awsiotjobarn = 491989121;
 
-  string awsiotjobid = 134742365;
+  optional string awsiotjobid = 134742365;
 
   AwsJobExecutionsRolloutConfig awsjobexecutionsrolloutconfig = 470414114;
 
   AwsJobPresignedUrlConfig awsjobpresignedurlconfig = 461082422;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   ErrorInfo errorinfo = 186283978;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string otaupdatearn = 258238004;
+  optional string otaupdatearn = 258238004;
 
   repeated OTAUpdateFile otaupdatefiles = 279270428;
 
-  string otaupdateid = 284156338;
+  optional string otaupdateid = 284156338;
 
   OTAUpdateStatus otaupdatestatus = 129588903;
 
@@ -9697,11 +9827,11 @@ enum OTAUpdateStatus {
 
 message OTAUpdateSummary {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string otaupdatearn = 258238004;
+  optional string otaupdatearn = 258238004;
 
-  string otaupdateid = 284156338;
+  optional string otaupdateid = 284156338;
 
 }
 
@@ -9729,17 +9859,17 @@ message OpenSearchAction {
 
 message OutgoingCertificate {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string transferdate = 253018867;
+  optional string transferdate = 253018867;
 
-  string transfermessage = 319751558;
+  optional string transfermessage = 319751558;
 
-  string transferredto = 134382173;
+  optional string transferredto = 134382173;
 
 }
 
@@ -9759,13 +9889,13 @@ enum OutputFormat {
 
 message PackageSummary {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string defaultversionname = 333866698;
+  optional string defaultversionname = 333866698;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
 }
 
@@ -9807,15 +9937,15 @@ enum PackageVersionStatus {
 
 message PackageVersionSummary {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string packagename = 474490177;
+  optional string packagename = 474490177;
 
   PackageVersionStatus status = 441153520;
 
-  string versionname = 508494709;
+  optional string versionname = 508494709;
 
 }
 
@@ -9825,9 +9955,9 @@ message PackageVersionSummary {
 
 message PercentPair {
 
-  double percent = 368704091;
+  optional double percent = 368704091;
 
-  double value = 39769035;
+  optional double value = 39769035;
 
 }
 
@@ -9837,9 +9967,9 @@ message PercentPair {
 
 message Policy {
 
-  string policyarn = 200811875;
+  optional string policyarn = 200811875;
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
 }
 
@@ -9857,11 +9987,11 @@ enum PolicyTemplateName {
 
 message PolicyVersion {
 
-  string createdate = 381365682;
+  optional string createdate = 381365682;
 
   optional bool isdefaultversion = 116217651;
 
-  string versionid = 129102907;
+  optional string versionid = 129102907;
 
 }
 
@@ -9871,9 +10001,9 @@ message PolicyVersion {
 
 message PolicyVersionIdentifier {
 
-  string policyname = 115126621;
+  optional string policyname = 115126621;
 
-  string policyversionid = 206864853;
+  optional string policyversionid = 206864853;
 
 }
 
@@ -9885,7 +10015,7 @@ message PresignedUrlConfig {
 
   optional int64 expiresinsec = 446391094;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -9907,11 +10037,11 @@ message PrincipalThingObject {
 
 message PropagatingAttribute {
 
-  string connectionattribute = 390423604;
+  optional string connectionattribute = 390423604;
 
-  string thingattribute = 327890214;
+  optional string thingattribute = 327890214;
 
-  string userpropertykey = 515207711;
+  optional string userpropertykey = 515207711;
 
 }
 
@@ -9931,7 +10061,7 @@ enum Protocol {
 
 message ProvisioningHook {
 
-  string payloadversion = 400074840;
+  optional string payloadversion = 400074840;
 
   string targetarn = 367964720;
 
@@ -9943,17 +10073,17 @@ message ProvisioningHook {
 
 message ProvisioningTemplateSummary {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool enabled = 49525663;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string templatearn = 290623807;
+  optional string templatearn = 290623807;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
   TemplateType type = 287830350;
 
@@ -9965,7 +10095,7 @@ message ProvisioningTemplateSummary {
 
 message ProvisioningTemplateVersionSummary {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional bool isdefaultversion = 116217651;
 
@@ -9989,13 +10119,13 @@ message PublishFindingToSnsParams {
 
 message PutAssetPropertyValueEntry {
 
-  string assetid = 497392375;
+  optional string assetid = 497392375;
 
-  string entryid = 115710079;
+  optional string entryid = 115710079;
 
-  string propertyalias = 7377573;
+  optional string propertyalias = 7377573;
 
-  string propertyid = 228597334;
+  optional string propertyid = 228597334;
 
   repeated AssetPropertyValue propertyvalues = 72900639;
 
@@ -10017,7 +10147,7 @@ message PutVerificationStateOnViolationRequest {
 
   VerificationState verificationstate = 46156804;
 
-  string verificationstatedescription = 16078040;
+  optional string verificationstatedescription = 16078040;
 
   string violationid = 273917670;
 
@@ -10059,7 +10189,7 @@ message RegisterCACertificateRequest {
 
   repeated Tag tags = 337046433;
 
-  string verificationcertificate = 77887642;
+  optional string verificationcertificate = 77887642;
 
 }
 
@@ -10069,9 +10199,9 @@ message RegisterCACertificateRequest {
 
 message RegisterCACertificateResponse {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
 }
 
@@ -10081,7 +10211,7 @@ message RegisterCACertificateResponse {
 
 message RegisterCertificateRequest {
 
-  string cacertificatepem = 240572259;
+  optional string cacertificatepem = 240572259;
 
   string certificatepem = 498816311;
 
@@ -10097,9 +10227,9 @@ message RegisterCertificateRequest {
 
 message RegisterCertificateResponse {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
 }
 
@@ -10117,9 +10247,9 @@ message RegisterCertificateWithoutCARequest {
 
 message RegisterCertificateWithoutCAResponse {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificateid = 322284558;
+  optional string certificateid = 322284558;
 
 }
 
@@ -10137,7 +10267,7 @@ message RegisterThingRequest {
 
 message RegisterThingResponse {
 
-  string certificatepem = 498816311;
+  optional string certificatepem = 498816311;
 
   map<string, string> resourcearns = 465810734;
 
@@ -10149,7 +10279,7 @@ message RegisterThingResponse {
 
 message RegistrationCodeValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10159,11 +10289,11 @@ message RegistrationCodeValidationException {
 
 message RegistrationConfig {
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
-  string templatebody = 339554452;
+  optional string templatebody = 339554452;
 
-  string templatename = 301901137;
+  optional string templatename = 301901137;
 
 }
 
@@ -10175,7 +10305,7 @@ message RejectCertificateTransferRequest {
 
   string certificateid = 322284558;
 
-  string rejectreason = 36412771;
+  optional string rejectreason = 36412771;
 
 }
 
@@ -10197,13 +10327,13 @@ message RelatedResource {
 
 message RemoveThingFromBillingGroupRequest {
 
-  string billinggrouparn = 452343283;
+  optional string billinggrouparn = 452343283;
 
-  string billinggroupname = 249899885;
+  optional string billinggroupname = 249899885;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -10217,13 +10347,13 @@ message RemoveThingFromBillingGroupResponse {
 
 message RemoveThingFromThingGroupRequest {
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thinggrouparn = 350650610;
+  optional string thinggrouparn = 350650610;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -10287,11 +10417,11 @@ message RepublishAction {
 
 message ResourceAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string resourcearn = 67806797;
+  optional string resourcearn = 67806797;
 
-  string resourceid = 318922417;
+  optional string resourceid = 318922417;
 
 }
 
@@ -10301,25 +10431,25 @@ message ResourceAlreadyExistsException {
 
 message ResourceIdentifier {
 
-  string account = 156223325;
+  optional string account = 156223325;
 
-  string cacertificateid = 510727626;
+  optional string cacertificateid = 510727626;
 
-  string clientid = 5306436;
+  optional string clientid = 5306436;
 
-  string cognitoidentitypoolid = 190932214;
+  optional string cognitoidentitypoolid = 190932214;
 
-  string devicecertificatearn = 215929758;
+  optional string devicecertificatearn = 215929758;
 
-  string devicecertificateid = 299838688;
+  optional string devicecertificateid = 299838688;
 
-  string iamrolearn = 316257434;
+  optional string iamrolearn = 316257434;
 
   IssuerCertificateIdentifier issuercertificateidentifier = 23902539;
 
   PolicyVersionIdentifier policyversionidentifier = 493166699;
 
-  string rolealiasarn = 447309823;
+  optional string rolealiasarn = 447309823;
 
 }
 
@@ -10329,7 +10459,7 @@ message ResourceIdentifier {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10339,7 +10469,7 @@ message ResourceNotFoundException {
 
 message ResourceRegistrationFailureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10397,19 +10527,19 @@ enum RetryableFailureType {
 
 message RoleAliasDescription {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional int32 credentialdurationseconds = 521634614;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string owner = 359091413;
+  optional string owner = 359091413;
 
-  string rolealias = 126155980;
+  optional string rolealias = 126155980;
 
-  string rolealiasarn = 447309823;
+  optional string rolealiasarn = 447309823;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -10435,9 +10565,9 @@ message S3Action {
 
 message S3Destination {
 
-  string bucket = 326668088;
+  optional string bucket = 326668088;
 
-  string prefix = 474370506;
+  optional string prefix = 474370506;
 
 }
 
@@ -10447,11 +10577,11 @@ message S3Destination {
 
 message S3Location {
 
-  string bucket = 326668088;
+  optional string bucket = 326668088;
 
-  string key = 135645293;
+  optional string key = 135645293;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
 }
 
@@ -10505,9 +10635,9 @@ message SbomValidationResultSummary {
 
   SbomValidationErrorCode errorcode = 355916985;
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
-  string filename = 524113321;
+  optional string filename = 524113321;
 
   SbomValidationResult validationresult = 173338468;
 
@@ -10531,15 +10661,15 @@ enum SbomValidationStatus {
 
 message ScheduledAuditMetadata {
 
-  string dayofmonth = 239383807;
+  optional string dayofmonth = 239383807;
 
   DayOfWeek dayofweek = 99137661;
 
   AuditFrequency frequency = 263396354;
 
-  string scheduledauditarn = 244234715;
+  optional string scheduledauditarn = 244234715;
 
-  string scheduledauditname = 384331605;
+  optional string scheduledauditname = 384331605;
 
 }
 
@@ -10549,7 +10679,7 @@ message ScheduledAuditMetadata {
 
 message ScheduledJobRollout {
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
 }
 
@@ -10561,11 +10691,11 @@ message SchedulingConfig {
 
   JobEndBehavior endbehavior = 146379981;
 
-  string endtime = 329679852;
+  optional string endtime = 329679852;
 
   repeated MaintenanceWindow maintenancewindows = 40861662;
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
 }
 
@@ -10573,15 +10703,15 @@ message SchedulingConfig {
 
 message SearchIndexRequest {
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
   optional int32 maxresults = 465170002;
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
 }
 
@@ -10589,7 +10719,7 @@ message SearchIndexRequest {
 
 message SearchIndexResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated ThingGroupDocument thinggroups = 351564288;
 
@@ -10639,9 +10769,9 @@ message ServerCertificateConfig {
 
   optional bool enableocspcheck = 70105598;
 
-  string ocspauthorizedresponderarn = 457453533;
+  optional string ocspauthorizedresponderarn = 457453533;
 
-  string ocsplambdaarn = 212497627;
+  optional string ocsplambdaarn = 212497627;
 
 }
 
@@ -10661,11 +10791,11 @@ enum ServerCertificateStatus {
 
 message ServerCertificateSummary {
 
-  string servercertificatearn = 8361365;
+  optional string servercertificatearn = 8361365;
 
   ServerCertificateStatus servercertificatestatus = 224463784;
 
-  string servercertificatestatusdetail = 184980711;
+  optional string servercertificatestatusdetail = 184980711;
 
 }
 
@@ -10675,7 +10805,7 @@ message ServerCertificateSummary {
 
 message ServiceQuotaExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10697,7 +10827,7 @@ enum ServiceType {
 
 message ServiceUnavailableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10713,9 +10843,9 @@ message SetDefaultAuthorizerRequest {
 
 message SetDefaultAuthorizerResponse {
 
-  string authorizerarn = 182378050;
+  optional string authorizerarn = 182378050;
 
-  string authorizername = 49871270;
+  optional string authorizername = 49871270;
 
 }
 
@@ -10761,7 +10891,7 @@ message SetV2LoggingOptionsRequest {
 
   repeated LogEventConfiguration eventconfigurations = 151393605;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -10785,11 +10915,11 @@ message SigV4Authorization {
 
 message SigningProfileParameter {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificatepathondevice = 121025589;
+  optional string certificatepathondevice = 121025589;
 
-  string platform = 172634803;
+  optional string platform = 172634803;
 
 }
 
@@ -10823,7 +10953,7 @@ enum SortOrder {
 
 message SqlParseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10859,7 +10989,7 @@ message StartAuditMitigationActionsTaskRequest {
 
 message StartAuditMitigationActionsTaskResponse {
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -10887,7 +11017,7 @@ message StartDetectMitigationActionsTaskRequest {
 
 message StartDetectMitigationActionsTaskResponse {
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -10903,7 +11033,7 @@ message StartOnDemandAuditTaskRequest {
 
 message StartOnDemandAuditTaskResponse {
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -10915,7 +11045,7 @@ message StartSigningJobParameter {
 
   Destination destination = 316564672;
 
-  string signingprofilename = 207327867;
+  optional string signingprofilename = 207327867;
 
   SigningProfileParameter signingprofileparameter = 83321893;
 
@@ -10939,7 +11069,7 @@ message StartThingRegistrationTaskRequest {
 
 message StartThingRegistrationTaskResponse {
 
-  string taskid = 216769858;
+  optional string taskid = 216769858;
 
 }
 
@@ -10949,7 +11079,7 @@ message StartThingRegistrationTaskResponse {
 
 message StatisticalThreshold {
 
-  string statistic = 486216318;
+  optional string statistic = 486216318;
 
 }
 
@@ -10959,21 +11089,21 @@ message StatisticalThreshold {
 
 message Statistics {
 
-  double average = 392081961;
+  optional double average = 392081961;
 
   optional int32 count = 431087093;
 
-  double maximum = 468907650;
+  optional double maximum = 468907650;
 
-  double minimum = 327230200;
+  optional double minimum = 327230200;
 
-  double stddeviation = 344880238;
+  optional double stddeviation = 344880238;
 
-  double sum = 491666089;
+  optional double sum = 491666089;
 
-  double sumofsquares = 473467516;
+  optional double sumofsquares = 473467516;
 
-  double variance = 231780543;
+  optional double variance = 231780543;
 
 }
 
@@ -11001,7 +11131,7 @@ message StatusReason {
 
   string reasoncode = 207873105;
 
-  string reasondescription = 248931182;
+  optional string reasondescription = 248931182;
 
 }
 
@@ -11011,7 +11141,7 @@ message StatusReason {
 
 message StepFunctionsAction {
 
-  string executionnameprefix = 138445067;
+  optional string executionnameprefix = 138445067;
 
   string rolearn = 170019745;
 
@@ -11041,7 +11171,7 @@ message Stream {
 
   optional int32 fileid = 229417775;
 
-  string streamid = 487753313;
+  optional string streamid = 487753313;
 
 }
 
@@ -11063,19 +11193,19 @@ message StreamFile {
 
 message StreamInfo {
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated StreamFile files = 518471825;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
-  string streamarn = 197684605;
+  optional string streamarn = 197684605;
 
-  string streamid = 487753313;
+  optional string streamid = 487753313;
 
   optional int32 streamversion = 162865432;
 
@@ -11087,11 +11217,11 @@ message StreamInfo {
 
 message StreamSummary {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string streamarn = 197684605;
+  optional string streamarn = 197684605;
 
-  string streamid = 487753313;
+  optional string streamid = 487753313;
 
   optional int32 streamversion = 162865432;
 
@@ -11105,7 +11235,7 @@ message Tag {
 
   string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -11151,7 +11281,7 @@ enum TargetSelection {
 
 message TaskAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -11221,15 +11351,15 @@ message TestAuthorizationRequest {
 
   repeated AuthInfo authinfos = 519209977;
 
-  string clientid = 5306436;
+  optional string clientid = 5306436;
 
-  string cognitoidentitypoolid = 190932214;
+  optional string cognitoidentitypoolid = 190932214;
 
   repeated string policynamestoadd = 362188376;
 
   repeated string policynamestoskip = 29499428;
 
-  string principal = 262257194;
+  optional string principal = 262257194;
 
 }
 
@@ -11253,9 +11383,9 @@ message TestInvokeAuthorizerRequest {
 
   TlsContext tlscontext = 514823094;
 
-  string token = 343534131;
+  optional string token = 343534131;
 
-  string tokensignature = 20000025;
+  optional string tokensignature = 20000025;
 
 }
 
@@ -11269,7 +11399,7 @@ message TestInvokeAuthorizerResponse {
 
   repeated string policydocuments = 256068828;
 
-  string principalid = 350710285;
+  optional string principalid = 350710285;
 
   optional int32 refreshafterinseconds = 88527567;
 
@@ -11283,11 +11413,11 @@ message ThingAttribute {
 
   map<string, string> attributes = 33545109;
 
-  string thingarn = 78684339;
+  optional string thingarn = 78684339;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
   optional int64 version = 108113560;
 
@@ -11301,11 +11431,11 @@ message ThingConnectivity {
 
   optional bool cleansession = 498517171;
 
-  string clientid = 5306436;
+  optional string clientid = 5306436;
 
   optional bool connected = 351196369;
 
-  string disconnectreason = 71375216;
+  optional string disconnectreason = 71375216;
 
   optional int32 keepaliveduration = 104990410;
 
@@ -11335,17 +11465,17 @@ message ThingDocument {
 
   ThingConnectivity connectivity = 160013091;
 
-  string devicedefender = 326238181;
+  optional string devicedefender = 326238181;
 
-  string shadow = 440649058;
+  optional string shadow = 440649058;
 
   repeated string thinggroupnames = 365445139;
 
-  string thingid = 235214179;
+  optional string thingid = 235214179;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
 }
 
@@ -11359,11 +11489,11 @@ message ThingGroupDocument {
 
   repeated string parentgroupnames = 470141637;
 
-  string thinggroupdescription = 47143977;
+  optional string thinggroupdescription = 47143977;
 
-  string thinggroupid = 331425484;
+  optional string thinggroupid = 331425484;
 
-  string thinggroupname = 104567446;
+  optional string thinggroupname = 104567446;
 
 }
 
@@ -11397,9 +11527,9 @@ enum ThingGroupIndexingMode {
 
 message ThingGroupMetadata {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string parentgroupname = 80598240;
+  optional string parentgroupname = 80598240;
 
   repeated GroupNameAndArn roottoparentthinggroups = 20638121;
 
@@ -11413,7 +11543,7 @@ message ThingGroupProperties {
 
   AttributePayload attributepayload = 135968928;
 
-  string thinggroupdescription = 47143977;
+  optional string thinggroupdescription = 47143977;
 
 }
 
@@ -11479,11 +11609,11 @@ enum ThingPrincipalType {
 
 message ThingTypeDefinition {
 
-  string thingtypearn = 40700411;
+  optional string thingtypearn = 40700411;
 
   ThingTypeMetadata thingtypemetadata = 294541515;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
   ThingTypeProperties thingtypeproperties = 426962639;
 
@@ -11495,11 +11625,11 @@ message ThingTypeDefinition {
 
 message ThingTypeMetadata {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
   optional bool deprecated = 269356453;
 
-  string deprecationdate = 140858202;
+  optional string deprecationdate = 140858202;
 
 }
 
@@ -11513,7 +11643,7 @@ message ThingTypeProperties {
 
   repeated string searchableattributes = 69027009;
 
-  string thingtypedescription = 270951228;
+  optional string thingtypedescription = 270951228;
 
 }
 
@@ -11523,7 +11653,7 @@ message ThingTypeProperties {
 
 message ThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -11533,9 +11663,9 @@ message ThrottlingException {
 
 message TimeFilter {
 
-  string after = 460225994;
+  optional string after = 460225994;
 
-  string before = 407240511;
+  optional string before = 407240511;
 
 }
 
@@ -11597,7 +11727,7 @@ message TimestreamTimestamp {
 
 message TlsConfig {
 
-  string securitypolicy = 491792990;
+  optional string securitypolicy = 491792990;
 
 }
 
@@ -11607,7 +11737,7 @@ message TlsConfig {
 
 message TlsContext {
 
-  string servername = 167896250;
+  optional string servername = 167896250;
 
 }
 
@@ -11619,19 +11749,19 @@ message TopicRule {
 
   repeated Action actions = 364201573;
 
-  string awsiotsqlversion = 44615007;
+  optional string awsiotsqlversion = 44615007;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   Action erroraction = 280293060;
 
   optional bool ruledisabled = 444136068;
 
-  string rulename = 324319033;
+  optional string rulename = 324319033;
 
-  string sql = 507842432;
+  optional string sql = 507842432;
 
 }
 
@@ -11641,17 +11771,19 @@ message TopicRule {
 
 message TopicRuleDestination {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
   HttpUrlDestinationProperties httpurlproperties = 424978444;
 
-  string lastupdatedat = 2052226;
+  InfluxDBDestinationProperties influxdbproperties = 282836311;
+
+  optional string lastupdatedat = 2052226;
 
   TopicRuleDestinationStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VpcDestinationProperties vpcproperties = 57632238;
 
@@ -11664,6 +11796,8 @@ message TopicRuleDestination {
 message TopicRuleDestinationConfiguration {
 
   HttpUrlDestinationConfiguration httpurlconfiguration = 273330837;
+
+  InfluxDBDestinationConfiguration influxdbconfiguration = 206132960;
 
   VpcDestinationConfiguration vpcconfiguration = 493992523;
 
@@ -11691,17 +11825,19 @@ enum TopicRuleDestinationStatus {
 
 message TopicRuleDestinationSummary {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
   HttpUrlDestinationSummary httpurlsummary = 121888091;
 
-  string lastupdatedat = 2052226;
+  InfluxDBDestinationSummary influxdbsummary = 152374586;
+
+  optional string lastupdatedat = 2052226;
 
   TopicRuleDestinationStatus status = 441153520;
 
-  string statusreason = 352592412;
+  optional string statusreason = 352592412;
 
   VpcDestinationSummary vpcdestinationsummary = 457039073;
 
@@ -11713,15 +11849,15 @@ message TopicRuleDestinationSummary {
 
 message TopicRuleListItem {
 
-  string createdat = 370722959;
+  optional string createdat = 370722959;
 
-  string rulearn = 23280359;
+  optional string rulearn = 23280359;
 
   optional bool ruledisabled = 444136068;
 
-  string rulename = 324319033;
+  optional string rulename = 324319033;
 
-  string topicpattern = 370866327;
+  optional string topicpattern = 370866327;
 
 }
 
@@ -11733,9 +11869,9 @@ message TopicRulePayload {
 
   repeated Action actions = 364201573;
 
-  string awsiotsqlversion = 44615007;
+  optional string awsiotsqlversion = 44615007;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   Action erroraction = 280293060;
 
@@ -11751,7 +11887,7 @@ message TopicRulePayload {
 
 message TransferAlreadyCompletedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -11765,7 +11901,7 @@ message TransferCertificateRequest {
 
   string targetawsaccount = 480730205;
 
-  string transfermessage = 319751558;
+  optional string transfermessage = 319751558;
 
 }
 
@@ -11775,7 +11911,7 @@ message TransferCertificateRequest {
 
 message TransferCertificateResponse {
 
-  string transferredcertificatearn = 329695056;
+  optional string transferredcertificatearn = 329695056;
 
 }
 
@@ -11785,7 +11921,7 @@ message TransferCertificateResponse {
 
 message TransferConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -11795,15 +11931,15 @@ message TransferConflictException {
 
 message TransferData {
 
-  string acceptdate = 79995686;
+  optional string acceptdate = 79995686;
 
-  string rejectdate = 188429363;
+  optional string rejectdate = 188429363;
 
-  string rejectreason = 36412771;
+  optional string rejectreason = 36412771;
 
-  string transferdate = 253018867;
+  optional string transferdate = 253018867;
 
-  string transfermessage = 319751558;
+  optional string transfermessage = 319751558;
 
 }
 
@@ -11813,7 +11949,7 @@ message TransferData {
 
 message UnauthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -11841,7 +11977,7 @@ message UpdateAccountAuditConfigurationRequest {
 
   map<string, AuditNotificationTarget> auditnotificationtargetconfigurations = 410386946;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -11857,9 +11993,9 @@ message UpdateAuditSuppressionRequest {
 
   string checkname = 534449509;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string expirationdate = 391033245;
+  optional string expirationdate = 391033245;
 
   ResourceIdentifier resourceidentifier = 309427407;
 
@@ -11877,7 +12013,7 @@ message UpdateAuditSuppressionResponse {
 
 message UpdateAuthorizerRequest {
 
-  string authorizerfunctionarn = 386040646;
+  optional string authorizerfunctionarn = 386040646;
 
   string authorizername = 49871270;
 
@@ -11885,7 +12021,7 @@ message UpdateAuthorizerRequest {
 
   AuthorizerStatus status = 441153520;
 
-  string tokenkeyname = 279325171;
+  optional string tokenkeyname = 279325171;
 
   map<string, string> tokensigningpublickeys = 326945473;
 
@@ -11895,9 +12031,9 @@ message UpdateAuthorizerRequest {
 
 message UpdateAuthorizerResponse {
 
-  string authorizerarn = 182378050;
+  optional string authorizerarn = 182378050;
 
-  string authorizername = 49871270;
+  optional string authorizername = 49871270;
 
 }
 
@@ -11957,7 +12093,7 @@ message UpdateCertificateProviderRequest {
 
   string certificateprovidername = 158318159;
 
-  string lambdafunctionarn = 12837978;
+  optional string lambdafunctionarn = 12837978;
 
 }
 
@@ -11965,9 +12101,9 @@ message UpdateCertificateProviderRequest {
 
 message UpdateCertificateProviderResponse {
 
-  string certificateproviderarn = 382493445;
+  optional string certificateproviderarn = 382493445;
 
-  string certificateprovidername = 158318159;
+  optional string certificateprovidername = 158318159;
 
 }
 
@@ -11991,9 +12127,9 @@ message UpdateCommandRequest {
 
   optional bool deprecated = 269356453;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
 }
 
@@ -12001,15 +12137,15 @@ message UpdateCommandRequest {
 
 message UpdateCommandResponse {
 
-  string commandid = 424777632;
+  optional string commandid = 424777632;
 
   optional bool deprecated = 269356453;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
-  string lastupdatedat = 2052226;
+  optional string lastupdatedat = 2052226;
 
 }
 
@@ -12027,15 +12163,15 @@ message UpdateCustomMetricRequest {
 
 message UpdateCustomMetricResponse {
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string displayname = 268527191;
+  optional string displayname = 268527191;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string metricarn = 465303433;
+  optional string metricarn = 465303433;
 
-  string metricname = 204020635;
+  optional string metricname = 204020635;
 
   CustomMetricType metrictype = 39768938;
 
@@ -12065,13 +12201,13 @@ message UpdateDimensionRequest {
 
 message UpdateDimensionResponse {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated string stringvalues = 236264239;
 
@@ -12107,9 +12243,9 @@ message UpdateDomainConfigurationRequest {
 
 message UpdateDomainConfigurationResponse {
 
-  string domainconfigurationarn = 95043717;
+  optional string domainconfigurationarn = 95043717;
 
-  string domainconfigurationname = 280194767;
+  optional string domainconfigurationname = 280194767;
 
 }
 
@@ -12119,11 +12255,11 @@ message UpdateDynamicThingGroupRequest {
 
   optional int64 expectedversion = 211544452;
 
-  string indexname = 280883889;
+  optional string indexname = 280883889;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
   string thinggroupname = 104567446;
 
@@ -12145,9 +12281,9 @@ message UpdateEncryptionConfigurationRequest {
 
   EncryptionType encryptiontype = 113239253;
 
-  string kmsaccessrolearn = 260591204;
+  optional string kmsaccessrolearn = 260591204;
 
-  string kmskeyarn = 341492497;
+  optional string kmskeyarn = 341492497;
 
 }
 
@@ -12175,11 +12311,11 @@ message UpdateEventConfigurationsResponse {
 
 message UpdateFleetMetricRequest {
 
-  string aggregationfield = 310236136;
+  optional string aggregationfield = 310236136;
 
   AggregationType aggregationtype = 193702350;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional int64 expectedversion = 211544452;
 
@@ -12189,9 +12325,9 @@ message UpdateFleetMetricRequest {
 
   optional int32 period = 432621317;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
-  string queryversion = 11161566;
+  optional string queryversion = 11161566;
 
   FleetMetricUnit unit = 146086408;
 
@@ -12219,7 +12355,7 @@ message UpdateJobRequest {
 
   AbortConfig abortconfig = 501145356;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   JobExecutionsRetryConfig jobexecutionsretryconfig = 535887858;
 
@@ -12227,7 +12363,7 @@ message UpdateJobRequest {
 
   string jobid = 333387506;
 
-  string namespaceid = 85280638;
+  optional string namespaceid = 85280638;
 
   PresignedUrlConfig presignedurlconfig = 376323594;
 
@@ -12243,7 +12379,7 @@ message UpdateMitigationActionRequest {
 
   MitigationActionParams actionparams = 111951182;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -12251,9 +12387,9 @@ message UpdateMitigationActionRequest {
 
 message UpdateMitigationActionResponse {
 
-  string actionarn = 192808675;
+  optional string actionarn = 192808675;
 
-  string actionid = 281444883;
+  optional string actionid = 281444883;
 
 }
 
@@ -12261,7 +12397,7 @@ message UpdateMitigationActionResponse {
 
 message UpdatePackageConfigurationRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
   VersionUpdateByJobsConfig versionupdatebyjobsconfig = 132142766;
 
@@ -12277,11 +12413,11 @@ message UpdatePackageConfigurationResponse {
 
 message UpdatePackageRequest {
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
-  string defaultversionname = 333866698;
+  optional string defaultversionname = 333866698;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string packagename = 474490177;
 
@@ -12305,13 +12441,13 @@ message UpdatePackageVersionRequest {
 
   map<string, string> attributes = 33545109;
 
-  string clienttoken = 272531820;
+  optional string clienttoken = 272531820;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string packagename = 474490177;
 
-  string recipe = 209622992;
+  optional string recipe = 209622992;
 
   string versionname = 508494709;
 
@@ -12329,13 +12465,13 @@ message UpdateProvisioningTemplateRequest {
 
   optional int32 defaultversionid = 292354832;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool enabled = 49525663;
 
   ProvisioningHook preprovisioninghook = 210437497;
 
-  string provisioningrolearn = 456546880;
+  optional string provisioningrolearn = 456546880;
 
   optional bool removepreprovisioninghook = 393890641;
 
@@ -12357,7 +12493,7 @@ message UpdateRoleAliasRequest {
 
   string rolealias = 126155980;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -12365,9 +12501,9 @@ message UpdateRoleAliasRequest {
 
 message UpdateRoleAliasResponse {
 
-  string rolealias = 126155980;
+  optional string rolealias = 126155980;
 
-  string rolealiasarn = 447309823;
+  optional string rolealiasarn = 447309823;
 
 }
 
@@ -12375,7 +12511,7 @@ message UpdateRoleAliasResponse {
 
 message UpdateScheduledAuditRequest {
 
-  string dayofmonth = 239383807;
+  optional string dayofmonth = 239383807;
 
   DayOfWeek dayofweek = 99137661;
 
@@ -12391,7 +12527,7 @@ message UpdateScheduledAuditRequest {
 
 message UpdateScheduledAuditResponse {
 
-  string scheduledauditarn = 244234715;
+  optional string scheduledauditarn = 244234715;
 
 }
 
@@ -12419,7 +12555,7 @@ message UpdateSecurityProfileRequest {
 
   MetricsExportConfig metricsexportconfig = 478238987;
 
-  string securityprofiledescription = 313643535;
+  optional string securityprofiledescription = 313643535;
 
   string securityprofilename = 463970880;
 
@@ -12437,17 +12573,17 @@ message UpdateSecurityProfileResponse {
 
   repeated Behavior behaviors = 16162365;
 
-  string creationdate = 238315265;
+  optional string creationdate = 238315265;
 
-  string lastmodifieddate = 161429939;
+  optional string lastmodifieddate = 161429939;
 
   MetricsExportConfig metricsexportconfig = 478238987;
 
-  string securityprofilearn = 279713244;
+  optional string securityprofilearn = 279713244;
 
-  string securityprofiledescription = 313643535;
+  optional string securityprofiledescription = 313643535;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
   optional int64 version = 108113560;
 
@@ -12457,11 +12593,11 @@ message UpdateSecurityProfileResponse {
 
 message UpdateStreamRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   repeated StreamFile files = 518471825;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   string streamid = 487753313;
 
@@ -12471,11 +12607,11 @@ message UpdateStreamRequest {
 
 message UpdateStreamResponse {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string streamarn = 197684605;
+  optional string streamarn = 197684605;
 
-  string streamid = 487753313;
+  optional string streamid = 487753313;
 
   optional int32 streamversion = 162865432;
 
@@ -12511,7 +12647,7 @@ message UpdateThingGroupsForThingRequest {
 
   repeated string thinggroupstoremove = 288127935;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
 }
 
@@ -12535,7 +12671,7 @@ message UpdateThingRequest {
 
   string thingname = 526020141;
 
-  string thingtypename = 118350069;
+  optional string thingtypename = 118350069;
 
 }
 
@@ -12615,7 +12751,7 @@ message ValidateSecurityProfileBehaviorsResponse {
 
 message ValidationError {
 
-  string errormessage = 136873289;
+  optional string errormessage = 136873289;
 
 }
 
@@ -12625,7 +12761,7 @@ message ValidationError {
 
 message ValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -12649,7 +12785,7 @@ enum VerificationState {
 
 message VersionConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -12661,7 +12797,7 @@ message VersionUpdateByJobsConfig {
 
   optional bool enabled = 49525663;
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
 }
 
@@ -12671,7 +12807,7 @@ message VersionUpdateByJobsConfig {
 
 message VersionsLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -12685,21 +12821,21 @@ message ViolationEvent {
 
   MetricValue metricvalue = 51084559;
 
-  string securityprofilename = 463970880;
+  optional string securityprofilename = 463970880;
 
-  string thingname = 526020141;
+  optional string thingname = 526020141;
 
   VerificationState verificationstate = 46156804;
 
-  string verificationstatedescription = 16078040;
+  optional string verificationstatedescription = 16078040;
 
   ViolationEventAdditionalInfo violationeventadditionalinfo = 29091486;
 
-  string violationeventtime = 434404122;
+  optional string violationeventtime = 434404122;
 
   ViolationEventType violationeventtype = 372521673;
 
-  string violationid = 273917670;
+  optional string violationid = 273917670;
 
 }
 
@@ -12759,13 +12895,13 @@ message VpcDestinationConfiguration {
 
 message VpcDestinationProperties {
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   repeated string securitygroups = 524252404;
 
   repeated string subnetids = 487351219;
 
-  string vpcid = 305739798;
+  optional string vpcid = 305739798;
 
 }
 
@@ -12775,13 +12911,13 @@ message VpcDestinationProperties {
 
 message VpcDestinationSummary {
 
-  string rolearn = 170019745;
+  optional string rolearn = 170019745;
 
   repeated string securitygroups = 524252404;
 
   repeated string subnetids = 487351219;
 
-  string vpcid = 305739798;
+  optional string vpcid = 305739798;
 
 }
 

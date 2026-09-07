@@ -45,7 +45,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 	result, err := h.service.describeParametersCore(store, DescribeParametersInput{
 		Filters:    filters,
 		MaxResults: req.Msg.GetMaxresults(),
-		NextToken:  req.Msg.Nexttoken,
+		NextToken:  req.Msg.GetNexttoken(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(toSSMError(err))
@@ -58,7 +58,7 @@ func (h *AdminHandler) DescribeParameters(ctx context.Context, req *connect.Requ
 
 	return connect.NewResponse(&pb.DescribeParametersResult{
 		Parameters: metadataList,
-		Nexttoken:  result.NextToken,
+		Nexttoken:  proto.String(result.NextToken),
 	}), nil
 }
 
@@ -84,12 +84,12 @@ func (h *AdminHandler) PutParameter(ctx context.Context, req *connect.Request[pb
 		Name:           req.Msg.Name,
 		Value:          req.Msg.Value,
 		Type:           paramType,
-		Description:    req.Msg.Description,
-		KeyID:          req.Msg.Keyid,
-		AllowedPattern: req.Msg.Allowedpattern,
-		DataType:       req.Msg.Datatype,
+		Description:    req.Msg.GetDescription(),
+		KeyID:          req.Msg.GetKeyid(),
+		AllowedPattern: req.Msg.GetAllowedpattern(),
+		DataType:       req.Msg.GetDatatype(),
 		Tier:           tier,
-		Policies:       req.Msg.Policies,
+		Policies:       req.Msg.GetPolicies(),
 	}
 	if len(req.Msg.Tags) > 0 {
 		tags := make(map[string]string, len(req.Msg.Tags))

@@ -42,7 +42,7 @@ func (s *RDSService) describeDBClusterParameterGroupsCore(stores *rdsStores, in 
 	for _, g := range groups {
 		pbGroups = append(pbGroups, clusterParamGroupToPb(g))
 	}
-	return &pb.DBClusterParameterGroupsMessage{Dbclusterparametergroups: pbGroups, Marker: nextMarker}, nil
+	return &pb.DBClusterParameterGroupsMessage{Dbclusterparametergroups: pbGroups, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeDBParameterGroupsCore(stores *rdsStores, in DescribeDBParameterGroupsInput) (*pb.DBParameterGroupsMessage, error) {
@@ -54,7 +54,7 @@ func (s *RDSService) describeDBParameterGroupsCore(stores *rdsStores, in Describ
 	for _, g := range groups {
 		pbGroups = append(pbGroups, paramGroupToPb(g))
 	}
-	return &pb.DBParameterGroupsMessage{Dbparametergroups: pbGroups, Marker: nextMarker}, nil
+	return &pb.DBParameterGroupsMessage{Dbparametergroups: pbGroups, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeDBParametersCore(stores *rdsStores, in DescribeDBParametersInput) (*pb.DBParameterGroupDetails, error) {
@@ -73,35 +73,35 @@ func (s *RDSService) describeDBParametersCore(stores *rdsStores, in DescribeDBPa
 	for _, dp := range defaultParams {
 		if mod, ok := userMods[dp.name]; ok {
 			pbParams = append(pbParams, &pb.Parameter{
-				Parametername:  mod.ParameterName,
-				Parametervalue: mod.ParameterValue,
-				Description:    mod.Description,
-				Source:         mod.Source,
-				Applytype:      mod.ApplyType,
-				Datatype:       mod.DataType,
+				Parametername:  proto.String(mod.ParameterName),
+				Parametervalue: proto.String(mod.ParameterValue),
+				Description:    proto.String(mod.Description),
+				Source:         proto.String(mod.Source),
+				Applytype:      proto.String(mod.ApplyType),
+				Datatype:       proto.String(mod.DataType),
 				Ismodifiable:   proto.Bool(mod.IsModifiable),
 			})
 			delete(userMods, dp.name)
 		} else {
 			pbParams = append(pbParams, &pb.Parameter{
-				Parametername:  dp.name,
-				Parametervalue: dp.value,
-				Description:    dp.desc,
-				Source:         dp.source,
-				Applytype:      dp.apply,
-				Datatype:       dp.dtype,
+				Parametername:  proto.String(dp.name),
+				Parametervalue: proto.String(dp.value),
+				Description:    proto.String(dp.desc),
+				Source:         proto.String(dp.source),
+				Applytype:      proto.String(dp.apply),
+				Datatype:       proto.String(dp.dtype),
 				Ismodifiable:   proto.Bool(dp.modifiable == "true"),
 			})
 		}
 	}
 	for _, p := range userMods {
 		pbParams = append(pbParams, &pb.Parameter{
-			Parametername:  p.ParameterName,
-			Parametervalue: p.ParameterValue,
-			Description:    p.Description,
-			Source:         p.Source,
-			Applytype:      p.ApplyType,
-			Datatype:       p.DataType,
+			Parametername:  proto.String(p.ParameterName),
+			Parametervalue: proto.String(p.ParameterValue),
+			Description:    proto.String(p.Description),
+			Source:         proto.String(p.Source),
+			Applytype:      proto.String(p.ApplyType),
+			Datatype:       proto.String(p.DataType),
 			Ismodifiable:   proto.Bool(p.IsModifiable),
 		})
 	}
@@ -109,7 +109,7 @@ func (s *RDSService) describeDBParametersCore(stores *rdsStores, in DescribeDBPa
 
 	return &pb.DBParameterGroupDetails{
 		Parameters: pbParams,
-		Marker:     "",
+		Marker:     proto.String(""),
 	}, nil
 }
 
@@ -119,19 +119,19 @@ func (s *RDSService) describeDBParametersCore(stores *rdsStores, in DescribeDBPa
 
 func clusterParamGroupToPb(g *storerds.DBClusterParameterGroup) *pb.DBClusterParameterGroup {
 	return &pb.DBClusterParameterGroup{
-		Dbclusterparametergroupname: g.DBClusterParameterGroupName,
-		Dbparametergroupfamily:      g.DBParameterGroupFamily,
-		Description:                 g.Description,
-		Dbclusterparametergrouparn:  g.ARN,
+		Dbclusterparametergroupname: proto.String(g.DBClusterParameterGroupName),
+		Dbparametergroupfamily:      proto.String(g.DBParameterGroupFamily),
+		Description:                 proto.String(g.Description),
+		Dbclusterparametergrouparn:  proto.String(g.ARN),
 	}
 }
 
 func paramGroupToPb(g *storerds.DBParameterGroup) *pb.DBParameterGroup {
 	return &pb.DBParameterGroup{
-		Dbparametergroupname:   g.DBParameterGroupName,
-		Dbparametergroupfamily: g.DBParameterGroupFamily,
-		Description:            g.Description,
-		Dbparametergrouparn:    g.ARN,
+		Dbparametergroupname:   proto.String(g.DBParameterGroupName),
+		Dbparametergroupfamily: proto.String(g.DBParameterGroupFamily),
+		Description:            proto.String(g.Description),
+		Dbparametergrouparn:    proto.String(g.ARN),
 	}
 }
 

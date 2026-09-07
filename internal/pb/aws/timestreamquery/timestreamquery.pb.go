@@ -631,7 +631,7 @@ func (ScheduledQueryState) EnumDescriptor() ([]byte, []int) {
 
 type AccessDeniedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -667,8 +667,8 @@ func (*AccessDeniedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccessDeniedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -771,7 +771,7 @@ func (x *CancelQueryRequest) GetQueryid() string {
 
 type CancelQueryResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Cancellationmessage string                 `protobuf:"bytes,226613662,opt,name=cancellationmessage,proto3" json:"cancellationmessage,omitempty"`
+	Cancellationmessage *string                `protobuf:"bytes,226613662,opt,name=cancellationmessage,proto3,oneof" json:"cancellationmessage,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -807,15 +807,15 @@ func (*CancelQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelQueryResponse) GetCancellationmessage() string {
-	if x != nil {
-		return x.Cancellationmessage
+	if x != nil && x.Cancellationmessage != nil {
+		return *x.Cancellationmessage
 	}
 	return ""
 }
 
 type ColumnInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Type          *Type                  `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -852,8 +852,8 @@ func (*ColumnInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *ColumnInfo) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -867,7 +867,7 @@ func (x *ColumnInfo) GetType() *Type {
 
 type ConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -903,17 +903,17 @@ func (*ConflictException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CreateScheduledQueryRequest struct {
 	state                          protoimpl.MessageState     `protogen:"open.v1"`
-	Clienttoken                    string                     `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
+	Clienttoken                    *string                    `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Errorreportconfiguration       *ErrorReportConfiguration  `protobuf:"bytes,222039776,opt,name=errorreportconfiguration,proto3" json:"errorreportconfiguration,omitempty"`
-	Kmskeyid                       string                     `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                       *string                    `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Name                           string                     `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Notificationconfiguration      *NotificationConfiguration `protobuf:"bytes,290208045,opt,name=notificationconfiguration,proto3" json:"notificationconfiguration,omitempty"`
 	Querystring                    string                     `protobuf:"bytes,435938663,opt,name=querystring,proto3" json:"querystring,omitempty"`
@@ -956,8 +956,8 @@ func (*CreateScheduledQueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateScheduledQueryRequest) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
@@ -970,8 +970,8 @@ func (x *CreateScheduledQueryRequest) GetErrorreportconfiguration() *ErrorReport
 }
 
 func (x *CreateScheduledQueryRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -1074,7 +1074,7 @@ type Datum struct {
 	Arrayvalue      []*Datum               `protobuf:"bytes,20393608,rep,name=arrayvalue,proto3" json:"arrayvalue,omitempty"`
 	Nullvalue       *bool                  `protobuf:"varint,440981694,opt,name=nullvalue,proto3,oneof" json:"nullvalue,omitempty"`
 	Rowvalue        *Row                   `protobuf:"bytes,530552345,opt,name=rowvalue,proto3" json:"rowvalue,omitempty"`
-	Scalarvalue     string                 `protobuf:"bytes,45700451,opt,name=scalarvalue,proto3" json:"scalarvalue,omitempty"`
+	Scalarvalue     *string                `protobuf:"bytes,45700451,opt,name=scalarvalue,proto3,oneof" json:"scalarvalue,omitempty"`
 	Timeseriesvalue []*TimeSeriesDataPoint `protobuf:"bytes,468590991,rep,name=timeseriesvalue,proto3" json:"timeseriesvalue,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -1132,8 +1132,8 @@ func (x *Datum) GetRowvalue() *Row {
 }
 
 func (x *Datum) GetScalarvalue() string {
-	if x != nil {
-		return x.Scalarvalue
+	if x != nil && x.Scalarvalue != nil {
+		return *x.Scalarvalue
 	}
 	return ""
 }
@@ -1647,7 +1647,7 @@ func (x *ErrorReportLocation) GetS3Reportlocation() *S3ReportLocation {
 
 type ExecuteScheduledQueryRequest struct {
 	state             protoimpl.MessageState  `protogen:"open.v1"`
-	Clienttoken       string                  `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
+	Clienttoken       *string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Invocationtime    string                  `protobuf:"bytes,331845291,opt,name=invocationtime,proto3" json:"invocationtime,omitempty"`
 	Queryinsights     *ScheduledQueryInsights `protobuf:"bytes,105458863,opt,name=queryinsights,proto3" json:"queryinsights,omitempty"`
 	Scheduledqueryarn string                  `protobuf:"bytes,234602964,opt,name=scheduledqueryarn,proto3" json:"scheduledqueryarn,omitempty"`
@@ -1686,8 +1686,8 @@ func (*ExecuteScheduledQueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecuteScheduledQueryRequest) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
@@ -1799,7 +1799,7 @@ func (x *ExecutionStats) GetRecordsingested() int64 {
 
 type InternalServerException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1835,15 +1835,15 @@ func (*InternalServerException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InternalServerException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEndpointException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1879,8 +1879,8 @@ func (*InvalidEndpointException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEndpointException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1888,7 +1888,7 @@ func (x *InvalidEndpointException) GetMessage() string {
 type LastUpdate struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Status         LastUpdateStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=timestreamquery.LastUpdateStatus" json:"status,omitempty"`
-	Statusmessage  string                 `protobuf:"bytes,72590095,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
+	Statusmessage  *string                `protobuf:"bytes,72590095,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	Targetquerytcu *int32                 `protobuf:"varint,183880621,opt,name=targetquerytcu,proto3,oneof" json:"targetquerytcu,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -1932,8 +1932,8 @@ func (x *LastUpdate) GetStatus() LastUpdateStatus {
 }
 
 func (x *LastUpdate) GetStatusmessage() string {
-	if x != nil {
-		return x.Statusmessage
+	if x != nil && x.Statusmessage != nil {
+		return *x.Statusmessage
 	}
 	return ""
 }
@@ -1948,7 +1948,7 @@ func (x *LastUpdate) GetTargetquerytcu() int32 {
 type ListScheduledQueriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1991,15 +1991,15 @@ func (x *ListScheduledQueriesRequest) GetMaxresults() int32 {
 }
 
 func (x *ListScheduledQueriesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListScheduledQueriesResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken        *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Scheduledqueries []*ScheduledQuery      `protobuf:"bytes,458789865,rep,name=scheduledqueries,proto3" json:"scheduledqueries,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -2036,8 +2036,8 @@ func (*ListScheduledQueriesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListScheduledQueriesResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2052,7 +2052,7 @@ func (x *ListScheduledQueriesResponse) GetScheduledqueries() []*ScheduledQuery {
 type ListTagsForResourceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2096,8 +2096,8 @@ func (x *ListTagsForResourceRequest) GetMaxresults() int32 {
 }
 
 func (x *ListTagsForResourceRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2111,7 +2111,7 @@ func (x *ListTagsForResourceRequest) GetResourcearn() string {
 
 type ListTagsForResourceResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2148,8 +2148,8 @@ func (*ListTagsForResourceResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsForResourceResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2163,11 +2163,11 @@ func (x *ListTagsForResourceResponse) GetTags() []*Tag {
 
 type MixedMeasureMapping struct {
 	state                         protoimpl.MessageState          `protogen:"open.v1"`
-	Measurename                   string                          `protobuf:"bytes,426079069,opt,name=measurename,proto3" json:"measurename,omitempty"`
+	Measurename                   *string                         `protobuf:"bytes,426079069,opt,name=measurename,proto3,oneof" json:"measurename,omitempty"`
 	Measurevaluetype              MeasureValueType                `protobuf:"varint,466683165,opt,name=measurevaluetype,proto3,enum=timestreamquery.MeasureValueType" json:"measurevaluetype,omitempty"`
 	Multimeasureattributemappings []*MultiMeasureAttributeMapping `protobuf:"bytes,311133918,rep,name=multimeasureattributemappings,proto3" json:"multimeasureattributemappings,omitempty"`
-	Sourcecolumn                  string                          `protobuf:"bytes,219947651,opt,name=sourcecolumn,proto3" json:"sourcecolumn,omitempty"`
-	Targetmeasurename             string                          `protobuf:"bytes,469508316,opt,name=targetmeasurename,proto3" json:"targetmeasurename,omitempty"`
+	Sourcecolumn                  *string                         `protobuf:"bytes,219947651,opt,name=sourcecolumn,proto3,oneof" json:"sourcecolumn,omitempty"`
+	Targetmeasurename             *string                         `protobuf:"bytes,469508316,opt,name=targetmeasurename,proto3,oneof" json:"targetmeasurename,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -2203,8 +2203,8 @@ func (*MixedMeasureMapping) Descriptor() ([]byte, []int) {
 }
 
 func (x *MixedMeasureMapping) GetMeasurename() string {
-	if x != nil {
-		return x.Measurename
+	if x != nil && x.Measurename != nil {
+		return *x.Measurename
 	}
 	return ""
 }
@@ -2224,15 +2224,15 @@ func (x *MixedMeasureMapping) GetMultimeasureattributemappings() []*MultiMeasure
 }
 
 func (x *MixedMeasureMapping) GetSourcecolumn() string {
-	if x != nil {
-		return x.Sourcecolumn
+	if x != nil && x.Sourcecolumn != nil {
+		return *x.Sourcecolumn
 	}
 	return ""
 }
 
 func (x *MixedMeasureMapping) GetTargetmeasurename() string {
-	if x != nil {
-		return x.Targetmeasurename
+	if x != nil && x.Targetmeasurename != nil {
+		return *x.Targetmeasurename
 	}
 	return ""
 }
@@ -2241,7 +2241,7 @@ type MultiMeasureAttributeMapping struct {
 	state                           protoimpl.MessageState `protogen:"open.v1"`
 	Measurevaluetype                ScalarMeasureValueType `protobuf:"varint,466683165,opt,name=measurevaluetype,proto3,enum=timestreamquery.ScalarMeasureValueType" json:"measurevaluetype,omitempty"`
 	Sourcecolumn                    string                 `protobuf:"bytes,219947651,opt,name=sourcecolumn,proto3" json:"sourcecolumn,omitempty"`
-	Targetmultimeasureattributename string                 `protobuf:"bytes,415623663,opt,name=targetmultimeasureattributename,proto3" json:"targetmultimeasureattributename,omitempty"`
+	Targetmultimeasureattributename *string                `protobuf:"bytes,415623663,opt,name=targetmultimeasureattributename,proto3,oneof" json:"targetmultimeasureattributename,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
 	sizeCache                       protoimpl.SizeCache
 }
@@ -2291,8 +2291,8 @@ func (x *MultiMeasureAttributeMapping) GetSourcecolumn() string {
 }
 
 func (x *MultiMeasureAttributeMapping) GetTargetmultimeasureattributename() string {
-	if x != nil {
-		return x.Targetmultimeasureattributename
+	if x != nil && x.Targetmultimeasureattributename != nil {
+		return *x.Targetmultimeasureattributename
 	}
 	return ""
 }
@@ -2300,7 +2300,7 @@ func (x *MultiMeasureAttributeMapping) GetTargetmultimeasureattributename() stri
 type MultiMeasureMappings struct {
 	state                         protoimpl.MessageState          `protogen:"open.v1"`
 	Multimeasureattributemappings []*MultiMeasureAttributeMapping `protobuf:"bytes,311133918,rep,name=multimeasureattributemappings,proto3" json:"multimeasureattributemappings,omitempty"`
-	Targetmultimeasurename        string                          `protobuf:"bytes,27420053,opt,name=targetmultimeasurename,proto3" json:"targetmultimeasurename,omitempty"`
+	Targetmultimeasurename        *string                         `protobuf:"bytes,27420053,opt,name=targetmultimeasurename,proto3,oneof" json:"targetmultimeasurename,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -2343,8 +2343,8 @@ func (x *MultiMeasureMappings) GetMultimeasureattributemappings() []*MultiMeasur
 }
 
 func (x *MultiMeasureMappings) GetTargetmultimeasurename() string {
-	if x != nil {
-		return x.Targetmultimeasurename
+	if x != nil && x.Targetmultimeasurename != nil {
+		return *x.Targetmultimeasurename
 	}
 	return ""
 }
@@ -2775,7 +2775,7 @@ func (x *QueryComputeResponse) GetProvisionedcapacity() *ProvisionedCapacityResp
 
 type QueryExecutionException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2811,8 +2811,8 @@ func (*QueryExecutionException) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryExecutionException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2963,9 +2963,9 @@ func (x *QueryInsightsResponse) GetUnloadwrittenrows() int64 {
 
 type QueryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clienttoken   string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
+	Clienttoken   *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Maxrows       *int32                 `protobuf:"varint,251920525,opt,name=maxrows,proto3,oneof" json:"maxrows,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queryinsights *QueryInsights         `protobuf:"bytes,105458863,opt,name=queryinsights,proto3" json:"queryinsights,omitempty"`
 	Querystring   string                 `protobuf:"bytes,435938663,opt,name=querystring,proto3" json:"querystring,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -3003,8 +3003,8 @@ func (*QueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryRequest) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
@@ -3017,8 +3017,8 @@ func (x *QueryRequest) GetMaxrows() int32 {
 }
 
 func (x *QueryRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3040,7 +3040,7 @@ func (x *QueryRequest) GetQuerystring() string {
 type QueryResponse struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Columninfo            []*ColumnInfo          `protobuf:"bytes,364742404,rep,name=columninfo,proto3" json:"columninfo,omitempty"`
-	Nexttoken             string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken             *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queryid               string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	Queryinsightsresponse *QueryInsightsResponse `protobuf:"bytes,354278130,opt,name=queryinsightsresponse,proto3" json:"queryinsightsresponse,omitempty"`
 	Querystatus           *QueryStatus           `protobuf:"bytes,367016406,opt,name=querystatus,proto3" json:"querystatus,omitempty"`
@@ -3087,8 +3087,8 @@ func (x *QueryResponse) GetColumninfo() []*ColumnInfo {
 }
 
 func (x *QueryResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3168,8 +3168,8 @@ func (x *QuerySpatialCoverage) GetMax() *QuerySpatialCoverageMax {
 type QuerySpatialCoverageMax struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Partitionkey  []string               `protobuf:"bytes,379379617,rep,name=partitionkey,proto3" json:"partitionkey,omitempty"`
-	Tablearn      string                 `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
-	Value         float64                `protobuf:"fixed64,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Tablearn      *string                `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
+	Value         *float64               `protobuf:"fixed64,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3212,15 +3212,15 @@ func (x *QuerySpatialCoverageMax) GetPartitionkey() []string {
 }
 
 func (x *QuerySpatialCoverageMax) GetTablearn() string {
-	if x != nil {
-		return x.Tablearn
+	if x != nil && x.Tablearn != nil {
+		return *x.Tablearn
 	}
 	return ""
 }
 
 func (x *QuerySpatialCoverageMax) GetValue() float64 {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return 0
 }
@@ -3229,7 +3229,7 @@ type QueryStatus struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Cumulativebytesmetered *int64                 `protobuf:"varint,196882576,opt,name=cumulativebytesmetered,proto3,oneof" json:"cumulativebytesmetered,omitempty"`
 	Cumulativebytesscanned *int64                 `protobuf:"varint,413524176,opt,name=cumulativebytesscanned,proto3,oneof" json:"cumulativebytesscanned,omitempty"`
-	Progresspercentage     float64                `protobuf:"fixed64,211894727,opt,name=progresspercentage,proto3" json:"progresspercentage,omitempty"`
+	Progresspercentage     *float64               `protobuf:"fixed64,211894727,opt,name=progresspercentage,proto3,oneof" json:"progresspercentage,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3279,8 +3279,8 @@ func (x *QueryStatus) GetCumulativebytesscanned() int64 {
 }
 
 func (x *QueryStatus) GetProgresspercentage() float64 {
-	if x != nil {
-		return x.Progresspercentage
+	if x != nil && x.Progresspercentage != nil {
+		return *x.Progresspercentage
 	}
 	return 0
 }
@@ -3331,7 +3331,7 @@ func (x *QueryTemporalRange) GetMax() *QueryTemporalRangeMax {
 
 type QueryTemporalRangeMax struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Tablearn      string                 `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
+	Tablearn      *string                `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
 	Value         *int64                 `protobuf:"varint,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3368,8 +3368,8 @@ func (*QueryTemporalRangeMax) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryTemporalRangeMax) GetTablearn() string {
-	if x != nil {
-		return x.Tablearn
+	if x != nil && x.Tablearn != nil {
+		return *x.Tablearn
 	}
 	return ""
 }
@@ -3383,8 +3383,8 @@ func (x *QueryTemporalRangeMax) GetValue() int64 {
 
 type ResourceNotFoundException struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Message           string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Scheduledqueryarn string                 `protobuf:"bytes,234602964,opt,name=scheduledqueryarn,proto3" json:"scheduledqueryarn,omitempty"`
+	Message           *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Scheduledqueryarn *string                `protobuf:"bytes,234602964,opt,name=scheduledqueryarn,proto3,oneof" json:"scheduledqueryarn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3420,15 +3420,15 @@ func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *ResourceNotFoundException) GetScheduledqueryarn() string {
-	if x != nil {
-		return x.Scheduledqueryarn
+	if x != nil && x.Scheduledqueryarn != nil {
+		return *x.Scheduledqueryarn
 	}
 	return ""
 }
@@ -3481,7 +3481,7 @@ type S3Configuration struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Bucketname       string                 `protobuf:"bytes,208117045,opt,name=bucketname,proto3" json:"bucketname,omitempty"`
 	Encryptionoption S3EncryptionOption     `protobuf:"varint,160833062,opt,name=encryptionoption,proto3,enum=timestreamquery.S3EncryptionOption" json:"encryptionoption,omitempty"`
-	Objectkeyprefix  string                 `protobuf:"bytes,132617574,opt,name=objectkeyprefix,proto3" json:"objectkeyprefix,omitempty"`
+	Objectkeyprefix  *string                `protobuf:"bytes,132617574,opt,name=objectkeyprefix,proto3,oneof" json:"objectkeyprefix,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -3531,16 +3531,16 @@ func (x *S3Configuration) GetEncryptionoption() S3EncryptionOption {
 }
 
 func (x *S3Configuration) GetObjectkeyprefix() string {
-	if x != nil {
-		return x.Objectkeyprefix
+	if x != nil && x.Objectkeyprefix != nil {
+		return *x.Objectkeyprefix
 	}
 	return ""
 }
 
 type S3ReportLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Bucketname    string                 `protobuf:"bytes,208117045,opt,name=bucketname,proto3" json:"bucketname,omitempty"`
-	Objectkey     string                 `protobuf:"bytes,335986226,opt,name=objectkey,proto3" json:"objectkey,omitempty"`
+	Bucketname    *string                `protobuf:"bytes,208117045,opt,name=bucketname,proto3,oneof" json:"bucketname,omitempty"`
+	Objectkey     *string                `protobuf:"bytes,335986226,opt,name=objectkey,proto3,oneof" json:"objectkey,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3576,15 +3576,15 @@ func (*S3ReportLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *S3ReportLocation) GetBucketname() string {
-	if x != nil {
-		return x.Bucketname
+	if x != nil && x.Bucketname != nil {
+		return *x.Bucketname
 	}
 	return ""
 }
 
 func (x *S3ReportLocation) GetObjectkey() string {
-	if x != nil {
-		return x.Objectkey
+	if x != nil && x.Objectkey != nil {
+		return *x.Objectkey
 	}
 	return ""
 }
@@ -3636,12 +3636,12 @@ func (x *ScheduleConfiguration) GetScheduleexpression() string {
 type ScheduledQuery struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
 	Arn                      string                    `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtime             string                    `protobuf:"bytes,103458790,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime             *string                   `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Errorreportconfiguration *ErrorReportConfiguration `protobuf:"bytes,222039776,opt,name=errorreportconfiguration,proto3" json:"errorreportconfiguration,omitempty"`
 	Lastrunstatus            ScheduledQueryRunStatus   `protobuf:"varint,441976361,opt,name=lastrunstatus,proto3,enum=timestreamquery.ScheduledQueryRunStatus" json:"lastrunstatus,omitempty"`
 	Name                     string                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextinvocationtime       string                    `protobuf:"bytes,424223272,opt,name=nextinvocationtime,proto3" json:"nextinvocationtime,omitempty"`
-	Previousinvocationtime   string                    `protobuf:"bytes,7530344,opt,name=previousinvocationtime,proto3" json:"previousinvocationtime,omitempty"`
+	Nextinvocationtime       *string                   `protobuf:"bytes,424223272,opt,name=nextinvocationtime,proto3,oneof" json:"nextinvocationtime,omitempty"`
+	Previousinvocationtime   *string                   `protobuf:"bytes,7530344,opt,name=previousinvocationtime,proto3,oneof" json:"previousinvocationtime,omitempty"`
 	State                    ScheduledQueryState       `protobuf:"varint,502047895,opt,name=state,proto3,enum=timestreamquery.ScheduledQueryState" json:"state,omitempty"`
 	Targetdestination        *TargetDestination        `protobuf:"bytes,121667401,opt,name=targetdestination,proto3" json:"targetdestination,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -3686,8 +3686,8 @@ func (x *ScheduledQuery) GetArn() string {
 }
 
 func (x *ScheduledQuery) GetCreationtime() string {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return ""
 }
@@ -3714,15 +3714,15 @@ func (x *ScheduledQuery) GetName() string {
 }
 
 func (x *ScheduledQuery) GetNextinvocationtime() string {
-	if x != nil {
-		return x.Nextinvocationtime
+	if x != nil && x.Nextinvocationtime != nil {
+		return *x.Nextinvocationtime
 	}
 	return ""
 }
 
 func (x *ScheduledQuery) GetPreviousinvocationtime() string {
-	if x != nil {
-		return x.Previousinvocationtime
+	if x != nil && x.Previousinvocationtime != nil {
+		return *x.Previousinvocationtime
 	}
 	return ""
 }
@@ -3744,18 +3744,18 @@ func (x *ScheduledQuery) GetTargetdestination() *TargetDestination {
 type ScheduledQueryDescription struct {
 	state                          protoimpl.MessageState      `protogen:"open.v1"`
 	Arn                            string                      `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationtime                   string                      `protobuf:"bytes,103458790,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime                   *string                     `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Errorreportconfiguration       *ErrorReportConfiguration   `protobuf:"bytes,222039776,opt,name=errorreportconfiguration,proto3" json:"errorreportconfiguration,omitempty"`
-	Kmskeyid                       string                      `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                       *string                     `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Lastrunsummary                 *ScheduledQueryRunSummary   `protobuf:"bytes,238724003,opt,name=lastrunsummary,proto3" json:"lastrunsummary,omitempty"`
 	Name                           string                      `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextinvocationtime             string                      `protobuf:"bytes,424223272,opt,name=nextinvocationtime,proto3" json:"nextinvocationtime,omitempty"`
+	Nextinvocationtime             *string                     `protobuf:"bytes,424223272,opt,name=nextinvocationtime,proto3,oneof" json:"nextinvocationtime,omitempty"`
 	Notificationconfiguration      *NotificationConfiguration  `protobuf:"bytes,290208045,opt,name=notificationconfiguration,proto3" json:"notificationconfiguration,omitempty"`
-	Previousinvocationtime         string                      `protobuf:"bytes,7530344,opt,name=previousinvocationtime,proto3" json:"previousinvocationtime,omitempty"`
+	Previousinvocationtime         *string                     `protobuf:"bytes,7530344,opt,name=previousinvocationtime,proto3,oneof" json:"previousinvocationtime,omitempty"`
 	Querystring                    string                      `protobuf:"bytes,435938663,opt,name=querystring,proto3" json:"querystring,omitempty"`
 	Recentlyfailedruns             []*ScheduledQueryRunSummary `protobuf:"bytes,365830319,rep,name=recentlyfailedruns,proto3" json:"recentlyfailedruns,omitempty"`
 	Scheduleconfiguration          *ScheduleConfiguration      `protobuf:"bytes,526075047,opt,name=scheduleconfiguration,proto3" json:"scheduleconfiguration,omitempty"`
-	Scheduledqueryexecutionrolearn string                      `protobuf:"bytes,284244182,opt,name=scheduledqueryexecutionrolearn,proto3" json:"scheduledqueryexecutionrolearn,omitempty"`
+	Scheduledqueryexecutionrolearn *string                     `protobuf:"bytes,284244182,opt,name=scheduledqueryexecutionrolearn,proto3,oneof" json:"scheduledqueryexecutionrolearn,omitempty"`
 	State                          ScheduledQueryState         `protobuf:"varint,502047895,opt,name=state,proto3,enum=timestreamquery.ScheduledQueryState" json:"state,omitempty"`
 	Targetconfiguration            *TargetConfiguration        `protobuf:"bytes,499845483,opt,name=targetconfiguration,proto3" json:"targetconfiguration,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
@@ -3800,8 +3800,8 @@ func (x *ScheduledQueryDescription) GetArn() string {
 }
 
 func (x *ScheduledQueryDescription) GetCreationtime() string {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return ""
 }
@@ -3814,8 +3814,8 @@ func (x *ScheduledQueryDescription) GetErrorreportconfiguration() *ErrorReportCo
 }
 
 func (x *ScheduledQueryDescription) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -3835,8 +3835,8 @@ func (x *ScheduledQueryDescription) GetName() string {
 }
 
 func (x *ScheduledQueryDescription) GetNextinvocationtime() string {
-	if x != nil {
-		return x.Nextinvocationtime
+	if x != nil && x.Nextinvocationtime != nil {
+		return *x.Nextinvocationtime
 	}
 	return ""
 }
@@ -3849,8 +3849,8 @@ func (x *ScheduledQueryDescription) GetNotificationconfiguration() *Notification
 }
 
 func (x *ScheduledQueryDescription) GetPreviousinvocationtime() string {
-	if x != nil {
-		return x.Previousinvocationtime
+	if x != nil && x.Previousinvocationtime != nil {
+		return *x.Previousinvocationtime
 	}
 	return ""
 }
@@ -3877,8 +3877,8 @@ func (x *ScheduledQueryDescription) GetScheduleconfiguration() *ScheduleConfigur
 }
 
 func (x *ScheduledQueryDescription) GetScheduledqueryexecutionrolearn() string {
-	if x != nil {
-		return x.Scheduledqueryexecutionrolearn
+	if x != nil && x.Scheduledqueryexecutionrolearn != nil {
+		return *x.Scheduledqueryexecutionrolearn
 	}
 	return ""
 }
@@ -4021,11 +4021,11 @@ type ScheduledQueryRunSummary struct {
 	state                 protoimpl.MessageState          `protogen:"open.v1"`
 	Errorreportlocation   *ErrorReportLocation            `protobuf:"bytes,117286905,opt,name=errorreportlocation,proto3" json:"errorreportlocation,omitempty"`
 	Executionstats        *ExecutionStats                 `protobuf:"bytes,220056093,opt,name=executionstats,proto3" json:"executionstats,omitempty"`
-	Failurereason         string                          `protobuf:"bytes,232322142,opt,name=failurereason,proto3" json:"failurereason,omitempty"`
-	Invocationtime        string                          `protobuf:"bytes,331845291,opt,name=invocationtime,proto3" json:"invocationtime,omitempty"`
+	Failurereason         *string                         `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
+	Invocationtime        *string                         `protobuf:"bytes,331845291,opt,name=invocationtime,proto3,oneof" json:"invocationtime,omitempty"`
 	Queryinsightsresponse *ScheduledQueryInsightsResponse `protobuf:"bytes,354278130,opt,name=queryinsightsresponse,proto3" json:"queryinsightsresponse,omitempty"`
 	Runstatus             ScheduledQueryRunStatus         `protobuf:"varint,293822805,opt,name=runstatus,proto3,enum=timestreamquery.ScheduledQueryRunStatus" json:"runstatus,omitempty"`
-	Triggertime           string                          `protobuf:"bytes,268796699,opt,name=triggertime,proto3" json:"triggertime,omitempty"`
+	Triggertime           *string                         `protobuf:"bytes,268796699,opt,name=triggertime,proto3,oneof" json:"triggertime,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -4075,15 +4075,15 @@ func (x *ScheduledQueryRunSummary) GetExecutionstats() *ExecutionStats {
 }
 
 func (x *ScheduledQueryRunSummary) GetFailurereason() string {
-	if x != nil {
-		return x.Failurereason
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
 	}
 	return ""
 }
 
 func (x *ScheduledQueryRunSummary) GetInvocationtime() string {
-	if x != nil {
-		return x.Invocationtime
+	if x != nil && x.Invocationtime != nil {
+		return *x.Invocationtime
 	}
 	return ""
 }
@@ -4103,8 +4103,8 @@ func (x *ScheduledQueryRunSummary) GetRunstatus() ScheduledQueryRunStatus {
 }
 
 func (x *ScheduledQueryRunSummary) GetTriggertime() string {
-	if x != nil {
-		return x.Triggertime
+	if x != nil && x.Triggertime != nil {
+		return *x.Triggertime
 	}
 	return ""
 }
@@ -4112,9 +4112,9 @@ func (x *ScheduledQueryRunSummary) GetTriggertime() string {
 type SelectColumn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Aliased       *bool                  `protobuf:"varint,157931831,opt,name=aliased,proto3,oneof" json:"aliased,omitempty"`
-	Databasename  string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Tablename     string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	Databasename  *string                `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Tablename     *string                `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	Type          *Type                  `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4158,22 +4158,22 @@ func (x *SelectColumn) GetAliased() bool {
 }
 
 func (x *SelectColumn) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
 
 func (x *SelectColumn) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *SelectColumn) GetTablename() string {
-	if x != nil {
-		return x.Tablename
+	if x != nil && x.Tablename != nil {
+		return *x.Tablename
 	}
 	return ""
 }
@@ -4187,7 +4187,7 @@ func (x *SelectColumn) GetType() *Type {
 
 type ServiceQuotaExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4223,8 +4223,8 @@ func (*ServiceQuotaExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServiceQuotaExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4503,7 +4503,7 @@ func (x *TargetDestination) GetTimestreamdestination() *TimestreamDestination {
 
 type ThrottlingException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4539,8 +4539,8 @@ func (*ThrottlingException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ThrottlingException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4601,7 +4601,7 @@ type TimestreamConfiguration struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Databasename         string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
 	Dimensionmappings    []*DimensionMapping    `protobuf:"bytes,224443741,rep,name=dimensionmappings,proto3" json:"dimensionmappings,omitempty"`
-	Measurenamecolumn    string                 `protobuf:"bytes,112141775,opt,name=measurenamecolumn,proto3" json:"measurenamecolumn,omitempty"`
+	Measurenamecolumn    *string                `protobuf:"bytes,112141775,opt,name=measurenamecolumn,proto3,oneof" json:"measurenamecolumn,omitempty"`
 	Mixedmeasuremappings []*MixedMeasureMapping `protobuf:"bytes,521774144,rep,name=mixedmeasuremappings,proto3" json:"mixedmeasuremappings,omitempty"`
 	Multimeasuremappings *MultiMeasureMappings  `protobuf:"bytes,501736394,opt,name=multimeasuremappings,proto3" json:"multimeasuremappings,omitempty"`
 	Tablename            string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
@@ -4655,8 +4655,8 @@ func (x *TimestreamConfiguration) GetDimensionmappings() []*DimensionMapping {
 }
 
 func (x *TimestreamConfiguration) GetMeasurenamecolumn() string {
-	if x != nil {
-		return x.Measurenamecolumn
+	if x != nil && x.Measurenamecolumn != nil {
+		return *x.Measurenamecolumn
 	}
 	return ""
 }
@@ -4691,8 +4691,8 @@ func (x *TimestreamConfiguration) GetTimecolumn() string {
 
 type TimestreamDestination struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Databasename  string                 `protobuf:"bytes,89545052,opt,name=databasename,proto3" json:"databasename,omitempty"`
-	Tablename     string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
+	Databasename  *string                `protobuf:"bytes,89545052,opt,name=databasename,proto3,oneof" json:"databasename,omitempty"`
+	Tablename     *string                `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4728,15 +4728,15 @@ func (*TimestreamDestination) Descriptor() ([]byte, []int) {
 }
 
 func (x *TimestreamDestination) GetDatabasename() string {
-	if x != nil {
-		return x.Databasename
+	if x != nil && x.Databasename != nil {
+		return *x.Databasename
 	}
 	return ""
 }
 
 func (x *TimestreamDestination) GetTablename() string {
-	if x != nil {
-		return x.Tablename
+	if x != nil && x.Tablename != nil {
+		return *x.Tablename
 	}
 	return ""
 }
@@ -5071,7 +5071,7 @@ func (x *UpdateScheduledQueryRequest) GetState() ScheduledQueryState {
 
 type ValidationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5107,8 +5107,8 @@ func (*ValidationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ValidationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5117,45 +5117,54 @@ var File_timestreamquery_proto protoreflect.FileDescriptor
 
 const file_timestreamquery_proto_rawDesc = "" +
 	"\n" +
-	"\x15timestreamquery.proto\x12\x0ftimestreamquery\x1a\fcommon.proto\x1a\taws.proto\"4\n" +
-	"\x15AccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9a\x01\n" +
+	"\x15timestreamquery.proto\x12\x0ftimestreamquery\x1a\fcommon.proto\x1a\taws.proto\"E\n" +
+	"\x15AccessDeniedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9a\x01\n" +
 	"(AccountSettingsNotificationConfiguration\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12P\n" +
 	"\x10snsconfiguration\x18\x8a\xe2\xa1\x03 \x01(\v2!.timestreamquery.SnsConfigurationR\x10snsconfiguration\"1\n" +
 	"\x12CancelQueryRequest\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"J\n" +
-	"\x13CancelQueryResponse\x123\n" +
-	"\x13cancellationmessage\x18\x9e\xb3\x87l \x01(\tR\x13cancellationmessage\"R\n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"g\n" +
+	"\x13CancelQueryResponse\x128\n" +
+	"\x13cancellationmessage\x18\x9e\xb3\x87l \x01(\tH\x00R\x13cancellationmessage\x88\x01\x01B\x16\n" +
+	"\x14_cancellationmessage\"`\n" +
 	"\n" +
-	"ColumnInfo\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12-\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\v2\x15.timestreamquery.TypeR\x04type\"0\n" +
-	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xae\x05\n" +
-	"\x1bCreateScheduledQueryRequest\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12h\n" +
-	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12\x15\n" +
+	"ColumnInfo\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12-\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\v2\x15.timestreamquery.TypeR\x04typeB\a\n" +
+	"\x05_name\"A\n" +
+	"\x11ConflictException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xd5\x05\n" +
+	"\x1bCreateScheduledQueryRequest\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12h\n" +
+	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12l\n" +
 	"\x19notificationconfiguration\x18\xad\xf2\xb0\x8a\x01 \x01(\v2*.timestreamquery.NotificationConfigurationR\x19notificationconfiguration\x12$\n" +
 	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tR\vquerystring\x12`\n" +
 	"\x15scheduleconfiguration\x18\xa7\x89\xed\xfa\x01 \x01(\v2&.timestreamquery.ScheduleConfigurationR\x15scheduleconfiguration\x12J\n" +
 	"\x1escheduledqueryexecutionrolearn\x18\xd6\xf1ć\x01 \x01(\tR\x1escheduledqueryexecutionrolearn\x12,\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.timestreamquery.TagR\x04tags\x12Z\n" +
-	"\x13targetconfiguration\x18뒬\xee\x01 \x01(\v2$.timestreamquery.TargetConfigurationR\x13targetconfiguration\"4\n" +
+	"\x13targetconfiguration\x18뒬\xee\x01 \x01(\v2$.timestreamquery.TargetConfigurationR\x13targetconfigurationB\x0e\n" +
+	"\f_clienttokenB\v\n" +
+	"\t_kmskeyid\"4\n" +
 	"\x1cCreateScheduledQueryResponse\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\"\xa6\x02\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\"\xbb\x02\n" +
 	"\x05Datum\x129\n" +
 	"\n" +
 	"arrayvalue\x18\x88\xdd\xdc\t \x03(\v2\x16.timestreamquery.DatumR\n" +
 	"arrayvalue\x12%\n" +
 	"\tnullvalue\x18\xbe\xb1\xa3\xd2\x01 \x01(\bH\x00R\tnullvalue\x88\x01\x01\x124\n" +
-	"\browvalue\x18\x99\xac\xfe\xfc\x01 \x01(\v2\x14.timestreamquery.RowR\browvalue\x12#\n" +
-	"\vscalarvalue\x18\xe3\xaa\xe5\x15 \x01(\tR\vscalarvalue\x12R\n" +
+	"\browvalue\x18\x99\xac\xfe\xfc\x01 \x01(\v2\x14.timestreamquery.RowR\browvalue\x12(\n" +
+	"\vscalarvalue\x18\xe3\xaa\xe5\x15 \x01(\tH\x01R\vscalarvalue\x88\x01\x01\x12R\n" +
 	"\x0ftimeseriesvalue\x18\x8fø\xdf\x01 \x03(\v2$.timestreamquery.TimeSeriesDataPointR\x0ftimeseriesvalueB\f\n" +
 	"\n" +
-	"_nullvalue\"N\n" +
+	"_nullvalueB\x0e\n" +
+	"\f_scalarvalue\"N\n" +
 	"\x1bDeleteScheduledQueryRequest\x12/\n" +
 	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarn\" \n" +
 	"\x1eDescribeAccountSettingsRequest\"\x81\x02\n" +
@@ -5180,12 +5189,13 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x18ErrorReportConfiguration\x12M\n" +
 	"\x0fs3configuration\x18\xfc\xc1\xa2\r \x01(\v2 .timestreamquery.S3ConfigurationR\x0fs3configuration\"g\n" +
 	"\x13ErrorReportLocation\x12P\n" +
-	"\x10s3reportlocation\x18\xef\x95\xc4M \x01(\v2!.timestreamquery.S3ReportLocationR\x10s3reportlocation\"\xf2\x01\n" +
-	"\x1cExecuteScheduledQueryRequest\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12*\n" +
+	"\x10s3reportlocation\x18\xef\x95\xc4M \x01(\v2!.timestreamquery.S3ReportLocationR\x10s3reportlocation\"\x87\x02\n" +
+	"\x1cExecuteScheduledQueryRequest\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12*\n" +
 	"\x0einvocationtime\x18\xab\x9d\x9e\x9e\x01 \x01(\tR\x0einvocationtime\x12P\n" +
 	"\rqueryinsights\x18\xaf٤2 \x01(\v2'.timestreamquery.ScheduledQueryInsightsR\rqueryinsights\x12/\n" +
-	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarn\"\xc6\x03\n" +
+	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarnB\x0e\n" +
+	"\f_clienttoken\"\xc6\x03\n" +
 	"\x0eExecutionStats\x12*\n" +
 	"\fbytesmetered\x18\xb5\xd0\xfbn \x01(\x03H\x00R\fbytesmetered\x88\x01\x01\x12?\n" +
 	"\x16cumulativebytesscanned\x18\xd0\xc1\x97\xc5\x01 \x01(\x03H\x01R\x16cumulativebytesscanned\x88\x01\x01\x12'\n" +
@@ -5200,49 +5210,67 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\v_datawritesB\x18\n" +
 	"\x16_executiontimeinmillisB\x12\n" +
 	"\x10_queryresultrowsB\x12\n" +
-	"\x10_recordsingested\"6\n" +
-	"\x17InternalServerException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
-	"\x18InvalidEndpointException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xb6\x01\n" +
+	"\x10_recordsingested\"G\n" +
+	"\x17InternalServerException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18InvalidEndpointException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xcd\x01\n" +
 	"\n" +
 	"LastUpdate\x12<\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.timestreamquery.LastUpdateStatusR\x06status\x12'\n" +
-	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tR\rstatusmessage\x12.\n" +
-	"\x0etargetquerytcu\x18\xad\x97\xd7W \x01(\x05H\x00R\x0etargetquerytcu\x88\x01\x01B\x11\n" +
-	"\x0f_targetquerytcu\"v\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.timestreamquery.LastUpdateStatusR\x06status\x12,\n" +
+	"\rstatusmessage\x18\x8f\xc6\xce\" \x01(\tH\x00R\rstatusmessage\x88\x01\x01\x12.\n" +
+	"\x0etargetquerytcu\x18\xad\x97\xd7W \x01(\x05H\x01R\x0etargetquerytcu\x88\x01\x01B\x10\n" +
+	"\x0e_statusmessageB\x11\n" +
+	"\x0f_targetquerytcu\"\x89\x01\n" +
 	"\x1bListScheduledQueriesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x90\x01\n" +
-	"\x1cListScheduledQueriesResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12O\n" +
-	"\x10scheduledqueries\x18\xe9\xa7\xe2\xda\x01 \x03(\v2\x1f.timestreamquery.ScheduledQueryR\x10scheduledqueries\"\x9b\x01\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa3\x01\n" +
+	"\x1cListScheduledQueriesResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12O\n" +
+	"\x10scheduledqueries\x18\xe9\xa7\xe2\xda\x01 \x03(\v2\x1f.timestreamquery.ScheduledQueryR\x10scheduledqueriesB\f\n" +
+	"\n" +
+	"_nexttoken\"\xae\x01\n" +
 	"\x1aListTagsForResourceRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12$\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\r\n" +
-	"\v_maxresults\"l\n" +
-	"\x1bListTagsForResourceResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12,\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.timestreamquery.TagR\x04tags\"\xe0\x02\n" +
-	"\x13MixedMeasureMapping\x12$\n" +
-	"\vmeasurename\x18\xdd\xe6\x95\xcb\x01 \x01(\tR\vmeasurename\x12Q\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x7f\n" +
+	"\x1bListTagsForResourceResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12,\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.timestreamquery.TagR\x04tagsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa6\x03\n" +
+	"\x13MixedMeasureMapping\x12)\n" +
+	"\vmeasurename\x18\xdd\xe6\x95\xcb\x01 \x01(\tH\x00R\vmeasurename\x88\x01\x01\x12Q\n" +
 	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2!.timestreamquery.MeasureValueTypeR\x10measurevaluetype\x12w\n" +
-	"\x1dmultimeasureattributemappings\x18ލ\xae\x94\x01 \x03(\v2-.timestreamquery.MultiMeasureAttributeMappingR\x1dmultimeasureattributemappings\x12%\n" +
-	"\fsourcecolumn\x18\x83\xc5\xf0h \x01(\tR\fsourcecolumn\x120\n" +
-	"\x11targetmeasurename\x18\xdc\xc1\xf0\xdf\x01 \x01(\tR\x11targetmeasurename\"\xec\x01\n" +
+	"\x1dmultimeasureattributemappings\x18ލ\xae\x94\x01 \x03(\v2-.timestreamquery.MultiMeasureAttributeMappingR\x1dmultimeasureattributemappings\x12*\n" +
+	"\fsourcecolumn\x18\x83\xc5\xf0h \x01(\tH\x01R\fsourcecolumn\x88\x01\x01\x125\n" +
+	"\x11targetmeasurename\x18\xdc\xc1\xf0\xdf\x01 \x01(\tH\x02R\x11targetmeasurename\x88\x01\x01B\x0e\n" +
+	"\f_measurenameB\x0f\n" +
+	"\r_sourcecolumnB\x14\n" +
+	"\x12_targetmeasurename\"\x95\x02\n" +
 	"\x1cMultiMeasureAttributeMapping\x12W\n" +
 	"\x10measurevaluetype\x18\x9d\x8a\xc4\xde\x01 \x01(\x0e2'.timestreamquery.ScalarMeasureValueTypeR\x10measurevaluetype\x12%\n" +
-	"\fsourcecolumn\x18\x83\xc5\xf0h \x01(\tR\fsourcecolumn\x12L\n" +
-	"\x1ftargetmultimeasureattributename\x18\xefӗ\xc6\x01 \x01(\tR\x1ftargetmultimeasureattributename\"\xca\x01\n" +
+	"\fsourcecolumn\x18\x83\xc5\xf0h \x01(\tR\fsourcecolumn\x12Q\n" +
+	"\x1ftargetmultimeasureattributename\x18\xefӗ\xc6\x01 \x01(\tH\x00R\x1ftargetmultimeasureattributename\x88\x01\x01B\"\n" +
+	" _targetmultimeasureattributename\"\xea\x01\n" +
 	"\x14MultiMeasureMappings\x12w\n" +
-	"\x1dmultimeasureattributemappings\x18ލ\xae\x94\x01 \x03(\v2-.timestreamquery.MultiMeasureAttributeMappingR\x1dmultimeasureattributemappings\x129\n" +
-	"\x16targetmultimeasurename\x18\x95ˉ\r \x01(\tR\x16targetmultimeasurename\"m\n" +
+	"\x1dmultimeasureattributemappings\x18ލ\xae\x94\x01 \x03(\v2-.timestreamquery.MultiMeasureAttributeMappingR\x1dmultimeasureattributemappings\x12>\n" +
+	"\x16targetmultimeasurename\x18\x95ˉ\r \x01(\tH\x00R\x16targetmultimeasurename\x88\x01\x01B\x19\n" +
+	"\x17_targetmultimeasurename\"m\n" +
 	"\x19NotificationConfiguration\x12P\n" +
 	"\x10snsconfiguration\x18\x8a\xe2\xa1\x03 \x01(\v2!.timestreamquery.SnsConfigurationR\x10snsconfiguration\"X\n" +
 	"\x10ParameterMapping\x12\x15\n" +
@@ -5273,9 +5301,11 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2+.timestreamquery.ProvisionedCapacityRequestR\x13provisionedcapacity\"\xbc\x01\n" +
 	"\x14QueryComputeResponse\x12A\n" +
 	"\vcomputemode\x18\u008b\xeea \x01(\x0e2\x1c.timestreamquery.ComputeModeR\vcomputemode\x12a\n" +
-	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2,.timestreamquery.ProvisionedCapacityResponseR\x13provisionedcapacity\"6\n" +
-	"\x17QueryExecutionException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"K\n" +
+	"\x13provisionedcapacity\x18\xfe\xe8\xbfV \x01(\v2,.timestreamquery.ProvisionedCapacityResponseR\x13provisionedcapacity\"G\n" +
+	"\x17QueryExecutionException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
 	"\rQueryInsights\x12:\n" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\".timestreamquery.QueryInsightsModeR\x04mode\"\xf6\x04\n" +
 	"\x15QueryInsightsResponse\x12)\n" +
@@ -5294,86 +5324,110 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x10_querytablecountB\x17\n" +
 	"\x15_unloadpartitioncountB\x15\n" +
 	"\x13_unloadwrittenbytesB\x14\n" +
-	"\x12_unloadwrittenrows\"\xf1\x01\n" +
-	"\fQueryRequest\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12 \n" +
-	"\amaxrows\x18\x8d\x81\x90x \x01(\x05H\x00R\amaxrows\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12G\n" +
+	"\x12_unloadwrittenrows\"\x99\x02\n" +
+	"\fQueryRequest\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12 \n" +
+	"\amaxrows\x18\x8d\x81\x90x \x01(\x05H\x01R\amaxrows\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12G\n" +
 	"\rqueryinsights\x18\xaf٤2 \x01(\v2\x1e.timestreamquery.QueryInsightsR\rqueryinsights\x12$\n" +
-	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tR\vquerystringB\n" +
+	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tR\vquerystringB\x0e\n" +
+	"\f_clienttokenB\n" +
 	"\n" +
-	"\b_maxrows\"\xe1\x02\n" +
+	"\b_maxrowsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xf4\x02\n" +
 	"\rQueryResponse\x12?\n" +
 	"\n" +
 	"columninfo\x18\x84\x8e\xf6\xad\x01 \x03(\v2\x1b.timestreamquery.ColumnInfoR\n" +
-	"columninfo\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1b\n" +
+	"columninfo\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12\x1b\n" +
 	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\x12`\n" +
 	"\x15queryinsightsresponse\x18\xf2\xb5\xf7\xa8\x01 \x01(\v2&.timestreamquery.QueryInsightsResponseR\x15queryinsightsresponse\x12B\n" +
 	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\v2\x1c.timestreamquery.QueryStatusR\vquerystatus\x12+\n" +
-	"\x04rows\x18\xb9\xa5\x96S \x03(\v2\x14.timestreamquery.RowR\x04rows\"V\n" +
+	"\x04rows\x18\xb9\xa5\x96S \x03(\v2\x14.timestreamquery.RowR\x04rowsB\f\n" +
+	"\n" +
+	"_nexttoken\"V\n" +
 	"\x14QuerySpatialCoverage\x12>\n" +
-	"\x03max\x18\xbaǟ\xe5\x01 \x01(\v2(.timestreamquery.QuerySpatialCoverageMaxR\x03max\"{\n" +
+	"\x03max\x18\xbaǟ\xe5\x01 \x01(\v2(.timestreamquery.QuerySpatialCoverageMaxR\x03max\"\x9c\x01\n" +
 	"\x17QuerySpatialCoverageMax\x12&\n" +
-	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x03(\tR\fpartitionkey\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01R\x05value\"\xf7\x01\n" +
+	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x03(\tR\fpartitionkey\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x00R\btablearn\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x01H\x01R\x05value\x88\x01\x01B\v\n" +
+	"\t_tablearnB\b\n" +
+	"\x06_value\"\x93\x02\n" +
 	"\vQueryStatus\x12>\n" +
 	"\x16cumulativebytesmetered\x18\x90\xe1\xf0] \x01(\x03H\x00R\x16cumulativebytesmetered\x88\x01\x01\x12?\n" +
-	"\x16cumulativebytesscanned\x18\xd0\xc1\x97\xc5\x01 \x01(\x03H\x01R\x16cumulativebytesscanned\x88\x01\x01\x121\n" +
-	"\x12progresspercentage\x18ǃ\x85e \x01(\x01R\x12progresspercentageB\x19\n" +
+	"\x16cumulativebytesscanned\x18\xd0\xc1\x97\xc5\x01 \x01(\x03H\x01R\x16cumulativebytesscanned\x88\x01\x01\x126\n" +
+	"\x12progresspercentage\x18ǃ\x85e \x01(\x01H\x02R\x12progresspercentage\x88\x01\x01B\x19\n" +
 	"\x17_cumulativebytesmeteredB\x19\n" +
-	"\x17_cumulativebytesscanned\"R\n" +
+	"\x17_cumulativebytesscannedB\x15\n" +
+	"\x13_progresspercentage\"R\n" +
 	"\x12QueryTemporalRange\x12<\n" +
-	"\x03max\x18\xbaǟ\xe5\x01 \x01(\v2&.timestreamquery.QueryTemporalRangeMaxR\x03max\"`\n" +
-	"\x15QueryTemporalRangeMax\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12\x1d\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03H\x00R\x05value\x88\x01\x01B\b\n" +
-	"\x06_value\"i\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12/\n" +
-	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarn\"5\n" +
+	"\x03max\x18\xbaǟ\xe5\x01 \x01(\v2&.timestreamquery.QueryTemporalRangeMaxR\x03max\"r\n" +
+	"\x15QueryTemporalRangeMax\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x00R\btablearn\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x03H\x01R\x05value\x88\x01\x01B\v\n" +
+	"\t_tablearnB\b\n" +
+	"\x06_value\"\x95\x01\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x124\n" +
+	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tH\x01R\x11scheduledqueryarn\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x14\n" +
+	"\x12_scheduledqueryarn\"5\n" +
 	"\x03Row\x12.\n" +
-	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x03(\v2\x16.timestreamquery.DatumR\x04data\"\xb5\x01\n" +
+	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x03(\v2\x16.timestreamquery.DatumR\x04data\"\xce\x01\n" +
 	"\x0fS3Configuration\x12!\n" +
 	"\n" +
 	"bucketname\x18\xb5\xba\x9ec \x01(\tR\n" +
 	"bucketname\x12R\n" +
-	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamquery.S3EncryptionOptionR\x10encryptionoption\x12+\n" +
-	"\x0fobjectkeyprefix\x18檞? \x01(\tR\x0fobjectkeyprefix\"W\n" +
-	"\x10S3ReportLocation\x12!\n" +
+	"\x10encryptionoption\x18\xa6\xbc\xd8L \x01(\x0e2#.timestreamquery.S3EncryptionOptionR\x10encryptionoption\x120\n" +
+	"\x0fobjectkeyprefix\x18檞? \x01(\tH\x00R\x0fobjectkeyprefix\x88\x01\x01B\x12\n" +
+	"\x10_objectkeyprefix\"~\n" +
+	"\x10S3ReportLocation\x12&\n" +
 	"\n" +
-	"bucketname\x18\xb5\xba\x9ec \x01(\tR\n" +
-	"bucketname\x12 \n" +
-	"\tobjectkey\x18\xb2\xfc\x9a\xa0\x01 \x01(\tR\tobjectkey\"K\n" +
+	"bucketname\x18\xb5\xba\x9ec \x01(\tH\x00R\n" +
+	"bucketname\x88\x01\x01\x12%\n" +
+	"\tobjectkey\x18\xb2\xfc\x9a\xa0\x01 \x01(\tH\x01R\tobjectkey\x88\x01\x01B\r\n" +
+	"\v_bucketnameB\f\n" +
+	"\n" +
+	"_objectkey\"K\n" +
 	"\x15ScheduleConfiguration\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\"\xa6\x04\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\"\xf8\x04\n" +
 	"\x0eScheduledQuery\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12%\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12h\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12h\n" +
 	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12R\n" +
 	"\rlastrunstatus\x18\xa9\x8c\xe0\xd2\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusR\rlastrunstatus\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x12nextinvocationtime\x18\xa8Ĥ\xca\x01 \x01(\tR\x12nextinvocationtime\x129\n" +
-	"\x16previousinvocationtime\x18\xe8\xce\xcb\x03 \x01(\tR\x16previousinvocationtime\x12>\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
+	"\x12nextinvocationtime\x18\xa8Ĥ\xca\x01 \x01(\tH\x01R\x12nextinvocationtime\x88\x01\x01\x12>\n" +
+	"\x16previousinvocationtime\x18\xe8\xce\xcb\x03 \x01(\tH\x02R\x16previousinvocationtime\x88\x01\x01\x12>\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2$.timestreamquery.ScheduledQueryStateR\x05state\x12S\n" +
-	"\x11targetdestination\x18\xc9\xfe\x81: \x01(\v2\".timestreamquery.TargetDestinationR\x11targetdestination\"\xfa\a\n" +
+	"\x11targetdestination\x18\xc9\xfe\x81: \x01(\v2\".timestreamquery.TargetDestinationR\x11targetdestinationB\x0f\n" +
+	"\r_creationtimeB\x15\n" +
+	"\x13_nextinvocationtimeB\x19\n" +
+	"\x17_previousinvocationtime\"\x86\t\n" +
 	"\x19ScheduledQueryDescription\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12%\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12h\n" +
-	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12T\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12h\n" +
+	"\x18errorreportconfiguration\x18\xe0\x9d\xf0i \x01(\v2).timestreamquery.ErrorReportConfigurationR\x18errorreportconfiguration\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x12T\n" +
 	"\x0elastrunsummary\x18\xa3\xc7\xeaq \x01(\v2).timestreamquery.ScheduledQueryRunSummaryR\x0elastrunsummary\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x12nextinvocationtime\x18\xa8Ĥ\xca\x01 \x01(\tR\x12nextinvocationtime\x12l\n" +
-	"\x19notificationconfiguration\x18\xad\xf2\xb0\x8a\x01 \x01(\v2*.timestreamquery.NotificationConfigurationR\x19notificationconfiguration\x129\n" +
-	"\x16previousinvocationtime\x18\xe8\xce\xcb\x03 \x01(\tR\x16previousinvocationtime\x12$\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
+	"\x12nextinvocationtime\x18\xa8Ĥ\xca\x01 \x01(\tH\x02R\x12nextinvocationtime\x88\x01\x01\x12l\n" +
+	"\x19notificationconfiguration\x18\xad\xf2\xb0\x8a\x01 \x01(\v2*.timestreamquery.NotificationConfigurationR\x19notificationconfiguration\x12>\n" +
+	"\x16previousinvocationtime\x18\xe8\xce\xcb\x03 \x01(\tH\x03R\x16previousinvocationtime\x88\x01\x01\x12$\n" +
 	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tR\vquerystring\x12]\n" +
 	"\x12recentlyfailedruns\x18\xaf\xc1\xb8\xae\x01 \x03(\v2).timestreamquery.ScheduledQueryRunSummaryR\x12recentlyfailedruns\x12`\n" +
-	"\x15scheduleconfiguration\x18\xa7\x89\xed\xfa\x01 \x01(\v2&.timestreamquery.ScheduleConfigurationR\x15scheduleconfiguration\x12J\n" +
-	"\x1escheduledqueryexecutionrolearn\x18\xd6\xf1ć\x01 \x01(\tR\x1escheduledqueryexecutionrolearn\x12>\n" +
+	"\x15scheduleconfiguration\x18\xa7\x89\xed\xfa\x01 \x01(\v2&.timestreamquery.ScheduleConfigurationR\x15scheduleconfiguration\x12O\n" +
+	"\x1escheduledqueryexecutionrolearn\x18\xd6\xf1ć\x01 \x01(\tH\x04R\x1escheduledqueryexecutionrolearn\x88\x01\x01\x12>\n" +
 	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2$.timestreamquery.ScheduledQueryStateR\x05state\x12Z\n" +
-	"\x13targetconfiguration\x18뒬\xee\x01 \x01(\v2$.timestreamquery.TargetConfigurationR\x13targetconfiguration\"]\n" +
+	"\x13targetconfiguration\x18뒬\xee\x01 \x01(\v2$.timestreamquery.TargetConfigurationR\x13targetconfigurationB\x0f\n" +
+	"\r_creationtimeB\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_nextinvocationtimeB\x19\n" +
+	"\x17_previousinvocationtimeB!\n" +
+	"\x1f_scheduledqueryexecutionrolearn\"]\n" +
 	"\x16ScheduledQueryInsights\x12C\n" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2+.timestreamquery.ScheduledQueryInsightsModeR\x04mode\"\x8e\x03\n" +
 	"\x1eScheduledQueryInsightsResponse\x12)\n" +
@@ -5386,25 +5440,34 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x12querytemporalrange\x18\xe7\xbc\xe9_ \x01(\v2#.timestreamquery.QueryTemporalRangeR\x12querytemporalrangeB\x0e\n" +
 	"\f_outputbytesB\r\n" +
 	"\v_outputrowsB\x12\n" +
-	"\x10_querytablecount\"\xf3\x03\n" +
+	"\x10_querytablecount\"\xb7\x04\n" +
 	"\x18ScheduledQueryRunSummary\x12Y\n" +
 	"\x13errorreportlocation\x18\xf9\xcf\xf67 \x01(\v2$.timestreamquery.ErrorReportLocationR\x13errorreportlocation\x12J\n" +
-	"\x0eexecutionstats\x18\x9d\x94\xf7h \x01(\v2\x1f.timestreamquery.ExecutionStatsR\x0eexecutionstats\x12'\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tR\rfailurereason\x12*\n" +
-	"\x0einvocationtime\x18\xab\x9d\x9e\x9e\x01 \x01(\tR\x0einvocationtime\x12i\n" +
+	"\x0eexecutionstats\x18\x9d\x94\xf7h \x01(\v2\x1f.timestreamquery.ExecutionStatsR\x0eexecutionstats\x12,\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x00R\rfailurereason\x88\x01\x01\x12/\n" +
+	"\x0einvocationtime\x18\xab\x9d\x9e\x9e\x01 \x01(\tH\x01R\x0einvocationtime\x88\x01\x01\x12i\n" +
 	"\x15queryinsightsresponse\x18\xf2\xb5\xf7\xa8\x01 \x01(\v2/.timestreamquery.ScheduledQueryInsightsResponseR\x15queryinsightsresponse\x12J\n" +
-	"\trunstatus\x18\xd5\u008d\x8c\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusR\trunstatus\x12$\n" +
-	"\vtriggertime\x18\x9b\x86\x96\x80\x01 \x01(\tR\vtriggertime\"\xcb\x01\n" +
+	"\trunstatus\x18\xd5\u008d\x8c\x01 \x01(\x0e2(.timestreamquery.ScheduledQueryRunStatusR\trunstatus\x12)\n" +
+	"\vtriggertime\x18\x9b\x86\x96\x80\x01 \x01(\tH\x02R\vtriggertime\x88\x01\x01B\x10\n" +
+	"\x0e_failurereasonB\x11\n" +
+	"\x0f_invocationtimeB\x0e\n" +
+	"\f_triggertime\"\x82\x02\n" +
 	"\fSelectColumn\x12 \n" +
-	"\aaliased\x18\xb7\xb2\xa7K \x01(\bH\x00R\aaliased\x88\x01\x01\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12-\n" +
+	"\aaliased\x18\xb7\xb2\xa7K \x01(\bH\x00R\aaliased\x88\x01\x01\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x01R\fdatabasename\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x03R\ttablename\x88\x01\x01\x12-\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\v2\x15.timestreamquery.TypeR\x04typeB\n" +
 	"\n" +
-	"\b_aliased\"<\n" +
-	"\x1dServiceQuotaExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"1\n" +
+	"\b_aliasedB\x0f\n" +
+	"\r_databasenameB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_tablename\"M\n" +
+	"\x1dServiceQuotaExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"1\n" +
 	"\x10SnsConfiguration\x12\x1d\n" +
 	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"4\n" +
 	"\x03Tag\x12\x13\n" +
@@ -5417,25 +5480,31 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\x13TargetConfiguration\x12e\n" +
 	"\x17timestreamconfiguration\x18\x97\xae\xac\x0e \x01(\v2(.timestreamquery.TimestreamConfigurationR\x17timestreamconfiguration\"t\n" +
 	"\x11TargetDestination\x12_\n" +
-	"\x15timestreamdestination\x18ͻ\xd5{ \x01(\v2&.timestreamquery.TimestreamDestinationR\x15timestreamdestination\"2\n" +
-	"\x13ThrottlingException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"_\n" +
+	"\x15timestreamdestination\x18ͻ\xd5{ \x01(\v2&.timestreamquery.TimestreamDestinationR\x15timestreamdestination\"C\n" +
+	"\x13ThrottlingException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"_\n" +
 	"\x13TimeSeriesDataPoint\x12\x16\n" +
 	"\x04time\x18\x85ȓ\xff\x01 \x01(\tR\x04time\x120\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x16.timestreamquery.DatumR\x05value\"\xc8\x03\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\v2\x16.timestreamquery.DatumR\x05value\"\xe3\x03\n" +
 	"\x17TimestreamConfiguration\x12%\n" +
 	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12R\n" +
-	"\x11dimensionmappings\x18\xdd\xfa\x82k \x03(\v2!.timestreamquery.DimensionMappingR\x11dimensionmappings\x12/\n" +
-	"\x11measurenamecolumn\x18\xcf˼5 \x01(\tR\x11measurenamecolumn\x12\\\n" +
+	"\x11dimensionmappings\x18\xdd\xfa\x82k \x03(\v2!.timestreamquery.DimensionMappingR\x11dimensionmappings\x124\n" +
+	"\x11measurenamecolumn\x18\xcf˼5 \x01(\tH\x00R\x11measurenamecolumn\x88\x01\x01\x12\\\n" +
 	"\x14mixedmeasuremappings\x18\xc0\xc8\xe6\xf8\x01 \x03(\v2$.timestreamquery.MixedMeasureMappingR\x14mixedmeasuremappings\x12]\n" +
 	"\x14multimeasuremappings\x18\xcaǟ\xef\x01 \x01(\v2%.timestreamquery.MultiMeasureMappingsR\x14multimeasuremappings\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12\"\n" +
 	"\n" +
 	"timecolumn\x18\x97\xd6\xd8\xf7\x01 \x01(\tR\n" +
-	"timecolumn\"`\n" +
-	"\x15TimestreamDestination\x12%\n" +
-	"\fdatabasename\x18ܲ\xd9* \x01(\tR\fdatabasename\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\"\xc5\x02\n" +
+	"timecolumnB\x14\n" +
+	"\x12_measurenamecolumn\"\x89\x01\n" +
+	"\x15TimestreamDestination\x12*\n" +
+	"\fdatabasename\x18ܲ\xd9* \x01(\tH\x00R\fdatabasename\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01B\x0f\n" +
+	"\r_databasenameB\f\n" +
+	"\n" +
+	"_tablename\"\xc5\x02\n" +
 	"\x04Type\x12I\n" +
 	"\x0farraycolumninfo\x18\xa1\x95\xaa\xe3\x01 \x01(\v2\x1b.timestreamquery.ColumnInfoR\x0farraycolumninfo\x12D\n" +
 	"\rrowcolumninfo\x18\xba\xc1\xf8\x11 \x03(\v2\x1b.timestreamquery.ColumnInfoR\rrowcolumninfo\x12?\n" +
@@ -5459,9 +5528,11 @@ const file_timestreamquery_proto_rawDesc = "" +
 	"\f_maxquerytcu\"\x8e\x01\n" +
 	"\x1bUpdateScheduledQueryRequest\x12/\n" +
 	"\x11scheduledqueryarn\x18ԃ\xefo \x01(\tR\x11scheduledqueryarn\x12>\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2$.timestreamquery.ScheduledQueryStateR\x05state\"2\n" +
-	"\x13ValidationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage*G\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\x0e2$.timestreamquery.ScheduledQueryStateR\x05state\"C\n" +
+	"\x13ValidationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message*G\n" +
 	"\vComputeMode\x12\x1c\n" +
 	"\x18COMPUTE_MODE_PROVISIONED\x10\x00\x12\x1a\n" +
 	"\x16COMPUTE_MODE_ON_DEMAND\x10\x01*6\n" +
@@ -5768,22 +5839,49 @@ func file_timestreamquery_proto_init() {
 	if File_timestreamquery_proto != nil {
 		return
 	}
+	file_timestreamquery_proto_msgTypes[0].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[3].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[4].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[5].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[6].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[8].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[11].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[20].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[21].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[22].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[23].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[24].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[25].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[26].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[27].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[28].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[29].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[30].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[31].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[34].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[37].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[40].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[42].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[43].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[44].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[46].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[47].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[49].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[50].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[52].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[53].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[55].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[56].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[58].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[59].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[60].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[61].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[68].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[70].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[71].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[75].OneofWrappers = []any{}
 	file_timestreamquery_proto_msgTypes[76].OneofWrappers = []any{}
+	file_timestreamquery_proto_msgTypes[78].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

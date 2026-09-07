@@ -28,7 +28,7 @@ const (
 
 type AwsVpcConfiguration struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Assignpublicip string                 `protobuf:"bytes,461653589,opt,name=assignpublicip,proto3" json:"assignpublicip,omitempty"`
+	Assignpublicip *string                `protobuf:"bytes,461653589,opt,name=assignpublicip,proto3,oneof" json:"assignpublicip,omitempty"`
 	Securitygroups []string               `protobuf:"bytes,515282516,rep,name=securitygroups,proto3" json:"securitygroups,omitempty"`
 	Subnets        []string               `protobuf:"bytes,414921506,rep,name=subnets,proto3" json:"subnets,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -66,8 +66,8 @@ func (*AwsVpcConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *AwsVpcConfiguration) GetAssignpublicip() string {
-	if x != nil {
-		return x.Assignpublicip
+	if x != nil && x.Assignpublicip != nil {
+		return *x.Assignpublicip
 	}
 	return ""
 }
@@ -192,7 +192,7 @@ func (x *ConflictException) GetMessage() string {
 
 type CreateScheduleGroupInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clienttoken   string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
+	Clienttoken   *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -230,8 +230,8 @@ func (*CreateScheduleGroupInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateScheduleGroupInput) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
@@ -296,18 +296,18 @@ func (x *CreateScheduleGroupOutput) GetSchedulegrouparn() string {
 
 type CreateScheduleInput struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Actionaftercompletion      string                 `protobuf:"bytes,282350906,opt,name=actionaftercompletion,proto3" json:"actionaftercompletion,omitempty"`
-	Clienttoken                string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
-	Description                string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Enddate                    string                 `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
+	Actionaftercompletion      *string                `protobuf:"bytes,282350906,opt,name=actionaftercompletion,proto3,oneof" json:"actionaftercompletion,omitempty"`
+	Clienttoken                *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
+	Description                *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Enddate                    *string                `protobuf:"bytes,77486543,opt,name=enddate,proto3,oneof" json:"enddate,omitempty"`
 	Flexibletimewindow         *FlexibleTimeWindow    `protobuf:"bytes,2518952,opt,name=flexibletimewindow,proto3" json:"flexibletimewindow,omitempty"`
-	Groupname                  string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Kmskeyarn                  string                 `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
+	Groupname                  *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
+	Kmskeyarn                  *string                `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3,oneof" json:"kmskeyarn,omitempty"`
 	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Scheduleexpression         string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Scheduleexpressiontimezone string                 `protobuf:"bytes,400730326,opt,name=scheduleexpressiontimezone,proto3" json:"scheduleexpressiontimezone,omitempty"`
-	Startdate                  string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	State                      string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Scheduleexpressiontimezone *string                `protobuf:"bytes,400730326,opt,name=scheduleexpressiontimezone,proto3,oneof" json:"scheduleexpressiontimezone,omitempty"`
+	Startdate                  *string                `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
+	State                      *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	Target                     *Target                `protobuf:"bytes,191361385,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -344,29 +344,29 @@ func (*CreateScheduleInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateScheduleInput) GetActionaftercompletion() string {
-	if x != nil {
-		return x.Actionaftercompletion
+	if x != nil && x.Actionaftercompletion != nil {
+		return *x.Actionaftercompletion
 	}
 	return ""
 }
 
 func (x *CreateScheduleInput) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
 
 func (x *CreateScheduleInput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *CreateScheduleInput) GetEnddate() string {
-	if x != nil {
-		return x.Enddate
+	if x != nil && x.Enddate != nil {
+		return *x.Enddate
 	}
 	return ""
 }
@@ -379,15 +379,15 @@ func (x *CreateScheduleInput) GetFlexibletimewindow() *FlexibleTimeWindow {
 }
 
 func (x *CreateScheduleInput) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
 
 func (x *CreateScheduleInput) GetKmskeyarn() string {
-	if x != nil {
-		return x.Kmskeyarn
+	if x != nil && x.Kmskeyarn != nil {
+		return *x.Kmskeyarn
 	}
 	return ""
 }
@@ -407,22 +407,22 @@ func (x *CreateScheduleInput) GetScheduleexpression() string {
 }
 
 func (x *CreateScheduleInput) GetScheduleexpressiontimezone() string {
-	if x != nil {
-		return x.Scheduleexpressiontimezone
+	if x != nil && x.Scheduleexpressiontimezone != nil {
+		return *x.Scheduleexpressiontimezone
 	}
 	return ""
 }
 
 func (x *CreateScheduleInput) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
 
 func (x *CreateScheduleInput) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
@@ -480,7 +480,7 @@ func (x *CreateScheduleOutput) GetSchedulearn() string {
 
 type DeadLetterConfig struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
+	Arn           *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -516,15 +516,15 @@ func (*DeadLetterConfig) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeadLetterConfig) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 type DeleteScheduleGroupInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clienttoken   string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
+	Clienttoken   *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -561,8 +561,8 @@ func (*DeleteScheduleGroupInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteScheduleGroupInput) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
@@ -612,8 +612,8 @@ func (*DeleteScheduleGroupOutput) Descriptor() ([]byte, []int) {
 
 type DeleteScheduleInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clienttoken   string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
-	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
+	Clienttoken   *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
+	Groupname     *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -650,15 +650,15 @@ func (*DeleteScheduleInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteScheduleInput) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
 
 func (x *DeleteScheduleInput) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
@@ -711,14 +711,14 @@ type EcsParameters struct {
 	Capacityproviderstrategy []*CapacityProviderStrategyItem `protobuf:"bytes,273957206,rep,name=capacityproviderstrategy,proto3" json:"capacityproviderstrategy,omitempty"`
 	Enableecsmanagedtags     *bool                           `protobuf:"varint,146161174,opt,name=enableecsmanagedtags,proto3,oneof" json:"enableecsmanagedtags,omitempty"`
 	Enableexecutecommand     *bool                           `protobuf:"varint,451374779,opt,name=enableexecutecommand,proto3,oneof" json:"enableexecutecommand,omitempty"`
-	Group                    string                          `protobuf:"bytes,91525165,opt,name=group,proto3" json:"group,omitempty"`
-	Launchtype               string                          `protobuf:"bytes,184333335,opt,name=launchtype,proto3" json:"launchtype,omitempty"`
+	Group                    *string                         `protobuf:"bytes,91525165,opt,name=group,proto3,oneof" json:"group,omitempty"`
+	Launchtype               *string                         `protobuf:"bytes,184333335,opt,name=launchtype,proto3,oneof" json:"launchtype,omitempty"`
 	Networkconfiguration     *NetworkConfiguration           `protobuf:"bytes,240088634,opt,name=networkconfiguration,proto3" json:"networkconfiguration,omitempty"`
 	Placementconstraints     []*PlacementConstraint          `protobuf:"bytes,248464365,rep,name=placementconstraints,proto3" json:"placementconstraints,omitempty"`
 	Placementstrategy        []*PlacementStrategy            `protobuf:"bytes,25036678,rep,name=placementstrategy,proto3" json:"placementstrategy,omitempty"`
-	Platformversion          string                          `protobuf:"bytes,139924287,opt,name=platformversion,proto3" json:"platformversion,omitempty"`
-	Propagatetags            string                          `protobuf:"bytes,405557622,opt,name=propagatetags,proto3" json:"propagatetags,omitempty"`
-	Referenceid              string                          `protobuf:"bytes,291739032,opt,name=referenceid,proto3" json:"referenceid,omitempty"`
+	Platformversion          *string                         `protobuf:"bytes,139924287,opt,name=platformversion,proto3,oneof" json:"platformversion,omitempty"`
+	Propagatetags            *string                         `protobuf:"bytes,405557622,opt,name=propagatetags,proto3,oneof" json:"propagatetags,omitempty"`
+	Referenceid              *string                         `protobuf:"bytes,291739032,opt,name=referenceid,proto3,oneof" json:"referenceid,omitempty"`
 	Tags                     []*TagsEntry                    `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	Taskcount                *int32                          `protobuf:"varint,398407508,opt,name=taskcount,proto3,oneof" json:"taskcount,omitempty"`
 	Taskdefinitionarn        string                          `protobuf:"bytes,82234477,opt,name=taskdefinitionarn,proto3" json:"taskdefinitionarn,omitempty"`
@@ -778,15 +778,15 @@ func (x *EcsParameters) GetEnableexecutecommand() bool {
 }
 
 func (x *EcsParameters) GetGroup() string {
-	if x != nil {
-		return x.Group
+	if x != nil && x.Group != nil {
+		return *x.Group
 	}
 	return ""
 }
 
 func (x *EcsParameters) GetLaunchtype() string {
-	if x != nil {
-		return x.Launchtype
+	if x != nil && x.Launchtype != nil {
+		return *x.Launchtype
 	}
 	return ""
 }
@@ -813,22 +813,22 @@ func (x *EcsParameters) GetPlacementstrategy() []*PlacementStrategy {
 }
 
 func (x *EcsParameters) GetPlatformversion() string {
-	if x != nil {
-		return x.Platformversion
+	if x != nil && x.Platformversion != nil {
+		return *x.Platformversion
 	}
 	return ""
 }
 
 func (x *EcsParameters) GetPropagatetags() string {
-	if x != nil {
-		return x.Propagatetags
+	if x != nil && x.Propagatetags != nil {
+		return *x.Propagatetags
 	}
 	return ""
 }
 
 func (x *EcsParameters) GetReferenceid() string {
-	if x != nil {
-		return x.Referenceid
+	if x != nil && x.Referenceid != nil {
+		return *x.Referenceid
 	}
 	return ""
 }
@@ -1004,11 +1004,11 @@ func (x *GetScheduleGroupInput) GetName() string {
 
 type GetScheduleGroupOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationdate         string                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Lastmodificationdate string                 `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3" json:"lastmodificationdate,omitempty"`
-	Name                 string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	State                string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Arn                  *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationdate         *string                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Lastmodificationdate *string                `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3,oneof" json:"lastmodificationdate,omitempty"`
+	Name                 *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	State                *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1044,43 +1044,43 @@ func (*GetScheduleGroupOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetScheduleGroupOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetScheduleGroupOutput) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *GetScheduleGroupOutput) GetLastmodificationdate() string {
-	if x != nil {
-		return x.Lastmodificationdate
+	if x != nil && x.Lastmodificationdate != nil {
+		return *x.Lastmodificationdate
 	}
 	return ""
 }
 
 func (x *GetScheduleGroupOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *GetScheduleGroupOutput) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
 
 type GetScheduleInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
+	Groupname     *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1117,8 +1117,8 @@ func (*GetScheduleInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetScheduleInput) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
@@ -1132,20 +1132,20 @@ func (x *GetScheduleInput) GetName() string {
 
 type GetScheduleOutput struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Actionaftercompletion      string                 `protobuf:"bytes,282350906,opt,name=actionaftercompletion,proto3" json:"actionaftercompletion,omitempty"`
-	Arn                        string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationdate               string                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Description                string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Enddate                    string                 `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
+	Actionaftercompletion      *string                `protobuf:"bytes,282350906,opt,name=actionaftercompletion,proto3,oneof" json:"actionaftercompletion,omitempty"`
+	Arn                        *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationdate               *string                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Description                *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Enddate                    *string                `protobuf:"bytes,77486543,opt,name=enddate,proto3,oneof" json:"enddate,omitempty"`
 	Flexibletimewindow         *FlexibleTimeWindow    `protobuf:"bytes,2518952,opt,name=flexibletimewindow,proto3" json:"flexibletimewindow,omitempty"`
-	Groupname                  string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Kmskeyarn                  string                 `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
-	Lastmodificationdate       string                 `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3" json:"lastmodificationdate,omitempty"`
-	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Scheduleexpression         string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Scheduleexpressiontimezone string                 `protobuf:"bytes,400730326,opt,name=scheduleexpressiontimezone,proto3" json:"scheduleexpressiontimezone,omitempty"`
-	Startdate                  string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	State                      string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Groupname                  *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
+	Kmskeyarn                  *string                `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3,oneof" json:"kmskeyarn,omitempty"`
+	Lastmodificationdate       *string                `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3,oneof" json:"lastmodificationdate,omitempty"`
+	Name                       *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Scheduleexpression         *string                `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3,oneof" json:"scheduleexpression,omitempty"`
+	Scheduleexpressiontimezone *string                `protobuf:"bytes,400730326,opt,name=scheduleexpressiontimezone,proto3,oneof" json:"scheduleexpressiontimezone,omitempty"`
+	Startdate                  *string                `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
+	State                      *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	Target                     *Target                `protobuf:"bytes,191361385,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -1182,36 +1182,36 @@ func (*GetScheduleOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetScheduleOutput) GetActionaftercompletion() string {
-	if x != nil {
-		return x.Actionaftercompletion
+	if x != nil && x.Actionaftercompletion != nil {
+		return *x.Actionaftercompletion
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetEnddate() string {
-	if x != nil {
-		return x.Enddate
+	if x != nil && x.Enddate != nil {
+		return *x.Enddate
 	}
 	return ""
 }
@@ -1224,57 +1224,57 @@ func (x *GetScheduleOutput) GetFlexibletimewindow() *FlexibleTimeWindow {
 }
 
 func (x *GetScheduleOutput) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetKmskeyarn() string {
-	if x != nil {
-		return x.Kmskeyarn
+	if x != nil && x.Kmskeyarn != nil {
+		return *x.Kmskeyarn
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetLastmodificationdate() string {
-	if x != nil {
-		return x.Lastmodificationdate
+	if x != nil && x.Lastmodificationdate != nil {
+		return *x.Lastmodificationdate
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetScheduleexpression() string {
-	if x != nil {
-		return x.Scheduleexpression
+	if x != nil && x.Scheduleexpression != nil {
+		return *x.Scheduleexpression
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetScheduleexpressiontimezone() string {
-	if x != nil {
-		return x.Scheduleexpressiontimezone
+	if x != nil && x.Scheduleexpressiontimezone != nil {
+		return *x.Scheduleexpressiontimezone
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
 
 func (x *GetScheduleOutput) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
@@ -1377,8 +1377,8 @@ func (x *KinesisParameters) GetPartitionkey() string {
 type ListScheduleGroupsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nameprefix    string                 `protobuf:"bytes,361707931,opt,name=nameprefix,proto3" json:"nameprefix,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nameprefix    *string                `protobuf:"bytes,361707931,opt,name=nameprefix,proto3,oneof" json:"nameprefix,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1421,22 +1421,22 @@ func (x *ListScheduleGroupsInput) GetMaxresults() int32 {
 }
 
 func (x *ListScheduleGroupsInput) GetNameprefix() string {
-	if x != nil {
-		return x.Nameprefix
+	if x != nil && x.Nameprefix != nil {
+		return *x.Nameprefix
 	}
 	return ""
 }
 
 func (x *ListScheduleGroupsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListScheduleGroupsOutput struct {
 	state          protoimpl.MessageState  `protogen:"open.v1"`
-	Nexttoken      string                  `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken      *string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Schedulegroups []*ScheduleGroupSummary `protobuf:"bytes,136082885,rep,name=schedulegroups,proto3" json:"schedulegroups,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -1473,8 +1473,8 @@ func (*ListScheduleGroupsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListScheduleGroupsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -1488,11 +1488,11 @@ func (x *ListScheduleGroupsOutput) GetSchedulegroups() []*ScheduleGroupSummary {
 
 type ListSchedulesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Groupname     string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
+	Groupname     *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nameprefix    string                 `protobuf:"bytes,361707931,opt,name=nameprefix,proto3" json:"nameprefix,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	State         string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Nameprefix    *string                `protobuf:"bytes,361707931,opt,name=nameprefix,proto3,oneof" json:"nameprefix,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	State         *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1528,8 +1528,8 @@ func (*ListSchedulesInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSchedulesInput) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
@@ -1542,29 +1542,29 @@ func (x *ListSchedulesInput) GetMaxresults() int32 {
 }
 
 func (x *ListSchedulesInput) GetNameprefix() string {
-	if x != nil {
-		return x.Nameprefix
+	if x != nil && x.Nameprefix != nil {
+		return *x.Nameprefix
 	}
 	return ""
 }
 
 func (x *ListSchedulesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *ListSchedulesInput) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
 
 type ListSchedulesOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Schedules     []*ScheduleSummary     `protobuf:"bytes,18925646,rep,name=schedules,proto3" json:"schedules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1601,8 +1601,8 @@ func (*ListSchedulesOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSchedulesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -1748,8 +1748,8 @@ func (x *NetworkConfiguration) GetAwsvpcconfiguration() *AwsVpcConfiguration {
 
 type PlacementConstraint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Expression    string                 `protobuf:"bytes,253079532,opt,name=expression,proto3" json:"expression,omitempty"`
-	Type          string                 `protobuf:"bytes,287830350,opt,name=type,proto3" json:"type,omitempty"`
+	Expression    *string                `protobuf:"bytes,253079532,opt,name=expression,proto3,oneof" json:"expression,omitempty"`
+	Type          *string                `protobuf:"bytes,287830350,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1785,23 +1785,23 @@ func (*PlacementConstraint) Descriptor() ([]byte, []int) {
 }
 
 func (x *PlacementConstraint) GetExpression() string {
-	if x != nil {
-		return x.Expression
+	if x != nil && x.Expression != nil {
+		return *x.Expression
 	}
 	return ""
 }
 
 func (x *PlacementConstraint) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
 
 type PlacementStrategy struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Field         string                 `protobuf:"bytes,125985384,opt,name=field,proto3" json:"field,omitempty"`
-	Type          string                 `protobuf:"bytes,287830350,opt,name=type,proto3" json:"type,omitempty"`
+	Field         *string                `protobuf:"bytes,125985384,opt,name=field,proto3,oneof" json:"field,omitempty"`
+	Type          *string                `protobuf:"bytes,287830350,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1837,15 +1837,15 @@ func (*PlacementStrategy) Descriptor() ([]byte, []int) {
 }
 
 func (x *PlacementStrategy) GetField() string {
-	if x != nil {
-		return x.Field
+	if x != nil && x.Field != nil {
+		return *x.Field
 	}
 	return ""
 }
 
 func (x *PlacementStrategy) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
@@ -2044,11 +2044,11 @@ func (x *SageMakerPipelineParameters) GetPipelineparameterlist() []*SageMakerPip
 
 type ScheduleGroupSummary struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationdate         string                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Lastmodificationdate string                 `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3" json:"lastmodificationdate,omitempty"`
-	Name                 string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	State                string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Arn                  *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationdate         *string                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Lastmodificationdate *string                `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3,oneof" json:"lastmodificationdate,omitempty"`
+	Name                 *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	State                *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -2084,48 +2084,48 @@ func (*ScheduleGroupSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ScheduleGroupSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *ScheduleGroupSummary) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *ScheduleGroupSummary) GetLastmodificationdate() string {
-	if x != nil {
-		return x.Lastmodificationdate
+	if x != nil && x.Lastmodificationdate != nil {
+		return *x.Lastmodificationdate
 	}
 	return ""
 }
 
 func (x *ScheduleGroupSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ScheduleGroupSummary) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
 
 type ScheduleSummary struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Arn                  string                 `protobuf:"bytes,402345373,opt,name=arn,proto3" json:"arn,omitempty"`
-	Creationdate         string                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Groupname            string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Lastmodificationdate string                 `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3" json:"lastmodificationdate,omitempty"`
-	Name                 string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	State                string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Arn                  *string                `protobuf:"bytes,402345373,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Creationdate         *string                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Groupname            *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
+	Lastmodificationdate *string                `protobuf:"bytes,4750358,opt,name=lastmodificationdate,proto3,oneof" json:"lastmodificationdate,omitempty"`
+	Name                 *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	State                *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	Target               *TargetSummary         `protobuf:"bytes,191361385,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -2162,43 +2162,43 @@ func (*ScheduleSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ScheduleSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *ScheduleSummary) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *ScheduleSummary) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
 
 func (x *ScheduleSummary) GetLastmodificationdate() string {
-	if x != nil {
-		return x.Lastmodificationdate
+	if x != nil && x.Lastmodificationdate != nil {
+		return *x.Lastmodificationdate
 	}
 	return ""
 }
 
 func (x *ScheduleSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ScheduleSummary) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
@@ -2256,7 +2256,7 @@ func (x *ServiceQuotaExceededException) GetMessage() string {
 
 type SqsParameters struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Messagegroupid string                 `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3" json:"messagegroupid,omitempty"`
+	Messagegroupid *string                `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3,oneof" json:"messagegroupid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -2292,8 +2292,8 @@ func (*SqsParameters) Descriptor() ([]byte, []int) {
 }
 
 func (x *SqsParameters) GetMessagegroupid() string {
-	if x != nil {
-		return x.Messagegroupid
+	if x != nil && x.Messagegroupid != nil {
+		return *x.Messagegroupid
 	}
 	return ""
 }
@@ -2444,7 +2444,7 @@ type Target struct {
 	Deadletterconfig            *DeadLetterConfig            `protobuf:"bytes,79786642,opt,name=deadletterconfig,proto3" json:"deadletterconfig,omitempty"`
 	Ecsparameters               *EcsParameters               `protobuf:"bytes,501521183,opt,name=ecsparameters,proto3" json:"ecsparameters,omitempty"`
 	Eventbridgeparameters       *EventBridgeParameters       `protobuf:"bytes,285439471,opt,name=eventbridgeparameters,proto3" json:"eventbridgeparameters,omitempty"`
-	Input                       string                       `protobuf:"bytes,529785116,opt,name=input,proto3" json:"input,omitempty"`
+	Input                       *string                      `protobuf:"bytes,529785116,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Kinesisparameters           *KinesisParameters           `protobuf:"bytes,70111902,opt,name=kinesisparameters,proto3" json:"kinesisparameters,omitempty"`
 	Retrypolicy                 *RetryPolicy                 `protobuf:"bytes,266827188,opt,name=retrypolicy,proto3" json:"retrypolicy,omitempty"`
 	Rolearn                     string                       `protobuf:"bytes,322567169,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
@@ -2513,8 +2513,8 @@ func (x *Target) GetEventbridgeparameters() *EventBridgeParameters {
 }
 
 func (x *Target) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -2732,18 +2732,18 @@ func (*UntagResourceOutput) Descriptor() ([]byte, []int) {
 
 type UpdateScheduleInput struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Actionaftercompletion      string                 `protobuf:"bytes,282350906,opt,name=actionaftercompletion,proto3" json:"actionaftercompletion,omitempty"`
-	Clienttoken                string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
-	Description                string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Enddate                    string                 `protobuf:"bytes,77486543,opt,name=enddate,proto3" json:"enddate,omitempty"`
+	Actionaftercompletion      *string                `protobuf:"bytes,282350906,opt,name=actionaftercompletion,proto3,oneof" json:"actionaftercompletion,omitempty"`
+	Clienttoken                *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
+	Description                *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Enddate                    *string                `protobuf:"bytes,77486543,opt,name=enddate,proto3,oneof" json:"enddate,omitempty"`
 	Flexibletimewindow         *FlexibleTimeWindow    `protobuf:"bytes,2518952,opt,name=flexibletimewindow,proto3" json:"flexibletimewindow,omitempty"`
-	Groupname                  string                 `protobuf:"bytes,357049672,opt,name=groupname,proto3" json:"groupname,omitempty"`
-	Kmskeyarn                  string                 `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
+	Groupname                  *string                `protobuf:"bytes,357049672,opt,name=groupname,proto3,oneof" json:"groupname,omitempty"`
+	Kmskeyarn                  *string                `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3,oneof" json:"kmskeyarn,omitempty"`
 	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Scheduleexpression         string                 `protobuf:"bytes,446089471,opt,name=scheduleexpression,proto3" json:"scheduleexpression,omitempty"`
-	Scheduleexpressiontimezone string                 `protobuf:"bytes,400730326,opt,name=scheduleexpressiontimezone,proto3" json:"scheduleexpressiontimezone,omitempty"`
-	Startdate                  string                 `protobuf:"bytes,445135996,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	State                      string                 `protobuf:"bytes,502047895,opt,name=state,proto3" json:"state,omitempty"`
+	Scheduleexpressiontimezone *string                `protobuf:"bytes,400730326,opt,name=scheduleexpressiontimezone,proto3,oneof" json:"scheduleexpressiontimezone,omitempty"`
+	Startdate                  *string                `protobuf:"bytes,445135996,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
+	State                      *string                `protobuf:"bytes,502047895,opt,name=state,proto3,oneof" json:"state,omitempty"`
 	Target                     *Target                `protobuf:"bytes,191361385,opt,name=target,proto3" json:"target,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -2780,29 +2780,29 @@ func (*UpdateScheduleInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateScheduleInput) GetActionaftercompletion() string {
-	if x != nil {
-		return x.Actionaftercompletion
+	if x != nil && x.Actionaftercompletion != nil {
+		return *x.Actionaftercompletion
 	}
 	return ""
 }
 
 func (x *UpdateScheduleInput) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
 
 func (x *UpdateScheduleInput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *UpdateScheduleInput) GetEnddate() string {
-	if x != nil {
-		return x.Enddate
+	if x != nil && x.Enddate != nil {
+		return *x.Enddate
 	}
 	return ""
 }
@@ -2815,15 +2815,15 @@ func (x *UpdateScheduleInput) GetFlexibletimewindow() *FlexibleTimeWindow {
 }
 
 func (x *UpdateScheduleInput) GetGroupname() string {
-	if x != nil {
-		return x.Groupname
+	if x != nil && x.Groupname != nil {
+		return *x.Groupname
 	}
 	return ""
 }
 
 func (x *UpdateScheduleInput) GetKmskeyarn() string {
-	if x != nil {
-		return x.Kmskeyarn
+	if x != nil && x.Kmskeyarn != nil {
+		return *x.Kmskeyarn
 	}
 	return ""
 }
@@ -2843,22 +2843,22 @@ func (x *UpdateScheduleInput) GetScheduleexpression() string {
 }
 
 func (x *UpdateScheduleInput) GetScheduleexpressiontimezone() string {
-	if x != nil {
-		return x.Scheduleexpressiontimezone
+	if x != nil && x.Scheduleexpressiontimezone != nil {
+		return *x.Scheduleexpressiontimezone
 	}
 	return ""
 }
 
 func (x *UpdateScheduleInput) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
 
 func (x *UpdateScheduleInput) GetState() string {
-	if x != nil {
-		return x.State
+	if x != nil && x.State != nil {
+		return *x.State
 	}
 	return ""
 }
@@ -3006,11 +3006,12 @@ var File_scheduler_proto protoreflect.FileDescriptor
 
 const file_scheduler_proto_rawDesc = "" +
 	"\n" +
-	"\x0fscheduler.proto\x12\tscheduler\x1a\fcommon.proto\x1a\taws.proto\"\x8b\x01\n" +
-	"\x13AwsVpcConfiguration\x12*\n" +
-	"\x0eassignpublicip\x18Ռ\x91\xdc\x01 \x01(\tR\x0eassignpublicip\x12*\n" +
+	"\x0fscheduler.proto\x12\tscheduler\x1a\fcommon.proto\x1a\taws.proto\"\xa3\x01\n" +
+	"\x13AwsVpcConfiguration\x12/\n" +
+	"\x0eassignpublicip\x18Ռ\x91\xdc\x01 \x01(\tH\x00R\x0eassignpublicip\x88\x01\x01\x12*\n" +
 	"\x0esecuritygroups\x18Ԭ\xda\xf5\x01 \x03(\tR\x0esecuritygroups\x12\x1c\n" +
-	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\tR\asubnets\"\x9f\x01\n" +
+	"\asubnets\x18\xa2\xe6\xec\xc5\x01 \x03(\tR\asubnetsB\x11\n" +
+	"\x0f_assignpublicip\"\x9f\x01\n" +
 	"\x1cCapacityProviderStrategyItem\x12\x1b\n" +
 	"\x04base\x18٩\xf2\xee\x01 \x01(\x05H\x00R\x04base\x88\x01\x01\x12-\n" +
 	"\x10capacityprovider\x18\xf1\x8d\x824 \x01(\tR\x10capacityprovider\x12\x1f\n" +
@@ -3018,59 +3019,83 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x05_baseB\t\n" +
 	"\a_weight\"0\n" +
 	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"~\n" +
-	"\x18CreateScheduleGroupInput\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12\x15\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x93\x01\n" +
+	"\x18CreateScheduleGroupInput\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0e.scheduler.TagR\x04tags\"J\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0e.scheduler.TagR\x04tagsB\x0e\n" +
+	"\f_clienttoken\"J\n" +
 	"\x19CreateScheduleGroupOutput\x12-\n" +
-	"\x10schedulegrouparn\x18\x83\xc7\xe1F \x01(\tR\x10schedulegrouparn\"\xc4\x04\n" +
-	"\x13CreateScheduleInput\x128\n" +
-	"\x15actionaftercompletion\x18\xba\xaaц\x01 \x01(\tR\x15actionaftercompletion\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1b\n" +
-	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12P\n" +
-	"\x12flexibletimewindow\x18\xa8ߙ\x01 \x01(\v2\x1d.scheduler.FlexibleTimeWindowR\x12flexibletimewindow\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x1f\n" +
-	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\x12\x15\n" +
+	"\x10schedulegrouparn\x18\x83\xc7\xe1F \x01(\tR\x10schedulegrouparn\"\x8a\x06\n" +
+	"\x13CreateScheduleInput\x12=\n" +
+	"\x15actionaftercompletion\x18\xba\xaaц\x01 \x01(\tH\x00R\x15actionaftercompletion\x88\x01\x01\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x01R\vclienttoken\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x12 \n" +
+	"\aenddate\x18ϳ\xf9$ \x01(\tH\x03R\aenddate\x88\x01\x01\x12P\n" +
+	"\x12flexibletimewindow\x18\xa8ߙ\x01 \x01(\v2\x1d.scheduler.FlexibleTimeWindowR\x12flexibletimewindow\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x04R\tgroupname\x88\x01\x01\x12$\n" +
+	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tH\x05R\tkmskeyarn\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12B\n" +
-	"\x1ascheduleexpressiontimezone\x18\xd6ъ\xbf\x01 \x01(\tR\x1ascheduleexpressiontimezone\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x12,\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x11.scheduler.TargetR\x06target\";\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12G\n" +
+	"\x1ascheduleexpressiontimezone\x18\xd6ъ\xbf\x01 \x01(\tH\x06R\x1ascheduleexpressiontimezone\x88\x01\x01\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\aR\tstartdate\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\bR\x05state\x88\x01\x01\x12,\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x11.scheduler.TargetR\x06targetB\x18\n" +
+	"\x16_actionaftercompletionB\x0e\n" +
+	"\f_clienttokenB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_enddateB\f\n" +
+	"\n" +
+	"_groupnameB\f\n" +
+	"\n" +
+	"_kmskeyarnB\x1d\n" +
+	"\x1b_scheduleexpressiontimezoneB\f\n" +
+	"\n" +
+	"_startdateB\b\n" +
+	"\x06_state\";\n" +
 	"\x14CreateScheduleOutput\x12#\n" +
-	"\vschedulearn\x18\x84\xb7\x8bU \x01(\tR\vschedulearn\"(\n" +
-	"\x10DeadLetterConfig\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\"V\n" +
-	"\x18DeleteScheduleGroupInput\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x1b\n" +
-	"\x19DeleteScheduleGroupOutput\"s\n" +
-	"\x13DeleteScheduleInput\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x16\n" +
-	"\x14DeleteScheduleOutput\"\xee\x06\n" +
+	"\vschedulearn\x18\x84\xb7\x8bU \x01(\tR\vschedulearn\"5\n" +
+	"\x10DeadLetterConfig\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01B\x06\n" +
+	"\x04_arn\"k\n" +
+	"\x18DeleteScheduleGroupInput\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0e\n" +
+	"\f_clienttoken\"\x1b\n" +
+	"\x19DeleteScheduleGroupOutput\"\x9b\x01\n" +
+	"\x13DeleteScheduleInput\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x01R\tgroupname\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0e\n" +
+	"\f_clienttokenB\f\n" +
+	"\n" +
+	"_groupname\"\x16\n" +
+	"\x14DeleteScheduleOutput\"\xd6\a\n" +
 	"\rEcsParameters\x12g\n" +
 	"\x18capacityproviderstrategy\x18ւт\x01 \x03(\v2'.scheduler.CapacityProviderStrategyItemR\x18capacityproviderstrategy\x12:\n" +
 	"\x14enableecsmanagedtags\x18\x96\xfc\xd8E \x01(\bH\x00R\x14enableecsmanagedtags\x88\x01\x01\x12;\n" +
-	"\x14enableexecutecommand\x18\xbbݝ\xd7\x01 \x01(\bH\x01R\x14enableexecutecommand\x88\x01\x01\x12\x17\n" +
-	"\x05group\x18\xad\xa0\xd2+ \x01(\tR\x05group\x12!\n" +
+	"\x14enableexecutecommand\x18\xbbݝ\xd7\x01 \x01(\bH\x01R\x14enableexecutecommand\x88\x01\x01\x12\x1c\n" +
+	"\x05group\x18\xad\xa0\xd2+ \x01(\tH\x02R\x05group\x88\x01\x01\x12&\n" +
 	"\n" +
-	"launchtype\x18\x97\xe8\xf2W \x01(\tR\n" +
-	"launchtype\x12V\n" +
+	"launchtype\x18\x97\xe8\xf2W \x01(\tH\x03R\n" +
+	"launchtype\x88\x01\x01\x12V\n" +
 	"\x14networkconfiguration\x18\xba\xec\xbdr \x01(\v2\x1f.scheduler.NetworkConfigurationR\x14networkconfiguration\x12U\n" +
 	"\x14placementconstraints\x18퇽v \x03(\v2\x1e.scheduler.PlacementConstraintR\x14placementconstraints\x12M\n" +
-	"\x11placementstrategy\x18\x86\x8f\xf8\v \x03(\v2\x1c.scheduler.PlacementStrategyR\x11placementstrategy\x12+\n" +
-	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tR\x0fplatformversion\x12(\n" +
-	"\rpropagatetags\x18\xf6\xa2\xb1\xc1\x01 \x01(\tR\rpropagatetags\x12$\n" +
-	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tR\vreferenceid\x12,\n" +
+	"\x11placementstrategy\x18\x86\x8f\xf8\v \x03(\v2\x1c.scheduler.PlacementStrategyR\x11placementstrategy\x120\n" +
+	"\x0fplatformversion\x18\xbf\xa6\xdcB \x01(\tH\x04R\x0fplatformversion\x88\x01\x01\x12-\n" +
+	"\rpropagatetags\x18\xf6\xa2\xb1\xc1\x01 \x01(\tH\x05R\rpropagatetags\x88\x01\x01\x12)\n" +
+	"\vreferenceid\x18\x98\xab\x8e\x8b\x01 \x01(\tH\x06R\vreferenceid\x88\x01\x01\x12,\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x14.scheduler.TagsEntryR\x04tags\x12%\n" +
-	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05H\x02R\ttaskcount\x88\x01\x01\x12/\n" +
+	"\ttaskcount\x18\xd4\xee\xfc\xbd\x01 \x01(\x05H\aR\ttaskcount\x88\x01\x01\x12/\n" +
 	"\x11taskdefinitionarn\x18혛' \x01(\tR\x11taskdefinitionarnB\x17\n" +
 	"\x15_enableecsmanagedtagsB\x17\n" +
-	"\x15_enableexecutecommandB\f\n" +
+	"\x15_enableexecutecommandB\b\n" +
+	"\x06_groupB\r\n" +
+	"\v_launchtypeB\x12\n" +
+	"\x10_platformversionB\x10\n" +
+	"\x0e_propagatetagsB\x0e\n" +
+	"\f_referenceidB\f\n" +
 	"\n" +
 	"_taskcount\"U\n" +
 	"\x15EventBridgeParameters\x12!\n" +
@@ -3083,76 +3108,118 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\tR\x04modeB\x19\n" +
 	"\x17_maximumwindowinminutes\".\n" +
 	"\x15GetScheduleGroupInput\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xbe\x01\n" +
-	"\x16GetScheduleGroupOutput\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x125\n" +
-	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tR\x14lastmodificationdate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\"K\n" +
-	"\x10GetScheduleInput\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x92\x05\n" +
-	"\x11GetScheduleOutput\x128\n" +
-	"\x15actionaftercompletion\x18\xba\xaaц\x01 \x01(\tR\x15actionaftercompletion\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1b\n" +
-	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12P\n" +
-	"\x12flexibletimewindow\x18\xa8ߙ\x01 \x01(\v2\x1d.scheduler.FlexibleTimeWindowR\x12flexibletimewindow\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x1f\n" +
-	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\x125\n" +
-	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tR\x14lastmodificationdate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12B\n" +
-	"\x1ascheduleexpressiontimezone\x18\xd6ъ\xbf\x01 \x01(\tR\x1ascheduleexpressiontimezone\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x12,\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x11.scheduler.TargetR\x06target\"6\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x9c\x02\n" +
+	"\x16GetScheduleGroupOutput\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x01R\fcreationdate\x88\x01\x01\x12:\n" +
+	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tH\x02R\x14lastmodificationdate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\x04R\x05state\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_creationdateB\x17\n" +
+	"\x15_lastmodificationdateB\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state\"^\n" +
+	"\x10GetScheduleInput\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x00R\tgroupname\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\f\n" +
+	"\n" +
+	"_groupname\"\xae\a\n" +
+	"\x11GetScheduleOutput\x12=\n" +
+	"\x15actionaftercompletion\x18\xba\xaaц\x01 \x01(\tH\x00R\x15actionaftercompletion\x88\x01\x01\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x01R\x03arn\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x02R\fcreationdate\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x03R\vdescription\x88\x01\x01\x12 \n" +
+	"\aenddate\x18ϳ\xf9$ \x01(\tH\x04R\aenddate\x88\x01\x01\x12P\n" +
+	"\x12flexibletimewindow\x18\xa8ߙ\x01 \x01(\v2\x1d.scheduler.FlexibleTimeWindowR\x12flexibletimewindow\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x05R\tgroupname\x88\x01\x01\x12$\n" +
+	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tH\x06R\tkmskeyarn\x88\x01\x01\x12:\n" +
+	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tH\aR\x14lastmodificationdate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\bR\x04name\x88\x01\x01\x127\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tH\tR\x12scheduleexpression\x88\x01\x01\x12G\n" +
+	"\x1ascheduleexpressiontimezone\x18\xd6ъ\xbf\x01 \x01(\tH\n" +
+	"R\x1ascheduleexpressiontimezone\x88\x01\x01\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\vR\tstartdate\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\fR\x05state\x88\x01\x01\x12,\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x11.scheduler.TargetR\x06targetB\x18\n" +
+	"\x16_actionaftercompletionB\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_creationdateB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_enddateB\f\n" +
+	"\n" +
+	"_groupnameB\f\n" +
+	"\n" +
+	"_kmskeyarnB\x17\n" +
+	"\x15_lastmodificationdateB\a\n" +
+	"\x05_nameB\x15\n" +
+	"\x13_scheduleexpressionB\x1d\n" +
+	"\x1b_scheduleexpressiontimezoneB\f\n" +
+	"\n" +
+	"_startdateB\b\n" +
+	"\x06_state\"6\n" +
 	"\x17InternalServerException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
 	"\x11KinesisParameters\x12&\n" +
-	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x01(\tR\fpartitionkey\"\x96\x01\n" +
+	"\fpartitionkey\x18\xa1\xbf\xf3\xb4\x01 \x01(\tR\fpartitionkey\"\xbd\x01\n" +
 	"\x17ListScheduleGroupsInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\"\n" +
+	"maxresults\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tR\n" +
-	"nameprefix\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x87\x01\n" +
-	"\x18ListScheduleGroupsOutput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12J\n" +
-	"\x0eschedulegroups\x18\xc5\xeb\xf1@ \x03(\v2\x1f.scheduler.ScheduleGroupSummaryR\x0eschedulegroups\"\xcd\x01\n" +
-	"\x12ListSchedulesInput\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12'\n" +
+	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x01R\n" +
+	"nameprefix\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\r\n" +
+	"\v_nameprefixB\f\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\"\n" +
+	"_nexttoken\"\x9a\x01\n" +
+	"\x18ListScheduleGroupsOutput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12J\n" +
+	"\x0eschedulegroups\x18\xc5\xeb\xf1@ \x03(\v2\x1f.scheduler.ScheduleGroupSummaryR\x0eschedulegroupsB\f\n" +
 	"\n" +
-	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tR\n" +
-	"nameprefix\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05stateB\r\n" +
-	"\v_maxresults\"s\n" +
-	"\x13ListSchedulesOutput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12;\n" +
-	"\tschedules\x18ΐ\x83\t \x03(\v2\x1a.scheduler.ScheduleSummaryR\tschedules\"@\n" +
+	"_nexttoken\"\x96\x02\n" +
+	"\x12ListSchedulesInput\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x00R\tgroupname\x88\x01\x01\x12'\n" +
+	"\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12'\n" +
+	"\n" +
+	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x02R\n" +
+	"nameprefix\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\x04R\x05state\x88\x01\x01B\f\n" +
+	"\n" +
+	"_groupnameB\r\n" +
+	"\v_maxresultsB\r\n" +
+	"\v_nameprefixB\f\n" +
+	"\n" +
+	"_nexttokenB\b\n" +
+	"\x06_state\"\x86\x01\n" +
+	"\x13ListSchedulesOutput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12;\n" +
+	"\tschedules\x18ΐ\x83\t \x03(\v2\x1a.scheduler.ScheduleSummaryR\tschedulesB\f\n" +
+	"\n" +
+	"_nexttoken\"@\n" +
 	"\x18ListTagsForResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"C\n" +
 	"\x19ListTagsForResourceOutput\x12&\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0e.scheduler.TagR\x04tags\"k\n" +
 	"\x14NetworkConfiguration\x12S\n" +
-	"\x13awsvpcconfiguration\x18\xd6\xf0\xdej \x01(\v2\x1e.scheduler.AwsVpcConfigurationR\x13awsvpcconfiguration\"P\n" +
-	"\x13PlacementConstraint\x12!\n" +
+	"\x13awsvpcconfiguration\x18\xd6\xf0\xdej \x01(\v2\x1e.scheduler.AwsVpcConfigurationR\x13awsvpcconfiguration\"r\n" +
+	"\x13PlacementConstraint\x12&\n" +
 	"\n" +
-	"expression\x18\xec\xdf\xd6x \x01(\tR\n" +
-	"expression\x12\x16\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\tR\x04type\"D\n" +
-	"\x11PlacementStrategy\x12\x17\n" +
-	"\x05field\x18\xe8ĉ< \x01(\tR\x05field\x12\x16\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\tR\x04type\"8\n" +
+	"expression\x18\xec\xdf\xd6x \x01(\tH\x00R\n" +
+	"expression\x88\x01\x01\x12\x1b\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\tH\x01R\x04type\x88\x01\x01B\r\n" +
+	"\v_expressionB\a\n" +
+	"\x05_type\"a\n" +
+	"\x11PlacementStrategy\x12\x1c\n" +
+	"\x05field\x18\xe8ĉ< \x01(\tH\x00R\x05field\x88\x01\x01\x12\x1b\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\tH\x01R\x04type\x88\x01\x01B\b\n" +
+	"\x06_fieldB\a\n" +
+	"\x05_type\"8\n" +
 	"\x19ResourceNotFoundException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xc4\x01\n" +
 	"\vRetryPolicy\x12C\n" +
@@ -3164,43 +3231,57 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"}\n" +
 	"\x1bSageMakerPipelineParameters\x12^\n" +
-	"\x15pipelineparameterlist\x18\xa7\xb9\xc5^ \x03(\v2%.scheduler.SageMakerPipelineParameterR\x15pipelineparameterlist\"\xbc\x01\n" +
-	"\x14ScheduleGroupSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x125\n" +
-	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tR\x14lastmodificationdate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\"\x8e\x02\n" +
-	"\x0fScheduleSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x125\n" +
-	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tR\x14lastmodificationdate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x123\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x18.scheduler.TargetSummaryR\x06target\"<\n" +
+	"\x15pipelineparameterlist\x18\xa7\xb9\xc5^ \x03(\v2%.scheduler.SageMakerPipelineParameterR\x15pipelineparameterlist\"\x9a\x02\n" +
+	"\x14ScheduleGroupSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x01R\fcreationdate\x88\x01\x01\x12:\n" +
+	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tH\x02R\x14lastmodificationdate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\x04R\x05state\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_creationdateB\x17\n" +
+	"\x15_lastmodificationdateB\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state\"\xff\x02\n" +
+	"\x0fScheduleSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x01R\fcreationdate\x88\x01\x01\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x02R\tgroupname\x88\x01\x01\x12:\n" +
+	"\x14lastmodificationdate\x18\x96\xf8\xa1\x02 \x01(\tH\x03R\x14lastmodificationdate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\x05R\x05state\x88\x01\x01\x123\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x18.scheduler.TargetSummaryR\x06targetB\x06\n" +
+	"\x04_arnB\x0f\n" +
+	"\r_creationdateB\f\n" +
+	"\n" +
+	"_groupnameB\x17\n" +
+	"\x15_lastmodificationdateB\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_state\"<\n" +
 	"\x1dServiceQuotaExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\rSqsParameters\x12*\n" +
-	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tR\x0emessagegroupid\"4\n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"S\n" +
+	"\rSqsParameters\x12/\n" +
+	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tH\x00R\x0emessagegroupid\x88\x01\x01B\x11\n" +
+	"\x0f_messagegroupid\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"`\n" +
 	"\x10TagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12&\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0e.scheduler.TagR\x04tags\"\x13\n" +
-	"\x11TagResourceOutput\"\xff\x04\n" +
+	"\x11TagResourceOutput\"\x8e\x05\n" +
 	"\x06Target\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\x12J\n" +
 	"\x10deadletterconfig\x18\x92\xe5\x85& \x01(\v2\x1b.scheduler.DeadLetterConfigR\x10deadletterconfig\x12B\n" +
 	"\recsparameters\x18\x9f\xb6\x92\xef\x01 \x01(\v2\x18.scheduler.EcsParametersR\recsparameters\x12Z\n" +
-	"\x15eventbridgeparameters\x18\xef덈\x01 \x01(\v2 .scheduler.EventBridgeParametersR\x15eventbridgeparameters\x12\x18\n" +
-	"\x05input\x18\x9c\xc2\xcf\xfc\x01 \x01(\tR\x05input\x12M\n" +
+	"\x15eventbridgeparameters\x18\xef덈\x01 \x01(\v2 .scheduler.EventBridgeParametersR\x15eventbridgeparameters\x12\x1d\n" +
+	"\x05input\x18\x9c\xc2\xcf\xfc\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12M\n" +
 	"\x11kinesisparameters\x18\x9e\xa5\xb7! \x01(\v2\x1c.scheduler.KinesisParametersR\x11kinesisparameters\x12;\n" +
 	"\vretrypolicy\x18\xb4\xeb\x9d\x7f \x01(\v2\x16.scheduler.RetryPolicyR\vretrypolicy\x12\x1c\n" +
 	"\arolearn\x18\x81\xf8\xe7\x99\x01 \x01(\tR\arolearn\x12l\n" +
 	"\x1bsagemakerpipelineparameters\x18\x9e\xf3\xff\xf4\x01 \x01(\v2&.scheduler.SageMakerPipelineParametersR\x1bsagemakerpipelineparameters\x12A\n" +
-	"\rsqsparameters\x18Ϩ\xc7+ \x01(\v2\x18.scheduler.SqsParametersR\rsqsparameters\"%\n" +
+	"\rsqsparameters\x18Ϩ\xc7+ \x01(\v2\x18.scheduler.SqsParametersR\rsqsparametersB\b\n" +
+	"\x06_input\"%\n" +
 	"\rTargetSummary\x12\x14\n" +
 	"\x03arn\x18\x9d\x9b\xed\xbf\x01 \x01(\tR\x03arn\"2\n" +
 	"\x13ThrottlingException\x12\x1b\n" +
@@ -3208,21 +3289,34 @@ const file_scheduler_proto_rawDesc = "" +
 	"\x12UntagResourceInput\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x15\n" +
-	"\x13UntagResourceOutput\"\xc4\x04\n" +
-	"\x13UpdateScheduleInput\x128\n" +
-	"\x15actionaftercompletion\x18\xba\xaaц\x01 \x01(\tR\x15actionaftercompletion\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x1b\n" +
-	"\aenddate\x18ϳ\xf9$ \x01(\tR\aenddate\x12P\n" +
-	"\x12flexibletimewindow\x18\xa8ߙ\x01 \x01(\v2\x1d.scheduler.FlexibleTimeWindowR\x12flexibletimewindow\x12 \n" +
-	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tR\tgroupname\x12\x1f\n" +
-	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\x12\x15\n" +
+	"\x13UntagResourceOutput\"\x8a\x06\n" +
+	"\x13UpdateScheduleInput\x12=\n" +
+	"\x15actionaftercompletion\x18\xba\xaaц\x01 \x01(\tH\x00R\x15actionaftercompletion\x88\x01\x01\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x01R\vclienttoken\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x02R\vdescription\x88\x01\x01\x12 \n" +
+	"\aenddate\x18ϳ\xf9$ \x01(\tH\x03R\aenddate\x88\x01\x01\x12P\n" +
+	"\x12flexibletimewindow\x18\xa8ߙ\x01 \x01(\v2\x1d.scheduler.FlexibleTimeWindowR\x12flexibletimewindow\x12%\n" +
+	"\tgroupname\x18\xc8ʠ\xaa\x01 \x01(\tH\x04R\tgroupname\x88\x01\x01\x12$\n" +
+	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tH\x05R\tkmskeyarn\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
-	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12B\n" +
-	"\x1ascheduleexpressiontimezone\x18\xd6ъ\xbf\x01 \x01(\tR\x1ascheduleexpressiontimezone\x12 \n" +
-	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tR\tstartdate\x12\x18\n" +
-	"\x05state\x18\x97ɲ\xef\x01 \x01(\tR\x05state\x12,\n" +
-	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x11.scheduler.TargetR\x06target\";\n" +
+	"\x12scheduleexpression\x18\xff\x91\xdb\xd4\x01 \x01(\tR\x12scheduleexpression\x12G\n" +
+	"\x1ascheduleexpressiontimezone\x18\xd6ъ\xbf\x01 \x01(\tH\x06R\x1ascheduleexpressiontimezone\x88\x01\x01\x12%\n" +
+	"\tstartdate\x18\xfc\xf8\xa0\xd4\x01 \x01(\tH\aR\tstartdate\x88\x01\x01\x12\x1d\n" +
+	"\x05state\x18\x97ɲ\xef\x01 \x01(\tH\bR\x05state\x88\x01\x01\x12,\n" +
+	"\x06target\x18\xe9\xe2\x9f[ \x01(\v2\x11.scheduler.TargetR\x06targetB\x18\n" +
+	"\x16_actionaftercompletionB\x0e\n" +
+	"\f_clienttokenB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_enddateB\f\n" +
+	"\n" +
+	"_groupnameB\f\n" +
+	"\n" +
+	"_kmskeyarnB\x1d\n" +
+	"\x1b_scheduleexpressiontimezoneB\f\n" +
+	"\n" +
+	"_startdateB\b\n" +
+	"\x06_state\";\n" +
 	"\x14UpdateScheduleOutput\x12#\n" +
 	"\vschedulearn\x18\x84\xb7\x8bU \x01(\tR\vschedulearn\"2\n" +
 	"\x13ValidationException\x12\x1b\n" +
@@ -3377,12 +3471,30 @@ func file_scheduler_proto_init() {
 	if File_scheduler_proto != nil {
 		return
 	}
+	file_scheduler_proto_msgTypes[0].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[1].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[3].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[5].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[7].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[8].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[10].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[12].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[14].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[16].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[17].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[18].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[21].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[22].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[23].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[24].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[28].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[29].OneofWrappers = []any{}
 	file_scheduler_proto_msgTypes[31].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[34].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[35].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[37].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[41].OneofWrappers = []any{}
+	file_scheduler_proto_msgTypes[46].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

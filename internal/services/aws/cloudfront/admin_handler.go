@@ -85,7 +85,7 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 	maxItems = resolveListMaxItems(maxItems)
 
 	result, err := h.service.listDistributionsCore(stores, ListDistributionsInput{
-		Marker:   req.Msg.Marker,
+		Marker:   req.Msg.GetMarker(),
 		MaxItems: maxItems,
 	})
 	if err != nil {
@@ -102,8 +102,8 @@ func (h *AdminHandler) ListDistributions(ctx context.Context, req *connect.Reque
 			Quantity:    int32(len(items)),
 			Items:       items,
 			Istruncated: proto.Bool(result.IsTruncated),
-			Nextmarker:  result.NextMarker,
-			Marker:      req.Msg.Marker,
+			Nextmarker:  proto.String(result.NextMarker),
+			Marker:      req.Msg.GetMarker(),
 			Maxitems:    int32(maxItems),
 		},
 	}), nil

@@ -508,16 +508,15 @@ func (r *TestRunner) s3ObjectTests(ctx context.Context, client *s3.Client, ts st
 	}))
 
 	results = append(results, r.RunTest("s3", "DeleteObject_VersionIdOnNonVersionedBucket", func() error {
-		// Deleting with VersionId on a non-versioned bucket should return an error
+		// A bucket that never had versioning only ever holds the null
+		// version, so a version-addressed delete references a version that
+		// does not exist: NoSuchVersion, not a server-side failure.
 		_, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
 			Bucket:    aws.String(bucketName),
 			Key:       aws.String("versioned-delete-test.txt"),
 			VersionId: aws.String("test-version-id"),
 		})
-		if err == nil {
-			return fmt.Errorf("expected error when DeleteObject has VersionId on non-versioned bucket, got nil")
-		}
-		return nil
+		return expectAWSErrorCode(err, "NoSuchVersion")
 	}))
 
 	results = append(results, r.RunTest("s3", "PutObject_SystemMetadata", func() error {

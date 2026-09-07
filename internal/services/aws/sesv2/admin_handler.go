@@ -2,6 +2,7 @@ package sesv2
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -46,7 +47,7 @@ func (h *AdminHandler) ListEmailIdentities(ctx context.Context, req *connect.Req
 
 	return connect.NewResponse(&pb.ListEmailIdentitiesResponse{
 		Emailidentities: toPbIdentityInfos(result.Identities),
-		Nexttoken:       result.NextToken,
+		Nexttoken:       proto.String(result.NextToken),
 	}), nil
 }
 

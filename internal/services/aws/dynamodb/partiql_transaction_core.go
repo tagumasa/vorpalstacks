@@ -2,6 +2,7 @@ package dynamodb
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"vorpalstacks/internal/common/request"
@@ -22,6 +23,27 @@ const (
 type executeTransactionInput struct {
 	TransactStatements []interface{}
 	Parameters         map[string]interface{}
+}
+
+// txnStatementChange records what one write statement inside an
+// ExecuteTransaction did: the stream capture runs within the shared storage
+// transaction, and the record joins the post-commit propagation queue so
+// Kinesis destinations and global table replicas see the write only once
+// the transaction has committed.
+type txnStatementChange struct {
+	table     *dbstore.Table
+	eventName dbstore.StreamEventName
+	keys      map[string]*dbstore.AttributeValue
+	newImage  map[string]*dbstore.AttributeValue
+	oldImage  map[string]*dbstore.AttributeValue
+	replicaOp func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error
+}
+
+// recordStatementChange captures the statement's stream record inside the
+// running transaction and queues its post-commit propagation.
+func (s *DynamoDBService) recordStatementChange(txn *dbstore.DynamoDBTxn, store dbstore.DynamoDBStoreInterface, changes *[]txnStatementChange, ch txnStatementChange) {
+	s.captureStreamChangeTxn(txn, store, ch.table, ch.eventName, ch.keys, ch.newImage, ch.oldImage)
+	*changes = append(*changes, ch)
 }
 
 // executeTransactionCore is the single validation and persistence path of the
@@ -64,6 +86,14 @@ func (s *DynamoDBService) executeTransactionCore(ctx context.Context, reqCtx *re
 		}
 
 		params := parsePartiQLParams(stmtMap)
+		// Normalise `?` placeholders into their explicit whole-statement
+		// :vN form before any engine parse, and reject a parameter list
+		// that does not carry exactly one value per placeholder.
+		normalised, placeholderCount := preparePartiQLStatement(statement)
+		if err := validateParameterCount(placeholderCount, params); err != nil {
+			return nil, err
+		}
+		statement = normalised
 
 		upperStmt := strings.ToUpper(strings.TrimSpace(statement))
 		var stmtType statementType
@@ -117,6 +147,15 @@ func (s *DynamoDBService) executeTransactionCore(ctx context.Context, reqCtx *re
 			return nil
 		})
 	} else {
+		var changes []txnStatementChange
+		// A failing singleton statement cancels the whole transaction: its
+		// error travels in the ordered CancellationReasons envelope, and
+		// every unaffected statement reports the literal code "None" with no
+		// message. Request-level failures stay direct (below).
+		cancellationReasons := make([]CancellationReason, len(parsedStatements))
+		for i := range cancellationReasons {
+			cancellationReasons[i] = CancellationReason{Code: "None"}
+		}
 		err = store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			for i, ps := range parsedStatements {
 				upperStmt := strings.ToUpper(strings.TrimSpace(ps.statement))
@@ -125,15 +164,20 @@ func (s *DynamoDBService) executeTransactionCore(ctx context.Context, reqCtx *re
 
 				switch {
 				case strings.HasPrefix(upperStmt, "INSERT"):
-					result, execErr = s.executePartiQLInsertInTxn(ctx, reqCtx, txn, ps.statement, ps.params)
+					result, execErr = s.executePartiQLInsertInTxn(ctx, reqCtx, store, txn, ps.statement, ps.params, &changes)
 				case strings.HasPrefix(upperStmt, "UPDATE"):
-					result, execErr = s.executePartiQLUpdateInTxn(ctx, reqCtx, txn, ps.statement, ps.params)
+					result, execErr = s.executePartiQLUpdateInTxn(ctx, reqCtx, store, txn, ps.statement, ps.params, &changes)
 				case strings.HasPrefix(upperStmt, "DELETE"):
-					result, execErr = s.executePartiQLDeleteInTxn(ctx, reqCtx, txn, ps.statement, ps.params)
+					result, execErr = s.executePartiQLDeleteInTxn(ctx, reqCtx, store, txn, ps.statement, ps.params, &changes)
 				}
 
 				if execErr != nil {
-					return execErr
+					reason, cancels := singletonCancellationReason(execErr)
+					if !cancels {
+						return execErr
+					}
+					cancellationReasons[i] = reason
+					return NewTransactionCanceledError("Transaction canceled", cancellationReasons)
 				}
 
 				var item interface{} = nil
@@ -146,6 +190,15 @@ func (s *DynamoDBService) executeTransactionCore(ctx context.Context, reqCtx *re
 			}
 			return nil
 		})
+		if err != nil {
+			return nil, err
+		}
+
+		// The transaction committed: fire the asynchronous propagation every
+		// write statement owes, in statement order.
+		for _, ch := range changes {
+			s.emitChangePropagation(store, reqCtx.GetRegion(), ch.table, ch.eventName, ch.keys, ch.newImage, ch.oldImage, ch.replicaOp)
+		}
 	}
 
 	if err != nil {
@@ -174,4 +227,267 @@ func (s *DynamoDBService) executeTransactionCore(ctx context.Context, reqCtx *re
 	}
 
 	return resp, nil
+}
+
+// singletonCancellationReason classifies a failed write statement's error
+// for the transaction-cancellation envelope. Only errors a singleton
+// operation reports against the stored data — a duplicate key, a
+// multi-item match, a clause applied onto an incompatible attribute type —
+// cancel the transaction and carry a per-statement reason; request-level
+// failures (malformed statements, unresolvable parameters, unknown tables,
+// storage faults) propagate directly with their own error code.
+func singletonCancellationReason(err error) (CancellationReason, bool) {
+	switch {
+	case errors.Is(err, ErrConditionalCheckFailed):
+		return CancellationReason{Code: "ConditionalCheckFailed", Message: "The conditional request failed"}, true
+	case errors.Is(err, ErrTypeMismatch):
+		return CancellationReason{Code: "ValidationError", Message: ErrTypeMismatch.Message}, true
+	}
+	var apiErr *APIError
+	if errors.As(err, &apiErr) && apiErr.Code == "com.amazonaws.dynamodb.v20120810#ValidationException" {
+		// The multi-item-match rejection of the single-item contract is the
+		// only producer of the DynamoDB-namespaced ValidationException code.
+		return CancellationReason{Code: "ValidationError", Message: apiErr.Message}, true
+	}
+	return CancellationReason{}, false
+}
+
+// The per-statement-type transactional execution engines below own the full
+// write path of one PartiQL statement inside ExecuteTransaction's store
+// transaction — table resolution, the single-item contract, index and
+// metric maintenance, and the stream/replication capture the commit fires.
+
+func (s *DynamoDBService) executePartiQLSelectInTxn(ctx context.Context, reqCtx *request.RequestContext, txn *dbstore.DynamoDBTxn, statement string, params *partiQLParams) (interface{}, error) {
+	tableName, whereExpr := parseSelectStatement(statement)
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	table, err := txn.GetTable(tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	var items []*dbstore.Item
+
+	pkName := getHashKeyName(table)
+	pkValue := extractPartitionKeyFromWhere(whereExpr, pkName, params)
+
+	if pkValue != "" {
+		err = txn.ScanByPartitionKey(tableName, pkValue, func(item *dbstore.Item) error {
+			items = append(items, item)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err = txn.Scan(tableName, func(item *dbstore.Item) error {
+			items = append(items, item)
+			return nil
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	scannedCount := len(items)
+	if whereExpr != nil {
+		items = filterItemsByExpr(items, whereExpr, params)
+	}
+
+	result := make([]map[string]interface{}, 0, len(items))
+	for _, item := range items {
+		result = append(result, buildItemResponse(item.Attributes))
+	}
+
+	return map[string]interface{}{
+		"Items":        result,
+		"Count":        len(result),
+		"ScannedCount": scannedCount,
+	}, nil
+}
+
+func (s *DynamoDBService) executePartiQLInsertInTxn(ctx context.Context, reqCtx *request.RequestContext, store dbstore.DynamoDBStoreInterface, txn *dbstore.DynamoDBTxn, statement string, params *partiQLParams, changes *[]txnStatementChange) (interface{}, error) {
+	tableName, itemData, err := parseInsertStatementWithParams(statement, params)
+	if err != nil {
+		return nil, err
+	}
+
+	table, err := txn.GetTable(tableName)
+	if err != nil {
+		return nil, err
+	}
+	// A table mid-restore (CREATING) must not be mutated: a transactional
+	// write statement follows the write-requires-ACTIVE rule of the
+	// single-item writes.
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
+	}
+
+	keyAttrs := buildKeyFromSchema(table.KeySchema, itemData)
+	if keyAttrs == nil {
+		return nil, ErrInvalidParameter
+	}
+
+	_, err = txn.GetItem(tableName, keyAttrs)
+	if err != nil {
+		if !dbstore.IsItemNotFound(err) {
+			return nil, err
+		}
+	} else {
+		return nil, ErrConditionalCheckFailed
+	}
+
+	if err := txn.StoreItemWrite(tableName, keyAttrs, itemData, nil, false, 0); err != nil {
+		return nil, err
+	}
+
+	s.recordStatementChange(txn, store, changes, txnStatementChange{
+		table:     table,
+		eventName: dbstore.StreamEventInsert,
+		keys:      keyAttrs,
+		newImage:  itemData,
+		replicaOp: s.replicaPutOp(table, keyAttrs, itemData),
+	})
+
+	return map[string]interface{}{
+		"Items":        []map[string]interface{}{},
+		"Count":        0,
+		"ScannedCount": 0,
+	}, nil
+}
+
+func (s *DynamoDBService) executePartiQLUpdateInTxn(ctx context.Context, reqCtx *request.RequestContext, store dbstore.DynamoDBStoreInterface, txn *dbstore.DynamoDBTxn, statement string, params *partiQLParams, changes *[]txnStatementChange) (interface{}, error) {
+	tableName, clauses, whereExpr := parseUpdateStatement(statement)
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	// At least one clause must be present.
+	if len(clauses.setAssignments) == 0 && len(clauses.removeAttrs) == 0 &&
+		len(clauses.addAssignments) == 0 && len(clauses.deleteAssignments) == 0 {
+		return nil, ErrInvalidParameter
+	}
+
+	table, err := txn.GetTable(tableName)
+	if err != nil {
+		return nil, err
+	}
+	// A table mid-restore (CREATING) must not be mutated: a transactional
+	// write statement follows the write-requires-ACTIVE rule of the
+	// single-item writes.
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
+	}
+
+	// The key attributes identify the item being updated; no UPDATE clause
+	// may write them.
+	if err := validateNotKeyAttributes(table, updateClauseTargetNames(clauses)); err != nil {
+		return nil, err
+	}
+
+	// The AWS single-item contract: the WHERE clause carries a partition-key
+	// equality and the statement matches at most one item.
+	item, _, scannedCount, err := matchSingleTargetItem(
+		func(pkValue string, cb func(*dbstore.Item) error) error {
+			return txn.ScanByPartitionKey(tableName, pkValue, cb)
+		}, table, whereExpr, params, "UPDATE", false)
+	if err != nil {
+		return nil, err
+	}
+
+	updatedCount := 0
+	if item != nil {
+		oldSize := dbstore.CalculateItemSize(item.Attributes)
+
+		oldItem := &dbstore.Item{
+			TableName:  tableName,
+			Key:        copyAttributes(item.Key),
+			Attributes: copyAttributes(item.Attributes),
+		}
+
+		if err := applySetAssignments(item.Attributes, clauses.setAssignments, params); err != nil {
+			return nil, err
+		}
+		applyRemoveAttrs(item.Attributes, clauses.removeAttrs)
+		if err := applyAddAssignments(item.Attributes, clauses.addAssignments, params); err != nil {
+			return nil, err
+		}
+		if err := applyDeleteAssignments(item.Attributes, clauses.deleteAssignments, params); err != nil {
+			return nil, err
+		}
+
+		if err := txn.StoreItemWrite(tableName, item.Key, item.Attributes, oldItem, true, oldSize); err != nil {
+			return nil, err
+		}
+
+		s.recordStatementChange(txn, store, changes, txnStatementChange{
+			table:     table,
+			eventName: dbstore.StreamEventModify,
+			keys:      item.Key,
+			newImage:  item.Attributes,
+			oldImage:  oldItem.Attributes,
+			replicaOp: s.replicaPutOp(table, item.Key, item.Attributes),
+		})
+
+		updatedCount = 1
+	}
+
+	return map[string]interface{}{
+		"Items":        []map[string]interface{}{},
+		"Count":        updatedCount,
+		"ScannedCount": scannedCount,
+	}, nil
+}
+
+func (s *DynamoDBService) executePartiQLDeleteInTxn(ctx context.Context, reqCtx *request.RequestContext, store dbstore.DynamoDBStoreInterface, txn *dbstore.DynamoDBTxn, statement string, params *partiQLParams, changes *[]txnStatementChange) (interface{}, error) {
+	tableName, whereExpr := parseDeleteStatement(statement)
+	if tableName == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	table, err := txn.GetTable(tableName)
+	if err != nil {
+		return nil, err
+	}
+	// A table mid-restore (CREATING) must not be mutated: a transactional
+	// write statement follows the write-requires-ACTIVE rule of the
+	// single-item writes.
+	if table.Status != dbstore.TableStatusActive {
+		return nil, ErrTableNotActive
+	}
+
+	// The AWS single-item contract: the WHERE clause carries a partition-key
+	// equality and the statement matches at most one item.
+	item, _, scannedCount, err := matchSingleTargetItem(
+		func(pkValue string, cb func(*dbstore.Item) error) error {
+			return txn.ScanByPartitionKey(tableName, pkValue, cb)
+		}, table, whereExpr, params, "DELETE", false)
+	if err != nil {
+		return nil, err
+	}
+
+	deletedCount := 0
+	if item != nil {
+		if err := txn.DeleteItemWrite(tableName, item.Key, item, true, dbstore.CalculateItemSize(item.Attributes)); err != nil {
+			return nil, err
+		}
+
+		s.recordStatementChange(txn, store, changes, txnStatementChange{
+			table:     table,
+			eventName: dbstore.StreamEventRemove,
+			keys:      item.Key,
+			oldImage:  item.Attributes,
+			replicaOp: s.replicaDeleteOp(table, item.Key),
+		})
+
+		deletedCount = 1
+	}
+
+	return map[string]interface{}{
+		"Items":        []map[string]interface{}{},
+		"Count":        deletedCount,
+		"ScannedCount": scannedCount,
+	}, nil
 }

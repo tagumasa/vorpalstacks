@@ -309,15 +309,15 @@ enum AlgorithmSpec {
 
 message AliasListEntry {
 
-  string aliasarn = 461101595;
+  optional string aliasarn = 461101595;
 
-  string aliasname = 313250709;
+  optional string aliasname = 313250709;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string lastupdateddate = 166338449;
+  optional string lastupdateddate = 166338449;
 
-  string targetkeyid = 406196123;
+  optional string targetkeyid = 406196123;
 
 }
 
@@ -327,7 +327,7 @@ message AliasListEntry {
 
 message AlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -343,7 +343,7 @@ message CancelKeyDeletionRequest {
 
 message CancelKeyDeletionResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
 }
 
@@ -353,7 +353,7 @@ message CancelKeyDeletionResponse {
 
 message CloudHsmClusterInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -363,7 +363,7 @@ message CloudHsmClusterInUseException {
 
 message CloudHsmClusterInvalidConfigurationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -373,7 +373,7 @@ message CloudHsmClusterInvalidConfigurationException {
 
 message CloudHsmClusterNotActiveException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -383,7 +383,7 @@ message CloudHsmClusterNotActiveException {
 
 message CloudHsmClusterNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -393,7 +393,7 @@ message CloudHsmClusterNotFoundException {
 
 message CloudHsmClusterNotRelatedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -403,7 +403,7 @@ message CloudHsmClusterNotRelatedException {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -493,27 +493,27 @@ message CreateAliasRequest {
 
 message CreateCustomKeyStoreRequest {
 
-  string cloudhsmclusterid = 56498754;
+  optional string cloudhsmclusterid = 56498754;
 
   string customkeystorename = 170278046;
 
   CustomKeyStoreType customkeystoretype = 415647103;
 
-  string keystorepassword = 403136353;
+  optional string keystorepassword = 403136353;
 
-  string trustanchorcertificate = 48354588;
+  optional string trustanchorcertificate = 48354588;
 
   XksProxyAuthenticationCredentialType xksproxyauthenticationcredential = 350418199;
 
   XksProxyConnectivityType xksproxyconnectivity = 298569161;
 
-  string xksproxyuriendpoint = 273255559;
+  optional string xksproxyuriendpoint = 273255559;
 
-  string xksproxyuripath = 436753509;
+  optional string xksproxyuripath = 436753509;
 
-  string xksproxyvpcendpointservicename = 372786130;
+  optional string xksproxyvpcendpointservicename = 372786130;
 
-  string xksproxyvpcendpointserviceowner = 55249590;
+  optional string xksproxyvpcendpointserviceowner = 55249590;
 
 }
 
@@ -521,7 +521,7 @@ message CreateCustomKeyStoreRequest {
 
 message CreateCustomKeyStoreResponse {
 
-  string customkeystoreid = 88348228;
+  optional string customkeystoreid = 88348228;
 
 }
 
@@ -535,19 +535,19 @@ message CreateGrantRequest {
 
   repeated string granttokens = 339740300;
 
-  string granteeprincipal = 234727364;
+  optional string granteeprincipal = 234727364;
 
-  string granteeserviceprincipal = 57008093;
+  optional string granteeserviceprincipal = 57008093;
 
   string keyid = 275906594;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated GrantOperation operations = 126776656;
 
-  string retiringprincipal = 49541086;
+  optional string retiringprincipal = 49541086;
 
-  string retiringserviceprincipal = 402948019;
+  optional string retiringserviceprincipal = 402948019;
 
 }
 
@@ -555,9 +555,9 @@ message CreateGrantRequest {
 
 message CreateGrantResponse {
 
-  string grantid = 66852281;
+  optional string grantid = 66852281;
 
-  string granttoken = 137683547;
+  optional string granttoken = 137683547;
 
 }
 
@@ -567,11 +567,11 @@ message CreateKeyRequest {
 
   optional bool bypasspolicylockoutsafetycheck = 177450851;
 
-  string customkeystoreid = 88348228;
+  optional string customkeystoreid = 88348228;
 
   CustomerMasterKeySpec customermasterkeyspec = 472470930;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   KeySpec keyspec = 138220928;
 
@@ -581,11 +581,11 @@ message CreateKeyRequest {
 
   OriginType origin = 529732720;
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
   repeated Tag tags = 381526209;
 
-  string xkskeyid = 12647506;
+  optional string xkskeyid = 12647506;
 
 }
 
@@ -603,7 +603,7 @@ message CreateKeyResponse {
 
 message CustomKeyStoreHasCMKsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -613,7 +613,7 @@ message CustomKeyStoreHasCMKsException {
 
 message CustomKeyStoreInvalidStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -623,7 +623,7 @@ message CustomKeyStoreInvalidStateException {
 
 message CustomKeyStoreNameInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -633,7 +633,7 @@ message CustomKeyStoreNameInUseException {
 
 message CustomKeyStoreNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -653,21 +653,21 @@ enum CustomKeyStoreType {
 
 message CustomKeyStoresListEntry {
 
-  string cloudhsmclusterid = 56498754;
+  optional string cloudhsmclusterid = 56498754;
 
   ConnectionErrorCodeType connectionerrorcode = 324951101;
 
   ConnectionStateType connectionstate = 404323675;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string customkeystoreid = 88348228;
+  optional string customkeystoreid = 88348228;
 
-  string customkeystorename = 170278046;
+  optional string customkeystorename = 170278046;
 
   CustomKeyStoreType customkeystoretype = 415647103;
 
-  string trustanchorcertificate = 48354588;
+  optional string trustanchorcertificate = 48354588;
 
   XksProxyConfigurationType xksproxyconfiguration = 349047828;
 
@@ -743,7 +743,7 @@ enum DataKeySpec {
 
 message DecryptRequest {
 
-  bytes ciphertextblob = 338198183;
+  optional bytes ciphertextblob = 338198183;
 
   optional bool dryrun = 92204984;
 
@@ -755,7 +755,7 @@ message DecryptRequest {
 
   repeated string granttokens = 339740300;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   RecipientInfo recipient = 445981721;
 
@@ -765,15 +765,15 @@ message DecryptRequest {
 
 message DecryptResponse {
 
-  bytes ciphertextforrecipient = 75299212;
+  optional bytes ciphertextforrecipient = 75299212;
 
   EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
-  bytes plaintext = 88342721;
+  optional bytes plaintext = 88342721;
 
 }
 
@@ -805,7 +805,7 @@ message DeleteImportedKeyMaterialRequest {
 
   string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
 }
 
@@ -813,9 +813,9 @@ message DeleteImportedKeyMaterialRequest {
 
 message DeleteImportedKeyMaterialResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
 }
 
@@ -825,7 +825,7 @@ message DeleteImportedKeyMaterialResponse {
 
 message DependencyTimeoutException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -851,15 +851,15 @@ message DeriveSharedSecretRequest {
 
 message DeriveSharedSecretResponse {
 
-  bytes ciphertextforrecipient = 75299212;
+  optional bytes ciphertextforrecipient = 75299212;
 
   KeyAgreementAlgorithmSpec keyagreementalgorithm = 99147702;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   OriginType keyorigin = 50912311;
 
-  bytes sharedsecret = 382876889;
+  optional bytes sharedsecret = 382876889;
 
 }
 
@@ -867,13 +867,13 @@ message DeriveSharedSecretResponse {
 
 message DescribeCustomKeyStoresRequest {
 
-  string customkeystoreid = 88348228;
+  optional string customkeystoreid = 88348228;
 
-  string customkeystorename = 170278046;
+  optional string customkeystorename = 170278046;
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -883,7 +883,7 @@ message DescribeCustomKeyStoresResponse {
 
   repeated CustomKeyStoresListEntry customkeystores = 200763800;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   optional bool truncated = 152451018;
 
@@ -929,7 +929,7 @@ message DisableKeyRotationRequest {
 
 message DisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -961,7 +961,7 @@ enum DryRunModifierType {
 
 message DryRunOperationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1005,11 +1005,11 @@ message EncryptRequest {
 
 message EncryptResponse {
 
-  bytes ciphertextblob = 338198183;
+  optional bytes ciphertextblob = 338198183;
 
   EncryptionAlgorithmSpec encryptionalgorithm = 203224586;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
 }
 
@@ -1043,7 +1043,7 @@ enum ExpirationModelType {
 
 message ExpiredImportTokenException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1069,19 +1069,19 @@ message GenerateDataKeyPairRequest {
 
 message GenerateDataKeyPairResponse {
 
-  bytes ciphertextforrecipient = 75299212;
+  optional bytes ciphertextforrecipient = 75299212;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
   DataKeyPairSpec keypairspec = 142696380;
 
-  bytes privatekeyciphertextblob = 295238401;
+  optional bytes privatekeyciphertextblob = 295238401;
 
-  bytes privatekeyplaintext = 422534247;
+  optional bytes privatekeyplaintext = 422534247;
 
-  bytes publickey = 167335776;
+  optional bytes publickey = 167335776;
 
 }
 
@@ -1105,15 +1105,15 @@ message GenerateDataKeyPairWithoutPlaintextRequest {
 
 message GenerateDataKeyPairWithoutPlaintextResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
   DataKeyPairSpec keypairspec = 142696380;
 
-  bytes privatekeyciphertextblob = 295238401;
+  optional bytes privatekeyciphertextblob = 295238401;
 
-  bytes publickey = 167335776;
+  optional bytes publickey = 167335776;
 
 }
 
@@ -1141,15 +1141,15 @@ message GenerateDataKeyRequest {
 
 message GenerateDataKeyResponse {
 
-  bytes ciphertextblob = 338198183;
+  optional bytes ciphertextblob = 338198183;
 
-  bytes ciphertextforrecipient = 75299212;
+  optional bytes ciphertextforrecipient = 75299212;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
-  bytes plaintext = 88342721;
+  optional bytes plaintext = 88342721;
 
 }
 
@@ -1175,11 +1175,11 @@ message GenerateDataKeyWithoutPlaintextRequest {
 
 message GenerateDataKeyWithoutPlaintextResponse {
 
-  bytes ciphertextblob = 338198183;
+  optional bytes ciphertextblob = 338198183;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
 }
 
@@ -1203,9 +1203,9 @@ message GenerateMacRequest {
 
 message GenerateMacResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  bytes mac = 296223945;
+  optional bytes mac = 296223945;
 
   MacAlgorithmSpec macalgorithm = 253519878;
 
@@ -1215,7 +1215,7 @@ message GenerateMacResponse {
 
 message GenerateRandomRequest {
 
-  string customkeystoreid = 88348228;
+  optional string customkeystoreid = 88348228;
 
   optional int32 numberofbytes = 277086201;
 
@@ -1227,9 +1227,9 @@ message GenerateRandomRequest {
 
 message GenerateRandomResponse {
 
-  bytes ciphertextforrecipient = 75299212;
+  optional bytes ciphertextforrecipient = 75299212;
 
-  bytes plaintext = 88342721;
+  optional bytes plaintext = 88342721;
 
 }
 
@@ -1245,13 +1245,13 @@ message GetKeyLastUsageRequest {
 
 message GetKeyLastUsageResponse {
 
-  string keycreationdate = 76474346;
+  optional string keycreationdate = 76474346;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   KeyLastUsageData keylastusage = 440304564;
 
-  string trackingstartdate = 54177637;
+  optional string trackingstartdate = 54177637;
 
 }
 
@@ -1261,7 +1261,7 @@ message GetKeyPolicyRequest {
 
   string keyid = 275906594;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
 }
 
@@ -1269,9 +1269,9 @@ message GetKeyPolicyRequest {
 
 message GetKeyPolicyResponse {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
 }
 
@@ -1287,13 +1287,13 @@ message GetKeyRotationStatusRequest {
 
 message GetKeyRotationStatusResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   optional bool keyrotationenabled = 525956616;
 
-  string nextrotationdate = 192035355;
+  optional string nextrotationdate = 192035355;
 
-  string ondemandrotationstartdate = 360279652;
+  optional string ondemandrotationstartdate = 360279652;
 
   optional int32 rotationperiodindays = 118357231;
 
@@ -1315,13 +1315,13 @@ message GetParametersForImportRequest {
 
 message GetParametersForImportResponse {
 
-  bytes importtoken = 461726162;
+  optional bytes importtoken = 461726162;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string parametersvalidto = 394913717;
+  optional string parametersvalidto = 394913717;
 
-  bytes publickey = 167335776;
+  optional bytes publickey = 167335776;
 
 }
 
@@ -1345,13 +1345,13 @@ message GetPublicKeyResponse {
 
   repeated KeyAgreementAlgorithmSpec keyagreementalgorithms = 328746163;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   KeySpec keyspec = 138220928;
 
   KeyUsageType keyusage = 357216772;
 
-  bytes publickey = 167335776;
+  optional bytes publickey = 167335776;
 
   repeated SigningAlgorithmSpec signingalgorithms = 508241975;
 
@@ -1367,7 +1367,7 @@ message GrantConstraints {
 
   map<string, string> encryptioncontextsubset = 72310514;
 
-  string sourcearn = 439903072;
+  optional string sourcearn = 439903072;
 
 }
 
@@ -1379,25 +1379,25 @@ message GrantListEntry {
 
   GrantConstraints constraints = 302297388;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string grantid = 66852281;
+  optional string grantid = 66852281;
 
-  string granteeprincipal = 234727364;
+  optional string granteeprincipal = 234727364;
 
-  string granteeserviceprincipal = 57008093;
+  optional string granteeserviceprincipal = 57008093;
 
-  string issuingaccount = 47662575;
+  optional string issuingaccount = 47662575;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated GrantOperation operations = 126776656;
 
-  string retiringprincipal = 49541086;
+  optional string retiringprincipal = 49541086;
 
-  string retiringserviceprincipal = 402948019;
+  optional string retiringserviceprincipal = 402948019;
 
 }
 
@@ -1455,11 +1455,11 @@ message ImportKeyMaterialRequest {
 
   string keyid = 275906594;
 
-  string keymaterialdescription = 277153546;
+  optional string keymaterialdescription = 277153546;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
-  string validto = 522718673;
+  optional string validto = 522718673;
 
 }
 
@@ -1467,9 +1467,9 @@ message ImportKeyMaterialRequest {
 
 message ImportKeyMaterialResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
 }
 
@@ -1509,7 +1509,7 @@ enum IncludeKeyMaterial {
 
 message IncorrectKeyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1519,7 +1519,7 @@ message IncorrectKeyException {
 
 message IncorrectKeyMaterialException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1529,7 +1529,7 @@ message IncorrectKeyMaterialException {
 
 message IncorrectTrustAnchorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1539,7 +1539,7 @@ message IncorrectTrustAnchorException {
 
 message InvalidAliasNameException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1549,7 +1549,7 @@ message InvalidAliasNameException {
 
 message InvalidArnException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1559,7 +1559,7 @@ message InvalidArnException {
 
 message InvalidCiphertextException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1569,7 +1569,7 @@ message InvalidCiphertextException {
 
 message InvalidGrantIdException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1579,7 +1579,7 @@ message InvalidGrantIdException {
 
 message InvalidGrantTokenException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1589,7 +1589,7 @@ message InvalidGrantTokenException {
 
 message InvalidImportTokenException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1599,7 +1599,7 @@ message InvalidImportTokenException {
 
 message InvalidKeyUsageException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1609,7 +1609,7 @@ message InvalidKeyUsageException {
 
 message InvalidMarkerException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1619,7 +1619,7 @@ message InvalidMarkerException {
 
 message KMSInternalException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1629,7 +1629,7 @@ message KMSInternalException {
 
 message KMSInvalidMacException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1639,7 +1639,7 @@ message KMSInvalidMacException {
 
 message KMSInvalidSignatureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1649,7 +1649,7 @@ message KMSInvalidSignatureException {
 
 message KMSInvalidStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1675,13 +1675,13 @@ enum KeyEncryptionMechanism {
 
 message KeyLastUsageData {
 
-  string cloudtraileventid = 100722332;
+  optional string cloudtraileventid = 100722332;
 
-  string kmsrequestid = 427787075;
+  optional string kmsrequestid = 427787075;
 
   KeyLastUsageTrackingOperation operation = 26084007;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
 }
 
@@ -1721,9 +1721,9 @@ enum KeyLastUsageTrackingOperation {
 
 message KeyListEntry {
 
-  string keyarn = 418055012;
+  optional string keyarn = 418055012;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
 }
 
@@ -1757,23 +1757,23 @@ enum KeyMaterialState {
 
 message KeyMetadata {
 
-  string awsaccountid = 370093421;
+  optional string awsaccountid = 370093421;
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string cloudhsmclusterid = 56498754;
+  optional string cloudhsmclusterid = 56498754;
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string currentkeymaterialid = 183721586;
+  optional string currentkeymaterialid = 183721586;
 
-  string customkeystoreid = 88348228;
+  optional string customkeystoreid = 88348228;
 
   CustomerMasterKeySpec customermasterkeyspec = 472470930;
 
-  string deletiondate = 347845564;
+  optional string deletiondate = 347845564;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional bool enabled = 478602303;
 
@@ -1805,7 +1805,7 @@ message KeyMetadata {
 
   repeated SigningAlgorithmSpec signingalgorithms = 508241975;
 
-  string validto = 522718673;
+  optional string validto = 522718673;
 
   XksKeyConfigurationType xkskeyconfiguration = 359766455;
 
@@ -1879,7 +1879,7 @@ enum KeyState {
 
 message KeyUnavailableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1903,7 +1903,7 @@ enum KeyUsageType {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1911,11 +1911,11 @@ message LimitExceededException {
 
 message ListAliasesRequest {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -1925,7 +1925,7 @@ message ListAliasesResponse {
 
   repeated AliasListEntry aliases = 476693696;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   optional bool truncated = 152451018;
 
@@ -1935,17 +1935,17 @@ message ListAliasesResponse {
 
 message ListGrantsRequest {
 
-  string grantid = 66852281;
+  optional string grantid = 66852281;
 
-  string granteeprincipal = 234727364;
+  optional string granteeprincipal = 234727364;
 
-  string granteeserviceprincipal = 57008093;
+  optional string granteeserviceprincipal = 57008093;
 
   string keyid = 275906594;
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -1955,7 +1955,7 @@ message ListGrantsResponse {
 
   repeated GrantListEntry grants = 226910555;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   optional bool truncated = 152451018;
 
@@ -1969,7 +1969,7 @@ message ListKeyPoliciesRequest {
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -1977,7 +1977,7 @@ message ListKeyPoliciesRequest {
 
 message ListKeyPoliciesResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated string policynames = 264098782;
 
@@ -1995,7 +1995,7 @@ message ListKeyRotationsRequest {
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2003,7 +2003,7 @@ message ListKeyRotationsRequest {
 
 message ListKeyRotationsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RotationsListEntry rotations = 24209381;
 
@@ -2017,7 +2017,7 @@ message ListKeysRequest {
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2027,7 +2027,7 @@ message ListKeysResponse {
 
   repeated KeyListEntry keys = 2831086;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   optional bool truncated = 152451018;
 
@@ -2041,7 +2041,7 @@ message ListResourceTagsRequest {
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
 }
 
@@ -2049,7 +2049,7 @@ message ListResourceTagsRequest {
 
 message ListResourceTagsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated Tag tags = 381526209;
 
@@ -2063,11 +2063,11 @@ message ListRetirableGrantsRequest {
 
   optional int32 limit = 412502741;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
-  string retiringprincipal = 49541086;
+  optional string retiringprincipal = 49541086;
 
-  string retiringserviceprincipal = 402948019;
+  optional string retiringserviceprincipal = 402948019;
 
 }
 
@@ -2091,7 +2091,7 @@ enum MacAlgorithmSpec {
 
 message MalformedPolicyDocumentException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2127,9 +2127,9 @@ message MultiRegionConfiguration {
 
 message MultiRegionKey {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string region = 154040478;
+  optional string region = 154040478;
 
 }
 
@@ -2149,7 +2149,7 @@ enum MultiRegionKeyType {
 
 message NotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2177,7 +2177,7 @@ message PutKeyPolicyRequest {
 
   string policy = 471611296;
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
 }
 
@@ -2185,7 +2185,7 @@ message PutKeyPolicyRequest {
 
 message ReEncryptRequest {
 
-  bytes ciphertextblob = 338198183;
+  optional bytes ciphertextblob = 338198183;
 
   EncryptionAlgorithmSpec destinationencryptionalgorithm = 3500944;
 
@@ -2203,7 +2203,7 @@ message ReEncryptRequest {
 
   map<string, string> sourceencryptioncontext = 203785001;
 
-  string sourcekeyid = 137105771;
+  optional string sourcekeyid = 137105771;
 
 }
 
@@ -2211,19 +2211,19 @@ message ReEncryptRequest {
 
 message ReEncryptResponse {
 
-  bytes ciphertextblob = 338198183;
+  optional bytes ciphertextblob = 338198183;
 
   EncryptionAlgorithmSpec destinationencryptionalgorithm = 3500944;
 
-  string destinationkeymaterialid = 469834039;
+  optional string destinationkeymaterialid = 469834039;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   EncryptionAlgorithmSpec sourceencryptionalgorithm = 283215847;
 
-  string sourcekeyid = 137105771;
+  optional string sourcekeyid = 137105771;
 
-  string sourcekeymaterialid = 34789220;
+  optional string sourcekeymaterialid = 34789220;
 
 }
 
@@ -2233,7 +2233,7 @@ message ReEncryptResponse {
 
 message RecipientInfo {
 
-  bytes attestationdocument = 217786849;
+  optional bytes attestationdocument = 217786849;
 
   KeyEncryptionMechanism keyencryptionalgorithm = 478234803;
 
@@ -2245,11 +2245,11 @@ message ReplicateKeyRequest {
 
   optional bool bypasspolicylockoutsafetycheck = 177450851;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string keyid = 275906594;
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
   string replicaregion = 160061584;
 
@@ -2263,7 +2263,7 @@ message ReplicateKeyResponse {
 
   KeyMetadata replicakeymetadata = 68328236;
 
-  string replicapolicy = 279018266;
+  optional string replicapolicy = 279018266;
 
   repeated Tag replicatags = 17934651;
 
@@ -2275,11 +2275,11 @@ message RetireGrantRequest {
 
   optional bool dryrun = 92204984;
 
-  string grantid = 66852281;
+  optional string grantid = 66852281;
 
-  string granttoken = 137683547;
+  optional string granttoken = 137683547;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
 }
 
@@ -2307,7 +2307,7 @@ message RotateKeyOnDemandRequest {
 
 message RotateKeyOnDemandResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
 }
 
@@ -2331,19 +2331,19 @@ message RotationsListEntry {
 
   ImportState importstate = 32548970;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string keymaterialdescription = 277153546;
+  optional string keymaterialdescription = 277153546;
 
-  string keymaterialid = 147011585;
+  optional string keymaterialid = 147011585;
 
   KeyMaterialState keymaterialstate = 431806871;
 
-  string rotationdate = 529238652;
+  optional string rotationdate = 529238652;
 
   RotationType rotationtype = 122951592;
 
-  string validto = 522718673;
+  optional string validto = 522718673;
 
 }
 
@@ -2361,9 +2361,9 @@ message ScheduleKeyDeletionRequest {
 
 message ScheduleKeyDeletionResponse {
 
-  string deletiondate = 347845564;
+  optional string deletiondate = 347845564;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   KeyState keystate = 27894226;
 
@@ -2393,9 +2393,9 @@ message SignRequest {
 
 message SignResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  bytes signature = 4785422;
+  optional bytes signature = 4785422;
 
   SigningAlgorithmSpec signingalgorithm = 488091842;
 
@@ -2451,7 +2451,7 @@ message Tag {
 
 message TagException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2471,7 +2471,7 @@ message TagResourceRequest {
 
 message UnsupportedOperationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2499,25 +2499,25 @@ message UpdateAliasRequest {
 
 message UpdateCustomKeyStoreRequest {
 
-  string cloudhsmclusterid = 56498754;
+  optional string cloudhsmclusterid = 56498754;
 
   string customkeystoreid = 88348228;
 
-  string keystorepassword = 403136353;
+  optional string keystorepassword = 403136353;
 
-  string newcustomkeystorename = 10936866;
+  optional string newcustomkeystorename = 10936866;
 
   XksProxyAuthenticationCredentialType xksproxyauthenticationcredential = 350418199;
 
   XksProxyConnectivityType xksproxyconnectivity = 298569161;
 
-  string xksproxyuriendpoint = 273255559;
+  optional string xksproxyuriendpoint = 273255559;
 
-  string xksproxyuripath = 436753509;
+  optional string xksproxyuripath = 436753509;
 
-  string xksproxyvpcendpointservicename = 372786130;
+  optional string xksproxyvpcendpointservicename = 372786130;
 
-  string xksproxyvpcendpointserviceowner = 55249590;
+  optional string xksproxyvpcendpointserviceowner = 55249590;
 
 }
 
@@ -2569,7 +2569,7 @@ message VerifyMacRequest {
 
 message VerifyMacResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   MacAlgorithmSpec macalgorithm = 253519878;
 
@@ -2601,7 +2601,7 @@ message VerifyRequest {
 
 message VerifyResponse {
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   optional bool signaturevalid = 272180330;
 
@@ -2629,7 +2629,7 @@ enum WrappingKeySpec {
 
 message XksKeyAlreadyInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2639,7 +2639,7 @@ message XksKeyAlreadyInUseException {
 
 message XksKeyConfigurationType {
 
-  string id = 384350465;
+  optional string id = 384350465;
 
 }
 
@@ -2649,7 +2649,7 @@ message XksKeyConfigurationType {
 
 message XksKeyInvalidConfigurationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2659,7 +2659,7 @@ message XksKeyInvalidConfigurationException {
 
 message XksKeyNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2681,17 +2681,17 @@ message XksProxyAuthenticationCredentialType {
 
 message XksProxyConfigurationType {
 
-  string accesskeyid = 453893024;
+  optional string accesskeyid = 453893024;
 
   XksProxyConnectivityType connectivity = 210638147;
 
-  string uriendpoint = 79142005;
+  optional string uriendpoint = 79142005;
 
-  string uripath = 288340351;
+  optional string uripath = 288340351;
 
-  string vpcendpointservicename = 269882444;
+  optional string vpcendpointservicename = 269882444;
 
-  string vpcendpointserviceowner = 298819456;
+  optional string vpcendpointserviceowner = 298819456;
 
 }
 
@@ -2711,7 +2711,7 @@ enum XksProxyConnectivityType {
 
 message XksProxyIncorrectAuthenticationCredentialException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2721,7 +2721,7 @@ message XksProxyIncorrectAuthenticationCredentialException {
 
 message XksProxyInvalidConfigurationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2731,7 +2731,7 @@ message XksProxyInvalidConfigurationException {
 
 message XksProxyInvalidResponseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2741,7 +2741,7 @@ message XksProxyInvalidResponseException {
 
 message XksProxyUriEndpointInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2751,7 +2751,7 @@ message XksProxyUriEndpointInUseException {
 
 message XksProxyUriInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2761,7 +2761,7 @@ message XksProxyUriInUseException {
 
 message XksProxyUriUnreachableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2771,7 +2771,7 @@ message XksProxyUriUnreachableException {
 
 message XksProxyVpcEndpointServiceInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2781,7 +2781,7 @@ message XksProxyVpcEndpointServiceInUseException {
 
 message XksProxyVpcEndpointServiceInvalidConfigurationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2791,7 +2791,7 @@ message XksProxyVpcEndpointServiceInvalidConfigurationException {
 
 message XksProxyVpcEndpointServiceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

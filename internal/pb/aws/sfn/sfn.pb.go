@@ -1093,7 +1093,7 @@ func (ValidationExceptionReason) EnumDescriptor() ([]byte, []int) {
 
 type ActivityAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1129,15 +1129,15 @@ func (*ActivityAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ActivityDoesNotExist struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1173,16 +1173,16 @@ func (*ActivityDoesNotExist) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityDoesNotExist) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ActivityFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1218,22 +1218,22 @@ func (*ActivityFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *ActivityFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type ActivityLimitExceeded struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1269,8 +1269,8 @@ func (*ActivityLimitExceeded) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityLimitExceeded) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1337,8 +1337,8 @@ func (x *ActivityListItem) GetName() string {
 
 type ActivityScheduleFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1374,15 +1374,15 @@ func (*ActivityScheduleFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityScheduleFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *ActivityScheduleFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -1390,7 +1390,7 @@ func (x *ActivityScheduleFailedEventDetails) GetError() string {
 type ActivityScheduledEventDetails struct {
 	state              protoimpl.MessageState            `protogen:"open.v1"`
 	Heartbeatinseconds *int64                            `protobuf:"varint,125718754,opt,name=heartbeatinseconds,proto3,oneof" json:"heartbeatinseconds,omitempty"`
-	Input              string                            `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input              *string                           `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inputdetails       *HistoryEventExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
 	Resource           string                            `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Timeoutinseconds   *int64                            `protobuf:"varint,472710197,opt,name=timeoutinseconds,proto3,oneof" json:"timeoutinseconds,omitempty"`
@@ -1436,8 +1436,8 @@ func (x *ActivityScheduledEventDetails) GetHeartbeatinseconds() int64 {
 }
 
 func (x *ActivityScheduledEventDetails) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -1465,7 +1465,7 @@ func (x *ActivityScheduledEventDetails) GetTimeoutinseconds() int64 {
 
 type ActivityStartedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Workername    string                 `protobuf:"bytes,526761781,opt,name=workername,proto3" json:"workername,omitempty"`
+	Workername    *string                `protobuf:"bytes,526761781,opt,name=workername,proto3,oneof" json:"workername,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1501,15 +1501,15 @@ func (*ActivityStartedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityStartedEventDetails) GetWorkername() string {
-	if x != nil {
-		return x.Workername
+	if x != nil && x.Workername != nil {
+		return *x.Workername
 	}
 	return ""
 }
 
 type ActivitySucceededEventDetails struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Output        string                            `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        *string                           `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails *HistoryEventExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1546,8 +1546,8 @@ func (*ActivitySucceededEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivitySucceededEventDetails) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -1561,8 +1561,8 @@ func (x *ActivitySucceededEventDetails) GetOutputdetails() *HistoryEventExecutio
 
 type ActivityTimedOutEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1598,22 +1598,22 @@ func (*ActivityTimedOutEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityTimedOutEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *ActivityTimedOutEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type ActivityWorkerLimitExceeded struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1649,8 +1649,8 @@ func (*ActivityWorkerLimitExceeded) Descriptor() ([]byte, []int) {
 }
 
 func (x *ActivityWorkerLimitExceeded) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1797,7 +1797,7 @@ func (x *CloudWatchEventsExecutionDataDetails) GetIncluded() bool {
 
 type CloudWatchLogsLogGroup struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Loggrouparn   string                 `protobuf:"bytes,6742512,opt,name=loggrouparn,proto3" json:"loggrouparn,omitempty"`
+	Loggrouparn   *string                `protobuf:"bytes,6742512,opt,name=loggrouparn,proto3,oneof" json:"loggrouparn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1833,15 +1833,15 @@ func (*CloudWatchLogsLogGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *CloudWatchLogsLogGroup) GetLoggrouparn() string {
-	if x != nil {
-		return x.Loggrouparn
+	if x != nil && x.Loggrouparn != nil {
+		return *x.Loggrouparn
 	}
 	return ""
 }
 
 type ConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1877,8 +1877,8 @@ func (*ConflictException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1997,7 +1997,7 @@ func (x *CreateActivityOutput) GetCreationdate() string {
 
 type CreateStateMachineAliasInput struct {
 	state                protoimpl.MessageState          `protogen:"open.v1"`
-	Description          string                          `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                         `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name                 string                          `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Routingconfiguration []*RoutingConfigurationListItem `protobuf:"bytes,372891510,rep,name=routingconfiguration,proto3" json:"routingconfiguration,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -2035,8 +2035,8 @@ func (*CreateStateMachineAliasInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateStateMachineAliasInput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2118,7 +2118,7 @@ type CreateStateMachineInput struct {
 	Tags                    []*Tag                   `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty"`
 	Tracingconfiguration    *TracingConfiguration    `protobuf:"bytes,491315910,opt,name=tracingconfiguration,proto3" json:"tracingconfiguration,omitempty"`
 	Type                    StateMachineType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.StateMachineType" json:"type,omitempty"`
-	Versiondescription      string                   `protobuf:"bytes,434714300,opt,name=versiondescription,proto3" json:"versiondescription,omitempty"`
+	Versiondescription      *string                  `protobuf:"bytes,434714300,opt,name=versiondescription,proto3,oneof" json:"versiondescription,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -2217,8 +2217,8 @@ func (x *CreateStateMachineInput) GetType() StateMachineType {
 }
 
 func (x *CreateStateMachineInput) GetVersiondescription() string {
-	if x != nil {
-		return x.Versiondescription
+	if x != nil && x.Versiondescription != nil {
+		return *x.Versiondescription
 	}
 	return ""
 }
@@ -2227,7 +2227,7 @@ type CreateStateMachineOutput struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Creationdate           string                 `protobuf:"bytes,238315265,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
 	Statemachinearn        string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Statemachineversionarn string                 `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3" json:"statemachineversionarn,omitempty"`
+	Statemachineversionarn *string                `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3,oneof" json:"statemachineversionarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2277,8 +2277,8 @@ func (x *CreateStateMachineOutput) GetStatemachinearn() string {
 }
 
 func (x *CreateStateMachineOutput) GetStatemachineversionarn() string {
-	if x != nil {
-		return x.Statemachineversionarn
+	if x != nil && x.Statemachineversionarn != nil {
+		return *x.Statemachineversionarn
 	}
 	return ""
 }
@@ -2769,26 +2769,26 @@ func (x *DescribeExecutionInput) GetIncludeddata() IncludedData {
 
 type DescribeExecutionOutput struct {
 	state                  protoimpl.MessageState                `protogen:"open.v1"`
-	Cause                  string                                `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error                  string                                `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause                  *string                               `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error                  *string                               `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Executionarn           string                                `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
-	Input                  string                                `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input                  *string                               `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inputdetails           *CloudWatchEventsExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
-	Maprunarn              string                                `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
-	Name                   string                                `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Output                 string                                `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Maprunarn              *string                               `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
+	Name                   *string                               `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Output                 *string                               `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails          *CloudWatchEventsExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	Redrivecount           *int32                                `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
-	Redrivedate            string                                `protobuf:"bytes,152812125,opt,name=redrivedate,proto3" json:"redrivedate,omitempty"`
+	Redrivedate            *string                               `protobuf:"bytes,152812125,opt,name=redrivedate,proto3,oneof" json:"redrivedate,omitempty"`
 	Redrivestatus          ExecutionRedriveStatus                `protobuf:"varint,247102059,opt,name=redrivestatus,proto3,enum=sfn.ExecutionRedriveStatus" json:"redrivestatus,omitempty"`
-	Redrivestatusreason    string                                `protobuf:"bytes,339085215,opt,name=redrivestatusreason,proto3" json:"redrivestatusreason,omitempty"`
+	Redrivestatusreason    *string                               `protobuf:"bytes,339085215,opt,name=redrivestatusreason,proto3,oneof" json:"redrivestatusreason,omitempty"`
 	Startdate              string                                `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	Statemachinealiasarn   string                                `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3" json:"statemachinealiasarn,omitempty"`
+	Statemachinealiasarn   *string                               `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3,oneof" json:"statemachinealiasarn,omitempty"`
 	Statemachinearn        string                                `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Statemachineversionarn string                                `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3" json:"statemachineversionarn,omitempty"`
+	Statemachineversionarn *string                               `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3,oneof" json:"statemachineversionarn,omitempty"`
 	Status                 ExecutionStatus                       `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.ExecutionStatus" json:"status,omitempty"`
-	Stopdate               string                                `protobuf:"bytes,180697434,opt,name=stopdate,proto3" json:"stopdate,omitempty"`
-	Traceheader            string                                `protobuf:"bytes,219960864,opt,name=traceheader,proto3" json:"traceheader,omitempty"`
+	Stopdate               *string                               `protobuf:"bytes,180697434,opt,name=stopdate,proto3,oneof" json:"stopdate,omitempty"`
+	Traceheader            *string                               `protobuf:"bytes,219960864,opt,name=traceheader,proto3,oneof" json:"traceheader,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2824,15 +2824,15 @@ func (*DescribeExecutionOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeExecutionOutput) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *DescribeExecutionOutput) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -2845,8 +2845,8 @@ func (x *DescribeExecutionOutput) GetExecutionarn() string {
 }
 
 func (x *DescribeExecutionOutput) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -2859,22 +2859,22 @@ func (x *DescribeExecutionOutput) GetInputdetails() *CloudWatchEventsExecutionDa
 }
 
 func (x *DescribeExecutionOutput) GetMaprunarn() string {
-	if x != nil {
-		return x.Maprunarn
+	if x != nil && x.Maprunarn != nil {
+		return *x.Maprunarn
 	}
 	return ""
 }
 
 func (x *DescribeExecutionOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *DescribeExecutionOutput) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -2894,8 +2894,8 @@ func (x *DescribeExecutionOutput) GetRedrivecount() int32 {
 }
 
 func (x *DescribeExecutionOutput) GetRedrivedate() string {
-	if x != nil {
-		return x.Redrivedate
+	if x != nil && x.Redrivedate != nil {
+		return *x.Redrivedate
 	}
 	return ""
 }
@@ -2908,8 +2908,8 @@ func (x *DescribeExecutionOutput) GetRedrivestatus() ExecutionRedriveStatus {
 }
 
 func (x *DescribeExecutionOutput) GetRedrivestatusreason() string {
-	if x != nil {
-		return x.Redrivestatusreason
+	if x != nil && x.Redrivestatusreason != nil {
+		return *x.Redrivestatusreason
 	}
 	return ""
 }
@@ -2922,8 +2922,8 @@ func (x *DescribeExecutionOutput) GetStartdate() string {
 }
 
 func (x *DescribeExecutionOutput) GetStatemachinealiasarn() string {
-	if x != nil {
-		return x.Statemachinealiasarn
+	if x != nil && x.Statemachinealiasarn != nil {
+		return *x.Statemachinealiasarn
 	}
 	return ""
 }
@@ -2936,8 +2936,8 @@ func (x *DescribeExecutionOutput) GetStatemachinearn() string {
 }
 
 func (x *DescribeExecutionOutput) GetStatemachineversionarn() string {
-	if x != nil {
-		return x.Statemachineversionarn
+	if x != nil && x.Statemachineversionarn != nil {
+		return *x.Statemachineversionarn
 	}
 	return ""
 }
@@ -2950,15 +2950,15 @@ func (x *DescribeExecutionOutput) GetStatus() ExecutionStatus {
 }
 
 func (x *DescribeExecutionOutput) GetStopdate() string {
-	if x != nil {
-		return x.Stopdate
+	if x != nil && x.Stopdate != nil {
+		return *x.Stopdate
 	}
 	return ""
 }
 
 func (x *DescribeExecutionOutput) GetTraceheader() string {
-	if x != nil {
-		return x.Traceheader
+	if x != nil && x.Traceheader != nil {
+		return *x.Traceheader
 	}
 	return ""
 }
@@ -3015,10 +3015,10 @@ type DescribeMapRunOutput struct {
 	Maprunarn                  string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
 	Maxconcurrency             int32                  `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3" json:"maxconcurrency,omitempty"`
 	Redrivecount               *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
-	Redrivedate                string                 `protobuf:"bytes,152812125,opt,name=redrivedate,proto3" json:"redrivedate,omitempty"`
+	Redrivedate                *string                `protobuf:"bytes,152812125,opt,name=redrivedate,proto3,oneof" json:"redrivedate,omitempty"`
 	Startdate                  string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Status                     MapRunStatus           `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.MapRunStatus" json:"status,omitempty"`
-	Stopdate                   string                 `protobuf:"bytes,180697434,opt,name=stopdate,proto3" json:"stopdate,omitempty"`
+	Stopdate                   *string                `protobuf:"bytes,180697434,opt,name=stopdate,proto3,oneof" json:"stopdate,omitempty"`
 	Toleratedfailurecount      int64                  `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3" json:"toleratedfailurecount,omitempty"`
 	Toleratedfailurepercentage float32                `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3" json:"toleratedfailurepercentage,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -3098,8 +3098,8 @@ func (x *DescribeMapRunOutput) GetRedrivecount() int32 {
 }
 
 func (x *DescribeMapRunOutput) GetRedrivedate() string {
-	if x != nil {
-		return x.Redrivedate
+	if x != nil && x.Redrivedate != nil {
+		return *x.Redrivedate
 	}
 	return ""
 }
@@ -3119,8 +3119,8 @@ func (x *DescribeMapRunOutput) GetStatus() MapRunStatus {
 }
 
 func (x *DescribeMapRunOutput) GetStopdate() string {
-	if x != nil {
-		return x.Stopdate
+	if x != nil && x.Stopdate != nil {
+		return *x.Stopdate
 	}
 	return ""
 }
@@ -3185,12 +3185,12 @@ func (x *DescribeStateMachineAliasInput) GetStatemachinealiasarn() string {
 
 type DescribeStateMachineAliasOutput struct {
 	state                protoimpl.MessageState          `protogen:"open.v1"`
-	Creationdate         string                          `protobuf:"bytes,238315265,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Description          string                          `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Name                 string                          `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Creationdate         *string                         `protobuf:"bytes,238315265,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Description          *string                         `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Name                 *string                         `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Routingconfiguration []*RoutingConfigurationListItem `protobuf:"bytes,372891510,rep,name=routingconfiguration,proto3" json:"routingconfiguration,omitempty"`
-	Statemachinealiasarn string                          `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3" json:"statemachinealiasarn,omitempty"`
-	Updatedate           string                          `protobuf:"bytes,510552561,opt,name=updatedate,proto3" json:"updatedate,omitempty"`
+	Statemachinealiasarn *string                         `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3,oneof" json:"statemachinealiasarn,omitempty"`
+	Updatedate           *string                         `protobuf:"bytes,510552561,opt,name=updatedate,proto3,oneof" json:"updatedate,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -3226,22 +3226,22 @@ func (*DescribeStateMachineAliasOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeStateMachineAliasOutput) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *DescribeStateMachineAliasOutput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *DescribeStateMachineAliasOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -3254,15 +3254,15 @@ func (x *DescribeStateMachineAliasOutput) GetRoutingconfiguration() []*RoutingCo
 }
 
 func (x *DescribeStateMachineAliasOutput) GetStatemachinealiasarn() string {
-	if x != nil {
-		return x.Statemachinealiasarn
+	if x != nil && x.Statemachinealiasarn != nil {
+		return *x.Statemachinealiasarn
 	}
 	return ""
 }
 
 func (x *DescribeStateMachineAliasOutput) GetUpdatedate() string {
-	if x != nil {
-		return x.Updatedate
+	if x != nil && x.Updatedate != nil {
+		return *x.Updatedate
 	}
 	return ""
 }
@@ -3323,11 +3323,11 @@ type DescribeStateMachineForExecutionOutput struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
 	Definition              string                   `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
 	Encryptionconfiguration *EncryptionConfiguration `protobuf:"bytes,167857431,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
-	Label                   string                   `protobuf:"bytes,379000830,opt,name=label,proto3" json:"label,omitempty"`
+	Label                   *string                  `protobuf:"bytes,379000830,opt,name=label,proto3,oneof" json:"label,omitempty"`
 	Loggingconfiguration    *LoggingConfiguration    `protobuf:"bytes,420811605,opt,name=loggingconfiguration,proto3" json:"loggingconfiguration,omitempty"`
-	Maprunarn               string                   `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
+	Maprunarn               *string                  `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
 	Name                    string                   `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Revisionid              string                   `protobuf:"bytes,369170086,opt,name=revisionid,proto3" json:"revisionid,omitempty"`
+	Revisionid              *string                  `protobuf:"bytes,369170086,opt,name=revisionid,proto3,oneof" json:"revisionid,omitempty"`
 	Rolearn                 string                   `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Statemachinearn         string                   `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	Tracingconfiguration    *TracingConfiguration    `protobuf:"bytes,491315910,opt,name=tracingconfiguration,proto3" json:"tracingconfiguration,omitempty"`
@@ -3382,8 +3382,8 @@ func (x *DescribeStateMachineForExecutionOutput) GetEncryptionconfiguration() *E
 }
 
 func (x *DescribeStateMachineForExecutionOutput) GetLabel() string {
-	if x != nil {
-		return x.Label
+	if x != nil && x.Label != nil {
+		return *x.Label
 	}
 	return ""
 }
@@ -3396,8 +3396,8 @@ func (x *DescribeStateMachineForExecutionOutput) GetLoggingconfiguration() *Logg
 }
 
 func (x *DescribeStateMachineForExecutionOutput) GetMaprunarn() string {
-	if x != nil {
-		return x.Maprunarn
+	if x != nil && x.Maprunarn != nil {
+		return *x.Maprunarn
 	}
 	return ""
 }
@@ -3410,8 +3410,8 @@ func (x *DescribeStateMachineForExecutionOutput) GetName() string {
 }
 
 func (x *DescribeStateMachineForExecutionOutput) GetRevisionid() string {
-	if x != nil {
-		return x.Revisionid
+	if x != nil && x.Revisionid != nil {
+		return *x.Revisionid
 	}
 	return ""
 }
@@ -3507,12 +3507,12 @@ type DescribeStateMachineOutput struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
 	Creationdate            string                   `protobuf:"bytes,238315265,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
 	Definition              string                   `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
-	Description             string                   `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description             *string                  `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Encryptionconfiguration *EncryptionConfiguration `protobuf:"bytes,167857431,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
-	Label                   string                   `protobuf:"bytes,379000830,opt,name=label,proto3" json:"label,omitempty"`
+	Label                   *string                  `protobuf:"bytes,379000830,opt,name=label,proto3,oneof" json:"label,omitempty"`
 	Loggingconfiguration    *LoggingConfiguration    `protobuf:"bytes,420811605,opt,name=loggingconfiguration,proto3" json:"loggingconfiguration,omitempty"`
 	Name                    string                   `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Revisionid              string                   `protobuf:"bytes,369170086,opt,name=revisionid,proto3" json:"revisionid,omitempty"`
+	Revisionid              *string                  `protobuf:"bytes,369170086,opt,name=revisionid,proto3,oneof" json:"revisionid,omitempty"`
 	Rolearn                 string                   `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
 	Statemachinearn         string                   `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	Status                  StateMachineStatus       `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.StateMachineStatus" json:"status,omitempty"`
@@ -3568,8 +3568,8 @@ func (x *DescribeStateMachineOutput) GetDefinition() string {
 }
 
 func (x *DescribeStateMachineOutput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -3582,8 +3582,8 @@ func (x *DescribeStateMachineOutput) GetEncryptionconfiguration() *EncryptionCon
 }
 
 func (x *DescribeStateMachineOutput) GetLabel() string {
-	if x != nil {
-		return x.Label
+	if x != nil && x.Label != nil {
+		return *x.Label
 	}
 	return ""
 }
@@ -3603,8 +3603,8 @@ func (x *DescribeStateMachineOutput) GetName() string {
 }
 
 func (x *DescribeStateMachineOutput) GetRevisionid() string {
-	if x != nil {
-		return x.Revisionid
+	if x != nil && x.Revisionid != nil {
+		return *x.Revisionid
 	}
 	return ""
 }
@@ -3654,7 +3654,7 @@ func (x *DescribeStateMachineOutput) GetVariablereferences() map[string]string {
 type EncryptionConfiguration struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	Kmsdatakeyreuseperiodseconds *int32                 `protobuf:"varint,440747764,opt,name=kmsdatakeyreuseperiodseconds,proto3,oneof" json:"kmsdatakeyreuseperiodseconds,omitempty"`
-	Kmskeyid                     string                 `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                     *string                `protobuf:"bytes,510698477,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Type                         EncryptionType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=sfn.EncryptionType" json:"type,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -3698,8 +3698,8 @@ func (x *EncryptionConfiguration) GetKmsdatakeyreuseperiodseconds() int32 {
 }
 
 func (x *EncryptionConfiguration) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -3713,9 +3713,9 @@ func (x *EncryptionConfiguration) GetType() EncryptionType {
 
 type EvaluationFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
-	Location      string                 `protobuf:"bytes,200649127,opt,name=location,proto3" json:"location,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
+	Location      *string                `protobuf:"bytes,200649127,opt,name=location,proto3,oneof" json:"location,omitempty"`
 	State         string                 `protobuf:"bytes,405877495,opt,name=state,proto3" json:"state,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3752,22 +3752,22 @@ func (*EvaluationFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *EvaluationFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *EvaluationFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 func (x *EvaluationFailedEventDetails) GetLocation() string {
-	if x != nil {
-		return x.Location
+	if x != nil && x.Location != nil {
+		return *x.Location
 	}
 	return ""
 }
@@ -3781,8 +3781,8 @@ func (x *EvaluationFailedEventDetails) GetState() string {
 
 type ExecutionAbortedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3818,22 +3818,22 @@ func (*ExecutionAbortedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionAbortedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *ExecutionAbortedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type ExecutionAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3869,15 +3869,15 @@ func (*ExecutionAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ExecutionDoesNotExist struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3913,16 +3913,16 @@ func (*ExecutionDoesNotExist) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionDoesNotExist) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ExecutionFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3958,22 +3958,22 @@ func (*ExecutionFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *ExecutionFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type ExecutionLimitExceeded struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4009,8 +4009,8 @@ func (*ExecutionLimitExceeded) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionLimitExceeded) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4019,16 +4019,16 @@ type ExecutionListItem struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn           string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
 	Itemcount              *int32                 `protobuf:"varint,349613174,opt,name=itemcount,proto3,oneof" json:"itemcount,omitempty"`
-	Maprunarn              string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
+	Maprunarn              *string                `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
 	Name                   string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Redrivecount           *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
-	Redrivedate            string                 `protobuf:"bytes,152812125,opt,name=redrivedate,proto3" json:"redrivedate,omitempty"`
+	Redrivedate            *string                `protobuf:"bytes,152812125,opt,name=redrivedate,proto3,oneof" json:"redrivedate,omitempty"`
 	Startdate              string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	Statemachinealiasarn   string                 `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3" json:"statemachinealiasarn,omitempty"`
+	Statemachinealiasarn   *string                `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3,oneof" json:"statemachinealiasarn,omitempty"`
 	Statemachinearn        string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Statemachineversionarn string                 `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3" json:"statemachineversionarn,omitempty"`
+	Statemachineversionarn *string                `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3,oneof" json:"statemachineversionarn,omitempty"`
 	Status                 ExecutionStatus        `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.ExecutionStatus" json:"status,omitempty"`
-	Stopdate               string                 `protobuf:"bytes,180697434,opt,name=stopdate,proto3" json:"stopdate,omitempty"`
+	Stopdate               *string                `protobuf:"bytes,180697434,opt,name=stopdate,proto3,oneof" json:"stopdate,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -4078,8 +4078,8 @@ func (x *ExecutionListItem) GetItemcount() int32 {
 }
 
 func (x *ExecutionListItem) GetMaprunarn() string {
-	if x != nil {
-		return x.Maprunarn
+	if x != nil && x.Maprunarn != nil {
+		return *x.Maprunarn
 	}
 	return ""
 }
@@ -4099,8 +4099,8 @@ func (x *ExecutionListItem) GetRedrivecount() int32 {
 }
 
 func (x *ExecutionListItem) GetRedrivedate() string {
-	if x != nil {
-		return x.Redrivedate
+	if x != nil && x.Redrivedate != nil {
+		return *x.Redrivedate
 	}
 	return ""
 }
@@ -4113,8 +4113,8 @@ func (x *ExecutionListItem) GetStartdate() string {
 }
 
 func (x *ExecutionListItem) GetStatemachinealiasarn() string {
-	if x != nil {
-		return x.Statemachinealiasarn
+	if x != nil && x.Statemachinealiasarn != nil {
+		return *x.Statemachinealiasarn
 	}
 	return ""
 }
@@ -4127,8 +4127,8 @@ func (x *ExecutionListItem) GetStatemachinearn() string {
 }
 
 func (x *ExecutionListItem) GetStatemachineversionarn() string {
-	if x != nil {
-		return x.Statemachineversionarn
+	if x != nil && x.Statemachineversionarn != nil {
+		return *x.Statemachineversionarn
 	}
 	return ""
 }
@@ -4141,15 +4141,15 @@ func (x *ExecutionListItem) GetStatus() ExecutionStatus {
 }
 
 func (x *ExecutionListItem) GetStopdate() string {
-	if x != nil {
-		return x.Stopdate
+	if x != nil && x.Stopdate != nil {
+		return *x.Stopdate
 	}
 	return ""
 }
 
 type ExecutionNotRedrivable struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4185,8 +4185,8 @@ func (*ExecutionNotRedrivable) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionNotRedrivable) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4237,11 +4237,11 @@ func (x *ExecutionRedrivenEventDetails) GetRedrivecount() int32 {
 
 type ExecutionStartedEventDetails struct {
 	state                  protoimpl.MessageState            `protogen:"open.v1"`
-	Input                  string                            `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input                  *string                           `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inputdetails           *HistoryEventExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
-	Rolearn                string                            `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
-	Statemachinealiasarn   string                            `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3" json:"statemachinealiasarn,omitempty"`
-	Statemachineversionarn string                            `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3" json:"statemachineversionarn,omitempty"`
+	Rolearn                *string                           `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
+	Statemachinealiasarn   *string                           `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3,oneof" json:"statemachinealiasarn,omitempty"`
+	Statemachineversionarn *string                           `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3,oneof" json:"statemachineversionarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -4277,8 +4277,8 @@ func (*ExecutionStartedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionStartedEventDetails) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -4291,29 +4291,29 @@ func (x *ExecutionStartedEventDetails) GetInputdetails() *HistoryEventExecutionD
 }
 
 func (x *ExecutionStartedEventDetails) GetRolearn() string {
-	if x != nil {
-		return x.Rolearn
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
 	}
 	return ""
 }
 
 func (x *ExecutionStartedEventDetails) GetStatemachinealiasarn() string {
-	if x != nil {
-		return x.Statemachinealiasarn
+	if x != nil && x.Statemachinealiasarn != nil {
+		return *x.Statemachinealiasarn
 	}
 	return ""
 }
 
 func (x *ExecutionStartedEventDetails) GetStatemachineversionarn() string {
-	if x != nil {
-		return x.Statemachineversionarn
+	if x != nil && x.Statemachineversionarn != nil {
+		return *x.Statemachineversionarn
 	}
 	return ""
 }
 
 type ExecutionSucceededEventDetails struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Output        string                            `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        *string                           `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails *HistoryEventExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4350,8 +4350,8 @@ func (*ExecutionSucceededEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionSucceededEventDetails) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -4365,8 +4365,8 @@ func (x *ExecutionSucceededEventDetails) GetOutputdetails() *HistoryEventExecuti
 
 type ExecutionTimedOutEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4402,15 +4402,15 @@ func (*ExecutionTimedOutEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ExecutionTimedOutEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *ExecutionTimedOutEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -4418,7 +4418,7 @@ func (x *ExecutionTimedOutEventDetails) GetError() string {
 type GetActivityTaskInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Activityarn   string                 `protobuf:"bytes,327279492,opt,name=activityarn,proto3" json:"activityarn,omitempty"`
-	Workername    string                 `protobuf:"bytes,526761781,opt,name=workername,proto3" json:"workername,omitempty"`
+	Workername    *string                `protobuf:"bytes,526761781,opt,name=workername,proto3,oneof" json:"workername,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4461,16 +4461,16 @@ func (x *GetActivityTaskInput) GetActivityarn() string {
 }
 
 func (x *GetActivityTaskInput) GetWorkername() string {
-	if x != nil {
-		return x.Workername
+	if x != nil && x.Workername != nil {
+		return *x.Workername
 	}
 	return ""
 }
 
 type GetActivityTaskOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Input         string                 `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
-	Tasktoken     string                 `protobuf:"bytes,525325834,opt,name=tasktoken,proto3" json:"tasktoken,omitempty"`
+	Input         *string                `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
+	Tasktoken     *string                `protobuf:"bytes,525325834,opt,name=tasktoken,proto3,oneof" json:"tasktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4506,15 +4506,15 @@ func (*GetActivityTaskOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetActivityTaskOutput) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
 
 func (x *GetActivityTaskOutput) GetTasktoken() string {
-	if x != nil {
-		return x.Tasktoken
+	if x != nil && x.Tasktoken != nil {
+		return *x.Tasktoken
 	}
 	return ""
 }
@@ -4524,7 +4524,7 @@ type GetExecutionHistoryInput struct {
 	Executionarn         string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
 	Includeexecutiondata *bool                  `protobuf:"varint,203899608,opt,name=includeexecutiondata,proto3,oneof" json:"includeexecutiondata,omitempty"`
 	Maxresults           *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken            string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken            *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Reverseorder         *bool                  `protobuf:"varint,364411768,opt,name=reverseorder,proto3,oneof" json:"reverseorder,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -4582,8 +4582,8 @@ func (x *GetExecutionHistoryInput) GetMaxresults() int32 {
 }
 
 func (x *GetExecutionHistoryInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -4598,7 +4598,7 @@ func (x *GetExecutionHistoryInput) GetReverseorder() bool {
 type GetExecutionHistoryOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*HistoryEvent        `protobuf:"bytes,316203909,rep,name=events,proto3" json:"events,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4641,8 +4641,8 @@ func (x *GetExecutionHistoryOutput) GetEvents() []*HistoryEvent {
 }
 
 func (x *GetExecutionHistoryOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -5057,24 +5057,24 @@ func (x *HistoryEventExecutionDataDetails) GetTruncated() bool {
 
 type InspectionData struct {
 	state                      protoimpl.MessageState  `protogen:"open.v1"`
-	Afterarguments             string                  `protobuf:"bytes,365960236,opt,name=afterarguments,proto3" json:"afterarguments,omitempty"`
-	Afterinputpath             string                  `protobuf:"bytes,355404745,opt,name=afterinputpath,proto3" json:"afterinputpath,omitempty"`
-	Afteritembatcher           string                  `protobuf:"bytes,181123354,opt,name=afteritembatcher,proto3" json:"afteritembatcher,omitempty"`
-	Afteritemselector          string                  `protobuf:"bytes,394258120,opt,name=afteritemselector,proto3" json:"afteritemselector,omitempty"`
-	Afteritemspath             string                  `protobuf:"bytes,491034053,opt,name=afteritemspath,proto3" json:"afteritemspath,omitempty"`
-	Afteritemspointer          string                  `protobuf:"bytes,194882729,opt,name=afteritemspointer,proto3" json:"afteritemspointer,omitempty"`
-	Afterparameters            string                  `protobuf:"bytes,328015918,opt,name=afterparameters,proto3" json:"afterparameters,omitempty"`
-	Afterresultpath            string                  `protobuf:"bytes,480099136,opt,name=afterresultpath,proto3" json:"afterresultpath,omitempty"`
-	Afterresultselector        string                  `protobuf:"bytes,443240414,opt,name=afterresultselector,proto3" json:"afterresultselector,omitempty"`
+	Afterarguments             *string                 `protobuf:"bytes,365960236,opt,name=afterarguments,proto3,oneof" json:"afterarguments,omitempty"`
+	Afterinputpath             *string                 `protobuf:"bytes,355404745,opt,name=afterinputpath,proto3,oneof" json:"afterinputpath,omitempty"`
+	Afteritembatcher           *string                 `protobuf:"bytes,181123354,opt,name=afteritembatcher,proto3,oneof" json:"afteritembatcher,omitempty"`
+	Afteritemselector          *string                 `protobuf:"bytes,394258120,opt,name=afteritemselector,proto3,oneof" json:"afteritemselector,omitempty"`
+	Afteritemspath             *string                 `protobuf:"bytes,491034053,opt,name=afteritemspath,proto3,oneof" json:"afteritemspath,omitempty"`
+	Afteritemspointer          *string                 `protobuf:"bytes,194882729,opt,name=afteritemspointer,proto3,oneof" json:"afteritemspointer,omitempty"`
+	Afterparameters            *string                 `protobuf:"bytes,328015918,opt,name=afterparameters,proto3,oneof" json:"afterparameters,omitempty"`
+	Afterresultpath            *string                 `protobuf:"bytes,480099136,opt,name=afterresultpath,proto3,oneof" json:"afterresultpath,omitempty"`
+	Afterresultselector        *string                 `protobuf:"bytes,443240414,opt,name=afterresultselector,proto3,oneof" json:"afterresultselector,omitempty"`
 	Errordetails               *InspectionErrorDetails `protobuf:"bytes,192899050,opt,name=errordetails,proto3" json:"errordetails,omitempty"`
-	Input                      string                  `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input                      *string                 `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Maxconcurrency             *int32                  `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
 	Request                    *InspectionDataRequest  `protobuf:"bytes,514460083,opt,name=request,proto3" json:"request,omitempty"`
 	Response                   *InspectionDataResponse `protobuf:"bytes,425574879,opt,name=response,proto3" json:"response,omitempty"`
-	Result                     string                  `protobuf:"bytes,171406885,opt,name=result,proto3" json:"result,omitempty"`
+	Result                     *string                 `protobuf:"bytes,171406885,opt,name=result,proto3,oneof" json:"result,omitempty"`
 	Toleratedfailurecount      *int32                  `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3,oneof" json:"toleratedfailurecount,omitempty"`
-	Toleratedfailurepercentage float32                 `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3" json:"toleratedfailurepercentage,omitempty"`
-	Variables                  string                  `protobuf:"bytes,162226883,opt,name=variables,proto3" json:"variables,omitempty"`
+	Toleratedfailurepercentage *float32                `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3,oneof" json:"toleratedfailurepercentage,omitempty"`
+	Variables                  *string                 `protobuf:"bytes,162226883,opt,name=variables,proto3,oneof" json:"variables,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -5110,64 +5110,64 @@ func (*InspectionData) Descriptor() ([]byte, []int) {
 }
 
 func (x *InspectionData) GetAfterarguments() string {
-	if x != nil {
-		return x.Afterarguments
+	if x != nil && x.Afterarguments != nil {
+		return *x.Afterarguments
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfterinputpath() string {
-	if x != nil {
-		return x.Afterinputpath
+	if x != nil && x.Afterinputpath != nil {
+		return *x.Afterinputpath
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfteritembatcher() string {
-	if x != nil {
-		return x.Afteritembatcher
+	if x != nil && x.Afteritembatcher != nil {
+		return *x.Afteritembatcher
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfteritemselector() string {
-	if x != nil {
-		return x.Afteritemselector
+	if x != nil && x.Afteritemselector != nil {
+		return *x.Afteritemselector
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfteritemspath() string {
-	if x != nil {
-		return x.Afteritemspath
+	if x != nil && x.Afteritemspath != nil {
+		return *x.Afteritemspath
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfteritemspointer() string {
-	if x != nil {
-		return x.Afteritemspointer
+	if x != nil && x.Afteritemspointer != nil {
+		return *x.Afteritemspointer
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfterparameters() string {
-	if x != nil {
-		return x.Afterparameters
+	if x != nil && x.Afterparameters != nil {
+		return *x.Afterparameters
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfterresultpath() string {
-	if x != nil {
-		return x.Afterresultpath
+	if x != nil && x.Afterresultpath != nil {
+		return *x.Afterresultpath
 	}
 	return ""
 }
 
 func (x *InspectionData) GetAfterresultselector() string {
-	if x != nil {
-		return x.Afterresultselector
+	if x != nil && x.Afterresultselector != nil {
+		return *x.Afterresultselector
 	}
 	return ""
 }
@@ -5180,8 +5180,8 @@ func (x *InspectionData) GetErrordetails() *InspectionErrorDetails {
 }
 
 func (x *InspectionData) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -5208,8 +5208,8 @@ func (x *InspectionData) GetResponse() *InspectionDataResponse {
 }
 
 func (x *InspectionData) GetResult() string {
-	if x != nil {
-		return x.Result
+	if x != nil && x.Result != nil {
+		return *x.Result
 	}
 	return ""
 }
@@ -5222,26 +5222,26 @@ func (x *InspectionData) GetToleratedfailurecount() int32 {
 }
 
 func (x *InspectionData) GetToleratedfailurepercentage() float32 {
-	if x != nil {
-		return x.Toleratedfailurepercentage
+	if x != nil && x.Toleratedfailurepercentage != nil {
+		return *x.Toleratedfailurepercentage
 	}
 	return 0
 }
 
 func (x *InspectionData) GetVariables() string {
-	if x != nil {
-		return x.Variables
+	if x != nil && x.Variables != nil {
+		return *x.Variables
 	}
 	return ""
 }
 
 type InspectionDataRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Body          string                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
-	Headers       string                 `protobuf:"bytes,375773674,opt,name=headers,proto3" json:"headers,omitempty"`
-	Method        string                 `protobuf:"bytes,189134641,opt,name=method,proto3" json:"method,omitempty"`
-	Protocol      string                 `protobuf:"bytes,455607734,opt,name=protocol,proto3" json:"protocol,omitempty"`
-	Url           string                 `protobuf:"bytes,311381023,opt,name=url,proto3" json:"url,omitempty"`
+	Body          *string                `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Headers       *string                `protobuf:"bytes,375773674,opt,name=headers,proto3,oneof" json:"headers,omitempty"`
+	Method        *string                `protobuf:"bytes,189134641,opt,name=method,proto3,oneof" json:"method,omitempty"`
+	Protocol      *string                `protobuf:"bytes,455607734,opt,name=protocol,proto3,oneof" json:"protocol,omitempty"`
+	Url           *string                `protobuf:"bytes,311381023,opt,name=url,proto3,oneof" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5277,47 +5277,47 @@ func (*InspectionDataRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *InspectionDataRequest) GetBody() string {
-	if x != nil {
-		return x.Body
+	if x != nil && x.Body != nil {
+		return *x.Body
 	}
 	return ""
 }
 
 func (x *InspectionDataRequest) GetHeaders() string {
-	if x != nil {
-		return x.Headers
+	if x != nil && x.Headers != nil {
+		return *x.Headers
 	}
 	return ""
 }
 
 func (x *InspectionDataRequest) GetMethod() string {
-	if x != nil {
-		return x.Method
+	if x != nil && x.Method != nil {
+		return *x.Method
 	}
 	return ""
 }
 
 func (x *InspectionDataRequest) GetProtocol() string {
-	if x != nil {
-		return x.Protocol
+	if x != nil && x.Protocol != nil {
+		return *x.Protocol
 	}
 	return ""
 }
 
 func (x *InspectionDataRequest) GetUrl() string {
-	if x != nil {
-		return x.Url
+	if x != nil && x.Url != nil {
+		return *x.Url
 	}
 	return ""
 }
 
 type InspectionDataResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Body          string                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
-	Headers       string                 `protobuf:"bytes,375773674,opt,name=headers,proto3" json:"headers,omitempty"`
-	Protocol      string                 `protobuf:"bytes,455607734,opt,name=protocol,proto3" json:"protocol,omitempty"`
-	Statuscode    string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
-	Statusmessage string                 `protobuf:"bytes,474462255,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
+	Body          *string                `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Headers       *string                `protobuf:"bytes,375773674,opt,name=headers,proto3,oneof" json:"headers,omitempty"`
+	Protocol      *string                `protobuf:"bytes,455607734,opt,name=protocol,proto3,oneof" json:"protocol,omitempty"`
+	Statuscode    *string                `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
+	Statusmessage *string                `protobuf:"bytes,474462255,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5353,36 +5353,36 @@ func (*InspectionDataResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *InspectionDataResponse) GetBody() string {
-	if x != nil {
-		return x.Body
+	if x != nil && x.Body != nil {
+		return *x.Body
 	}
 	return ""
 }
 
 func (x *InspectionDataResponse) GetHeaders() string {
-	if x != nil {
-		return x.Headers
+	if x != nil && x.Headers != nil {
+		return *x.Headers
 	}
 	return ""
 }
 
 func (x *InspectionDataResponse) GetProtocol() string {
-	if x != nil {
-		return x.Protocol
+	if x != nil && x.Protocol != nil {
+		return *x.Protocol
 	}
 	return ""
 }
 
 func (x *InspectionDataResponse) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
 
 func (x *InspectionDataResponse) GetStatusmessage() string {
-	if x != nil {
-		return x.Statusmessage
+	if x != nil && x.Statusmessage != nil {
+		return *x.Statusmessage
 	}
 	return ""
 }
@@ -5449,7 +5449,7 @@ func (x *InspectionErrorDetails) GetRetryindex() int32 {
 
 type InvalidArn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5485,15 +5485,15 @@ func (*InvalidArn) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidArn) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDefinition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5529,15 +5529,15 @@ func (*InvalidDefinition) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDefinition) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEncryptionConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5573,15 +5573,15 @@ func (*InvalidEncryptionConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEncryptionConfiguration) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidExecutionInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5617,15 +5617,15 @@ func (*InvalidExecutionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidExecutionInput) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidLoggingConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5661,15 +5661,15 @@ func (*InvalidLoggingConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidLoggingConfiguration) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidName struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5705,15 +5705,15 @@ func (*InvalidName) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidName) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5749,15 +5749,15 @@ func (*InvalidOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidOutput) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidToken struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5793,15 +5793,15 @@ func (*InvalidToken) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidToken) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTracingConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5837,15 +5837,15 @@ func (*InvalidTracingConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidTracingConfiguration) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsAccessDeniedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5881,8 +5881,8 @@ func (*KmsAccessDeniedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsAccessDeniedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5890,7 +5890,7 @@ func (x *KmsAccessDeniedException) GetMessage() string {
 type KmsInvalidStateException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Kmskeystate   KmsKeyState            `protobuf:"varint,485859435,opt,name=kmskeystate,proto3,enum=sfn.KmsKeyState" json:"kmskeystate,omitempty"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5933,15 +5933,15 @@ func (x *KmsInvalidStateException) GetKmskeystate() KmsKeyState {
 }
 
 func (x *KmsInvalidStateException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsThrottlingException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5977,16 +5977,16 @@ func (*KmsThrottlingException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsThrottlingException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type LambdaFunctionFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6022,23 +6022,23 @@ func (*LambdaFunctionFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaFunctionFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *LambdaFunctionFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type LambdaFunctionScheduleFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6074,22 +6074,22 @@ func (*LambdaFunctionScheduleFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaFunctionScheduleFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *LambdaFunctionScheduleFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type LambdaFunctionScheduledEventDetails struct {
 	state            protoimpl.MessageState            `protogen:"open.v1"`
-	Input            string                            `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input            *string                           `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inputdetails     *HistoryEventExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
 	Resource         string                            `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Taskcredentials  *TaskCredentials                  `protobuf:"bytes,257843259,opt,name=taskcredentials,proto3" json:"taskcredentials,omitempty"`
@@ -6129,8 +6129,8 @@ func (*LambdaFunctionScheduledEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaFunctionScheduledEventDetails) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -6165,8 +6165,8 @@ func (x *LambdaFunctionScheduledEventDetails) GetTimeoutinseconds() int64 {
 
 type LambdaFunctionStartFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6202,22 +6202,22 @@ func (*LambdaFunctionStartFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaFunctionStartFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *LambdaFunctionStartFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
 
 type LambdaFunctionSucceededEventDetails struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Output        string                            `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        *string                           `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails *HistoryEventExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6254,8 +6254,8 @@ func (*LambdaFunctionSucceededEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaFunctionSucceededEventDetails) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -6269,8 +6269,8 @@ func (x *LambdaFunctionSucceededEventDetails) GetOutputdetails() *HistoryEventEx
 
 type LambdaFunctionTimedOutEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6306,15 +6306,15 @@ func (*LambdaFunctionTimedOutEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *LambdaFunctionTimedOutEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *LambdaFunctionTimedOutEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -6322,7 +6322,7 @@ func (x *LambdaFunctionTimedOutEventDetails) GetError() string {
 type ListActivitiesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6365,8 +6365,8 @@ func (x *ListActivitiesInput) GetMaxresults() int32 {
 }
 
 func (x *ListActivitiesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6374,7 +6374,7 @@ func (x *ListActivitiesInput) GetNexttoken() string {
 type ListActivitiesOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Activities    []*ActivityListItem    `protobuf:"bytes,164950681,rep,name=activities,proto3" json:"activities,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6417,19 +6417,19 @@ func (x *ListActivitiesOutput) GetActivities() []*ActivityListItem {
 }
 
 func (x *ListActivitiesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListExecutionsInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Maprunarn       string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
+	Maprunarn       *string                `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
 	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Redrivefilter   ExecutionRedriveFilter `protobuf:"varint,437804251,opt,name=redrivefilter,proto3,enum=sfn.ExecutionRedriveFilter" json:"redrivefilter,omitempty"`
-	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
+	Statemachinearn *string                `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3,oneof" json:"statemachinearn,omitempty"`
 	Statusfilter    ExecutionStatus        `protobuf:"varint,86045418,opt,name=statusfilter,proto3,enum=sfn.ExecutionStatus" json:"statusfilter,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -6466,8 +6466,8 @@ func (*ListExecutionsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListExecutionsInput) GetMaprunarn() string {
-	if x != nil {
-		return x.Maprunarn
+	if x != nil && x.Maprunarn != nil {
+		return *x.Maprunarn
 	}
 	return ""
 }
@@ -6480,8 +6480,8 @@ func (x *ListExecutionsInput) GetMaxresults() int32 {
 }
 
 func (x *ListExecutionsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6494,8 +6494,8 @@ func (x *ListExecutionsInput) GetRedrivefilter() ExecutionRedriveFilter {
 }
 
 func (x *ListExecutionsInput) GetStatemachinearn() string {
-	if x != nil {
-		return x.Statemachinearn
+	if x != nil && x.Statemachinearn != nil {
+		return *x.Statemachinearn
 	}
 	return ""
 }
@@ -6510,7 +6510,7 @@ func (x *ListExecutionsInput) GetStatusfilter() ExecutionStatus {
 type ListExecutionsOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Executions    []*ExecutionListItem   `protobuf:"bytes,113395923,rep,name=executions,proto3" json:"executions,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6553,8 +6553,8 @@ func (x *ListExecutionsOutput) GetExecutions() []*ExecutionListItem {
 }
 
 func (x *ListExecutionsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6563,7 +6563,7 @@ type ListMapRunsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Executionarn  string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6613,8 +6613,8 @@ func (x *ListMapRunsInput) GetMaxresults() int32 {
 }
 
 func (x *ListMapRunsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6622,7 +6622,7 @@ func (x *ListMapRunsInput) GetNexttoken() string {
 type ListMapRunsOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Mapruns       []*MapRunListItem      `protobuf:"bytes,34690200,rep,name=mapruns,proto3" json:"mapruns,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6665,8 +6665,8 @@ func (x *ListMapRunsOutput) GetMapruns() []*MapRunListItem {
 }
 
 func (x *ListMapRunsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6674,7 +6674,7 @@ func (x *ListMapRunsOutput) GetNexttoken() string {
 type ListStateMachineAliasesInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -6718,8 +6718,8 @@ func (x *ListStateMachineAliasesInput) GetMaxresults() int32 {
 }
 
 func (x *ListStateMachineAliasesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6733,7 +6733,7 @@ func (x *ListStateMachineAliasesInput) GetStatemachinearn() string {
 
 type ListStateMachineAliasesOutput struct {
 	state               protoimpl.MessageState       `protogen:"open.v1"`
-	Nexttoken           string                       `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken           *string                      `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Statemachinealiases []*StateMachineAliasListItem `protobuf:"bytes,452532502,rep,name=statemachinealiases,proto3" json:"statemachinealiases,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -6770,8 +6770,8 @@ func (*ListStateMachineAliasesOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStateMachineAliasesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6786,7 +6786,7 @@ func (x *ListStateMachineAliasesOutput) GetStatemachinealiases() []*StateMachine
 type ListStateMachineVersionsInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults      *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -6830,8 +6830,8 @@ func (x *ListStateMachineVersionsInput) GetMaxresults() int32 {
 }
 
 func (x *ListStateMachineVersionsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6845,7 +6845,7 @@ func (x *ListStateMachineVersionsInput) GetStatemachinearn() string {
 
 type ListStateMachineVersionsOutput struct {
 	state                protoimpl.MessageState         `protogen:"open.v1"`
-	Nexttoken            string                         `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken            *string                        `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Statemachineversions []*StateMachineVersionListItem `protobuf:"bytes,133258663,rep,name=statemachineversions,proto3" json:"statemachineversions,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -6882,8 +6882,8 @@ func (*ListStateMachineVersionsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStateMachineVersionsOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6898,7 +6898,7 @@ func (x *ListStateMachineVersionsOutput) GetStatemachineversions() []*StateMachi
 type ListStateMachinesInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,465170002,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6941,15 +6941,15 @@ func (x *ListStateMachinesInput) GetMaxresults() int32 {
 }
 
 func (x *ListStateMachinesInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListStateMachinesOutput struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
-	Nexttoken     string                  `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Statemachines []*StateMachineListItem `protobuf:"bytes,432113525,rep,name=statemachines,proto3" json:"statemachines,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6986,8 +6986,8 @@ func (*ListStateMachinesOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListStateMachinesOutput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -7194,7 +7194,7 @@ func (x *LoggingConfiguration) GetLevel() LogLevel {
 type MapIterationEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Index         *int32                 `protobuf:"varint,151693740,opt,name=index,proto3,oneof" json:"index,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7237,8 +7237,8 @@ func (x *MapIterationEventDetails) GetIndex() int32 {
 }
 
 func (x *MapIterationEventDetails) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -7361,8 +7361,8 @@ func (x *MapRunExecutionCounts) GetTotal() int64 {
 
 type MapRunFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7398,15 +7398,15 @@ func (*MapRunFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *MapRunFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *MapRunFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -7533,7 +7533,7 @@ type MapRunListItem struct {
 	Maprunarn       string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
 	Startdate       string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Stopdate        string                 `protobuf:"bytes,180697434,opt,name=stopdate,proto3" json:"stopdate,omitempty"`
+	Stopdate        *string                `protobuf:"bytes,180697434,opt,name=stopdate,proto3,oneof" json:"stopdate,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -7597,15 +7597,15 @@ func (x *MapRunListItem) GetStatemachinearn() string {
 }
 
 func (x *MapRunListItem) GetStopdate() string {
-	if x != nil {
-		return x.Stopdate
+	if x != nil && x.Stopdate != nil {
+		return *x.Stopdate
 	}
 	return ""
 }
 
 type MapRunRedrivenEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maprunarn     string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
+	Maprunarn     *string                `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
 	Redrivecount  *int32                 `protobuf:"varint,473458696,opt,name=redrivecount,proto3,oneof" json:"redrivecount,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7642,8 +7642,8 @@ func (*MapRunRedrivenEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *MapRunRedrivenEventDetails) GetMaprunarn() string {
-	if x != nil {
-		return x.Maprunarn
+	if x != nil && x.Maprunarn != nil {
+		return *x.Maprunarn
 	}
 	return ""
 }
@@ -7657,7 +7657,7 @@ func (x *MapRunRedrivenEventDetails) GetRedrivecount() int32 {
 
 type MapRunStartedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Maprunarn     string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
+	Maprunarn     *string                `protobuf:"bytes,18199994,opt,name=maprunarn,proto3,oneof" json:"maprunarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7693,8 +7693,8 @@ func (*MapRunStartedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *MapRunStartedEventDetails) GetMaprunarn() string {
-	if x != nil {
-		return x.Maprunarn
+	if x != nil && x.Maprunarn != nil {
+		return *x.Maprunarn
 	}
 	return ""
 }
@@ -7745,7 +7745,7 @@ func (x *MapStateStartedEventDetails) GetLength() int32 {
 
 type MissingRequiredParameter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7781,16 +7781,16 @@ func (*MissingRequiredParameter) Descriptor() ([]byte, []int) {
 }
 
 func (x *MissingRequiredParameter) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type MockErrorOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7826,15 +7826,15 @@ func (*MockErrorOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *MockErrorOutput) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *MockErrorOutput) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -7843,7 +7843,7 @@ type MockInput struct {
 	state               protoimpl.MessageState     `protogen:"open.v1"`
 	Erroroutput         *MockErrorOutput           `protobuf:"bytes,453597273,opt,name=erroroutput,proto3" json:"erroroutput,omitempty"`
 	Fieldvalidationmode MockResponseValidationMode `protobuf:"varint,519416556,opt,name=fieldvalidationmode,proto3,enum=sfn.MockResponseValidationMode" json:"fieldvalidationmode,omitempty"`
-	Result              string                     `protobuf:"bytes,171406885,opt,name=result,proto3" json:"result,omitempty"`
+	Result              *string                    `protobuf:"bytes,171406885,opt,name=result,proto3,oneof" json:"result,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -7893,16 +7893,16 @@ func (x *MockInput) GetFieldvalidationmode() MockResponseValidationMode {
 }
 
 func (x *MockInput) GetResult() string {
-	if x != nil {
-		return x.Result
+	if x != nil && x.Result != nil {
+		return *x.Result
 	}
 	return ""
 }
 
 type PublishStateMachineVersionInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Description     string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Revisionid      string                 `protobuf:"bytes,369170086,opt,name=revisionid,proto3" json:"revisionid,omitempty"`
+	Description     *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Revisionid      *string                `protobuf:"bytes,369170086,opt,name=revisionid,proto3,oneof" json:"revisionid,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -7939,15 +7939,15 @@ func (*PublishStateMachineVersionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *PublishStateMachineVersionInput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *PublishStateMachineVersionInput) GetRevisionid() string {
-	if x != nil {
-		return x.Revisionid
+	if x != nil && x.Revisionid != nil {
+		return *x.Revisionid
 	}
 	return ""
 }
@@ -8013,7 +8013,7 @@ func (x *PublishStateMachineVersionOutput) GetStatemachineversionarn() string {
 
 type RedriveExecutionInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clienttoken   string                 `protobuf:"bytes,272531820,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
+	Clienttoken   *string                `protobuf:"bytes,272531820,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
 	Executionarn  string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8050,8 +8050,8 @@ func (*RedriveExecutionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *RedriveExecutionInput) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
@@ -8109,8 +8109,8 @@ func (x *RedriveExecutionOutput) GetRedrivedate() string {
 
 type ResourceNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Resourcename  string                 `protobuf:"bytes,17776375,opt,name=resourcename,proto3" json:"resourcename,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Resourcename  *string                `protobuf:"bytes,17776375,opt,name=resourcename,proto3,oneof" json:"resourcename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8146,15 +8146,15 @@ func (*ResourceNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *ResourceNotFound) GetResourcename() string {
-	if x != nil {
-		return x.Resourcename
+	if x != nil && x.Resourcename != nil {
+		return *x.Resourcename
 	}
 	return ""
 }
@@ -8213,8 +8213,8 @@ func (x *RoutingConfigurationListItem) GetWeight() int32 {
 
 type SendTaskFailureInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Tasktoken     string                 `protobuf:"bytes,525325834,opt,name=tasktoken,proto3" json:"tasktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8251,15 +8251,15 @@ func (*SendTaskFailureInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *SendTaskFailureInput) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *SendTaskFailureInput) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -8477,7 +8477,7 @@ func (*SendTaskSuccessOutput) Descriptor() ([]byte, []int) {
 
 type ServiceQuotaExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8513,18 +8513,18 @@ func (*ServiceQuotaExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServiceQuotaExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type StartExecutionInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Input           string                 `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
-	Name            string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Input           *string                `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
+	Name            *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Traceheader     string                 `protobuf:"bytes,219960864,opt,name=traceheader,proto3" json:"traceheader,omitempty"`
+	Traceheader     *string                `protobuf:"bytes,219960864,opt,name=traceheader,proto3,oneof" json:"traceheader,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -8560,15 +8560,15 @@ func (*StartExecutionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartExecutionInput) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
 
 func (x *StartExecutionInput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -8581,8 +8581,8 @@ func (x *StartExecutionInput) GetStatemachinearn() string {
 }
 
 func (x *StartExecutionInput) GetTraceheader() string {
-	if x != nil {
-		return x.Traceheader
+	if x != nil && x.Traceheader != nil {
+		return *x.Traceheader
 	}
 	return ""
 }
@@ -8642,10 +8642,10 @@ func (x *StartExecutionOutput) GetStartdate() string {
 type StartSyncExecutionInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Includeddata    IncludedData           `protobuf:"varint,109719114,opt,name=includeddata,proto3,enum=sfn.IncludedData" json:"includeddata,omitempty"`
-	Input           string                 `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
-	Name            string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Input           *string                `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
+	Name            *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Statemachinearn string                 `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
-	Traceheader     string                 `protobuf:"bytes,219960864,opt,name=traceheader,proto3" json:"traceheader,omitempty"`
+	Traceheader     *string                `protobuf:"bytes,219960864,opt,name=traceheader,proto3,oneof" json:"traceheader,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -8688,15 +8688,15 @@ func (x *StartSyncExecutionInput) GetIncludeddata() IncludedData {
 }
 
 func (x *StartSyncExecutionInput) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
 
 func (x *StartSyncExecutionInput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -8709,8 +8709,8 @@ func (x *StartSyncExecutionInput) GetStatemachinearn() string {
 }
 
 func (x *StartSyncExecutionInput) GetTraceheader() string {
-	if x != nil {
-		return x.Traceheader
+	if x != nil && x.Traceheader != nil {
+		return *x.Traceheader
 	}
 	return ""
 }
@@ -8718,19 +8718,19 @@ func (x *StartSyncExecutionInput) GetTraceheader() string {
 type StartSyncExecutionOutput struct {
 	state           protoimpl.MessageState                `protogen:"open.v1"`
 	Billingdetails  *BillingDetails                       `protobuf:"bytes,270001723,opt,name=billingdetails,proto3" json:"billingdetails,omitempty"`
-	Cause           string                                `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error           string                                `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause           *string                               `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error           *string                               `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Executionarn    string                                `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
-	Input           string                                `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input           *string                               `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inputdetails    *CloudWatchEventsExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
-	Name            string                                `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Output          string                                `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Name            *string                               `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Output          *string                               `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails   *CloudWatchEventsExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	Startdate       string                                `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	Statemachinearn string                                `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
+	Statemachinearn *string                               `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3,oneof" json:"statemachinearn,omitempty"`
 	Status          SyncExecutionStatus                   `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.SyncExecutionStatus" json:"status,omitempty"`
 	Stopdate        string                                `protobuf:"bytes,180697434,opt,name=stopdate,proto3" json:"stopdate,omitempty"`
-	Traceheader     string                                `protobuf:"bytes,219960864,opt,name=traceheader,proto3" json:"traceheader,omitempty"`
+	Traceheader     *string                               `protobuf:"bytes,219960864,opt,name=traceheader,proto3,oneof" json:"traceheader,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -8773,15 +8773,15 @@ func (x *StartSyncExecutionOutput) GetBillingdetails() *BillingDetails {
 }
 
 func (x *StartSyncExecutionOutput) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *StartSyncExecutionOutput) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -8794,8 +8794,8 @@ func (x *StartSyncExecutionOutput) GetExecutionarn() string {
 }
 
 func (x *StartSyncExecutionOutput) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -8808,15 +8808,15 @@ func (x *StartSyncExecutionOutput) GetInputdetails() *CloudWatchEventsExecutionD
 }
 
 func (x *StartSyncExecutionOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *StartSyncExecutionOutput) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -8836,8 +8836,8 @@ func (x *StartSyncExecutionOutput) GetStartdate() string {
 }
 
 func (x *StartSyncExecutionOutput) GetStatemachinearn() string {
-	if x != nil {
-		return x.Statemachinearn
+	if x != nil && x.Statemachinearn != nil {
+		return *x.Statemachinearn
 	}
 	return ""
 }
@@ -8857,15 +8857,15 @@ func (x *StartSyncExecutionOutput) GetStopdate() string {
 }
 
 func (x *StartSyncExecutionOutput) GetTraceheader() string {
-	if x != nil {
-		return x.Traceheader
+	if x != nil && x.Traceheader != nil {
+		return *x.Traceheader
 	}
 	return ""
 }
 
 type StateEnteredEventDetails struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Input         string                            `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input         *string                           `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inputdetails  *HistoryEventExecutionDataDetails `protobuf:"bytes,452625788,opt,name=inputdetails,proto3" json:"inputdetails,omitempty"`
 	Name          string                            `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8903,8 +8903,8 @@ func (*StateEnteredEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *StateEnteredEventDetails) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -8928,7 +8928,7 @@ type StateExitedEventDetails struct {
 	Assignedvariables        map[string]string                 `protobuf:"bytes,411875019,rep,name=assignedvariables,proto3" json:"assignedvariables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Assignedvariablesdetails *AssignedVariablesDetails         `protobuf:"bytes,509183609,opt,name=assignedvariablesdetails,proto3" json:"assignedvariablesdetails,omitempty"`
 	Name                     string                            `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Output                   string                            `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output                   *string                           `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails            *HistoryEventExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -8986,8 +8986,8 @@ func (x *StateExitedEventDetails) GetName() string {
 }
 
 func (x *StateExitedEventDetails) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -9053,7 +9053,7 @@ func (x *StateMachineAliasListItem) GetStatemachinealiasarn() string {
 
 type StateMachineAlreadyExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9089,15 +9089,15 @@ func (*StateMachineAlreadyExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *StateMachineAlreadyExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type StateMachineDeleting struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9133,15 +9133,15 @@ func (*StateMachineDeleting) Descriptor() ([]byte, []int) {
 }
 
 func (x *StateMachineDeleting) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type StateMachineDoesNotExist struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9177,15 +9177,15 @@ func (*StateMachineDoesNotExist) Descriptor() ([]byte, []int) {
 }
 
 func (x *StateMachineDoesNotExist) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type StateMachineLimitExceeded struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9221,8 +9221,8 @@ func (*StateMachineLimitExceeded) Descriptor() ([]byte, []int) {
 }
 
 func (x *StateMachineLimitExceeded) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -9297,7 +9297,7 @@ func (x *StateMachineListItem) GetType() StateMachineType {
 
 type StateMachineTypeNotSupported struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9333,8 +9333,8 @@ func (*StateMachineTypeNotSupported) Descriptor() ([]byte, []int) {
 }
 
 func (x *StateMachineTypeNotSupported) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -9393,8 +9393,8 @@ func (x *StateMachineVersionListItem) GetStatemachineversionarn() string {
 
 type StopExecutionInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Executionarn  string                 `protobuf:"bytes,314526573,opt,name=executionarn,proto3" json:"executionarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9431,15 +9431,15 @@ func (*StopExecutionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *StopExecutionInput) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *StopExecutionInput) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -9497,8 +9497,8 @@ func (x *StopExecutionOutput) GetStopdate() string {
 
 type Tag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,135645293,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Key           *string                `protobuf:"bytes,135645293,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Value         *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9534,15 +9534,15 @@ func (*Tag) Descriptor() ([]byte, []int) {
 }
 
 func (x *Tag) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *Tag) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -9637,7 +9637,7 @@ func (*TagResourceOutput) Descriptor() ([]byte, []int) {
 
 type TaskCredentials struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Rolearn       string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
+	Rolearn       *string                `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9673,15 +9673,15 @@ func (*TaskCredentials) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskCredentials) GetRolearn() string {
-	if x != nil {
-		return x.Rolearn
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
 	}
 	return ""
 }
 
 type TaskDoesNotExist struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9717,16 +9717,16 @@ func (*TaskDoesNotExist) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskDoesNotExist) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TaskFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Resource      string                 `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype  string                 `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -9764,15 +9764,15 @@ func (*TaskFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *TaskFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -9885,8 +9885,8 @@ func (x *TaskScheduledEventDetails) GetTimeoutinseconds() int64 {
 
 type TaskStartFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Resource      string                 `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype  string                 `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -9924,15 +9924,15 @@ func (*TaskStartFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskStartFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *TaskStartFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -10005,8 +10005,8 @@ func (x *TaskStartedEventDetails) GetResourcetype() string {
 
 type TaskSubmitFailedEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Resource      string                 `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype  string                 `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10044,15 +10044,15 @@ func (*TaskSubmitFailedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskSubmitFailedEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *TaskSubmitFailedEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -10073,7 +10073,7 @@ func (x *TaskSubmitFailedEventDetails) GetResourcetype() string {
 
 type TaskSubmittedEventDetails struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Output        string                            `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        *string                           `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails *HistoryEventExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	Resource      string                            `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype  string                            `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
@@ -10112,8 +10112,8 @@ func (*TaskSubmittedEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskSubmittedEventDetails) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -10141,7 +10141,7 @@ func (x *TaskSubmittedEventDetails) GetResourcetype() string {
 
 type TaskSucceededEventDetails struct {
 	state         protoimpl.MessageState            `protogen:"open.v1"`
-	Output        string                            `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Output        *string                           `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Outputdetails *HistoryEventExecutionDataDetails `protobuf:"bytes,393734643,opt,name=outputdetails,proto3" json:"outputdetails,omitempty"`
 	Resource      string                            `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype  string                            `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
@@ -10180,8 +10180,8 @@ func (*TaskSucceededEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskSucceededEventDetails) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -10209,7 +10209,7 @@ func (x *TaskSucceededEventDetails) GetResourcetype() string {
 
 type TaskTimedOut struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10245,16 +10245,16 @@ func (*TaskTimedOut) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskTimedOut) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TaskTimedOutEventDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Cause         string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error         string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause         *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error         *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Resource      string                 `protobuf:"bytes,165642230,opt,name=resource,proto3" json:"resource,omitempty"`
 	Resourcetype  string                 `protobuf:"bytes,7604990,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -10292,15 +10292,15 @@ func (*TaskTimedOutEventDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *TaskTimedOutEventDetails) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *TaskTimedOutEventDetails) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -10321,8 +10321,8 @@ func (x *TaskTimedOutEventDetails) GetResourcetype() string {
 
 type TestStateConfiguration struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
-	Errorcausedbystate       string                 `protobuf:"bytes,313873103,opt,name=errorcausedbystate,proto3" json:"errorcausedbystate,omitempty"`
-	Mapitemreaderdata        string                 `protobuf:"bytes,503260646,opt,name=mapitemreaderdata,proto3" json:"mapitemreaderdata,omitempty"`
+	Errorcausedbystate       *string                `protobuf:"bytes,313873103,opt,name=errorcausedbystate,proto3,oneof" json:"errorcausedbystate,omitempty"`
+	Mapitemreaderdata        *string                `protobuf:"bytes,503260646,opt,name=mapitemreaderdata,proto3,oneof" json:"mapitemreaderdata,omitempty"`
 	Mapiterationfailurecount *int32                 `protobuf:"varint,419587762,opt,name=mapiterationfailurecount,proto3,oneof" json:"mapiterationfailurecount,omitempty"`
 	Retrierretrycount        *int32                 `protobuf:"varint,275735648,opt,name=retrierretrycount,proto3,oneof" json:"retrierretrycount,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -10360,15 +10360,15 @@ func (*TestStateConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *TestStateConfiguration) GetErrorcausedbystate() string {
-	if x != nil {
-		return x.Errorcausedbystate
+	if x != nil && x.Errorcausedbystate != nil {
+		return *x.Errorcausedbystate
 	}
 	return ""
 }
 
 func (x *TestStateConfiguration) GetMapitemreaderdata() string {
-	if x != nil {
-		return x.Mapitemreaderdata
+	if x != nil && x.Mapitemreaderdata != nil {
+		return *x.Mapitemreaderdata
 	}
 	return ""
 }
@@ -10389,16 +10389,16 @@ func (x *TestStateConfiguration) GetRetrierretrycount() int32 {
 
 type TestStateInput struct {
 	state              protoimpl.MessageState  `protogen:"open.v1"`
-	Context            string                  `protobuf:"bytes,210178173,opt,name=context,proto3" json:"context,omitempty"`
+	Context            *string                 `protobuf:"bytes,210178173,opt,name=context,proto3,oneof" json:"context,omitempty"`
 	Definition         string                  `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
-	Input              string                  `protobuf:"bytes,433614716,opt,name=input,proto3" json:"input,omitempty"`
+	Input              *string                 `protobuf:"bytes,433614716,opt,name=input,proto3,oneof" json:"input,omitempty"`
 	Inspectionlevel    InspectionLevel         `protobuf:"varint,277169476,opt,name=inspectionlevel,proto3,enum=sfn.InspectionLevel" json:"inspectionlevel,omitempty"`
 	Mock               *MockInput              `protobuf:"bytes,242883628,opt,name=mock,proto3" json:"mock,omitempty"`
 	Revealsecrets      *bool                   `protobuf:"varint,351839742,opt,name=revealsecrets,proto3,oneof" json:"revealsecrets,omitempty"`
-	Rolearn            string                  `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
+	Rolearn            *string                 `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	Stateconfiguration *TestStateConfiguration `protobuf:"bytes,17002877,opt,name=stateconfiguration,proto3" json:"stateconfiguration,omitempty"`
-	Statename          string                  `protobuf:"bytes,270657590,opt,name=statename,proto3" json:"statename,omitempty"`
-	Variables          string                  `protobuf:"bytes,162226883,opt,name=variables,proto3" json:"variables,omitempty"`
+	Statename          *string                 `protobuf:"bytes,270657590,opt,name=statename,proto3,oneof" json:"statename,omitempty"`
+	Variables          *string                 `protobuf:"bytes,162226883,opt,name=variables,proto3,oneof" json:"variables,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -10434,8 +10434,8 @@ func (*TestStateInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *TestStateInput) GetContext() string {
-	if x != nil {
-		return x.Context
+	if x != nil && x.Context != nil {
+		return *x.Context
 	}
 	return ""
 }
@@ -10448,8 +10448,8 @@ func (x *TestStateInput) GetDefinition() string {
 }
 
 func (x *TestStateInput) GetInput() string {
-	if x != nil {
-		return x.Input
+	if x != nil && x.Input != nil {
+		return *x.Input
 	}
 	return ""
 }
@@ -10476,8 +10476,8 @@ func (x *TestStateInput) GetRevealsecrets() bool {
 }
 
 func (x *TestStateInput) GetRolearn() string {
-	if x != nil {
-		return x.Rolearn
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
 	}
 	return ""
 }
@@ -10490,26 +10490,26 @@ func (x *TestStateInput) GetStateconfiguration() *TestStateConfiguration {
 }
 
 func (x *TestStateInput) GetStatename() string {
-	if x != nil {
-		return x.Statename
+	if x != nil && x.Statename != nil {
+		return *x.Statename
 	}
 	return ""
 }
 
 func (x *TestStateInput) GetVariables() string {
-	if x != nil {
-		return x.Variables
+	if x != nil && x.Variables != nil {
+		return *x.Variables
 	}
 	return ""
 }
 
 type TestStateOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Cause          string                 `protobuf:"bytes,145674785,opt,name=cause,proto3" json:"cause,omitempty"`
-	Error          string                 `protobuf:"bytes,26314578,opt,name=error,proto3" json:"error,omitempty"`
+	Cause          *string                `protobuf:"bytes,145674785,opt,name=cause,proto3,oneof" json:"cause,omitempty"`
+	Error          *string                `protobuf:"bytes,26314578,opt,name=error,proto3,oneof" json:"error,omitempty"`
 	Inspectiondata *InspectionData        `protobuf:"bytes,113762044,opt,name=inspectiondata,proto3" json:"inspectiondata,omitempty"`
-	Nextstate      string                 `protobuf:"bytes,525594702,opt,name=nextstate,proto3" json:"nextstate,omitempty"`
-	Output         string                 `protobuf:"bytes,430526213,opt,name=output,proto3" json:"output,omitempty"`
+	Nextstate      *string                `protobuf:"bytes,525594702,opt,name=nextstate,proto3,oneof" json:"nextstate,omitempty"`
+	Output         *string                `protobuf:"bytes,430526213,opt,name=output,proto3,oneof" json:"output,omitempty"`
 	Status         TestExecutionStatus    `protobuf:"varint,441153520,opt,name=status,proto3,enum=sfn.TestExecutionStatus" json:"status,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -10546,15 +10546,15 @@ func (*TestStateOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *TestStateOutput) GetCause() string {
-	if x != nil {
-		return x.Cause
+	if x != nil && x.Cause != nil {
+		return *x.Cause
 	}
 	return ""
 }
 
 func (x *TestStateOutput) GetError() string {
-	if x != nil {
-		return x.Error
+	if x != nil && x.Error != nil {
+		return *x.Error
 	}
 	return ""
 }
@@ -10567,15 +10567,15 @@ func (x *TestStateOutput) GetInspectiondata() *InspectionData {
 }
 
 func (x *TestStateOutput) GetNextstate() string {
-	if x != nil {
-		return x.Nextstate
+	if x != nil && x.Nextstate != nil {
+		return *x.Nextstate
 	}
 	return ""
 }
 
 func (x *TestStateOutput) GetOutput() string {
-	if x != nil {
-		return x.Output
+	if x != nil && x.Output != nil {
+		return *x.Output
 	}
 	return ""
 }
@@ -10589,8 +10589,8 @@ func (x *TestStateOutput) GetStatus() TestExecutionStatus {
 
 type TooManyTags struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Resourcename  string                 `protobuf:"bytes,17776375,opt,name=resourcename,proto3" json:"resourcename,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Resourcename  *string                `protobuf:"bytes,17776375,opt,name=resourcename,proto3,oneof" json:"resourcename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10626,15 +10626,15 @@ func (*TooManyTags) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyTags) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *TooManyTags) GetResourcename() string {
-	if x != nil {
-		return x.Resourcename
+	if x != nil && x.Resourcename != nil {
+		return *x.Resourcename
 	}
 	return ""
 }
@@ -10776,7 +10776,7 @@ type UpdateMapRunInput struct {
 	Maprunarn                  string                 `protobuf:"bytes,18199994,opt,name=maprunarn,proto3" json:"maprunarn,omitempty"`
 	Maxconcurrency             *int32                 `protobuf:"varint,100901405,opt,name=maxconcurrency,proto3,oneof" json:"maxconcurrency,omitempty"`
 	Toleratedfailurecount      *int64                 `protobuf:"varint,41834811,opt,name=toleratedfailurecount,proto3,oneof" json:"toleratedfailurecount,omitempty"`
-	Toleratedfailurepercentage float32                `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3" json:"toleratedfailurepercentage,omitempty"`
+	Toleratedfailurepercentage *float32               `protobuf:"fixed32,116496164,opt,name=toleratedfailurepercentage,proto3,oneof" json:"toleratedfailurepercentage,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -10833,8 +10833,8 @@ func (x *UpdateMapRunInput) GetToleratedfailurecount() int64 {
 }
 
 func (x *UpdateMapRunInput) GetToleratedfailurepercentage() float32 {
-	if x != nil {
-		return x.Toleratedfailurepercentage
+	if x != nil && x.Toleratedfailurepercentage != nil {
+		return *x.Toleratedfailurepercentage
 	}
 	return 0
 }
@@ -10877,7 +10877,7 @@ func (*UpdateMapRunOutput) Descriptor() ([]byte, []int) {
 
 type UpdateStateMachineAliasInput struct {
 	state                protoimpl.MessageState          `protogen:"open.v1"`
-	Description          string                          `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                         `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Routingconfiguration []*RoutingConfigurationListItem `protobuf:"bytes,372891510,rep,name=routingconfiguration,proto3" json:"routingconfiguration,omitempty"`
 	Statemachinealiasarn string                          `protobuf:"bytes,530344465,opt,name=statemachinealiasarn,proto3" json:"statemachinealiasarn,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -10915,8 +10915,8 @@ func (*UpdateStateMachineAliasInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateStateMachineAliasInput) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -10981,14 +10981,14 @@ func (x *UpdateStateMachineAliasOutput) GetUpdatedate() string {
 
 type UpdateStateMachineInput struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
-	Definition              string                   `protobuf:"bytes,68443297,opt,name=definition,proto3" json:"definition,omitempty"`
+	Definition              *string                  `protobuf:"bytes,68443297,opt,name=definition,proto3,oneof" json:"definition,omitempty"`
 	Encryptionconfiguration *EncryptionConfiguration `protobuf:"bytes,167857431,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
 	Loggingconfiguration    *LoggingConfiguration    `protobuf:"bytes,420811605,opt,name=loggingconfiguration,proto3" json:"loggingconfiguration,omitempty"`
 	Publish                 *bool                    `protobuf:"varint,264247305,opt,name=publish,proto3,oneof" json:"publish,omitempty"`
-	Rolearn                 string                   `protobuf:"bytes,170019745,opt,name=rolearn,proto3" json:"rolearn,omitempty"`
+	Rolearn                 *string                  `protobuf:"bytes,170019745,opt,name=rolearn,proto3,oneof" json:"rolearn,omitempty"`
 	Statemachinearn         string                   `protobuf:"bytes,393321971,opt,name=statemachinearn,proto3" json:"statemachinearn,omitempty"`
 	Tracingconfiguration    *TracingConfiguration    `protobuf:"bytes,491315910,opt,name=tracingconfiguration,proto3" json:"tracingconfiguration,omitempty"`
-	Versiondescription      string                   `protobuf:"bytes,434714300,opt,name=versiondescription,proto3" json:"versiondescription,omitempty"`
+	Versiondescription      *string                  `protobuf:"bytes,434714300,opt,name=versiondescription,proto3,oneof" json:"versiondescription,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -11024,8 +11024,8 @@ func (*UpdateStateMachineInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateStateMachineInput) GetDefinition() string {
-	if x != nil {
-		return x.Definition
+	if x != nil && x.Definition != nil {
+		return *x.Definition
 	}
 	return ""
 }
@@ -11052,8 +11052,8 @@ func (x *UpdateStateMachineInput) GetPublish() bool {
 }
 
 func (x *UpdateStateMachineInput) GetRolearn() string {
-	if x != nil {
-		return x.Rolearn
+	if x != nil && x.Rolearn != nil {
+		return *x.Rolearn
 	}
 	return ""
 }
@@ -11073,16 +11073,16 @@ func (x *UpdateStateMachineInput) GetTracingconfiguration() *TracingConfiguratio
 }
 
 func (x *UpdateStateMachineInput) GetVersiondescription() string {
-	if x != nil {
-		return x.Versiondescription
+	if x != nil && x.Versiondescription != nil {
+		return *x.Versiondescription
 	}
 	return ""
 }
 
 type UpdateStateMachineOutput struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Revisionid             string                 `protobuf:"bytes,369170086,opt,name=revisionid,proto3" json:"revisionid,omitempty"`
-	Statemachineversionarn string                 `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3" json:"statemachineversionarn,omitempty"`
+	Revisionid             *string                `protobuf:"bytes,369170086,opt,name=revisionid,proto3,oneof" json:"revisionid,omitempty"`
+	Statemachineversionarn *string                `protobuf:"bytes,69976825,opt,name=statemachineversionarn,proto3,oneof" json:"statemachineversionarn,omitempty"`
 	Updatedate             string                 `protobuf:"bytes,510552561,opt,name=updatedate,proto3" json:"updatedate,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -11119,15 +11119,15 @@ func (*UpdateStateMachineOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateStateMachineOutput) GetRevisionid() string {
-	if x != nil {
-		return x.Revisionid
+	if x != nil && x.Revisionid != nil {
+		return *x.Revisionid
 	}
 	return ""
 }
 
 func (x *UpdateStateMachineOutput) GetStatemachineversionarn() string {
-	if x != nil {
-		return x.Statemachineversionarn
+	if x != nil && x.Statemachineversionarn != nil {
+		return *x.Statemachineversionarn
 	}
 	return ""
 }
@@ -11142,7 +11142,7 @@ func (x *UpdateStateMachineOutput) GetUpdatedate() string {
 type ValidateStateMachineDefinitionDiagnostic struct {
 	state         protoimpl.MessageState                 `protogen:"open.v1"`
 	Code          string                                 `protobuf:"bytes,422669557,opt,name=code,proto3" json:"code,omitempty"`
-	Location      string                                 `protobuf:"bytes,200649127,opt,name=location,proto3" json:"location,omitempty"`
+	Location      *string                                `protobuf:"bytes,200649127,opt,name=location,proto3,oneof" json:"location,omitempty"`
 	Message       string                                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
 	Severity      ValidateStateMachineDefinitionSeverity `protobuf:"varint,268193715,opt,name=severity,proto3,enum=sfn.ValidateStateMachineDefinitionSeverity" json:"severity,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11187,8 +11187,8 @@ func (x *ValidateStateMachineDefinitionDiagnostic) GetCode() string {
 }
 
 func (x *ValidateStateMachineDefinitionDiagnostic) GetLocation() string {
-	if x != nil {
-		return x.Location
+	if x != nil && x.Location != nil {
+		return *x.Location
 	}
 	return ""
 }
@@ -11337,7 +11337,7 @@ func (x *ValidateStateMachineDefinitionOutput) GetTruncated() bool {
 
 type ValidationException struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Message       string                    `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                   `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Reason        ValidationExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=sfn.ValidationExceptionReason" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11374,8 +11374,8 @@ func (*ValidationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ValidationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -11391,43 +11391,60 @@ var File_sfn_proto protoreflect.FileDescriptor
 
 const file_sfn_proto_rawDesc = "" +
 	"\n" +
-	"\tsfn.proto\x12\x03sfn\x1a\fcommon.proto\x1a\taws.proto\"4\n" +
-	"\x15ActivityAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14ActivityDoesNotExist\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"N\n" +
-	"\x1aActivityFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"4\n" +
-	"\x15ActivityLimitExceeded\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"v\n" +
+	"\tsfn.proto\x12\x03sfn\x1a\fcommon.proto\x1a\taws.proto\"E\n" +
+	"\x15ActivityAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14ActivityDoesNotExist\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"l\n" +
+	"\x1aActivityFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"E\n" +
+	"\x15ActivityLimitExceeded\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"v\n" +
 	"\x10ActivityListItem\x12$\n" +
 	"\vactivityarn\x18\x84Ǉ\x9c\x01 \x01(\tR\vactivityarn\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"V\n" +
-	"\"ActivityScheduleFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xc0\x02\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"t\n" +
+	"\"ActivityScheduleFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xcf\x02\n" +
 	"\x1dActivityScheduledEventDetails\x126\n" +
-	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03H\x00R\x12heartbeatinseconds\x88\x01\x01\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
+	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03H\x00R\x12heartbeatinseconds\x88\x01\x01\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x01R\x05input\x88\x01\x01\x12M\n" +
 	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x123\n" +
-	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x01R\x10timeoutinseconds\x88\x01\x01B\x15\n" +
-	"\x13_heartbeatinsecondsB\x13\n" +
-	"\x11_timeoutinseconds\"A\n" +
-	"\x1bActivityStartedEventDetails\x12\"\n" +
+	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x02R\x10timeoutinseconds\x88\x01\x01B\x15\n" +
+	"\x13_heartbeatinsecondsB\b\n" +
+	"\x06_inputB\x13\n" +
+	"\x11_timeoutinseconds\"U\n" +
+	"\x1bActivityStartedEventDetails\x12'\n" +
 	"\n" +
-	"workername\x18\xb5\xfe\x96\xfb\x01 \x01(\tR\n" +
-	"workername\"\x8c\x01\n" +
-	"\x1dActivitySucceededEventDetails\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12O\n" +
-	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\"P\n" +
-	"\x1cActivityTimedOutEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\":\n" +
-	"\x1bActivityWorkerLimitExceeded\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"O\n" +
+	"workername\x18\xb5\xfe\x96\xfb\x01 \x01(\tH\x00R\n" +
+	"workername\x88\x01\x01B\r\n" +
+	"\v_workername\"\x9c\x01\n" +
+	"\x1dActivitySucceededEventDetails\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x00R\x06output\x88\x01\x01\x12O\n" +
+	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetailsB\t\n" +
+	"\a_output\"n\n" +
+	"\x1cActivityTimedOutEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"K\n" +
+	"\x1bActivityWorkerLimitExceeded\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
 	"\x18AssignedVariablesDetails\x12%\n" +
 	"\ttruncated\x18\xaa\xa2\xa7\xc2\x01 \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
@@ -11439,25 +11456,29 @@ const file_sfn_proto_rawDesc = "" +
 	"\x15_billedmemoryusedinmb\"X\n" +
 	"$CloudWatchEventsExecutionDataDetails\x12#\n" +
 	"\bincluded\x18\xba\xa5\xec\xf6\x01 \x01(\bH\x00R\bincluded\x88\x01\x01B\v\n" +
-	"\t_included\"=\n" +
-	"\x16CloudWatchLogsLogGroup\x12#\n" +
-	"\vloggrouparn\x18\xf0Û\x03 \x01(\tR\vloggrouparn\"0\n" +
-	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa9\x01\n" +
+	"\t_included\"R\n" +
+	"\x16CloudWatchLogsLogGroup\x12(\n" +
+	"\vloggrouparn\x18\xf0Û\x03 \x01(\tH\x00R\vloggrouparn\x88\x01\x01B\x0e\n" +
+	"\f_loggrouparn\"A\n" +
+	"\x11ConflictException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa9\x01\n" +
 	"\x13CreateActivityInput\x12Y\n" +
 	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.sfn.TagR\x04tags\"c\n" +
 	"\x14CreateActivityOutput\x12$\n" +
 	"\vactivityarn\x18\x84Ǉ\x9c\x01 \x01(\tR\vactivityarn\x12%\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\"\xb6\x01\n" +
-	"\x1cCreateStateMachineAliasInput\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x15\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\"\xcb\x01\n" +
+	"\x1cCreateStateMachineAliasInput\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12Y\n" +
-	"\x14routingconfiguration\x18\xf6\xbe\xe7\xb1\x01 \x03(\v2!.sfn.RoutingConfigurationListItemR\x14routingconfiguration\"~\n" +
+	"\x14routingconfiguration\x18\xf6\xbe\xe7\xb1\x01 \x03(\v2!.sfn.RoutingConfigurationListItemR\x14routingconfigurationB\x0e\n" +
+	"\f_description\"~\n" +
 	"\x1dCreateStateMachineAliasOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xa4\x04\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xc0\x04\n" +
 	"\x17CreateStateMachineInput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
@@ -11469,14 +11490,16 @@ const file_sfn_proto_rawDesc = "" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.sfn.TagR\x04tags\x12Q\n" +
 	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\x122\n" +
-	"\x12versiondescription\x18\xbc\xed\xa4\xcf\x01 \x01(\tR\x12versiondescriptionB\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\x127\n" +
+	"\x12versiondescription\x18\xbc\xed\xa4\xcf\x01 \x01(\tH\x01R\x12versiondescription\x88\x01\x01B\n" +
 	"\n" +
-	"\b_publish\"\xaa\x01\n" +
+	"\b_publishB\x15\n" +
+	"\x13_versiondescription\"\xca\x01\n" +
 	"\x18CreateStateMachineOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\";\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12>\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\x00R\x16statemachineversionarn\x88\x01\x01B\x19\n" +
+	"\x17_statemachineversionarn\";\n" +
 	"\x13DeleteActivityInput\x12$\n" +
 	"\vactivityarn\x18\x84Ǉ\x9c\x01 \x01(\tR\vactivityarn\"\x16\n" +
 	"\x14DeleteActivityOutput\"V\n" +
@@ -11498,31 +11521,45 @@ const file_sfn_proto_rawDesc = "" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"z\n" +
 	"\x16DescribeExecutionInput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\xa1\a\n" +
-	"\x17DescribeExecutionOutput\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12Q\n" +
-	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\finputdetails\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12S\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\x96\t\n" +
+	"\x17DescribeExecutionOutput\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12&\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x02R\x05input\x88\x01\x01\x12Q\n" +
+	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\finputdetails\x12$\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x03R\tmaprunarn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x04R\x04name\x88\x01\x01\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x05R\x06output\x88\x01\x01\x12S\n" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\routputdetails\x12+\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01\x12#\n" +
-	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\x12D\n" +
-	"\rredrivestatus\x18\xeb\xf4\xe9u \x01(\x0e2\x1b.sfn.ExecutionRedriveStatusR\rredrivestatus\x124\n" +
-	"\x13redrivestatusreason\x18\x9f\x8fء\x01 \x01(\tR\x13redrivestatusreason\x12 \n" +
-	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\x120\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\x12#\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tR\vtraceheaderB\x0f\n" +
-	"\r_redrivecount\"6\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x06R\fredrivecount\x88\x01\x01\x12(\n" +
+	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tH\aR\vredrivedate\x88\x01\x01\x12D\n" +
+	"\rredrivestatus\x18\xeb\xf4\xe9u \x01(\x0e2\x1b.sfn.ExecutionRedriveStatusR\rredrivestatus\x129\n" +
+	"\x13redrivestatusreason\x18\x9f\x8fء\x01 \x01(\tH\bR\x13redrivestatusreason\x88\x01\x01\x12 \n" +
+	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12;\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tH\tR\x14statemachinealiasarn\x88\x01\x01\x12,\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12>\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\n" +
+	"R\x16statemachineversionarn\x88\x01\x01\x120\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\"\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tH\vR\bstopdate\x88\x01\x01\x12(\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\fR\vtraceheader\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_errorB\b\n" +
+	"\x06_inputB\f\n" +
+	"\n" +
+	"_maprunarnB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_outputB\x0f\n" +
+	"\r_redrivecountB\x0e\n" +
+	"\f_redrivedateB\x16\n" +
+	"\x14_redrivestatusreasonB\x17\n" +
+	"\x15_statemachinealiasarnB\x19\n" +
+	"\x17_statemachineversionarnB\v\n" +
+	"\t_stopdateB\x0e\n" +
+	"\f_traceheader\"6\n" +
 	"\x13DescribeMapRunInput\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"\xde\x04\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"\x85\x05\n" +
 	"\x14DescribeMapRunOutput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12H\n" +
 	"\x0fexecutioncounts\x18և\xa4\x97\x01 \x01(\v2\x1a.sfn.MapRunExecutionCountsR\x0fexecutioncounts\x129\n" +
@@ -11531,40 +11568,47 @@ const file_sfn_proto_rawDesc = "" +
 	"itemcounts\x12\x1f\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12)\n" +
 	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05R\x0emaxconcurrency\x12+\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01\x12#\n" +
-	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\x12 \n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01\x12(\n" +
+	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tH\x01R\vredrivedate\x88\x01\x01\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12-\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x11.sfn.MapRunStatusR\x06status\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\x127\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x11.sfn.MapRunStatusR\x06status\x12\"\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tH\x02R\bstopdate\x88\x01\x01\x127\n" +
 	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x03R\x15toleratedfailurecount\x12A\n" +
 	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentageB\x0f\n" +
-	"\r_redrivecount\"X\n" +
+	"\r_redrivecountB\x0e\n" +
+	"\f_redrivedateB\v\n" +
+	"\t_stopdate\"X\n" +
 	"\x1eDescribeStateMachineAliasInput\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xbc\x02\n" +
-	"\x1fDescribeStateMachineAliasOutput\x12%\n" +
-	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12Y\n" +
-	"\x14routingconfiguration\x18\xf6\xbe\xe7\xb1\x01 \x03(\v2!.sfn.RoutingConfigurationListItemR\x14routingconfiguration\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\x12\"\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"\xa7\x03\n" +
+	"\x1fDescribeStateMachineAliasOutput\x12*\n" +
+	"\fcreationdate\x18\x81\xce\xd1q \x01(\tH\x00R\fcreationdate\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x12Y\n" +
+	"\x14routingconfiguration\x18\xf6\xbe\xe7\xb1\x01 \x03(\v2!.sfn.RoutingConfigurationListItemR\x14routingconfiguration\x12;\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tH\x03R\x14statemachinealiasarn\x88\x01\x01\x12'\n" +
 	"\n" +
-	"updatedate\x18\xf1ӹ\xf3\x01 \x01(\tR\n" +
-	"updatedate\"\x89\x01\n" +
+	"updatedate\x18\xf1ӹ\xf3\x01 \x01(\tH\x04R\n" +
+	"updatedate\x88\x01\x01B\x0f\n" +
+	"\r_creationdateB\x0e\n" +
+	"\f_descriptionB\a\n" +
+	"\x05_nameB\x17\n" +
+	"\x15_statemachinealiasarnB\r\n" +
+	"\v_updatedate\"\x89\x01\n" +
 	"%DescribeStateMachineForExecutionInput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\xf0\x05\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\"\xa6\x06\n" +
 	"&DescribeStateMachineForExecutionOutput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
 	"definition\x12Y\n" +
-	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12\x18\n" +
-	"\x05label\x18\xfe\xafܴ\x01 \x01(\tR\x05label\x12Q\n" +
-	"\x14loggingconfiguration\x18զ\xd4\xc8\x01 \x01(\v2\x19.sfn.LoggingConfigurationR\x14loggingconfiguration\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\"\n" +
+	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12\x1d\n" +
+	"\x05label\x18\xfe\xafܴ\x01 \x01(\tH\x00R\x05label\x88\x01\x01\x12Q\n" +
+	"\x14loggingconfiguration\x18զ\xd4\xc8\x01 \x01(\v2\x19.sfn.LoggingConfigurationR\x14loggingconfiguration\x12$\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x01R\tmaprunarn\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12'\n" +
 	"\n" +
-	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tR\n" +
-	"revisionid\x12\x1b\n" +
+	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tH\x02R\n" +
+	"revisionid\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12Q\n" +
 	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x12\"\n" +
@@ -11574,23 +11618,27 @@ const file_sfn_proto_rawDesc = "" +
 	"\x12variablereferences\x18\xac\xe4\xfcG \x03(\v2C.sfn.DescribeStateMachineForExecutionOutput.VariablereferencesEntryR\x12variablereferences\x1aE\n" +
 	"\x17VariablereferencesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x83\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\b\n" +
+	"\x06_labelB\f\n" +
+	"\n" +
+	"_maprunarnB\r\n" +
+	"\v_revisionid\"\x83\x01\n" +
 	"\x19DescribeStateMachineInput\x128\n" +
 	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\"\xc4\x06\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\"\xfc\x06\n" +
 	"\x1aDescribeStateMachineOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
-	"definition\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12Y\n" +
-	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12\x18\n" +
-	"\x05label\x18\xfe\xafܴ\x01 \x01(\tR\x05label\x12Q\n" +
+	"definition\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12Y\n" +
+	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12\x1d\n" +
+	"\x05label\x18\xfe\xafܴ\x01 \x01(\tH\x01R\x05label\x88\x01\x01\x12Q\n" +
 	"\x14loggingconfiguration\x18զ\xd4\xc8\x01 \x01(\v2\x19.sfn.LoggingConfigurationR\x14loggingconfiguration\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\"\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12'\n" +
 	"\n" +
-	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tR\n" +
-	"revisionid\x12\x1b\n" +
+	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tH\x02R\n" +
+	"revisionid\x88\x01\x01\x12\x1b\n" +
 	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x123\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x17.sfn.StateMachineStatusR\x06status\x12Q\n" +
@@ -11599,84 +11647,125 @@ const file_sfn_proto_rawDesc = "" +
 	"\x12variablereferences\x18\xac\xe4\xfcG \x03(\v27.sfn.DescribeStateMachineOutput.VariablereferencesEntryR\x12variablereferences\x1aE\n" +
 	"\x17VariablereferencesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd4\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_descriptionB\b\n" +
+	"\x06_labelB\r\n" +
+	"\v_revisionid\"\xe6\x01\n" +
 	"\x17EncryptionConfiguration\x12K\n" +
-	"\x1ckmsdatakeyreuseperiodseconds\x18\xf4\x8d\x95\xd2\x01 \x01(\x05H\x00R\x1ckmsdatakeyreuseperiodseconds\x88\x01\x01\x12\x1e\n" +
-	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tR\bkmskeyid\x12+\n" +
+	"\x1ckmsdatakeyreuseperiodseconds\x18\xf4\x8d\x95\xd2\x01 \x01(\x05H\x00R\x1ckmsdatakeyreuseperiodseconds\x88\x01\x01\x12#\n" +
+	"\bkmskeyid\x18\xed\xc7\xc2\xf3\x01 \x01(\tH\x01R\bkmskeyid\x88\x01\x01\x12+\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x13.sfn.EncryptionTypeR\x04typeB\x1f\n" +
-	"\x1d_kmsdatakeyreuseperiodseconds\"\x89\x01\n" +
-	"\x1cEvaluationFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
-	"\blocation\x18\xa7\xd3\xd6_ \x01(\tR\blocation\x12\x18\n" +
-	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\tR\x05state\"P\n" +
-	"\x1cExecutionAbortedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"5\n" +
-	"\x16ExecutionAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15ExecutionDoesNotExist\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"O\n" +
-	"\x1bExecutionFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"5\n" +
-	"\x16ExecutionLimitExceeded\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9f\x04\n" +
+	"\x1d_kmsdatakeyreuseperiodsecondsB\v\n" +
+	"\t_kmskeyid\"\xb9\x01\n" +
+	"\x1cEvaluationFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12\"\n" +
+	"\blocation\x18\xa7\xd3\xd6_ \x01(\tH\x02R\blocation\x88\x01\x01\x12\x18\n" +
+	"\x05state\x18\xf7\xe5\xc4\xc1\x01 \x01(\tR\x05stateB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_errorB\v\n" +
+	"\t_location\"n\n" +
+	"\x1cExecutionAbortedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"F\n" +
+	"\x16ExecutionAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15ExecutionDoesNotExist\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"m\n" +
+	"\x1bExecutionFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"F\n" +
+	"\x16ExecutionLimitExceeded\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x97\x05\n" +
 	"\x11ExecutionListItem\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12%\n" +
-	"\titemcount\x18\xf6\xd8ڦ\x01 \x01(\x05H\x00R\titemcount\x88\x01\x01\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12\x15\n" +
+	"\titemcount\x18\xf6\xd8ڦ\x01 \x01(\x05H\x00R\titemcount\x88\x01\x01\x12$\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x01R\tmaprunarn\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12+\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x01R\fredrivecount\x88\x01\x01\x12#\n" +
-	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\x12 \n" +
-	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\x120\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdateB\f\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x02R\fredrivecount\x88\x01\x01\x12(\n" +
+	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tH\x03R\vredrivedate\x88\x01\x01\x12 \n" +
+	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12;\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tH\x04R\x14statemachinealiasarn\x88\x01\x01\x12,\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12>\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\x05R\x16statemachineversionarn\x88\x01\x01\x120\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x14.sfn.ExecutionStatusR\x06status\x12\"\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tH\x06R\bstopdate\x88\x01\x01B\f\n" +
 	"\n" +
-	"_itemcountB\x0f\n" +
-	"\r_redrivecount\"5\n" +
-	"\x16ExecutionNotRedrivable\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"]\n" +
+	"_itemcountB\f\n" +
+	"\n" +
+	"_maprunarnB\x0f\n" +
+	"\r_redrivecountB\x0e\n" +
+	"\f_redrivedateB\x17\n" +
+	"\x15_statemachinealiasarnB\x19\n" +
+	"\x17_statemachineversionarnB\v\n" +
+	"\t_stopdate\"F\n" +
+	"\x16ExecutionNotRedrivable\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"]\n" +
 	"\x1dExecutionRedrivenEventDetails\x12+\n" +
 	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01B\x0f\n" +
-	"\r_redrivecount\"\x97\x02\n" +
-	"\x1cExecutionStartedEventDetails\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
-	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x1b\n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\"\x8d\x01\n" +
-	"\x1eExecutionSucceededEventDetails\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12O\n" +
-	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\"Q\n" +
-	"\x1dExecutionTimedOutEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"`\n" +
-	"\x14GetActivityTaskInput\x12$\n" +
-	"\vactivityarn\x18\x84Ǉ\x9c\x01 \x01(\tR\vactivityarn\x12\"\n" +
+	"\r_redrivecount\"\xf5\x02\n" +
+	"\x1cExecutionStartedEventDetails\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12M\n" +
+	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x01R\arolearn\x88\x01\x01\x12;\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tH\x02R\x14statemachinealiasarn\x88\x01\x01\x12>\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\x03R\x16statemachineversionarn\x88\x01\x01B\b\n" +
+	"\x06_inputB\n" +
 	"\n" +
-	"workername\x18\xb5\xfe\x96\xfb\x01 \x01(\tR\n" +
-	"workername\"S\n" +
-	"\x15GetActivityTaskOutput\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12 \n" +
-	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktoken\"\xae\x02\n" +
+	"\b_rolearnB\x17\n" +
+	"\x15_statemachinealiasarnB\x19\n" +
+	"\x17_statemachineversionarn\"\x9d\x01\n" +
+	"\x1eExecutionSucceededEventDetails\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x00R\x06output\x88\x01\x01\x12O\n" +
+	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetailsB\t\n" +
+	"\a_output\"o\n" +
+	"\x1dExecutionTimedOutEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"t\n" +
+	"\x14GetActivityTaskInput\x12$\n" +
+	"\vactivityarn\x18\x84Ǉ\x9c\x01 \x01(\tR\vactivityarn\x12'\n" +
+	"\n" +
+	"workername\x18\xb5\xfe\x96\xfb\x01 \x01(\tH\x00R\n" +
+	"workername\x88\x01\x01B\r\n" +
+	"\v_workername\"u\n" +
+	"\x15GetActivityTaskOutput\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12%\n" +
+	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tH\x01R\ttasktoken\x88\x01\x01B\b\n" +
+	"\x06_inputB\f\n" +
+	"\n" +
+	"_tasktoken\"\xc1\x02\n" +
 	"\x18GetExecutionHistoryInput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12:\n" +
 	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12+\n" +
-	"\freverseorder\x18\xf8\xf6\xe1\xad\x01 \x01(\bH\x02R\freverseorder\x88\x01\x01B\x17\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12+\n" +
+	"\freverseorder\x18\xf8\xf6\xe1\xad\x01 \x01(\bH\x03R\freverseorder\x88\x01\x01B\x17\n" +
 	"\x15_includeexecutiondataB\r\n" +
-	"\v_maxresultsB\x0f\n" +
-	"\r_reverseorder\"k\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\x0f\n" +
+	"\r_reverseorder\"~\n" +
 	"\x19GetExecutionHistoryOutput\x12-\n" +
-	"\x06events\x18\x85\xc7\xe3\x96\x01 \x03(\v2\x11.sfn.HistoryEventR\x06events\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc8 \n" +
+	"\x06events\x18\x85\xc7\xe3\x96\x01 \x03(\v2\x11.sfn.HistoryEventR\x06events\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xc8 \n" +
 	"\fHistoryEvent\x12c\n" +
 	"\x1aactivityfailedeventdetails\x18\x9c\xcb\xfe\x82\x01 \x01(\v2\x1f.sfn.ActivityFailedEventDetailsR\x1aactivityfailedeventdetails\x12z\n" +
 	"\"activityschedulefailedeventdetails\x18\xff\xc9\xf5f \x01(\v2'.sfn.ActivityScheduleFailedEventDetailsR\"activityschedulefailedeventdetails\x12k\n" +
@@ -11723,42 +11812,69 @@ const file_sfn_proto_rawDesc = "" +
 	" HistoryEventExecutionDataDetails\x12%\n" +
 	"\ttruncated\x18\xaa\xa2\xa7\xc2\x01 \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"\xa7\a\n" +
-	"\x0eInspectionData\x12*\n" +
-	"\x0eafterarguments\x18\xac\xb8\xc0\xae\x01 \x01(\tR\x0eafterarguments\x12*\n" +
-	"\x0eafterinputpath\x18ɗ\xbc\xa9\x01 \x01(\tR\x0eafterinputpath\x12-\n" +
-	"\x10afteritembatcher\x18\x9a\xf2\xaeV \x01(\tR\x10afteritembatcher\x120\n" +
-	"\x11afteritemselector\x18\xc8\xcd\xff\xbb\x01 \x01(\tR\x11afteritemselector\x12*\n" +
-	"\x0eafteritemspath\x18ū\x92\xea\x01 \x01(\tR\x0eafteritemspath\x12/\n" +
-	"\x11afteritemspointer\x18\xa9\xd9\xf6\\ \x01(\tR\x11afteritemspointer\x12,\n" +
-	"\x0fafterparameters\x18\xae\xc0\xb4\x9c\x01 \x01(\tR\x0fafterparameters\x12,\n" +
-	"\x0fafterresultpath\x18\xc0\xf6\xf6\xe4\x01 \x01(\tR\x0fafterresultpath\x124\n" +
-	"\x13afterresultselector\x18ޟ\xad\xd3\x01 \x01(\tR\x13afterresultselector\x12B\n" +
-	"\ferrordetails\x18\xea\xcf\xfd[ \x01(\v2\x1b.sfn.InspectionErrorDetailsR\ferrordetails\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12.\n" +
-	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05H\x00R\x0emaxconcurrency\x88\x01\x01\x128\n" +
+	"_truncated\"\xe4\t\n" +
+	"\x0eInspectionData\x12/\n" +
+	"\x0eafterarguments\x18\xac\xb8\xc0\xae\x01 \x01(\tH\x00R\x0eafterarguments\x88\x01\x01\x12/\n" +
+	"\x0eafterinputpath\x18ɗ\xbc\xa9\x01 \x01(\tH\x01R\x0eafterinputpath\x88\x01\x01\x122\n" +
+	"\x10afteritembatcher\x18\x9a\xf2\xaeV \x01(\tH\x02R\x10afteritembatcher\x88\x01\x01\x125\n" +
+	"\x11afteritemselector\x18\xc8\xcd\xff\xbb\x01 \x01(\tH\x03R\x11afteritemselector\x88\x01\x01\x12/\n" +
+	"\x0eafteritemspath\x18ū\x92\xea\x01 \x01(\tH\x04R\x0eafteritemspath\x88\x01\x01\x124\n" +
+	"\x11afteritemspointer\x18\xa9\xd9\xf6\\ \x01(\tH\x05R\x11afteritemspointer\x88\x01\x01\x121\n" +
+	"\x0fafterparameters\x18\xae\xc0\xb4\x9c\x01 \x01(\tH\x06R\x0fafterparameters\x88\x01\x01\x121\n" +
+	"\x0fafterresultpath\x18\xc0\xf6\xf6\xe4\x01 \x01(\tH\aR\x0fafterresultpath\x88\x01\x01\x129\n" +
+	"\x13afterresultselector\x18ޟ\xad\xd3\x01 \x01(\tH\bR\x13afterresultselector\x88\x01\x01\x12B\n" +
+	"\ferrordetails\x18\xea\xcf\xfd[ \x01(\v2\x1b.sfn.InspectionErrorDetailsR\ferrordetails\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\tR\x05input\x88\x01\x01\x12.\n" +
+	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05H\n" +
+	"R\x0emaxconcurrency\x88\x01\x01\x128\n" +
 	"\arequest\x18\xb3\x93\xa8\xf5\x01 \x01(\v2\x1a.sfn.InspectionDataRequestR\arequest\x12;\n" +
-	"\bresponse\x18߃\xf7\xca\x01 \x01(\v2\x1b.sfn.InspectionDataResponseR\bresponse\x12\x19\n" +
-	"\x06result\x18\xa5\xec\xddQ \x01(\tR\x06result\x12<\n" +
-	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x05H\x01R\x15toleratedfailurecount\x88\x01\x01\x12A\n" +
-	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentage\x12\x1f\n" +
-	"\tvariables\x18\xc3ŭM \x01(\tR\tvariablesB\x11\n" +
-	"\x0f_maxconcurrencyB\x18\n" +
-	"\x16_toleratedfailurecount\"\x9e\x01\n" +
-	"\x15InspectionDataRequest\x12\x16\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tR\x04body\x12\x1c\n" +
-	"\aheaders\x18곗\xb3\x01 \x01(\tR\aheaders\x12\x19\n" +
-	"\x06method\x18\xb1\xee\x97Z \x01(\tR\x06method\x12\x1e\n" +
-	"\bprotocol\x18\xb6\x8b\xa0\xd9\x01 \x01(\tR\bprotocol\x12\x14\n" +
-	"\x03url\x18\x9f\x98\xbd\x94\x01 \x01(\tR\x03url\"\xbc\x01\n" +
-	"\x16InspectionDataResponse\x12\x16\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tR\x04body\x12\x1c\n" +
-	"\aheaders\x18곗\xb3\x01 \x01(\tR\aheaders\x12\x1e\n" +
-	"\bprotocol\x18\xb6\x8b\xa0\xd9\x01 \x01(\tR\bprotocol\x12\"\n" +
+	"\bresponse\x18߃\xf7\xca\x01 \x01(\v2\x1b.sfn.InspectionDataResponseR\bresponse\x12\x1e\n" +
+	"\x06result\x18\xa5\xec\xddQ \x01(\tH\vR\x06result\x88\x01\x01\x12<\n" +
+	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x05H\fR\x15toleratedfailurecount\x88\x01\x01\x12F\n" +
+	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02H\rR\x1atoleratedfailurepercentage\x88\x01\x01\x12$\n" +
+	"\tvariables\x18\xc3ŭM \x01(\tH\x0eR\tvariables\x88\x01\x01B\x11\n" +
+	"\x0f_afterargumentsB\x11\n" +
+	"\x0f_afterinputpathB\x13\n" +
+	"\x11_afteritembatcherB\x14\n" +
+	"\x12_afteritemselectorB\x11\n" +
+	"\x0f_afteritemspathB\x14\n" +
+	"\x12_afteritemspointerB\x12\n" +
+	"\x10_afterparametersB\x12\n" +
+	"\x10_afterresultpathB\x16\n" +
+	"\x14_afterresultselectorB\b\n" +
+	"\x06_inputB\x11\n" +
+	"\x0f_maxconcurrencyB\t\n" +
+	"\a_resultB\x18\n" +
+	"\x16_toleratedfailurecountB\x1d\n" +
+	"\x1b_toleratedfailurepercentageB\f\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\x12(\n" +
-	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tR\rstatusmessage\"\xf1\x01\n" +
+	"_variables\"\xec\x01\n" +
+	"\x15InspectionDataRequest\x12\x1b\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tH\x00R\x04body\x88\x01\x01\x12!\n" +
+	"\aheaders\x18곗\xb3\x01 \x01(\tH\x01R\aheaders\x88\x01\x01\x12\x1e\n" +
+	"\x06method\x18\xb1\xee\x97Z \x01(\tH\x02R\x06method\x88\x01\x01\x12#\n" +
+	"\bprotocol\x18\xb6\x8b\xa0\xd9\x01 \x01(\tH\x03R\bprotocol\x88\x01\x01\x12\x19\n" +
+	"\x03url\x18\x9f\x98\xbd\x94\x01 \x01(\tH\x04R\x03url\x88\x01\x01B\a\n" +
+	"\x05_bodyB\n" +
+	"\n" +
+	"\b_headersB\t\n" +
+	"\a_methodB\v\n" +
+	"\t_protocolB\x06\n" +
+	"\x04_url\"\x98\x02\n" +
+	"\x16InspectionDataResponse\x12\x1b\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tH\x00R\x04body\x88\x01\x01\x12!\n" +
+	"\aheaders\x18곗\xb3\x01 \x01(\tH\x01R\aheaders\x88\x01\x01\x12#\n" +
+	"\bprotocol\x18\xb6\x8b\xa0\xd9\x01 \x01(\tH\x02R\bprotocol\x88\x01\x01\x12'\n" +
+	"\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x03R\n" +
+	"statuscode\x88\x01\x01\x12-\n" +
+	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tH\x04R\rstatusmessage\x88\x01\x01B\a\n" +
+	"\x05_bodyB\n" +
+	"\n" +
+	"\b_headersB\v\n" +
+	"\t_protocolB\r\n" +
+	"\v_statuscodeB\x10\n" +
+	"\x0e_statusmessage\"\xf1\x01\n" +
 	"\x16InspectionErrorDetails\x12'\n" +
 	"\n" +
 	"catchindex\x18\xc9\xc1\xba\x8a\x01 \x01(\x05H\x00R\n" +
@@ -11769,120 +11885,181 @@ const file_sfn_proto_rawDesc = "" +
 	"retryindex\x88\x01\x01B\r\n" +
 	"\v_catchindexB\x1e\n" +
 	"\x1c_retrybackoffintervalsecondsB\r\n" +
-	"\v_retryindex\")\n" +
+	"\v_retryindex\":\n" +
 	"\n" +
-	"InvalidArn\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"0\n" +
-	"\x11InvalidDefinition\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidEncryptionConfiguration\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15InvalidExecutionInput\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bInvalidLoggingConfiguration\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"*\n" +
-	"\vInvalidName\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\",\n" +
-	"\rInvalidOutput\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"+\n" +
-	"\fInvalidToken\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bInvalidTracingConfiguration\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18KmsAccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"o\n" +
+	"InvalidArn\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11InvalidDefinition\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidEncryptionConfiguration\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15InvalidExecutionInput\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bInvalidLoggingConfiguration\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\";\n" +
+	"\vInvalidName\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"=\n" +
+	"\rInvalidOutput\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"<\n" +
+	"\fInvalidToken\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bInvalidTracingConfiguration\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18KmsAccessDeniedException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x80\x01\n" +
 	"\x18KmsInvalidStateException\x126\n" +
-	"\vkmskeystate\x18\xeb\xc0\xd6\xe7\x01 \x01(\x0e2\x10.sfn.KmsKeyStateR\vkmskeystate\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16KmsThrottlingException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"T\n" +
-	" LambdaFunctionFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\\\n" +
-	"(LambdaFunctionScheduleFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xba\x02\n" +
-	"#LambdaFunctionScheduledEventDetails\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
+	"\vkmskeystate\x18\xeb\xc0\xd6\xe7\x01 \x01(\x0e2\x10.sfn.KmsKeyStateR\vkmskeystate\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16KmsThrottlingException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"r\n" +
+	" LambdaFunctionFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"z\n" +
+	"(LambdaFunctionScheduleFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xc9\x02\n" +
+	"#LambdaFunctionScheduledEventDetails\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12M\n" +
 	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12A\n" +
 	"\x0ftaskcredentials\x18\xbb\xc0\xf9z \x01(\v2\x14.sfn.TaskCredentialsR\x0ftaskcredentials\x123\n" +
-	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x00R\x10timeoutinseconds\x88\x01\x01B\x13\n" +
-	"\x11_timeoutinseconds\"Y\n" +
-	"%LambdaFunctionStartFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\x92\x01\n" +
-	"#LambdaFunctionSucceededEventDetails\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12O\n" +
-	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\"V\n" +
-	"\"LambdaFunctionTimedOutEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"n\n" +
+	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x01R\x10timeoutinseconds\x88\x01\x01B\b\n" +
+	"\x06_inputB\x13\n" +
+	"\x11_timeoutinseconds\"w\n" +
+	"%LambdaFunctionStartFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xa2\x01\n" +
+	"#LambdaFunctionSucceededEventDetails\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x00R\x06output\x88\x01\x01\x12O\n" +
+	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetailsB\t\n" +
+	"\a_output\"t\n" +
+	"\"LambdaFunctionTimedOutEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\x81\x01\n" +
 	"\x13ListActivitiesInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"q\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x84\x01\n" +
 	"\x14ListActivitiesOutput\x128\n" +
 	"\n" +
 	"activities\x18\x99\xe5\xd3N \x03(\v2\x15.sfn.ActivityListItemR\n" +
-	"activities\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xc1\x02\n" +
-	"\x13ListExecutionsInput\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12'\n" +
+	"activities\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
 	"\n" +
-	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12E\n" +
-	"\rredrivefilter\x18۹\xe1\xd0\x01 \x01(\x0e2\x1b.sfn.ExecutionRedriveFilterR\rredrivefilter\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12;\n" +
-	"\fstatusfilter\x18\xea\xe5\x83) \x01(\x0e2\x14.sfn.ExecutionStatusR\fstatusfilterB\r\n" +
-	"\v_maxresults\"r\n" +
+	"_nexttoken\"\x80\x03\n" +
+	"\x13ListExecutionsInput\x12$\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x00R\tmaprunarn\x88\x01\x01\x12'\n" +
+	"\n" +
+	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12E\n" +
+	"\rredrivefilter\x18۹\xe1\xd0\x01 \x01(\x0e2\x1b.sfn.ExecutionRedriveFilterR\rredrivefilter\x121\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tH\x03R\x0fstatemachinearn\x88\x01\x01\x12;\n" +
+	"\fstatusfilter\x18\xea\xe5\x83) \x01(\x0e2\x14.sfn.ExecutionStatusR\fstatusfilterB\f\n" +
+	"\n" +
+	"_maprunarnB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\x12\n" +
+	"\x10_statemachinearn\"\x85\x01\n" +
 	"\x14ListExecutionsOutput\x129\n" +
 	"\n" +
 	"executions\x18ӑ\x896 \x03(\v2\x16.sfn.ExecutionListItemR\n" +
-	"executions\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\x93\x01\n" +
+	"executions\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xa6\x01\n" +
 	"\x10ListMapRunsInput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"f\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"y\n" +
 	"\x11ListMapRunsOutput\x120\n" +
-	"\amapruns\x18\x98\xa9\xc5\x10 \x03(\v2\x13.sfn.MapRunListItemR\amapruns\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"\xa5\x01\n" +
+	"\amapruns\x18\x98\xa9\xc5\x10 \x03(\v2\x13.sfn.MapRunListItemR\amapruns\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xb8\x01\n" +
 	"\x1cListStateMachineAliasesInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12,\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearnB\r\n" +
-	"\v_maxresults\"\x96\x01\n" +
-	"\x1dListStateMachineAliasesOutput\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12T\n" +
-	"\x13statemachinealiases\x18\x96\xb2\xe4\xd7\x01 \x03(\v2\x1e.sfn.StateMachineAliasListItemR\x13statemachinealiases\"\xa6\x01\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa9\x01\n" +
+	"\x1dListStateMachineAliasesOutput\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12T\n" +
+	"\x13statemachinealiases\x18\x96\xb2\xe4\xd7\x01 \x03(\v2\x1e.sfn.StateMachineAliasListItemR\x13statemachinealiasesB\f\n" +
+	"\n" +
+	"_nexttoken\"\xb9\x01\n" +
 	"\x1dListStateMachineVersionsInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12,\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearnB\r\n" +
-	"\v_maxresults\"\x9a\x01\n" +
-	"\x1eListStateMachineVersionsOutput\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12W\n" +
-	"\x14statemachineversions\x18\xa7\xbb\xc5? \x03(\v2 .sfn.StateMachineVersionListItemR\x14statemachineversions\"q\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xad\x01\n" +
+	"\x1eListStateMachineVersionsOutput\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12W\n" +
+	"\x14statemachineversions\x18\xa7\xbb\xc5? \x03(\v2 .sfn.StateMachineVersionListItemR\x14statemachineversionsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x84\x01\n" +
 	"\x16ListStateMachinesInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xd2\xdc\xe7\xdd\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x7f\n" +
-	"\x17ListStateMachinesOutput\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12C\n" +
-	"\rstatemachines\x18\xf5\x8e\x86\xce\x01 \x03(\v2\x19.sfn.StateMachineListItemR\rstatemachines\"?\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x92\x01\n" +
+	"\x17ListStateMachinesOutput\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12C\n" +
+	"\rstatemachines\x18\xf5\x8e\x86\xce\x01 \x03(\v2\x19.sfn.StateMachineListItemR\rstatemachinesB\f\n" +
+	"\n" +
+	"_nexttoken\"?\n" +
 	"\x18ListTagsForResourceInput\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\"=\n" +
 	"\x19ListTagsForResourceOutput\x12 \n" +
@@ -11893,11 +12070,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\fdestinations\x18\xa5\xdab \x03(\v2\x13.sfn.LogDestinationR\fdestinations\x12:\n" +
 	"\x14includeexecutiondata\x18\u0605\x9da \x01(\bH\x00R\x14includeexecutiondata\x88\x01\x01\x12'\n" +
 	"\x05level\x18\xde\xcf\xe7\xdc\x01 \x01(\x0e2\r.sfn.LogLevelR\x05levelB\x17\n" +
-	"\x15_includeexecutiondata\"Y\n" +
+	"\x15_includeexecutiondata\"g\n" +
 	"\x18MapIterationEventDetails\x12\x1c\n" +
-	"\x05index\x18\xacӪH \x01(\x05H\x00R\x05index\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04nameB\b\n" +
-	"\x06_index\"\xad\x03\n" +
+	"\x05index\x18\xacӪH \x01(\x05H\x00R\x05index\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01B\b\n" +
+	"\x06_indexB\a\n" +
+	"\x05_name\"\xad\x03\n" +
 	"\x15MapRunExecutionCounts\x12\x1c\n" +
 	"\aaborted\x18х\xf4\xb5\x01 \x01(\x03R\aaborted\x12\x19\n" +
 	"\x06failed\x18\xb5\x9f\xb3\x05 \x01(\x03R\x06failed\x12<\n" +
@@ -11910,10 +12088,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\btimedout\x18\xe5\xcb\xe0\x9f\x01 \x01(\x03R\btimedout\x12\x17\n" +
 	"\x05total\x18\xfe\xa5\xc2& \x01(\x03R\x05totalB\x18\n" +
 	"\x16_failuresnotredrivableB\x11\n" +
-	"\x0f_pendingredrive\"L\n" +
-	"\x18MapRunFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xa8\x03\n" +
+	"\x0f_pendingredrive\"j\n" +
+	"\x18MapRunFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xa8\x03\n" +
 	"\x10MapRunItemCounts\x12\x1c\n" +
 	"\aaborted\x18х\xf4\xb5\x01 \x01(\x03R\aaborted\x12\x19\n" +
 	"\x06failed\x18\xb5\x9f\xb3\x05 \x01(\x03R\x06failed\x12<\n" +
@@ -11926,55 +12106,73 @@ const file_sfn_proto_rawDesc = "" +
 	"\btimedout\x18\xe5\xcb\xe0\x9f\x01 \x01(\x03R\btimedout\x12\x17\n" +
 	"\x05total\x18\xfe\xa5\xc2& \x01(\x03R\x05totalB\x18\n" +
 	"\x16_failuresnotredrivableB\x11\n" +
-	"\x0f_pendingredrive\"\xc8\x01\n" +
+	"\x0f_pendingredrive\"\xda\x01\n" +
 	"\x0eMapRunListItem\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\x1f\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\"{\n" +
-	"\x1aMapRunRedrivenEventDetails\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12+\n" +
-	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x00R\fredrivecount\x88\x01\x01B\x0f\n" +
-	"\r_redrivecount\"<\n" +
-	"\x19MapRunStartedEventDetails\x12\x1f\n" +
-	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\"H\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12\"\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tH\x00R\bstopdate\x88\x01\x01B\v\n" +
+	"\t_stopdate\"\x8e\x01\n" +
+	"\x1aMapRunRedrivenEventDetails\x12$\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x00R\tmaprunarn\x88\x01\x01\x12+\n" +
+	"\fredrivecount\x18\x88\xd0\xe1\xe1\x01 \x01(\x05H\x01R\fredrivecount\x88\x01\x01B\f\n" +
+	"\n" +
+	"_maprunarnB\x0f\n" +
+	"\r_redrivecount\"O\n" +
+	"\x19MapRunStartedEventDetails\x12$\n" +
+	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tH\x00R\tmaprunarn\x88\x01\x01B\f\n" +
+	"\n" +
+	"_maprunarn\"H\n" +
 	"\x1bMapStateStartedEventDetails\x12\x1e\n" +
 	"\x06length\x18\x96\xec\xc0\x1e \x01(\x05H\x00R\x06length\x88\x01\x01B\t\n" +
-	"\a_length\"7\n" +
-	"\x18MissingRequiredParameter\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"C\n" +
-	"\x0fMockErrorOutput\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\"\xb9\x01\n" +
+	"\a_length\"H\n" +
+	"\x18MissingRequiredParameter\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"a\n" +
+	"\x0fMockErrorOutput\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xc9\x01\n" +
 	"\tMockInput\x12:\n" +
 	"\verroroutput\x18ٰ\xa5\xd8\x01 \x01(\v2\x14.sfn.MockErrorOutputR\verroroutput\x12U\n" +
-	"\x13fieldvalidationmode\x18\xec\xd5\xd6\xf7\x01 \x01(\x0e2\x1f.sfn.MockResponseValidationModeR\x13fieldvalidationmode\x12\x19\n" +
-	"\x06result\x18\xa5\xec\xddQ \x01(\tR\x06result\"\x99\x01\n" +
-	"\x1fPublishStateMachineVersionInput\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\"\n" +
+	"\x13fieldvalidationmode\x18\xec\xd5\xd6\xf7\x01 \x01(\x0e2\x1f.sfn.MockResponseValidationModeR\x13fieldvalidationmode\x12\x1e\n" +
+	"\x06result\x18\xa5\xec\xddQ \x01(\tH\x00R\x06result\x88\x01\x01B\t\n" +
+	"\a_result\"\xc2\x01\n" +
+	"\x1fPublishStateMachineVersionInput\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12'\n" +
 	"\n" +
-	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tR\n" +
-	"revisionid\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\"\x84\x01\n" +
+	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tH\x01R\n" +
+	"revisionid\x88\x01\x01\x12,\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearnB\x0e\n" +
+	"\f_descriptionB\r\n" +
+	"\v_revisionid\"\x84\x01\n" +
 	" PublishStateMachineVersionOutput\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\"e\n" +
-	"\x15RedriveExecutionInput\x12$\n" +
-	"\vclienttoken\x18\xec\x82\xfa\x81\x01 \x01(\tR\vclienttoken\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\"=\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\"z\n" +
+	"\x15RedriveExecutionInput\x12)\n" +
+	"\vclienttoken\x18\xec\x82\xfa\x81\x01 \x01(\tH\x00R\vclienttoken\x88\x01\x01\x12&\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarnB\x0e\n" +
+	"\f_clienttoken\"=\n" +
 	"\x16RedriveExecutionOutput\x12#\n" +
-	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\"V\n" +
-	"\x10ResourceNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
-	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tR\fresourcename\"u\n" +
+	"\vredrivedate\x18\xdd\xf4\xeeH \x01(\tR\vredrivedate\"}\n" +
+	"\x10ResourceNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12*\n" +
+	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tH\x01R\fresourcename\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x0f\n" +
+	"\r_resourcename\"u\n" +
 	"\x1cRoutingConfigurationListItem\x129\n" +
 	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\x12\x1a\n" +
-	"\x06weight\x18\xba\xbd\x82\x85\x01 \x01(\x05R\x06weight\"j\n" +
-	"\x14SendTaskFailureInput\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12 \n" +
-	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktoken\"\x17\n" +
+	"\x06weight\x18\xba\xbd\x82\x85\x01 \x01(\x05R\x06weight\"\x88\x01\n" +
+	"\x14SendTaskFailureInput\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12 \n" +
+	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktokenB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\x17\n" +
 	"\x15SendTaskFailureOutput\":\n" +
 	"\x16SendTaskHeartbeatInput\x12 \n" +
 	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktoken\"\x19\n" +
@@ -11982,94 +12180,131 @@ const file_sfn_proto_rawDesc = "" +
 	"\x14SendTaskSuccessInput\x12\x1a\n" +
 	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12 \n" +
 	"\ttasktoken\x18\x8a\xac\xbf\xfa\x01 \x01(\tR\ttasktoken\"\x17\n" +
-	"\x15SendTaskSuccessOutput\"<\n" +
-	"\x1dServiceQuotaExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x99\x01\n" +
-	"\x13StartExecutionInput\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12#\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tR\vtraceheader\"`\n" +
+	"\x15SendTaskSuccessOutput\"M\n" +
+	"\x1dServiceQuotaExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xcb\x01\n" +
+	"\x13StartExecutionInput\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01\x12,\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12(\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\x02R\vtraceheader\x88\x01\x01B\b\n" +
+	"\x06_inputB\a\n" +
+	"\x05_nameB\x0e\n" +
+	"\f_traceheader\"`\n" +
 	"\x14StartExecutionOutput\x12&\n" +
 	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12 \n" +
-	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\"\xd7\x01\n" +
+	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\"\x89\x02\n" +
 	"\x17StartSyncExecutionInput\x128\n" +
-	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12#\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tR\vtraceheader\"\xf4\x04\n" +
+	"\fincludeddata\x18\xcaܨ4 \x01(\x0e2\x11.sfn.IncludedDataR\fincludeddata\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01\x12,\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12(\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\x02R\vtraceheader\x88\x01\x01B\b\n" +
+	"\x06_inputB\a\n" +
+	"\x05_nameB\x0e\n" +
+	"\f_traceheader\"\xed\x05\n" +
 	"\x18StartSyncExecutionOutput\x12?\n" +
-	"\x0ebillingdetails\x18\xbb\xcc߀\x01 \x01(\v2\x13.sfn.BillingDetailsR\x0ebillingdetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12Q\n" +
-	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\finputdetails\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12S\n" +
+	"\x0ebillingdetails\x18\xbb\xcc߀\x01 \x01(\v2\x13.sfn.BillingDetailsR\x0ebillingdetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12&\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x02R\x05input\x88\x01\x01\x12Q\n" +
+	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\finputdetails\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x04R\x06output\x88\x01\x01\x12S\n" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2).sfn.CloudWatchEventsExecutionDataDetailsR\routputdetails\x12 \n" +
-	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12,\n" +
-	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x124\n" +
+	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x121\n" +
+	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tH\x05R\x0fstatemachinearn\x88\x01\x01\x124\n" +
 	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.sfn.SyncExecutionStatusR\x06status\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\x12#\n" +
-	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tR\vtraceheader\"\x9a\x01\n" +
-	"\x18StateEnteredEventDetails\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12M\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\x12(\n" +
+	"\vtraceheader\x18\xa0\xac\xf1h \x01(\tH\x06R\vtraceheader\x88\x01\x01B\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_errorB\b\n" +
+	"\x06_inputB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_outputB\x12\n" +
+	"\x10_statemachinearnB\x0e\n" +
+	"\f_traceheader\"\xa9\x01\n" +
+	"\x18StateEnteredEventDetails\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x00R\x05input\x88\x01\x01\x12M\n" +
 	"\finputdetails\x18\xfc\x8a\xea\xd7\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\finputdetails\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\"\xa9\x03\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04nameB\b\n" +
+	"\x06_input\"\xb9\x03\n" +
 	"\x17StateExitedEventDetails\x12e\n" +
 	"\x11assignedvariables\x18\xcb\xed\xb2\xc4\x01 \x03(\v23.sfn.StateExitedEventDetails.AssignedvariablesEntryR\x11assignedvariables\x12]\n" +
 	"\x18assignedvariablesdetails\x18\xf9\x8c\xe6\xf2\x01 \x01(\v2\x1d.sfn.AssignedVariablesDetailsR\x18assignedvariablesdetails\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12O\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x00R\x06output\x88\x01\x01\x12O\n" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\x1aD\n" +
 	"\x16AssignedvariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"z\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\t\n" +
+	"\a_output\"z\n" +
 	"\x19StateMachineAliasListItem\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"8\n" +
-	"\x19StateMachineAlreadyExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14StateMachineDeleting\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18StateMachineDoesNotExist\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19StateMachineLimitExceeded\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb1\x01\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"I\n" +
+	"\x19StateMachineAlreadyExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14StateMachineDeleting\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18StateMachineDoesNotExist\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19StateMachineLimitExceeded\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb1\x01\n" +
 	"\x14StateMachineListItem\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12-\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\";\n" +
-	"\x1cStateMachineTypeNotSupported\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x7f\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x15.sfn.StateMachineTypeR\x04type\"L\n" +
+	"\x1cStateMachineTypeNotSupported\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x7f\n" +
 	"\x1bStateMachineVersionListItem\x12%\n" +
 	"\fcreationdate\x18\x81\xce\xd1q \x01(\tR\fcreationdate\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\"n\n" +
-	"\x12StopExecutionInput\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12&\n" +
-	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarn\"4\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\"\x8c\x01\n" +
+	"\x12StopExecutionInput\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12&\n" +
+	"\fexecutionarn\x18\xed\x96\xfd\x95\x01 \x01(\tR\fexecutionarnB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"4\n" +
 	"\x13StopExecutionOutput\x12\x1d\n" +
-	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\"3\n" +
-	"\x03Tag\x12\x13\n" +
-	"\x03key\x18\xed\x90\xd7@ \x01(\tR\x03key\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"Y\n" +
+	"\bstopdate\x18\xda\xf2\x94V \x01(\tR\bstopdate\"O\n" +
+	"\x03Tag\x12\x18\n" +
+	"\x03key\x18\xed\x90\xd7@ \x01(\tH\x00R\x03key\x88\x01\x01\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\x01R\x05value\x88\x01\x01B\x06\n" +
+	"\x04_keyB\b\n" +
+	"\x06_value\"Y\n" +
 	"\x10TagResourceInput\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12 \n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\b.sfn.TagR\x04tags\"\x13\n" +
-	"\x11TagResourceOutput\".\n" +
-	"\x0fTaskCredentials\x12\x1b\n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\"/\n" +
-	"\x10TaskDoesNotExist\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x90\x01\n" +
-	"\x16TaskFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
+	"\x11TagResourceOutput\"?\n" +
+	"\x0fTaskCredentials\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x00R\arolearn\x88\x01\x01B\n" +
+	"\n" +
+	"\b_rolearn\"@\n" +
+	"\x10TaskDoesNotExist\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xae\x01\n" +
+	"\x16TaskFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xfb\x02\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetypeB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xfb\x02\n" +
 	"\x19TaskScheduledEventDetails\x126\n" +
 	"\x12heartbeatinseconds\x18\xe2\xa1\xf9; \x01(\x03H\x00R\x12heartbeatinseconds\x88\x01\x01\x12!\n" +
 	"\n" +
@@ -12081,68 +12316,97 @@ const file_sfn_proto_rawDesc = "" +
 	"\x0ftaskcredentials\x18\xbb\xc0\xf9z \x01(\v2\x14.sfn.TaskCredentialsR\x0ftaskcredentials\x123\n" +
 	"\x10timeoutinseconds\x18\xb5\xf8\xb3\xe1\x01 \x01(\x03H\x01R\x10timeoutinseconds\x88\x01\x01B\x15\n" +
 	"\x13_heartbeatinsecondsB\x13\n" +
-	"\x11_timeoutinseconds\"\x95\x01\n" +
-	"\x1bTaskStartFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
+	"\x11_timeoutinseconds\"\xb3\x01\n" +
+	"\x1bTaskStartFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"_\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetypeB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"_\n" +
 	"\x17TaskStartedEventDetails\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\x96\x01\n" +
-	"\x1cTaskSubmitFailedEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xb4\x01\n" +
+	"\x1cTaskSubmitFailedEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xce\x01\n" +
-	"\x19TaskSubmittedEventDetails\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12O\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetypeB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xde\x01\n" +
+	"\x19TaskSubmittedEventDetails\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x00R\x06output\x88\x01\x01\x12O\n" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xce\x01\n" +
-	"\x19TaskSucceededEventDetails\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x12O\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetypeB\t\n" +
+	"\a_output\"\xde\x01\n" +
+	"\x19TaskSucceededEventDetails\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x00R\x06output\x88\x01\x01\x12O\n" +
 	"\routputdetails\x18\xf3\xd3\u07fb\x01 \x01(\v2%.sfn.HistoryEventExecutionDataDetailsR\routputdetails\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"+\n" +
-	"\fTaskTimedOut\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x92\x01\n" +
-	"\x18TaskTimedOutEventDetails\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12\x1d\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetypeB\t\n" +
+	"\a_output\"<\n" +
+	"\fTaskTimedOut\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb0\x01\n" +
+	"\x18TaskTimedOutEventDetails\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12\x1d\n" +
 	"\bresource\x18\xf6\xff\xfdN \x01(\tR\bresource\x12%\n" +
-	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetype\"\xad\x02\n" +
-	"\x16TestStateConfiguration\x122\n" +
-	"\x12errorcausedbystate\x18ϥՕ\x01 \x01(\tR\x12errorcausedbystate\x120\n" +
-	"\x11mapitemreaderdata\x18\xe6\xcb\xfc\xef\x01 \x01(\tR\x11mapitemreaderdata\x12C\n" +
-	"\x18mapiterationfailurecount\x18\xb2͉\xc8\x01 \x01(\x05H\x00R\x18mapiterationfailurecount\x88\x01\x01\x125\n" +
-	"\x11retrierretrycount\x18\xe0Ƚ\x83\x01 \x01(\x05H\x01R\x11retrierretrycount\x88\x01\x01B\x1b\n" +
+	"\fresourcetype\x18\xfe\x95\xd0\x03 \x01(\tR\fresourcetypeB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_error\"\xe4\x02\n" +
+	"\x16TestStateConfiguration\x127\n" +
+	"\x12errorcausedbystate\x18ϥՕ\x01 \x01(\tH\x00R\x12errorcausedbystate\x88\x01\x01\x125\n" +
+	"\x11mapitemreaderdata\x18\xe6\xcb\xfc\xef\x01 \x01(\tH\x01R\x11mapitemreaderdata\x88\x01\x01\x12C\n" +
+	"\x18mapiterationfailurecount\x18\xb2͉\xc8\x01 \x01(\x05H\x02R\x18mapiterationfailurecount\x88\x01\x01\x125\n" +
+	"\x11retrierretrycount\x18\xe0Ƚ\x83\x01 \x01(\x05H\x03R\x11retrierretrycount\x88\x01\x01B\x15\n" +
+	"\x13_errorcausedbystateB\x14\n" +
+	"\x12_mapitemreaderdataB\x1b\n" +
 	"\x19_mapiterationfailurecountB\x14\n" +
-	"\x12_retrierretrycount\"\xc6\x03\n" +
-	"\x0eTestStateInput\x12\x1b\n" +
-	"\acontext\x18\xfd\xa0\x9cd \x01(\tR\acontext\x12!\n" +
+	"\x12_retrierretrycount\"\x9d\x04\n" +
+	"\x0eTestStateInput\x12 \n" +
+	"\acontext\x18\xfd\xa0\x9cd \x01(\tH\x00R\acontext\x88\x01\x01\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
-	"definition\x12\x18\n" +
-	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tR\x05input\x12B\n" +
+	"definition\x12\x1d\n" +
+	"\x05input\x18\xfc\xde\xe1\xce\x01 \x01(\tH\x01R\x05input\x88\x01\x01\x12B\n" +
 	"\x0finspectionlevel\x18Ċ\x95\x84\x01 \x01(\x0e2\x14.sfn.InspectionLevelR\x0finspectionlevel\x12%\n" +
 	"\x04mock\x18\xac\xb8\xe8s \x01(\v2\x0e.sfn.MockInputR\x04mock\x12-\n" +
-	"\rrevealsecrets\x18\xfe\xcb\xe2\xa7\x01 \x01(\bH\x00R\rrevealsecrets\x88\x01\x01\x12\x1b\n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12N\n" +
-	"\x12stateconfiguration\x18\xfd\xe2\x8d\b \x01(\v2\x1b.sfn.TestStateConfigurationR\x12stateconfiguration\x12 \n" +
-	"\tstatename\x18\xb6Ї\x81\x01 \x01(\tR\tstatename\x12\x1f\n" +
-	"\tvariables\x18\xc3ŭM \x01(\tR\tvariablesB\x10\n" +
-	"\x0e_revealsecrets\"\xf7\x01\n" +
-	"\x0fTestStateOutput\x12\x17\n" +
-	"\x05cause\x18\xa1\xa4\xbbE \x01(\tR\x05cause\x12\x17\n" +
-	"\x05error\x18Ҏ\xc6\f \x01(\tR\x05error\x12>\n" +
-	"\x0einspectiondata\x18\xfc\xbd\x9f6 \x01(\v2\x13.sfn.InspectionDataR\x0einspectiondata\x12 \n" +
-	"\tnextstate\x18\xce\xe0\xcf\xfa\x01 \x01(\tR\tnextstate\x12\x1a\n" +
-	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tR\x06output\x124\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.sfn.TestExecutionStatusR\x06status\"Q\n" +
-	"\vTooManyTags\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12%\n" +
-	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tR\fresourcename\"D\n" +
+	"\rrevealsecrets\x18\xfe\xcb\xe2\xa7\x01 \x01(\bH\x02R\rrevealsecrets\x88\x01\x01\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x03R\arolearn\x88\x01\x01\x12N\n" +
+	"\x12stateconfiguration\x18\xfd\xe2\x8d\b \x01(\v2\x1b.sfn.TestStateConfigurationR\x12stateconfiguration\x12%\n" +
+	"\tstatename\x18\xb6Ї\x81\x01 \x01(\tH\x04R\tstatename\x88\x01\x01\x12$\n" +
+	"\tvariables\x18\xc3ŭM \x01(\tH\x05R\tvariables\x88\x01\x01B\n" +
+	"\n" +
+	"\b_contextB\b\n" +
+	"\x06_inputB\x10\n" +
+	"\x0e_revealsecretsB\n" +
+	"\n" +
+	"\b_rolearnB\f\n" +
+	"\n" +
+	"_statenameB\f\n" +
+	"\n" +
+	"_variables\"\xb8\x02\n" +
+	"\x0fTestStateOutput\x12\x1c\n" +
+	"\x05cause\x18\xa1\xa4\xbbE \x01(\tH\x00R\x05cause\x88\x01\x01\x12\x1c\n" +
+	"\x05error\x18Ҏ\xc6\f \x01(\tH\x01R\x05error\x88\x01\x01\x12>\n" +
+	"\x0einspectiondata\x18\xfc\xbd\x9f6 \x01(\v2\x13.sfn.InspectionDataR\x0einspectiondata\x12%\n" +
+	"\tnextstate\x18\xce\xe0\xcf\xfa\x01 \x01(\tH\x02R\tnextstate\x88\x01\x01\x12\x1f\n" +
+	"\x06output\x18\x85\x9e\xa5\xcd\x01 \x01(\tH\x03R\x06output\x88\x01\x01\x124\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x18.sfn.TestExecutionStatusR\x06statusB\b\n" +
+	"\x06_causeB\b\n" +
+	"\x06_errorB\f\n" +
+	"\n" +
+	"_nextstateB\t\n" +
+	"\a_output\"x\n" +
+	"\vTooManyTags\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12*\n" +
+	"\fresourcename\x18\xf7\xfd\xbc\b \x01(\tH\x01R\fresourcename\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x0f\n" +
+	"\r_resourcename\"D\n" +
 	"\x14TracingConfiguration\x12 \n" +
 	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
 	"\n" +
@@ -12150,49 +12414,58 @@ const file_sfn_proto_rawDesc = "" +
 	"\x12UntagResourceInput\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12\x1b\n" +
 	"\atagkeys\x18\x9c\x9f\xca% \x03(\tR\atagkeys\"\x15\n" +
-	"\x13UntagResourceOutput\"\x92\x02\n" +
+	"\x13UntagResourceOutput\"\xb6\x02\n" +
 	"\x11UpdateMapRunInput\x12\x1f\n" +
 	"\tmaprunarn\x18\xba\xeb\xd6\b \x01(\tR\tmaprunarn\x12.\n" +
 	"\x0emaxconcurrency\x18\x9dĎ0 \x01(\x05H\x00R\x0emaxconcurrency\x88\x01\x01\x12<\n" +
-	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x03H\x01R\x15toleratedfailurecount\x88\x01\x01\x12A\n" +
-	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02R\x1atoleratedfailurepercentageB\x11\n" +
+	"\x15toleratedfailurecount\x18\xbb\xb2\xf9\x13 \x01(\x03H\x01R\x15toleratedfailurecount\x88\x01\x01\x12F\n" +
+	"\x1atoleratedfailurepercentage\x18\xa4\xae\xc67 \x01(\x02H\x02R\x1atoleratedfailurepercentage\x88\x01\x01B\x11\n" +
 	"\x0f_maxconcurrencyB\x18\n" +
-	"\x16_toleratedfailurecount\"\x14\n" +
-	"\x12UpdateMapRunOutput\"\xd7\x01\n" +
-	"\x1cUpdateStateMachineAliasInput\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12Y\n" +
+	"\x16_toleratedfailurecountB\x1d\n" +
+	"\x1b_toleratedfailurepercentage\"\x14\n" +
+	"\x12UpdateMapRunOutput\"\xec\x01\n" +
+	"\x1cUpdateStateMachineAliasInput\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12Y\n" +
 	"\x14routingconfiguration\x18\xf6\xbe\xe7\xb1\x01 \x03(\v2!.sfn.RoutingConfigurationListItemR\x14routingconfiguration\x126\n" +
-	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarn\"C\n" +
+	"\x14statemachinealiasarn\x18\x91\xd4\xf1\xfc\x01 \x01(\tR\x14statemachinealiasarnB\x0e\n" +
+	"\f_description\"C\n" +
 	"\x1dUpdateStateMachineAliasOutput\x12\"\n" +
 	"\n" +
 	"updatedate\x18\xf1ӹ\xf3\x01 \x01(\tR\n" +
-	"updatedate\"\xea\x03\n" +
-	"\x17UpdateStateMachineInput\x12!\n" +
+	"updatedate\"\xab\x04\n" +
+	"\x17UpdateStateMachineInput\x12&\n" +
 	"\n" +
-	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
-	"definition\x12Y\n" +
+	"definition\x18\xa1\xb9\xd1  \x01(\tH\x00R\n" +
+	"definition\x88\x01\x01\x12Y\n" +
 	"\x17encryptionconfiguration\x18\x97\x9a\x85P \x01(\v2\x1c.sfn.EncryptionConfigurationR\x17encryptionconfiguration\x12Q\n" +
 	"\x14loggingconfiguration\x18զ\xd4\xc8\x01 \x01(\v2\x19.sfn.LoggingConfigurationR\x14loggingconfiguration\x12 \n" +
-	"\apublish\x18\x89\xb0\x80~ \x01(\bH\x00R\apublish\x88\x01\x01\x12\x1b\n" +
-	"\arolearn\x18\xa1\x97\x89Q \x01(\tR\arolearn\x12,\n" +
+	"\apublish\x18\x89\xb0\x80~ \x01(\bH\x01R\apublish\x88\x01\x01\x12 \n" +
+	"\arolearn\x18\xa1\x97\x89Q \x01(\tH\x02R\arolearn\x88\x01\x01\x12,\n" +
 	"\x0fstatemachinearn\x18\xf3\xbbƻ\x01 \x01(\tR\x0fstatemachinearn\x12Q\n" +
-	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x122\n" +
-	"\x12versiondescription\x18\xbc\xed\xa4\xcf\x01 \x01(\tR\x12versiondescriptionB\n" +
+	"\x14tracingconfiguration\x18\xc6ţ\xea\x01 \x01(\v2\x19.sfn.TracingConfigurationR\x14tracingconfiguration\x127\n" +
+	"\x12versiondescription\x18\xbc\xed\xa4\xcf\x01 \x01(\tH\x03R\x12versiondescription\x88\x01\x01B\r\n" +
+	"\v_definitionB\n" +
 	"\n" +
-	"\b_publish\"\x9d\x01\n" +
-	"\x18UpdateStateMachineOutput\x12\"\n" +
+	"\b_publishB\n" +
 	"\n" +
-	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tR\n" +
-	"revisionid\x129\n" +
-	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tR\x16statemachineversionarn\x12\"\n" +
+	"\b_rolearnB\x15\n" +
+	"\x13_versiondescription\"\xd1\x01\n" +
+	"\x18UpdateStateMachineOutput\x12'\n" +
+	"\n" +
+	"revisionid\x18\xa6\xad\x84\xb0\x01 \x01(\tH\x00R\n" +
+	"revisionid\x88\x01\x01\x12>\n" +
+	"\x16statemachineversionarn\x18\xf9\x85\xaf! \x01(\tH\x01R\x16statemachineversionarn\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"updatedate\x18\xf1ӹ\xf3\x01 \x01(\tR\n" +
-	"updatedate\"\xca\x01\n" +
+	"updatedateB\r\n" +
+	"\v_revisionidB\x19\n" +
+	"\x17_statemachineversionarn\"\xdc\x01\n" +
 	"(ValidateStateMachineDefinitionDiagnostic\x12\x16\n" +
-	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12\x1d\n" +
-	"\blocation\x18\xa7\xd3\xd6_ \x01(\tR\blocation\x12\x1b\n" +
+	"\x04code\x18\xf5\xd9\xc5\xc9\x01 \x01(\tR\x04code\x12\"\n" +
+	"\blocation\x18\xa7\xd3\xd6_ \x01(\tH\x00R\blocation\x88\x01\x01\x12\x1b\n" +
 	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12J\n" +
-	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverity\"\xfb\x01\n" +
+	"\bseverity\x18\xb3\x9f\xf1\x7f \x01(\x0e2+.sfn.ValidateStateMachineDefinitionSeverityR\bseverityB\v\n" +
+	"\t_location\"\xfb\x01\n" +
 	"#ValidateStateMachineDefinitionInput\x12!\n" +
 	"\n" +
 	"definition\x18\xa1\xb9\xd1  \x01(\tR\n" +
@@ -12208,10 +12481,12 @@ const file_sfn_proto_rawDesc = "" +
 	"\x06result\x18\xa5\xec\xddQ \x01(\x0e2-.sfn.ValidateStateMachineDefinitionResultCodeR\x06result\x12%\n" +
 	"\ttruncated\x18\xaa\xa2\xa7\xc2\x01 \x01(\bH\x00R\ttruncated\x88\x01\x01B\f\n" +
 	"\n" +
-	"_truncated\"n\n" +
-	"\x13ValidationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x12:\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1e.sfn.ValidationExceptionReasonR\x06reason*a\n" +
+	"_truncated\"\x7f\n" +
+	"\x13ValidationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x12:\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1e.sfn.ValidationExceptionReasonR\x06reasonB\n" +
+	"\n" +
+	"\b_message*a\n" +
 	"\x0eEncryptionType\x12,\n" +
 	"(ENCRYPTION_TYPE_CUSTOMER_MANAGED_KMS_KEY\x10\x00\x12!\n" +
 	"\x1dENCRYPTION_TYPE_AWS_OWNED_KEY\x10\x01*j\n" +
@@ -12805,42 +13080,134 @@ func file_sfn_proto_init() {
 	if File_sfn_proto != nil {
 		return
 	}
+	file_sfn_proto_msgTypes[0].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[2].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[3].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[5].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[6].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[7].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[8].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[9].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[10].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[11].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[12].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[13].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[14].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[15].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[18].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[20].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[21].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[33].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[35].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[37].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[39].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[41].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[42].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[43].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[44].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[45].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[46].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[47].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[48].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[49].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[50].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[51].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[52].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[53].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[54].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[55].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[56].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[57].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[58].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[59].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[60].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[61].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[62].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[63].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[64].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[65].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[66].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[67].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[68].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[69].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[70].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[71].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[72].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[73].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[74].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[75].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[76].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[77].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[78].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[79].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[80].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[81].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[82].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[83].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[84].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[85].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[86].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[87].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[88].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[89].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[90].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[91].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[92].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[93].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[94].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[98].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[99].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[100].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[101].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[102].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[103].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[104].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[105].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[106].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[107].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[108].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[109].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[110].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[112].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[114].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[116].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[122].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[123].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[125].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[126].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[127].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[128].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[130].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[131].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[132].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[133].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[135].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[137].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[139].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[142].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[143].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[144].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[145].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[146].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[148].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[149].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[150].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[151].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[152].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[153].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[154].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[155].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[156].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[157].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[160].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[162].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[164].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[165].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[166].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[167].OneofWrappers = []any{}
 	file_sfn_proto_msgTypes[168].OneofWrappers = []any{}
+	file_sfn_proto_msgTypes[169].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

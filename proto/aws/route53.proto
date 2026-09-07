@@ -470,7 +470,7 @@ message AliasTarget {
 
 message AssociateVPCWithHostedZoneRequest {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string hostedzoneid = 346531710;
 
@@ -520,7 +520,7 @@ message ChangeBatch {
 
   repeated Change changes = 516230891;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
 }
 
@@ -550,7 +550,7 @@ message ChangeCidrCollectionResponse {
 
 message ChangeInfo {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string id = 384350465;
 
@@ -622,7 +622,7 @@ message ChangeTagsForResourceResponse {
 
 message CidrBlockInUseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -632,9 +632,9 @@ message CidrBlockInUseException {
 
 message CidrBlockSummary {
 
-  string cidrblock = 56494185;
+  optional string cidrblock = 56494185;
 
-  string locationname = 158186566;
+  optional string locationname = 158186566;
 
 }
 
@@ -644,11 +644,11 @@ message CidrBlockSummary {
 
 message CidrCollection {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int64 version = 500028728;
 
@@ -660,7 +660,7 @@ message CidrCollection {
 
 message CidrCollectionAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -694,7 +694,7 @@ enum CidrCollectionChangeAction {
 
 message CidrCollectionInUseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -704,7 +704,7 @@ message CidrCollectionInUseException {
 
 message CidrCollectionVersionMismatchException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -848,11 +848,11 @@ enum CloudWatchRegion {
 
 message CollectionSummary {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int64 version = 500028728;
 
@@ -878,7 +878,7 @@ enum ComparisonOperator {
 
 message ConcurrentModification {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -888,7 +888,7 @@ message ConcurrentModification {
 
 message ConflictingDomainExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -898,7 +898,7 @@ message ConflictingDomainExists {
 
 message ConflictingTypes {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -930,7 +930,7 @@ message CreateCidrCollectionResponse {
 
   CidrCollection collection = 114272434;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -966,7 +966,7 @@ message CreateHostedZoneRequest {
 
   string callerreference = 151211160;
 
-  string delegationsetid = 307328801;
+  optional string delegationsetid = 307328801;
 
   HostedZoneConfig hostedzoneconfig = 881519;
 
@@ -1048,7 +1048,7 @@ message CreateReusableDelegationSetRequest {
 
   string callerreference = 151211160;
 
-  string hostedzoneid = 346531710;
+  optional string hostedzoneid = 346531710;
 
 }
 
@@ -1098,7 +1098,7 @@ message CreateTrafficPolicyInstanceResponse {
 
 message CreateTrafficPolicyRequest {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string document = 407108341;
 
@@ -1124,7 +1124,7 @@ message CreateTrafficPolicyResponse {
 
 message CreateTrafficPolicyVersionRequest {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string document = 407108341;
 
@@ -1174,7 +1174,7 @@ message CreateVPCAssociationAuthorizationResponse {
 
 message DNSSECNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1184,9 +1184,9 @@ message DNSSECNotFound {
 
 message DNSSECStatus {
 
-  string servesignature = 466239599;
+  optional string servesignature = 466239599;
 
-  string statusmessage = 72590095;
+  optional string statusmessage = 72590095;
 
 }
 
@@ -1214,9 +1214,9 @@ message DeactivateKeySigningKeyResponse {
 
 message DelegationSet {
 
-  string callerreference = 151211160;
+  optional string callerreference = 151211160;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   repeated string nameservers = 340971511;
 
@@ -1228,7 +1228,7 @@ message DelegationSet {
 
 message DelegationSetAlreadyCreated {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1238,7 +1238,7 @@ message DelegationSetAlreadyCreated {
 
 message DelegationSetAlreadyReusable {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1248,7 +1248,7 @@ message DelegationSetAlreadyReusable {
 
 message DelegationSetInUse {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1258,7 +1258,7 @@ message DelegationSetInUse {
 
 message DelegationSetNotAvailable {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1268,7 +1268,7 @@ message DelegationSetNotAvailable {
 
 message DelegationSetNotReusable {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1466,7 +1466,7 @@ message DisableHostedZoneDNSSECResponse {
 
 message DisassociateVPCFromHostedZoneRequest {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string hostedzoneid = 346531710;
 
@@ -1506,11 +1506,11 @@ message EnableHostedZoneDNSSECResponse {
 
 message GeoLocation {
 
-  string continentcode = 180194347;
+  optional string continentcode = 180194347;
 
-  string countrycode = 485287065;
+  optional string countrycode = 485287065;
 
-  string subdivisioncode = 444328268;
+  optional string subdivisioncode = 444328268;
 
 }
 
@@ -1520,17 +1520,17 @@ message GeoLocation {
 
 message GeoLocationDetails {
 
-  string continentcode = 180194347;
+  optional string continentcode = 180194347;
 
-  string continentname = 203176953;
+  optional string continentname = 203176953;
 
-  string countrycode = 485287065;
+  optional string countrycode = 485287065;
 
-  string countryname = 16070667;
+  optional string countryname = 16070667;
 
-  string subdivisioncode = 444328268;
+  optional string subdivisioncode = 444328268;
 
-  string subdivisionname = 412782294;
+  optional string subdivisionname = 412782294;
 
 }
 
@@ -1540,13 +1540,13 @@ message GeoLocationDetails {
 
 message GeoProximityLocation {
 
-  string awsregion = 245430451;
+  optional string awsregion = 245430451;
 
   optional int32 bias = 60849893;
 
   Coordinates coordinates = 231283401;
 
-  string localzonegroup = 60150354;
+  optional string localzonegroup = 60150354;
 
 }
 
@@ -1634,11 +1634,11 @@ message GetDNSSECResponse {
 
 message GetGeoLocationRequest {
 
-  string continentcode = 180194347;
+  optional string continentcode = 180194347;
 
-  string countrycode = 485287065;
+  optional string countrycode = 485287065;
 
-  string subdivisioncode = 444328268;
+  optional string subdivisioncode = 444328268;
 
 }
 
@@ -1942,7 +1942,7 @@ message HealthCheck {
 
 message HealthCheckAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1962,11 +1962,11 @@ message HealthCheckConfig {
 
   optional int32 failurethreshold = 176846565;
 
-  string fullyqualifieddomainname = 459321509;
+  optional string fullyqualifieddomainname = 459321509;
 
   optional int32 healththreshold = 215873163;
 
-  string ipaddress = 169333741;
+  optional string ipaddress = 169333741;
 
   InsufficientDataHealthStatus insufficientdatahealthstatus = 493115723;
 
@@ -1980,11 +1980,11 @@ message HealthCheckConfig {
 
   optional int32 requestinterval = 350673112;
 
-  string resourcepath = 117584551;
+  optional string resourcepath = 117584551;
 
-  string routingcontrolarn = 206883790;
+  optional string routingcontrolarn = 206883790;
 
-  string searchstring = 318687365;
+  optional string searchstring = 318687365;
 
   HealthCheckType type = 290836590;
 
@@ -1996,7 +1996,7 @@ message HealthCheckConfig {
 
 message HealthCheckInUse {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2006,7 +2006,7 @@ message HealthCheckInUse {
 
 message HealthCheckObservation {
 
-  string ipaddress = 169333741;
+  optional string ipaddress = 169333741;
 
   HealthCheckRegion region = 154040478;
 
@@ -2064,7 +2064,7 @@ enum HealthCheckType {
 
 message HealthCheckVersionMismatch {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2098,7 +2098,7 @@ message HostedZone {
 
 message HostedZoneAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2108,7 +2108,7 @@ message HostedZoneAlreadyExists {
 
 message HostedZoneConfig {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   optional bool privatezone = 506703867;
 
@@ -2120,7 +2120,7 @@ message HostedZoneConfig {
 
 message HostedZoneFailureReasons {
 
-  string acceleratedrecovery = 356087092;
+  optional string acceleratedrecovery = 356087092;
 
 }
 
@@ -2164,7 +2164,7 @@ enum HostedZoneLimitType {
 
 message HostedZoneNotEmpty {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2174,7 +2174,7 @@ message HostedZoneNotEmpty {
 
 message HostedZoneNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2184,7 +2184,7 @@ message HostedZoneNotFound {
 
 message HostedZoneNotPrivate {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2194,9 +2194,9 @@ message HostedZoneNotPrivate {
 
 message HostedZoneOwner {
 
-  string owningaccount = 339968073;
+  optional string owningaccount = 339968073;
 
-  string owningservice = 462487817;
+  optional string owningservice = 462487817;
 
 }
 
@@ -2206,7 +2206,7 @@ message HostedZoneOwner {
 
 message HostedZonePartiallyDelegated {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2238,7 +2238,7 @@ enum HostedZoneType {
 
 message IncompatibleVersion {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2248,7 +2248,7 @@ message IncompatibleVersion {
 
 message InsufficientCloudWatchLogsResourcePolicy {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2270,7 +2270,7 @@ enum InsufficientDataHealthStatus {
 
 message InvalidArgument {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2280,7 +2280,7 @@ message InvalidArgument {
 
 message InvalidChangeBatch {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   repeated string messages = 230838;
 
@@ -2292,7 +2292,7 @@ message InvalidChangeBatch {
 
 message InvalidDomainName {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2302,7 +2302,7 @@ message InvalidDomainName {
 
 message InvalidInput {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2312,7 +2312,7 @@ message InvalidInput {
 
 message InvalidKMSArn {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2322,7 +2322,7 @@ message InvalidKMSArn {
 
 message InvalidKeySigningKeyName {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2332,7 +2332,7 @@ message InvalidKeySigningKeyName {
 
 message InvalidKeySigningKeyStatus {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2342,7 +2342,7 @@ message InvalidKeySigningKeyStatus {
 
 message InvalidPaginationToken {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2352,7 +2352,7 @@ message InvalidPaginationToken {
 
 message InvalidSigningStatus {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2362,7 +2362,7 @@ message InvalidSigningStatus {
 
 message InvalidTrafficPolicyDocument {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2372,7 +2372,7 @@ message InvalidTrafficPolicyDocument {
 
 message InvalidVPCId {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2382,37 +2382,37 @@ message InvalidVPCId {
 
 message KeySigningKey {
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string dnskeyrecord = 33128395;
+  optional string dnskeyrecord = 33128395;
 
-  string dsrecord = 123290342;
+  optional string dsrecord = 123290342;
 
-  string digestalgorithmmnemonic = 209907099;
+  optional string digestalgorithmmnemonic = 209907099;
 
   optional int32 digestalgorithmtype = 255175667;
 
-  string digestvalue = 277868387;
+  optional string digestvalue = 277868387;
 
   optional int32 flag = 504820984;
 
   optional int32 keytag = 245478853;
 
-  string kmsarn = 205584974;
+  optional string kmsarn = 205584974;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string publickey = 167335776;
+  optional string publickey = 167335776;
 
-  string signingalgorithmmnemonic = 379080734;
+  optional string signingalgorithmmnemonic = 379080734;
 
   optional int32 signingalgorithmtype = 407768874;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
-  string statusmessage = 72590095;
+  optional string statusmessage = 72590095;
 
 }
 
@@ -2422,7 +2422,7 @@ message KeySigningKey {
 
 message KeySigningKeyAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2432,7 +2432,7 @@ message KeySigningKeyAlreadyExists {
 
 message KeySigningKeyInParentDSRecord {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2442,7 +2442,7 @@ message KeySigningKeyInParentDSRecord {
 
 message KeySigningKeyInUse {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2452,7 +2452,7 @@ message KeySigningKeyInUse {
 
 message KeySigningKeyWithActiveStatusNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2462,7 +2462,7 @@ message KeySigningKeyWithActiveStatusNotFound {
 
 message LastVPCAssociation {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2472,7 +2472,7 @@ message LastVPCAssociation {
 
 message LimitsExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2482,9 +2482,9 @@ message LimitsExceeded {
 
 message LinkedService {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string serviceprincipal = 146694383;
+  optional string serviceprincipal = 146694383;
 
 }
 
@@ -2494,11 +2494,11 @@ message ListCidrBlocksRequest {
 
   string collectionid = 128052453;
 
-  string locationname = 158186566;
+  optional string locationname = 158186566;
 
-  string maxresults = 275174450;
+  optional string maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2508,7 +2508,7 @@ message ListCidrBlocksResponse {
 
   repeated CidrBlockSummary cidrblocks = 134660738;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2516,9 +2516,9 @@ message ListCidrBlocksResponse {
 
 message ListCidrCollectionsRequest {
 
-  string maxresults = 275174450;
+  optional string maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2528,7 +2528,7 @@ message ListCidrCollectionsResponse {
 
   repeated CollectionSummary cidrcollections = 502378541;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2538,9 +2538,9 @@ message ListCidrLocationsRequest {
 
   string collectionid = 128052453;
 
-  string maxresults = 275174450;
+  optional string maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2550,7 +2550,7 @@ message ListCidrLocationsResponse {
 
   repeated LocationSummary cidrlocations = 480481962;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2560,13 +2560,13 @@ message ListCidrLocationsResponse {
 
 message ListGeoLocationsRequest {
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string startcontinentcode = 272774541;
+  optional string startcontinentcode = 272774541;
 
-  string startcountrycode = 182995791;
+  optional string startcountrycode = 182995791;
 
-  string startsubdivisioncode = 206846290;
+  optional string startsubdivisioncode = 206846290;
 
 }
 
@@ -2582,11 +2582,11 @@ message ListGeoLocationsResponse {
 
   string maxitems = 506899220;
 
-  string nextcontinentcode = 14234018;
+  optional string nextcontinentcode = 14234018;
 
-  string nextcountrycode = 147948496;
+  optional string nextcountrycode = 147948496;
 
-  string nextsubdivisioncode = 385449253;
+  optional string nextsubdivisioncode = 385449253;
 
 }
 
@@ -2596,9 +2596,9 @@ message ListGeoLocationsResponse {
 
 message ListHealthChecksRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
 }
 
@@ -2616,7 +2616,7 @@ message ListHealthChecksResponse {
 
   string maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2626,11 +2626,11 @@ message ListHealthChecksResponse {
 
 message ListHostedZonesByNameRequest {
 
-  string dnsname = 171901432;
+  optional string dnsname = 171901432;
 
-  string hostedzoneid = 346531710;
+  optional string hostedzoneid = 346531710;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
 }
 
@@ -2640,9 +2640,9 @@ message ListHostedZonesByNameRequest {
 
 message ListHostedZonesByNameResponse {
 
-  string dnsname = 171901432;
+  optional string dnsname = 171901432;
 
-  string hostedzoneid = 346531710;
+  optional string hostedzoneid = 346531710;
 
   repeated HostedZone hostedzones = 86735402;
 
@@ -2650,9 +2650,9 @@ message ListHostedZonesByNameResponse {
 
   string maxitems = 506899220;
 
-  string nextdnsname = 488331797;
+  optional string nextdnsname = 488331797;
 
-  string nexthostedzoneid = 162450165;
+  optional string nexthostedzoneid = 162450165;
 
 }
 
@@ -2662,9 +2662,9 @@ message ListHostedZonesByNameResponse {
 
 message ListHostedZonesByVPCRequest {
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string vpcid = 325135798;
 
@@ -2680,7 +2680,7 @@ message ListHostedZonesByVPCResponse {
 
   string maxitems = 506899220;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2690,13 +2690,13 @@ message ListHostedZonesByVPCResponse {
 
 message ListHostedZonesRequest {
 
-  string delegationsetid = 307328801;
+  optional string delegationsetid = 307328801;
 
   HostedZoneType hostedzonetype = 409319401;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
 }
 
@@ -2712,7 +2712,7 @@ message ListHostedZonesResponse {
 
   string maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2720,11 +2720,11 @@ message ListHostedZonesResponse {
 
 message ListQueryLoggingConfigsRequest {
 
-  string hostedzoneid = 346531710;
+  optional string hostedzoneid = 346531710;
 
-  string maxresults = 275174450;
+  optional string maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2732,7 +2732,7 @@ message ListQueryLoggingConfigsRequest {
 
 message ListQueryLoggingConfigsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated QueryLoggingConfig queryloggingconfigs = 87688172;
 
@@ -2746,11 +2746,11 @@ message ListResourceRecordSetsRequest {
 
   string hostedzoneid = 346531710;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string startrecordidentifier = 518502950;
+  optional string startrecordidentifier = 518502950;
 
-  string startrecordname = 145299062;
+  optional string startrecordname = 145299062;
 
   RRType startrecordtype = 408714791;
 
@@ -2766,9 +2766,9 @@ message ListResourceRecordSetsResponse {
 
   string maxitems = 506899220;
 
-  string nextrecordidentifier = 424069527;
+  optional string nextrecordidentifier = 424069527;
 
-  string nextrecordname = 131258783;
+  optional string nextrecordname = 131258783;
 
   RRType nextrecordtype = 97817846;
 
@@ -2782,9 +2782,9 @@ message ListResourceRecordSetsResponse {
 
 message ListReusableDelegationSetsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
 }
 
@@ -2802,7 +2802,7 @@ message ListReusableDelegationSetsResponse {
 
   string maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2856,9 +2856,9 @@ message ListTagsForResourcesResponse {
 
 message ListTrafficPoliciesRequest {
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string trafficpolicyidmarker = 426883336;
+  optional string trafficpolicyidmarker = 426883336;
 
 }
 
@@ -2886,9 +2886,9 @@ message ListTrafficPolicyInstancesByHostedZoneRequest {
 
   string hostedzoneid = 346531710;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string trafficpolicyinstancenamemarker = 136215379;
+  optional string trafficpolicyinstancenamemarker = 136215379;
 
   RRType trafficpolicyinstancetypemarker = 30935978;
 
@@ -2904,7 +2904,7 @@ message ListTrafficPolicyInstancesByHostedZoneResponse {
 
   string maxitems = 506899220;
 
-  string trafficpolicyinstancenamemarker = 136215379;
+  optional string trafficpolicyinstancenamemarker = 136215379;
 
   RRType trafficpolicyinstancetypemarker = 30935978;
 
@@ -2918,13 +2918,13 @@ message ListTrafficPolicyInstancesByHostedZoneResponse {
 
 message ListTrafficPolicyInstancesByPolicyRequest {
 
-  string hostedzoneidmarker = 475055952;
+  optional string hostedzoneidmarker = 475055952;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
   string trafficpolicyid = 40235222;
 
-  string trafficpolicyinstancenamemarker = 136215379;
+  optional string trafficpolicyinstancenamemarker = 136215379;
 
   RRType trafficpolicyinstancetypemarker = 30935978;
 
@@ -2938,13 +2938,13 @@ message ListTrafficPolicyInstancesByPolicyRequest {
 
 message ListTrafficPolicyInstancesByPolicyResponse {
 
-  string hostedzoneidmarker = 475055952;
+  optional string hostedzoneidmarker = 475055952;
 
   optional bool istruncated = 242094042;
 
   string maxitems = 506899220;
 
-  string trafficpolicyinstancenamemarker = 136215379;
+  optional string trafficpolicyinstancenamemarker = 136215379;
 
   RRType trafficpolicyinstancetypemarker = 30935978;
 
@@ -2958,11 +2958,11 @@ message ListTrafficPolicyInstancesByPolicyResponse {
 
 message ListTrafficPolicyInstancesRequest {
 
-  string hostedzoneidmarker = 475055952;
+  optional string hostedzoneidmarker = 475055952;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string trafficpolicyinstancenamemarker = 136215379;
+  optional string trafficpolicyinstancenamemarker = 136215379;
 
   RRType trafficpolicyinstancetypemarker = 30935978;
 
@@ -2974,13 +2974,13 @@ message ListTrafficPolicyInstancesRequest {
 
 message ListTrafficPolicyInstancesResponse {
 
-  string hostedzoneidmarker = 475055952;
+  optional string hostedzoneidmarker = 475055952;
 
   optional bool istruncated = 242094042;
 
   string maxitems = 506899220;
 
-  string trafficpolicyinstancenamemarker = 136215379;
+  optional string trafficpolicyinstancenamemarker = 136215379;
 
   RRType trafficpolicyinstancetypemarker = 30935978;
 
@@ -2996,9 +2996,9 @@ message ListTrafficPolicyVersionsRequest {
 
   string id = 384350465;
 
-  string maxitems = 506899220;
+  optional string maxitems = 506899220;
 
-  string trafficpolicyversionmarker = 228559295;
+  optional string trafficpolicyversionmarker = 228559295;
 
 }
 
@@ -3026,9 +3026,9 @@ message ListVPCAssociationAuthorizationsRequest {
 
   string hostedzoneid = 346531710;
 
-  string maxresults = 275174450;
+  optional string maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3040,7 +3040,7 @@ message ListVPCAssociationAuthorizationsResponse {
 
   string hostedzoneid = 346531710;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated VPC vpcs = 424064898;
 
@@ -3052,7 +3052,7 @@ message ListVPCAssociationAuthorizationsResponse {
 
 message LocationSummary {
 
-  string locationname = 158186566;
+  optional string locationname = 158186566;
 
 }
 
@@ -3062,7 +3062,7 @@ message LocationSummary {
 
 message NoSuchChange {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3072,7 +3072,7 @@ message NoSuchChange {
 
 message NoSuchCidrCollectionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3082,7 +3082,7 @@ message NoSuchCidrCollectionException {
 
 message NoSuchCidrLocationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3092,7 +3092,7 @@ message NoSuchCidrLocationException {
 
 message NoSuchCloudWatchLogsLogGroup {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3102,7 +3102,7 @@ message NoSuchCloudWatchLogsLogGroup {
 
 message NoSuchDelegationSet {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3112,7 +3112,7 @@ message NoSuchDelegationSet {
 
 message NoSuchGeoLocation {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3122,7 +3122,7 @@ message NoSuchGeoLocation {
 
 message NoSuchHealthCheck {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3132,7 +3132,7 @@ message NoSuchHealthCheck {
 
 message NoSuchHostedZone {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3142,7 +3142,7 @@ message NoSuchHostedZone {
 
 message NoSuchKeySigningKey {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3152,7 +3152,7 @@ message NoSuchKeySigningKey {
 
 message NoSuchQueryLoggingConfig {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3162,7 +3162,7 @@ message NoSuchQueryLoggingConfig {
 
 message NoSuchTrafficPolicy {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3172,7 +3172,7 @@ message NoSuchTrafficPolicy {
 
 message NoSuchTrafficPolicyInstance {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3182,7 +3182,7 @@ message NoSuchTrafficPolicyInstance {
 
 message NotAuthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3192,7 +3192,7 @@ message NotAuthorizedException {
 
 message PriorRequestNotComplete {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3202,7 +3202,7 @@ message PriorRequestNotComplete {
 
 message PublicZoneVPCAssociation {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3226,7 +3226,7 @@ message QueryLoggingConfig {
 
 message QueryLoggingConfigAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3310,7 +3310,7 @@ message ResourceRecordSet {
 
   GeoProximityLocation geoproximitylocation = 94319785;
 
-  string healthcheckid = 312971637;
+  optional string healthcheckid = 312971637;
 
   optional bool multivalueanswer = 424105486;
 
@@ -3320,11 +3320,11 @@ message ResourceRecordSet {
 
   repeated ResourceRecord resourcerecords = 519418974;
 
-  string setidentifier = 201408985;
+  optional string setidentifier = 201408985;
 
   optional int64 ttl = 526904700;
 
-  string trafficpolicyinstanceid = 251421439;
+  optional string trafficpolicyinstanceid = 251421439;
 
   RRType type = 290836590;
 
@@ -3432,7 +3432,7 @@ enum ResourceRecordSetRegion {
 
 message ResourceTagSet {
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
   TagResourceType resourcetype = 301342558;
 
@@ -3482,9 +3482,9 @@ enum Statistic {
 
 message StatusReport {
 
-  string checkedtime = 152550560;
+  optional string checkedtime = 152550560;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -3494,9 +3494,9 @@ message StatusReport {
 
 message Tag {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -3516,9 +3516,9 @@ enum TagResourceType {
 
 message TestDNSAnswerRequest {
 
-  string edns0clientsubnetip = 506730999;
+  optional string edns0clientsubnetip = 506730999;
 
-  string edns0clientsubnetmask = 381322620;
+  optional string edns0clientsubnetmask = 381322620;
 
   string hostedzoneid = 346531710;
 
@@ -3526,7 +3526,7 @@ message TestDNSAnswerRequest {
 
   RRType recordtype = 441248261;
 
-  string resolverip = 95000907;
+  optional string resolverip = 95000907;
 
 }
 
@@ -3556,7 +3556,7 @@ message TestDNSAnswerResponse {
 
 message ThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3566,7 +3566,7 @@ message ThrottlingException {
 
 message TooManyHealthChecks {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3576,7 +3576,7 @@ message TooManyHealthChecks {
 
 message TooManyHostedZones {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3586,7 +3586,7 @@ message TooManyHostedZones {
 
 message TooManyKeySigningKeys {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3596,7 +3596,7 @@ message TooManyKeySigningKeys {
 
 message TooManyTrafficPolicies {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3606,7 +3606,7 @@ message TooManyTrafficPolicies {
 
 message TooManyTrafficPolicyInstances {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3616,7 +3616,7 @@ message TooManyTrafficPolicyInstances {
 
 message TooManyTrafficPolicyVersionsForCurrentPolicy {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3626,7 +3626,7 @@ message TooManyTrafficPolicyVersionsForCurrentPolicy {
 
 message TooManyVPCAssociationAuthorizations {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3636,7 +3636,7 @@ message TooManyVPCAssociationAuthorizations {
 
 message TrafficPolicy {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string document = 407108341;
 
@@ -3656,7 +3656,7 @@ message TrafficPolicy {
 
 message TrafficPolicyAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3666,7 +3666,7 @@ message TrafficPolicyAlreadyExists {
 
 message TrafficPolicyInUse {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3702,7 +3702,7 @@ message TrafficPolicyInstance {
 
 message TrafficPolicyInstanceAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3740,7 +3740,7 @@ message UpdateHealthCheckRequest {
 
   optional int32 failurethreshold = 176846565;
 
-  string fullyqualifieddomainname = 459321509;
+  optional string fullyqualifieddomainname = 459321509;
 
   string healthcheckid = 312971637;
 
@@ -3748,7 +3748,7 @@ message UpdateHealthCheckRequest {
 
   optional int32 healththreshold = 215873163;
 
-  string ipaddress = 169333741;
+  optional string ipaddress = 169333741;
 
   InsufficientDataHealthStatus insufficientdatahealthstatus = 493115723;
 
@@ -3760,9 +3760,9 @@ message UpdateHealthCheckRequest {
 
   repeated ResettableElementName resetelements = 16543458;
 
-  string resourcepath = 117584551;
+  optional string resourcepath = 117584551;
 
-  string searchstring = 318687365;
+  optional string searchstring = 318687365;
 
 }
 
@@ -3782,7 +3782,7 @@ message UpdateHealthCheckResponse {
 
 message UpdateHostedZoneCommentRequest {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string id = 384350465;
 
@@ -3870,7 +3870,7 @@ message UpdateTrafficPolicyInstanceResponse {
 
 message VPC {
 
-  string vpcid = 325135798;
+  optional string vpcid = 325135798;
 
   VPCRegion vpcregion = 474180765;
 
@@ -3882,7 +3882,7 @@ message VPC {
 
 message VPCAssociationAuthorizationNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3892,7 +3892,7 @@ message VPCAssociationAuthorizationNotFound {
 
 message VPCAssociationNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

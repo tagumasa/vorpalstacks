@@ -20,25 +20,25 @@
 
 | Service | Coverage | Notes |
 |---------|----------|-------|
-| ACM | Broad | No ACME protocol (19 ops) |
-| API Gateway | Broad | No client certificates, documentation, or SDK generation. No VpcLink (5 ops; private integrations require a Network Load Balancer, which this platform does not provide). |
+| ACM | Broad | No ACME protocol |
+| API Gateway | Broad | No client certificates, documentation, SDK generation, or VpcLink |
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
 | CloudWatch Logs | Selective | No Logs Insights queries or export |
 | Cognito IDP | Selective | No external IdP |
 | Cognito Identity | Selective | Basic identity pool support |
-| DynamoDB | Broad | ION import/export not supported. Streams and Global Tables implemented with multi-active replication. |
+| DynamoDB | Broad | No ION import/export; Streams and Global Tables implemented |
 | EventBridge | Broad | No global endpoints or partner event sources |
-| IAM | Broad | No custom-policy simulator (`SimulatePrincipalPolicy` and `ListPoliciesGrantingServiceAccess` implemented) or organisations integration. GetHumanReadableSummary excluded (external LLM dependence). Delegation request APIs not implemented. |
+| IAM | Broad | No policy-simulator family beyond `SimulatePrincipalPolicy` and `ListPoliciesGrantingServiceAccess`; no organisations integration, GetHumanReadableSummary, or delegation request APIs |
 | Kinesis | Full | |
 | KMS | Full | |
-| Lambda | Broad | No durable functions, code signing, capacity providers, recursive loop detection, function scaling, or managed runtime updates. |
-| S3 | Broad | Bucket inventory and metrics configurations implemented. No analytics/intelligent-tiering configurations (no storage-class tiering), object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, or WriteGetObjectResponse. Object Lock, CORS, lifecycle, SSE encryption fully enforced. |
-| Scheduler | Full | Templated targets limited to platform-implemented services (Lambda, SQS, SNS, Kinesis, Step Functions, EventBridge); ECS and Firehose targets non-functional until those services exist. SageMaker, CodeBuild, CodePipeline, and Inspector targets permanently out of scope (services not implemented on this platform). |
-| Secrets Manager | Full | ListTagsForResource is implemented beyond the 2017-10-17 API model. No managed external secret rotation execution (partner integration is external). |
+| Lambda | Broad | No durable functions, code signing, capacity providers, recursive loop detection, function scaling, or managed runtime updates |
+| S3 | Broad | Inventory and metrics configurations implemented; no analytics/intelligent-tiering configurations, object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, or WriteGetObjectResponse; Object Lock, CORS, lifecycle, and SSE enforced |
+| Scheduler | Full | Templated targets limited to platform-implemented services; no SageMaker, CodeBuild, CodePipeline, or Inspector targets |
+| Secrets Manager | Full | No managed external rotation execution |
 | SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |
 | SFN (Step Functions) | Full | |
-| SNS | Broad | SMS sending, email/email-json delivery, and mobile push (application protocol) not supported. Platform application/endpoint CRUD is available but no push delivery. Subscription FilterPolicy and RawMessageDelivery are supported. |
-| SQS | Broad | No SSE-KMS message encryption. No FIFO advanced-attribute enforcement (DeduplicationScope, FifoThroughputLimit, RedriveAllowPolicy). No per-account request-rate quotas (AWS-account-tied rate limiting is out of scope). |
+| SNS | Broad | No SMS, email/email-json, or mobile push (application protocol) delivery; platform application/endpoint CRUD, FilterPolicy, and RawMessageDelivery implemented |
+| SQS | Broad | No SSE-KMS message encryption, FIFO advanced-attribute enforcement (DeduplicationScope, FifoThroughputLimit, RedriveAllowPolicy), or per-account request-rate quotas |
 | SSM | Selective | Parameter Store only |
 | STS | Full | |
 
@@ -51,15 +51,15 @@
 | CloudFront | Broad | enabled | Origin proxy with cache behaviours, TTL edge cache, invalidation, CNAME aliases, continuous deployment policies, viewer TLS serving, and ViewerProtocolPolicy enforcement |
 | CloudTrail | Broad | **disabled** | Audit logging. No event data stores or SQL queries |
 | EC2 | Selective | enabled | Basic instance management |
-| IoT Core | Broad | enabled | 272 operations: things, certificates, policies, rules engine (11 action types), jobs, shadows, device management |
+| IoT Core | Broad | enabled | Things, certificates, policies, rules engine, jobs, shadows, and device management |
 | Neptune | Full | enabled | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
 | NeptuneData | Broad | enabled | Gremlin/SPARQL query endpoint |
 | NeptuneGraph | Broad | enabled | Graph engine with graph/SPARQL/neptune-analytics APIs |
-| RDS Data | Full | **disabled** | MySQL-compatible SQL via vmysql engine (requires `RDS_MYSQL_ENABLED=true` or `ALL_SERVICES_ENABLED=true`) |
+| RDS Data | Full | **disabled** | MySQL-compatible SQL via vmysql engine |
 | Route53 | Selective | enabled | DNS record management only |
 | Timestream Query | Broad | enabled | SQL query engine |
 | Timestream Write | Broad | enabled | Time-series data ingestion |
-| WAFv2 | Broad | enabled | Signature managed rule groups implemented; no data-dependent groups (IP reputation, anonymous IP, Bot Control, ATP, ACFP, Anti-DDoS) or Known Bad Inputs ReactJS RCE rule (inputs exist only inside AWS); Monetize payment settlement not verified |
+| WAFv2 | Broad | enabled | Signature managed rule groups implemented; no data-dependent groups (IP reputation, anonymous IP, Bot Control, ATP, ACFP, Anti-DDoS) or Known Bad Inputs ReactJS RCE rule; Monetize payment settlement unverified |
 
 ### Service Scope
 
@@ -90,11 +90,16 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **API Gateway — VPC_LINK connection type**: rejects at both integration create and the /connectionType replace path; a VPC_LINK integration would route through a VpcLink to a Network Load Balancer, which this platform does not provide.
 - **Athena — TEST_MODE**: query execution history is purged at startup.
 - **CloudFront — viewer TLS serving**: SNI per distribution, from the attached ACM/IAM certificate.
+- **Cognito IDP — user-pool domains**: the four domain operations are implemented; domain entries resolve to the platform endpoint suffix (`<domain>.auth.<cognito_suffix>` with the region substituted) rather than AWS-hosted CloudFront domains, which cannot exist in an edge/on-premises deployment.
+- **DynamoDB — Streams and Global Tables**: implemented with multi-active replication.
+- **IAM — GetHumanReadableSummary**: excluded; the summary requires external LLM generation.
 - **Kinesis — SubscribeToShard heartbeat interval**: 15 s (provisional; AWS does not document the exact value).
 - **Lambda — AddPermission Principal**: restricted to a known service-principal allowlist (see `validServicePrincipals` in `validators.go`); unrecognised `*.amazonaws.com` principals are rejected.
 - **S3 — inventory report delivery**: reports deliver on daily/weekly UTC boundaries to the S3 destination as CSV (gzip), Parquet (snappy), and ORC (ZLIB), with manifest.json, manifest.checksum, and the Hive symlink; report files honour the configuration's SSE-S3/SSE-KMS encryption choice. The report columns IntelligentTieringAccessTier, ChecksumAlgorithm, and LifecycleExpirationDate are emitted empty (no single-tier substrate). Both configuration families are bounded by the 1,000-configuration limit with 100-item pagination.
 - **S3 — metrics configurations**: per-filter CloudWatch request metrics in the AWS/S3 namespace; requests on both the object and bucket planes count into AllRequests plus their per-operation metric, and each minute window publishes a CloudWatch statistic set (sample count, sum, min, max, so Average carries the documented error rate and bytes-per-request semantics). A filter carrying an access-point ARN generates no datapoints (no access-point substrate).
-- **Scheduler — ECS and Firehose targets**: rule templates accept them, but delivery fails until those services exist on the platform.
+- **S3 — analytics/intelligent-tiering configurations**: excluded; this single-tier platform has no storage-class transition substrate.
+- **RDS Data — enablement**: requires `RDS_MYSQL_ENABLED=true` or `ALL_SERVICES_ENABLED=true`.
+- **Scheduler — templated targets**: platform-implemented targets are Lambda, SQS, SNS, Kinesis, Step Functions, and EventBridge; ECS and Firehose targets are accepted by rule templates but delivery fails until those services exist on the platform; SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (those services are not implemented on this platform).
 - **Secrets Manager — ListTagsForResource and managed rotation members**: the operation does not exist in the 2017-10-17 model, so AWS SDKs never generate a client method for it; the platform operation serves raw-HTTP/console consumers. Managed external rotation members are configuration storage and echo only — the partner integration itself is external.
 - **SQS — SSE-KMS and request throttling**: SSE-KMS attributes are accepted but messages are stored unencrypted; per-account request-rate quotas are not enforced, and the RequestThrottled error shape exists for wire-contract completeness only.
 - **Secrets Manager — BatchGetSecretValue `MaxResults`**: AWS documents the requirement ("To use this parameter, you must also use the Filters parameter") but not the behaviour when it is violated; requests pairing `MaxResults` with `SecretIdList` are rejected with `InvalidParameterException` (400).

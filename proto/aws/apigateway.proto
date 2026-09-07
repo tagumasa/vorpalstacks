@@ -649,9 +649,9 @@ enum AccessAssociationSourceType {
 
 message AccessLogSettings {
 
-  string destinationarn = 427601315;
+  optional string destinationarn = 427601315;
 
-  string format = 429753683;
+  optional string format = 429753683;
 
 }
 
@@ -661,9 +661,9 @@ message AccessLogSettings {
 
 message Account {
 
-  string apikeyversion = 148957539;
+  optional string apikeyversion = 148957539;
 
-  string cloudwatchrolearn = 144858329;
+  optional string cloudwatchrolearn = 144858329;
 
   repeated string features = 528712651;
 
@@ -677,25 +677,25 @@ message Account {
 
 message ApiKey {
 
-  string createddate = 53061200;
+  optional string createddate = 53061200;
 
-  string customerid = 227830269;
+  optional string customerid = 227830269;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool enabled = 49525663;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string lastupdateddate = 448453361;
+  optional string lastupdateddate = 448453361;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated string stagekeys = 287991830;
 
   map<string, string> tags = 337046433;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -729,7 +729,7 @@ message ApiKeys {
 
   repeated ApiKey items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   repeated string warnings = 185617301;
 
@@ -749,9 +749,9 @@ enum ApiKeysFormat {
 
 message ApiStage {
 
-  string apiid = 113380971;
+  optional string apiid = 113380971;
 
-  string stage = 140155438;
+  optional string stage = 140155438;
 
   map<string, ThrottleSettings> throttle = 395260638;
 
@@ -777,21 +777,21 @@ enum ApiStatus {
 
 message Authorizer {
 
-  string authtype = 162773848;
+  optional string authtype = 162773848;
 
-  string authorizercredentials = 233575233;
+  optional string authorizercredentials = 233575233;
 
   optional int32 authorizerresultttlinseconds = 135440208;
 
-  string authorizeruri = 525146137;
+  optional string authorizeruri = 525146137;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string identitysource = 285615231;
+  optional string identitysource = 285615231;
 
-  string identityvalidationexpression = 227211199;
+  optional string identityvalidationexpression = 227211199;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated string providerarns = 301486689;
 
@@ -819,7 +819,7 @@ message Authorizers {
 
   repeated Authorizer items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -829,7 +829,7 @@ message Authorizers {
 
 message BadRequestException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -839,11 +839,11 @@ message BadRequestException {
 
 message BasePathMapping {
 
-  string basepath = 267528880;
+  optional string basepath = 267528880;
 
-  string restapiid = 383799833;
+  optional string restapiid = 383799833;
 
-  string stage = 140155438;
+  optional string stage = 140155438;
 
 }
 
@@ -855,7 +855,7 @@ message BasePathMappings {
 
   repeated BasePathMapping items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -903,9 +903,9 @@ enum CacheClusterStatus {
 
 message CanarySettings {
 
-  string deploymentid = 439369188;
+  optional string deploymentid = 439369188;
 
-  double percenttraffic = 147177864;
+  optional double percenttraffic = 147177864;
 
   map<string, string> stagevariableoverrides = 221124259;
 
@@ -919,15 +919,15 @@ message CanarySettings {
 
 message ClientCertificate {
 
-  string clientcertificateid = 276222909;
+  optional string clientcertificateid = 276222909;
 
-  string createddate = 53061200;
+  optional string createddate = 53061200;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string expirationdate = 391033245;
+  optional string expirationdate = 391033245;
 
-  string pemencodedcertificate = 449484817;
+  optional string pemencodedcertificate = 449484817;
 
   map<string, string> tags = 337046433;
 
@@ -941,7 +941,7 @@ message ClientCertificates {
 
   repeated ClientCertificate items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -951,7 +951,7 @@ message ClientCertificates {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -981,21 +981,21 @@ enum ContentHandlingStrategy {
 
 message CreateApiKeyRequest {
 
-  string customerid = 227830269;
+  optional string customerid = 227830269;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool enabled = 49525663;
 
   optional bool generatedistinctid = 99833588;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   repeated StageKey stagekeys = 287991830;
 
   map<string, string> tags = 337046433;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -1005,17 +1005,17 @@ message CreateApiKeyRequest {
 
 message CreateAuthorizerRequest {
 
-  string authtype = 162773848;
+  optional string authtype = 162773848;
 
-  string authorizercredentials = 233575233;
+  optional string authorizercredentials = 233575233;
 
   optional int32 authorizerresultttlinseconds = 135440208;
 
-  string authorizeruri = 525146137;
+  optional string authorizeruri = 525146137;
 
-  string identitysource = 285615231;
+  optional string identitysource = 285615231;
 
-  string identityvalidationexpression = 227211199;
+  optional string identityvalidationexpression = 227211199;
 
   string name = 221887975;
 
@@ -1033,15 +1033,15 @@ message CreateAuthorizerRequest {
 
 message CreateBasePathMappingRequest {
 
-  string basepath = 267528880;
+  optional string basepath = 267528880;
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
   string restapiid = 383799833;
 
-  string stage = 140155438;
+  optional string stage = 140155438;
 
 }
 
@@ -1057,13 +1057,13 @@ message CreateDeploymentRequest {
 
   DeploymentCanarySettings canarysettings = 285544261;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string restapiid = 383799833;
 
-  string stagedescription = 496169986;
+  optional string stagedescription = 496169986;
 
-  string stagename = 9563663;
+  optional string stagename = 9563663;
 
   optional bool tracingenabled = 390995731;
 
@@ -1091,13 +1091,13 @@ message CreateDocumentationPartRequest {
 
 message CreateDocumentationVersionRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string documentationversion = 167009804;
 
   string restapiid = 383799833;
 
-  string stagename = 9563663;
+  optional string stagename = 9563663;
 
 }
 
@@ -1121,15 +1121,15 @@ message CreateDomainNameAccessAssociationRequest {
 
 message CreateDomainNameRequest {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificatebody = 183933821;
+  optional string certificatebody = 183933821;
 
-  string certificatechain = 50547450;
+  optional string certificatechain = 50547450;
 
-  string certificatename = 140276948;
+  optional string certificatename = 140276948;
 
-  string certificateprivatekey = 277544067;
+  optional string certificateprivatekey = 277544067;
 
   string domainname = 390326667;
 
@@ -1139,13 +1139,13 @@ message CreateDomainNameRequest {
 
   MutualTlsAuthenticationInput mutualtlsauthentication = 99462043;
 
-  string ownershipverificationcertificatearn = 100550548;
+  optional string ownershipverificationcertificatearn = 100550548;
 
-  string policy = 247528064;
+  optional string policy = 247528064;
 
-  string regionalcertificatearn = 137066579;
+  optional string regionalcertificatearn = 137066579;
 
-  string regionalcertificatename = 431716941;
+  optional string regionalcertificatename = 431716941;
 
   RoutingMode routingmode = 506342119;
 
@@ -1163,13 +1163,13 @@ message CreateModelRequest {
 
   string contenttype = 281764659;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string name = 221887975;
 
   string restapiid = 383799833;
 
-  string schema = 310182711;
+  optional string schema = 310182711;
 
 }
 
@@ -1179,7 +1179,7 @@ message CreateModelRequest {
 
 message CreateRequestValidatorRequest {
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   string restapiid = 383799833;
 
@@ -1213,9 +1213,9 @@ message CreateRestApiRequest {
 
   repeated string binarymediatypes = 406416146;
 
-  string clonefrom = 263376551;
+  optional string clonefrom = 263376551;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool disableexecuteapiendpoint = 148140696;
 
@@ -1227,13 +1227,13 @@ message CreateRestApiRequest {
 
   string name = 221887975;
 
-  string policy = 247528064;
+  optional string policy = 247528064;
 
   SecurityPolicy securitypolicy = 491792990;
 
   map<string, string> tags = 337046433;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
 }
 
@@ -1251,9 +1251,9 @@ message CreateStageRequest {
 
   string deploymentid = 439369188;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string documentationversion = 167009804;
+  optional string documentationversion = 167009804;
 
   string restapiid = 383799833;
 
@@ -1289,7 +1289,7 @@ message CreateUsagePlanRequest {
 
   repeated ApiStage apistages = 64558449;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string name = 221887975;
 
@@ -1307,7 +1307,7 @@ message CreateUsagePlanRequest {
 
 message CreateVpcLinkRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   string name = 221887975;
 
@@ -1349,7 +1349,7 @@ message DeleteBasePathMappingRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
 }
 
@@ -1415,7 +1415,7 @@ message DeleteDomainNameRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
 }
 
@@ -1589,11 +1589,11 @@ message Deployment {
 
   map<string, string> apisummary = 159675170;
 
-  string createddate = 53061200;
+  optional string createddate = 53061200;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -1603,7 +1603,7 @@ message Deployment {
 
 message DeploymentCanarySettings {
 
-  double percenttraffic = 147177864;
+  optional double percenttraffic = 147177864;
 
   map<string, string> stagevariableoverrides = 221124259;
 
@@ -1619,7 +1619,7 @@ message Deployments {
 
   repeated Deployment items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -1629,11 +1629,11 @@ message Deployments {
 
 message DocumentationPart {
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   DocumentationPartLocation location = 200649127;
 
-  string properties = 299789533;
+  optional string properties = 299789533;
 
 }
 
@@ -1655,13 +1655,13 @@ message DocumentationPartIds {
 
 message DocumentationPartLocation {
 
-  string method = 189134641;
+  optional string method = 189134641;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string path = 75975991;
+  optional string path = 75975991;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
   DocumentationPartType type = 287830350;
 
@@ -1705,7 +1705,7 @@ message DocumentationParts {
 
   repeated DocumentationPart items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -1715,11 +1715,11 @@ message DocumentationParts {
 
 message DocumentationVersion {
 
-  string createddate = 53061200;
+  optional string createddate = 53061200;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
 }
 
@@ -1731,7 +1731,7 @@ message DocumentationVersions {
 
   repeated DocumentationVersion items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -1741,45 +1741,45 @@ message DocumentationVersions {
 
 message DomainName {
 
-  string certificatearn = 425831704;
+  optional string certificatearn = 425831704;
 
-  string certificatename = 140276948;
+  optional string certificatename = 140276948;
 
-  string certificateuploaddate = 504466814;
+  optional string certificateuploaddate = 504466814;
 
-  string distributiondomainname = 266229213;
+  optional string distributiondomainname = 266229213;
 
-  string distributionhostedzoneid = 185867208;
+  optional string distributionhostedzoneid = 185867208;
 
-  string domainname = 390326667;
+  optional string domainname = 390326667;
 
-  string domainnamearn = 244019094;
+  optional string domainnamearn = 244019094;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
   DomainNameStatus domainnamestatus = 275080629;
 
-  string domainnamestatusmessage = 335045044;
+  optional string domainnamestatusmessage = 335045044;
 
   EndpointAccessMode endpointaccessmode = 356705630;
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
-  string managementpolicy = 90103737;
+  optional string managementpolicy = 90103737;
 
   MutualTlsAuthentication mutualtlsauthentication = 99462043;
 
-  string ownershipverificationcertificatearn = 100550548;
+  optional string ownershipverificationcertificatearn = 100550548;
 
-  string policy = 247528064;
+  optional string policy = 247528064;
 
-  string regionalcertificatearn = 137066579;
+  optional string regionalcertificatearn = 137066579;
 
-  string regionalcertificatename = 431716941;
+  optional string regionalcertificatename = 431716941;
 
-  string regionaldomainname = 198256560;
+  optional string regionaldomainname = 198256560;
 
-  string regionalhostedzoneid = 467276949;
+  optional string regionalhostedzoneid = 467276949;
 
   RoutingMode routingmode = 506342119;
 
@@ -1795,13 +1795,13 @@ message DomainName {
 
 message DomainNameAccessAssociation {
 
-  string accessassociationsource = 328257828;
+  optional string accessassociationsource = 328257828;
 
   AccessAssociationSourceType accessassociationsourcetype = 176397628;
 
-  string domainnameaccessassociationarn = 281017927;
+  optional string domainnameaccessassociationarn = 281017927;
 
-  string domainnamearn = 244019094;
+  optional string domainnamearn = 244019094;
 
   map<string, string> tags = 337046433;
 
@@ -1813,7 +1813,7 @@ message DomainNameAccessAssociations {
 
   repeated DomainNameAccessAssociation items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -1843,7 +1843,7 @@ message DomainNames {
 
   repeated DomainName items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -1889,11 +1889,11 @@ enum EndpointType {
 
 message ExportResponse {
 
-  bytes body = 464157046 [(aws.http_payload) = true];
+  optional bytes body = 464157046 [(aws.http_payload) = true];
 
-  string contentdisposition = 375146466;
+  optional string contentdisposition = 375146466;
 
-  string contenttype = 281764659;
+  optional string contenttype = 281764659;
 
 }
 
@@ -1935,7 +1935,7 @@ message GatewayResponse {
 
   GatewayResponseType responsetype = 377935935;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -1995,7 +1995,7 @@ message GatewayResponses {
 
   repeated GatewayResponse items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2005,7 +2005,7 @@ message GatewayResponses {
 
 message GenerateClientCertificateRequest {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   map<string, string> tags = 337046433;
 
@@ -2037,15 +2037,15 @@ message GetApiKeyRequest {
 
 message GetApiKeysRequest {
 
-  string customerid = 227830269;
+  optional string customerid = 227830269;
 
   optional bool includevalues = 490347326;
 
   optional int32 limit = 316332341;
 
-  string namequery = 51018795;
+  optional string namequery = 51018795;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2069,7 +2069,7 @@ message GetAuthorizersRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2085,7 +2085,7 @@ message GetBasePathMappingRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
 }
 
@@ -2097,11 +2097,11 @@ message GetBasePathMappingsRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2123,7 +2123,7 @@ message GetClientCertificatesRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2149,7 +2149,7 @@ message GetDeploymentsRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2177,11 +2177,11 @@ message GetDocumentationPartsRequest {
 
   LocationStatusType locationstatus = 532215305;
 
-  string namequery = 51018795;
+  optional string namequery = 51018795;
 
-  string path = 75975991;
+  optional string path = 75975991;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2209,7 +2209,7 @@ message GetDocumentationVersionsRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2221,7 +2221,7 @@ message GetDomainNameAccessAssociationsRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   ResourceOwner resourceowner = 259175301;
 
@@ -2235,7 +2235,7 @@ message GetDomainNameRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
 }
 
@@ -2247,7 +2247,7 @@ message GetDomainNamesRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   ResourceOwner resourceowner = 259175301;
 
@@ -2259,7 +2259,7 @@ message GetDomainNamesRequest {
 
 message GetExportRequest {
 
-  string accepts = 192079791;
+  optional string accepts = 192079791;
 
   string exporttype = 243495788;
 
@@ -2291,7 +2291,7 @@ message GetGatewayResponsesRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2391,7 +2391,7 @@ message GetModelsRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2417,7 +2417,7 @@ message GetRequestValidatorsRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2447,7 +2447,7 @@ message GetResourcesRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string restapiid = 383799833;
 
@@ -2471,7 +2471,7 @@ message GetRestApisRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2509,7 +2509,7 @@ message GetSdkTypesRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2531,7 +2531,7 @@ message GetStageRequest {
 
 message GetStagesRequest {
 
-  string deploymentid = 439369188;
+  optional string deploymentid = 439369188;
 
   string restapiid = 383799833;
 
@@ -2545,7 +2545,7 @@ message GetTagsRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string resourcearn = 67806797;
 
@@ -2571,9 +2571,9 @@ message GetUsagePlanKeysRequest {
 
   optional int32 limit = 316332341;
 
-  string namequery = 51018795;
+  optional string namequery = 51018795;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string usageplanid = 509179991;
 
@@ -2595,11 +2595,11 @@ message GetUsagePlanRequest {
 
 message GetUsagePlansRequest {
 
-  string keyid = 479913282;
+  optional string keyid = 479913282;
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2611,11 +2611,11 @@ message GetUsageRequest {
 
   string enddate = 384831215;
 
-  string keyid = 479913282;
+  optional string keyid = 479913282;
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
   string startdate = 364840732;
 
@@ -2641,7 +2641,7 @@ message GetVpcLinksRequest {
 
   optional int32 limit = 316332341;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2697,23 +2697,23 @@ message Integration {
 
   repeated string cachekeyparameters = 481441313;
 
-  string cachenamespace = 85102753;
+  optional string cachenamespace = 85102753;
 
-  string connectionid = 450027965;
+  optional string connectionid = 450027965;
 
   ConnectionType connectiontype = 336253170;
 
   ContentHandlingStrategy contenthandling = 533182832;
 
-  string credentials = 150838226;
+  optional string credentials = 150838226;
 
-  string httpmethod = 115276273;
+  optional string httpmethod = 115276273;
 
   map<string, IntegrationResponse> integrationresponses = 386580464;
 
-  string integrationtarget = 17646705;
+  optional string integrationtarget = 17646705;
 
-  string passthroughbehavior = 310796908;
+  optional string passthroughbehavior = 310796908;
 
   map<string, string> requestparameters = 523499939;
 
@@ -2727,7 +2727,7 @@ message Integration {
 
   IntegrationType type = 287830350;
 
-  string uri = 395269118;
+  optional string uri = 395269118;
 
 }
 
@@ -2743,9 +2743,9 @@ message IntegrationResponse {
 
   map<string, string> responsetemplates = 107376570;
 
-  string selectionpattern = 470634042;
+  optional string selectionpattern = 470634042;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -2781,9 +2781,9 @@ enum IpAddressType {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string retryafterseconds = 436039555;
+  optional string retryafterseconds = 436039555;
 
 }
 
@@ -2807,23 +2807,23 @@ message Method {
 
   repeated string authorizationscopes = 423149932;
 
-  string authorizationtype = 387986911;
+  optional string authorizationtype = 387986911;
 
-  string authorizerid = 111773148;
+  optional string authorizerid = 111773148;
 
-  string httpmethod = 115276273;
+  optional string httpmethod = 115276273;
 
   Integration methodintegration = 518245059;
 
   map<string, MethodResponse> methodresponses = 231818421;
 
-  string operationname = 178909574;
+  optional string operationname = 178909574;
 
   map<string, string> requestmodels = 397252853;
 
   map<string, bool> requestparameters = 523499939;
 
-  string requestvalidatorid = 517546134;
+  optional string requestvalidatorid = 517546134;
 
 }
 
@@ -2837,7 +2837,7 @@ message MethodResponse {
 
   map<string, bool> responseparameters = 64271839;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -2855,7 +2855,7 @@ message MethodSetting {
 
   optional bool datatraceenabled = 363519852;
 
-  string logginglevel = 59396637;
+  optional string logginglevel = 59396637;
 
   optional bool metricsenabled = 142460292;
 
@@ -2863,7 +2863,7 @@ message MethodSetting {
 
   optional int32 throttlingburstlimit = 402901688;
 
-  double throttlingratelimit = 371718088;
+  optional double throttlingratelimit = 371718088;
 
   UnauthorizedCacheControlHeaderStrategy unauthorizedcachecontrolheaderstrategy = 476741277;
 
@@ -2877,7 +2877,7 @@ message MethodSnapshot {
 
   optional bool apikeyrequired = 435360152;
 
-  string authorizationtype = 387986911;
+  optional string authorizationtype = 387986911;
 
 }
 
@@ -2887,15 +2887,15 @@ message MethodSnapshot {
 
 message Model {
 
-  string contenttype = 281764659;
+  optional string contenttype = 281764659;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string schema = 310182711;
+  optional string schema = 310182711;
 
 }
 
@@ -2907,7 +2907,7 @@ message Models {
 
   repeated Model items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -2917,9 +2917,9 @@ message Models {
 
 message MutualTlsAuthentication {
 
-  string truststoreuri = 120246545;
+  optional string truststoreuri = 120246545;
 
-  string truststoreversion = 119080291;
+  optional string truststoreversion = 119080291;
 
   repeated string truststorewarnings = 420536820;
 
@@ -2931,9 +2931,9 @@ message MutualTlsAuthentication {
 
 message MutualTlsAuthenticationInput {
 
-  string truststoreuri = 120246545;
+  optional string truststoreuri = 120246545;
 
-  string truststoreversion = 119080291;
+  optional string truststoreversion = 119080291;
 
 }
 
@@ -2943,7 +2943,7 @@ message MutualTlsAuthenticationInput {
 
 message NotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2971,13 +2971,13 @@ enum Op {
 
 message PatchOperation {
 
-  string from = 365789302;
+  optional string from = 365789302;
 
   Op op = 523513003;
 
-  string path = 75975991;
+  optional string path = 75975991;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -2995,7 +2995,7 @@ message PutGatewayResponseRequest {
 
   string restapiid = 383799833;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -3007,23 +3007,23 @@ message PutIntegrationRequest {
 
   repeated string cachekeyparameters = 481441313;
 
-  string cachenamespace = 85102753;
+  optional string cachenamespace = 85102753;
 
-  string connectionid = 450027965;
+  optional string connectionid = 450027965;
 
   ConnectionType connectiontype = 336253170;
 
   ContentHandlingStrategy contenthandling = 533182832;
 
-  string credentials = 150838226;
+  optional string credentials = 150838226;
 
   string httpmethod = 115276273;
 
-  string integrationhttpmethod = 355314073;
+  optional string integrationhttpmethod = 355314073;
 
-  string integrationtarget = 17646705;
+  optional string integrationtarget = 17646705;
 
-  string passthroughbehavior = 310796908;
+  optional string passthroughbehavior = 310796908;
 
   map<string, string> requestparameters = 523499939;
 
@@ -3041,7 +3041,7 @@ message PutIntegrationRequest {
 
   IntegrationType type = 287830350;
 
-  string uri = 395269118;
+  optional string uri = 395269118;
 
 }
 
@@ -3063,7 +3063,7 @@ message PutIntegrationResponseRequest {
 
   string restapiid = 383799833;
 
-  string selectionpattern = 470634042;
+  optional string selectionpattern = 470634042;
 
   string statuscode = 299352223;
 
@@ -3081,17 +3081,17 @@ message PutMethodRequest {
 
   string authorizationtype = 387986911;
 
-  string authorizerid = 111773148;
+  optional string authorizerid = 111773148;
 
   string httpmethod = 115276273;
 
-  string operationname = 178909574;
+  optional string operationname = 178909574;
 
   map<string, string> requestmodels = 397252853;
 
   map<string, bool> requestparameters = 523499939;
 
-  string requestvalidatorid = 517546134;
+  optional string requestvalidatorid = 517546134;
 
   string resourceid = 318922417;
 
@@ -3189,9 +3189,9 @@ message RejectDomainNameAccessAssociationRequest {
 
 message RequestValidator {
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   optional bool validaterequestbody = 397505841;
 
@@ -3207,7 +3207,7 @@ message RequestValidators {
 
   repeated RequestValidator items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -3217,13 +3217,13 @@ message RequestValidators {
 
 message Resource {
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string parentid = 106050857;
+  optional string parentid = 106050857;
 
-  string path = 75975991;
+  optional string path = 75975991;
 
-  string pathpart = 487915984;
+  optional string pathpart = 487915984;
 
   map<string, Method> resourcemethods = 307700458;
 
@@ -3247,7 +3247,7 @@ message Resources {
 
   repeated Resource items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -3271,13 +3271,13 @@ message RestApi {
 
   ApiStatus apistatus = 200568018;
 
-  string apistatusmessage = 353995209;
+  optional string apistatusmessage = 353995209;
 
   repeated string binarymediatypes = 406416146;
 
-  string createddate = 53061200;
+  optional string createddate = 53061200;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
   optional bool disableexecuteapiendpoint = 148140696;
 
@@ -3285,21 +3285,21 @@ message RestApi {
 
   EndpointConfiguration endpointconfiguration = 487543735;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   optional int32 minimumcompressionsize = 254902719;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string policy = 247528064;
+  optional string policy = 247528064;
 
-  string rootresourceid = 360157585;
+  optional string rootresourceid = 360157585;
 
   SecurityPolicy securitypolicy = 491792990;
 
   map<string, string> tags = 337046433;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
   repeated string warnings = 185617301;
 
@@ -3313,7 +3313,7 @@ message RestApis {
 
   repeated RestApi items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -3335,13 +3335,13 @@ enum RoutingMode {
 
 message SdkConfigurationProperty {
 
-  string defaultvalue = 403858624;
+  optional string defaultvalue = 403858624;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string friendlyname = 39239102;
+  optional string friendlyname = 39239102;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   optional bool required = 76318241;
 
@@ -3353,11 +3353,11 @@ message SdkConfigurationProperty {
 
 message SdkResponse {
 
-  bytes body = 464157046 [(aws.http_payload) = true];
+  optional bytes body = 464157046 [(aws.http_payload) = true];
 
-  string contentdisposition = 375146466;
+  optional string contentdisposition = 375146466;
 
-  string contenttype = 281764659;
+  optional string contenttype = 281764659;
 
 }
 
@@ -3369,11 +3369,11 @@ message SdkType {
 
   repeated SdkConfigurationProperty configurationproperties = 113650241;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string friendlyname = 39239102;
+  optional string friendlyname = 39239102;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -3423,9 +3423,9 @@ enum SecurityPolicy {
 
 message ServiceUnavailableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string retryafterseconds = 436039555;
+  optional string retryafterseconds = 436039555;
 
 }
 
@@ -3445,21 +3445,21 @@ message Stage {
 
   CanarySettings canarysettings = 285544261;
 
-  string clientcertificateid = 276222909;
+  optional string clientcertificateid = 276222909;
 
-  string createddate = 53061200;
+  optional string createddate = 53061200;
 
-  string deploymentid = 439369188;
+  optional string deploymentid = 439369188;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string documentationversion = 167009804;
+  optional string documentationversion = 167009804;
 
-  string lastupdateddate = 448453361;
+  optional string lastupdateddate = 448453361;
 
   map<string, MethodSetting> methodsettings = 30387838;
 
-  string stagename = 9563663;
+  optional string stagename = 9563663;
 
   map<string, string> tags = 337046433;
 
@@ -3467,7 +3467,7 @@ message Stage {
 
   map<string, string> variables = 162226883;
 
-  string webaclarn = 243701763;
+  optional string webaclarn = 243701763;
 
 }
 
@@ -3477,9 +3477,9 @@ message Stage {
 
 message StageKey {
 
-  string restapiid = 383799833;
+  optional string restapiid = 383799833;
 
-  string stagename = 9563663;
+  optional string stagename = 9563663;
 
 }
 
@@ -3521,7 +3521,7 @@ message Tags {
 
 message Template {
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -3535,13 +3535,13 @@ message TestInvokeAuthorizerRequest {
 
   string authorizerid = 111773148;
 
-  string body = 464157046;
+  optional string body = 464157046;
 
   map<string, string> headers = 375773674;
 
   map<string, string> multivalueheaders = 142421420;
 
-  string pathwithquerystring = 159950736;
+  optional string pathwithquerystring = 159950736;
 
   string restapiid = 383799833;
 
@@ -3563,11 +3563,11 @@ message TestInvokeAuthorizerResponse {
 
   optional int64 latency = 318473050;
 
-  string log = 525422930;
+  optional string log = 525422930;
 
-  string policy = 247528064;
+  optional string policy = 247528064;
 
-  string principalid = 350710285;
+  optional string principalid = 350710285;
 
 }
 
@@ -3577,9 +3577,9 @@ message TestInvokeAuthorizerResponse {
 
 message TestInvokeMethodRequest {
 
-  string body = 464157046;
+  optional string body = 464157046;
 
-  string clientcertificateid = 276222909;
+  optional string clientcertificateid = 276222909;
 
   map<string, string> headers = 375773674;
 
@@ -3587,7 +3587,7 @@ message TestInvokeMethodRequest {
 
   map<string, string> multivalueheaders = 142421420;
 
-  string pathwithquerystring = 159950736;
+  optional string pathwithquerystring = 159950736;
 
   string resourceid = 318922417;
 
@@ -3603,13 +3603,13 @@ message TestInvokeMethodRequest {
 
 message TestInvokeMethodResponse {
 
-  string body = 464157046;
+  optional string body = 464157046;
 
   map<string, string> headers = 375773674;
 
   optional int64 latency = 318473050;
 
-  string log = 525422930;
+  optional string log = 525422930;
 
   map<string, string> multivalueheaders = 142421420;
 
@@ -3625,7 +3625,7 @@ message ThrottleSettings {
 
   optional int32 burstlimit = 37855041;
 
-  double ratelimit = 505789539;
+  optional double ratelimit = 505789539;
 
 }
 
@@ -3645,9 +3645,9 @@ message TlsConfig {
 
 message TooManyRequestsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
-  string retryafterseconds = 436039555;
+  optional string retryafterseconds = 436039555;
 
 }
 
@@ -3669,7 +3669,7 @@ enum UnauthorizedCacheControlHeaderStrategy {
 
 message UnauthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3731,7 +3731,7 @@ message UpdateBasePathMappingRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
   repeated PatchOperation patchoperations = 201637420;
 
@@ -3799,7 +3799,7 @@ message UpdateDomainNameRequest {
 
   string domainname = 390326667;
 
-  string domainnameid = 298270248;
+  optional string domainnameid = 298270248;
 
   repeated PatchOperation patchoperations = 201637420;
 
@@ -3999,15 +3999,15 @@ message UpdateVpcLinkRequest {
 
 message Usage {
 
-  string enddate = 384831215;
+  optional string enddate = 384831215;
 
   map<string, string> items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
-  string startdate = 364840732;
+  optional string startdate = 364840732;
 
-  string usageplanid = 509179991;
+  optional string usageplanid = 509179991;
 
 }
 
@@ -4019,13 +4019,13 @@ message UsagePlan {
 
   repeated ApiStage apistages = 64558449;
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string productcode = 533381226;
+  optional string productcode = 533381226;
 
   QuotaSettings quota = 243824012;
 
@@ -4041,13 +4041,13 @@ message UsagePlan {
 
 message UsagePlanKey {
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string type = 287830350;
+  optional string type = 287830350;
 
-  string value = 39769035;
+  optional string value = 39769035;
 
 }
 
@@ -4059,7 +4059,7 @@ message UsagePlanKeys {
 
   repeated UsagePlanKey items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -4071,7 +4071,7 @@ message UsagePlans {
 
   repeated UsagePlan items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 
@@ -4081,15 +4081,15 @@ message UsagePlans {
 
 message VpcLink {
 
-  string description = 342834026;
+  optional string description = 342834026;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
   VpcLinkStatus status = 441153520;
 
-  string statusmessage = 474462255;
+  optional string statusmessage = 474462255;
 
   map<string, string> tags = 337046433;
 
@@ -4119,7 +4119,7 @@ message VpcLinks {
 
   repeated VpcLink items = 444150672;
 
-  string position = 323964427;
+  optional string position = 323964427;
 
 }
 

@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -26,10 +27,10 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 	}
 
 	in := &ApiKeyInput{
-		Name:               req.Msg.Name,
-		Description:        req.Msg.Description,
-		CustomerId:         req.Msg.Customerid,
-		Value:              req.Msg.Value,
+		Name:               req.Msg.GetName(),
+		Description:        req.Msg.GetDescription(),
+		CustomerId:         req.Msg.GetCustomerid(),
+		Value:              req.Msg.GetValue(),
 		Enabled:            enabled,
 		GenerateDistinctId: req.Msg.Generatedistinctid,
 	}
@@ -40,7 +41,7 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 
 	for _, sk := range req.Msg.Stagekeys {
 		if sk != nil {
-			in.StageKeys = append(in.StageKeys, sk.Restapiid+"/"+sk.Stagename)
+			in.StageKeys = append(in.StageKeys, sk.GetRestapiid()+"/"+sk.GetStagename())
 		}
 	}
 
@@ -57,7 +58,7 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	result, err := h.service.listApiKeysCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
+	result, err := h.service.listApiKeysCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -68,7 +69,7 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 	}
 	resp := &pb.ApiKeys{Items: items}
 	if result.NextMarker != "" {
-		resp.Position = result.NextMarker
+		resp.Position = proto.String(result.NextMarker)
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -106,8 +107,8 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 	}
 
 	in := &UsagePlanInput{
-		Name:        req.Msg.Name,
-		Description: req.Msg.Description,
+		Name:        req.Msg.GetName(),
+		Description: req.Msg.GetDescription(),
 	}
 	for _, as := range req.Msg.Apistages {
 		if as != nil {
@@ -125,7 +126,7 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 	if req.Msg.Throttle != nil {
 		in.Throttle = &ThrottleInput{
 			BurstLimit: int64(req.Msg.Throttle.GetBurstlimit()),
-			RateLimit:  req.Msg.Throttle.Ratelimit,
+			RateLimit:  req.Msg.Throttle.GetRatelimit(),
 		}
 	}
 
@@ -142,7 +143,7 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	result, err := h.service.listUsagePlansCore(stores, int(req.Msg.GetLimit()), req.Msg.Position)
+	result, err := h.service.listUsagePlansCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -153,7 +154,7 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 	}
 	resp := &pb.UsagePlans{Items: items}
 	if result.NextMarker != "" {
-		resp.Position = result.NextMarker
+		resp.Position = proto.String(result.NextMarker)
 	}
 	return connect.NewResponse(resp), nil
 }
@@ -206,7 +207,7 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	result, err := h.service.listUsagePlanKeysCore(stores, req.Msg.Usageplanid, int(req.Msg.GetLimit()), req.Msg.Position)
+	result, err := h.service.listUsagePlanKeysCore(stores, req.Msg.Usageplanid, int(req.Msg.GetLimit()), req.Msg.GetPosition())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -217,7 +218,7 @@ func (h *AdminHandler) GetUsagePlanKeys(ctx context.Context, req *connect.Reques
 	}
 	resp := &pb.UsagePlanKeys{Items: items}
 	if result.NextMarker != "" {
-		resp.Position = result.NextMarker
+		resp.Position = proto.String(result.NextMarker)
 	}
 	return connect.NewResponse(resp), nil
 }

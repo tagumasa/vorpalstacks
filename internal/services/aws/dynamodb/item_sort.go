@@ -1,7 +1,6 @@
 package dynamodb
 
 import (
-	"bytes"
 	"sort"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -52,24 +51,6 @@ func sortItemsBySortKeyWithIndex(table *dbstore.Table, items []*dbstore.Item, in
 	sortItemsBySortKeyWithIndexDirection(table, items, indexName, true)
 }
 
-func compareAttributeValuesGeneric(avI, avJ *dbstore.AttributeValue) int {
-	if avI.N != nil && avJ.N != nil {
-		return compareNumberStrings(*avI.N, *avJ.N)
-	}
-	if avI.S != nil && avJ.S != nil {
-		if *avI.S < *avJ.S {
-			return -1
-		} else if *avI.S > *avJ.S {
-			return 1
-		}
-		return 0
-	}
-	if avI.B != nil && avJ.B != nil {
-		return bytes.Compare(avI.B, avJ.B)
-	}
-	return 0
-}
-
 func sortItemsReverseBySortKeyWithIndex(table *dbstore.Table, items []*dbstore.Item, indexName string) {
 	sortItemsBySortKeyWithIndexDirection(table, items, indexName, false)
 }
@@ -96,13 +77,13 @@ func sortItemsBySortKeyWithIndexDirection(table *dbstore.Table, items []*dbstore
 			return false
 		}
 
-		cmp := compareAttributeValuesGeneric(avI, avJ)
+		cmp := genericCompare(avI, avJ)
 
 		if cmp == 0 && basePK != "" {
 			pkI := items[i].Attributes[basePK]
 			pkJ := items[j].Attributes[basePK]
 			if pkI != nil && pkJ != nil {
-				cmp = compareAttributeValuesGeneric(pkI, pkJ)
+				cmp = genericCompare(pkI, pkJ)
 			}
 		}
 
@@ -110,7 +91,7 @@ func sortItemsBySortKeyWithIndexDirection(table *dbstore.Table, items []*dbstore
 			skI := items[i].Attributes[baseSK]
 			skJ := items[j].Attributes[baseSK]
 			if skI != nil && skJ != nil {
-				cmp = compareAttributeValuesGeneric(skI, skJ)
+				cmp = genericCompare(skI, skJ)
 			}
 		}
 

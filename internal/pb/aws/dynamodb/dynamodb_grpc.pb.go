@@ -67,6 +67,7 @@ const (
 	DynamoDBService_RestoreTableFromBackup_FullMethodName              = "/dynamodb.DynamoDBService/RestoreTableFromBackup"
 	DynamoDBService_RestoreTableToPointInTime_FullMethodName           = "/dynamodb.DynamoDBService/RestoreTableToPointInTime"
 	DynamoDBService_Scan_FullMethodName                                = "/dynamodb.DynamoDBService/Scan"
+	DynamoDBService_SearchVectors_FullMethodName                       = "/dynamodb.DynamoDBService/SearchVectors"
 	DynamoDBService_TagResource_FullMethodName                         = "/dynamodb.DynamoDBService/TagResource"
 	DynamoDBService_TransactGetItems_FullMethodName                    = "/dynamodb.DynamoDBService/TransactGetItems"
 	DynamoDBService_TransactWriteItems_FullMethodName                  = "/dynamodb.DynamoDBService/TransactWriteItems"
@@ -264,6 +265,10 @@ type DynamoDBServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	Scan(ctx context.Context, in *ScanInput, opts ...grpc.CallOption) (*ScanOutput, error)
+	// Performs a vector similarity search on a vector index associated with an Amazon DynamoDB table, and returns the most similar items sorted by similarity score based on the distance function configur...
+	// HTTP:
+	// Protocol: awsJson1_0
+	SearchVectors(ctx context.Context, in *SearchVectorsInput, opts ...grpc.CallOption) (*SearchVectorsOutput, error)
 	// Associate a set of tags with an Amazon DynamoDB resource. You can then activate these user-defined tags so that they appear on the Billing and Cost Management console for cost allocation tracking. ...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -766,6 +771,16 @@ func (c *dynamoDBServiceClient) Scan(ctx context.Context, in *ScanInput, opts ..
 	return out, nil
 }
 
+func (c *dynamoDBServiceClient) SearchVectors(ctx context.Context, in *SearchVectorsInput, opts ...grpc.CallOption) (*SearchVectorsOutput, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchVectorsOutput)
+	err := c.cc.Invoke(ctx, DynamoDBService_SearchVectors_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *dynamoDBServiceClient) TagResource(ctx context.Context, in *TagResourceInput, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
@@ -1078,6 +1093,10 @@ type DynamoDBServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	Scan(context.Context, *ScanInput) (*ScanOutput, error)
+	// Performs a vector similarity search on a vector index associated with an Amazon DynamoDB table, and returns the most similar items sorted by similarity score based on the distance function configur...
+	// HTTP:
+	// Protocol: awsJson1_0
+	SearchVectors(context.Context, *SearchVectorsInput) (*SearchVectorsOutput, error)
 	// Associate a set of tags with an Amazon DynamoDB resource. You can then activate these user-defined tags so that they appear on the Billing and Cost Management console for cost allocation tracking. ...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -1271,6 +1290,9 @@ func (UnimplementedDynamoDBServiceServer) RestoreTableToPointInTime(context.Cont
 }
 func (UnimplementedDynamoDBServiceServer) Scan(context.Context, *ScanInput) (*ScanOutput, error) {
 	return nil, status.Error(codes.Unimplemented, "method Scan not implemented")
+}
+func (UnimplementedDynamoDBServiceServer) SearchVectors(context.Context, *SearchVectorsInput) (*SearchVectorsOutput, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchVectors not implemented")
 }
 func (UnimplementedDynamoDBServiceServer) TagResource(context.Context, *TagResourceInput) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method TagResource not implemented")
@@ -2124,6 +2146,24 @@ func _DynamoDBService_Scan_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DynamoDBService_SearchVectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchVectorsInput)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DynamoDBServiceServer).SearchVectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DynamoDBService_SearchVectors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DynamoDBServiceServer).SearchVectors(ctx, req.(*SearchVectorsInput))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _DynamoDBService_TagResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TagResourceInput)
 	if err := dec(in); err != nil {
@@ -2540,6 +2580,10 @@ var DynamoDBService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Scan",
 			Handler:    _DynamoDBService_Scan_Handler,
+		},
+		{
+			MethodName: "SearchVectors",
+			Handler:    _DynamoDBService_SearchVectors_Handler,
 		},
 		{
 			MethodName: "TagResource",

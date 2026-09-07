@@ -23,23 +23,46 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ACMService_AddTagsToCertificate_FullMethodName      = "/acm.ACMService/AddTagsToCertificate"
-	ACMService_DeleteCertificate_FullMethodName         = "/acm.ACMService/DeleteCertificate"
-	ACMService_DescribeCertificate_FullMethodName       = "/acm.ACMService/DescribeCertificate"
-	ACMService_ExportCertificate_FullMethodName         = "/acm.ACMService/ExportCertificate"
-	ACMService_GetAccountConfiguration_FullMethodName   = "/acm.ACMService/GetAccountConfiguration"
-	ACMService_GetCertificate_FullMethodName            = "/acm.ACMService/GetCertificate"
-	ACMService_ImportCertificate_FullMethodName         = "/acm.ACMService/ImportCertificate"
-	ACMService_ListCertificates_FullMethodName          = "/acm.ACMService/ListCertificates"
-	ACMService_ListTagsForCertificate_FullMethodName    = "/acm.ACMService/ListTagsForCertificate"
-	ACMService_PutAccountConfiguration_FullMethodName   = "/acm.ACMService/PutAccountConfiguration"
-	ACMService_RemoveTagsFromCertificate_FullMethodName = "/acm.ACMService/RemoveTagsFromCertificate"
-	ACMService_RenewCertificate_FullMethodName          = "/acm.ACMService/RenewCertificate"
-	ACMService_RequestCertificate_FullMethodName        = "/acm.ACMService/RequestCertificate"
-	ACMService_ResendValidationEmail_FullMethodName     = "/acm.ACMService/ResendValidationEmail"
-	ACMService_RevokeCertificate_FullMethodName         = "/acm.ACMService/RevokeCertificate"
-	ACMService_SearchCertificates_FullMethodName        = "/acm.ACMService/SearchCertificates"
-	ACMService_UpdateCertificateOptions_FullMethodName  = "/acm.ACMService/UpdateCertificateOptions"
+	ACMService_AddTagsToCertificate_FullMethodName                     = "/acm.ACMService/AddTagsToCertificate"
+	ACMService_CreateAcmeDomainValidation_FullMethodName               = "/acm.ACMService/CreateAcmeDomainValidation"
+	ACMService_CreateAcmeEndpoint_FullMethodName                       = "/acm.ACMService/CreateAcmeEndpoint"
+	ACMService_CreateAcmeExternalAccountBinding_FullMethodName         = "/acm.ACMService/CreateAcmeExternalAccountBinding"
+	ACMService_DeleteAcmeDomainValidation_FullMethodName               = "/acm.ACMService/DeleteAcmeDomainValidation"
+	ACMService_DeleteAcmeEndpoint_FullMethodName                       = "/acm.ACMService/DeleteAcmeEndpoint"
+	ACMService_DeleteAcmeExternalAccountBinding_FullMethodName         = "/acm.ACMService/DeleteAcmeExternalAccountBinding"
+	ACMService_DeleteCertificate_FullMethodName                        = "/acm.ACMService/DeleteCertificate"
+	ACMService_DescribeAcmeAccount_FullMethodName                      = "/acm.ACMService/DescribeAcmeAccount"
+	ACMService_DescribeAcmeDomainValidation_FullMethodName             = "/acm.ACMService/DescribeAcmeDomainValidation"
+	ACMService_DescribeAcmeEndpoint_FullMethodName                     = "/acm.ACMService/DescribeAcmeEndpoint"
+	ACMService_DescribeAcmeExternalAccountBinding_FullMethodName       = "/acm.ACMService/DescribeAcmeExternalAccountBinding"
+	ACMService_DescribeCertificate_FullMethodName                      = "/acm.ACMService/DescribeCertificate"
+	ACMService_ExportCertificate_FullMethodName                        = "/acm.ACMService/ExportCertificate"
+	ACMService_GetAccountConfiguration_FullMethodName                  = "/acm.ACMService/GetAccountConfiguration"
+	ACMService_GetAcmeExternalAccountBindingCredentials_FullMethodName = "/acm.ACMService/GetAcmeExternalAccountBindingCredentials"
+	ACMService_GetCertificate_FullMethodName                           = "/acm.ACMService/GetCertificate"
+	ACMService_ImportCertificate_FullMethodName                        = "/acm.ACMService/ImportCertificate"
+	ACMService_ListAcmeAccounts_FullMethodName                         = "/acm.ACMService/ListAcmeAccounts"
+	ACMService_ListAcmeDomainValidations_FullMethodName                = "/acm.ACMService/ListAcmeDomainValidations"
+	ACMService_ListAcmeEndpoints_FullMethodName                        = "/acm.ACMService/ListAcmeEndpoints"
+	ACMService_ListAcmeExternalAccountBindings_FullMethodName          = "/acm.ACMService/ListAcmeExternalAccountBindings"
+	ACMService_ListCertificateDomainValidations_FullMethodName         = "/acm.ACMService/ListCertificateDomainValidations"
+	ACMService_ListCertificates_FullMethodName                         = "/acm.ACMService/ListCertificates"
+	ACMService_ListTagsForCertificate_FullMethodName                   = "/acm.ACMService/ListTagsForCertificate"
+	ACMService_ListTagsForResource_FullMethodName                      = "/acm.ACMService/ListTagsForResource"
+	ACMService_PutAccountConfiguration_FullMethodName                  = "/acm.ACMService/PutAccountConfiguration"
+	ACMService_RemoveTagsFromCertificate_FullMethodName                = "/acm.ACMService/RemoveTagsFromCertificate"
+	ACMService_RenewCertificate_FullMethodName                         = "/acm.ACMService/RenewCertificate"
+	ACMService_RequestCertificate_FullMethodName                       = "/acm.ACMService/RequestCertificate"
+	ACMService_ResendValidationEmail_FullMethodName                    = "/acm.ACMService/ResendValidationEmail"
+	ACMService_RevokeAcmeAccount_FullMethodName                        = "/acm.ACMService/RevokeAcmeAccount"
+	ACMService_RevokeAcmeExternalAccountBinding_FullMethodName         = "/acm.ACMService/RevokeAcmeExternalAccountBinding"
+	ACMService_RevokeCertificate_FullMethodName                        = "/acm.ACMService/RevokeCertificate"
+	ACMService_SearchCertificates_FullMethodName                       = "/acm.ACMService/SearchCertificates"
+	ACMService_TagResource_FullMethodName                              = "/acm.ACMService/TagResource"
+	ACMService_UntagResource_FullMethodName                            = "/acm.ACMService/UntagResource"
+	ACMService_UpdateAcmeDomainValidation_FullMethodName               = "/acm.ACMService/UpdateAcmeDomainValidation"
+	ACMService_UpdateAcmeEndpoint_FullMethodName                       = "/acm.ACMService/UpdateAcmeEndpoint"
+	ACMService_UpdateCertificateOptions_FullMethodName                 = "/acm.ACMService/UpdateCertificateOptions"
 )
 
 // ACMServiceClient is the client API for ACMService service.
@@ -52,10 +75,50 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(ctx context.Context, in *AddTagsToCertificateRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Creates a domain validation for an ACME endpoint. Domain validations authorize the endpoint to issue certificates for specified domain names. You configure prevalidation to prove domain ownership.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeDomainValidation(ctx context.Context, in *CreateAcmeDomainValidationRequest, opts ...grpc.CallOption) (*CreateAcmeDomainValidationResponse, error)
+	// Creates an ACME endpoint, which is a managed ACME server with a unique endpoint URL. After creation, ACME clients can use the endpoint URL to automate certificate issuance using the ACME protocol.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeEndpoint(ctx context.Context, in *CreateAcmeEndpointRequest, opts ...grpc.CallOption) (*CreateAcmeEndpointResponse, error)
+	// Creates an external account binding (EAB) for an ACME endpoint. An EAB provides credentials that authorize an ACME client to register an account with the endpoint. Each EAB is associated with an IA...
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeExternalAccountBinding(ctx context.Context, in *CreateAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*CreateAcmeExternalAccountBindingResponse, error)
+	// Deletes a domain validation. After deletion, the ACME endpoint can no longer issue certificates for the associated domain.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeDomainValidation(ctx context.Context, in *DeleteAcmeDomainValidationRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Deletes an ACME endpoint. After deletion, the endpoint URL is no longer accessible and ACME clients cannot issue certificates through it. Any existing external account bindings and domain validatio...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeEndpoint(ctx context.Context, in *DeleteAcmeEndpointRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Deletes an external account binding. Previously fetched credentials for this binding will no longer be usable for account registration. A deleted binding cannot be recovered.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeExternalAccountBinding(ctx context.Context, in *DeleteAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(ctx context.Context, in *DeleteCertificateRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Returns detailed metadata about the specified ACME account, including its status, public key thumbprint, and associated external account binding.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeAccount(ctx context.Context, in *DescribeAcmeAccountRequest, opts ...grpc.CallOption) (*DescribeAcmeAccountResponse, error)
+	// Returns detailed metadata about the specified domain validation, including its status, domain scope, and DNS resource records required for validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeDomainValidation(ctx context.Context, in *DescribeAcmeDomainValidationRequest, opts ...grpc.CallOption) (*DescribeAcmeDomainValidationResponse, error)
+	// Returns detailed metadata about the specified ACME endpoint, including its status, URL, authorization behavior, and certificate authority configuration.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeEndpoint(ctx context.Context, in *DescribeAcmeEndpointRequest, opts ...grpc.CallOption) (*DescribeAcmeEndpointResponse, error)
+	// Returns detailed metadata about the specified external account binding, including the associated IAM role, expiration time, and usage history.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeExternalAccountBinding(ctx context.Context, in *DescribeAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*DescribeAcmeExternalAccountBindingResponse, error)
 	// Returns detailed metadata about the specified ACM certificate. If you have just created a certificate using the RequestCertificate action, there is a delay of several seconds before you can retriev...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -68,6 +131,10 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetAccountConfiguration(ctx context.Context, in *common.Empty, opts ...grpc.CallOption) (*GetAccountConfigurationResponse, error)
+	// Retrieves the key ID and MAC key credentials for an external account binding. These credentials are used by ACME clients during account registration to bind to the endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetAcmeExternalAccountBindingCredentials(ctx context.Context, in *GetAcmeExternalAccountBindingCredentialsRequest, opts ...grpc.CallOption) (*GetAcmeExternalAccountBindingCredentialsResponse, error)
 	// Retrieves a certificate and its certificate chain. The certificate may be either a public or private certificate issued using the ACM RequestCertificate action, or a certificate imported into ACM u...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -76,6 +143,26 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ImportCertificate(ctx context.Context, in *ImportCertificateRequest, opts ...grpc.CallOption) (*ImportCertificateResponse, error)
+	// Retrieves a list of ACME accounts registered with the specified ACME endpoint. ACME accounts are created when clients use external account binding credentials to register.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeAccounts(ctx context.Context, in *ListAcmeAccountsRequest, opts ...grpc.CallOption) (*ListAcmeAccountsResponse, error)
+	// Retrieves a list of domain validations for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeDomainValidations(ctx context.Context, in *ListAcmeDomainValidationsRequest, opts ...grpc.CallOption) (*ListAcmeDomainValidationsResponse, error)
+	// Retrieves a list of ACME endpoints in your account. Use this operation to view all configured ACME endpoints and their current status.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeEndpoints(ctx context.Context, in *ListAcmeEndpointsRequest, opts ...grpc.CallOption) (*ListAcmeEndpointsResponse, error)
+	// Retrieves a list of external account bindings for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeExternalAccountBindings(ctx context.Context, in *ListAcmeExternalAccountBindingsRequest, opts ...grpc.CallOption) (*ListAcmeExternalAccountBindingsResponse, error)
+	// Returns per-domain validation summaries for an ACM certificate. Each summary includes the domain name, the active validation configuration, and the requested validation configuration when a validat...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListCertificateDomainValidations(ctx context.Context, in *ListCertificateDomainValidationsRequest, opts ...grpc.CallOption) (*ListCertificateDomainValidationsResponse, error)
 	// Retrieves a list of certificate ARNs and domain names. You can request that only certificates that match a specific status be listed. You can also filter by specific attributes of the certificate. ...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -84,6 +171,10 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListTagsForCertificate(ctx context.Context, in *ListTagsForCertificateRequest, opts ...grpc.CallOption) (*ListTagsForCertificateResponse, error)
+	// Lists the tags associated with an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use ListTagsForCertificate instead. To ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListTagsForResource(ctx context.Context, in *ListTagsForResourceRequest, opts ...grpc.CallOption) (*ListTagsForResourceResponse, error)
 	// Adds or modifies account-level configurations in ACM. The supported configuration option is DaysBeforeExpiry. This option specifies the number of days prior to certificate expiration when ACM start...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -104,6 +195,14 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(ctx context.Context, in *ResendValidationEmailRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Revokes an ACME account, preventing it from requesting or revoking certificates. This operation is irreversible.
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeAccount(ctx context.Context, in *RevokeAcmeAccountRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Revokes an external account binding, preventing new ACME accounts from being registered using this binding. Existing ACME accounts that were previously registered using the binding are not affected...
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeExternalAccountBinding(ctx context.Context, in *RevokeAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -112,7 +211,23 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	SearchCertificates(ctx context.Context, in *SearchCertificatesRequest, opts ...grpc.CallOption) (*SearchCertificatesResponse, error)
-	// Updates a certificate. You can use this function to specify whether to export your certificate. Certificate transparency logging opt-out is no longer available. For more information, see Certificat...
+	// Adds one or more tags to an ACM resource. Tags are labels that you can use to identify and organize your Amazon Web Services resources. Each tag consists of a key and an optional value. Use this ac...
+	// HTTP:
+	// Protocol: awsJson1_1
+	TagResource(ctx context.Context, in *TagResourceRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Removes one or more tags from an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use RemoveTagsFromCertificate instead. To ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UntagResource(ctx context.Context, in *UntagResourceRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Updates the prevalidation configuration of an existing domain validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeDomainValidation(ctx context.Context, in *UpdateAcmeDomainValidationRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Updates the configuration of an existing ACME endpoint. You can change the authorization behavior, contact requirement, or certificate authority settings.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeEndpoint(ctx context.Context, in *UpdateAcmeEndpointRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Updates certificate options. You can use this operation to change the domain validation method or specify whether to export your certificate. For more information, see Migrate from email to DNS val...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateCertificateOptions(ctx context.Context, in *UpdateCertificateOptionsRequest, opts ...grpc.CallOption) (*common.Empty, error)
@@ -136,10 +251,110 @@ func (c *aCMServiceClient) AddTagsToCertificate(ctx context.Context, in *AddTags
 	return out, nil
 }
 
+func (c *aCMServiceClient) CreateAcmeDomainValidation(ctx context.Context, in *CreateAcmeDomainValidationRequest, opts ...grpc.CallOption) (*CreateAcmeDomainValidationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAcmeDomainValidationResponse)
+	err := c.cc.Invoke(ctx, ACMService_CreateAcmeDomainValidation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) CreateAcmeEndpoint(ctx context.Context, in *CreateAcmeEndpointRequest, opts ...grpc.CallOption) (*CreateAcmeEndpointResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAcmeEndpointResponse)
+	err := c.cc.Invoke(ctx, ACMService_CreateAcmeEndpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) CreateAcmeExternalAccountBinding(ctx context.Context, in *CreateAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*CreateAcmeExternalAccountBindingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAcmeExternalAccountBindingResponse)
+	err := c.cc.Invoke(ctx, ACMService_CreateAcmeExternalAccountBinding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DeleteAcmeDomainValidation(ctx context.Context, in *DeleteAcmeDomainValidationRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_DeleteAcmeDomainValidation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DeleteAcmeEndpoint(ctx context.Context, in *DeleteAcmeEndpointRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_DeleteAcmeEndpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DeleteAcmeExternalAccountBinding(ctx context.Context, in *DeleteAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_DeleteAcmeExternalAccountBinding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aCMServiceClient) DeleteCertificate(ctx context.Context, in *DeleteCertificateRequest, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
 	err := c.cc.Invoke(ctx, ACMService_DeleteCertificate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DescribeAcmeAccount(ctx context.Context, in *DescribeAcmeAccountRequest, opts ...grpc.CallOption) (*DescribeAcmeAccountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeAcmeAccountResponse)
+	err := c.cc.Invoke(ctx, ACMService_DescribeAcmeAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DescribeAcmeDomainValidation(ctx context.Context, in *DescribeAcmeDomainValidationRequest, opts ...grpc.CallOption) (*DescribeAcmeDomainValidationResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeAcmeDomainValidationResponse)
+	err := c.cc.Invoke(ctx, ACMService_DescribeAcmeDomainValidation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DescribeAcmeEndpoint(ctx context.Context, in *DescribeAcmeEndpointRequest, opts ...grpc.CallOption) (*DescribeAcmeEndpointResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeAcmeEndpointResponse)
+	err := c.cc.Invoke(ctx, ACMService_DescribeAcmeEndpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) DescribeAcmeExternalAccountBinding(ctx context.Context, in *DescribeAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*DescribeAcmeExternalAccountBindingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DescribeAcmeExternalAccountBindingResponse)
+	err := c.cc.Invoke(ctx, ACMService_DescribeAcmeExternalAccountBinding_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +391,16 @@ func (c *aCMServiceClient) GetAccountConfiguration(ctx context.Context, in *comm
 	return out, nil
 }
 
+func (c *aCMServiceClient) GetAcmeExternalAccountBindingCredentials(ctx context.Context, in *GetAcmeExternalAccountBindingCredentialsRequest, opts ...grpc.CallOption) (*GetAcmeExternalAccountBindingCredentialsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetAcmeExternalAccountBindingCredentialsResponse)
+	err := c.cc.Invoke(ctx, ACMService_GetAcmeExternalAccountBindingCredentials_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aCMServiceClient) GetCertificate(ctx context.Context, in *GetCertificateRequest, opts ...grpc.CallOption) (*GetCertificateResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCertificateResponse)
@@ -196,6 +421,56 @@ func (c *aCMServiceClient) ImportCertificate(ctx context.Context, in *ImportCert
 	return out, nil
 }
 
+func (c *aCMServiceClient) ListAcmeAccounts(ctx context.Context, in *ListAcmeAccountsRequest, opts ...grpc.CallOption) (*ListAcmeAccountsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAcmeAccountsResponse)
+	err := c.cc.Invoke(ctx, ACMService_ListAcmeAccounts_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) ListAcmeDomainValidations(ctx context.Context, in *ListAcmeDomainValidationsRequest, opts ...grpc.CallOption) (*ListAcmeDomainValidationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAcmeDomainValidationsResponse)
+	err := c.cc.Invoke(ctx, ACMService_ListAcmeDomainValidations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) ListAcmeEndpoints(ctx context.Context, in *ListAcmeEndpointsRequest, opts ...grpc.CallOption) (*ListAcmeEndpointsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAcmeEndpointsResponse)
+	err := c.cc.Invoke(ctx, ACMService_ListAcmeEndpoints_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) ListAcmeExternalAccountBindings(ctx context.Context, in *ListAcmeExternalAccountBindingsRequest, opts ...grpc.CallOption) (*ListAcmeExternalAccountBindingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListAcmeExternalAccountBindingsResponse)
+	err := c.cc.Invoke(ctx, ACMService_ListAcmeExternalAccountBindings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) ListCertificateDomainValidations(ctx context.Context, in *ListCertificateDomainValidationsRequest, opts ...grpc.CallOption) (*ListCertificateDomainValidationsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListCertificateDomainValidationsResponse)
+	err := c.cc.Invoke(ctx, ACMService_ListCertificateDomainValidations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aCMServiceClient) ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*ListCertificatesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListCertificatesResponse)
@@ -210,6 +485,16 @@ func (c *aCMServiceClient) ListTagsForCertificate(ctx context.Context, in *ListT
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListTagsForCertificateResponse)
 	err := c.cc.Invoke(ctx, ACMService_ListTagsForCertificate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) ListTagsForResource(ctx context.Context, in *ListTagsForResourceRequest, opts ...grpc.CallOption) (*ListTagsForResourceResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListTagsForResourceResponse)
+	err := c.cc.Invoke(ctx, ACMService_ListTagsForResource_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -266,6 +551,26 @@ func (c *aCMServiceClient) ResendValidationEmail(ctx context.Context, in *Resend
 	return out, nil
 }
 
+func (c *aCMServiceClient) RevokeAcmeAccount(ctx context.Context, in *RevokeAcmeAccountRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_RevokeAcmeAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) RevokeAcmeExternalAccountBinding(ctx context.Context, in *RevokeAcmeExternalAccountBindingRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_RevokeAcmeExternalAccountBinding_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *aCMServiceClient) RevokeCertificate(ctx context.Context, in *RevokeCertificateRequest, opts ...grpc.CallOption) (*RevokeCertificateResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RevokeCertificateResponse)
@@ -280,6 +585,46 @@ func (c *aCMServiceClient) SearchCertificates(ctx context.Context, in *SearchCer
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SearchCertificatesResponse)
 	err := c.cc.Invoke(ctx, ACMService_SearchCertificates_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) TagResource(ctx context.Context, in *TagResourceRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_TagResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) UntagResource(ctx context.Context, in *UntagResourceRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_UntagResource_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) UpdateAcmeDomainValidation(ctx context.Context, in *UpdateAcmeDomainValidationRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_UpdateAcmeDomainValidation_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aCMServiceClient) UpdateAcmeEndpoint(ctx context.Context, in *UpdateAcmeEndpointRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, ACMService_UpdateAcmeEndpoint_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -306,10 +651,50 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(context.Context, *AddTagsToCertificateRequest) (*common.Empty, error)
+	// Creates a domain validation for an ACME endpoint. Domain validations authorize the endpoint to issue certificates for specified domain names. You configure prevalidation to prove domain ownership.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeDomainValidation(context.Context, *CreateAcmeDomainValidationRequest) (*CreateAcmeDomainValidationResponse, error)
+	// Creates an ACME endpoint, which is a managed ACME server with a unique endpoint URL. After creation, ACME clients can use the endpoint URL to automate certificate issuance using the ACME protocol.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeEndpoint(context.Context, *CreateAcmeEndpointRequest) (*CreateAcmeEndpointResponse, error)
+	// Creates an external account binding (EAB) for an ACME endpoint. An EAB provides credentials that authorize an ACME client to register an account with the endpoint. Each EAB is associated with an IA...
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeExternalAccountBinding(context.Context, *CreateAcmeExternalAccountBindingRequest) (*CreateAcmeExternalAccountBindingResponse, error)
+	// Deletes a domain validation. After deletion, the ACME endpoint can no longer issue certificates for the associated domain.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeDomainValidation(context.Context, *DeleteAcmeDomainValidationRequest) (*common.Empty, error)
+	// Deletes an ACME endpoint. After deletion, the endpoint URL is no longer accessible and ACME clients cannot issue certificates through it. Any existing external account bindings and domain validatio...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeEndpoint(context.Context, *DeleteAcmeEndpointRequest) (*common.Empty, error)
+	// Deletes an external account binding. Previously fetched credentials for this binding will no longer be usable for account registration. A deleted binding cannot be recovered.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeExternalAccountBinding(context.Context, *DeleteAcmeExternalAccountBindingRequest) (*common.Empty, error)
 	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(context.Context, *DeleteCertificateRequest) (*common.Empty, error)
+	// Returns detailed metadata about the specified ACME account, including its status, public key thumbprint, and associated external account binding.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeAccount(context.Context, *DescribeAcmeAccountRequest) (*DescribeAcmeAccountResponse, error)
+	// Returns detailed metadata about the specified domain validation, including its status, domain scope, and DNS resource records required for validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeDomainValidation(context.Context, *DescribeAcmeDomainValidationRequest) (*DescribeAcmeDomainValidationResponse, error)
+	// Returns detailed metadata about the specified ACME endpoint, including its status, URL, authorization behavior, and certificate authority configuration.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeEndpoint(context.Context, *DescribeAcmeEndpointRequest) (*DescribeAcmeEndpointResponse, error)
+	// Returns detailed metadata about the specified external account binding, including the associated IAM role, expiration time, and usage history.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeExternalAccountBinding(context.Context, *DescribeAcmeExternalAccountBindingRequest) (*DescribeAcmeExternalAccountBindingResponse, error)
 	// Returns detailed metadata about the specified ACM certificate. If you have just created a certificate using the RequestCertificate action, there is a delay of several seconds before you can retriev...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -322,6 +707,10 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetAccountConfiguration(context.Context, *common.Empty) (*GetAccountConfigurationResponse, error)
+	// Retrieves the key ID and MAC key credentials for an external account binding. These credentials are used by ACME clients during account registration to bind to the endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetAcmeExternalAccountBindingCredentials(context.Context, *GetAcmeExternalAccountBindingCredentialsRequest) (*GetAcmeExternalAccountBindingCredentialsResponse, error)
 	// Retrieves a certificate and its certificate chain. The certificate may be either a public or private certificate issued using the ACM RequestCertificate action, or a certificate imported into ACM u...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -330,6 +719,26 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ImportCertificate(context.Context, *ImportCertificateRequest) (*ImportCertificateResponse, error)
+	// Retrieves a list of ACME accounts registered with the specified ACME endpoint. ACME accounts are created when clients use external account binding credentials to register.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeAccounts(context.Context, *ListAcmeAccountsRequest) (*ListAcmeAccountsResponse, error)
+	// Retrieves a list of domain validations for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeDomainValidations(context.Context, *ListAcmeDomainValidationsRequest) (*ListAcmeDomainValidationsResponse, error)
+	// Retrieves a list of ACME endpoints in your account. Use this operation to view all configured ACME endpoints and their current status.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeEndpoints(context.Context, *ListAcmeEndpointsRequest) (*ListAcmeEndpointsResponse, error)
+	// Retrieves a list of external account bindings for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeExternalAccountBindings(context.Context, *ListAcmeExternalAccountBindingsRequest) (*ListAcmeExternalAccountBindingsResponse, error)
+	// Returns per-domain validation summaries for an ACM certificate. Each summary includes the domain name, the active validation configuration, and the requested validation configuration when a validat...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListCertificateDomainValidations(context.Context, *ListCertificateDomainValidationsRequest) (*ListCertificateDomainValidationsResponse, error)
 	// Retrieves a list of certificate ARNs and domain names. You can request that only certificates that match a specific status be listed. You can also filter by specific attributes of the certificate. ...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -338,6 +747,10 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListTagsForCertificate(context.Context, *ListTagsForCertificateRequest) (*ListTagsForCertificateResponse, error)
+	// Lists the tags associated with an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use ListTagsForCertificate instead. To ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error)
 	// Adds or modifies account-level configurations in ACM. The supported configuration option is DaysBeforeExpiry. This option specifies the number of days prior to certificate expiration when ACM start...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -358,6 +771,14 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(context.Context, *ResendValidationEmailRequest) (*common.Empty, error)
+	// Revokes an ACME account, preventing it from requesting or revoking certificates. This operation is irreversible.
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeAccount(context.Context, *RevokeAcmeAccountRequest) (*common.Empty, error)
+	// Revokes an external account binding, preventing new ACME accounts from being registered using this binding. Existing ACME accounts that were previously registered using the binding are not affected...
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeExternalAccountBinding(context.Context, *RevokeAcmeExternalAccountBindingRequest) (*common.Empty, error)
 	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -366,7 +787,23 @@ type ACMServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	SearchCertificates(context.Context, *SearchCertificatesRequest) (*SearchCertificatesResponse, error)
-	// Updates a certificate. You can use this function to specify whether to export your certificate. Certificate transparency logging opt-out is no longer available. For more information, see Certificat...
+	// Adds one or more tags to an ACM resource. Tags are labels that you can use to identify and organize your Amazon Web Services resources. Each tag consists of a key and an optional value. Use this ac...
+	// HTTP:
+	// Protocol: awsJson1_1
+	TagResource(context.Context, *TagResourceRequest) (*common.Empty, error)
+	// Removes one or more tags from an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use RemoveTagsFromCertificate instead. To ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UntagResource(context.Context, *UntagResourceRequest) (*common.Empty, error)
+	// Updates the prevalidation configuration of an existing domain validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeDomainValidation(context.Context, *UpdateAcmeDomainValidationRequest) (*common.Empty, error)
+	// Updates the configuration of an existing ACME endpoint. You can change the authorization behavior, contact requirement, or certificate authority settings.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeEndpoint(context.Context, *UpdateAcmeEndpointRequest) (*common.Empty, error)
+	// Updates certificate options. You can use this operation to change the domain validation method or specify whether to export your certificate. For more information, see Migrate from email to DNS val...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateCertificateOptions(context.Context, *UpdateCertificateOptionsRequest) (*common.Empty, error)
@@ -383,8 +820,38 @@ type UnimplementedACMServiceServer struct{}
 func (UnimplementedACMServiceServer) AddTagsToCertificate(context.Context, *AddTagsToCertificateRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method AddTagsToCertificate not implemented")
 }
+func (UnimplementedACMServiceServer) CreateAcmeDomainValidation(context.Context, *CreateAcmeDomainValidationRequest) (*CreateAcmeDomainValidationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAcmeDomainValidation not implemented")
+}
+func (UnimplementedACMServiceServer) CreateAcmeEndpoint(context.Context, *CreateAcmeEndpointRequest) (*CreateAcmeEndpointResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAcmeEndpoint not implemented")
+}
+func (UnimplementedACMServiceServer) CreateAcmeExternalAccountBinding(context.Context, *CreateAcmeExternalAccountBindingRequest) (*CreateAcmeExternalAccountBindingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateAcmeExternalAccountBinding not implemented")
+}
+func (UnimplementedACMServiceServer) DeleteAcmeDomainValidation(context.Context, *DeleteAcmeDomainValidationRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAcmeDomainValidation not implemented")
+}
+func (UnimplementedACMServiceServer) DeleteAcmeEndpoint(context.Context, *DeleteAcmeEndpointRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAcmeEndpoint not implemented")
+}
+func (UnimplementedACMServiceServer) DeleteAcmeExternalAccountBinding(context.Context, *DeleteAcmeExternalAccountBindingRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteAcmeExternalAccountBinding not implemented")
+}
 func (UnimplementedACMServiceServer) DeleteCertificate(context.Context, *DeleteCertificateRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteCertificate not implemented")
+}
+func (UnimplementedACMServiceServer) DescribeAcmeAccount(context.Context, *DescribeAcmeAccountRequest) (*DescribeAcmeAccountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeAcmeAccount not implemented")
+}
+func (UnimplementedACMServiceServer) DescribeAcmeDomainValidation(context.Context, *DescribeAcmeDomainValidationRequest) (*DescribeAcmeDomainValidationResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeAcmeDomainValidation not implemented")
+}
+func (UnimplementedACMServiceServer) DescribeAcmeEndpoint(context.Context, *DescribeAcmeEndpointRequest) (*DescribeAcmeEndpointResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeAcmeEndpoint not implemented")
+}
+func (UnimplementedACMServiceServer) DescribeAcmeExternalAccountBinding(context.Context, *DescribeAcmeExternalAccountBindingRequest) (*DescribeAcmeExternalAccountBindingResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DescribeAcmeExternalAccountBinding not implemented")
 }
 func (UnimplementedACMServiceServer) DescribeCertificate(context.Context, *DescribeCertificateRequest) (*DescribeCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DescribeCertificate not implemented")
@@ -395,17 +862,38 @@ func (UnimplementedACMServiceServer) ExportCertificate(context.Context, *ExportC
 func (UnimplementedACMServiceServer) GetAccountConfiguration(context.Context, *common.Empty) (*GetAccountConfigurationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAccountConfiguration not implemented")
 }
+func (UnimplementedACMServiceServer) GetAcmeExternalAccountBindingCredentials(context.Context, *GetAcmeExternalAccountBindingCredentialsRequest) (*GetAcmeExternalAccountBindingCredentialsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetAcmeExternalAccountBindingCredentials not implemented")
+}
 func (UnimplementedACMServiceServer) GetCertificate(context.Context, *GetCertificateRequest) (*GetCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetCertificate not implemented")
 }
 func (UnimplementedACMServiceServer) ImportCertificate(context.Context, *ImportCertificateRequest) (*ImportCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ImportCertificate not implemented")
 }
+func (UnimplementedACMServiceServer) ListAcmeAccounts(context.Context, *ListAcmeAccountsRequest) (*ListAcmeAccountsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAcmeAccounts not implemented")
+}
+func (UnimplementedACMServiceServer) ListAcmeDomainValidations(context.Context, *ListAcmeDomainValidationsRequest) (*ListAcmeDomainValidationsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAcmeDomainValidations not implemented")
+}
+func (UnimplementedACMServiceServer) ListAcmeEndpoints(context.Context, *ListAcmeEndpointsRequest) (*ListAcmeEndpointsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAcmeEndpoints not implemented")
+}
+func (UnimplementedACMServiceServer) ListAcmeExternalAccountBindings(context.Context, *ListAcmeExternalAccountBindingsRequest) (*ListAcmeExternalAccountBindingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListAcmeExternalAccountBindings not implemented")
+}
+func (UnimplementedACMServiceServer) ListCertificateDomainValidations(context.Context, *ListCertificateDomainValidationsRequest) (*ListCertificateDomainValidationsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListCertificateDomainValidations not implemented")
+}
 func (UnimplementedACMServiceServer) ListCertificates(context.Context, *ListCertificatesRequest) (*ListCertificatesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListCertificates not implemented")
 }
 func (UnimplementedACMServiceServer) ListTagsForCertificate(context.Context, *ListTagsForCertificateRequest) (*ListTagsForCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListTagsForCertificate not implemented")
+}
+func (UnimplementedACMServiceServer) ListTagsForResource(context.Context, *ListTagsForResourceRequest) (*ListTagsForResourceResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListTagsForResource not implemented")
 }
 func (UnimplementedACMServiceServer) PutAccountConfiguration(context.Context, *PutAccountConfigurationRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutAccountConfiguration not implemented")
@@ -422,11 +910,29 @@ func (UnimplementedACMServiceServer) RequestCertificate(context.Context, *Reques
 func (UnimplementedACMServiceServer) ResendValidationEmail(context.Context, *ResendValidationEmailRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResendValidationEmail not implemented")
 }
+func (UnimplementedACMServiceServer) RevokeAcmeAccount(context.Context, *RevokeAcmeAccountRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeAcmeAccount not implemented")
+}
+func (UnimplementedACMServiceServer) RevokeAcmeExternalAccountBinding(context.Context, *RevokeAcmeExternalAccountBindingRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeAcmeExternalAccountBinding not implemented")
+}
 func (UnimplementedACMServiceServer) RevokeCertificate(context.Context, *RevokeCertificateRequest) (*RevokeCertificateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RevokeCertificate not implemented")
 }
 func (UnimplementedACMServiceServer) SearchCertificates(context.Context, *SearchCertificatesRequest) (*SearchCertificatesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SearchCertificates not implemented")
+}
+func (UnimplementedACMServiceServer) TagResource(context.Context, *TagResourceRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method TagResource not implemented")
+}
+func (UnimplementedACMServiceServer) UntagResource(context.Context, *UntagResourceRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UntagResource not implemented")
+}
+func (UnimplementedACMServiceServer) UpdateAcmeDomainValidation(context.Context, *UpdateAcmeDomainValidationRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAcmeDomainValidation not implemented")
+}
+func (UnimplementedACMServiceServer) UpdateAcmeEndpoint(context.Context, *UpdateAcmeEndpointRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateAcmeEndpoint not implemented")
 }
 func (UnimplementedACMServiceServer) UpdateCertificateOptions(context.Context, *UpdateCertificateOptionsRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateCertificateOptions not implemented")
@@ -470,6 +976,114 @@ func _ACMService_AddTagsToCertificate_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ACMService_CreateAcmeDomainValidation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAcmeDomainValidationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).CreateAcmeDomainValidation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_CreateAcmeDomainValidation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).CreateAcmeDomainValidation(ctx, req.(*CreateAcmeDomainValidationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_CreateAcmeEndpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAcmeEndpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).CreateAcmeEndpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_CreateAcmeEndpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).CreateAcmeEndpoint(ctx, req.(*CreateAcmeEndpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_CreateAcmeExternalAccountBinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAcmeExternalAccountBindingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).CreateAcmeExternalAccountBinding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_CreateAcmeExternalAccountBinding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).CreateAcmeExternalAccountBinding(ctx, req.(*CreateAcmeExternalAccountBindingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DeleteAcmeDomainValidation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAcmeDomainValidationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DeleteAcmeDomainValidation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DeleteAcmeDomainValidation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DeleteAcmeDomainValidation(ctx, req.(*DeleteAcmeDomainValidationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DeleteAcmeEndpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAcmeEndpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DeleteAcmeEndpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DeleteAcmeEndpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DeleteAcmeEndpoint(ctx, req.(*DeleteAcmeEndpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DeleteAcmeExternalAccountBinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAcmeExternalAccountBindingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DeleteAcmeExternalAccountBinding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DeleteAcmeExternalAccountBinding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DeleteAcmeExternalAccountBinding(ctx, req.(*DeleteAcmeExternalAccountBindingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ACMService_DeleteCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteCertificateRequest)
 	if err := dec(in); err != nil {
@@ -484,6 +1098,78 @@ func _ACMService_DeleteCertificate_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ACMServiceServer).DeleteCertificate(ctx, req.(*DeleteCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DescribeAcmeAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeAcmeAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DescribeAcmeAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DescribeAcmeAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DescribeAcmeAccount(ctx, req.(*DescribeAcmeAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DescribeAcmeDomainValidation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeAcmeDomainValidationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DescribeAcmeDomainValidation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DescribeAcmeDomainValidation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DescribeAcmeDomainValidation(ctx, req.(*DescribeAcmeDomainValidationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DescribeAcmeEndpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeAcmeEndpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DescribeAcmeEndpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DescribeAcmeEndpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DescribeAcmeEndpoint(ctx, req.(*DescribeAcmeEndpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_DescribeAcmeExternalAccountBinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DescribeAcmeExternalAccountBindingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).DescribeAcmeExternalAccountBinding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_DescribeAcmeExternalAccountBinding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).DescribeAcmeExternalAccountBinding(ctx, req.(*DescribeAcmeExternalAccountBindingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -542,6 +1228,24 @@ func _ACMService_GetAccountConfiguration_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ACMService_GetAcmeExternalAccountBindingCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAcmeExternalAccountBindingCredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).GetAcmeExternalAccountBindingCredentials(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_GetAcmeExternalAccountBindingCredentials_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).GetAcmeExternalAccountBindingCredentials(ctx, req.(*GetAcmeExternalAccountBindingCredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ACMService_GetCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCertificateRequest)
 	if err := dec(in); err != nil {
@@ -578,6 +1282,96 @@ func _ACMService_ImportCertificate_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ACMService_ListAcmeAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAcmeAccountsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).ListAcmeAccounts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_ListAcmeAccounts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).ListAcmeAccounts(ctx, req.(*ListAcmeAccountsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_ListAcmeDomainValidations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAcmeDomainValidationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).ListAcmeDomainValidations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_ListAcmeDomainValidations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).ListAcmeDomainValidations(ctx, req.(*ListAcmeDomainValidationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_ListAcmeEndpoints_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAcmeEndpointsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).ListAcmeEndpoints(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_ListAcmeEndpoints_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).ListAcmeEndpoints(ctx, req.(*ListAcmeEndpointsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_ListAcmeExternalAccountBindings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAcmeExternalAccountBindingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).ListAcmeExternalAccountBindings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_ListAcmeExternalAccountBindings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).ListAcmeExternalAccountBindings(ctx, req.(*ListAcmeExternalAccountBindingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_ListCertificateDomainValidations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListCertificateDomainValidationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).ListCertificateDomainValidations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_ListCertificateDomainValidations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).ListCertificateDomainValidations(ctx, req.(*ListCertificateDomainValidationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ACMService_ListCertificates_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListCertificatesRequest)
 	if err := dec(in); err != nil {
@@ -610,6 +1404,24 @@ func _ACMService_ListTagsForCertificate_Handler(srv interface{}, ctx context.Con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ACMServiceServer).ListTagsForCertificate(ctx, req.(*ListTagsForCertificateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_ListTagsForResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListTagsForResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).ListTagsForResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_ListTagsForResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).ListTagsForResource(ctx, req.(*ListTagsForResourceRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -704,6 +1516,42 @@ func _ACMService_ResendValidationEmail_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ACMService_RevokeAcmeAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAcmeAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).RevokeAcmeAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_RevokeAcmeAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).RevokeAcmeAccount(ctx, req.(*RevokeAcmeAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_RevokeAcmeExternalAccountBinding_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeAcmeExternalAccountBindingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).RevokeAcmeExternalAccountBinding(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_RevokeAcmeExternalAccountBinding_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).RevokeAcmeExternalAccountBinding(ctx, req.(*RevokeAcmeExternalAccountBindingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ACMService_RevokeCertificate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RevokeCertificateRequest)
 	if err := dec(in); err != nil {
@@ -740,6 +1588,78 @@ func _ACMService_SearchCertificates_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ACMService_TagResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(TagResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).TagResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_TagResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).TagResource(ctx, req.(*TagResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_UntagResource_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UntagResourceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).UntagResource(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_UntagResource_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).UntagResource(ctx, req.(*UntagResourceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_UpdateAcmeDomainValidation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAcmeDomainValidationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).UpdateAcmeDomainValidation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_UpdateAcmeDomainValidation_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).UpdateAcmeDomainValidation(ctx, req.(*UpdateAcmeDomainValidationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ACMService_UpdateAcmeEndpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateAcmeEndpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ACMServiceServer).UpdateAcmeEndpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ACMService_UpdateAcmeEndpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ACMServiceServer).UpdateAcmeEndpoint(ctx, req.(*UpdateAcmeEndpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ACMService_UpdateCertificateOptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateCertificateOptionsRequest)
 	if err := dec(in); err != nil {
@@ -770,8 +1690,48 @@ var ACMService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ACMService_AddTagsToCertificate_Handler,
 		},
 		{
+			MethodName: "CreateAcmeDomainValidation",
+			Handler:    _ACMService_CreateAcmeDomainValidation_Handler,
+		},
+		{
+			MethodName: "CreateAcmeEndpoint",
+			Handler:    _ACMService_CreateAcmeEndpoint_Handler,
+		},
+		{
+			MethodName: "CreateAcmeExternalAccountBinding",
+			Handler:    _ACMService_CreateAcmeExternalAccountBinding_Handler,
+		},
+		{
+			MethodName: "DeleteAcmeDomainValidation",
+			Handler:    _ACMService_DeleteAcmeDomainValidation_Handler,
+		},
+		{
+			MethodName: "DeleteAcmeEndpoint",
+			Handler:    _ACMService_DeleteAcmeEndpoint_Handler,
+		},
+		{
+			MethodName: "DeleteAcmeExternalAccountBinding",
+			Handler:    _ACMService_DeleteAcmeExternalAccountBinding_Handler,
+		},
+		{
 			MethodName: "DeleteCertificate",
 			Handler:    _ACMService_DeleteCertificate_Handler,
+		},
+		{
+			MethodName: "DescribeAcmeAccount",
+			Handler:    _ACMService_DescribeAcmeAccount_Handler,
+		},
+		{
+			MethodName: "DescribeAcmeDomainValidation",
+			Handler:    _ACMService_DescribeAcmeDomainValidation_Handler,
+		},
+		{
+			MethodName: "DescribeAcmeEndpoint",
+			Handler:    _ACMService_DescribeAcmeEndpoint_Handler,
+		},
+		{
+			MethodName: "DescribeAcmeExternalAccountBinding",
+			Handler:    _ACMService_DescribeAcmeExternalAccountBinding_Handler,
 		},
 		{
 			MethodName: "DescribeCertificate",
@@ -786,6 +1746,10 @@ var ACMService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ACMService_GetAccountConfiguration_Handler,
 		},
 		{
+			MethodName: "GetAcmeExternalAccountBindingCredentials",
+			Handler:    _ACMService_GetAcmeExternalAccountBindingCredentials_Handler,
+		},
+		{
 			MethodName: "GetCertificate",
 			Handler:    _ACMService_GetCertificate_Handler,
 		},
@@ -794,12 +1758,36 @@ var ACMService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ACMService_ImportCertificate_Handler,
 		},
 		{
+			MethodName: "ListAcmeAccounts",
+			Handler:    _ACMService_ListAcmeAccounts_Handler,
+		},
+		{
+			MethodName: "ListAcmeDomainValidations",
+			Handler:    _ACMService_ListAcmeDomainValidations_Handler,
+		},
+		{
+			MethodName: "ListAcmeEndpoints",
+			Handler:    _ACMService_ListAcmeEndpoints_Handler,
+		},
+		{
+			MethodName: "ListAcmeExternalAccountBindings",
+			Handler:    _ACMService_ListAcmeExternalAccountBindings_Handler,
+		},
+		{
+			MethodName: "ListCertificateDomainValidations",
+			Handler:    _ACMService_ListCertificateDomainValidations_Handler,
+		},
+		{
 			MethodName: "ListCertificates",
 			Handler:    _ACMService_ListCertificates_Handler,
 		},
 		{
 			MethodName: "ListTagsForCertificate",
 			Handler:    _ACMService_ListTagsForCertificate_Handler,
+		},
+		{
+			MethodName: "ListTagsForResource",
+			Handler:    _ACMService_ListTagsForResource_Handler,
 		},
 		{
 			MethodName: "PutAccountConfiguration",
@@ -822,12 +1810,36 @@ var ACMService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ACMService_ResendValidationEmail_Handler,
 		},
 		{
+			MethodName: "RevokeAcmeAccount",
+			Handler:    _ACMService_RevokeAcmeAccount_Handler,
+		},
+		{
+			MethodName: "RevokeAcmeExternalAccountBinding",
+			Handler:    _ACMService_RevokeAcmeExternalAccountBinding_Handler,
+		},
+		{
 			MethodName: "RevokeCertificate",
 			Handler:    _ACMService_RevokeCertificate_Handler,
 		},
 		{
 			MethodName: "SearchCertificates",
 			Handler:    _ACMService_SearchCertificates_Handler,
+		},
+		{
+			MethodName: "TagResource",
+			Handler:    _ACMService_TagResource_Handler,
+		},
+		{
+			MethodName: "UntagResource",
+			Handler:    _ACMService_UntagResource_Handler,
+		},
+		{
+			MethodName: "UpdateAcmeDomainValidation",
+			Handler:    _ACMService_UpdateAcmeDomainValidation_Handler,
+		},
+		{
+			MethodName: "UpdateAcmeEndpoint",
+			Handler:    _ACMService_UpdateAcmeEndpoint_Handler,
 		},
 		{
 			MethodName: "UpdateCertificateOptions",

@@ -1279,15 +1279,19 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 
 		// The mid replica is marked REPLICA, so the onwards rule on the mid
-		// bucket must leave it alone: after the replication pipeline has
-		// settled (mid replica visible and marked), the object stays absent
-		// from the final bucket.
-		time.Sleep(2 * time.Second)
-		_, err = client.HeadObject(ctx, &s3.HeadObjectInput{
-			Bucket: aws.String(finalBucket),
-			Key:    aws.String(chainKey),
-		})
-		if err == nil {
+		// bucket must leave it alone. The onwards decision is made when the
+		// replica write lands, so once the mid replica is visible the
+		// absence of a final-bucket copy is already settled; a short
+		// fail-fast watch replaces the former fixed settle: the test fails
+		// the moment a copy appears, and passes when none does within the
+		// watch window.
+		if waitFor(100*time.Millisecond, 500*time.Millisecond, func() bool {
+			_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+				Bucket: aws.String(finalBucket),
+				Key:    aws.String(chainKey),
+			})
+			return err == nil
+		}) == nil {
 			return fmt.Errorf("replica must not be re-replicated to the final bucket")
 		}
 		return nil
@@ -2491,7 +2495,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			if sums["AllRequests"] >= 2 && sums["PutRequests"] >= 1 && sums["GetRequests"] >= 1 {
 				return nil
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(250 * time.Millisecond)
 		}
 		return fmt.Errorf("request metrics not populated in time: %v", sums)
 	}))
@@ -2582,7 +2586,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			if sums["AllRequests"] >= 4 && sums["HeadRequests"] >= 1 && sums["DeleteRequests"] >= 1 {
 				return nil
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(250 * time.Millisecond)
 		}
 		return fmt.Errorf("bucket-plane request metrics not populated in time: %v", sums)
 	}))
@@ -2666,7 +2670,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			if sum >= 1 {
 				return nil
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(250 * time.Millisecond)
 		}
 		return fmt.Errorf("copy-source GetRequests not populated in time")
 	}))
@@ -2769,9 +2773,9 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			return "", false
 		}
 
-		// TEST_MODE compresses the delivery cadence; a minute covers the
-		// compressed period plus the worker tick.
-		deadline := time.Now().Add(120 * time.Second)
+		// TEST_MODE compresses the delivery cadence to 5s Daily with a 1s
+		// worker tick; the deadline covers both with ample margin.
+		deadline := time.Now().Add(30 * time.Second)
 		var csvManifestKey, pqManifestKey, orcManifestKey string
 		for time.Now().Before(deadline) {
 			if csvManifestKey == "" {
@@ -2792,7 +2796,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			if csvManifestKey != "" && pqManifestKey != "" && orcManifestKey != "" {
 				break
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(250 * time.Millisecond)
 		}
 		if csvManifestKey == "" || pqManifestKey == "" || orcManifestKey == "" {
 			return fmt.Errorf("inventory reports not delivered in time (csv=%q parquet=%q orc=%q)", csvManifestKey, pqManifestKey, orcManifestKey)
@@ -3029,9 +3033,9 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			return "", false
 		}
 
-		// TEST_MODE compresses the delivery cadence; a minute covers the
-		// compressed period plus the worker tick.
-		deadline := time.Now().Add(120 * time.Second)
+		// TEST_MODE compresses the delivery cadence to 5s Daily with a 1s
+		// worker tick; the deadline covers both with ample margin.
+		deadline := time.Now().Add(30 * time.Second)
 		manifests := map[string]string{}
 		for time.Now().Before(deadline) && len(manifests) < 2 {
 			for _, id := range []string{s3ID, kmsID} {
@@ -3042,7 +3046,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 					manifests[id] = key
 				}
 			}
-			time.Sleep(2 * time.Second)
+			time.Sleep(250 * time.Millisecond)
 		}
 		if len(manifests) < 2 {
 			return fmt.Errorf("encrypted inventory reports not delivered in time (seen: %v)", manifests)

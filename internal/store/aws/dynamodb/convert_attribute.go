@@ -132,3 +132,16 @@ func protoToAttributeValueMapDirect(m map[string]*pb.AttributeValue) map[string]
 	}
 	return result
 }
+
+// itemFromProto converts a persisted proto item into its store form — the
+// single conversion every read path that unmarshals an item value uses.
+func itemFromProto(pbItem *pb.Item) *Item {
+	if pbItem == nil {
+		return nil
+	}
+	return &Item{
+		TableName:  pbItem.TableName,
+		Key:        protoToAttributeValueMapDirect(pbItem.Key),
+		Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
+	}
+}

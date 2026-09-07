@@ -233,6 +233,11 @@ service DynamoDBService {
   // Protocol: awsJson1_0
   rpc Scan(ScanInput) returns (ScanOutput);
 
+  // Performs a vector similarity search on a vector index associated with an Amazon DynamoDB table, and returns the most similar items sorted by similarity score based on the distance function configur...
+  // HTTP:  
+  // Protocol: awsJson1_0
+  rpc SearchVectors(SearchVectorsInput) returns (SearchVectorsOutput);
+
   // Associate a set of tags with an Amazon DynamoDB resource. You can then activate these user-defined tags so that they appear on the Billing and Cost Management console for cost allocation tracking. ...
   // HTTP:  
   // Protocol: awsJson1_0
@@ -316,11 +321,11 @@ enum ApproximateCreationDateTimePrecision {
 
 message ArchivalSummary {
 
-  string archivalbackuparn = 95197293;
+  optional string archivalbackuparn = 95197293;
 
-  string archivaldatetime = 424460035;
+  optional string archivaldatetime = 424460035;
 
-  string archivalreason = 132420188;
+  optional string archivalreason = 132420188;
 
 }
 
@@ -354,7 +359,7 @@ message AttributeDefinition {
 
 message AttributeValue {
 
-  bytes b = 118225798;
+  optional bytes b = 118225798;
 
   optional bool bool = 307144766;
 
@@ -364,13 +369,13 @@ message AttributeValue {
 
   map<string, AttributeValue> m = 135003417;
 
-  string n = 185336274;
+  optional string n = 185336274;
 
   repeated string ns = 98983847;
 
   optional bool null = 426761765;
 
-  string s = 369890083;
+  optional string s = 369890083;
 
   repeated string ss = 100834020;
 
@@ -394,7 +399,7 @@ message AttributeValueUpdate {
 
 message AutoScalingPolicyDescription {
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
   AutoScalingTargetTrackingScalingPolicyConfigurationDescription targettrackingscalingpolicyconfiguration = 474521147;
 
@@ -406,7 +411,7 @@ message AutoScalingPolicyDescription {
 
 message AutoScalingPolicyUpdate {
 
-  string policyname = 266468029;
+  optional string policyname = 266468029;
 
   AutoScalingTargetTrackingScalingPolicyConfigurationUpdate targettrackingscalingpolicyconfiguration = 474521147;
 
@@ -420,7 +425,7 @@ message AutoScalingSettingsDescription {
 
   optional bool autoscalingdisabled = 183835736;
 
-  string autoscalingrolearn = 348085703;
+  optional string autoscalingrolearn = 348085703;
 
   optional int64 maximumunits = 501867481;
 
@@ -438,7 +443,7 @@ message AutoScalingSettingsUpdate {
 
   optional bool autoscalingdisabled = 183835736;
 
-  string autoscalingrolearn = 348085703;
+  optional string autoscalingrolearn = 348085703;
 
   optional int64 maximumunits = 501867481;
 
@@ -504,7 +509,7 @@ message BackupDetails {
 
   string backupcreationdatetime = 368022476;
 
-  string backupexpirydatetime = 471291762;
+  optional string backupexpirydatetime = 471291762;
 
   string backupname = 467693789;
 
@@ -522,7 +527,7 @@ message BackupDetails {
 
 message BackupInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -532,7 +537,7 @@ message BackupInUseException {
 
 message BackupNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -554,13 +559,13 @@ enum BackupStatus {
 
 message BackupSummary {
 
-  string backuparn = 370874339;
+  optional string backuparn = 370874339;
 
-  string backupcreationdatetime = 368022476;
+  optional string backupcreationdatetime = 368022476;
 
-  string backupexpirydatetime = 471291762;
+  optional string backupexpirydatetime = 471291762;
 
-  string backupname = 467693789;
+  optional string backupname = 467693789;
 
   optional int64 backupsizebytes = 147336318;
 
@@ -568,11 +573,11 @@ message BackupSummary {
 
   BackupType backuptype = 134973992;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
-  string tableid = 449893011;
+  optional string tableid = 449893011;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -658,7 +663,7 @@ message BatchStatementError {
 
   map<string, AttributeValue> item = 526680071;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -716,7 +721,7 @@ message BatchStatementResponse {
 
   map<string, AttributeValue> item = 526680071;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -766,7 +771,7 @@ message BillingModeSummary {
 
   BillingMode billingmode = 184162880;
 
-  string lastupdatetopayperrequestdatetime = 40315649;
+  optional string lastupdatetopayperrequestdatetime = 40315649;
 
 }
 
@@ -776,11 +781,11 @@ message BillingModeSummary {
 
 message CancellationReason {
 
-  string code = 425572629;
+  optional string code = 425572629;
 
   map<string, AttributeValue> item = 526680071;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -790,11 +795,11 @@ message CancellationReason {
 
 message Capacity {
 
-  double capacityunits = 521922929;
+  optional double capacityunits = 521922929;
 
-  double readcapacityunits = 43945489;
+  optional double readcapacityunits = 43945489;
 
-  double writecapacityunits = 26938032;
+  optional double writecapacityunits = 26938032;
 
 }
 
@@ -870,7 +875,7 @@ message ConditionalCheckFailedException {
 
   map<string, AttributeValue> item = 526680071;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -890,19 +895,21 @@ enum ConditionalOperator {
 
 message ConsumedCapacity {
 
-  double capacityunits = 521922929;
+  optional double capacityunits = 521922929;
 
   map<string, Capacity> globalsecondaryindexes = 409156905;
 
   map<string, Capacity> localsecondaryindexes = 362339959;
 
-  double readcapacityunits = 43945489;
+  optional double readcapacityunits = 43945489;
 
   Capacity table = 386722688;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
-  double writecapacityunits = 26938032;
+  map<string, VectorCapacity> vectorindexes = 66291727;
+
+  optional double writecapacityunits = 26938032;
 
 }
 
@@ -934,7 +941,7 @@ enum ContinuousBackupsStatus {
 
 message ContinuousBackupsUnavailableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -984,9 +991,9 @@ message ContributorInsightsSummary {
 
   ContributorInsightsStatus contributorinsightsstatus = 363347282;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -1074,7 +1081,7 @@ message CreateReplicationGroupMemberAction {
 
   repeated ReplicaGlobalSecondaryIndex globalsecondaryindexes = 409156905;
 
-  string kmsmasterkeyid = 521459443;
+  optional string kmsmasterkeyid = 521459443;
 
   OnDemandThroughputOverride ondemandthroughputoverride = 317165234;
 
@@ -1102,7 +1109,7 @@ message CreateTableInput {
 
   GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
-  string globaltablesourcearn = 443614787;
+  optional string globaltablesourcearn = 443614787;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -1112,7 +1119,7 @@ message CreateTableInput {
 
   ProvisionedThroughput provisionedthroughput = 1757580;
 
-  string resourcepolicy = 15747632;
+  optional string resourcepolicy = 15747632;
 
   SSESpecification ssespecification = 31692444;
 
@@ -1123,6 +1130,8 @@ message CreateTableInput {
   string tablename = 272020061;
 
   repeated Tag tags = 381526209;
+
+  repeated VectorIndex vectorindexes = 66291727;
 
   WarmThroughput warmthroughput = 290598659;
 
@@ -1140,11 +1149,31 @@ message CreateTableOutput {
 
 
 
+// A new vector index to be added to a table.
+
+message CreateVectorIndexAction {
+
+  int64 dimensions = 462933457;
+
+  VectorDistanceFunction distancefunction = 423470871;
+
+  string indexname = 102427281;
+
+  Projection projection = 105045921;
+
+  repeated SearchSchemaElement searchschema = 383005739;
+
+  VectorAttributeDefinition vectorattribute = 384679503;
+
+}
+
+
+
 // Processing options for the CSV file being imported.
 
 message CsvOptions {
 
-  string delimiter = 302132379;
+  optional string delimiter = 302132379;
 
   repeated string headerlist = 424018665;
 
@@ -1156,7 +1185,7 @@ message CsvOptions {
 
 message Delete {
 
-  string conditionexpression = 409657405;
+  optional string conditionexpression = 409657405;
 
   map<string, string> expressionattributenames = 150228092;
 
@@ -1212,7 +1241,7 @@ message DeleteGlobalTableWitnessGroupMemberAction {
 
 message DeleteItemInput {
 
-  string conditionexpression = 409657405;
+  optional string conditionexpression = 409657405;
 
   ConditionalOperator conditionaloperator = 172066260;
 
@@ -1284,7 +1313,7 @@ message DeleteRequest {
 
 message DeleteResourcePolicyInput {
 
-  string expectedrevisionid = 456463970;
+  optional string expectedrevisionid = 456463970;
 
   string resourcearn = 364280877;
 
@@ -1294,7 +1323,7 @@ message DeleteResourcePolicyInput {
 
 message DeleteResourcePolicyOutput {
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
 }
 
@@ -1315,6 +1344,16 @@ message DeleteTableInput {
 message DeleteTableOutput {
 
   TableDescription tabledescription = 19962388;
+
+}
+
+
+
+// A vector index to be removed from a table.
+
+message DeleteVectorIndexAction {
+
+  string indexname = 102427281;
 
 }
 
@@ -1354,7 +1393,7 @@ message DescribeContinuousBackupsOutput {
 
 message DescribeContributorInsightsInput {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   string tablename = 272020061;
 
@@ -1372,11 +1411,11 @@ message DescribeContributorInsightsOutput {
 
   FailureException failureexception = 284668899;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
-  string lastupdatedatetime = 452274318;
+  optional string lastupdatedatetime = 452274318;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -1438,7 +1477,7 @@ message DescribeGlobalTableSettingsInput {
 
 message DescribeGlobalTableSettingsOutput {
 
-  string globaltablename = 283759402;
+  optional string globaltablename = 283759402;
 
   repeated ReplicaSettingsDescription replicasettings = 288882107;
 
@@ -1474,7 +1513,7 @@ message DescribeKinesisStreamingDestinationOutput {
 
   repeated KinesisDataStreamDestination kinesisdatastreamdestinations = 4645129;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -1578,7 +1617,7 @@ enum DestinationStatus {
 
 message DuplicateItemException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1612,7 +1651,7 @@ message ExecuteStatementInput {
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated AttributeValue parameters = 494900218;
 
@@ -1634,7 +1673,7 @@ message ExecuteStatementOutput {
 
   map<string, AttributeValue> lastevaluatedkey = 54319830;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -1642,7 +1681,7 @@ message ExecuteStatementOutput {
 
 message ExecuteTransactionInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
@@ -1682,7 +1721,7 @@ message ExpectedAttributeValue {
 
 message ExportConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1694,45 +1733,45 @@ message ExportDescription {
 
   optional int64 billedsizebytes = 443315368;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string exportarn = 3661287;
+  optional string exportarn = 3661287;
 
   ExportFormat exportformat = 300799837;
 
-  string exportmanifest = 196735863;
+  optional string exportmanifest = 196735863;
 
   ExportStatus exportstatus = 459702918;
 
-  string exporttime = 28335083;
+  optional string exporttime = 28335083;
 
   ExportType exporttype = 189377484;
 
-  string failurecode = 84707897;
+  optional string failurecode = 84707897;
 
-  string failuremessage = 353556937;
+  optional string failuremessage = 353556937;
 
   IncrementalExportSpecification incrementalexportspecification = 20792295;
 
   optional int64 itemcount = 26280022;
 
-  string s3bucket = 114031434;
+  optional string s3bucket = 114031434;
 
-  string s3bucketowner = 351576129;
+  optional string s3bucketowner = 351576129;
 
-  string s3prefix = 21529336;
+  optional string s3prefix = 21529336;
 
   S3SseAlgorithm s3ssealgorithm = 213032706;
 
-  string s3ssekmskeyid = 9386110;
+  optional string s3ssekmskeyid = 9386110;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
-  string tableid = 449893011;
+  optional string tableid = 449893011;
 
 }
 
@@ -1752,7 +1791,7 @@ enum ExportFormat {
 
 message ExportNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1774,7 +1813,7 @@ enum ExportStatus {
 
 message ExportSummary {
 
-  string exportarn = 3661287;
+  optional string exportarn = 3661287;
 
   ExportStatus exportstatus = 459702918;
 
@@ -1786,11 +1825,11 @@ message ExportSummary {
 
 message ExportTableToPointInTimeInput {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   ExportFormat exportformat = 300799837;
 
-  string exporttime = 28335083;
+  optional string exporttime = 28335083;
 
   ExportType exporttype = 189377484;
 
@@ -1798,13 +1837,13 @@ message ExportTableToPointInTimeInput {
 
   string s3bucket = 114031434;
 
-  string s3bucketowner = 351576129;
+  optional string s3bucketowner = 351576129;
 
-  string s3prefix = 21529336;
+  optional string s3prefix = 21529336;
 
   S3SseAlgorithm s3ssealgorithm = 213032706;
 
-  string s3ssekmskeyid = 9386110;
+  optional string s3ssekmskeyid = 9386110;
 
   string tablearn = 431669347;
 
@@ -1844,9 +1883,9 @@ enum ExportViewType {
 
 message FailureException {
 
-  string exceptiondescription = 75755113;
+  optional string exceptiondescription = 75755113;
 
-  string exceptionname = 449933270;
+  optional string exceptionname = 449933270;
 
 }
 
@@ -1860,7 +1899,7 @@ message Get {
 
   map<string, AttributeValue> key = 219859213;
 
-  string projectionexpression = 150730243;
+  optional string projectionexpression = 150730243;
 
   string tablename = 272020061;
 
@@ -1880,7 +1919,7 @@ message GetItemInput {
 
   map<string, AttributeValue> key = 219859213;
 
-  string projectionexpression = 150730243;
+  optional string projectionexpression = 150730243;
 
   ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
@@ -1912,9 +1951,9 @@ message GetResourcePolicyInput {
 
 message GetResourcePolicyOutput {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
 }
 
@@ -1944,7 +1983,7 @@ message GlobalSecondaryIndex {
 
 message GlobalSecondaryIndexAutoScalingUpdate {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   AutoScalingSettingsUpdate provisionedwritecapacityautoscalingupdate = 316618294;
 
@@ -1958,9 +1997,9 @@ message GlobalSecondaryIndexDescription {
 
   optional bool backfilling = 251413370;
 
-  string indexarn = 374335615;
+  optional string indexarn = 374335615;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   optional int64 indexsizebytes = 395738346;
 
@@ -1986,7 +2025,7 @@ message GlobalSecondaryIndexDescription {
 
 message GlobalSecondaryIndexInfo {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -2032,7 +2071,7 @@ message GlobalSecondaryIndexWarmThroughputDescription {
 
 message GlobalTable {
 
-  string globaltablename = 283759402;
+  optional string globaltablename = 283759402;
 
   repeated Replica replicationgroup = 190970785;
 
@@ -2044,7 +2083,7 @@ message GlobalTable {
 
 message GlobalTableAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2054,11 +2093,11 @@ message GlobalTableAlreadyExistsException {
 
 message GlobalTableDescription {
 
-  string creationdatetime = 48904698;
+  optional string creationdatetime = 48904698;
 
-  string globaltablearn = 262302830;
+  optional string globaltablearn = 262302830;
 
-  string globaltablename = 283759402;
+  optional string globaltablename = 283759402;
 
   GlobalTableStatus globaltablestatus = 8833293;
 
@@ -2086,7 +2125,7 @@ message GlobalTableGlobalSecondaryIndexSettingsUpdate {
 
 message GlobalTableNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2122,7 +2161,7 @@ enum GlobalTableStatus {
 
 message GlobalTableWitnessDescription {
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
   WitnessStatus witnessstatus = 303352887;
 
@@ -2146,7 +2185,7 @@ message GlobalTableWitnessGroupUpdate {
 
 message IdempotentParameterMismatchException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2156,7 +2195,7 @@ message IdempotentParameterMismatchException {
 
 message ImportConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2166,7 +2205,7 @@ message ImportConflictException {
 
 message ImportNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2192,11 +2231,11 @@ enum ImportStatus {
 
 message ImportSummary {
 
-  string cloudwatchloggrouparn = 171042008;
+  optional string cloudwatchloggrouparn = 171042008;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string importarn = 444379628;
+  optional string importarn = 444379628;
 
   ImportStatus importstatus = 129077631;
 
@@ -2204,9 +2243,9 @@ message ImportSummary {
 
   S3BucketSource s3bucketsource = 202310037;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
 }
 
@@ -2216,19 +2255,19 @@ message ImportSummary {
 
 message ImportTableDescription {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string cloudwatchloggrouparn = 171042008;
+  optional string cloudwatchloggrouparn = 171042008;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
   optional int64 errorcount = 311137001;
 
-  string failurecode = 84707897;
+  optional string failurecode = 84707897;
 
-  string failuremessage = 353556937;
+  optional string failuremessage = 353556937;
 
-  string importarn = 444379628;
+  optional string importarn = 444379628;
 
   ImportStatus importstatus = 129077631;
 
@@ -2246,13 +2285,13 @@ message ImportTableDescription {
 
   S3BucketSource s3bucketsource = 202310037;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
   TableCreationParameters tablecreationparameters = 487419839;
 
-  string tableid = 449893011;
+  optional string tableid = 449893011;
 
 }
 
@@ -2260,7 +2299,7 @@ message ImportTableDescription {
 
 message ImportTableInput {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   InputCompressionType inputcompressiontype = 392699396;
 
@@ -2288,9 +2327,9 @@ message ImportTableOutput {
 
 message IncrementalExportSpecification {
 
-  string exportfromtime = 466248415;
+  optional string exportfromtime = 466248415;
 
-  string exporttotime = 242369368;
+  optional string exporttotime = 242369368;
 
   ExportViewType exportviewtype = 26765639;
 
@@ -2302,7 +2341,7 @@ message IncrementalExportSpecification {
 
 message IndexNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2360,7 +2399,7 @@ message InputFormatOptions {
 
 message InternalServerError {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2368,7 +2407,7 @@ message InternalServerError {
 
 message InvalidEndpointException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2378,7 +2417,7 @@ message InvalidEndpointException {
 
 message InvalidExportTimeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2388,7 +2427,7 @@ message InvalidExportTimeException {
 
 message InvalidRestoreTimeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2410,7 +2449,7 @@ message ItemCollectionMetrics {
 
 message ItemCollectionSizeLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2460,7 +2499,7 @@ message KeysAndAttributes {
 
   repeated KeyListEntry keys = 2831086;
 
-  string projectionexpression = 150730243;
+  optional string projectionexpression = 150730243;
 
 }
 
@@ -2474,9 +2513,9 @@ message KinesisDataStreamDestination {
 
   DestinationStatus destinationstatus = 381248234;
 
-  string destinationstatusdescription = 499573086;
+  optional string destinationstatusdescription = 499573086;
 
-  string streamarn = 513423709;
+  optional string streamarn = 513423709;
 
 }
 
@@ -2500,9 +2539,9 @@ message KinesisStreamingDestinationOutput {
 
   EnableKinesisStreamingConfiguration enablekinesisstreamingconfiguration = 300307843;
 
-  string streamarn = 513423709;
+  optional string streamarn = 513423709;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -2512,7 +2551,7 @@ message KinesisStreamingDestinationOutput {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2522,15 +2561,15 @@ message ListBackupsInput {
 
   BackupTypeFilter backuptype = 134973992;
 
-  string exclusivestartbackuparn = 381696959;
+  optional string exclusivestartbackuparn = 381696959;
 
   optional int32 limit = 412502741;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
-  string timerangelowerbound = 506236543;
+  optional string timerangelowerbound = 506236543;
 
-  string timerangeupperbound = 420889434;
+  optional string timerangeupperbound = 420889434;
 
 }
 
@@ -2540,7 +2579,7 @@ message ListBackupsOutput {
 
   repeated BackupSummary backupsummaries = 375274198;
 
-  string lastevaluatedbackuparn = 254744240;
+  optional string lastevaluatedbackuparn = 254744240;
 
 }
 
@@ -2550,9 +2589,9 @@ message ListContributorInsightsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -2562,7 +2601,7 @@ message ListContributorInsightsOutput {
 
   repeated ContributorInsightsSummary contributorinsightssummaries = 228077470;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2572,9 +2611,9 @@ message ListExportsInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
 }
 
@@ -2584,7 +2623,7 @@ message ListExportsOutput {
 
   repeated ExportSummary exportsummaries = 378369890;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2592,11 +2631,11 @@ message ListExportsOutput {
 
 message ListGlobalTablesInput {
 
-  string exclusivestartglobaltablename = 89274086;
+  optional string exclusivestartglobaltablename = 89274086;
 
   optional int32 limit = 412502741;
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
 }
 
@@ -2606,7 +2645,7 @@ message ListGlobalTablesOutput {
 
   repeated GlobalTable globaltables = 213108516;
 
-  string lastevaluatedglobaltablename = 157875353;
+  optional string lastevaluatedglobaltablename = 157875353;
 
 }
 
@@ -2614,11 +2653,11 @@ message ListGlobalTablesOutput {
 
 message ListImportsInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
 }
 
@@ -2628,7 +2667,7 @@ message ListImportsOutput {
 
   repeated ImportSummary importsummarylist = 19020549;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2638,7 +2677,7 @@ message ListImportsOutput {
 
 message ListTablesInput {
 
-  string exclusivestarttablename = 4554457;
+  optional string exclusivestarttablename = 4554457;
 
   optional int32 limit = 412502741;
 
@@ -2650,7 +2689,7 @@ message ListTablesInput {
 
 message ListTablesOutput {
 
-  string lastevaluatedtablename = 436880490;
+  optional string lastevaluatedtablename = 436880490;
 
   repeated string tablenames = 354058238;
 
@@ -2660,7 +2699,7 @@ message ListTablesOutput {
 
 message ListTagsOfResourceInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string resourcearn = 364280877;
 
@@ -2670,7 +2709,7 @@ message ListTagsOfResourceInput {
 
 message ListTagsOfResourceOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Tag tags = 381526209;
 
@@ -2696,9 +2735,9 @@ message LocalSecondaryIndex {
 
 message LocalSecondaryIndexDescription {
 
-  string indexarn = 374335615;
+  optional string indexarn = 374335615;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   optional int64 indexsizebytes = 395738346;
 
@@ -2716,7 +2755,7 @@ message LocalSecondaryIndexDescription {
 
 message LocalSecondaryIndexInfo {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   repeated KeySchemaElement keyschema = 293038056;
 
@@ -2776,9 +2815,9 @@ message ParameterizedStatement {
 
 message PointInTimeRecoveryDescription {
 
-  string earliestrestorabledatetime = 440478879;
+  optional string earliestrestorabledatetime = 440478879;
 
-  string latestrestorabledatetime = 131030757;
+  optional string latestrestorabledatetime = 131030757;
 
   PointInTimeRecoveryStatus pointintimerecoverystatus = 510838075;
 
@@ -2814,7 +2853,7 @@ enum PointInTimeRecoveryStatus {
 
 message PointInTimeRecoveryUnavailableException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2824,7 +2863,7 @@ message PointInTimeRecoveryUnavailableException {
 
 message PolicyNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2870,9 +2909,9 @@ message ProvisionedThroughput {
 
 message ProvisionedThroughputDescription {
 
-  string lastdecreasedatetime = 494947041;
+  optional string lastdecreasedatetime = 494947041;
 
-  string lastincreasedatetime = 490688181;
+  optional string lastincreasedatetime = 490688181;
 
   optional int64 numberofdecreasestoday = 34313772;
 
@@ -2890,7 +2929,7 @@ message ProvisionedThroughputExceededException {
 
   repeated ThrottlingReason throttlingreasons = 284436852;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -2910,7 +2949,7 @@ message ProvisionedThroughputOverride {
 
 message Put {
 
-  string conditionexpression = 409657405;
+  optional string conditionexpression = 409657405;
 
   map<string, string> expressionattributenames = 150228092;
 
@@ -2930,7 +2969,7 @@ message Put {
 
 message PutItemInput {
 
-  string conditionexpression = 409657405;
+  optional string conditionexpression = 409657405;
 
   ConditionalOperator conditionaloperator = 172066260;
 
@@ -2984,7 +3023,7 @@ message PutResourcePolicyInput {
 
   optional bool confirmremoveselfresourceaccess = 88224484;
 
-  string expectedrevisionid = 456463970;
+  optional string expectedrevisionid = 456463970;
 
   string policy = 471611296;
 
@@ -2996,7 +3035,7 @@ message PutResourcePolicyInput {
 
 message PutResourcePolicyOutput {
 
-  string revisionid = 499618182;
+  optional string revisionid = 499618182;
 
 }
 
@@ -3018,17 +3057,17 @@ message QueryInput {
 
   map<string, AttributeValue> expressionattributevalues = 484970072;
 
-  string filterexpression = 68019610;
+  optional string filterexpression = 68019610;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
-  string keyconditionexpression = 218579280;
+  optional string keyconditionexpression = 218579280;
 
   map<string, Condition> keyconditions = 307034879;
 
   optional int32 limit = 412502741;
 
-  string projectionexpression = 150730243;
+  optional string projectionexpression = 150730243;
 
   map<string, Condition> queryfilter = 107880942;
 
@@ -3066,7 +3105,7 @@ message QueryOutput {
 
 message Replica {
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
 }
 
@@ -3076,7 +3115,7 @@ message Replica {
 
 message ReplicaAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3088,7 +3127,7 @@ message ReplicaAutoScalingDescription {
 
   repeated ReplicaGlobalSecondaryIndexAutoScalingDescription globalsecondaryindexes = 409156905;
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
   AutoScalingSettingsDescription replicaprovisionedreadcapacityautoscalingsettings = 125131885;
 
@@ -3122,23 +3161,23 @@ message ReplicaDescription {
 
   GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
-  string kmsmasterkeyid = 521459443;
+  optional string kmsmasterkeyid = 521459443;
 
   OnDemandThroughputOverride ondemandthroughputoverride = 317165234;
 
   ProvisionedThroughputOverride provisionedthroughputoverride = 413332116;
 
-  string regionname = 112086463;
+  optional string regionname = 112086463;
 
-  string replicaarn = 119254443;
+  optional string replicaarn = 119254443;
 
-  string replicainaccessibledatetime = 20060608;
+  optional string replicainaccessibledatetime = 20060608;
 
   ReplicaStatus replicastatus = 466739730;
 
-  string replicastatusdescription = 416683638;
+  optional string replicastatusdescription = 416683638;
 
-  string replicastatuspercentprogress = 456382130;
+  optional string replicastatuspercentprogress = 456382130;
 
   TableClassSummary replicatableclasssummary = 519483614;
 
@@ -3166,7 +3205,7 @@ message ReplicaGlobalSecondaryIndex {
 
 message ReplicaGlobalSecondaryIndexAutoScalingDescription {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   IndexStatus indexstatus = 364436830;
 
@@ -3182,7 +3221,7 @@ message ReplicaGlobalSecondaryIndexAutoScalingDescription {
 
 message ReplicaGlobalSecondaryIndexAutoScalingUpdate {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   AutoScalingSettingsUpdate provisionedreadcapacityautoscalingupdate = 22287551;
 
@@ -3194,7 +3233,7 @@ message ReplicaGlobalSecondaryIndexAutoScalingUpdate {
 
 message ReplicaGlobalSecondaryIndexDescription {
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   OnDemandThroughputOverride ondemandthroughputoverride = 317165234;
 
@@ -3244,7 +3283,7 @@ message ReplicaGlobalSecondaryIndexSettingsUpdate {
 
 message ReplicaNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3336,7 +3375,7 @@ message ReplicaUpdate {
 
 message ReplicatedWriteConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3362,7 +3401,7 @@ message RequestLimitExceeded {
 
   repeated ThrottlingReason throttlingreasons = 284436852;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3372,7 +3411,7 @@ message RequestLimitExceeded {
 
 message ResourceInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3382,7 +3421,7 @@ message ResourceInUseException {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3396,9 +3435,9 @@ message RestoreSummary {
 
   optional bool restoreinprogress = 508499598;
 
-  string sourcebackuparn = 16805842;
+  optional string sourcebackuparn = 16805842;
 
-  string sourcetablearn = 124215796;
+  optional string sourcetablearn = 124215796;
 
 }
 
@@ -3421,6 +3460,8 @@ message RestoreTableFromBackupInput {
   SSESpecification ssespecificationoverride = 421570884;
 
   string targettablename = 298767720;
+
+  repeated VectorIndex vectorindexoverride = 509828855;
 
 }
 
@@ -3446,17 +3487,19 @@ message RestoreTableToPointInTimeInput {
 
   ProvisionedThroughput provisionedthroughputoverride = 413332116;
 
-  string restoredatetime = 176772301;
+  optional string restoredatetime = 176772301;
 
   SSESpecification ssespecificationoverride = 421570884;
 
-  string sourcetablearn = 124215796;
+  optional string sourcetablearn = 124215796;
 
-  string sourcetablename = 165368952;
+  optional string sourcetablename = 165368952;
 
   string targettablename = 298767720;
 
   optional bool uselatestrestorabletime = 434512618;
+
+  repeated VectorIndex vectorindexoverride = 509828855;
 
 }
 
@@ -3524,9 +3567,9 @@ message S3BucketSource {
 
   string s3bucket = 114031434;
 
-  string s3bucketowner = 351576129;
+  optional string s3bucketowner = 351576129;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
 }
 
@@ -3546,9 +3589,9 @@ enum S3SseAlgorithm {
 
 message SSEDescription {
 
-  string inaccessibleencryptiondatetime = 478188797;
+  optional string inaccessibleencryptiondatetime = 478188797;
 
-  string kmsmasterkeyarn = 281937987;
+  optional string kmsmasterkeyarn = 281937987;
 
   SSEType ssetype = 431846435;
 
@@ -3564,7 +3607,7 @@ message SSESpecification {
 
   optional bool enabled = 478602303;
 
-  string kmsmasterkeyid = 521459443;
+  optional string kmsmasterkeyid = 521459443;
 
   SSEType ssetype = 431846435;
 
@@ -3626,13 +3669,13 @@ message ScanInput {
 
   map<string, AttributeValue> expressionattributevalues = 484970072;
 
-  string filterexpression = 68019610;
+  optional string filterexpression = 68019610;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   optional int32 limit = 412502741;
 
-  string projectionexpression = 150730243;
+  optional string projectionexpression = 150730243;
 
   ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
@@ -3668,6 +3711,74 @@ message ScanOutput {
 
 
 
+// A single result from a SearchVectors operation.
+
+message SearchResultItem {
+
+  map<string, AttributeValue> item = 526680071;
+
+  optional double score = 401277494;
+
+}
+
+
+
+// An element in the search schema of a vector index.
+
+message SearchSchemaElement {
+
+  string attributename = 352717485;
+
+  SearchSchemaElementType searchschemaelementtype = 172522355;
+
+}
+
+
+
+enum SearchSchemaElementType {
+
+  SEARCH_SCHEMA_ELEMENT_TYPE_HASH = 0;
+
+  SEARCH_SCHEMA_ELEMENT_TYPE_INLINE_FILTER = 1;
+
+}
+
+
+
+message SearchVectorsInput {
+
+  map<string, string> expressionattributenames = 150228092;
+
+  map<string, AttributeValue> expressionattributevalues = 484970072;
+
+  string indexname = 102427281;
+
+  optional string projectionexpression = 150730243;
+
+  ReturnConsumedCapacity returnconsumedcapacity = 43545598;
+
+  optional string searchconditionexpression = 251540249;
+
+  repeated AttributeValue searchvector = 114923063;
+
+  string tablename = 272020061;
+
+  int32 topk = 381089462;
+
+}
+
+
+
+message SearchVectorsOutput {
+
+  VectorCapacity consumedcapacity = 449336620;
+
+  repeated SearchResultItem searchresults = 29101186;
+
+}
+
+
+
 enum Select {
 
   SELECT_ALL_ATTRIBUTES = 0;
@@ -3696,7 +3807,7 @@ message SourceTableDetails {
 
   ProvisionedThroughput provisionedthroughput = 1757580;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
   string tablecreationdatetime = 152706380;
 
@@ -3723,6 +3834,8 @@ message SourceTableFeatureDetails {
   StreamSpecification streamdescription = 363737034;
 
   TimeToLiveDescription timetolivedescription = 367590876;
+
+  repeated VectorIndexInfo vectorindexes = 66291727;
 
 }
 
@@ -3758,7 +3871,7 @@ enum StreamViewType {
 
 message TableAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3770,7 +3883,7 @@ message TableAutoScalingDescription {
 
   repeated ReplicaAutoScalingDescription replicas = 306066781;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
   TableStatus tablestatus = 207908810;
 
@@ -3792,7 +3905,7 @@ enum TableClass {
 
 message TableClassSummary {
 
-  string lastupdatedatetime = 452274318;
+  optional string lastupdatedatetime = 452274318;
 
   TableClass tableclass = 342890498;
 
@@ -3820,6 +3933,8 @@ message TableCreationParameters {
 
   string tablename = 272020061;
 
+  repeated VectorIndex vectorindexes = 66291727;
+
 }
 
 
@@ -3834,7 +3949,7 @@ message TableDescription {
 
   BillingModeSummary billingmodesummary = 163529882;
 
-  string creationdatetime = 48904698;
+  optional string creationdatetime = 48904698;
 
   optional bool deletionprotectionenabled = 259418450;
 
@@ -3842,7 +3957,7 @@ message TableDescription {
 
   GlobalTableSettingsReplicationMode globaltablesettingsreplicationmode = 10446577;
 
-  string globaltableversion = 68234287;
+  optional string globaltableversion = 68234287;
 
   repeated GlobalTableWitnessDescription globaltablewitnesses = 4521286;
 
@@ -3850,9 +3965,9 @@ message TableDescription {
 
   repeated KeySchemaElement keyschema = 293038056;
 
-  string lateststreamarn = 207365682;
+  optional string lateststreamarn = 207365682;
 
-  string lateststreamlabel = 328475293;
+  optional string lateststreamlabel = 328475293;
 
   repeated LocalSecondaryIndexDescription localsecondaryindexes = 362339959;
 
@@ -3870,17 +3985,19 @@ message TableDescription {
 
   StreamSpecification streamspecification = 403922627;
 
-  string tablearn = 431669347;
+  optional string tablearn = 431669347;
 
   TableClassSummary tableclasssummary = 4371552;
 
-  string tableid = 449893011;
+  optional string tableid = 449893011;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
   optional int64 tablesizebytes = 220631294;
 
   TableStatus tablestatus = 207908810;
+
+  repeated VectorIndexDescription vectorindexes = 66291727;
 
   TableWarmThroughputDescription warmthroughput = 290598659;
 
@@ -3892,7 +4009,7 @@ message TableDescription {
 
 message TableInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3902,7 +4019,7 @@ message TableInUseException {
 
 message TableNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3970,7 +4087,7 @@ message TagResourceInput {
 
 message ThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
   repeated ThrottlingReason throttlingreasons = 170616084;
 
@@ -3982,9 +4099,9 @@ message ThrottlingException {
 
 message ThrottlingReason {
 
-  string reason = 413359642;
+  optional string reason = 413359642;
 
-  string resource = 165642230;
+  optional string resource = 165642230;
 
 }
 
@@ -3994,7 +4111,7 @@ message ThrottlingReason {
 
 message TimeToLiveDescription {
 
-  string attributename = 352717485;
+  optional string attributename = 352717485;
 
   TimeToLiveStatus timetolivestatus = 279467554;
 
@@ -4076,7 +4193,7 @@ message TransactWriteItem {
 
 message TransactWriteItemsInput {
 
-  string clientrequesttoken = 455653361;
+  optional string clientrequesttoken = 455653361;
 
   ReturnConsumedCapacity returnconsumedcapacity = 43545598;
 
@@ -4104,7 +4221,7 @@ message TransactionCanceledException {
 
   repeated CancellationReason cancellationreasons = 346602284;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4114,7 +4231,7 @@ message TransactionCanceledException {
 
 message TransactionConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4124,7 +4241,7 @@ message TransactionConflictException {
 
 message TransactionInProgressException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4144,7 +4261,7 @@ message UntagResourceInput {
 
 message Update {
 
-  string conditionexpression = 409657405;
+  optional string conditionexpression = 409657405;
 
   map<string, string> expressionattributenames = 150228092;
 
@@ -4186,7 +4303,7 @@ message UpdateContributorInsightsInput {
 
   ContributorInsightsMode contributorinsightsmode = 86700161;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
   string tablename = 272020061;
 
@@ -4200,9 +4317,9 @@ message UpdateContributorInsightsOutput {
 
   ContributorInsightsStatus contributorinsightsstatus = 363347282;
 
-  string indexname = 102427281;
+  optional string indexname = 102427281;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
 }
 
@@ -4262,7 +4379,7 @@ message UpdateGlobalTableSettingsInput {
 
 message UpdateGlobalTableSettingsOutput {
 
-  string globaltablename = 283759402;
+  optional string globaltablename = 283759402;
 
   repeated ReplicaSettingsDescription replicasettings = 288882107;
 
@@ -4276,7 +4393,7 @@ message UpdateItemInput {
 
   map<string, AttributeValueUpdate> attributeupdates = 32403512;
 
-  string conditionexpression = 409657405;
+  optional string conditionexpression = 409657405;
 
   ConditionalOperator conditionaloperator = 172066260;
 
@@ -4298,7 +4415,7 @@ message UpdateItemInput {
 
   string tablename = 272020061;
 
-  string updateexpression = 389263879;
+  optional string updateexpression = 389263879;
 
 }
 
@@ -4344,9 +4461,9 @@ message UpdateKinesisStreamingDestinationOutput {
 
   DestinationStatus destinationstatus = 381248234;
 
-  string streamarn = 513423709;
+  optional string streamarn = 513423709;
 
-  string tablename = 272020061;
+  optional string tablename = 272020061;
 
   UpdateKinesisStreamingConfiguration updatekinesisstreamingconfiguration = 239134845;
 
@@ -4360,7 +4477,7 @@ message UpdateReplicationGroupMemberAction {
 
   repeated ReplicaGlobalSecondaryIndex globalsecondaryindexes = 409156905;
 
-  string kmsmasterkeyid = 521459443;
+  optional string kmsmasterkeyid = 521459443;
 
   OnDemandThroughputOverride ondemandthroughputoverride = 317165234;
 
@@ -4405,6 +4522,8 @@ message UpdateTableInput {
   TableClass tableclass = 342890498;
 
   string tablename = 272020061;
+
+  repeated VectorIndexUpdate vectorindexupdates = 269513317;
 
   WarmThroughput warmthroughput = 290598659;
 
@@ -4459,6 +4578,122 @@ message UpdateTimeToLiveInput {
 message UpdateTimeToLiveOutput {
 
   TimeToLiveSpecification timetolivespecification = 315882193;
+
+}
+
+
+
+// The definition of a vector attribute for a vector index.
+
+message VectorAttributeDefinition {
+
+  string attributename = 352717485;
+
+}
+
+
+
+// The consumed capacity for vector index operations, including vector search request bytes and vector write request bytes.
+
+message VectorCapacity {
+
+  optional double vectorsearchrequestbytes = 221424307;
+
+  optional double vectorwriterequestbytes = 301610474;
+
+}
+
+
+
+enum VectorDistanceFunction {
+
+  VECTOR_DISTANCE_FUNCTION_DOT_PRODUCT = 0;
+
+  VECTOR_DISTANCE_FUNCTION_COSINE = 1;
+
+  VECTOR_DISTANCE_FUNCTION_EUCLIDEAN = 2;
+
+}
+
+
+
+// Contains the configuration settings for a vector index, including the index name, vector attribute, dimensions, distance function, search schema, and projection.
+
+message VectorIndex {
+
+  int64 dimensions = 462933457;
+
+  VectorDistanceFunction distancefunction = 423470871;
+
+  string indexname = 102427281;
+
+  Projection projection = 105045921;
+
+  repeated SearchSchemaElement searchschema = 383005739;
+
+  VectorAttributeDefinition vectorattribute = 384679503;
+
+}
+
+
+
+// Contains the current state and configuration of a vector index, including its status, size, item count, and the settings specified when the index was created.
+
+message VectorIndexDescription {
+
+  optional bool backfilling = 251413370;
+
+  optional int64 dimensions = 462933457;
+
+  VectorDistanceFunction distancefunction = 423470871;
+
+  optional string indexarn = 374335615;
+
+  optional string indexname = 102427281;
+
+  optional int64 indexsizebytes = 395738346;
+
+  IndexStatus indexstatus = 364436830;
+
+  optional int64 itemcount = 26280022;
+
+  Projection projection = 105045921;
+
+  repeated SearchSchemaElement searchschema = 383005739;
+
+  VectorAttributeDefinition vectorattribute = 384679503;
+
+}
+
+
+
+// Contains the configuration of a vector index as it existed at the time a backup was created.
+
+message VectorIndexInfo {
+
+  optional int64 dimensions = 462933457;
+
+  VectorDistanceFunction distancefunction = 423470871;
+
+  optional string indexname = 102427281;
+
+  Projection projection = 105045921;
+
+  repeated SearchSchemaElement searchschema = 383005739;
+
+  VectorAttributeDefinition vectorattribute = 384679503;
+
+}
+
+
+
+// A vector index to be added to or removed from a table.
+
+message VectorIndexUpdate {
+
+  CreateVectorIndexAction create = 420340862;
+
+  DeleteVectorIndexAction delete = 395831915;
 
 }
 

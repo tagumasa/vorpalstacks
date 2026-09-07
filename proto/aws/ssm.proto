@@ -48,6 +48,11 @@ service SSMService {
   // Protocol: awsJson1_1
   rpc CreateAssociationBatch(CreateAssociationBatchRequest) returns (CreateAssociationBatchResult);
 
+  // Creates a cloud connector that establishes a connection between Systems Manager and a third-party cloud environment.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc CreateCloudConnector(CreateCloudConnectorRequest) returns (CreateCloudConnectorResult);
+
   // Creates a Amazon Web Services Systems Manager (SSM document). An SSM document defines the actions that Systems Manager performs on your managed nodes. For more information about SSM documents, incl...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -87,6 +92,11 @@ service SSMService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DeleteAssociation(DeleteAssociationRequest) returns (DeleteAssociationResult);
+
+  // Deletes a cloud connector.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DeleteCloudConnector(DeleteCloudConnectorRequest) returns (DeleteCloudConnectorResult);
 
   // Deletes the Amazon Web Services Systems Manager document (SSM document) and all managed node associations to the document. Before you delete the document, we recommend that you use DeleteAssociatio...
   // HTTP:  
@@ -343,6 +353,11 @@ service SSMService {
   // Protocol: awsJson1_1
   rpc GetCalendarState(GetCalendarStateRequest) returns (GetCalendarStateResponse);
 
+  // Returns detailed information about a cloud connector.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc GetCloudConnector(GetCloudConnectorRequest) returns (GetCloudConnectorResult);
+
   // Returns detailed information about command execution for an invocation or plugin. The Run Command API follows an eventual consistency model, due to the distributed nature of the system supporting t...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -478,6 +493,11 @@ service SSMService {
   // Protocol: awsJson1_1
   rpc ListAssociationVersions(ListAssociationVersionsRequest) returns (ListAssociationVersionsResult);
 
+  // Returns a list of cloud connectors in the current Amazon Web Services account and Amazon Web Services Region.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListCloudConnectors(ListCloudConnectorsRequest) returns (ListCloudConnectorsResult);
+
   // An invocation is copy of a command sent to a specific managed node. A command can apply to one or more managed nodes. A command invocation applies to one managed node. For example, if a user runs S...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -573,7 +593,7 @@ service SSMService {
   // Protocol: awsJson1_1
   rpc PutInventory(PutInventoryRequest) returns (PutInventoryResult);
 
-  // Create or update a parameter in Parameter Store.
+  // Create or update a parameter in Parameter Store. Parameter Store throughput defines the number of API transactions per second (TPS) that Systems Manager can process. This applies to GetParameter, G...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc PutParameter(PutParameterRequest) returns (PutParameterResult);
@@ -683,6 +703,11 @@ service SSMService {
   // Protocol: awsJson1_1
   rpc UpdateAssociationStatus(UpdateAssociationStatusRequest) returns (UpdateAssociationStatusResult);
 
+  // Updates an existing cloud connector with new configuration details.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc UpdateCloudConnector(UpdateCloudConnectorRequest) returns (UpdateCloudConnectorResult);
+
   // Updates one or more values for an SSM document.
   // HTTP:  
   // Protocol: awsJson1_1
@@ -743,6 +768,11 @@ service SSMService {
   // Protocol: awsJson1_1
   rpc UpdateServiceSetting(UpdateServiceSettingRequest) returns (UpdateServiceSettingResult);
 
+  // Validates the configuration and connectivity of a cloud connector.
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ValidateCloudConnector(ValidateCloudConnectorRequest) returns (ValidateCloudConnectorResult);
+
 }
 
 
@@ -787,9 +817,9 @@ enum AccessType {
 
 message AccountSharingInfo {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
-  string shareddocumentversion = 240155144;
+  optional string shareddocumentversion = 240155144;
 
 }
 
@@ -799,19 +829,19 @@ message AccountSharingInfo {
 
 message Activation {
 
-  string activationid = 146858601;
+  optional string activationid = 146858601;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string defaultinstancename = 27070947;
+  optional string defaultinstancename = 27070947;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string expirationdate = 17577725;
+  optional string expirationdate = 17577725;
 
   optional bool expired = 480900051;
 
-  string iamrole = 242424351;
+  optional string iamrole = 242424351;
 
   optional int32 registrationlimit = 312393964;
 
@@ -879,7 +909,7 @@ message AlarmStateInformation {
 
 message AlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -901,7 +931,7 @@ message AssociateOpsItemRelatedItemRequest {
 
 message AssociateOpsItemRelatedItemResponse {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
 }
 
@@ -919,25 +949,25 @@ message AssociatedInstances {
 
 message Association {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 duration = 348604718;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string lastexecutiondate = 492296302;
+  optional string lastexecutiondate = 492296302;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   AssociationOverview overview = 172576699;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   optional int32 scheduleoffset = 156928216;
 
@@ -981,39 +1011,39 @@ message AssociationDescription {
 
   optional bool applyonlyatcroninterval = 285867158;
 
-  string associationdispatchassumerole = 281627425;
+  optional string associationdispatchassumerole = 281627425;
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string automationtargetparametername = 348584826;
+  optional string automationtargetparametername = 348584826;
 
   repeated string calendarnames = 36075966;
 
   AssociationComplianceSeverity complianceseverity = 278891158;
 
-  string date = 458388346;
+  optional string date = 458388346;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 duration = 348604718;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string lastexecutiondate = 492296302;
+  optional string lastexecutiondate = 492296302;
 
-  string lastsuccessfulexecutiondate = 160123084;
+  optional string lastsuccessfulexecutiondate = 160123084;
 
-  string lastupdateassociationdate = 223483812;
+  optional string lastupdateassociationdate = 223483812;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   InstanceAssociationOutputLocation outputlocation = 67991028;
 
@@ -1021,7 +1051,7 @@ message AssociationDescription {
 
   map<string, string> parameters = 494900218;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   optional int32 scheduleoffset = 156928216;
 
@@ -1045,7 +1075,7 @@ message AssociationDescription {
 
 message AssociationDoesNotExist {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1057,21 +1087,21 @@ message AssociationExecution {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
-  string detailedstatus = 223171376;
+  optional string detailedstatus = 223171376;
 
-  string executionid = 147580849;
+  optional string executionid = 147580849;
 
-  string lastexecutiondate = 492296302;
+  optional string lastexecutiondate = 492296302;
 
-  string resourcecountbystatus = 129812756;
+  optional string resourcecountbystatus = 129812756;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   repeated AlarmStateInformation triggeredalarms = 263222917;
 
@@ -1083,7 +1113,7 @@ message AssociationExecution {
 
 message AssociationExecutionDoesNotExist {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1119,23 +1149,23 @@ enum AssociationExecutionFilterKey {
 
 message AssociationExecutionTarget {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string detailedstatus = 223171376;
+  optional string detailedstatus = 223171376;
 
-  string executionid = 147580849;
+  optional string executionid = 147580849;
 
-  string lastexecutiondate = 492296302;
+  optional string lastexecutiondate = 492296302;
 
   OutputSource outputsource = 125784002;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -1189,11 +1219,13 @@ enum AssociationFilterKey {
 
   ASSOCIATION_FILTER_KEY_RESOURCEGROUPNAME = 4;
 
-  ASSOCIATION_FILTER_KEY_NAME = 5;
+  ASSOCIATION_FILTER_KEY_CLOUDCONNECTORID = 5;
 
-  ASSOCIATION_FILTER_KEY_ASSOCIATIONNAME = 6;
+  ASSOCIATION_FILTER_KEY_NAME = 6;
 
-  ASSOCIATION_FILTER_KEY_ASSOCIATIONID = 7;
+  ASSOCIATION_FILTER_KEY_ASSOCIATIONNAME = 7;
+
+  ASSOCIATION_FILTER_KEY_ASSOCIATIONID = 8;
 
 }
 
@@ -1225,9 +1257,9 @@ message AssociationOverview {
 
   map<string, int32> associationstatusaggregatedcount = 159361291;
 
-  string detailedstatus = 223171376;
+  optional string detailedstatus = 223171376;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -1237,7 +1269,7 @@ message AssociationOverview {
 
 message AssociationStatus {
 
-  string additionalinfo = 62481793;
+  optional string additionalinfo = 62481793;
 
   string date = 458388346;
 
@@ -1277,35 +1309,35 @@ message AssociationVersionInfo {
 
   optional bool applyonlyatcroninterval = 285867158;
 
-  string associationdispatchassumerole = 281627425;
+  optional string associationdispatchassumerole = 281627425;
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
   repeated string calendarnames = 36075966;
 
   AssociationComplianceSeverity complianceseverity = 278891158;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 duration = 348604718;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   InstanceAssociationOutputLocation outputlocation = 67991028;
 
   map<string, string> parameters = 494900218;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   optional int32 scheduleoffset = 156928216;
 
@@ -1325,7 +1357,7 @@ message AssociationVersionInfo {
 
 message AssociationVersionLimitExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1335,15 +1367,15 @@ message AssociationVersionLimitExceeded {
 
 message AttachmentContent {
 
-  string hash = 250828530;
+  optional string hash = 250828530;
 
   AttachmentHashType hashtype = 172838330;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int64 size = 105352829;
 
-  string url = 354018239;
+  optional string url = 354018239;
 
 }
 
@@ -1361,7 +1393,7 @@ enum AttachmentHashType {
 
 message AttachmentInformation {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1373,7 +1405,7 @@ message AttachmentsSource {
 
   AttachmentsSourceKey key = 219859213;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated string values = 223158876;
 
@@ -1397,7 +1429,7 @@ enum AttachmentsSourceKey {
 
 message AutomationDefinitionNotApprovedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1407,7 +1439,7 @@ message AutomationDefinitionNotApprovedException {
 
 message AutomationDefinitionNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1417,7 +1449,7 @@ message AutomationDefinitionNotFoundException {
 
 message AutomationDefinitionVersionNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1429,45 +1461,45 @@ message AutomationExecution {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string automationexecutionid = 12449766;
+  optional string automationexecutionid = 12449766;
 
   AutomationExecutionStatus automationexecutionstatus = 531364411;
 
   AutomationSubtype automationsubtype = 153542097;
 
-  string changerequestname = 468779362;
+  optional string changerequestname = 468779362;
 
-  string currentaction = 337681497;
+  optional string currentaction = 337681497;
 
-  string currentstepname = 126991996;
+  optional string currentstepname = 126991996;
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string executedby = 186546754;
+  optional string executedby = 186546754;
 
-  string executionendtime = 139859196;
+  optional string executionendtime = 139859196;
 
-  string executionstarttime = 429847391;
+  optional string executionstarttime = 429847391;
 
-  string failuremessage = 353556937;
+  optional string failuremessage = 353556937;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   ExecutionMode mode = 323909427;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
   map<string, string> outputs = 455868918;
 
   map<string, string> parameters = 494900218;
 
-  string parentautomationexecutionid = 232537390;
+  optional string parentautomationexecutionid = 232537390;
 
   ProgressCounters progresscounters = 162419216;
 
@@ -1475,27 +1507,29 @@ message AutomationExecution {
 
   repeated Runbook runbooks = 514418725;
 
-  string scheduledtime = 334708242;
+  optional string scheduledtime = 334708242;
 
   repeated StepExecution stepexecutions = 164157981;
 
   optional bool stepexecutionstruncated = 472961151;
 
-  string target = 191361385;
+  optional string target = 191361385;
 
   repeated TargetLocation targetlocations = 289168805;
 
-  string targetlocationsurl = 107583422;
+  optional string targetlocationsurl = 107583422;
 
   repeated TargetMapsEntry targetmaps = 74800696;
 
-  string targetparametername = 351056597;
+  optional string targetparametername = 351056597;
 
   repeated Target targets = 262180226;
 
   repeated AlarmStateInformation triggeredalarms = 263222917;
 
   map<string, string> variables = 429322339;
+
+  optional string warningmessage = 497413775;
 
 }
 
@@ -1551,11 +1585,11 @@ message AutomationExecutionInputs {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  string targetlocationsurl = 107583422;
+  optional string targetlocationsurl = 107583422;
 
   repeated TargetMapsEntry targetmaps = 74800696;
 
-  string targetparametername = 351056597;
+  optional string targetparametername = 351056597;
 
   repeated Target targets = 262180226;
 
@@ -1567,7 +1601,7 @@ message AutomationExecutionInputs {
 
 message AutomationExecutionLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1579,9 +1613,9 @@ message AutomationExecutionMetadata {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string automationexecutionid = 12449766;
+  optional string automationexecutionid = 12449766;
 
   AutomationExecutionStatus automationexecutionstatus = 531364411;
 
@@ -1589,55 +1623,57 @@ message AutomationExecutionMetadata {
 
   AutomationType automationtype = 72473291;
 
-  string changerequestname = 468779362;
+  optional string changerequestname = 468779362;
 
-  string currentaction = 337681497;
+  optional string currentaction = 337681497;
 
-  string currentstepname = 126991996;
+  optional string currentstepname = 126991996;
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string executedby = 186546754;
+  optional string executedby = 186546754;
 
-  string executionendtime = 139859196;
+  optional string executionendtime = 139859196;
 
-  string executionstarttime = 429847391;
+  optional string executionstarttime = 429847391;
 
-  string failuremessage = 353556937;
+  optional string failuremessage = 353556937;
 
-  string logfile = 13056280;
+  optional string logfile = 13056280;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   ExecutionMode mode = 323909427;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
   map<string, string> outputs = 455868918;
 
-  string parentautomationexecutionid = 232537390;
+  optional string parentautomationexecutionid = 232537390;
 
   ResolvedTargets resolvedtargets = 361325602;
 
   repeated Runbook runbooks = 514418725;
 
-  string scheduledtime = 334708242;
+  optional string scheduledtime = 334708242;
 
-  string target = 191361385;
+  optional string target = 191361385;
 
-  string targetlocationsurl = 107583422;
+  optional string targetlocationsurl = 107583422;
 
   repeated TargetMapsEntry targetmaps = 74800696;
 
-  string targetparametername = 351056597;
+  optional string targetparametername = 351056597;
 
   repeated Target targets = 262180226;
 
   repeated AlarmStateInformation triggeredalarms = 263222917;
+
+  optional string warningmessage = 497413775;
 
 }
 
@@ -1647,7 +1683,7 @@ message AutomationExecutionMetadata {
 
 message AutomationExecutionNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1717,7 +1753,7 @@ enum AutomationExecutionStatus {
 
 message AutomationStepNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1738,6 +1774,36 @@ enum AutomationType {
   AUTOMATION_TYPE_LOCAL = 0;
 
   AUTOMATION_TYPE_CROSSACCOUNT = 1;
+
+}
+
+
+
+// The access details and targets for connecting to a Microsoft Azure tenant, including the application registration used for authentication and the subscriptions to target.
+
+message AzureConfiguration {
+
+  optional string applicationdisplayname = 216937047;
+
+  string applicationid = 132869857;
+
+  ConfigurationTargets targets = 262180226;
+
+  optional string tenantdisplayname = 475348407;
+
+  string tenantid = 211549185;
+
+}
+
+
+
+// Information about an Azure subscription targeted by the cloud connector.
+
+message AzureSubscription {
+
+  optional string displayname = 418161847;
+
+  string id = 384350465;
 
 }
 
@@ -1811,7 +1877,59 @@ message CancelMaintenanceWindowExecutionRequest {
 
 message CancelMaintenanceWindowExecutionResult {
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
+
+}
+
+
+
+// The configuration that provides access details and targets for connecting to a third-party cloud environment.
+
+message CloudConnectorConfiguration {
+
+  AzureConfiguration azureconfiguration = 417776179;
+
+}
+
+
+
+// A filter for listing cloud connectors.
+
+message CloudConnectorFilter {
+
+  CloudConnectorFilterKey filterkey = 300347055;
+
+  repeated string filtervalues = 471484302;
+
+}
+
+
+
+enum CloudConnectorFilterKey {
+
+  CLOUD_CONNECTOR_FILTER_KEY_SUBSCRIPTIONID = 0;
+
+  CLOUD_CONNECTOR_FILTER_KEY_TENANTID = 1;
+
+}
+
+
+
+// Summary information about a cloud connector.
+
+message CloudConnectorSummary {
+
+  optional string cloudconnectorid = 285172965;
+
+  optional string createdat = 258192751;
+
+  optional string description = 115243530;
+
+  optional string displayname = 418161847;
+
+  optional string rolearn = 322567169;
+
+  optional string updatedat = 213581206;
 
 }
 
@@ -1821,7 +1939,7 @@ message CancelMaintenanceWindowExecutionResult {
 
 message CloudWatchOutputConfig {
 
-  string cloudwatchloggroupname = 2322068;
+  optional string cloudwatchloggroupname = 2322068;
 
   optional bool cloudwatchoutputenabled = 30430974;
 
@@ -1837,45 +1955,45 @@ message Command {
 
   CloudWatchOutputConfig cloudwatchoutputconfig = 21186555;
 
-  string commandid = 159395200;
+  optional string commandid = 159395200;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   optional int32 completedcount = 11380122;
 
   optional int32 deliverytimedoutcount = 176157036;
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 errorcount = 311137001;
 
-  string expiresafter = 350882700;
+  optional string expiresafter = 350882700;
 
   repeated string instanceids = 312792453;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   NotificationConfig notificationconfig = 346074145;
 
-  string outputs3bucketname = 186756480;
+  optional string outputs3bucketname = 186756480;
 
-  string outputs3keyprefix = 17840974;
+  optional string outputs3keyprefix = 17840974;
 
-  string outputs3region = 398718159;
+  optional string outputs3region = 398718159;
 
   map<string, string> parameters = 494900218;
 
-  string requesteddatetime = 111054087;
+  optional string requesteddatetime = 111054087;
 
-  string servicerole = 47807725;
+  optional string servicerole = 47807725;
 
   CommandStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
   optional int32 targetcount = 525114440;
 
@@ -1923,35 +2041,35 @@ message CommandInvocation {
 
   CloudWatchOutputConfig cloudwatchoutputconfig = 21186555;
 
-  string commandid = 159395200;
+  optional string commandid = 159395200;
 
   repeated CommandPlugin commandplugins = 508176155;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string instancename = 281444442;
+  optional string instancename = 281444442;
 
   NotificationConfig notificationconfig = 346074145;
 
-  string requesteddatetime = 111054087;
+  optional string requesteddatetime = 111054087;
 
-  string servicerole = 47807725;
+  optional string servicerole = 47807725;
 
-  string standarderrorurl = 403407680;
+  optional string standarderrorurl = 403407680;
 
-  string standardoutputurl = 347642271;
+  optional string standardoutputurl = 347642271;
 
   CommandInvocationStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
-  string traceoutput = 519666568;
+  optional string traceoutput = 519666568;
 
 }
 
@@ -1983,29 +2101,29 @@ enum CommandInvocationStatus {
 
 message CommandPlugin {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string output = 242631461;
+  optional string output = 242631461;
 
-  string outputs3bucketname = 186756480;
+  optional string outputs3bucketname = 186756480;
 
-  string outputs3keyprefix = 17840974;
+  optional string outputs3keyprefix = 17840974;
 
-  string outputs3region = 398718159;
+  optional string outputs3region = 398718159;
 
   optional int32 responsecode = 447553700;
 
-  string responsefinishdatetime = 259049989;
+  optional string responsefinishdatetime = 259049989;
 
-  string responsestartdatetime = 382241276;
+  optional string responsestartdatetime = 382241276;
 
-  string standarderrorurl = 403407680;
+  optional string standarderrorurl = 403407680;
 
-  string standardoutputurl = 347642271;
+  optional string standardoutputurl = 347642271;
 
   CommandPluginStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
 }
 
@@ -2053,11 +2171,11 @@ enum CommandStatus {
 
 message ComplianceExecutionSummary {
 
-  string executionid = 147580849;
+  optional string executionid = 147580849;
 
   string executiontime = 379716053;
 
-  string executiontype = 224869374;
+  optional string executiontype = 224869374;
 
 }
 
@@ -2067,23 +2185,23 @@ message ComplianceExecutionSummary {
 
 message ComplianceItem {
 
-  string compliancetype = 451385291;
+  optional string compliancetype = 451385291;
 
   map<string, string> details = 247611974;
 
   ComplianceExecutionSummary executionsummary = 71480964;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
   ComplianceSeverity severity = 276886227;
 
   ComplianceStatus status = 6222352;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
 }
 
@@ -2095,13 +2213,13 @@ message ComplianceItemEntry {
 
   map<string, string> details = 247611974;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   ComplianceSeverity severity = 276886227;
 
   ComplianceStatus status = 6222352;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
 }
 
@@ -2155,7 +2273,7 @@ enum ComplianceStatus {
 
 message ComplianceStringFilter {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
   ComplianceQueryOperatorType type = 290836590;
 
@@ -2169,7 +2287,7 @@ message ComplianceStringFilter {
 
 message ComplianceSummaryItem {
 
-  string compliancetype = 451385291;
+  optional string compliancetype = 451385291;
 
   CompliantSummary compliantsummary = 133218055;
 
@@ -2183,7 +2301,7 @@ message ComplianceSummaryItem {
 
 message ComplianceTypeCountLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2211,6 +2329,26 @@ message CompliantSummary {
 
 
 
+// The target resources in the third-party cloud environment.
+
+message ConfigurationTargets {
+
+  repeated AzureSubscription subscriptions = 169711430;
+
+}
+
+
+
+// An error occurred because of a conflict with a concurrent request or the current state of the resource. Retry your request.
+
+message ConflictException {
+
+  optional string message = 235854213;
+
+}
+
+
+
 enum ConnectionStatus {
 
   CONNECTION_STATUS_NOT_CONNECTED = 0;
@@ -2223,11 +2361,11 @@ enum ConnectionStatus {
 
 message CreateActivationRequest {
 
-  string defaultinstancename = 27070947;
+  optional string defaultinstancename = 27070947;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string expirationdate = 17577725;
+  optional string expirationdate = 17577725;
 
   string iamrole = 242424351;
 
@@ -2243,9 +2381,9 @@ message CreateActivationRequest {
 
 message CreateActivationResult {
 
-  string activationcode = 290753501;
+  optional string activationcode = 290753501;
 
-  string activationid = 146858601;
+  optional string activationid = 146858601;
 
 }
 
@@ -2253,7 +2391,7 @@ message CreateActivationResult {
 
 message CreateAssociationBatchRequest {
 
-  string associationdispatchassumerole = 281627425;
+  optional string associationdispatchassumerole = 281627425;
 
   repeated CreateAssociationBatchRequestEntry entries = 481075860;
 
@@ -2269,23 +2407,23 @@ message CreateAssociationBatchRequestEntry {
 
   optional bool applyonlyatcroninterval = 285867158;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string automationtargetparametername = 348584826;
+  optional string automationtargetparametername = 348584826;
 
   repeated string calendarnames = 36075966;
 
   AssociationComplianceSeverity complianceseverity = 278891158;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 duration = 348604718;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   string name = 266367751;
 
@@ -2293,7 +2431,7 @@ message CreateAssociationBatchRequestEntry {
 
   map<string, string> parameters = 494900218;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   optional int32 scheduleoffset = 156928216;
 
@@ -2325,25 +2463,25 @@ message CreateAssociationRequest {
 
   optional bool applyonlyatcroninterval = 285867158;
 
-  string associationdispatchassumerole = 281627425;
+  optional string associationdispatchassumerole = 281627425;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string automationtargetparametername = 348584826;
+  optional string automationtargetparametername = 348584826;
 
   repeated string calendarnames = 36075966;
 
   AssociationComplianceSeverity complianceseverity = 278891158;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 duration = 348604718;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   string name = 266367751;
 
@@ -2351,7 +2489,7 @@ message CreateAssociationRequest {
 
   map<string, string> parameters = 494900218;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   optional int32 scheduleoffset = 156928216;
 
@@ -2377,13 +2515,39 @@ message CreateAssociationResult {
 
 
 
+message CreateCloudConnectorRequest {
+
+  string configconnectorarn = 339350470;
+
+  CloudConnectorConfiguration configuration = 442426458;
+
+  optional string description = 115243530;
+
+  string displayname = 418161847;
+
+  string rolearn = 322567169;
+
+  repeated Tag tags = 381526209;
+
+}
+
+
+
+message CreateCloudConnectorResult {
+
+  optional string cloudconnectorid = 285172965;
+
+}
+
+
+
 message CreateDocumentRequest {
 
   repeated AttachmentsSource attachments = 498946338;
 
   string content = 23568227;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   DocumentFormat documentformat = 516934792;
 
@@ -2395,9 +2559,9 @@ message CreateDocumentRequest {
 
   repeated Tag tags = 381526209;
 
-  string targettype = 397256481;
+  optional string targettype = 397256481;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -2415,15 +2579,15 @@ message CreateMaintenanceWindowRequest {
 
   optional bool allowunassociatedtargets = 154411300;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   int32 cutoff = 498433089;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   int32 duration = 348604718;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
   string name = 266367751;
 
@@ -2431,9 +2595,9 @@ message CreateMaintenanceWindowRequest {
 
   optional int32 scheduleoffset = 156928216;
 
-  string scheduletimezone = 170037696;
+  optional string scheduletimezone = 170037696;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   repeated Tag tags = 381526209;
 
@@ -2443,7 +2607,7 @@ message CreateMaintenanceWindowRequest {
 
 message CreateMaintenanceWindowResult {
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -2451,13 +2615,13 @@ message CreateMaintenanceWindowResult {
 
 message CreateOpsItemRequest {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
-  string actualendtime = 452787526;
+  optional string actualendtime = 452787526;
 
-  string actualstarttime = 532853117;
+  optional string actualstarttime = 532853117;
 
-  string category = 263447954;
+  optional string category = 263447954;
 
   string description = 115243530;
 
@@ -2465,17 +2629,17 @@ message CreateOpsItemRequest {
 
   map<string, OpsItemDataValue> operationaldata = 360357940;
 
-  string opsitemtype = 317873397;
+  optional string opsitemtype = 317873397;
 
-  string plannedendtime = 245727820;
+  optional string plannedendtime = 245727820;
 
-  string plannedstarttime = 478079215;
+  optional string plannedstarttime = 478079215;
 
   optional int32 priority = 109944618;
 
   repeated RelatedOpsItem relatedopsitems = 287082393;
 
-  string severity = 276886227;
+  optional string severity = 276886227;
 
   string source = 31630329;
 
@@ -2489,9 +2653,9 @@ message CreateOpsItemRequest {
 
 message CreateOpsItemResponse {
 
-  string opsitemarn = 222489428;
+  optional string opsitemarn = 222489428;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
 }
 
@@ -2511,7 +2675,7 @@ message CreateOpsMetadataRequest {
 
 message CreateOpsMetadataResult {
 
-  string opsmetadataarn = 482385698;
+  optional string opsmetadataarn = 482385698;
 
 }
 
@@ -2529,9 +2693,9 @@ message CreatePatchBaselineRequest {
 
   PatchComplianceStatus availablesecurityupdatescompliancestatus = 187471858;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   PatchFilterGroup globalfilters = 263302754;
 
@@ -2553,7 +2717,7 @@ message CreatePatchBaselineRequest {
 
 message CreatePatchBaselineResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
 }
 
@@ -2567,7 +2731,7 @@ message CreateResourceDataSyncRequest {
 
   ResourceDataSyncSource syncsource = 286486824;
 
-  string synctype = 122336091;
+  optional string synctype = 122336091;
 
 }
 
@@ -2599,7 +2763,7 @@ message Credentials {
 
 message CustomSchemaCountLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2621,11 +2785,11 @@ message DeleteActivationResult {
 
 message DeleteAssociationRequest {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -2637,15 +2801,31 @@ message DeleteAssociationResult {
 
 
 
+message DeleteCloudConnectorRequest {
+
+  string cloudconnectorid = 285172965;
+
+}
+
+
+
+message DeleteCloudConnectorResult {
+
+  optional string cloudconnectorid = 285172965;
+
+}
+
+
+
 message DeleteDocumentRequest {
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional bool force = 526711333;
 
   string name = 266367751;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -2659,7 +2839,7 @@ message DeleteDocumentResult {
 
 message DeleteInventoryRequest {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   optional bool dryrun = 92204984;
 
@@ -2673,11 +2853,11 @@ message DeleteInventoryRequest {
 
 message DeleteInventoryResult {
 
-  string deletionid = 126693587;
+  optional string deletionid = 126693587;
 
   InventoryDeletionSummary deletionsummary = 189954074;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -2693,7 +2873,7 @@ message DeleteMaintenanceWindowRequest {
 
 message DeleteMaintenanceWindowResult {
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -2769,7 +2949,7 @@ message DeletePatchBaselineRequest {
 
 message DeletePatchBaselineResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
 }
 
@@ -2779,7 +2959,7 @@ message DeleteResourceDataSyncRequest {
 
   string syncname = 369920802;
 
-  string synctype = 122336091;
+  optional string synctype = 122336091;
 
 }
 
@@ -2835,9 +3015,9 @@ message DeregisterPatchBaselineForPatchGroupRequest {
 
 message DeregisterPatchBaselineForPatchGroupResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
-  string patchgroup = 518806497;
+  optional string patchgroup = 518806497;
 
 }
 
@@ -2857,9 +3037,9 @@ message DeregisterTargetFromMaintenanceWindowRequest {
 
 message DeregisterTargetFromMaintenanceWindowResult {
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtargetid = 259696478;
+  optional string windowtargetid = 259696478;
 
 }
 
@@ -2877,9 +3057,9 @@ message DeregisterTaskFromMaintenanceWindowRequest {
 
 message DeregisterTaskFromMaintenanceWindowResult {
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtaskid = 323765978;
+  optional string windowtaskid = 323765978;
 
 }
 
@@ -2915,7 +3095,7 @@ message DescribeActivationsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2925,7 +3105,7 @@ message DescribeActivationsResult {
 
   repeated Activation activationlist = 341191290;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2941,7 +3121,7 @@ message DescribeAssociationExecutionTargetsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2951,7 +3131,7 @@ message DescribeAssociationExecutionTargetsResult {
 
   repeated AssociationExecutionTarget associationexecutiontargets = 124720489;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2965,7 +3145,7 @@ message DescribeAssociationExecutionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2975,7 +3155,7 @@ message DescribeAssociationExecutionsResult {
 
   repeated AssociationExecution associationexecutions = 406414972;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2983,13 +3163,13 @@ message DescribeAssociationExecutionsResult {
 
 message DescribeAssociationRequest {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -3009,7 +3189,7 @@ message DescribeAutomationExecutionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3019,7 +3199,7 @@ message DescribeAutomationExecutionsResult {
 
   repeated AutomationExecutionMetadata automationexecutionmetadatalist = 202240522;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3033,7 +3213,7 @@ message DescribeAutomationStepExecutionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional bool reverseorder = 427445336;
 
@@ -3043,7 +3223,7 @@ message DescribeAutomationStepExecutionsRequest {
 
 message DescribeAutomationStepExecutionsResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated StepExecution stepexecutions = 164157981;
 
@@ -3057,7 +3237,7 @@ message DescribeAvailablePatchesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3065,7 +3245,7 @@ message DescribeAvailablePatchesRequest {
 
 message DescribeAvailablePatchesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Patch patches = 66243222;
 
@@ -3079,7 +3259,7 @@ message DescribeDocumentPermissionRequest {
 
   string name = 266367751;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   DocumentPermissionType permissiontype = 479110739;
 
@@ -3093,7 +3273,7 @@ message DescribeDocumentPermissionResponse {
 
   repeated AccountSharingInfo accountsharinginfolist = 250360901;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3101,11 +3281,11 @@ message DescribeDocumentPermissionResponse {
 
 message DescribeDocumentRequest {
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   string name = 266367751;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -3125,7 +3305,7 @@ message DescribeEffectiveInstanceAssociationsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3135,7 +3315,7 @@ message DescribeEffectiveInstanceAssociationsResult {
 
   repeated InstanceAssociation associations = 149658718;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3147,7 +3327,7 @@ message DescribeEffectivePatchesForPatchBaselineRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3157,7 +3337,7 @@ message DescribeEffectivePatchesForPatchBaselineResult {
 
   repeated EffectivePatch effectivepatches = 494972541;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3169,7 +3349,7 @@ message DescribeInstanceAssociationsStatusRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3179,7 +3359,7 @@ message DescribeInstanceAssociationsStatusResult {
 
   repeated InstanceAssociationStatusInfo instanceassociationstatusinfos = 261960249;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3193,7 +3373,7 @@ message DescribeInstanceInformationRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3203,7 +3383,7 @@ message DescribeInstanceInformationResult {
 
   repeated InstanceInformation instanceinformationlist = 170547885;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3215,7 +3395,7 @@ message DescribeInstancePatchStatesForPatchGroupRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string patchgroup = 518806497;
 
@@ -3227,7 +3407,7 @@ message DescribeInstancePatchStatesForPatchGroupResult {
 
   repeated InstancePatchState instancepatchstates = 373960971;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3239,7 +3419,7 @@ message DescribeInstancePatchStatesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3249,7 +3429,7 @@ message DescribeInstancePatchStatesResult {
 
   repeated InstancePatchState instancepatchstates = 373960971;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3263,7 +3443,7 @@ message DescribeInstancePatchesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3271,7 +3451,7 @@ message DescribeInstancePatchesRequest {
 
 message DescribeInstancePatchesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PatchComplianceData patches = 66243222;
 
@@ -3287,7 +3467,7 @@ message DescribeInstancePropertiesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3297,7 +3477,7 @@ message DescribeInstancePropertiesResult {
 
   repeated InstanceProperty instanceproperties = 346214368;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3305,11 +3485,11 @@ message DescribeInstancePropertiesResult {
 
 message DescribeInventoryDeletionsRequest {
 
-  string deletionid = 126693587;
+  optional string deletionid = 126693587;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3319,7 +3499,7 @@ message DescribeInventoryDeletionsResult {
 
   repeated InventoryDeletionStatusItem inventorydeletions = 492028263;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3331,7 +3511,7 @@ message DescribeMaintenanceWindowExecutionTaskInvocationsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string taskid = 18532514;
 
@@ -3343,7 +3523,7 @@ message DescribeMaintenanceWindowExecutionTaskInvocationsRequest {
 
 message DescribeMaintenanceWindowExecutionTaskInvocationsResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowExecutionTaskInvocationIdentity windowexecutiontaskinvocationidentities = 497972341;
 
@@ -3357,7 +3537,7 @@ message DescribeMaintenanceWindowExecutionTasksRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string windowexecutionid = 357168521;
 
@@ -3367,7 +3547,7 @@ message DescribeMaintenanceWindowExecutionTasksRequest {
 
 message DescribeMaintenanceWindowExecutionTasksResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowExecutionTaskIdentity windowexecutiontaskidentities = 497824727;
 
@@ -3381,7 +3561,7 @@ message DescribeMaintenanceWindowExecutionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string windowid = 19001897;
 
@@ -3391,7 +3571,7 @@ message DescribeMaintenanceWindowExecutionsRequest {
 
 message DescribeMaintenanceWindowExecutionsResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowExecution windowexecutions = 165671467;
 
@@ -3405,13 +3585,13 @@ message DescribeMaintenanceWindowScheduleRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   MaintenanceWindowResourceType resourcetype = 301342558;
 
   repeated Target targets = 262180226;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -3419,7 +3599,7 @@ message DescribeMaintenanceWindowScheduleRequest {
 
 message DescribeMaintenanceWindowScheduleResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ScheduledWindowExecution scheduledwindowexecutions = 493214756;
 
@@ -3433,7 +3613,7 @@ message DescribeMaintenanceWindowTargetsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string windowid = 19001897;
 
@@ -3443,7 +3623,7 @@ message DescribeMaintenanceWindowTargetsRequest {
 
 message DescribeMaintenanceWindowTargetsResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowTarget targets = 262180226;
 
@@ -3457,7 +3637,7 @@ message DescribeMaintenanceWindowTasksRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string windowid = 19001897;
 
@@ -3467,7 +3647,7 @@ message DescribeMaintenanceWindowTasksRequest {
 
 message DescribeMaintenanceWindowTasksResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowTask tasks = 429824110;
 
@@ -3479,7 +3659,7 @@ message DescribeMaintenanceWindowsForTargetRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   MaintenanceWindowResourceType resourcetype = 301342558;
 
@@ -3491,7 +3671,7 @@ message DescribeMaintenanceWindowsForTargetRequest {
 
 message DescribeMaintenanceWindowsForTargetResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowIdentityForTarget windowidentities = 223310036;
 
@@ -3505,7 +3685,7 @@ message DescribeMaintenanceWindowsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3513,7 +3693,7 @@ message DescribeMaintenanceWindowsRequest {
 
 message DescribeMaintenanceWindowsResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated MaintenanceWindowIdentity windowidentities = 223310036;
 
@@ -3525,7 +3705,7 @@ message DescribeOpsItemsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated OpsItemFilter opsitemfilters = 81740152;
 
@@ -3535,7 +3715,7 @@ message DescribeOpsItemsRequest {
 
 message DescribeOpsItemsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated OpsItemSummary opsitemsummaries = 250098577;
 
@@ -3549,7 +3729,7 @@ message DescribeParametersRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ParameterStringFilter parameterfilters = 511502980;
 
@@ -3561,7 +3741,7 @@ message DescribeParametersRequest {
 
 message DescribeParametersResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ParameterMetadata parameters = 494900218;
 
@@ -3575,7 +3755,7 @@ message DescribePatchBaselinesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3585,7 +3765,7 @@ message DescribePatchBaselinesResult {
 
   repeated PatchBaselineIdentity baselineidentities = 340730797;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3637,7 +3817,7 @@ message DescribePatchGroupsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3647,7 +3827,7 @@ message DescribePatchGroupsResult {
 
   repeated PatchGroupPatchBaselineMapping mappings = 8955491;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3657,7 +3837,7 @@ message DescribePatchPropertiesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   OperatingSystem operatingsystem = 38829802;
 
@@ -3671,7 +3851,7 @@ message DescribePatchPropertiesRequest {
 
 message DescribePatchPropertiesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PatchPropertiesListEntry properties = 29886973;
 
@@ -3685,7 +3865,7 @@ message DescribeSessionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   SessionState state = 502047895;
 
@@ -3695,7 +3875,7 @@ message DescribeSessionsRequest {
 
 message DescribeSessionsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Session sessions = 379226861;
 
@@ -3723,7 +3903,7 @@ message DisassociateOpsItemRelatedItemResponse {
 
 message DocumentAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3733,11 +3913,11 @@ message DocumentAlreadyExists {
 
 message DocumentDefaultVersionDescription {
 
-  string defaultversion = 161172483;
+  optional string defaultversion = 161172483;
 
-  string defaultversionname = 61928938;
+  optional string defaultversionname = 61928938;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -3747,43 +3927,43 @@ message DocumentDefaultVersionDescription {
 
 message DocumentDescription {
 
-  string approvedversion = 457739495;
+  optional string approvedversion = 457739495;
 
   repeated AttachmentInformation attachmentsinformation = 327375170;
 
-  string author = 361744247;
+  optional string author = 361744247;
 
   repeated string category = 263447954;
 
   repeated string categoryenum = 42168029;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string defaultversion = 161172483;
+  optional string defaultversion = 161172483;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   DocumentFormat documentformat = 516934792;
 
   DocumentType documenttype = 457084477;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string hash = 250828530;
+  optional string hash = 250828530;
 
   DocumentHashType hashtype = 172838330;
 
-  string latestversion = 424864587;
+  optional string latestversion = 424864587;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string owner = 455261813;
+  optional string owner = 455261813;
 
   repeated DocumentParameter parameters = 494900218;
 
-  string pendingreviewversion = 160998637;
+  optional string pendingreviewversion = 160998637;
 
   repeated PlatformType platformtypes = 447196676;
 
@@ -3793,19 +3973,19 @@ message DocumentDescription {
 
   ReviewStatus reviewstatus = 34562404;
 
-  string schemaversion = 371681851;
+  optional string schemaversion = 371681851;
 
-  string sha1 = 462897589;
+  optional string sha1 = 462897589;
 
   DocumentStatus status = 6222352;
 
-  string statusinformation = 14795748;
+  optional string statusinformation = 14795748;
 
   repeated Tag tags = 381526209;
 
-  string targettype = 397256481;
+  optional string targettype = 397256481;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -3863,21 +4043,21 @@ enum DocumentHashType {
 
 message DocumentIdentifier {
 
-  string author = 361744247;
+  optional string author = 361744247;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   DocumentFormat documentformat = 516934792;
 
   DocumentType documenttype = 457084477;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string owner = 455261813;
+  optional string owner = 455261813;
 
   repeated PlatformType platformtypes = 447196676;
 
@@ -3885,13 +4065,13 @@ message DocumentIdentifier {
 
   ReviewStatus reviewstatus = 34562404;
 
-  string schemaversion = 371681851;
+  optional string schemaversion = 371681851;
 
   repeated Tag tags = 381526209;
 
-  string targettype = 397256481;
+  optional string targettype = 397256481;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -3901,7 +4081,7 @@ message DocumentIdentifier {
 
 message DocumentKeyValuesFilter {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
   repeated string values = 223158876;
 
@@ -3913,7 +4093,7 @@ message DocumentKeyValuesFilter {
 
 message DocumentLimitExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3941,11 +4121,11 @@ message DocumentMetadataResponseInfo {
 
 message DocumentParameter {
 
-  string defaultvalue = 218709920;
+  optional string defaultvalue = 218709920;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   DocumentParameterType type = 290836590;
 
@@ -3967,7 +4147,7 @@ enum DocumentParameterType {
 
 message DocumentPermissionLimit {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3987,11 +4167,11 @@ message DocumentRequires {
 
   string name = 266367751;
 
-  string requiretype = 56574093;
+  optional string requiretype = 56574093;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -4015,7 +4195,7 @@ enum DocumentReviewAction {
 
 message DocumentReviewCommentSource {
 
-  string content = 23568227;
+  optional string content = 23568227;
 
   DocumentReviewCommentType type = 290836590;
 
@@ -4037,13 +4217,13 @@ message DocumentReviewerResponseSource {
 
   repeated DocumentReviewCommentSource comment = 407871487;
 
-  string createtime = 490895933;
+  optional string createtime = 490895933;
 
   ReviewStatus reviewstatus = 34562404;
 
-  string reviewer = 436444219;
+  optional string reviewer = 436444219;
 
-  string updatedtime = 156274570;
+  optional string updatedtime = 156274570;
 
 }
 
@@ -4121,25 +4301,25 @@ enum DocumentType {
 
 message DocumentVersionInfo {
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   DocumentFormat documentformat = 516934792;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional bool isdefaultversion = 465655635;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   ReviewStatus reviewstatus = 34562404;
 
   DocumentStatus status = 6222352;
 
-  string statusinformation = 14795748;
+  optional string statusinformation = 14795748;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -4149,7 +4329,7 @@ message DocumentVersionInfo {
 
 message DocumentVersionLimitExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4159,7 +4339,7 @@ message DocumentVersionLimitExceeded {
 
 message DoesNotExistException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4169,7 +4349,7 @@ message DoesNotExistException {
 
 message DuplicateDocumentContent {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4179,7 +4359,7 @@ message DuplicateDocumentContent {
 
 message DuplicateDocumentVersionName {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4267,7 +4447,7 @@ message FailedCreateAssociation {
 
   Fault fault = 460759072;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4279,9 +4459,9 @@ message FailureDetails {
 
   map<string, string> details = 247611974;
 
-  string failurestage = 27770026;
+  optional string failurestage = 27770026;
 
-  string failuretype = 448893658;
+  optional string failuretype = 448893658;
 
 }
 
@@ -4303,7 +4483,7 @@ enum Fault {
 
 message FeatureNotAvailableException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4345,7 +4525,7 @@ message GetAutomationExecutionResult {
 
 message GetCalendarStateRequest {
 
-  string attime = 404952130;
+  optional string attime = 404952130;
 
   repeated string calendarnames = 36075966;
 
@@ -4355,11 +4535,41 @@ message GetCalendarStateRequest {
 
 message GetCalendarStateResponse {
 
-  string attime = 404952130;
+  optional string attime = 404952130;
 
-  string nexttransitiontime = 426659123;
+  optional string nexttransitiontime = 426659123;
 
   CalendarState state = 502047895;
+
+}
+
+
+
+message GetCloudConnectorRequest {
+
+  string cloudconnectorid = 285172965;
+
+}
+
+
+
+message GetCloudConnectorResult {
+
+  optional string cloudconnectorarn = 88658361;
+
+  optional string configconnectorarn = 339350470;
+
+  CloudConnectorConfiguration configuration = 442426458;
+
+  optional string createdat = 258192751;
+
+  optional string description = 115243530;
+
+  optional string displayname = 418161847;
+
+  optional string rolearn = 322567169;
+
+  optional string updatedat = 213581206;
 
 }
 
@@ -4371,7 +4581,7 @@ message GetCommandInvocationRequest {
 
   string instanceid = 49567392;
 
-  string pluginname = 115989314;
+  optional string pluginname = 115989314;
 
 }
 
@@ -4381,37 +4591,37 @@ message GetCommandInvocationResult {
 
   CloudWatchOutputConfig cloudwatchoutputconfig = 21186555;
 
-  string commandid = 159395200;
+  optional string commandid = 159395200;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string executionelapsedtime = 71300547;
+  optional string executionelapsedtime = 71300547;
 
-  string executionenddatetime = 521894840;
+  optional string executionenddatetime = 521894840;
 
-  string executionstartdatetime = 309261539;
+  optional string executionstartdatetime = 309261539;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string pluginname = 115989314;
+  optional string pluginname = 115989314;
 
   optional int32 responsecode = 447553700;
 
-  string standarderrorcontent = 473735696;
+  optional string standarderrorcontent = 473735696;
 
-  string standarderrorurl = 403407680;
+  optional string standarderrorurl = 403407680;
 
-  string standardoutputcontent = 294611267;
+  optional string standardoutputcontent = 294611267;
 
-  string standardoutputurl = 347642271;
+  optional string standardoutputurl = 347642271;
 
   CommandInvocationStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
 }
 
@@ -4429,7 +4639,7 @@ message GetConnectionStatusResponse {
 
   ConnectionStatus status = 6222352;
 
-  string target = 191361385;
+  optional string target = 191361385;
 
 }
 
@@ -4445,7 +4655,7 @@ message GetDefaultPatchBaselineRequest {
 
 message GetDefaultPatchBaselineResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
   OperatingSystem operatingsystem = 38829802;
 
@@ -4469,13 +4679,13 @@ message GetDeployablePatchSnapshotForInstanceRequest {
 
 message GetDeployablePatchSnapshotForInstanceResult {
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string product = 312238285;
+  optional string product = 312238285;
 
-  string snapshotdownloadurl = 419550867;
+  optional string snapshotdownloadurl = 419550867;
 
-  string snapshotid = 99585817;
+  optional string snapshotid = 99585817;
 
 }
 
@@ -4485,11 +4695,11 @@ message GetDocumentRequest {
 
   DocumentFormat documentformat = 516934792;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   string name = 266367751;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -4499,19 +4709,19 @@ message GetDocumentResult {
 
   repeated AttachmentContent attachmentscontent = 467878119;
 
-  string content = 23568227;
+  optional string content = 23568227;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   DocumentFormat documentformat = 516934792;
 
   DocumentType documenttype = 457084477;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated DocumentRequires requires = 149214838;
 
@@ -4519,9 +4729,9 @@ message GetDocumentResult {
 
   DocumentStatus status = 6222352;
 
-  string statusinformation = 14795748;
+  optional string statusinformation = 14795748;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -4537,15 +4747,15 @@ message GetExecutionPreviewRequest {
 
 message GetExecutionPreviewResponse {
 
-  string endedat = 104122351;
+  optional string endedat = 104122351;
 
   ExecutionPreview executionpreview = 108797384;
 
-  string executionpreviewid = 35285163;
+  optional string executionpreviewid = 35285163;
 
   ExecutionPreviewStatus status = 6222352;
 
-  string statusmessage = 72590095;
+  optional string statusmessage = 72590095;
 
 }
 
@@ -4559,7 +4769,7 @@ message GetInventoryRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ResultAttribute resultattributes = 430325814;
 
@@ -4571,7 +4781,7 @@ message GetInventoryResult {
 
   repeated InventoryResultEntity entities = 406339595;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -4583,11 +4793,11 @@ message GetInventorySchemaRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional bool subtype = 152988350;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -4595,7 +4805,7 @@ message GetInventorySchemaRequest {
 
 message GetInventorySchemaResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated InventoryItemSchema schemas = 276103488;
 
@@ -4613,17 +4823,17 @@ message GetMaintenanceWindowExecutionRequest {
 
 message GetMaintenanceWindowExecutionResult {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
   MaintenanceWindowExecutionStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
   repeated string taskids = 254419607;
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
 
 }
 
@@ -4643,29 +4853,29 @@ message GetMaintenanceWindowExecutionTaskInvocationRequest {
 
 message GetMaintenanceWindowExecutionTaskInvocationResult {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string executionid = 147580849;
+  optional string executionid = 147580849;
 
-  string invocationid = 116064639;
+  optional string invocationid = 116064639;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
-  string parameters = 494900218;
+  optional string parameters = 494900218;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
   MaintenanceWindowExecutionStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
-  string taskexecutionid = 474180408;
+  optional string taskexecutionid = 474180408;
 
   MaintenanceWindowTaskType tasktype = 370407909;
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
 
-  string windowtargetid = 259696478;
+  optional string windowtargetid = 259696478;
 
 }
 
@@ -4685,25 +4895,25 @@ message GetMaintenanceWindowExecutionTaskResult {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   optional int32 priority = 109944618;
 
-  string servicerole = 47807725;
+  optional string servicerole = 47807725;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
   MaintenanceWindowExecutionStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
-  string taskarn = 312386788;
+  optional string taskarn = 312386788;
 
-  string taskexecutionid = 474180408;
+  optional string taskexecutionid = 474180408;
 
   repeated MaintenanceWindowTaskParametersListEntry taskparameters = 385451905;
 
@@ -4711,7 +4921,7 @@ message GetMaintenanceWindowExecutionTaskResult {
 
   MaintenanceWindowTaskType type = 290836590;
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
 
 }
 
@@ -4729,33 +4939,33 @@ message GetMaintenanceWindowResult {
 
   optional bool allowunassociatedtargets = 154411300;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
   optional int32 cutoff = 498433089;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 duration = 348604718;
 
   optional bool enabled = 478602303;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
-  string modifieddate = 210609143;
+  optional string modifieddate = 210609143;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string nextexecutiontime = 528679720;
+  optional string nextexecutiontime = 528679720;
 
-  string schedule = 66697965;
+  optional string schedule = 66697965;
 
   optional int32 scheduleoffset = 156928216;
 
-  string scheduletimezone = 170037696;
+  optional string scheduletimezone = 170037696;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -4777,23 +4987,23 @@ message GetMaintenanceWindowTaskResult {
 
   MaintenanceWindowTaskCutoffBehavior cutoffbehavior = 120608587;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   LoggingInfo logginginfo = 448312415;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int32 priority = 109944618;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   repeated Target targets = 262180226;
 
-  string taskarn = 312386788;
+  optional string taskarn = 312386788;
 
   MaintenanceWindowTaskInvocationParameters taskinvocationparameters = 347127635;
 
@@ -4801,9 +5011,9 @@ message GetMaintenanceWindowTaskResult {
 
   MaintenanceWindowTaskType tasktype = 370407909;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtaskid = 323765978;
+  optional string windowtaskid = 323765978;
 
 }
 
@@ -4811,7 +5021,7 @@ message GetMaintenanceWindowTaskResult {
 
 message GetOpsItemRequest {
 
-  string opsitemarn = 222489428;
+  optional string opsitemarn = 222489428;
 
   string opsitemid = 25520466;
 
@@ -4831,7 +5041,7 @@ message GetOpsMetadataRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string opsmetadataarn = 482385698;
 
@@ -4843,9 +5053,9 @@ message GetOpsMetadataResult {
 
   map<string, MetadataValue> metadata = 470020449;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
 }
 
@@ -4859,11 +5069,11 @@ message GetOpsSummaryRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated OpsResultAttribute resultattributes = 430325814;
 
-  string syncname = 369920802;
+  optional string syncname = 369920802;
 
 }
 
@@ -4873,7 +5083,7 @@ message GetOpsSummaryResult {
 
   repeated OpsEntity entities = 406339595;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -4885,7 +5095,7 @@ message GetParameterHistoryRequest {
 
   string name = 266367751;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional bool withdecryption = 387365121;
 
@@ -4895,7 +5105,7 @@ message GetParameterHistoryRequest {
 
 message GetParameterHistoryResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ParameterHistory parameters = 494900218;
 
@@ -4925,7 +5135,7 @@ message GetParametersByPathRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ParameterStringFilter parameterfilters = 511502980;
 
@@ -4941,7 +5151,7 @@ message GetParametersByPathRequest {
 
 message GetParametersByPathResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Parameter parameters = 494900218;
 
@@ -4981,11 +5191,11 @@ message GetPatchBaselineForPatchGroupRequest {
 
 message GetPatchBaselineForPatchGroupResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
   OperatingSystem operatingsystem = 38829802;
 
-  string patchgroup = 518806497;
+  optional string patchgroup = 518806497;
 
 }
 
@@ -5011,17 +5221,17 @@ message GetPatchBaselineResult {
 
   PatchComplianceStatus availablesecurityupdatescompliancestatus = 187471858;
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   PatchFilterGroup globalfilters = 263302754;
 
-  string modifieddate = 210609143;
+  optional string modifieddate = 210609143;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   OperatingSystem operatingsystem = 38829802;
 
@@ -5041,7 +5251,7 @@ message GetResourcePoliciesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string resourcearn = 364280877;
 
@@ -5051,7 +5261,7 @@ message GetResourcePoliciesRequest {
 
 message GetResourcePoliciesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated GetResourcePoliciesResponseEntry policies = 40015384;
 
@@ -5063,11 +5273,11 @@ message GetResourcePoliciesResponse {
 
 message GetResourcePoliciesResponseEntry {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
-  string policyhash = 203037360;
+  optional string policyhash = 203037360;
 
-  string policyid = 299520499;
+  optional string policyid = 299520499;
 
 }
 
@@ -5097,7 +5307,7 @@ message GetServiceSettingResult {
 
 message HierarchyLevelLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5107,7 +5317,7 @@ message HierarchyLevelLimitExceededException {
 
 message HierarchyTypeMismatchException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5117,7 +5327,7 @@ message HierarchyTypeMismatchException {
 
 message IdempotentParameterMismatch {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5139,7 +5349,7 @@ enum ImpactType {
 
 message IncompatiblePolicyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5149,7 +5359,7 @@ message IncompatiblePolicyException {
 
 message InstanceAggregatedAssociationOverview {
 
-  string detailedstatus = 223171376;
+  optional string detailedstatus = 223171376;
 
   map<string, int32> instanceassociationstatusaggregatedcount = 202072750;
 
@@ -5161,13 +5371,13 @@ message InstanceAggregatedAssociationOverview {
 
 message InstanceAssociation {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string content = 23568227;
+  optional string content = 23568227;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
 }
 
@@ -5197,29 +5407,29 @@ message InstanceAssociationOutputUrl {
 
 message InstanceAssociationStatusInfo {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string detailedstatus = 223171376;
+  optional string detailedstatus = 223171376;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string executiondate = 432181066;
+  optional string executiondate = 432181066;
 
-  string executionsummary = 71480964;
+  optional string executionsummary = 71480964;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   InstanceAssociationOutputUrl outputurl = 42495998;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -5229,25 +5439,37 @@ message InstanceAssociationStatusInfo {
 
 message InstanceInfo {
 
-  string agenttype = 408897495;
+  optional string agenttype = 408897495;
 
-  string agentversion = 173670635;
+  optional string agentversion = 173670635;
 
-  string computername = 67735292;
+  optional string availabilityzone = 391476601;
 
-  string instancestatus = 29604317;
+  optional string availabilityzoneid = 4760518;
 
-  string ipaddress = 1800397;
+  optional string computername = 67735292;
+
+  optional string instancestatus = 29604317;
+
+  optional string ipaddress = 1800397;
 
   ManagedStatus managedstatus = 200879673;
 
-  string platformname = 188917178;
+  optional string name = 266367751;
+
+  optional string platformname = 188917178;
 
   PlatformType platformtype = 378742691;
 
-  string platformversion = 139924287;
+  optional string platformversion = 139924287;
 
   ResourceType resourcetype = 301342558;
+
+  optional string sourceid = 425309766;
+
+  optional string sourcelocation = 72879408;
+
+  SourceType sourcetype = 195731217;
 
 }
 
@@ -5257,45 +5479,47 @@ message InstanceInfo {
 
 message InstanceInformation {
 
-  string activationid = 146858601;
+  optional string activationid = 146858601;
 
-  string agentversion = 173670635;
+  optional string agentversion = 173670635;
 
   InstanceAggregatedAssociationOverview associationoverview = 458852672;
 
-  string associationstatus = 486964487;
+  optional string associationstatus = 486964487;
 
-  string computername = 67735292;
+  optional string computername = 67735292;
 
-  string ipaddress = 169333741;
+  optional string ipaddress = 169333741;
 
-  string iamrole = 242424351;
+  optional string iamrole = 242424351;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
   optional bool islatestversion = 27844379;
 
-  string lastassociationexecutiondate = 37666619;
+  optional string lastassociationexecutiondate = 37666619;
 
-  string lastpingdatetime = 49842265;
+  optional string lastpingdatetime = 49842265;
 
-  string lastsuccessfulassociationexecutiondate = 162380165;
+  optional string lastsuccessfulassociationexecutiondate = 162380165;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   PingStatus pingstatus = 282358380;
 
-  string platformname = 188917178;
+  optional string platformname = 188917178;
 
   PlatformType platformtype = 378742691;
 
-  string platformversion = 139924287;
+  optional string platformversion = 139924287;
 
-  string registrationdate = 370887405;
+  optional string registrationdate = 370887405;
 
   ResourceType resourcetype = 301342558;
 
-  string sourceid = 425309766;
+  optional string sourceid = 425309766;
+
+  optional string sourcelocation = 72879408;
 
   SourceType sourcetype = 195731217;
 
@@ -5361,7 +5585,7 @@ message InstancePatchState {
 
   optional int32 failedcount = 121973932;
 
-  string installoverridelist = 487484089;
+  optional string installoverridelist = 487484089;
 
   optional int32 installedcount = 300247257;
 
@@ -5373,7 +5597,7 @@ message InstancePatchState {
 
   string instanceid = 49567392;
 
-  string lastnorebootinstalloperationtime = 135277587;
+  optional string lastnorebootinstalloperationtime = 135277587;
 
   optional int32 missingcount = 269209919;
 
@@ -5387,7 +5611,7 @@ message InstancePatchState {
 
   optional int32 othernoncompliantcount = 22394029;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
   string patchgroup = 518806497;
 
@@ -5395,7 +5619,7 @@ message InstancePatchState {
 
   optional int32 securitynoncompliantcount = 500346499;
 
-  string snapshotid = 99585817;
+  optional string snapshotid = 99585817;
 
   optional int32 unreportednotapplicablecount = 295417459;
 
@@ -5435,55 +5659,59 @@ enum InstancePatchStateOperatorType {
 
 message InstanceProperty {
 
-  string activationid = 146858601;
+  optional string activationid = 146858601;
 
-  string agentversion = 173670635;
+  optional string agentversion = 173670635;
 
-  string architecture = 420247267;
+  optional string architecture = 420247267;
 
   InstanceAggregatedAssociationOverview associationoverview = 458852672;
 
-  string associationstatus = 486964487;
+  optional string associationstatus = 486964487;
 
-  string computername = 67735292;
+  optional string availabilityzone = 391476601;
 
-  string ipaddress = 169333741;
+  optional string computername = 67735292;
 
-  string iamrole = 242424351;
+  optional string ipaddress = 169333741;
 
-  string instanceid = 49567392;
+  optional string iamrole = 242424351;
 
-  string instancerole = 143624115;
+  optional string instanceid = 49567392;
 
-  string instancestate = 217046808;
+  optional string instancerole = 143624115;
 
-  string instancetype = 46812483;
+  optional string instancestate = 217046808;
 
-  string keyname = 234857320;
+  optional string instancetype = 46812483;
 
-  string lastassociationexecutiondate = 37666619;
+  optional string keyname = 234857320;
 
-  string lastpingdatetime = 49842265;
+  optional string lastassociationexecutiondate = 37666619;
 
-  string lastsuccessfulassociationexecutiondate = 162380165;
+  optional string lastpingdatetime = 49842265;
 
-  string launchtime = 338860032;
+  optional string lastsuccessfulassociationexecutiondate = 162380165;
 
-  string name = 266367751;
+  optional string launchtime = 338860032;
+
+  optional string name = 266367751;
 
   PingStatus pingstatus = 282358380;
 
-  string platformname = 188917178;
+  optional string platformname = 188917178;
 
   PlatformType platformtype = 378742691;
 
-  string platformversion = 139924287;
+  optional string platformversion = 139924287;
 
-  string registrationdate = 370887405;
+  optional string registrationdate = 370887405;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
-  string sourceid = 425309766;
+  optional string sourceid = 425309766;
+
+  optional string sourcelocation = 72879408;
 
   SourceType sourcetype = 195731217;
 
@@ -5561,7 +5789,7 @@ message InstancePropertyStringFilter {
 
 message InternalServerError {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5571,7 +5799,7 @@ message InternalServerError {
 
 message InvalidActivation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5581,7 +5809,7 @@ message InvalidActivation {
 
 message InvalidActivationId {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5591,7 +5819,7 @@ message InvalidActivationId {
 
 message InvalidAggregatorException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5601,7 +5829,7 @@ message InvalidAggregatorException {
 
 message InvalidAllowedPatternException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5611,7 +5839,7 @@ message InvalidAllowedPatternException {
 
 message InvalidAssociation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5621,7 +5849,7 @@ message InvalidAssociation {
 
 message InvalidAssociationVersion {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5631,7 +5859,7 @@ message InvalidAssociationVersion {
 
 message InvalidAutomationExecutionParametersException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5641,7 +5869,7 @@ message InvalidAutomationExecutionParametersException {
 
 message InvalidAutomationSignalException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5651,7 +5879,7 @@ message InvalidAutomationSignalException {
 
 message InvalidAutomationStatusUpdateException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5669,7 +5897,7 @@ message InvalidCommandId {
 
 message InvalidDeleteInventoryParametersException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5679,7 +5907,7 @@ message InvalidDeleteInventoryParametersException {
 
 message InvalidDeletionIdException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5689,7 +5917,7 @@ message InvalidDeletionIdException {
 
 message InvalidDocument {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5699,7 +5927,7 @@ message InvalidDocument {
 
 message InvalidDocumentContent {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5709,7 +5937,7 @@ message InvalidDocumentContent {
 
 message InvalidDocumentOperation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5719,7 +5947,7 @@ message InvalidDocumentOperation {
 
 message InvalidDocumentSchemaVersion {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5729,7 +5957,7 @@ message InvalidDocumentSchemaVersion {
 
 message InvalidDocumentType {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5739,7 +5967,7 @@ message InvalidDocumentType {
 
 message InvalidDocumentVersion {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5749,7 +5977,7 @@ message InvalidDocumentVersion {
 
 message InvalidFilter {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5767,7 +5995,7 @@ message InvalidFilterKey {
 
 message InvalidFilterOption {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5777,7 +6005,7 @@ message InvalidFilterOption {
 
 message InvalidFilterValue {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5787,7 +6015,7 @@ message InvalidFilterValue {
 
 message InvalidInstanceId {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5797,7 +6025,7 @@ message InvalidInstanceId {
 
 message InvalidInstanceInformationFilterValue {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5807,7 +6035,7 @@ message InvalidInstanceInformationFilterValue {
 
 message InvalidInstancePropertyFilterValue {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5817,7 +6045,7 @@ message InvalidInstancePropertyFilterValue {
 
 message InvalidInventoryGroupException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5827,7 +6055,7 @@ message InvalidInventoryGroupException {
 
 message InvalidInventoryItemContextException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5837,7 +6065,7 @@ message InvalidInventoryItemContextException {
 
 message InvalidInventoryRequestException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5847,9 +6075,9 @@ message InvalidInventoryRequestException {
 
 message InvalidItemContentException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -5859,7 +6087,7 @@ message InvalidItemContentException {
 
 message InvalidKeyId {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5869,7 +6097,7 @@ message InvalidKeyId {
 
 message InvalidNextToken {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5879,7 +6107,7 @@ message InvalidNextToken {
 
 message InvalidNotificationConfig {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5889,7 +6117,7 @@ message InvalidNotificationConfig {
 
 message InvalidOptionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5915,7 +6143,7 @@ message InvalidOutputLocation {
 
 message InvalidParameters {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5925,7 +6153,7 @@ message InvalidParameters {
 
 message InvalidPermissionType {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5943,7 +6171,7 @@ message InvalidPluginName {
 
 message InvalidPolicyAttributeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5953,7 +6181,7 @@ message InvalidPolicyAttributeException {
 
 message InvalidPolicyTypeException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5979,7 +6207,7 @@ message InvalidResourceType {
 
 message InvalidResultAttributeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5989,7 +6217,7 @@ message InvalidResultAttributeException {
 
 message InvalidRole {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5999,7 +6227,7 @@ message InvalidRole {
 
 message InvalidSchedule {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6009,7 +6237,7 @@ message InvalidSchedule {
 
 message InvalidTag {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6019,7 +6247,7 @@ message InvalidTag {
 
 message InvalidTarget {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6029,7 +6257,7 @@ message InvalidTarget {
 
 message InvalidTargetMaps {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6039,7 +6267,7 @@ message InvalidTargetMaps {
 
 message InvalidTypeNameException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6049,7 +6277,7 @@ message InvalidTypeNameException {
 
 message InvalidUpdate {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6061,7 +6289,7 @@ message InventoryAggregator {
 
   repeated InventoryAggregator aggregators = 161545870;
 
-  string expression = 193051916;
+  optional string expression = 193051916;
 
   repeated InventoryGroup groups = 360662414;
 
@@ -6093,19 +6321,19 @@ enum InventoryDeletionStatus {
 
 message InventoryDeletionStatusItem {
 
-  string deletionid = 126693587;
+  optional string deletionid = 126693587;
 
-  string deletionstarttime = 413142901;
+  optional string deletionstarttime = 413142901;
 
   InventoryDeletionSummary deletionsummary = 189954074;
 
   InventoryDeletionStatus laststatus = 163326556;
 
-  string laststatusmessage = 59961987;
+  optional string laststatusmessage = 59961987;
 
-  string laststatusupdatetime = 66342972;
+  optional string laststatusupdatetime = 66342972;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -6133,7 +6361,7 @@ message InventoryDeletionSummaryItem {
 
   optional int32 remainingcount = 230680675;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -6173,7 +6401,7 @@ message InventoryItem {
 
   repeated InventoryItemEntryListEntry content = 23568227;
 
-  string contenthash = 99301015;
+  optional string contenthash = 99301015;
 
   map<string, string> context = 489783069;
 
@@ -6203,11 +6431,11 @@ message InventoryItemSchema {
 
   repeated InventoryItemAttribute attributes = 209638581;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   string typename = 446064463;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -6237,7 +6465,7 @@ message InventoryResultEntity {
 
   map<string, InventoryResultItem> data = 525498822;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
 }
 
@@ -6247,11 +6475,11 @@ message InventoryResultEntity {
 
 message InventoryResultItem {
 
-  string capturetime = 72276089;
+  optional string capturetime = 72276089;
 
   repeated InventoryItemEntryListEntry content = 23568227;
 
-  string contenthash = 99301015;
+  optional string contenthash = 99301015;
 
   string schemaversion = 371681851;
 
@@ -6283,9 +6511,9 @@ message InvocationDoesNotExist {
 
 message ItemContentMismatchException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -6295,9 +6523,9 @@ message ItemContentMismatchException {
 
 message ItemSizeLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -6343,7 +6571,7 @@ message ListAssociationVersionsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6353,7 +6581,7 @@ message ListAssociationVersionsResult {
 
   repeated AssociationVersionInfo associationversions = 161692378;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6365,7 +6593,7 @@ message ListAssociationsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6375,7 +6603,29 @@ message ListAssociationsResult {
 
   repeated Association associations = 149658718;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
+
+}
+
+
+
+message ListCloudConnectorsRequest {
+
+  repeated CloudConnectorFilter filters = 188393197;
+
+  optional int32 maxresults = 275174450;
+
+  optional string nexttoken = 216957566;
+
+}
+
+
+
+message ListCloudConnectorsResult {
+
+  repeated CloudConnectorSummary cloudconnectors = 442388839;
+
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6383,17 +6633,17 @@ message ListAssociationsResult {
 
 message ListCommandInvocationsRequest {
 
-  string commandid = 159395200;
+  optional string commandid = 159395200;
 
   optional bool details = 247611974;
 
   repeated CommandFilter filters = 188393197;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6403,7 +6653,7 @@ message ListCommandInvocationsResult {
 
   repeated CommandInvocation commandinvocations = 19955226;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6411,15 +6661,15 @@ message ListCommandInvocationsResult {
 
 message ListCommandsRequest {
 
-  string commandid = 159395200;
+  optional string commandid = 159395200;
 
   repeated CommandFilter filters = 188393197;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6429,7 +6679,7 @@ message ListCommandsResult {
 
   repeated Command commands = 387272948;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6441,7 +6691,7 @@ message ListComplianceItemsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string resourceids = 23528154;
 
@@ -6455,7 +6705,7 @@ message ListComplianceItemsResult {
 
   repeated ComplianceItem complianceitems = 129846551;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6467,7 +6717,7 @@ message ListComplianceSummariesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6477,7 +6727,7 @@ message ListComplianceSummariesResult {
 
   repeated ComplianceSummaryItem compliancesummaryitems = 47794643;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6485,7 +6735,7 @@ message ListComplianceSummariesResult {
 
 message ListDocumentMetadataHistoryRequest {
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 maxresults = 275174450;
 
@@ -6493,7 +6743,7 @@ message ListDocumentMetadataHistoryRequest {
 
   string name = 266367751;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6501,15 +6751,15 @@ message ListDocumentMetadataHistoryRequest {
 
 message ListDocumentMetadataHistoryResponse {
 
-  string author = 361744247;
+  optional string author = 361744247;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   DocumentMetadataResponseInfo metadata = 470020449;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6521,7 +6771,7 @@ message ListDocumentVersionsRequest {
 
   string name = 266367751;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6531,7 +6781,7 @@ message ListDocumentVersionsResult {
 
   repeated DocumentVersionInfo documentversions = 175799138;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6545,7 +6795,7 @@ message ListDocumentsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6555,7 +6805,7 @@ message ListDocumentsResult {
 
   repeated DocumentIdentifier documentidentifiers = 367445629;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6569,7 +6819,7 @@ message ListInventoryEntriesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string typename = 446064463;
 
@@ -6579,17 +6829,17 @@ message ListInventoryEntriesRequest {
 
 message ListInventoryEntriesResult {
 
-  string capturetime = 72276089;
+  optional string capturetime = 72276089;
 
   repeated InventoryItemEntryListEntry entries = 481075860;
 
-  string instanceid = 49567392;
+  optional string instanceid = 49567392;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string schemaversion = 371681851;
+  optional string schemaversion = 371681851;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -6601,9 +6851,9 @@ message ListNodesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string syncname = 369920802;
+  optional string syncname = 369920802;
 
 }
 
@@ -6611,7 +6861,7 @@ message ListNodesRequest {
 
 message ListNodesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Node nodes = 498945275;
 
@@ -6627,9 +6877,9 @@ message ListNodesSummaryRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string syncname = 369920802;
+  optional string syncname = 369920802;
 
 }
 
@@ -6637,7 +6887,7 @@ message ListNodesSummaryRequest {
 
 message ListNodesSummaryResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated NodeSummaryListEntry summary = 21935540;
 
@@ -6651,7 +6901,7 @@ message ListOpsItemEventsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6659,7 +6909,7 @@ message ListOpsItemEventsRequest {
 
 message ListOpsItemEventsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated OpsItemEventSummary summaries = 399105812;
 
@@ -6673,9 +6923,9 @@ message ListOpsItemRelatedItemsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
 }
 
@@ -6683,7 +6933,7 @@ message ListOpsItemRelatedItemsRequest {
 
 message ListOpsItemRelatedItemsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated OpsItemRelatedItemSummary summaries = 399105812;
 
@@ -6697,7 +6947,7 @@ message ListOpsMetadataRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6705,7 +6955,7 @@ message ListOpsMetadataRequest {
 
 message ListOpsMetadataResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated OpsMetadata opsmetadatalist = 196633523;
 
@@ -6719,7 +6969,7 @@ message ListResourceComplianceSummariesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -6727,7 +6977,7 @@ message ListResourceComplianceSummariesRequest {
 
 message ListResourceComplianceSummariesResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ResourceComplianceSummaryItem resourcecompliancesummaryitems = 286761155;
 
@@ -6739,9 +6989,9 @@ message ListResourceDataSyncRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string synctype = 122336091;
+  optional string synctype = 122336091;
 
 }
 
@@ -6749,7 +6999,7 @@ message ListResourceDataSyncRequest {
 
 message ListResourceDataSyncResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ResourceDataSyncItem resourcedatasyncitems = 406717751;
 
@@ -6781,7 +7031,7 @@ message LoggingInfo {
 
   string s3bucketname = 320495427;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
   string s3region = 354623468;
 
@@ -6793,7 +7043,7 @@ message LoggingInfo {
 
 message MaintenanceWindowAutomationParameters {
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   map<string, string> parameters = 494900218;
 
@@ -6805,17 +7055,17 @@ message MaintenanceWindowAutomationParameters {
 
 message MaintenanceWindowExecution {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
   MaintenanceWindowExecutionStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -6849,23 +7099,23 @@ message MaintenanceWindowExecutionTaskIdentity {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
   MaintenanceWindowExecutionStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
-  string taskarn = 312386788;
+  optional string taskarn = 312386788;
 
-  string taskexecutionid = 474180408;
+  optional string taskexecutionid = 474180408;
 
   MaintenanceWindowTaskType tasktype = 370407909;
 
   repeated AlarmStateInformation triggeredalarms = 263222917;
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
 
 }
 
@@ -6875,29 +7125,29 @@ message MaintenanceWindowExecutionTaskIdentity {
 
 message MaintenanceWindowExecutionTaskInvocationIdentity {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string executionid = 147580849;
+  optional string executionid = 147580849;
 
-  string invocationid = 116064639;
+  optional string invocationid = 116064639;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
-  string parameters = 494900218;
+  optional string parameters = 494900218;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
   MaintenanceWindowExecutionStatus status = 6222352;
 
-  string statusdetails = 372263208;
+  optional string statusdetails = 372263208;
 
-  string taskexecutionid = 474180408;
+  optional string taskexecutionid = 474180408;
 
   MaintenanceWindowTaskType tasktype = 370407909;
 
-  string windowexecutionid = 357168521;
+  optional string windowexecutionid = 357168521;
 
-  string windowtargetid = 259696478;
+  optional string windowtargetid = 259696478;
 
 }
 
@@ -6907,7 +7157,7 @@ message MaintenanceWindowExecutionTaskInvocationIdentity {
 
 message MaintenanceWindowFilter {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
   repeated string values = 223158876;
 
@@ -6921,27 +7171,27 @@ message MaintenanceWindowIdentity {
 
   optional int32 cutoff = 498433089;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 duration = 348604718;
 
   optional bool enabled = 478602303;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string nextexecutiontime = 528679720;
+  optional string nextexecutiontime = 528679720;
 
-  string schedule = 66697965;
+  optional string schedule = 66697965;
 
   optional int32 scheduleoffset = 156928216;
 
-  string scheduletimezone = 170037696;
+  optional string scheduletimezone = 170037696;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -6951,9 +7201,9 @@ message MaintenanceWindowIdentity {
 
 message MaintenanceWindowIdentityForTarget {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -6963,11 +7213,11 @@ message MaintenanceWindowIdentityForTarget {
 
 message MaintenanceWindowLambdaParameters {
 
-  string clientcontext = 354405962;
+  optional string clientcontext = 354405962;
 
-  bytes payload = 6526790;
+  optional bytes payload = 6526790;
 
-  string qualifier = 526670560;
+  optional string qualifier = 526670560;
 
 }
 
@@ -6989,23 +7239,23 @@ message MaintenanceWindowRunCommandParameters {
 
   CloudWatchOutputConfig cloudwatchoutputconfig = 21186555;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
-  string documenthash = 251248469;
+  optional string documenthash = 251248469;
 
   DocumentHashType documenthashtype = 93041117;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   NotificationConfig notificationconfig = 346074145;
 
-  string outputs3bucketname = 186756480;
+  optional string outputs3bucketname = 186756480;
 
-  string outputs3keyprefix = 17840974;
+  optional string outputs3keyprefix = 17840974;
 
   map<string, string> parameters = 494900218;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   optional int32 timeoutseconds = 336148022;
 
@@ -7017,9 +7267,9 @@ message MaintenanceWindowRunCommandParameters {
 
 message MaintenanceWindowStepFunctionsParameters {
 
-  string input = 529785116;
+  optional string input = 529785116;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -7029,19 +7279,19 @@ message MaintenanceWindowStepFunctionsParameters {
 
 message MaintenanceWindowTarget {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
   MaintenanceWindowResourceType resourcetype = 301342558;
 
   repeated Target targets = 262180226;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtargetid = 259696478;
+  optional string windowtargetid = 259696478;
 
 }
 
@@ -7055,31 +7305,31 @@ message MaintenanceWindowTask {
 
   MaintenanceWindowTaskCutoffBehavior cutoffbehavior = 120608587;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   LoggingInfo logginginfo = 448312415;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int32 priority = 109944618;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   repeated Target targets = 262180226;
 
-  string taskarn = 312386788;
+  optional string taskarn = 312386788;
 
   map<string, MaintenanceWindowTaskParameterValueExpression> taskparameters = 385451905;
 
   MaintenanceWindowTaskType type = 290836590;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtaskid = 323765978;
+  optional string windowtaskid = 323765978;
 
 }
 
@@ -7139,7 +7389,7 @@ enum MaintenanceWindowTaskType {
 
 message MalformedResourcePolicyDocumentException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7161,7 +7411,7 @@ enum ManagedStatus {
 
 message MaxDocumentSizeExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7171,7 +7421,7 @@ message MaxDocumentSizeExceeded {
 
 message MetadataValue {
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -7187,7 +7437,7 @@ message ModifyDocumentPermissionRequest {
 
   DocumentPermissionType permissiontype = 479110739;
 
-  string shareddocumentversion = 240155144;
+  optional string shareddocumentversion = 240155144;
 
 }
 
@@ -7203,7 +7453,7 @@ message ModifyDocumentPermissionResponse {
 
 message NoLongerSupportedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7213,15 +7463,15 @@ message NoLongerSupportedException {
 
 message Node {
 
-  string capturetime = 72276089;
+  optional string capturetime = 72276089;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   NodeType nodetype = 117090310;
 
   NodeOwnerInfo owner = 455261813;
 
-  string region = 154040478;
+  optional string region = 154040478;
 
 }
 
@@ -7259,11 +7509,15 @@ enum NodeAttributeName {
 
   NODE_ATTRIBUTE_NAME_PLATFORM_TYPE = 2;
 
-  NODE_ATTRIBUTE_NAME_AGENT_VERSION = 3;
+  NODE_ATTRIBUTE_NAME_AVAILABILITY_ZONE = 3;
 
-  NODE_ATTRIBUTE_NAME_PLATFORM_NAME = 4;
+  NODE_ATTRIBUTE_NAME_SOURCE_TYPE = 4;
 
-  NODE_ATTRIBUTE_NAME_RESOURCE_TYPE = 5;
+  NODE_ATTRIBUTE_NAME_AGENT_VERSION = 5;
+
+  NODE_ATTRIBUTE_NAME_PLATFORM_NAME = 6;
+
+  NODE_ATTRIBUTE_NAME_RESOURCE_TYPE = 7;
 
 }
 
@@ -7297,23 +7551,33 @@ enum NodeFilterKey {
 
   NODE_FILTER_KEY_ACCOUNT_ID = 5;
 
-  NODE_FILTER_KEY_MANAGED_STATUS = 6;
+  NODE_FILTER_KEY_SOURCE_ID = 6;
 
-  NODE_FILTER_KEY_INSTANCE_STATUS = 7;
+  NODE_FILTER_KEY_AVAILABILITY_ZONE = 7;
 
-  NODE_FILTER_KEY_AGENT_VERSION = 8;
+  NODE_FILTER_KEY_MANAGED_STATUS = 8;
 
-  NODE_FILTER_KEY_COMPUTER_NAME = 9;
+  NODE_FILTER_KEY_INSTANCE_STATUS = 9;
 
-  NODE_FILTER_KEY_AGENT_TYPE = 10;
+  NODE_FILTER_KEY_SOURCE_TYPE = 10;
 
-  NODE_FILTER_KEY_PLATFORM_NAME = 11;
+  NODE_FILTER_KEY_AGENT_VERSION = 11;
 
-  NODE_FILTER_KEY_RESOURCE_TYPE = 12;
+  NODE_FILTER_KEY_COMPUTER_NAME = 12;
 
-  NODE_FILTER_KEY_ORGANIZATIONAL_UNIT_PATH = 13;
+  NODE_FILTER_KEY_AVAILABILITY_ZONE_ID = 13;
 
-  NODE_FILTER_KEY_INSTANCE_ID = 14;
+  NODE_FILTER_KEY_SOURCE_LOCATION = 14;
+
+  NODE_FILTER_KEY_AGENT_TYPE = 15;
+
+  NODE_FILTER_KEY_PLATFORM_NAME = 16;
+
+  NODE_FILTER_KEY_RESOURCE_TYPE = 17;
+
+  NODE_FILTER_KEY_ORGANIZATIONAL_UNIT_PATH = 18;
+
+  NODE_FILTER_KEY_INSTANCE_ID = 19;
 
 }
 
@@ -7335,11 +7599,11 @@ enum NodeFilterOperatorType {
 
 message NodeOwnerInfo {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
-  string organizationalunitid = 201174977;
+  optional string organizationalunitid = 201174977;
 
-  string organizationalunitpath = 338158359;
+  optional string organizationalunitpath = 338158359;
 
 }
 
@@ -7379,7 +7643,7 @@ message NonCompliantSummary {
 
 message NotificationConfig {
 
-  string notificationarn = 192280642;
+  optional string notificationarn = 192280642;
 
   repeated NotificationEvent notificationevents = 16584116;
 
@@ -7457,15 +7721,15 @@ enum OperatingSystem {
 
 message OpsAggregator {
 
-  string aggregatortype = 328765509;
+  optional string aggregatortype = 328765509;
 
   repeated OpsAggregator aggregators = 161545870;
 
-  string attributename = 352717485;
+  optional string attributename = 352717485;
 
   repeated OpsFilter filters = 188393197;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
   map<string, string> values = 223158876;
 
@@ -7479,7 +7743,7 @@ message OpsEntity {
 
   map<string, OpsEntityItem> data = 525498822;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
 }
 
@@ -7489,7 +7753,7 @@ message OpsEntity {
 
 message OpsEntityItem {
 
-  string capturetime = 72276089;
+  optional string capturetime = 72276089;
 
   repeated OpsEntityItemEntryListEntry content = 23568227;
 
@@ -7533,49 +7797,49 @@ enum OpsFilterOperatorType {
 
 message OpsItem {
 
-  string actualendtime = 452787526;
+  optional string actualendtime = 452787526;
 
-  string actualstarttime = 532853117;
+  optional string actualstarttime = 532853117;
 
-  string category = 263447954;
+  optional string category = 263447954;
 
-  string createdby = 73491847;
+  optional string createdby = 73491847;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string lastmodifiedby = 119539216;
+  optional string lastmodifiedby = 119539216;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
   repeated OpsItemNotification notifications = 404560144;
 
   map<string, OpsItemDataValue> operationaldata = 360357940;
 
-  string opsitemarn = 222489428;
+  optional string opsitemarn = 222489428;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
-  string opsitemtype = 317873397;
+  optional string opsitemtype = 317873397;
 
-  string plannedendtime = 245727820;
+  optional string plannedendtime = 245727820;
 
-  string plannedstarttime = 478079215;
+  optional string plannedstarttime = 478079215;
 
   optional int32 priority = 109944618;
 
   repeated RelatedOpsItem relatedopsitems = 287082393;
 
-  string severity = 276886227;
+  optional string severity = 276886227;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
   OpsItemStatus status = 6222352;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -7585,7 +7849,7 @@ message OpsItem {
 
 message OpsItemAccessDeniedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7595,9 +7859,9 @@ message OpsItemAccessDeniedException {
 
 message OpsItemAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
 }
 
@@ -7607,7 +7871,7 @@ message OpsItemAlreadyExistsException {
 
 message OpsItemConflictException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7629,7 +7893,7 @@ message OpsItemDataValue {
 
   OpsItemDataType type = 290836590;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -7671,17 +7935,17 @@ message OpsItemEventSummary {
 
   OpsItemIdentity createdby = 73491847;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
-  string detail = 340030389;
+  optional string detail = 340030389;
 
-  string detailtype = 11758589;
+  optional string detailtype = 11758589;
 
-  string eventid = 376916819;
+  optional string eventid = 376916819;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
 }
 
@@ -7799,7 +8063,7 @@ enum OpsItemFilterOperator {
 
 message OpsItemIdentity {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -7809,7 +8073,7 @@ message OpsItemIdentity {
 
 message OpsItemInvalidParameterException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   repeated string parameternames = 72522785;
 
@@ -7823,9 +8087,9 @@ message OpsItemLimitExceededException {
 
   optional int32 limit = 412502741;
 
-  string limittype = 155546973;
+  optional string limittype = 155546973;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   repeated string resourcetypes = 343086443;
 
@@ -7837,7 +8101,7 @@ message OpsItemLimitExceededException {
 
 message OpsItemNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7847,7 +8111,7 @@ message OpsItemNotFoundException {
 
 message OpsItemNotification {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 
@@ -7857,11 +8121,11 @@ message OpsItemNotification {
 
 message OpsItemRelatedItemAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
-  string resourceuri = 442608014;
+  optional string resourceuri = 442608014;
 
 }
 
@@ -7871,7 +8135,7 @@ message OpsItemRelatedItemAlreadyExistsException {
 
 message OpsItemRelatedItemAssociationNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7881,23 +8145,23 @@ message OpsItemRelatedItemAssociationNotFoundException {
 
 message OpsItemRelatedItemSummary {
 
-  string associationid = 138771986;
+  optional string associationid = 138771986;
 
-  string associationtype = 165803189;
+  optional string associationtype = 165803189;
 
   OpsItemIdentity createdby = 73491847;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
   OpsItemIdentity lastmodifiedby = 119539216;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
-  string resourceuri = 442608014;
+  optional string resourceuri = 442608014;
 
 }
 
@@ -7987,39 +8251,39 @@ enum OpsItemStatus {
 
 message OpsItemSummary {
 
-  string actualendtime = 452787526;
+  optional string actualendtime = 452787526;
 
-  string actualstarttime = 532853117;
+  optional string actualstarttime = 532853117;
 
-  string category = 263447954;
+  optional string category = 263447954;
 
-  string createdby = 73491847;
+  optional string createdby = 73491847;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
-  string lastmodifiedby = 119539216;
+  optional string lastmodifiedby = 119539216;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
   map<string, OpsItemDataValue> operationaldata = 360357940;
 
-  string opsitemid = 25520466;
+  optional string opsitemid = 25520466;
 
-  string opsitemtype = 317873397;
+  optional string opsitemtype = 317873397;
 
-  string plannedendtime = 245727820;
+  optional string plannedendtime = 245727820;
 
-  string plannedstarttime = 478079215;
+  optional string plannedstarttime = 478079215;
 
   optional int32 priority = 109944618;
 
-  string severity = 276886227;
+  optional string severity = 276886227;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
   OpsItemStatus status = 6222352;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
 }
 
@@ -8029,15 +8293,15 @@ message OpsItemSummary {
 
 message OpsMetadata {
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string lastmodifieduser = 215822778;
+  optional string lastmodifieduser = 215822778;
 
-  string opsmetadataarn = 482385698;
+  optional string opsmetadataarn = 482385698;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
 }
 
@@ -8047,7 +8311,7 @@ message OpsMetadata {
 
 message OpsMetadataAlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8069,7 +8333,7 @@ message OpsMetadataFilter {
 
 message OpsMetadataInvalidArgumentException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8079,7 +8343,7 @@ message OpsMetadataInvalidArgumentException {
 
 message OpsMetadataKeyLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8089,7 +8353,7 @@ message OpsMetadataKeyLimitExceededException {
 
 message OpsMetadataLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8099,7 +8363,7 @@ message OpsMetadataLimitExceededException {
 
 message OpsMetadataNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8109,7 +8373,7 @@ message OpsMetadataNotFoundException {
 
 message OpsMetadataTooManyUpdatesException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8129,9 +8393,9 @@ message OpsResultAttribute {
 
 message OutputSource {
 
-  string outputsourceid = 305073205;
+  optional string outputsourceid = 305073205;
 
-  string outputsourcetype = 491822634;
+  optional string outputsourcetype = 491822634;
 
 }
 
@@ -8141,21 +8405,21 @@ message OutputSource {
 
 message Parameter {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string datatype = 67988590;
+  optional string datatype = 67988590;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string selector = 353735197;
+  optional string selector = 353735197;
 
-  string sourceresult = 320048386;
+  optional string sourceresult = 320048386;
 
   ParameterType type = 290836590;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
   optional int64 version = 500028728;
 
@@ -8167,7 +8431,7 @@ message Parameter {
 
 message ParameterAlreadyExists {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8177,21 +8441,21 @@ message ParameterAlreadyExists {
 
 message ParameterHistory {
 
-  string allowedpattern = 290284364;
+  optional string allowedpattern = 290284364;
 
-  string datatype = 67988590;
+  optional string datatype = 67988590;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   repeated string labels = 178416811;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string lastmodifieduser = 215822778;
+  optional string lastmodifieduser = 215822778;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated ParameterInlinePolicy policies = 40015384;
 
@@ -8199,7 +8463,7 @@ message ParameterHistory {
 
   ParameterType type = 290836590;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
   optional int64 version = 500028728;
 
@@ -8211,11 +8475,11 @@ message ParameterHistory {
 
 message ParameterInlinePolicy {
 
-  string policystatus = 256036138;
+  optional string policystatus = 256036138;
 
-  string policytext = 107473097;
+  optional string policytext = 107473097;
 
-  string policytype = 470619144;
+  optional string policytype = 470619144;
 
 }
 
@@ -8225,7 +8489,7 @@ message ParameterInlinePolicy {
 
 message ParameterLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8235,7 +8499,7 @@ message ParameterLimitExceeded {
 
 message ParameterMaxVersionLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8245,21 +8509,21 @@ message ParameterMaxVersionLimitExceeded {
 
 message ParameterMetadata {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string allowedpattern = 290284364;
+  optional string allowedpattern = 290284364;
 
-  string datatype = 67988590;
+  optional string datatype = 67988590;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string lastmodifieduser = 215822778;
+  optional string lastmodifieduser = 215822778;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated ParameterInlinePolicy policies = 40015384;
 
@@ -8277,7 +8541,7 @@ message ParameterMetadata {
 
 message ParameterNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8287,7 +8551,7 @@ message ParameterNotFound {
 
 message ParameterPatternMismatchException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8299,7 +8563,7 @@ message ParameterStringFilter {
 
   string key = 219859213;
 
-  string option = 388258997;
+  optional string option = 388258997;
 
   repeated string values = 223158876;
 
@@ -8335,7 +8599,7 @@ enum ParameterType {
 
 message ParameterVersionLabelLimitExceeded {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8345,7 +8609,7 @@ message ParameterVersionLabelLimitExceeded {
 
 message ParameterVersionNotFound {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8379,15 +8643,15 @@ enum ParametersFilterKey {
 
 message ParentStepDetails {
 
-  string action = 175614240;
+  optional string action = 175614240;
 
   optional int32 iteration = 162626349;
 
-  string iteratorvalue = 306879461;
+  optional string iteratorvalue = 306879461;
 
-  string stepexecutionid = 47252075;
+  optional string stepexecutionid = 47252075;
 
-  string stepname = 394700557;
+  optional string stepname = 394700557;
 
 }
 
@@ -8399,49 +8663,49 @@ message Patch {
 
   repeated string advisoryids = 297948609;
 
-  string arch = 312929514;
+  optional string arch = 312929514;
 
   repeated string bugzillaids = 31579172;
 
   repeated string cveids = 22965904;
 
-  string classification = 259348066;
+  optional string classification = 259348066;
 
-  string contenturl = 199526508;
+  optional string contenturl = 199526508;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 epoch = 190165127;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string kbnumber = 530478154;
+  optional string kbnumber = 530478154;
 
-  string language = 443800476;
+  optional string language = 443800476;
 
-  string msrcnumber = 387572764;
+  optional string msrcnumber = 387572764;
 
-  string msrcseverity = 364305242;
+  optional string msrcseverity = 364305242;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string product = 312238285;
+  optional string product = 312238285;
 
-  string productfamily = 200630325;
+  optional string productfamily = 200630325;
 
-  string release = 220109599;
+  optional string release = 220109599;
 
-  string releasedate = 16273963;
+  optional string releasedate = 16273963;
 
-  string repository = 123979958;
+  optional string repository = 123979958;
 
-  string severity = 276886227;
+  optional string severity = 276886227;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
-  string vendor = 499400308;
+  optional string vendor = 499400308;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -8461,11 +8725,11 @@ enum PatchAction {
 
 message PatchBaselineIdentity {
 
-  string baselinedescription = 29637269;
+  optional string baselinedescription = 29637269;
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
-  string baselinename = 226231050;
+  optional string baselinename = 226231050;
 
   optional bool defaultbaseline = 511737610;
 
@@ -8479,7 +8743,7 @@ message PatchBaselineIdentity {
 
 message PatchComplianceData {
 
-  string cveids = 22965904;
+  optional string cveids = 22965904;
 
   string classification = 259348066;
 
@@ -8633,7 +8897,7 @@ message PatchGroupPatchBaselineMapping {
 
   PatchBaselineIdentity baselineidentity = 354904729;
 
-  string patchgroup = 518806497;
+  optional string patchgroup = 518806497;
 
 }
 
@@ -8653,7 +8917,7 @@ enum PatchOperationType {
 
 message PatchOrchestratorFilter {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
   repeated string values = 223158876;
 
@@ -8685,7 +8949,7 @@ message PatchRule {
 
   optional int32 approveafterdays = 303775484;
 
-  string approveuntildate = 472356791;
+  optional string approveuntildate = 472356791;
 
   PatchComplianceLevel compliancelevel = 200031721;
 
@@ -8735,7 +8999,7 @@ message PatchSource {
 
 message PatchStatus {
 
-  string approvaldate = 140150963;
+  optional string approvaldate = 140150963;
 
   PatchComplianceLevel compliancelevel = 200031721;
 
@@ -8773,7 +9037,7 @@ enum PlatformType {
 
 message PoliciesLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -8803,7 +9067,7 @@ message PutComplianceItemsRequest {
 
   ComplianceExecutionSummary executionsummary = 71480964;
 
-  string itemcontenthash = 371661720;
+  optional string itemcontenthash = 371661720;
 
   repeated ComplianceItemEntry items = 3553328;
 
@@ -8835,7 +9099,7 @@ message PutInventoryRequest {
 
 message PutInventoryResult {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8843,19 +9107,19 @@ message PutInventoryResult {
 
 message PutParameterRequest {
 
-  string allowedpattern = 290284364;
+  optional string allowedpattern = 290284364;
 
-  string datatype = 67988590;
+  optional string datatype = 67988590;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   string name = 266367751;
 
   optional bool overwrite = 419368595;
 
-  string policies = 40015384;
+  optional string policies = 40015384;
 
   repeated Tag tags = 381526209;
 
@@ -8883,9 +9147,9 @@ message PutResourcePolicyRequest {
 
   string policy = 471611296;
 
-  string policyhash = 203037360;
+  optional string policyhash = 203037360;
 
-  string policyid = 299520499;
+  optional string policyid = 299520499;
 
   string resourcearn = 364280877;
 
@@ -8895,9 +9159,9 @@ message PutResourcePolicyRequest {
 
 message PutResourcePolicyResponse {
 
-  string policyhash = 203037360;
+  optional string policyhash = 203037360;
 
-  string policyid = 299520499;
+  optional string policyid = 299520499;
 
 }
 
@@ -8923,7 +9187,7 @@ message RegisterDefaultPatchBaselineRequest {
 
 message RegisterDefaultPatchBaselineResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
 }
 
@@ -8941,9 +9205,9 @@ message RegisterPatchBaselineForPatchGroupRequest {
 
 message RegisterPatchBaselineForPatchGroupResult {
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
-  string patchgroup = 518806497;
+  optional string patchgroup = 518806497;
 
 }
 
@@ -8951,13 +9215,13 @@ message RegisterPatchBaselineForPatchGroupResult {
 
 message RegisterTargetWithMaintenanceWindowRequest {
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
   MaintenanceWindowResourceType resourcetype = 301342558;
 
@@ -8971,7 +9235,7 @@ message RegisterTargetWithMaintenanceWindowRequest {
 
 message RegisterTargetWithMaintenanceWindowResult {
 
-  string windowtargetid = 259696478;
+  optional string windowtargetid = 259696478;
 
 }
 
@@ -8981,23 +9245,23 @@ message RegisterTaskWithMaintenanceWindowRequest {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   MaintenanceWindowTaskCutoffBehavior cutoffbehavior = 120608587;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   LoggingInfo logginginfo = 448312415;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int32 priority = 109944618;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   repeated Target targets = 262180226;
 
@@ -9017,7 +9281,7 @@ message RegisterTaskWithMaintenanceWindowRequest {
 
 message RegisterTaskWithMaintenanceWindowResult {
 
-  string windowtaskid = 323765978;
+  optional string windowtaskid = 323765978;
 
 }
 
@@ -9099,7 +9363,7 @@ message ResolvedTargets {
 
 message ResourceComplianceSummaryItem {
 
-  string compliancetype = 451385291;
+  optional string compliancetype = 451385291;
 
   CompliantSummary compliantsummary = 133218055;
 
@@ -9109,9 +9373,9 @@ message ResourceComplianceSummaryItem {
 
   ComplianceSeverity overallseverity = 74875526;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
   ComplianceStatus status = 6222352;
 
@@ -9123,7 +9387,7 @@ message ResourceComplianceSummaryItem {
 
 message ResourceDataSyncAlreadyExistsException {
 
-  string syncname = 369920802;
+  optional string syncname = 369920802;
 
 }
 
@@ -9145,7 +9409,7 @@ message ResourceDataSyncAwsOrganizationsSource {
 
 message ResourceDataSyncConflictException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9155,7 +9419,7 @@ message ResourceDataSyncConflictException {
 
 message ResourceDataSyncCountExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9165,7 +9429,7 @@ message ResourceDataSyncCountExceededException {
 
 message ResourceDataSyncDestinationDataSharing {
 
-  string destinationdatasharingtype = 162313154;
+  optional string destinationdatasharingtype = 162313154;
 
 }
 
@@ -9175,7 +9439,7 @@ message ResourceDataSyncDestinationDataSharing {
 
 message ResourceDataSyncInvalidConfigurationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9187,23 +9451,23 @@ message ResourceDataSyncItem {
 
   LastResourceDataSyncStatus laststatus = 163326556;
 
-  string lastsuccessfulsynctime = 94157050;
+  optional string lastsuccessfulsynctime = 94157050;
 
-  string lastsyncstatusmessage = 70064880;
+  optional string lastsyncstatusmessage = 70064880;
 
-  string lastsynctime = 125896272;
+  optional string lastsynctime = 125896272;
 
   ResourceDataSyncS3Destination s3destination = 526234522;
 
-  string synccreatedtime = 5143768;
+  optional string synccreatedtime = 5143768;
 
-  string synclastmodifiedtime = 176500261;
+  optional string synclastmodifiedtime = 176500261;
 
-  string syncname = 369920802;
+  optional string syncname = 369920802;
 
   ResourceDataSyncSourceWithState syncsource = 286486824;
 
-  string synctype = 122336091;
+  optional string synctype = 122336091;
 
 }
 
@@ -9213,11 +9477,11 @@ message ResourceDataSyncItem {
 
 message ResourceDataSyncNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string syncname = 369920802;
+  optional string syncname = 369920802;
 
-  string synctype = 122336091;
+  optional string synctype = 122336091;
 
 }
 
@@ -9227,7 +9491,7 @@ message ResourceDataSyncNotFoundException {
 
 message ResourceDataSyncOrganizationalUnit {
 
-  string organizationalunitid = 201174977;
+  optional string organizationalunitid = 201174977;
 
 }
 
@@ -9237,13 +9501,13 @@ message ResourceDataSyncOrganizationalUnit {
 
 message ResourceDataSyncS3Destination {
 
-  string awskmskeyarn = 533835690;
+  optional string awskmskeyarn = 533835690;
 
   string bucketname = 208117045;
 
   ResourceDataSyncDestinationDataSharing destinationdatasharing = 448514634;
 
-  string prefix = 273996266;
+  optional string prefix = 273996266;
 
   string region = 154040478;
 
@@ -9291,9 +9555,9 @@ message ResourceDataSyncSourceWithState {
 
   repeated string sourceregions = 115078446;
 
-  string sourcetype = 195731217;
+  optional string sourcetype = 195731217;
 
-  string state = 502047895;
+  optional string state = 502047895;
 
 }
 
@@ -9303,7 +9567,7 @@ message ResourceDataSyncSourceWithState {
 
 message ResourceInUseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9313,7 +9577,7 @@ message ResourceInUseException {
 
 message ResourceLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9323,7 +9587,7 @@ message ResourceLimitExceededException {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9333,7 +9597,7 @@ message ResourceNotFoundException {
 
 message ResourcePolicyConflictException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9343,7 +9607,7 @@ message ResourcePolicyConflictException {
 
 message ResourcePolicyInvalidParameterException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   repeated string parameternames = 72522785;
 
@@ -9357,9 +9621,9 @@ message ResourcePolicyLimitExceededException {
 
   optional int32 limit = 412502741;
 
-  string limittype = 155546973;
+  optional string limittype = 155546973;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9369,7 +9633,7 @@ message ResourcePolicyLimitExceededException {
 
 message ResourcePolicyNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9395,15 +9659,17 @@ enum ResourceTypeForTagging {
 
   RESOURCE_TYPE_FOR_TAGGING_AUTOMATION = 3;
 
-  RESOURCE_TYPE_FOR_TAGGING_PATCH_BASELINE = 4;
+  RESOURCE_TYPE_FOR_TAGGING_CLOUD_CONNECTOR = 4;
 
-  RESOURCE_TYPE_FOR_TAGGING_OPSMETADATA = 5;
+  RESOURCE_TYPE_FOR_TAGGING_PATCH_BASELINE = 5;
 
-  RESOURCE_TYPE_FOR_TAGGING_PARAMETER = 6;
+  RESOURCE_TYPE_FOR_TAGGING_OPSMETADATA = 6;
 
-  RESOURCE_TYPE_FOR_TAGGING_MANAGED_INSTANCE = 7;
+  RESOURCE_TYPE_FOR_TAGGING_PARAMETER = 7;
 
-  RESOURCE_TYPE_FOR_TAGGING_ASSOCIATION = 8;
+  RESOURCE_TYPE_FOR_TAGGING_MANAGED_INSTANCE = 8;
+
+  RESOURCE_TYPE_FOR_TAGGING_ASSOCIATION = 9;
 
 }
 
@@ -9429,11 +9695,11 @@ message ResumeSessionRequest {
 
 message ResumeSessionResponse {
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
-  string streamurl = 423623039;
+  optional string streamurl = 423623039;
 
-  string tokenvalue = 97232092;
+  optional string tokenvalue = 97232092;
 
 }
 
@@ -9443,9 +9709,9 @@ message ResumeSessionResponse {
 
 message ReviewInformation {
 
-  string reviewedtime = 277736338;
+  optional string reviewedtime = 277736338;
 
-  string reviewer = 436444219;
+  optional string reviewer = 436444219;
 
   ReviewStatus status = 6222352;
 
@@ -9473,11 +9739,11 @@ message Runbook {
 
   string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   map<string, string> parameters = 494900218;
 
@@ -9485,7 +9751,7 @@ message Runbook {
 
   repeated TargetMapsEntry targetmaps = 74800696;
 
-  string targetparametername = 351056597;
+  optional string targetparametername = 351056597;
 
   repeated Target targets = 262180226;
 
@@ -9497,11 +9763,11 @@ message Runbook {
 
 message S3OutputLocation {
 
-  string outputs3bucketname = 186756480;
+  optional string outputs3bucketname = 186756480;
 
-  string outputs3keyprefix = 17840974;
+  optional string outputs3keyprefix = 17840974;
 
-  string outputs3region = 398718159;
+  optional string outputs3region = 398718159;
 
 }
 
@@ -9511,7 +9777,7 @@ message S3OutputLocation {
 
 message S3OutputUrl {
 
-  string outputurl = 42495998;
+  optional string outputurl = 42495998;
 
 }
 
@@ -9521,11 +9787,11 @@ message S3OutputUrl {
 
 message ScheduledWindowExecution {
 
-  string executiontime = 379716053;
+  optional string executiontime = 379716053;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -9555,33 +9821,33 @@ message SendCommandRequest {
 
   CloudWatchOutputConfig cloudwatchoutputconfig = 21186555;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
-  string documenthash = 251248469;
+  optional string documenthash = 251248469;
 
   DocumentHashType documenthashtype = 93041117;
 
   string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   repeated string instanceids = 312792453;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   NotificationConfig notificationconfig = 346074145;
 
-  string outputs3bucketname = 186756480;
+  optional string outputs3bucketname = 186756480;
 
-  string outputs3keyprefix = 17840974;
+  optional string outputs3keyprefix = 17840974;
 
-  string outputs3region = 398718159;
+  optional string outputs3region = 398718159;
 
   map<string, string> parameters = 494900218;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   repeated Target targets = 262180226;
 
@@ -9607,9 +9873,9 @@ message ServiceQuotaExceededException {
 
   string quotacode = 306488915;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
   string servicecode = 474897394;
 
@@ -9621,17 +9887,17 @@ message ServiceQuotaExceededException {
 
 message ServiceSetting {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
-  string lastmodifieduser = 215822778;
+  optional string lastmodifieduser = 215822778;
 
-  string settingid = 422452711;
+  optional string settingid = 422452711;
 
-  string settingvalue = 467016041;
+  optional string settingvalue = 467016041;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -9641,7 +9907,7 @@ message ServiceSetting {
 
 message ServiceSettingNotFound {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -9653,27 +9919,27 @@ message Session {
 
   AccessType accesstype = 14019508;
 
-  string details = 247611974;
+  optional string details = 247611974;
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
-  string maxsessionduration = 391414912;
+  optional string maxsessionduration = 391414912;
 
   SessionManagerOutputUrl outputurl = 42495998;
 
-  string owner = 455261813;
+  optional string owner = 455261813;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   SessionStatus status = 6222352;
 
-  string target = 191361385;
+  optional string target = 191361385;
 
 }
 
@@ -9715,9 +9981,9 @@ enum SessionFilterKey {
 
 message SessionManagerOutputUrl {
 
-  string cloudwatchoutputurl = 60509222;
+  optional string cloudwatchoutputurl = 60509222;
 
-  string s3outputurl = 490515856;
+  optional string s3outputurl = 490515856;
 
 }
 
@@ -9793,9 +10059,11 @@ enum SourceType {
 
   SOURCE_TYPE_AWS_SSM_MANAGEDINSTANCE = 0;
 
-  SOURCE_TYPE_AWS_EC2_INSTANCE = 1;
+  SOURCE_TYPE_AZURE_INSTANCE = 1;
 
-  SOURCE_TYPE_AWS_IOT_THING = 2;
+  SOURCE_TYPE_AWS_EC2_INSTANCE = 2;
+
+  SOURCE_TYPE_AWS_IOT_THING = 3;
 
 }
 
@@ -9815,7 +10083,7 @@ message StartAccessRequestRequest {
 
 message StartAccessRequestResponse {
 
-  string accessrequestid = 377097210;
+  optional string accessrequestid = 377097210;
 
 }
 
@@ -9839,15 +10107,15 @@ message StartAutomationExecutionRequest {
 
   AlarmConfiguration alarmconfiguration = 70143113;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
   ExecutionMode mode = 323909427;
 
@@ -9857,11 +10125,11 @@ message StartAutomationExecutionRequest {
 
   repeated TargetLocation targetlocations = 289168805;
 
-  string targetlocationsurl = 107583422;
+  optional string targetlocationsurl = 107583422;
 
   repeated TargetMapsEntry targetmaps = 74800696;
 
-  string targetparametername = 351056597;
+  optional string targetparametername = 351056597;
 
   repeated Target targets = 262180226;
 
@@ -9871,7 +10139,7 @@ message StartAutomationExecutionRequest {
 
 message StartAutomationExecutionResult {
 
-  string automationexecutionid = 12449766;
+  optional string automationexecutionid = 12449766;
 
 }
 
@@ -9881,23 +10149,23 @@ message StartChangeRequestExecutionRequest {
 
   optional bool autoapprove = 461595104;
 
-  string changedetails = 125139630;
+  optional string changedetails = 125139630;
 
-  string changerequestname = 468779362;
+  optional string changerequestname = 468779362;
 
-  string clienttoken = 137297356;
+  optional string clienttoken = 137297356;
 
   string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   map<string, string> parameters = 494900218;
 
   repeated Runbook runbooks = 514418725;
 
-  string scheduledendtime = 3954269;
+  optional string scheduledendtime = 3954269;
 
-  string scheduledtime = 334708242;
+  optional string scheduledtime = 334708242;
 
   repeated Tag tags = 381526209;
 
@@ -9907,7 +10175,7 @@ message StartChangeRequestExecutionRequest {
 
 message StartChangeRequestExecutionResult {
 
-  string automationexecutionid = 12449766;
+  optional string automationexecutionid = 12449766;
 
 }
 
@@ -9917,7 +10185,7 @@ message StartExecutionPreviewRequest {
 
   string documentname = 120705488;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   ExecutionInputs executioninputs = 133189225;
 
@@ -9927,7 +10195,7 @@ message StartExecutionPreviewRequest {
 
 message StartExecutionPreviewResponse {
 
-  string executionpreviewid = 35285163;
+  optional string executionpreviewid = 35285163;
 
 }
 
@@ -9935,11 +10203,11 @@ message StartExecutionPreviewResponse {
 
 message StartSessionRequest {
 
-  string documentname = 120705488;
+  optional string documentname = 120705488;
 
   map<string, string> parameters = 494900218;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
   string target = 191361385;
 
@@ -9949,11 +10217,11 @@ message StartSessionRequest {
 
 message StartSessionResponse {
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
-  string streamurl = 423623039;
+  optional string streamurl = 423623039;
 
-  string tokenvalue = 97232092;
+  optional string tokenvalue = 97232092;
 
 }
 
@@ -9971,15 +10239,15 @@ message StatusUnchanged {
 
 message StepExecution {
 
-  string action = 175614240;
+  optional string action = 175614240;
 
-  string executionendtime = 139859196;
+  optional string executionendtime = 139859196;
 
-  string executionstarttime = 429847391;
+  optional string executionstarttime = 429847391;
 
   FailureDetails failuredetails = 409582698;
 
-  string failuremessage = 353556937;
+  optional string failuremessage = 353556937;
 
   map<string, string> inputs = 499898041;
 
@@ -9989,9 +10257,9 @@ message StepExecution {
 
   optional int32 maxattempts = 233732372;
 
-  string nextstep = 346442571;
+  optional string nextstep = 346442571;
 
-  string onfailure = 424696739;
+  optional string onfailure = 424696739;
 
   map<string, string> outputs = 455868918;
 
@@ -9999,13 +10267,13 @@ message StepExecution {
 
   ParentStepDetails parentstepdetails = 428116240;
 
-  string response = 363430655;
+  optional string response = 363430655;
 
-  string responsecode = 447553700;
+  optional string responsecode = 447553700;
 
-  string stepexecutionid = 47252075;
+  optional string stepexecutionid = 47252075;
 
-  string stepname = 394700557;
+  optional string stepname = 394700557;
 
   AutomationExecutionStatus stepstatus = 49235738;
 
@@ -10018,6 +10286,8 @@ message StepExecution {
   repeated AlarmStateInformation triggeredalarms = 263222917;
 
   repeated string validnextsteps = 403306152;
+
+  optional string warningmessage = 497413775;
 
 }
 
@@ -10089,7 +10359,7 @@ enum StopType {
 
 message SubTypeCountLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10111,7 +10381,7 @@ message Tag {
 
 message Target {
 
-  string key = 219859213;
+  optional string key = 219859213;
 
   repeated string values = 223158876;
 
@@ -10123,7 +10393,7 @@ message Target {
 
 message TargetInUseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10137,7 +10407,7 @@ message TargetLocation {
 
   repeated string excludeaccounts = 166973682;
 
-  string executionrolename = 402462979;
+  optional string executionrolename = 402462979;
 
   optional bool includechildorganizationunits = 323711808;
 
@@ -10145,15 +10415,15 @@ message TargetLocation {
 
   AlarmConfiguration targetlocationalarmconfiguration = 359268383;
 
-  string targetlocationmaxconcurrency = 202765591;
+  optional string targetlocationmaxconcurrency = 202765591;
 
-  string targetlocationmaxerrors = 212923133;
+  optional string targetlocationmaxerrors = 212923133;
 
   repeated Target targets = 262180226;
 
-  string targetsmaxconcurrency = 242641881;
+  optional string targetsmaxconcurrency = 242641881;
 
-  string targetsmaxerrors = 20182343;
+  optional string targetsmaxerrors = 20182343;
 
 }
 
@@ -10163,7 +10433,7 @@ message TargetLocation {
 
 message TargetNotConnected {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10175,7 +10445,7 @@ message TargetPreview {
 
   optional int32 count = 31963285;
 
-  string targettype = 397256481;
+  optional string targettype = 397256481;
 
 }
 
@@ -10191,7 +10461,7 @@ message TerminateSessionRequest {
 
 message TerminateSessionResponse {
 
-  string sessionid = 20529723;
+  optional string sessionid = 20529723;
 
 }
 
@@ -10203,9 +10473,9 @@ message ThrottlingException {
 
   string message = 235854213;
 
-  string quotacode = 306488915;
+  optional string quotacode = 306488915;
 
-  string servicecode = 474897394;
+  optional string servicecode = 474897394;
 
 }
 
@@ -10223,7 +10493,7 @@ message TooManyTagsError {
 
 message TooManyUpdates {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10233,7 +10503,7 @@ message TooManyUpdates {
 
 message TotalSizeLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10265,7 +10535,7 @@ message UnlabelParameterVersionResult {
 
 message UnsupportedCalendarException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10275,7 +10545,7 @@ message UnsupportedCalendarException {
 
 message UnsupportedFeatureRequiredException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10285,9 +10555,9 @@ message UnsupportedFeatureRequiredException {
 
 message UnsupportedInventoryItemContextException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string typename = 446064463;
+  optional string typename = 446064463;
 
 }
 
@@ -10297,7 +10567,7 @@ message UnsupportedInventoryItemContextException {
 
 message UnsupportedInventorySchemaVersionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10307,7 +10577,7 @@ message UnsupportedInventorySchemaVersionException {
 
 message UnsupportedOperatingSystem {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10317,7 +10587,7 @@ message UnsupportedOperatingSystem {
 
 message UnsupportedOperationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10327,7 +10597,7 @@ message UnsupportedOperationException {
 
 message UnsupportedParameterType {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -10337,7 +10607,7 @@ message UnsupportedParameterType {
 
 message UnsupportedPlatformType {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -10349,35 +10619,35 @@ message UpdateAssociationRequest {
 
   optional bool applyonlyatcroninterval = 285867158;
 
-  string associationdispatchassumerole = 281627425;
+  optional string associationdispatchassumerole = 281627425;
 
   string associationid = 138771986;
 
-  string associationname = 313608216;
+  optional string associationname = 313608216;
 
-  string associationversion = 447890705;
+  optional string associationversion = 447890705;
 
-  string automationtargetparametername = 348584826;
+  optional string automationtargetparametername = 348584826;
 
   repeated string calendarnames = 36075966;
 
   AssociationComplianceSeverity complianceseverity = 278891158;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   optional int32 duration = 348604718;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   InstanceAssociationOutputLocation outputlocation = 67991028;
 
   map<string, string> parameters = 494900218;
 
-  string scheduleexpression = 446089471;
+  optional string scheduleexpression = 446089471;
 
   optional int32 scheduleoffset = 156928216;
 
@@ -10421,6 +10691,28 @@ message UpdateAssociationStatusResult {
 
 
 
+message UpdateCloudConnectorRequest {
+
+  string cloudconnectorid = 285172965;
+
+  CloudConnectorConfiguration configuration = 442426458;
+
+  optional string description = 115243530;
+
+  optional string displayname = 418161847;
+
+}
+
+
+
+message UpdateCloudConnectorResult {
+
+  optional string cloudconnectorid = 285172965;
+
+}
+
+
+
 message UpdateDocumentDefaultVersionRequest {
 
   string documentversion = 84572105;
@@ -10443,7 +10735,7 @@ message UpdateDocumentMetadataRequest {
 
   DocumentReviews documentreviews = 387191202;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   string name = 266367751;
 
@@ -10463,17 +10755,17 @@ message UpdateDocumentRequest {
 
   string content = 23568227;
 
-  string displayname = 418161847;
+  optional string displayname = 418161847;
 
   DocumentFormat documentformat = 516934792;
 
-  string documentversion = 84572105;
+  optional string documentversion = 84572105;
 
   string name = 266367751;
 
-  string targettype = 397256481;
+  optional string targettype = 397256481;
 
-  string versionname = 227348949;
+  optional string versionname = 227348949;
 
 }
 
@@ -10493,25 +10785,25 @@ message UpdateMaintenanceWindowRequest {
 
   optional int32 cutoff = 498433089;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 duration = 348604718;
 
   optional bool enabled = 478602303;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool replace = 81088356;
 
-  string schedule = 66697965;
+  optional string schedule = 66697965;
 
   optional int32 scheduleoffset = 156928216;
 
-  string scheduletimezone = 170037696;
+  optional string scheduletimezone = 170037696;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   string windowid = 19001897;
 
@@ -10525,25 +10817,25 @@ message UpdateMaintenanceWindowResult {
 
   optional int32 cutoff = 498433089;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   optional int32 duration = 348604718;
 
   optional bool enabled = 478602303;
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string schedule = 66697965;
+  optional string schedule = 66697965;
 
   optional int32 scheduleoffset = 156928216;
 
-  string scheduletimezone = 170037696;
+  optional string scheduletimezone = 170037696;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
 }
 
@@ -10551,11 +10843,11 @@ message UpdateMaintenanceWindowResult {
 
 message UpdateMaintenanceWindowTargetRequest {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
   optional bool replace = 81088356;
 
@@ -10571,17 +10863,17 @@ message UpdateMaintenanceWindowTargetRequest {
 
 message UpdateMaintenanceWindowTargetResult {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string ownerinformation = 68242691;
+  optional string ownerinformation = 68242691;
 
   repeated Target targets = 262180226;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtargetid = 259696478;
+  optional string windowtargetid = 259696478;
 
 }
 
@@ -10593,25 +10885,25 @@ message UpdateMaintenanceWindowTaskRequest {
 
   MaintenanceWindowTaskCutoffBehavior cutoffbehavior = 120608587;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   LoggingInfo logginginfo = 448312415;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int32 priority = 109944618;
 
   optional bool replace = 81088356;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   repeated Target targets = 262180226;
 
-  string taskarn = 312386788;
+  optional string taskarn = 312386788;
 
   MaintenanceWindowTaskInvocationParameters taskinvocationparameters = 347127635;
 
@@ -10631,31 +10923,31 @@ message UpdateMaintenanceWindowTaskResult {
 
   MaintenanceWindowTaskCutoffBehavior cutoffbehavior = 120608587;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   LoggingInfo logginginfo = 448312415;
 
-  string maxconcurrency = 29597949;
+  optional string maxconcurrency = 29597949;
 
-  string maxerrors = 129851691;
+  optional string maxerrors = 129851691;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int32 priority = 109944618;
 
-  string servicerolearn = 383168900;
+  optional string servicerolearn = 383168900;
 
   repeated Target targets = 262180226;
 
-  string taskarn = 312386788;
+  optional string taskarn = 312386788;
 
   MaintenanceWindowTaskInvocationParameters taskinvocationparameters = 347127635;
 
   map<string, MaintenanceWindowTaskParameterValueExpression> taskparameters = 385451905;
 
-  string windowid = 19001897;
+  optional string windowid = 19001897;
 
-  string windowtaskid = 323765978;
+  optional string windowtaskid = 323765978;
 
 }
 
@@ -10679,13 +10971,13 @@ message UpdateManagedInstanceRoleResult {
 
 message UpdateOpsItemRequest {
 
-  string actualendtime = 452787526;
+  optional string actualendtime = 452787526;
 
-  string actualstarttime = 532853117;
+  optional string actualstarttime = 532853117;
 
-  string category = 263447954;
+  optional string category = 263447954;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   repeated OpsItemNotification notifications = 404560144;
 
@@ -10693,23 +10985,23 @@ message UpdateOpsItemRequest {
 
   repeated string operationaldatatodelete = 352411530;
 
-  string opsitemarn = 222489428;
+  optional string opsitemarn = 222489428;
 
   string opsitemid = 25520466;
 
-  string plannedendtime = 245727820;
+  optional string plannedendtime = 245727820;
 
-  string plannedstarttime = 478079215;
+  optional string plannedstarttime = 478079215;
 
   optional int32 priority = 109944618;
 
   repeated RelatedOpsItem relatedopsitems = 287082393;
 
-  string severity = 276886227;
+  optional string severity = 276886227;
 
   OpsItemStatus status = 6222352;
 
-  string title = 81031594;
+  optional string title = 81031594;
 
 }
 
@@ -10735,7 +11027,7 @@ message UpdateOpsMetadataRequest {
 
 message UpdateOpsMetadataResult {
 
-  string opsmetadataarn = 482385698;
+  optional string opsmetadataarn = 482385698;
 
 }
 
@@ -10755,11 +11047,11 @@ message UpdatePatchBaselineRequest {
 
   string baselineid = 85389904;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   PatchFilterGroup globalfilters = 263302754;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated string rejectedpatches = 309657116;
 
@@ -10785,17 +11077,17 @@ message UpdatePatchBaselineResult {
 
   PatchComplianceStatus availablesecurityupdatescompliancestatus = 187471858;
 
-  string baselineid = 85389904;
+  optional string baselineid = 85389904;
 
-  string createddate = 416929840;
+  optional string createddate = 416929840;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   PatchFilterGroup globalfilters = 263302754;
 
-  string modifieddate = 210609143;
+  optional string modifieddate = 210609143;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   OperatingSystem operatingsystem = 38829802;
 
@@ -10847,13 +11139,121 @@ message UpdateServiceSettingResult {
 
 
 
+message ValidateCloudConnectorRequest {
+
+  string cloudconnectorid = 285172965;
+
+  optional int32 maxresults = 275174450;
+
+  optional string nexttoken = 216957566;
+
+}
+
+
+
+message ValidateCloudConnectorResult {
+
+  optional string nexttoken = 216957566;
+
+  repeated ValidationFinding validationfindings = 180859761;
+
+}
+
+
+
 // The request isn't valid. Verify that you entered valid contents for the command and try again.
 
 message ValidationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
-  string reasoncode = 209655857;
+  optional string reasoncode = 209655857;
+
+}
+
+
+
+// A validation finding from a cloud connector validation check.
+
+message ValidationFinding {
+
+  ValidationFindingCode code = 425572629;
+
+  optional string message = 235854213;
+
+  optional string providermessage = 311475868;
+
+  ValidationFindingScope scope = 65430924;
+
+  ValidationFindingType type = 290836590;
+
+}
+
+
+
+enum ValidationFindingCode {
+
+  VALIDATION_FINDING_CODE_TARGET_INACCESSIBLE = 0;
+
+  VALIDATION_FINDING_CODE_PROVIDER_CREDENTIAL_CREATION_FAILED = 1;
+
+  VALIDATION_FINDING_CODE_SUBSCRIPTION_ACCESSIBLE = 2;
+
+  VALIDATION_FINDING_CODE_OUTBOUND_WEB_IDENTITY_FEDERATION_DISABLED = 3;
+
+  VALIDATION_FINDING_CODE_TARGET_UNUSABLE = 4;
+
+  VALIDATION_FINDING_CODE_TARGET_STATE_WARNING = 5;
+
+  VALIDATION_FINDING_CODE_TENANT_SUMMARY = 6;
+
+  VALIDATION_FINDING_CODE_AWS_ROLE_ASSUMPTION_FAILED = 7;
+
+  VALIDATION_FINDING_CODE_WEB_IDENTITY_TOKEN_FAILED = 8;
+
+}
+
+
+
+// Identifies the specific resource scope of a validation finding.
+
+message ValidationFindingScope {
+
+  optional string id = 384350465;
+
+  ValidationFindingScopeType type = 290836590;
+
+}
+
+
+
+enum ValidationFindingScopeType {
+
+  VALIDATION_FINDING_SCOPE_TYPE_AZURE_TENANT = 0;
+
+  VALIDATION_FINDING_SCOPE_TYPE_AZURE_SUBSCRIPTION = 1;
+
+}
+
+
+
+enum ValidationFindingType {
+
+  VALIDATION_FINDING_TYPE_WARN = 0;
+
+  VALIDATION_FINDING_TYPE_INFO = 1;
+
+  VALIDATION_FINDING_TYPE_ERROR = 2;
+
+}
+
+
+
+// Wrapper message for map (protobuf3 cannot express repeated map directly).
+
+message OpsEntityItemEntryListEntry {
+
+  map<string, string> value = 1;
 
 }
 
@@ -10902,16 +11302,6 @@ message InventoryItemEntryListEntry {
 // Wrapper message for map (protobuf3 cannot express repeated map directly).
 
 message NodeSummaryListEntry {
-
-  map<string, string> value = 1;
-
-}
-
-
-
-// Wrapper message for map (protobuf3 cannot express repeated map directly).
-
-message OpsEntityItemEntryListEntry {
 
   map<string, string> value = 1;
 

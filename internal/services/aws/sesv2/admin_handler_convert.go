@@ -1,6 +1,7 @@
 package sesv2
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -28,7 +29,7 @@ func toPbIdentityInfos(items []IdentitySummary) []*pb.IdentityInfo {
 	result := make([]*pb.IdentityInfo, 0, len(items))
 	for _, item := range items {
 		info := &pb.IdentityInfo{
-			Identityname:       item.IdentityName,
+			Identityname:       proto.String(item.IdentityName),
 			Identitytype:       pb.IdentityType_IDENTITY_TYPE_EMAIL_ADDRESS,
 			Sendingenabled:     boolPtr(item.SendingEnabled),
 			Verificationstatus: verificationStatusToProtoFromString(item.VerificationStatus),

@@ -246,8 +246,10 @@ func (s *ObjectStore) DeleteWithVersion(ctx context.Context, bucket, key, versio
 			}
 			return nil, nil
 		} else {
-			// VersionId specified but versioning not enabled — AWS returns InvalidArgument
-			return nil, fmt.Errorf("versioning is not enabled on this bucket")
+			// VersionId specified but versioning not enabled: a bucket that
+			// never had versioning only ever holds the null version, so any
+			// other version id references a version that does not exist.
+			return nil, ErrVersioningNotEnabled
 		}
 	}
 

@@ -58,11 +58,23 @@ func TestInventoryReportDueTestModeCompression(t *testing.T) {
 		Schedule:     &s3store.InventorySchedule{Frequency: "Daily"},
 		LastDelivery: base,
 	}
-	if inventoryReportDue(daily, base.Add(30*time.Second), true) {
+	if inventoryReportDue(daily, base.Add(4*time.Second), true) {
 		t.Fatal("compressed daily cadence must not be due before its period")
 	}
-	if !inventoryReportDue(daily, base.Add(46*time.Second), true) {
-		t.Fatal("compressed daily cadence must be due after 45s")
+	if !inventoryReportDue(daily, base.Add(6*time.Second), true) {
+		t.Fatal("compressed daily cadence must be due after 5s")
+	}
+
+	weekly := &s3store.InventoryConfiguration{
+		IsEnabled:    true,
+		Schedule:     &s3store.InventorySchedule{Frequency: "Weekly"},
+		LastDelivery: base,
+	}
+	if inventoryReportDue(weekly, base.Add(9*time.Second), true) {
+		t.Fatal("compressed weekly cadence must not be due before its period")
+	}
+	if !inventoryReportDue(weekly, base.Add(11*time.Second), true) {
+		t.Fatal("compressed weekly cadence must be due after 10s")
 	}
 }
 

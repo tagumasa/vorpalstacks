@@ -56,7 +56,7 @@ func (h *AdminHandler) GetUser(ctx context.Context, req *connect.Request[pb.GetU
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	user, err := h.service.getUserCore(stores, req.Msg.Username)
+	user, err := h.service.getUserCore(stores, req.Msg.GetUsername())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -71,7 +71,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	result, err := h.service.listUsersCore(stores, req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := h.service.listUsersCore(stores, req.Msg.GetPathprefix(), req.Msg.GetMarker(), maxItems)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -84,7 +84,7 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 	return connect.NewResponse(&pb.ListUsersResponse{
 		Users:       users,
 		Istruncated: proto.Bool(result.IsTruncated),
-		Marker:      result.Marker,
+		Marker:      proto.String(result.Marker),
 	}), nil
 }
 
@@ -95,8 +95,8 @@ func (h *AdminHandler) CreateUser(ctx context.Context, req *connect.Request[pb.C
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	input := &CreateUserInput{
-		UserName: req.Msg.Username,
-		Path:     req.Msg.Path,
+		UserName: req.Msg.GetUsername(),
+		Path:     req.Msg.GetPath(),
 		Tags:     pbTagsToStoreTags(req.Msg.Tags),
 	}
 	user, err := h.service.createUserCore(stores, input)
@@ -116,9 +116,9 @@ func (h *AdminHandler) UpdateUser(ctx context.Context, req *connect.Request[pb.U
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	input := &UpdateUserInput{
-		UserName:    req.Msg.Username,
-		NewPath:     req.Msg.Newpath,
-		NewUserName: req.Msg.Newusername,
+		UserName:    req.Msg.GetUsername(),
+		NewPath:     req.Msg.GetNewpath(),
+		NewUserName: req.Msg.GetNewusername(),
 	}
 	if _, err := h.service.updateUserCore(stores, input); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -134,7 +134,7 @@ func (h *AdminHandler) DeleteUser(ctx context.Context, req *connect.Request[pb.D
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 	input := &DeleteUserInput{
-		UserName: req.Msg.Username,
+		UserName: req.Msg.GetUsername(),
 		Cascade:  true,
 	}
 	if err := h.service.deleteUserCore(stores, input); err != nil {
@@ -167,7 +167,7 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	result, err := h.service.listRolesCore(stores, req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := h.service.listRolesCore(stores, req.Msg.GetPathprefix(), req.Msg.GetMarker(), maxItems)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -180,7 +180,7 @@ func (h *AdminHandler) ListRoles(ctx context.Context, req *connect.Request[pb.Li
 	return connect.NewResponse(&pb.ListRolesResponse{
 		Roles:       roles,
 		Istruncated: proto.Bool(result.IsTruncated),
-		Marker:      result.Marker,
+		Marker:      proto.String(result.Marker),
 	}), nil
 }
 
@@ -192,9 +192,9 @@ func (h *AdminHandler) CreateRole(ctx context.Context, req *connect.Request[pb.C
 	}
 	input := &CreateRoleInput{
 		RoleName:                 req.Msg.Rolename,
-		Path:                     req.Msg.Path,
+		Path:                     req.Msg.GetPath(),
 		AssumeRolePolicyDocument: req.Msg.Assumerolepolicydocument,
-		Description:              req.Msg.Description,
+		Description:              req.Msg.GetDescription(),
 		MaxSessionDuration:       int(req.Msg.GetMaxsessionduration()),
 		Tags:                     pbTagsToStoreTags(req.Msg.Tags),
 	}
@@ -216,7 +216,7 @@ func (h *AdminHandler) UpdateRole(ctx context.Context, req *connect.Request[pb.U
 	}
 	input := &UpdateRoleInput{
 		RoleName:           req.Msg.Rolename,
-		Description:        req.Msg.Description,
+		Description:        req.Msg.GetDescription(),
 		MaxSessionDuration: int(req.Msg.GetMaxsessionduration()),
 	}
 	if _, err := h.service.updateRoleCore(stores, input); err != nil {
@@ -273,7 +273,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 		scope = "All"
 	}
 
-	result, err := h.service.listPoliciesCore(stores, scope, req.Msg.Pathprefix, req.Msg.Marker, req.Msg.GetOnlyattached(), maxItems)
+	result, err := h.service.listPoliciesCore(stores, scope, req.Msg.GetPathprefix(), req.Msg.GetMarker(), req.Msg.GetOnlyattached(), maxItems)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -286,7 +286,7 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 	return connect.NewResponse(&pb.ListPoliciesResponse{
 		Policies:    policies,
 		Istruncated: proto.Bool(result.IsTruncated),
-		Marker:      result.Marker,
+		Marker:      proto.String(result.Marker),
 	}), nil
 }
 
@@ -298,9 +298,9 @@ func (h *AdminHandler) CreatePolicy(ctx context.Context, req *connect.Request[pb
 	}
 	input := &CreatePolicyInput{
 		PolicyName:     req.Msg.Policyname,
-		Path:           req.Msg.Path,
+		Path:           req.Msg.GetPath(),
 		PolicyDocument: req.Msg.Policydocument,
-		Description:    req.Msg.Description,
+		Description:    req.Msg.GetDescription(),
 		Tags:           pbTagsToStoreTags(req.Msg.Tags),
 	}
 	policy, err := h.service.createPolicyCore(stores, input)
@@ -350,7 +350,7 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	result, err := h.service.listGroupsCore(stores, req.Msg.Pathprefix, req.Msg.Marker, maxItems)
+	result, err := h.service.listGroupsCore(stores, req.Msg.GetPathprefix(), req.Msg.GetMarker(), maxItems)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -363,7 +363,7 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 	return connect.NewResponse(&pb.ListGroupsResponse{
 		Groups:      groups,
 		Istruncated: proto.Bool(result.IsTruncated),
-		Marker:      result.Marker,
+		Marker:      proto.String(result.Marker),
 	}), nil
 }
 
@@ -375,7 +375,7 @@ func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.
 	}
 	input := &CreateGroupInput{
 		GroupName: req.Msg.Groupname,
-		Path:      req.Msg.Path,
+		Path:      req.Msg.GetPath(),
 	}
 	group, err := h.service.createGroupCore(stores, input)
 	if err != nil {
@@ -393,8 +393,8 @@ func (h *AdminHandler) UpdateGroup(ctx context.Context, req *connect.Request[pb.
 	}
 	input := &UpdateGroupInput{
 		GroupName:    req.Msg.Groupname,
-		NewPath:      req.Msg.Newpath,
-		NewGroupName: req.Msg.Newgroupname,
+		NewPath:      req.Msg.GetNewpath(),
+		NewGroupName: req.Msg.GetNewgroupname(),
 	}
 	if _, err := h.service.updateGroupCore(stores, input); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

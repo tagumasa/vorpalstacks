@@ -30,14 +30,21 @@ func (s *DynamoDBService) DescribeTimeToLive(ctx context.Context, reqCtx *reques
 	}
 
 	if ttl != nil {
+		// The stored status is the TTL state machine's value — ENABLING or
+		// DISABLING while the transition goroutine has not yet committed,
+		// ENABLED or DISABLED after it has. A record without a status falls
+		// back to the derived value.
+		status := "DISABLED"
+		if ttl.Status != "" {
+			status = string(ttl.Status)
+		} else if ttl.Enabled {
+			status = "ENABLED"
+		}
 		desc := map[string]interface{}{
-			"TimeToLiveStatus": "DISABLED",
+			"TimeToLiveStatus": status,
 		}
 		if ttl.AttributeName != "" {
 			desc["AttributeName"] = ttl.AttributeName
-		}
-		if ttl.Enabled {
-			desc["TimeToLiveStatus"] = "ENABLED"
 		}
 		resp["TimeToLiveDescription"] = desc
 	}
@@ -52,46 +59,15 @@ func (s *DynamoDBService) UpdateTimeToLive(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	ttlSpec, ok := req.Parameters["TimeToLiveSpecification"].(map[string]interface{})
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	enabled, err := validateBoolParam(ttlSpec, "Enabled", false)
-	if err != nil {
-		return nil, err
-	}
-	attrName, ok := ttlSpec["AttributeName"].(string)
-	if !ok {
-		return nil, ErrInvalidParameter
-	}
-
-	if attrName == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateTimeToLiveAttributeName(attrName) {
-		return nil, ErrInvalidParameter
-	}
+	in := parseTimeToLiveSpec(req.Parameters["TimeToLiveSpecification"])
+	in.TableName = table.Name
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	// Enabling TTL on a table that already has TTL enabled is rejected;
-	// renaming the TTL attribute requires disabling TTL first. Disabling
-	// is always allowed and is the documented path for changing the
-	// attribute.
-	existingTTL, _ := s.describeTimeToLiveCore(store, table.Name)
-	if enabled && existingTTL != nil && existingTTL.Enabled {
-		return nil, ErrInvalidParameter
-	}
-
-	ttl, err := s.updateTimeToLiveCore(ctx, store, UpdateTimeToLiveInput{
-		TableName:     table.Name,
-		Enabled:       enabled,
-		AttributeName: attrName,
-	})
+	ttl, err := s.updateTimeToLiveCore(ctx, store, in)
 	if err != nil {
 		return nil, err
 	}

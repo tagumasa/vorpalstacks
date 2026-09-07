@@ -1222,7 +1222,7 @@ func (Type) EnumDescriptor() ([]byte, []int) {
 
 type AccessDeniedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1258,15 +1258,15 @@ func (*AccessDeniedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccessDeniedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type AccountHasOngoingImportException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1302,15 +1302,15 @@ func (*AccountHasOngoingImportException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccountHasOngoingImportException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type AccountNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1346,15 +1346,15 @@ func (*AccountNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccountNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type AccountNotRegisteredException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1390,15 +1390,15 @@ func (*AccountNotRegisteredException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccountNotRegisteredException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type AccountRegisteredException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1434,8 +1434,8 @@ func (*AccountRegisteredException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccountRegisteredException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1531,7 +1531,7 @@ func (*AddTagsResponse) Descriptor() ([]byte, []int) {
 type AdvancedEventSelector struct {
 	state          protoimpl.MessageState   `protogen:"open.v1"`
 	Fieldselectors []*AdvancedFieldSelector `protobuf:"bytes,445033784,rep,name=fieldselectors,proto3" json:"fieldselectors,omitempty"`
-	Name           string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name           *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1574,8 +1574,8 @@ func (x *AdvancedEventSelector) GetFieldselectors() []*AdvancedFieldSelector {
 }
 
 func (x *AdvancedEventSelector) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -1726,8 +1726,8 @@ func (x *AggregationConfiguration) GetTemplates() []Template {
 
 type CancelQueryRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastore               string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
+	Eventdatastore               *string                `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
 	Queryid                      string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -1764,15 +1764,15 @@ func (*CancelQueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelQueryRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
 
 func (x *CancelQueryRequest) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
@@ -1786,7 +1786,7 @@ func (x *CancelQueryRequest) GetQueryid() string {
 
 type CancelQueryResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
 	Queryid                      string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	Querystatus                  QueryStatus            `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
 	unknownFields                protoimpl.UnknownFields
@@ -1824,8 +1824,8 @@ func (*CancelQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CancelQueryResponse) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
@@ -1846,7 +1846,7 @@ func (x *CancelQueryResponse) GetQuerystatus() QueryStatus {
 
 type CannotDelegateManagementAccountException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1882,16 +1882,16 @@ func (*CannotDelegateManagementAccountException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CannotDelegateManagementAccountException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type Channel struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channelarn    string                 `protobuf:"bytes,99276476,opt,name=channelarn,proto3" json:"channelarn,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Channelarn    *string                `protobuf:"bytes,99276476,opt,name=channelarn,proto3,oneof" json:"channelarn,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1927,22 +1927,22 @@ func (*Channel) Descriptor() ([]byte, []int) {
 }
 
 func (x *Channel) GetChannelarn() string {
-	if x != nil {
-		return x.Channelarn
+	if x != nil && x.Channelarn != nil {
+		return *x.Channelarn
 	}
 	return ""
 }
 
 func (x *Channel) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type ChannelARNInvalidException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1978,15 +1978,15 @@ func (*ChannelARNInvalidException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChannelARNInvalidException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ChannelAlreadyExistsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2022,15 +2022,15 @@ func (*ChannelAlreadyExistsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChannelAlreadyExistsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ChannelExistsForEDSException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2066,15 +2066,15 @@ func (*ChannelExistsForEDSException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChannelExistsForEDSException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ChannelMaxLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2110,15 +2110,15 @@ func (*ChannelMaxLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChannelMaxLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ChannelNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2154,15 +2154,15 @@ func (*ChannelNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ChannelNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CloudTrailARNInvalidException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2198,15 +2198,15 @@ func (*CloudTrailARNInvalidException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CloudTrailARNInvalidException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CloudTrailAccessNotEnabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2242,15 +2242,15 @@ func (*CloudTrailAccessNotEnabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CloudTrailAccessNotEnabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CloudTrailInvalidClientTokenIdException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2286,15 +2286,15 @@ func (*CloudTrailInvalidClientTokenIdException) Descriptor() ([]byte, []int) {
 }
 
 func (x *CloudTrailInvalidClientTokenIdException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CloudWatchLogsDeliveryUnavailableException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2330,15 +2330,15 @@ func (*CloudWatchLogsDeliveryUnavailableException) Descriptor() ([]byte, []int) 
 }
 
 func (x *CloudWatchLogsDeliveryUnavailableException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ConcurrentModificationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2374,15 +2374,15 @@ func (*ConcurrentModificationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConcurrentModificationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2418,8 +2418,8 @@ func (*ConflictException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2546,10 +2546,10 @@ func (x *CreateChannelRequest) GetTags() []*Tag {
 
 type CreateChannelResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channelarn    string                 `protobuf:"bytes,99276476,opt,name=channelarn,proto3" json:"channelarn,omitempty"`
+	Channelarn    *string                `protobuf:"bytes,99276476,opt,name=channelarn,proto3,oneof" json:"channelarn,omitempty"`
 	Destinations  []*Destination         `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Source        string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Source        *string                `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2586,8 +2586,8 @@ func (*CreateChannelResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateChannelResponse) GetChannelarn() string {
-	if x != nil {
-		return x.Channelarn
+	if x != nil && x.Channelarn != nil {
+		return *x.Channelarn
 	}
 	return ""
 }
@@ -2600,15 +2600,15 @@ func (x *CreateChannelResponse) GetDestinations() []*Destination {
 }
 
 func (x *CreateChannelResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *CreateChannelResponse) GetSource() string {
-	if x != nil {
-		return x.Source
+	if x != nil && x.Source != nil {
+		return *x.Source
 	}
 	return ""
 }
@@ -2698,8 +2698,8 @@ func (x *CreateDashboardRequest) GetWidgets() []*RequestWidget {
 
 type CreateDashboardResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Dashboardarn                 string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
-	Name                         string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Dashboardarn                 *string                `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3,oneof" json:"dashboardarn,omitempty"`
+	Name                         *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Refreshschedule              *RefreshSchedule       `protobuf:"bytes,261773338,opt,name=refreshschedule,proto3" json:"refreshschedule,omitempty"`
 	Tagslist                     []*Tag                 `protobuf:"bytes,497422889,rep,name=tagslist,proto3" json:"tagslist,omitempty"`
 	Terminationprotectionenabled *bool                  `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
@@ -2740,15 +2740,15 @@ func (*CreateDashboardResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDashboardResponse) GetDashboardarn() string {
-	if x != nil {
-		return x.Dashboardarn
+	if x != nil && x.Dashboardarn != nil {
+		return *x.Dashboardarn
 	}
 	return ""
 }
 
 func (x *CreateDashboardResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -2792,7 +2792,7 @@ type CreateEventDataStoreRequest struct {
 	state                        protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Billingmode                  BillingMode              `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=cloudtrail.BillingMode" json:"billingmode,omitempty"`
-	Kmskeyid                     string                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                     *string                  `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
 	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
@@ -2849,8 +2849,8 @@ func (x *CreateEventDataStoreRequest) GetBillingmode() BillingMode {
 }
 
 func (x *CreateEventDataStoreRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -2908,17 +2908,17 @@ type CreateEventDataStoreResponse struct {
 	state                        protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Billingmode                  BillingMode              `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=cloudtrail.BillingMode" json:"billingmode,omitempty"`
-	Createdtimestamp             string                   `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Eventdatastorearn            string                   `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
-	Kmskeyid                     string                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Createdtimestamp             *string                  `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Eventdatastorearn            *string                  `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
+	Kmskeyid                     *string                  `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Tagslist                     []*Tag                   `protobuf:"bytes,497422889,rep,name=tagslist,proto3" json:"tagslist,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
-	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                  `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -2968,22 +2968,22 @@ func (x *CreateEventDataStoreResponse) GetBillingmode() BillingMode {
 }
 
 func (x *CreateEventDataStoreResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *CreateEventDataStoreResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
 
 func (x *CreateEventDataStoreResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -2996,8 +2996,8 @@ func (x *CreateEventDataStoreResponse) GetMultiregionenabled() bool {
 }
 
 func (x *CreateEventDataStoreResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -3038,25 +3038,25 @@ func (x *CreateEventDataStoreResponse) GetTerminationprotectionenabled() bool {
 }
 
 func (x *CreateEventDataStoreResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
 
 type CreateTrailRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Cloudwatchlogsloggrouparn  string                 `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3" json:"cloudwatchlogsloggrouparn,omitempty"`
-	Cloudwatchlogsrolearn      string                 `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3" json:"cloudwatchlogsrolearn,omitempty"`
+	Cloudwatchlogsloggrouparn  *string                `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3,oneof" json:"cloudwatchlogsloggrouparn,omitempty"`
+	Cloudwatchlogsrolearn      *string                `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3,oneof" json:"cloudwatchlogsrolearn,omitempty"`
 	Enablelogfilevalidation    *bool                  `protobuf:"varint,80236930,opt,name=enablelogfilevalidation,proto3,oneof" json:"enablelogfilevalidation,omitempty"`
 	Includeglobalserviceevents *bool                  `protobuf:"varint,212227451,opt,name=includeglobalserviceevents,proto3,oneof" json:"includeglobalserviceevents,omitempty"`
 	Ismultiregiontrail         *bool                  `protobuf:"varint,468658571,opt,name=ismultiregiontrail,proto3,oneof" json:"ismultiregiontrail,omitempty"`
 	Isorganizationtrail        *bool                  `protobuf:"varint,145256127,opt,name=isorganizationtrail,proto3,oneof" json:"isorganizationtrail,omitempty"`
-	Kmskeyid                   string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                   *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	S3Bucketname               string                 `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3" json:"s3bucketname,omitempty"`
-	S3Keyprefix                string                 `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3" json:"s3keyprefix,omitempty"`
-	Snstopicname               string                 `protobuf:"bytes,415454800,opt,name=snstopicname,proto3" json:"snstopicname,omitempty"`
+	S3Keyprefix                *string                `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3,oneof" json:"s3keyprefix,omitempty"`
+	Snstopicname               *string                `protobuf:"bytes,415454800,opt,name=snstopicname,proto3,oneof" json:"snstopicname,omitempty"`
 	Tagslist                   []*Tag                 `protobuf:"bytes,497422889,rep,name=tagslist,proto3" json:"tagslist,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -3093,15 +3093,15 @@ func (*CreateTrailRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateTrailRequest) GetCloudwatchlogsloggrouparn() string {
-	if x != nil {
-		return x.Cloudwatchlogsloggrouparn
+	if x != nil && x.Cloudwatchlogsloggrouparn != nil {
+		return *x.Cloudwatchlogsloggrouparn
 	}
 	return ""
 }
 
 func (x *CreateTrailRequest) GetCloudwatchlogsrolearn() string {
-	if x != nil {
-		return x.Cloudwatchlogsrolearn
+	if x != nil && x.Cloudwatchlogsrolearn != nil {
+		return *x.Cloudwatchlogsrolearn
 	}
 	return ""
 }
@@ -3135,8 +3135,8 @@ func (x *CreateTrailRequest) GetIsorganizationtrail() bool {
 }
 
 func (x *CreateTrailRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -3156,15 +3156,15 @@ func (x *CreateTrailRequest) GetS3Bucketname() string {
 }
 
 func (x *CreateTrailRequest) GetS3Keyprefix() string {
-	if x != nil {
-		return x.S3Keyprefix
+	if x != nil && x.S3Keyprefix != nil {
+		return *x.S3Keyprefix
 	}
 	return ""
 }
 
 func (x *CreateTrailRequest) GetSnstopicname() string {
-	if x != nil {
-		return x.Snstopicname
+	if x != nil && x.Snstopicname != nil {
+		return *x.Snstopicname
 	}
 	return ""
 }
@@ -3178,19 +3178,19 @@ func (x *CreateTrailRequest) GetTagslist() []*Tag {
 
 type CreateTrailResponse struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Cloudwatchlogsloggrouparn  string                 `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3" json:"cloudwatchlogsloggrouparn,omitempty"`
-	Cloudwatchlogsrolearn      string                 `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3" json:"cloudwatchlogsrolearn,omitempty"`
+	Cloudwatchlogsloggrouparn  *string                `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3,oneof" json:"cloudwatchlogsloggrouparn,omitempty"`
+	Cloudwatchlogsrolearn      *string                `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3,oneof" json:"cloudwatchlogsrolearn,omitempty"`
 	Includeglobalserviceevents *bool                  `protobuf:"varint,212227451,opt,name=includeglobalserviceevents,proto3,oneof" json:"includeglobalserviceevents,omitempty"`
 	Ismultiregiontrail         *bool                  `protobuf:"varint,468658571,opt,name=ismultiregiontrail,proto3,oneof" json:"ismultiregiontrail,omitempty"`
 	Isorganizationtrail        *bool                  `protobuf:"varint,145256127,opt,name=isorganizationtrail,proto3,oneof" json:"isorganizationtrail,omitempty"`
-	Kmskeyid                   string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                   *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Logfilevalidationenabled   *bool                  `protobuf:"varint,35904346,opt,name=logfilevalidationenabled,proto3,oneof" json:"logfilevalidationenabled,omitempty"`
-	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	S3Bucketname               string                 `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3" json:"s3bucketname,omitempty"`
-	S3Keyprefix                string                 `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3" json:"s3keyprefix,omitempty"`
-	Snstopicarn                string                 `protobuf:"bytes,380025580,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
-	Snstopicname               string                 `protobuf:"bytes,415454800,opt,name=snstopicname,proto3" json:"snstopicname,omitempty"`
-	Trailarn                   string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Name                       *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	S3Bucketname               *string                `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3,oneof" json:"s3bucketname,omitempty"`
+	S3Keyprefix                *string                `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3,oneof" json:"s3keyprefix,omitempty"`
+	Snstopicarn                *string                `protobuf:"bytes,380025580,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
+	Snstopicname               *string                `protobuf:"bytes,415454800,opt,name=snstopicname,proto3,oneof" json:"snstopicname,omitempty"`
+	Trailarn                   *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -3226,15 +3226,15 @@ func (*CreateTrailResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateTrailResponse) GetCloudwatchlogsloggrouparn() string {
-	if x != nil {
-		return x.Cloudwatchlogsloggrouparn
+	if x != nil && x.Cloudwatchlogsloggrouparn != nil {
+		return *x.Cloudwatchlogsloggrouparn
 	}
 	return ""
 }
 
 func (x *CreateTrailResponse) GetCloudwatchlogsrolearn() string {
-	if x != nil {
-		return x.Cloudwatchlogsrolearn
+	if x != nil && x.Cloudwatchlogsrolearn != nil {
+		return *x.Cloudwatchlogsrolearn
 	}
 	return ""
 }
@@ -3261,8 +3261,8 @@ func (x *CreateTrailResponse) GetIsorganizationtrail() bool {
 }
 
 func (x *CreateTrailResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -3275,50 +3275,50 @@ func (x *CreateTrailResponse) GetLogfilevalidationenabled() bool {
 }
 
 func (x *CreateTrailResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *CreateTrailResponse) GetS3Bucketname() string {
-	if x != nil {
-		return x.S3Bucketname
+	if x != nil && x.S3Bucketname != nil {
+		return *x.S3Bucketname
 	}
 	return ""
 }
 
 func (x *CreateTrailResponse) GetS3Keyprefix() string {
-	if x != nil {
-		return x.S3Keyprefix
+	if x != nil && x.S3Keyprefix != nil {
+		return *x.S3Keyprefix
 	}
 	return ""
 }
 
 func (x *CreateTrailResponse) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
 
 func (x *CreateTrailResponse) GetSnstopicname() string {
-	if x != nil {
-		return x.Snstopicname
+	if x != nil && x.Snstopicname != nil {
+		return *x.Snstopicname
 	}
 	return ""
 }
 
 func (x *CreateTrailResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
 
 type DashboardDetail struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dashboardarn  string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
+	Dashboardarn  *string                `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3,oneof" json:"dashboardarn,omitempty"`
 	Type          DashboardType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudtrail.DashboardType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3355,8 +3355,8 @@ func (*DashboardDetail) Descriptor() ([]byte, []int) {
 }
 
 func (x *DashboardDetail) GetDashboardarn() string {
-	if x != nil {
-		return x.Dashboardarn
+	if x != nil && x.Dashboardarn != nil {
+		return *x.Dashboardarn
 	}
 	return ""
 }
@@ -3370,7 +3370,7 @@ func (x *DashboardDetail) GetType() DashboardType {
 
 type DataResource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Type          string                 `protobuf:"bytes,290836590,opt,name=type,proto3" json:"type,omitempty"`
+	Type          *string                `protobuf:"bytes,290836590,opt,name=type,proto3,oneof" json:"type,omitempty"`
 	Values        []string               `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3407,8 +3407,8 @@ func (*DataResource) Descriptor() ([]byte, []int) {
 }
 
 func (x *DataResource) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
@@ -3422,7 +3422,7 @@ func (x *DataResource) GetValues() []string {
 
 type DelegatedAdminAccountLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3458,8 +3458,8 @@ func (*DelegatedAdminAccountLimitExceededException) Descriptor() ([]byte, []int)
 }
 
 func (x *DelegatedAdminAccountLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3946,11 +3946,11 @@ func (*DeregisterOrganizationDelegatedAdminResponse) Descriptor() ([]byte, []int
 
 type DescribeQueryRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastore               string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
-	Queryalias                   string                 `protobuf:"bytes,512762270,opt,name=queryalias,proto3" json:"queryalias,omitempty"`
-	Queryid                      string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
-	Refreshid                    string                 `protobuf:"bytes,57407610,opt,name=refreshid,proto3" json:"refreshid,omitempty"`
+	Eventdatastore               *string                `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
+	Queryalias                   *string                `protobuf:"bytes,512762270,opt,name=queryalias,proto3,oneof" json:"queryalias,omitempty"`
+	Queryid                      *string                `protobuf:"bytes,110737519,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
+	Refreshid                    *string                `protobuf:"bytes,57407610,opt,name=refreshid,proto3,oneof" json:"refreshid,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3986,51 +3986,51 @@ func (*DescribeQueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeQueryRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
 
 func (x *DescribeQueryRequest) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
 
 func (x *DescribeQueryRequest) GetQueryalias() string {
-	if x != nil {
-		return x.Queryalias
+	if x != nil && x.Queryalias != nil {
+		return *x.Queryalias
 	}
 	return ""
 }
 
 func (x *DescribeQueryRequest) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
 
 func (x *DescribeQueryRequest) GetRefreshid() string {
-	if x != nil {
-		return x.Refreshid
+	if x != nil && x.Refreshid != nil {
+		return *x.Refreshid
 	}
 	return ""
 }
 
 type DescribeQueryResponse struct {
 	state                        protoimpl.MessageState           `protogen:"open.v1"`
-	Deliverys3Uri                string                           `protobuf:"bytes,230884460,opt,name=deliverys3uri,proto3" json:"deliverys3uri,omitempty"`
+	Deliverys3Uri                *string                          `protobuf:"bytes,230884460,opt,name=deliverys3uri,proto3,oneof" json:"deliverys3uri,omitempty"`
 	Deliverystatus               DeliveryStatus                   `protobuf:"varint,483265504,opt,name=deliverystatus,proto3,enum=cloudtrail.DeliveryStatus" json:"deliverystatus,omitempty"`
-	Errormessage                 string                           `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
-	Eventdatastoreowneraccountid string                           `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
-	Prompt                       string                           `protobuf:"bytes,263974748,opt,name=prompt,proto3" json:"prompt,omitempty"`
-	Queryid                      string                           `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
+	Errormessage                 *string                          `protobuf:"bytes,518702377,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
+	Eventdatastoreowneraccountid *string                          `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
+	Prompt                       *string                          `protobuf:"bytes,263974748,opt,name=prompt,proto3,oneof" json:"prompt,omitempty"`
+	Queryid                      *string                          `protobuf:"bytes,110737519,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
 	Querystatistics              *QueryStatisticsForDescribeQuery `protobuf:"bytes,260794841,opt,name=querystatistics,proto3" json:"querystatistics,omitempty"`
 	Querystatus                  QueryStatus                      `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
-	Querystring                  string                           `protobuf:"bytes,435938663,opt,name=querystring,proto3" json:"querystring,omitempty"`
+	Querystring                  *string                          `protobuf:"bytes,435938663,opt,name=querystring,proto3,oneof" json:"querystring,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -4066,8 +4066,8 @@ func (*DescribeQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DescribeQueryResponse) GetDeliverys3Uri() string {
-	if x != nil {
-		return x.Deliverys3Uri
+	if x != nil && x.Deliverys3Uri != nil {
+		return *x.Deliverys3Uri
 	}
 	return ""
 }
@@ -4080,29 +4080,29 @@ func (x *DescribeQueryResponse) GetDeliverystatus() DeliveryStatus {
 }
 
 func (x *DescribeQueryResponse) GetErrormessage() string {
-	if x != nil {
-		return x.Errormessage
+	if x != nil && x.Errormessage != nil {
+		return *x.Errormessage
 	}
 	return ""
 }
 
 func (x *DescribeQueryResponse) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
 
 func (x *DescribeQueryResponse) GetPrompt() string {
-	if x != nil {
-		return x.Prompt
+	if x != nil && x.Prompt != nil {
+		return *x.Prompt
 	}
 	return ""
 }
 
 func (x *DescribeQueryResponse) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
@@ -4122,8 +4122,8 @@ func (x *DescribeQueryResponse) GetQuerystatus() QueryStatus {
 }
 
 func (x *DescribeQueryResponse) GetQuerystring() string {
-	if x != nil {
-		return x.Querystring
+	if x != nil && x.Querystring != nil {
+		return *x.Querystring
 	}
 	return ""
 }
@@ -4322,7 +4322,7 @@ func (x *DisableFederationRequest) GetEventdatastore() string {
 
 type DisableFederationResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastorearn string                 `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
+	Eventdatastorearn *string                `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
 	Federationstatus  FederationStatus       `protobuf:"varint,146235383,opt,name=federationstatus,proto3,enum=cloudtrail.FederationStatus" json:"federationstatus,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -4359,8 +4359,8 @@ func (*DisableFederationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DisableFederationResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
@@ -4426,8 +4426,8 @@ func (x *EnableFederationRequest) GetFederationrolearn() string {
 
 type EnableFederationResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastorearn string                 `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
-	Federationrolearn string                 `protobuf:"bytes,504464364,opt,name=federationrolearn,proto3" json:"federationrolearn,omitempty"`
+	Eventdatastorearn *string                `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
+	Federationrolearn *string                `protobuf:"bytes,504464364,opt,name=federationrolearn,proto3,oneof" json:"federationrolearn,omitempty"`
 	Federationstatus  FederationStatus       `protobuf:"varint,146235383,opt,name=federationstatus,proto3,enum=cloudtrail.FederationStatus" json:"federationstatus,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -4464,15 +4464,15 @@ func (*EnableFederationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *EnableFederationResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
 
 func (x *EnableFederationResponse) GetFederationrolearn() string {
-	if x != nil {
-		return x.Federationrolearn
+	if x != nil && x.Federationrolearn != nil {
+		return *x.Federationrolearn
 	}
 	return ""
 }
@@ -4486,15 +4486,15 @@ func (x *EnableFederationResponse) GetFederationstatus() FederationStatus {
 
 type Event struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Accesskeyid     string                 `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3" json:"accesskeyid,omitempty"`
-	Cloudtrailevent string                 `protobuf:"bytes,344297255,opt,name=cloudtrailevent,proto3" json:"cloudtrailevent,omitempty"`
-	Eventid         string                 `protobuf:"bytes,376916819,opt,name=eventid,proto3" json:"eventid,omitempty"`
-	Eventname       string                 `protobuf:"bytes,264746781,opt,name=eventname,proto3" json:"eventname,omitempty"`
-	Eventsource     string                 `protobuf:"bytes,37841339,opt,name=eventsource,proto3" json:"eventsource,omitempty"`
-	Eventtime       string                 `protobuf:"bytes,222361647,opt,name=eventtime,proto3" json:"eventtime,omitempty"`
-	Readonly        string                 `protobuf:"bytes,129039352,opt,name=readonly,proto3" json:"readonly,omitempty"`
+	Accesskeyid     *string                `protobuf:"bytes,453893024,opt,name=accesskeyid,proto3,oneof" json:"accesskeyid,omitempty"`
+	Cloudtrailevent *string                `protobuf:"bytes,344297255,opt,name=cloudtrailevent,proto3,oneof" json:"cloudtrailevent,omitempty"`
+	Eventid         *string                `protobuf:"bytes,376916819,opt,name=eventid,proto3,oneof" json:"eventid,omitempty"`
+	Eventname       *string                `protobuf:"bytes,264746781,opt,name=eventname,proto3,oneof" json:"eventname,omitempty"`
+	Eventsource     *string                `protobuf:"bytes,37841339,opt,name=eventsource,proto3,oneof" json:"eventsource,omitempty"`
+	Eventtime       *string                `protobuf:"bytes,222361647,opt,name=eventtime,proto3,oneof" json:"eventtime,omitempty"`
+	Readonly        *string                `protobuf:"bytes,129039352,opt,name=readonly,proto3,oneof" json:"readonly,omitempty"`
 	Resources       []*Resource            `protobuf:"bytes,358918291,rep,name=resources,proto3" json:"resources,omitempty"`
-	Username        string                 `protobuf:"bytes,470340826,opt,name=username,proto3" json:"username,omitempty"`
+	Username        *string                `protobuf:"bytes,470340826,opt,name=username,proto3,oneof" json:"username,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -4530,50 +4530,50 @@ func (*Event) Descriptor() ([]byte, []int) {
 }
 
 func (x *Event) GetAccesskeyid() string {
-	if x != nil {
-		return x.Accesskeyid
+	if x != nil && x.Accesskeyid != nil {
+		return *x.Accesskeyid
 	}
 	return ""
 }
 
 func (x *Event) GetCloudtrailevent() string {
-	if x != nil {
-		return x.Cloudtrailevent
+	if x != nil && x.Cloudtrailevent != nil {
+		return *x.Cloudtrailevent
 	}
 	return ""
 }
 
 func (x *Event) GetEventid() string {
-	if x != nil {
-		return x.Eventid
+	if x != nil && x.Eventid != nil {
+		return *x.Eventid
 	}
 	return ""
 }
 
 func (x *Event) GetEventname() string {
-	if x != nil {
-		return x.Eventname
+	if x != nil && x.Eventname != nil {
+		return *x.Eventname
 	}
 	return ""
 }
 
 func (x *Event) GetEventsource() string {
-	if x != nil {
-		return x.Eventsource
+	if x != nil && x.Eventsource != nil {
+		return *x.Eventsource
 	}
 	return ""
 }
 
 func (x *Event) GetEventtime() string {
-	if x != nil {
-		return x.Eventtime
+	if x != nil && x.Eventtime != nil {
+		return *x.Eventtime
 	}
 	return ""
 }
 
 func (x *Event) GetReadonly() string {
-	if x != nil {
-		return x.Readonly
+	if x != nil && x.Readonly != nil {
+		return *x.Readonly
 	}
 	return ""
 }
@@ -4586,8 +4586,8 @@ func (x *Event) GetResources() []*Resource {
 }
 
 func (x *Event) GetUsername() string {
-	if x != nil {
-		return x.Username
+	if x != nil && x.Username != nil {
+		return *x.Username
 	}
 	return ""
 }
@@ -4595,15 +4595,15 @@ func (x *Event) GetUsername() string {
 type EventDataStore struct {
 	state                        protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
-	Createdtimestamp             string                   `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Eventdatastorearn            string                   `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
+	Createdtimestamp             *string                  `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Eventdatastorearn            *string                  `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
-	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                  `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -4646,15 +4646,15 @@ func (x *EventDataStore) GetAdvancedeventselectors() []*AdvancedEventSelector {
 }
 
 func (x *EventDataStore) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *EventDataStore) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
@@ -4667,8 +4667,8 @@ func (x *EventDataStore) GetMultiregionenabled() bool {
 }
 
 func (x *EventDataStore) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -4702,15 +4702,15 @@ func (x *EventDataStore) GetTerminationprotectionenabled() bool {
 }
 
 func (x *EventDataStore) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
 
 type EventDataStoreARNInvalidException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4746,15 +4746,15 @@ func (*EventDataStoreARNInvalidException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventDataStoreARNInvalidException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type EventDataStoreAlreadyExistsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4790,15 +4790,15 @@ func (*EventDataStoreAlreadyExistsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventDataStoreAlreadyExistsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type EventDataStoreFederationEnabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4834,15 +4834,15 @@ func (*EventDataStoreFederationEnabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventDataStoreFederationEnabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type EventDataStoreHasOngoingImportException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4878,15 +4878,15 @@ func (*EventDataStoreHasOngoingImportException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventDataStoreHasOngoingImportException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type EventDataStoreMaxLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4922,15 +4922,15 @@ func (*EventDataStoreMaxLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventDataStoreMaxLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type EventDataStoreNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4966,15 +4966,15 @@ func (*EventDataStoreNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EventDataStoreNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type EventDataStoreTerminationProtectedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5010,8 +5010,8 @@ func (*EventDataStoreTerminationProtectedException) Descriptor() ([]byte, []int)
 }
 
 func (x *EventDataStoreTerminationProtectedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5138,9 +5138,9 @@ func (x *GenerateQueryRequest) GetPrompt() string {
 
 type GenerateQueryResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
-	Queryalias                   string                 `protobuf:"bytes,512762270,opt,name=queryalias,proto3" json:"queryalias,omitempty"`
-	Querystatement               string                 `protobuf:"bytes,340852217,opt,name=querystatement,proto3" json:"querystatement,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
+	Queryalias                   *string                `protobuf:"bytes,512762270,opt,name=queryalias,proto3,oneof" json:"queryalias,omitempty"`
+	Querystatement               *string                `protobuf:"bytes,340852217,opt,name=querystatement,proto3,oneof" json:"querystatement,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -5176,29 +5176,29 @@ func (*GenerateQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GenerateQueryResponse) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
 
 func (x *GenerateQueryResponse) GetQueryalias() string {
-	if x != nil {
-		return x.Queryalias
+	if x != nil && x.Queryalias != nil {
+		return *x.Queryalias
 	}
 	return ""
 }
 
 func (x *GenerateQueryResponse) GetQuerystatement() string {
-	if x != nil {
-		return x.Querystatement
+	if x != nil && x.Querystatement != nil {
+		return *x.Querystatement
 	}
 	return ""
 }
 
 type GenerateResponseException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5234,8 +5234,8 @@ func (*GenerateResponseException) Descriptor() ([]byte, []int) {
 }
 
 func (x *GenerateResponseException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5286,11 +5286,11 @@ func (x *GetChannelRequest) GetChannel() string {
 
 type GetChannelResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Channelarn      string                 `protobuf:"bytes,99276476,opt,name=channelarn,proto3" json:"channelarn,omitempty"`
+	Channelarn      *string                `protobuf:"bytes,99276476,opt,name=channelarn,proto3,oneof" json:"channelarn,omitempty"`
 	Destinations    []*Destination         `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	Ingestionstatus *IngestionStatus       `protobuf:"bytes,188310656,opt,name=ingestionstatus,proto3" json:"ingestionstatus,omitempty"`
-	Name            string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Source          string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
+	Name            *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Source          *string                `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
 	Sourceconfig    *SourceConfig          `protobuf:"bytes,415255383,opt,name=sourceconfig,proto3" json:"sourceconfig,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -5327,8 +5327,8 @@ func (*GetChannelResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetChannelResponse) GetChannelarn() string {
-	if x != nil {
-		return x.Channelarn
+	if x != nil && x.Channelarn != nil {
+		return *x.Channelarn
 	}
 	return ""
 }
@@ -5348,15 +5348,15 @@ func (x *GetChannelResponse) GetIngestionstatus() *IngestionStatus {
 }
 
 func (x *GetChannelResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *GetChannelResponse) GetSource() string {
-	if x != nil {
-		return x.Source
+	if x != nil && x.Source != nil {
+		return *x.Source
 	}
 	return ""
 }
@@ -5414,15 +5414,15 @@ func (x *GetDashboardRequest) GetDashboardid() string {
 
 type GetDashboardResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Createdtimestamp             string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Dashboardarn                 string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
-	Lastrefreshfailurereason     string                 `protobuf:"bytes,493889247,opt,name=lastrefreshfailurereason,proto3" json:"lastrefreshfailurereason,omitempty"`
-	Lastrefreshid                string                 `protobuf:"bytes,272889110,opt,name=lastrefreshid,proto3" json:"lastrefreshid,omitempty"`
+	Createdtimestamp             *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Dashboardarn                 *string                `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3,oneof" json:"dashboardarn,omitempty"`
+	Lastrefreshfailurereason     *string                `protobuf:"bytes,493889247,opt,name=lastrefreshfailurereason,proto3,oneof" json:"lastrefreshfailurereason,omitempty"`
+	Lastrefreshid                *string                `protobuf:"bytes,272889110,opt,name=lastrefreshid,proto3,oneof" json:"lastrefreshid,omitempty"`
 	Refreshschedule              *RefreshSchedule       `protobuf:"bytes,261773338,opt,name=refreshschedule,proto3" json:"refreshschedule,omitempty"`
 	Status                       DashboardStatus        `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.DashboardStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                  `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	Type                         DashboardType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudtrail.DashboardType" json:"type,omitempty"`
-	Updatedtimestamp             string                 `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	Widgets                      []*Widget              `protobuf:"bytes,501826147,rep,name=widgets,proto3" json:"widgets,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -5459,29 +5459,29 @@ func (*GetDashboardResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDashboardResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *GetDashboardResponse) GetDashboardarn() string {
-	if x != nil {
-		return x.Dashboardarn
+	if x != nil && x.Dashboardarn != nil {
+		return *x.Dashboardarn
 	}
 	return ""
 }
 
 func (x *GetDashboardResponse) GetLastrefreshfailurereason() string {
-	if x != nil {
-		return x.Lastrefreshfailurereason
+	if x != nil && x.Lastrefreshfailurereason != nil {
+		return *x.Lastrefreshfailurereason
 	}
 	return ""
 }
 
 func (x *GetDashboardResponse) GetLastrefreshid() string {
-	if x != nil {
-		return x.Lastrefreshid
+	if x != nil && x.Lastrefreshid != nil {
+		return *x.Lastrefreshid
 	}
 	return ""
 }
@@ -5515,8 +5515,8 @@ func (x *GetDashboardResponse) GetType() DashboardType {
 }
 
 func (x *GetDashboardResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
@@ -5530,8 +5530,8 @@ func (x *GetDashboardResponse) GetWidgets() []*Widget {
 
 type GetEventConfigurationRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastore string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Trailname      string                 `protobuf:"bytes,507774985,opt,name=trailname,proto3" json:"trailname,omitempty"`
+	Eventdatastore *string                `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
+	Trailname      *string                `protobuf:"bytes,507774985,opt,name=trailname,proto3,oneof" json:"trailname,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -5567,15 +5567,15 @@ func (*GetEventConfigurationRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetEventConfigurationRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
 
 func (x *GetEventConfigurationRequest) GetTrailname() string {
-	if x != nil {
-		return x.Trailname
+	if x != nil && x.Trailname != nil {
+		return *x.Trailname
 	}
 	return ""
 }
@@ -5584,9 +5584,9 @@ type GetEventConfigurationResponse struct {
 	state                     protoimpl.MessageState      `protogen:"open.v1"`
 	Aggregationconfigurations []*AggregationConfiguration `protobuf:"bytes,481530463,rep,name=aggregationconfigurations,proto3" json:"aggregationconfigurations,omitempty"`
 	Contextkeyselectors       []*ContextKeySelector       `protobuf:"bytes,342040300,rep,name=contextkeyselectors,proto3" json:"contextkeyselectors,omitempty"`
-	Eventdatastorearn         string                      `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
+	Eventdatastorearn         *string                     `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
 	Maxeventsize              MaxEventSize                `protobuf:"varint,517627763,opt,name=maxeventsize,proto3,enum=cloudtrail.MaxEventSize" json:"maxeventsize,omitempty"`
-	Trailarn                  string                      `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Trailarn                  *string                     `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -5636,8 +5636,8 @@ func (x *GetEventConfigurationResponse) GetContextkeyselectors() []*ContextKeySe
 }
 
 func (x *GetEventConfigurationResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
@@ -5650,8 +5650,8 @@ func (x *GetEventConfigurationResponse) GetMaxeventsize() MaxEventSize {
 }
 
 func (x *GetEventConfigurationResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
@@ -5704,19 +5704,19 @@ type GetEventDataStoreResponse struct {
 	state                        protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Billingmode                  BillingMode              `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=cloudtrail.BillingMode" json:"billingmode,omitempty"`
-	Createdtimestamp             string                   `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Eventdatastorearn            string                   `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
-	Federationrolearn            string                   `protobuf:"bytes,504464364,opt,name=federationrolearn,proto3" json:"federationrolearn,omitempty"`
+	Createdtimestamp             *string                  `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Eventdatastorearn            *string                  `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
+	Federationrolearn            *string                  `protobuf:"bytes,504464364,opt,name=federationrolearn,proto3,oneof" json:"federationrolearn,omitempty"`
 	Federationstatus             FederationStatus         `protobuf:"varint,146235383,opt,name=federationstatus,proto3,enum=cloudtrail.FederationStatus" json:"federationstatus,omitempty"`
-	Kmskeyid                     string                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                     *string                  `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Partitionkeys                []*PartitionKey          `protobuf:"bytes,200562986,rep,name=partitionkeys,proto3" json:"partitionkeys,omitempty"`
 	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
-	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                  `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -5766,22 +5766,22 @@ func (x *GetEventDataStoreResponse) GetBillingmode() BillingMode {
 }
 
 func (x *GetEventDataStoreResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *GetEventDataStoreResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
 
 func (x *GetEventDataStoreResponse) GetFederationrolearn() string {
-	if x != nil {
-		return x.Federationrolearn
+	if x != nil && x.Federationrolearn != nil {
+		return *x.Federationrolearn
 	}
 	return ""
 }
@@ -5794,8 +5794,8 @@ func (x *GetEventDataStoreResponse) GetFederationstatus() FederationStatus {
 }
 
 func (x *GetEventDataStoreResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -5808,8 +5808,8 @@ func (x *GetEventDataStoreResponse) GetMultiregionenabled() bool {
 }
 
 func (x *GetEventDataStoreResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -5850,8 +5850,8 @@ func (x *GetEventDataStoreResponse) GetTerminationprotectionenabled() bool {
 }
 
 func (x *GetEventDataStoreResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
@@ -5904,7 +5904,7 @@ type GetEventSelectorsResponse struct {
 	state                  protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Eventselectors         []*EventSelector         `protobuf:"bytes,344575328,rep,name=eventselectors,proto3" json:"eventselectors,omitempty"`
-	Trailarn               string                   `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Trailarn               *string                  `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -5954,8 +5954,8 @@ func (x *GetEventSelectorsResponse) GetEventselectors() []*EventSelector {
 }
 
 func (x *GetEventSelectorsResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
@@ -6006,15 +6006,15 @@ func (x *GetImportRequest) GetImportid() string {
 
 type GetImportResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Createdtimestamp string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
+	Createdtimestamp *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Destinations     []string               `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Endeventtime     string                 `protobuf:"bytes,260441984,opt,name=endeventtime,proto3" json:"endeventtime,omitempty"`
-	Importid         string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
+	Endeventtime     *string                `protobuf:"bytes,260441984,opt,name=endeventtime,proto3,oneof" json:"endeventtime,omitempty"`
+	Importid         *string                `protobuf:"bytes,420153946,opt,name=importid,proto3,oneof" json:"importid,omitempty"`
 	Importsource     *ImportSource          `protobuf:"bytes,41128754,opt,name=importsource,proto3" json:"importsource,omitempty"`
 	Importstatistics *ImportStatistics      `protobuf:"bytes,48175528,opt,name=importstatistics,proto3" json:"importstatistics,omitempty"`
 	Importstatus     ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=cloudtrail.ImportStatus" json:"importstatus,omitempty"`
-	Starteventtime   string                 `protobuf:"bytes,107272573,opt,name=starteventtime,proto3" json:"starteventtime,omitempty"`
-	Updatedtimestamp string                 `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Starteventtime   *string                `protobuf:"bytes,107272573,opt,name=starteventtime,proto3,oneof" json:"starteventtime,omitempty"`
+	Updatedtimestamp *string                `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -6050,8 +6050,8 @@ func (*GetImportResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetImportResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
@@ -6064,15 +6064,15 @@ func (x *GetImportResponse) GetDestinations() []string {
 }
 
 func (x *GetImportResponse) GetEndeventtime() string {
-	if x != nil {
-		return x.Endeventtime
+	if x != nil && x.Endeventtime != nil {
+		return *x.Endeventtime
 	}
 	return ""
 }
 
 func (x *GetImportResponse) GetImportid() string {
-	if x != nil {
-		return x.Importid
+	if x != nil && x.Importid != nil {
+		return *x.Importid
 	}
 	return ""
 }
@@ -6099,23 +6099,23 @@ func (x *GetImportResponse) GetImportstatus() ImportStatus {
 }
 
 func (x *GetImportResponse) GetStarteventtime() string {
-	if x != nil {
-		return x.Starteventtime
+	if x != nil && x.Starteventtime != nil {
+		return *x.Starteventtime
 	}
 	return ""
 }
 
 func (x *GetImportResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
 
 type GetInsightSelectorsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastore string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Trailname      string                 `protobuf:"bytes,507774985,opt,name=trailname,proto3" json:"trailname,omitempty"`
+	Eventdatastore *string                `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
+	Trailname      *string                `protobuf:"bytes,507774985,opt,name=trailname,proto3,oneof" json:"trailname,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -6151,25 +6151,25 @@ func (*GetInsightSelectorsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetInsightSelectorsRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
 
 func (x *GetInsightSelectorsRequest) GetTrailname() string {
-	if x != nil {
-		return x.Trailname
+	if x != nil && x.Trailname != nil {
+		return *x.Trailname
 	}
 	return ""
 }
 
 type GetInsightSelectorsResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastorearn   string                 `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
+	Eventdatastorearn   *string                `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
 	Insightselectors    []*InsightSelector     `protobuf:"bytes,49628748,rep,name=insightselectors,proto3" json:"insightselectors,omitempty"`
-	Insightsdestination string                 `protobuf:"bytes,396776649,opt,name=insightsdestination,proto3" json:"insightsdestination,omitempty"`
-	Trailarn            string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Insightsdestination *string                `protobuf:"bytes,396776649,opt,name=insightsdestination,proto3,oneof" json:"insightsdestination,omitempty"`
+	Trailarn            *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -6205,8 +6205,8 @@ func (*GetInsightSelectorsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetInsightSelectorsResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
@@ -6219,25 +6219,25 @@ func (x *GetInsightSelectorsResponse) GetInsightselectors() []*InsightSelector {
 }
 
 func (x *GetInsightSelectorsResponse) GetInsightsdestination() string {
-	if x != nil {
-		return x.Insightsdestination
+	if x != nil && x.Insightsdestination != nil {
+		return *x.Insightsdestination
 	}
 	return ""
 }
 
 func (x *GetInsightSelectorsResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
 
 type GetQueryResultsRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastore               string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
+	Eventdatastore               *string                `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
 	Maxqueryresults              *int32                 `protobuf:"varint,120660448,opt,name=maxqueryresults,proto3,oneof" json:"maxqueryresults,omitempty"`
-	Nexttoken                    string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken                    *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queryid                      string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -6274,15 +6274,15 @@ func (*GetQueryResultsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetQueryResultsRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
 
 func (x *GetQueryResultsRequest) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
@@ -6295,8 +6295,8 @@ func (x *GetQueryResultsRequest) GetMaxqueryresults() int32 {
 }
 
 func (x *GetQueryResultsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6310,8 +6310,8 @@ func (x *GetQueryResultsRequest) GetQueryid() string {
 
 type GetQueryResultsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Errormessage    string                 `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Errormessage    *string                `protobuf:"bytes,518702377,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queryresultrows []*QueryResultRowEntry `protobuf:"bytes,240264704,rep,name=queryresultrows,proto3" json:"queryresultrows,omitempty"`
 	Querystatistics *QueryStatistics       `protobuf:"bytes,260794841,opt,name=querystatistics,proto3" json:"querystatistics,omitempty"`
 	Querystatus     QueryStatus            `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
@@ -6350,15 +6350,15 @@ func (*GetQueryResultsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetQueryResultsResponse) GetErrormessage() string {
-	if x != nil {
-		return x.Errormessage
+	if x != nil && x.Errormessage != nil {
+		return *x.Errormessage
 	}
 	return ""
 }
 
 func (x *GetQueryResultsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -6430,9 +6430,9 @@ func (x *GetResourcePolicyRequest) GetResourcearn() string {
 
 type GetResourcePolicyResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Delegatedadminresourcepolicy string                 `protobuf:"bytes,510966132,opt,name=delegatedadminresourcepolicy,proto3" json:"delegatedadminresourcepolicy,omitempty"`
-	Resourcearn                  string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
-	Resourcepolicy               string                 `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3" json:"resourcepolicy,omitempty"`
+	Delegatedadminresourcepolicy *string                `protobuf:"bytes,510966132,opt,name=delegatedadminresourcepolicy,proto3,oneof" json:"delegatedadminresourcepolicy,omitempty"`
+	Resourcearn                  *string                `protobuf:"bytes,364280877,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
+	Resourcepolicy               *string                `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3,oneof" json:"resourcepolicy,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -6468,22 +6468,22 @@ func (*GetResourcePolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetResourcePolicyResponse) GetDelegatedadminresourcepolicy() string {
-	if x != nil {
-		return x.Delegatedadminresourcepolicy
+	if x != nil && x.Delegatedadminresourcepolicy != nil {
+		return *x.Delegatedadminresourcepolicy
 	}
 	return ""
 }
 
 func (x *GetResourcePolicyResponse) GetResourcearn() string {
-	if x != nil {
-		return x.Resourcearn
+	if x != nil && x.Resourcearn != nil {
+		return *x.Resourcearn
 	}
 	return ""
 }
 
 func (x *GetResourcePolicyResponse) GetResourcepolicy() string {
-	if x != nil {
-		return x.Resourcepolicy
+	if x != nil && x.Resourcepolicy != nil {
+		return *x.Resourcepolicy
 	}
 	return ""
 }
@@ -6623,22 +6623,22 @@ func (x *GetTrailStatusRequest) GetName() string {
 type GetTrailStatusResponse struct {
 	state                              protoimpl.MessageState `protogen:"open.v1"`
 	Islogging                          *bool                  `protobuf:"varint,61005519,opt,name=islogging,proto3,oneof" json:"islogging,omitempty"`
-	Latestcloudwatchlogsdeliveryerror  string                 `protobuf:"bytes,238605214,opt,name=latestcloudwatchlogsdeliveryerror,proto3" json:"latestcloudwatchlogsdeliveryerror,omitempty"`
-	Latestcloudwatchlogsdeliverytime   string                 `protobuf:"bytes,517138001,opt,name=latestcloudwatchlogsdeliverytime,proto3" json:"latestcloudwatchlogsdeliverytime,omitempty"`
-	Latestdeliveryattemptsucceeded     string                 `protobuf:"bytes,432951833,opt,name=latestdeliveryattemptsucceeded,proto3" json:"latestdeliveryattemptsucceeded,omitempty"`
-	Latestdeliveryattempttime          string                 `protobuf:"bytes,109095435,opt,name=latestdeliveryattempttime,proto3" json:"latestdeliveryattempttime,omitempty"`
-	Latestdeliveryerror                string                 `protobuf:"bytes,119953649,opt,name=latestdeliveryerror,proto3" json:"latestdeliveryerror,omitempty"`
-	Latestdeliverytime                 string                 `protobuf:"bytes,320897248,opt,name=latestdeliverytime,proto3" json:"latestdeliverytime,omitempty"`
-	Latestdigestdeliveryerror          string                 `protobuf:"bytes,514209249,opt,name=latestdigestdeliveryerror,proto3" json:"latestdigestdeliveryerror,omitempty"`
-	Latestdigestdeliverytime           string                 `protobuf:"bytes,469527024,opt,name=latestdigestdeliverytime,proto3" json:"latestdigestdeliverytime,omitempty"`
-	Latestnotificationattemptsucceeded string                 `protobuf:"bytes,3764412,opt,name=latestnotificationattemptsucceeded,proto3" json:"latestnotificationattemptsucceeded,omitempty"`
-	Latestnotificationattempttime      string                 `protobuf:"bytes,104168880,opt,name=latestnotificationattempttime,proto3" json:"latestnotificationattempttime,omitempty"`
-	Latestnotificationerror            string                 `protobuf:"bytes,261077338,opt,name=latestnotificationerror,proto3" json:"latestnotificationerror,omitempty"`
-	Latestnotificationtime             string                 `protobuf:"bytes,2082317,opt,name=latestnotificationtime,proto3" json:"latestnotificationtime,omitempty"`
-	Startloggingtime                   string                 `protobuf:"bytes,351696170,opt,name=startloggingtime,proto3" json:"startloggingtime,omitempty"`
-	Stoploggingtime                    string                 `protobuf:"bytes,469874232,opt,name=stoploggingtime,proto3" json:"stoploggingtime,omitempty"`
-	Timeloggingstarted                 string                 `protobuf:"bytes,18088239,opt,name=timeloggingstarted,proto3" json:"timeloggingstarted,omitempty"`
-	Timeloggingstopped                 string                 `protobuf:"bytes,272406495,opt,name=timeloggingstopped,proto3" json:"timeloggingstopped,omitempty"`
+	Latestcloudwatchlogsdeliveryerror  *string                `protobuf:"bytes,238605214,opt,name=latestcloudwatchlogsdeliveryerror,proto3,oneof" json:"latestcloudwatchlogsdeliveryerror,omitempty"`
+	Latestcloudwatchlogsdeliverytime   *string                `protobuf:"bytes,517138001,opt,name=latestcloudwatchlogsdeliverytime,proto3,oneof" json:"latestcloudwatchlogsdeliverytime,omitempty"`
+	Latestdeliveryattemptsucceeded     *string                `protobuf:"bytes,432951833,opt,name=latestdeliveryattemptsucceeded,proto3,oneof" json:"latestdeliveryattemptsucceeded,omitempty"`
+	Latestdeliveryattempttime          *string                `protobuf:"bytes,109095435,opt,name=latestdeliveryattempttime,proto3,oneof" json:"latestdeliveryattempttime,omitempty"`
+	Latestdeliveryerror                *string                `protobuf:"bytes,119953649,opt,name=latestdeliveryerror,proto3,oneof" json:"latestdeliveryerror,omitempty"`
+	Latestdeliverytime                 *string                `protobuf:"bytes,320897248,opt,name=latestdeliverytime,proto3,oneof" json:"latestdeliverytime,omitempty"`
+	Latestdigestdeliveryerror          *string                `protobuf:"bytes,514209249,opt,name=latestdigestdeliveryerror,proto3,oneof" json:"latestdigestdeliveryerror,omitempty"`
+	Latestdigestdeliverytime           *string                `protobuf:"bytes,469527024,opt,name=latestdigestdeliverytime,proto3,oneof" json:"latestdigestdeliverytime,omitempty"`
+	Latestnotificationattemptsucceeded *string                `protobuf:"bytes,3764412,opt,name=latestnotificationattemptsucceeded,proto3,oneof" json:"latestnotificationattemptsucceeded,omitempty"`
+	Latestnotificationattempttime      *string                `protobuf:"bytes,104168880,opt,name=latestnotificationattempttime,proto3,oneof" json:"latestnotificationattempttime,omitempty"`
+	Latestnotificationerror            *string                `protobuf:"bytes,261077338,opt,name=latestnotificationerror,proto3,oneof" json:"latestnotificationerror,omitempty"`
+	Latestnotificationtime             *string                `protobuf:"bytes,2082317,opt,name=latestnotificationtime,proto3,oneof" json:"latestnotificationtime,omitempty"`
+	Startloggingtime                   *string                `protobuf:"bytes,351696170,opt,name=startloggingtime,proto3,oneof" json:"startloggingtime,omitempty"`
+	Stoploggingtime                    *string                `protobuf:"bytes,469874232,opt,name=stoploggingtime,proto3,oneof" json:"stoploggingtime,omitempty"`
+	Timeloggingstarted                 *string                `protobuf:"bytes,18088239,opt,name=timeloggingstarted,proto3,oneof" json:"timeloggingstarted,omitempty"`
+	Timeloggingstopped                 *string                `protobuf:"bytes,272406495,opt,name=timeloggingstopped,proto3,oneof" json:"timeloggingstopped,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
 	sizeCache                          protoimpl.SizeCache
 }
@@ -6681,123 +6681,123 @@ func (x *GetTrailStatusResponse) GetIslogging() bool {
 }
 
 func (x *GetTrailStatusResponse) GetLatestcloudwatchlogsdeliveryerror() string {
-	if x != nil {
-		return x.Latestcloudwatchlogsdeliveryerror
+	if x != nil && x.Latestcloudwatchlogsdeliveryerror != nil {
+		return *x.Latestcloudwatchlogsdeliveryerror
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestcloudwatchlogsdeliverytime() string {
-	if x != nil {
-		return x.Latestcloudwatchlogsdeliverytime
+	if x != nil && x.Latestcloudwatchlogsdeliverytime != nil {
+		return *x.Latestcloudwatchlogsdeliverytime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestdeliveryattemptsucceeded() string {
-	if x != nil {
-		return x.Latestdeliveryattemptsucceeded
+	if x != nil && x.Latestdeliveryattemptsucceeded != nil {
+		return *x.Latestdeliveryattemptsucceeded
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestdeliveryattempttime() string {
-	if x != nil {
-		return x.Latestdeliveryattempttime
+	if x != nil && x.Latestdeliveryattempttime != nil {
+		return *x.Latestdeliveryattempttime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestdeliveryerror() string {
-	if x != nil {
-		return x.Latestdeliveryerror
+	if x != nil && x.Latestdeliveryerror != nil {
+		return *x.Latestdeliveryerror
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestdeliverytime() string {
-	if x != nil {
-		return x.Latestdeliverytime
+	if x != nil && x.Latestdeliverytime != nil {
+		return *x.Latestdeliverytime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestdigestdeliveryerror() string {
-	if x != nil {
-		return x.Latestdigestdeliveryerror
+	if x != nil && x.Latestdigestdeliveryerror != nil {
+		return *x.Latestdigestdeliveryerror
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestdigestdeliverytime() string {
-	if x != nil {
-		return x.Latestdigestdeliverytime
+	if x != nil && x.Latestdigestdeliverytime != nil {
+		return *x.Latestdigestdeliverytime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestnotificationattemptsucceeded() string {
-	if x != nil {
-		return x.Latestnotificationattemptsucceeded
+	if x != nil && x.Latestnotificationattemptsucceeded != nil {
+		return *x.Latestnotificationattemptsucceeded
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestnotificationattempttime() string {
-	if x != nil {
-		return x.Latestnotificationattempttime
+	if x != nil && x.Latestnotificationattempttime != nil {
+		return *x.Latestnotificationattempttime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestnotificationerror() string {
-	if x != nil {
-		return x.Latestnotificationerror
+	if x != nil && x.Latestnotificationerror != nil {
+		return *x.Latestnotificationerror
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetLatestnotificationtime() string {
-	if x != nil {
-		return x.Latestnotificationtime
+	if x != nil && x.Latestnotificationtime != nil {
+		return *x.Latestnotificationtime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetStartloggingtime() string {
-	if x != nil {
-		return x.Startloggingtime
+	if x != nil && x.Startloggingtime != nil {
+		return *x.Startloggingtime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetStoploggingtime() string {
-	if x != nil {
-		return x.Stoploggingtime
+	if x != nil && x.Stoploggingtime != nil {
+		return *x.Stoploggingtime
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetTimeloggingstarted() string {
-	if x != nil {
-		return x.Timeloggingstarted
+	if x != nil && x.Timeloggingstarted != nil {
+		return *x.Timeloggingstarted
 	}
 	return ""
 }
 
 func (x *GetTrailStatusResponse) GetTimeloggingstopped() string {
-	if x != nil {
-		return x.Timeloggingstopped
+	if x != nil && x.Timeloggingstopped != nil {
+		return *x.Timeloggingstopped
 	}
 	return ""
 }
 
 type ImportFailureListItem struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Errormessage    string                 `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
-	Errortype       string                 `protobuf:"bytes,398848954,opt,name=errortype,proto3" json:"errortype,omitempty"`
-	Lastupdatedtime string                 `protobuf:"bytes,177046166,opt,name=lastupdatedtime,proto3" json:"lastupdatedtime,omitempty"`
-	Location        string                 `protobuf:"bytes,465604039,opt,name=location,proto3" json:"location,omitempty"`
+	Errormessage    *string                `protobuf:"bytes,518702377,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
+	Errortype       *string                `protobuf:"bytes,398848954,opt,name=errortype,proto3,oneof" json:"errortype,omitempty"`
+	Lastupdatedtime *string                `protobuf:"bytes,177046166,opt,name=lastupdatedtime,proto3,oneof" json:"lastupdatedtime,omitempty"`
+	Location        *string                `protobuf:"bytes,465604039,opt,name=location,proto3,oneof" json:"location,omitempty"`
 	Status          ImportFailureStatus    `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.ImportFailureStatus" json:"status,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -6834,29 +6834,29 @@ func (*ImportFailureListItem) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportFailureListItem) GetErrormessage() string {
-	if x != nil {
-		return x.Errormessage
+	if x != nil && x.Errormessage != nil {
+		return *x.Errormessage
 	}
 	return ""
 }
 
 func (x *ImportFailureListItem) GetErrortype() string {
-	if x != nil {
-		return x.Errortype
+	if x != nil && x.Errortype != nil {
+		return *x.Errortype
 	}
 	return ""
 }
 
 func (x *ImportFailureListItem) GetLastupdatedtime() string {
-	if x != nil {
-		return x.Lastupdatedtime
+	if x != nil && x.Lastupdatedtime != nil {
+		return *x.Lastupdatedtime
 	}
 	return ""
 }
 
 func (x *ImportFailureListItem) GetLocation() string {
-	if x != nil {
-		return x.Location
+	if x != nil && x.Location != nil {
+		return *x.Location
 	}
 	return ""
 }
@@ -6870,7 +6870,7 @@ func (x *ImportFailureListItem) GetStatus() ImportFailureStatus {
 
 type ImportNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6906,8 +6906,8 @@ func (*ImportNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -7034,11 +7034,11 @@ func (x *ImportStatistics) GetPrefixesfound() int64 {
 
 type ImportsListItem struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Createdtimestamp string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
+	Createdtimestamp *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Destinations     []string               `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Importid         string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
+	Importid         *string                `protobuf:"bytes,420153946,opt,name=importid,proto3,oneof" json:"importid,omitempty"`
 	Importstatus     ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=cloudtrail.ImportStatus" json:"importstatus,omitempty"`
-	Updatedtimestamp string                 `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp *string                `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -7074,8 +7074,8 @@ func (*ImportsListItem) Descriptor() ([]byte, []int) {
 }
 
 func (x *ImportsListItem) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
@@ -7088,8 +7088,8 @@ func (x *ImportsListItem) GetDestinations() []string {
 }
 
 func (x *ImportsListItem) GetImportid() string {
-	if x != nil {
-		return x.Importid
+	if x != nil && x.Importid != nil {
+		return *x.Importid
 	}
 	return ""
 }
@@ -7102,15 +7102,15 @@ func (x *ImportsListItem) GetImportstatus() ImportStatus {
 }
 
 func (x *ImportsListItem) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
 
 type InactiveEventDataStoreException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7146,15 +7146,15 @@ func (*InactiveEventDataStoreException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InactiveEventDataStoreException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InactiveQueryException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7190,19 +7190,19 @@ func (*InactiveQueryException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InactiveQueryException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type IngestionStatus struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
-	Latestingestionattempteventid string                 `protobuf:"bytes,204299739,opt,name=latestingestionattempteventid,proto3" json:"latestingestionattempteventid,omitempty"`
-	Latestingestionattempttime    string                 `protobuf:"bytes,313195389,opt,name=latestingestionattempttime,proto3" json:"latestingestionattempttime,omitempty"`
-	Latestingestionerrorcode      string                 `protobuf:"bytes,415423856,opt,name=latestingestionerrorcode,proto3" json:"latestingestionerrorcode,omitempty"`
-	Latestingestionsuccesseventid string                 `protobuf:"bytes,31034217,opt,name=latestingestionsuccesseventid,proto3" json:"latestingestionsuccesseventid,omitempty"`
-	Latestingestionsuccesstime    string                 `protobuf:"bytes,184241615,opt,name=latestingestionsuccesstime,proto3" json:"latestingestionsuccesstime,omitempty"`
+	Latestingestionattempteventid *string                `protobuf:"bytes,204299739,opt,name=latestingestionattempteventid,proto3,oneof" json:"latestingestionattempteventid,omitempty"`
+	Latestingestionattempttime    *string                `protobuf:"bytes,313195389,opt,name=latestingestionattempttime,proto3,oneof" json:"latestingestionattempttime,omitempty"`
+	Latestingestionerrorcode      *string                `protobuf:"bytes,415423856,opt,name=latestingestionerrorcode,proto3,oneof" json:"latestingestionerrorcode,omitempty"`
+	Latestingestionsuccesseventid *string                `protobuf:"bytes,31034217,opt,name=latestingestionsuccesseventid,proto3,oneof" json:"latestingestionsuccesseventid,omitempty"`
+	Latestingestionsuccesstime    *string                `protobuf:"bytes,184241615,opt,name=latestingestionsuccesstime,proto3,oneof" json:"latestingestionsuccesstime,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
 }
@@ -7238,43 +7238,43 @@ func (*IngestionStatus) Descriptor() ([]byte, []int) {
 }
 
 func (x *IngestionStatus) GetLatestingestionattempteventid() string {
-	if x != nil {
-		return x.Latestingestionattempteventid
+	if x != nil && x.Latestingestionattempteventid != nil {
+		return *x.Latestingestionattempteventid
 	}
 	return ""
 }
 
 func (x *IngestionStatus) GetLatestingestionattempttime() string {
-	if x != nil {
-		return x.Latestingestionattempttime
+	if x != nil && x.Latestingestionattempttime != nil {
+		return *x.Latestingestionattempttime
 	}
 	return ""
 }
 
 func (x *IngestionStatus) GetLatestingestionerrorcode() string {
-	if x != nil {
-		return x.Latestingestionerrorcode
+	if x != nil && x.Latestingestionerrorcode != nil {
+		return *x.Latestingestionerrorcode
 	}
 	return ""
 }
 
 func (x *IngestionStatus) GetLatestingestionsuccesseventid() string {
-	if x != nil {
-		return x.Latestingestionsuccesseventid
+	if x != nil && x.Latestingestionsuccesseventid != nil {
+		return *x.Latestingestionsuccesseventid
 	}
 	return ""
 }
 
 func (x *IngestionStatus) GetLatestingestionsuccesstime() string {
-	if x != nil {
-		return x.Latestingestionsuccesstime
+	if x != nil && x.Latestingestionsuccesstime != nil {
+		return *x.Latestingestionsuccesstime
 	}
 	return ""
 }
 
 type InsightNotEnabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7310,8 +7310,8 @@ func (*InsightNotEnabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsightNotEnabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -7370,7 +7370,7 @@ func (x *InsightSelector) GetInsighttype() InsightType {
 
 type InsufficientDependencyServiceAccessPermissionException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7406,15 +7406,15 @@ func (*InsufficientDependencyServiceAccessPermissionException) Descriptor() ([]b
 }
 
 func (x *InsufficientDependencyServiceAccessPermissionException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientEncryptionPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7450,15 +7450,15 @@ func (*InsufficientEncryptionPolicyException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientEncryptionPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientIAMAccessPermissionException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7494,15 +7494,15 @@ func (*InsufficientIAMAccessPermissionException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientIAMAccessPermissionException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientS3BucketPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7538,15 +7538,15 @@ func (*InsufficientS3BucketPolicyException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientS3BucketPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InsufficientSnsTopicPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7582,15 +7582,15 @@ func (*InsufficientSnsTopicPolicyException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InsufficientSnsTopicPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidCloudWatchLogsLogGroupArnException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7626,15 +7626,15 @@ func (*InvalidCloudWatchLogsLogGroupArnException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidCloudWatchLogsLogGroupArnException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidCloudWatchLogsRoleArnException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7670,15 +7670,15 @@ func (*InvalidCloudWatchLogsRoleArnException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidCloudWatchLogsRoleArnException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidDateRangeException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7714,15 +7714,15 @@ func (*InvalidDateRangeException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidDateRangeException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEventCategoryException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7758,15 +7758,15 @@ func (*InvalidEventCategoryException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEventCategoryException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEventDataStoreCategoryException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7802,15 +7802,15 @@ func (*InvalidEventDataStoreCategoryException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEventDataStoreCategoryException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEventDataStoreStatusException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7846,15 +7846,15 @@ func (*InvalidEventDataStoreStatusException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEventDataStoreStatusException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidEventSelectorsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7890,15 +7890,15 @@ func (*InvalidEventSelectorsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidEventSelectorsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidHomeRegionException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7934,15 +7934,15 @@ func (*InvalidHomeRegionException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidHomeRegionException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidImportSourceException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7978,15 +7978,15 @@ func (*InvalidImportSourceException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidImportSourceException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidInsightSelectorsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8022,15 +8022,15 @@ func (*InvalidInsightSelectorsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidInsightSelectorsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidKmsKeyIdException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8066,15 +8066,15 @@ func (*InvalidKmsKeyIdException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidKmsKeyIdException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidLookupAttributesException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8110,15 +8110,15 @@ func (*InvalidLookupAttributesException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidLookupAttributesException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidMaxResultsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8154,15 +8154,15 @@ func (*InvalidMaxResultsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidMaxResultsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidNextTokenException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8198,15 +8198,15 @@ func (*InvalidNextTokenException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidNextTokenException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterCombinationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8242,15 +8242,15 @@ func (*InvalidParameterCombinationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidParameterCombinationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8286,15 +8286,15 @@ func (*InvalidParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidQueryStatementException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8330,15 +8330,15 @@ func (*InvalidQueryStatementException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidQueryStatementException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidQueryStatusException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8374,15 +8374,15 @@ func (*InvalidQueryStatusException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidQueryStatusException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidS3BucketNameException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8418,15 +8418,15 @@ func (*InvalidS3BucketNameException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidS3BucketNameException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidS3PrefixException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8462,15 +8462,15 @@ func (*InvalidS3PrefixException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidS3PrefixException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidSnsTopicNameException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8506,15 +8506,15 @@ func (*InvalidSnsTopicNameException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidSnsTopicNameException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidSourceException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8550,15 +8550,15 @@ func (*InvalidSourceException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidSourceException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTagParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8594,15 +8594,15 @@ func (*InvalidTagParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidTagParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTimeRangeException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8638,15 +8638,15 @@ func (*InvalidTimeRangeException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidTimeRangeException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTokenException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8682,15 +8682,15 @@ func (*InvalidTokenException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidTokenException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidTrailNameException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8726,15 +8726,15 @@ func (*InvalidTrailNameException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidTrailNameException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8770,15 +8770,15 @@ func (*KmsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsKeyDisabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8814,15 +8814,15 @@ func (*KmsKeyDisabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsKeyDisabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsKeyNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8858,8 +8858,8 @@ func (*KmsKeyNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsKeyNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -8867,7 +8867,7 @@ func (x *KmsKeyNotFoundException) GetMessage() string {
 type ListChannelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8910,8 +8910,8 @@ func (x *ListChannelsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListChannelsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -8919,7 +8919,7 @@ func (x *ListChannelsRequest) GetNexttoken() string {
 type ListChannelsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Channels      []*Channel             `protobuf:"bytes,155227286,rep,name=channels,proto3" json:"channels,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8962,8 +8962,8 @@ func (x *ListChannelsResponse) GetChannels() []*Channel {
 }
 
 func (x *ListChannelsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -8971,8 +8971,8 @@ func (x *ListChannelsResponse) GetNexttoken() string {
 type ListDashboardsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nameprefix    string                 `protobuf:"bytes,361707931,opt,name=nameprefix,proto3" json:"nameprefix,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nameprefix    *string                `protobuf:"bytes,361707931,opt,name=nameprefix,proto3,oneof" json:"nameprefix,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Type          DashboardType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudtrail.DashboardType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9016,15 +9016,15 @@ func (x *ListDashboardsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListDashboardsRequest) GetNameprefix() string {
-	if x != nil {
-		return x.Nameprefix
+	if x != nil && x.Nameprefix != nil {
+		return *x.Nameprefix
 	}
 	return ""
 }
 
 func (x *ListDashboardsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9039,7 +9039,7 @@ func (x *ListDashboardsRequest) GetType() DashboardType {
 type ListDashboardsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dashboards    []*DashboardDetail     `protobuf:"bytes,261493913,rep,name=dashboards,proto3" json:"dashboards,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9082,8 +9082,8 @@ func (x *ListDashboardsResponse) GetDashboards() []*DashboardDetail {
 }
 
 func (x *ListDashboardsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9091,7 +9091,7 @@ func (x *ListDashboardsResponse) GetNexttoken() string {
 type ListEventDataStoresRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9134,8 +9134,8 @@ func (x *ListEventDataStoresRequest) GetMaxresults() int32 {
 }
 
 func (x *ListEventDataStoresRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9143,7 +9143,7 @@ func (x *ListEventDataStoresRequest) GetNexttoken() string {
 type ListEventDataStoresResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Eventdatastores []*EventDataStore      `protobuf:"bytes,152154314,rep,name=eventdatastores,proto3" json:"eventdatastores,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -9186,8 +9186,8 @@ func (x *ListEventDataStoresResponse) GetEventdatastores() []*EventDataStore {
 }
 
 func (x *ListEventDataStoresResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9196,7 +9196,7 @@ type ListImportFailuresRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Importid      string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9246,8 +9246,8 @@ func (x *ListImportFailuresRequest) GetMaxresults() int32 {
 }
 
 func (x *ListImportFailuresRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9255,7 +9255,7 @@ func (x *ListImportFailuresRequest) GetNexttoken() string {
 type ListImportFailuresResponse struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
 	Failures      []*ImportFailureListItem `protobuf:"bytes,335467271,rep,name=failures,proto3" json:"failures,omitempty"`
-	Nexttoken     string                   `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                  `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9298,18 +9298,18 @@ func (x *ListImportFailuresResponse) GetFailures() []*ImportFailureListItem {
 }
 
 func (x *ListImportFailuresResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListImportsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Destination   string                 `protobuf:"bytes,457443680,opt,name=destination,proto3" json:"destination,omitempty"`
+	Destination   *string                `protobuf:"bytes,457443680,opt,name=destination,proto3,oneof" json:"destination,omitempty"`
 	Importstatus  ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=cloudtrail.ImportStatus" json:"importstatus,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9345,8 +9345,8 @@ func (*ListImportsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListImportsRequest) GetDestination() string {
-	if x != nil {
-		return x.Destination
+	if x != nil && x.Destination != nil {
+		return *x.Destination
 	}
 	return ""
 }
@@ -9366,8 +9366,8 @@ func (x *ListImportsRequest) GetMaxresults() int32 {
 }
 
 func (x *ListImportsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9375,7 +9375,7 @@ func (x *ListImportsRequest) GetNexttoken() string {
 type ListImportsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Imports       []*ImportsListItem     `protobuf:"bytes,497717894,rep,name=imports,proto3" json:"imports,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9418,8 +9418,8 @@ func (x *ListImportsResponse) GetImports() []*ImportsListItem {
 }
 
 func (x *ListImportsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9428,11 +9428,11 @@ type ListInsightsDataRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Datatype      ListInsightsDataType   `protobuf:"varint,67988590,opt,name=datatype,proto3,enum=cloudtrail.ListInsightsDataType" json:"datatype,omitempty"`
 	Dimensions    map[string]string      `protobuf:"bytes,462933457,rep,name=dimensions,proto3" json:"dimensions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Endtime       string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Endtime       *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Insightsource string                 `protobuf:"bytes,438381967,opt,name=insightsource,proto3" json:"insightsource,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Starttime     string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Starttime     *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9482,8 +9482,8 @@ func (x *ListInsightsDataRequest) GetDimensions() map[string]string {
 }
 
 func (x *ListInsightsDataRequest) GetEndtime() string {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return ""
 }
@@ -9503,15 +9503,15 @@ func (x *ListInsightsDataRequest) GetMaxresults() int32 {
 }
 
 func (x *ListInsightsDataRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *ListInsightsDataRequest) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
@@ -9519,7 +9519,7 @@ func (x *ListInsightsDataRequest) GetStarttime() string {
 type ListInsightsDataResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*Event               `protobuf:"bytes,3416229,rep,name=events,proto3" json:"events,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9562,8 +9562,8 @@ func (x *ListInsightsDataResponse) GetEvents() []*Event {
 }
 
 func (x *ListInsightsDataResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9571,16 +9571,16 @@ func (x *ListInsightsDataResponse) GetNexttoken() string {
 type ListInsightsMetricDataRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Datatype      InsightsMetricDataType `protobuf:"varint,67988590,opt,name=datatype,proto3,enum=cloudtrail.InsightsMetricDataType" json:"datatype,omitempty"`
-	Endtime       string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Errorcode     string                 `protobuf:"bytes,34663193,opt,name=errorcode,proto3" json:"errorcode,omitempty"`
+	Endtime       *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Errorcode     *string                `protobuf:"bytes,34663193,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
 	Eventname     string                 `protobuf:"bytes,264746781,opt,name=eventname,proto3" json:"eventname,omitempty"`
 	Eventsource   string                 `protobuf:"bytes,37841339,opt,name=eventsource,proto3" json:"eventsource,omitempty"`
 	Insighttype   InsightType            `protobuf:"varint,530375860,opt,name=insighttype,proto3,enum=cloudtrail.InsightType" json:"insighttype,omitempty"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Period        *int32                 `protobuf:"varint,119833637,opt,name=period,proto3,oneof" json:"period,omitempty"`
-	Starttime     string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
-	Trailname     string                 `protobuf:"bytes,507774985,opt,name=trailname,proto3" json:"trailname,omitempty"`
+	Starttime     *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
+	Trailname     *string                `protobuf:"bytes,507774985,opt,name=trailname,proto3,oneof" json:"trailname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9623,15 +9623,15 @@ func (x *ListInsightsMetricDataRequest) GetDatatype() InsightsMetricDataType {
 }
 
 func (x *ListInsightsMetricDataRequest) GetEndtime() string {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return ""
 }
 
 func (x *ListInsightsMetricDataRequest) GetErrorcode() string {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return ""
 }
@@ -9665,8 +9665,8 @@ func (x *ListInsightsMetricDataRequest) GetMaxresults() int32 {
 }
 
 func (x *ListInsightsMetricDataRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9679,28 +9679,28 @@ func (x *ListInsightsMetricDataRequest) GetPeriod() int32 {
 }
 
 func (x *ListInsightsMetricDataRequest) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
 
 func (x *ListInsightsMetricDataRequest) GetTrailname() string {
-	if x != nil {
-		return x.Trailname
+	if x != nil && x.Trailname != nil {
+		return *x.Trailname
 	}
 	return ""
 }
 
 type ListInsightsMetricDataResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Errorcode     string                 `protobuf:"bytes,34663193,opt,name=errorcode,proto3" json:"errorcode,omitempty"`
-	Eventname     string                 `protobuf:"bytes,264746781,opt,name=eventname,proto3" json:"eventname,omitempty"`
-	Eventsource   string                 `protobuf:"bytes,37841339,opt,name=eventsource,proto3" json:"eventsource,omitempty"`
+	Errorcode     *string                `protobuf:"bytes,34663193,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
+	Eventname     *string                `protobuf:"bytes,264746781,opt,name=eventname,proto3,oneof" json:"eventname,omitempty"`
+	Eventsource   *string                `protobuf:"bytes,37841339,opt,name=eventsource,proto3,oneof" json:"eventsource,omitempty"`
 	Insighttype   InsightType            `protobuf:"varint,530375860,opt,name=insighttype,proto3,enum=cloudtrail.InsightType" json:"insighttype,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Timestamps    []string               `protobuf:"bytes,213534737,rep,name=timestamps,proto3" json:"timestamps,omitempty"`
-	Trailarn      string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Trailarn      *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	Values        []float64              `protobuf:"fixed64,223158876,rep,packed,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9737,22 +9737,22 @@ func (*ListInsightsMetricDataResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListInsightsMetricDataResponse) GetErrorcode() string {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return ""
 }
 
 func (x *ListInsightsMetricDataResponse) GetEventname() string {
-	if x != nil {
-		return x.Eventname
+	if x != nil && x.Eventname != nil {
+		return *x.Eventname
 	}
 	return ""
 }
 
 func (x *ListInsightsMetricDataResponse) GetEventsource() string {
-	if x != nil {
-		return x.Eventsource
+	if x != nil && x.Eventsource != nil {
+		return *x.Eventsource
 	}
 	return ""
 }
@@ -9765,8 +9765,8 @@ func (x *ListInsightsMetricDataResponse) GetInsighttype() InsightType {
 }
 
 func (x *ListInsightsMetricDataResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9779,8 +9779,8 @@ func (x *ListInsightsMetricDataResponse) GetTimestamps() []string {
 }
 
 func (x *ListInsightsMetricDataResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
@@ -9794,9 +9794,9 @@ func (x *ListInsightsMetricDataResponse) GetValues() []float64 {
 
 type ListPublicKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Endtime       string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Starttime     string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Endtime       *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Starttime     *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9832,29 +9832,29 @@ func (*ListPublicKeysRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPublicKeysRequest) GetEndtime() string {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return ""
 }
 
 func (x *ListPublicKeysRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *ListPublicKeysRequest) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
 
 type ListPublicKeysResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Publickeylist []*PublicKey           `protobuf:"bytes,129933128,rep,name=publickeylist,proto3" json:"publickeylist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9891,8 +9891,8 @@ func (*ListPublicKeysResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPublicKeysResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9906,12 +9906,12 @@ func (x *ListPublicKeysResponse) GetPublickeylist() []*PublicKey {
 
 type ListQueriesRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Endtime        string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Endtime        *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Eventdatastore string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
 	Maxresults     *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken      string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Querystatus    QueryStatus            `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
-	Starttime      string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Starttime      *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -9947,8 +9947,8 @@ func (*ListQueriesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueriesRequest) GetEndtime() string {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return ""
 }
@@ -9968,8 +9968,8 @@ func (x *ListQueriesRequest) GetMaxresults() int32 {
 }
 
 func (x *ListQueriesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -9982,15 +9982,15 @@ func (x *ListQueriesRequest) GetQuerystatus() QueryStatus {
 }
 
 func (x *ListQueriesRequest) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
 
 type ListQueriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queries       []*Query               `protobuf:"bytes,305659620,rep,name=queries,proto3" json:"queries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10027,8 +10027,8 @@ func (*ListQueriesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueriesResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10042,7 +10042,7 @@ func (x *ListQueriesResponse) GetQueries() []*Query {
 
 type ListTagsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken      string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken      *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Resourceidlist []string               `protobuf:"bytes,272650681,rep,name=resourceidlist,proto3" json:"resourceidlist,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -10079,8 +10079,8 @@ func (*ListTagsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10094,7 +10094,7 @@ func (x *ListTagsRequest) GetResourceidlist() []string {
 
 type ListTagsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Resourcetaglist []*ResourceTag         `protobuf:"bytes,301974828,rep,name=resourcetaglist,proto3" json:"resourcetaglist,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -10131,8 +10131,8 @@ func (*ListTagsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10146,7 +10146,7 @@ func (x *ListTagsResponse) GetResourcetaglist() []*ResourceTag {
 
 type ListTrailsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10182,15 +10182,15 @@ func (*ListTrailsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTrailsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListTrailsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Trails        []*TrailInfo           `protobuf:"bytes,16939441,rep,name=trails,proto3" json:"trails,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10227,8 +10227,8 @@ func (*ListTrailsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTrailsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -10294,12 +10294,12 @@ func (x *LookupAttribute) GetAttributevalue() string {
 
 type LookupEventsRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Endtime          string                 `protobuf:"bytes,63911884,opt,name=endtime,proto3" json:"endtime,omitempty"`
+	Endtime          *string                `protobuf:"bytes,63911884,opt,name=endtime,proto3,oneof" json:"endtime,omitempty"`
 	Eventcategory    EventCategory          `protobuf:"varint,164668724,opt,name=eventcategory,proto3,enum=cloudtrail.EventCategory" json:"eventcategory,omitempty"`
 	Lookupattributes []*LookupAttribute     `protobuf:"bytes,162162567,rep,name=lookupattributes,proto3" json:"lookupattributes,omitempty"`
 	Maxresults       *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken        string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Starttime        string                 `protobuf:"bytes,370760303,opt,name=starttime,proto3" json:"starttime,omitempty"`
+	Nexttoken        *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Starttime        *string                `protobuf:"bytes,370760303,opt,name=starttime,proto3,oneof" json:"starttime,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -10335,8 +10335,8 @@ func (*LookupEventsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *LookupEventsRequest) GetEndtime() string {
-	if x != nil {
-		return x.Endtime
+	if x != nil && x.Endtime != nil {
+		return *x.Endtime
 	}
 	return ""
 }
@@ -10363,15 +10363,15 @@ func (x *LookupEventsRequest) GetMaxresults() int32 {
 }
 
 func (x *LookupEventsRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *LookupEventsRequest) GetStarttime() string {
-	if x != nil {
-		return x.Starttime
+	if x != nil && x.Starttime != nil {
+		return *x.Starttime
 	}
 	return ""
 }
@@ -10379,7 +10379,7 @@ func (x *LookupEventsRequest) GetStarttime() string {
 type LookupEventsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Events        []*Event               `protobuf:"bytes,3416229,rep,name=events,proto3" json:"events,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10422,15 +10422,15 @@ func (x *LookupEventsResponse) GetEvents() []*Event {
 }
 
 func (x *LookupEventsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type MaxConcurrentQueriesException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10466,15 +10466,15 @@ func (*MaxConcurrentQueriesException) Descriptor() ([]byte, []int) {
 }
 
 func (x *MaxConcurrentQueriesException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type MaximumNumberOfTrailsExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10510,15 +10510,15 @@ func (*MaximumNumberOfTrailsExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *MaximumNumberOfTrailsExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NoManagementAccountSLRExistsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10554,15 +10554,15 @@ func (*NoManagementAccountSLRExistsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NoManagementAccountSLRExistsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NotOrganizationManagementAccountException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10598,15 +10598,15 @@ func (*NotOrganizationManagementAccountException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NotOrganizationManagementAccountException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type NotOrganizationMasterAccountException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10642,15 +10642,15 @@ func (*NotOrganizationMasterAccountException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NotOrganizationMasterAccountException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type OperationNotPermittedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10686,15 +10686,15 @@ func (*OperationNotPermittedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *OperationNotPermittedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type OrganizationNotInAllFeaturesModeException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10730,15 +10730,15 @@ func (*OrganizationNotInAllFeaturesModeException) Descriptor() ([]byte, []int) {
 }
 
 func (x *OrganizationNotInAllFeaturesModeException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type OrganizationsNotInUseException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10774,8 +10774,8 @@ func (*OrganizationsNotInUseException) Descriptor() ([]byte, []int) {
 }
 
 func (x *OrganizationsNotInUseException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -10834,10 +10834,10 @@ func (x *PartitionKey) GetType() string {
 
 type PublicKey struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Fingerprint       string                 `protobuf:"bytes,502547484,opt,name=fingerprint,proto3" json:"fingerprint,omitempty"`
-	Validityendtime   string                 `protobuf:"bytes,192996550,opt,name=validityendtime,proto3" json:"validityendtime,omitempty"`
-	Validitystarttime string                 `protobuf:"bytes,288335101,opt,name=validitystarttime,proto3" json:"validitystarttime,omitempty"`
-	Value             []byte                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Fingerprint       *string                `protobuf:"bytes,502547484,opt,name=fingerprint,proto3,oneof" json:"fingerprint,omitempty"`
+	Validityendtime   *string                `protobuf:"bytes,192996550,opt,name=validityendtime,proto3,oneof" json:"validityendtime,omitempty"`
+	Validitystarttime *string                `protobuf:"bytes,288335101,opt,name=validitystarttime,proto3,oneof" json:"validitystarttime,omitempty"`
+	Value             []byte                 `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -10873,22 +10873,22 @@ func (*PublicKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *PublicKey) GetFingerprint() string {
-	if x != nil {
-		return x.Fingerprint
+	if x != nil && x.Fingerprint != nil {
+		return *x.Fingerprint
 	}
 	return ""
 }
 
 func (x *PublicKey) GetValidityendtime() string {
-	if x != nil {
-		return x.Validityendtime
+	if x != nil && x.Validityendtime != nil {
+		return *x.Validityendtime
 	}
 	return ""
 }
 
 func (x *PublicKey) GetValiditystarttime() string {
-	if x != nil {
-		return x.Validitystarttime
+	if x != nil && x.Validitystarttime != nil {
+		return *x.Validitystarttime
 	}
 	return ""
 }
@@ -10904,9 +10904,9 @@ type PutEventConfigurationRequest struct {
 	state                     protoimpl.MessageState      `protogen:"open.v1"`
 	Aggregationconfigurations []*AggregationConfiguration `protobuf:"bytes,481530463,rep,name=aggregationconfigurations,proto3" json:"aggregationconfigurations,omitempty"`
 	Contextkeyselectors       []*ContextKeySelector       `protobuf:"bytes,342040300,rep,name=contextkeyselectors,proto3" json:"contextkeyselectors,omitempty"`
-	Eventdatastore            string                      `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
+	Eventdatastore            *string                     `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
 	Maxeventsize              MaxEventSize                `protobuf:"varint,517627763,opt,name=maxeventsize,proto3,enum=cloudtrail.MaxEventSize" json:"maxeventsize,omitempty"`
-	Trailname                 string                      `protobuf:"bytes,507774985,opt,name=trailname,proto3" json:"trailname,omitempty"`
+	Trailname                 *string                     `protobuf:"bytes,507774985,opt,name=trailname,proto3,oneof" json:"trailname,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -10956,8 +10956,8 @@ func (x *PutEventConfigurationRequest) GetContextkeyselectors() []*ContextKeySel
 }
 
 func (x *PutEventConfigurationRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
@@ -10970,8 +10970,8 @@ func (x *PutEventConfigurationRequest) GetMaxeventsize() MaxEventSize {
 }
 
 func (x *PutEventConfigurationRequest) GetTrailname() string {
-	if x != nil {
-		return x.Trailname
+	if x != nil && x.Trailname != nil {
+		return *x.Trailname
 	}
 	return ""
 }
@@ -10980,9 +10980,9 @@ type PutEventConfigurationResponse struct {
 	state                     protoimpl.MessageState      `protogen:"open.v1"`
 	Aggregationconfigurations []*AggregationConfiguration `protobuf:"bytes,481530463,rep,name=aggregationconfigurations,proto3" json:"aggregationconfigurations,omitempty"`
 	Contextkeyselectors       []*ContextKeySelector       `protobuf:"bytes,342040300,rep,name=contextkeyselectors,proto3" json:"contextkeyselectors,omitempty"`
-	Eventdatastorearn         string                      `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
+	Eventdatastorearn         *string                     `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
 	Maxeventsize              MaxEventSize                `protobuf:"varint,517627763,opt,name=maxeventsize,proto3,enum=cloudtrail.MaxEventSize" json:"maxeventsize,omitempty"`
-	Trailarn                  string                      `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Trailarn                  *string                     `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -11032,8 +11032,8 @@ func (x *PutEventConfigurationResponse) GetContextkeyselectors() []*ContextKeySe
 }
 
 func (x *PutEventConfigurationResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
@@ -11046,8 +11046,8 @@ func (x *PutEventConfigurationResponse) GetMaxeventsize() MaxEventSize {
 }
 
 func (x *PutEventConfigurationResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
@@ -11116,7 +11116,7 @@ type PutEventSelectorsResponse struct {
 	state                  protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Eventselectors         []*EventSelector         `protobuf:"bytes,344575328,rep,name=eventselectors,proto3" json:"eventselectors,omitempty"`
-	Trailarn               string                   `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Trailarn               *string                  `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -11166,18 +11166,18 @@ func (x *PutEventSelectorsResponse) GetEventselectors() []*EventSelector {
 }
 
 func (x *PutEventSelectorsResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
 
 type PutInsightSelectorsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastore      string                 `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
+	Eventdatastore      *string                `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3,oneof" json:"eventdatastore,omitempty"`
 	Insightselectors    []*InsightSelector     `protobuf:"bytes,49628748,rep,name=insightselectors,proto3" json:"insightselectors,omitempty"`
-	Insightsdestination string                 `protobuf:"bytes,396776649,opt,name=insightsdestination,proto3" json:"insightsdestination,omitempty"`
-	Trailname           string                 `protobuf:"bytes,507774985,opt,name=trailname,proto3" json:"trailname,omitempty"`
+	Insightsdestination *string                `protobuf:"bytes,396776649,opt,name=insightsdestination,proto3,oneof" json:"insightsdestination,omitempty"`
+	Trailname           *string                `protobuf:"bytes,507774985,opt,name=trailname,proto3,oneof" json:"trailname,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11213,8 +11213,8 @@ func (*PutInsightSelectorsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutInsightSelectorsRequest) GetEventdatastore() string {
-	if x != nil {
-		return x.Eventdatastore
+	if x != nil && x.Eventdatastore != nil {
+		return *x.Eventdatastore
 	}
 	return ""
 }
@@ -11227,25 +11227,25 @@ func (x *PutInsightSelectorsRequest) GetInsightselectors() []*InsightSelector {
 }
 
 func (x *PutInsightSelectorsRequest) GetInsightsdestination() string {
-	if x != nil {
-		return x.Insightsdestination
+	if x != nil && x.Insightsdestination != nil {
+		return *x.Insightsdestination
 	}
 	return ""
 }
 
 func (x *PutInsightSelectorsRequest) GetTrailname() string {
-	if x != nil {
-		return x.Trailname
+	if x != nil && x.Trailname != nil {
+		return *x.Trailname
 	}
 	return ""
 }
 
 type PutInsightSelectorsResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastorearn   string                 `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
+	Eventdatastorearn   *string                `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
 	Insightselectors    []*InsightSelector     `protobuf:"bytes,49628748,rep,name=insightselectors,proto3" json:"insightselectors,omitempty"`
-	Insightsdestination string                 `protobuf:"bytes,396776649,opt,name=insightsdestination,proto3" json:"insightsdestination,omitempty"`
-	Trailarn            string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Insightsdestination *string                `protobuf:"bytes,396776649,opt,name=insightsdestination,proto3,oneof" json:"insightsdestination,omitempty"`
+	Trailarn            *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11281,8 +11281,8 @@ func (*PutInsightSelectorsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutInsightSelectorsResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
@@ -11295,15 +11295,15 @@ func (x *PutInsightSelectorsResponse) GetInsightselectors() []*InsightSelector {
 }
 
 func (x *PutInsightSelectorsResponse) GetInsightsdestination() string {
-	if x != nil {
-		return x.Insightsdestination
+	if x != nil && x.Insightsdestination != nil {
+		return *x.Insightsdestination
 	}
 	return ""
 }
 
 func (x *PutInsightSelectorsResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
@@ -11362,9 +11362,9 @@ func (x *PutResourcePolicyRequest) GetResourcepolicy() string {
 
 type PutResourcePolicyResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Delegatedadminresourcepolicy string                 `protobuf:"bytes,510966132,opt,name=delegatedadminresourcepolicy,proto3" json:"delegatedadminresourcepolicy,omitempty"`
-	Resourcearn                  string                 `protobuf:"bytes,364280877,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
-	Resourcepolicy               string                 `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3" json:"resourcepolicy,omitempty"`
+	Delegatedadminresourcepolicy *string                `protobuf:"bytes,510966132,opt,name=delegatedadminresourcepolicy,proto3,oneof" json:"delegatedadminresourcepolicy,omitempty"`
+	Resourcearn                  *string                `protobuf:"bytes,364280877,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
+	Resourcepolicy               *string                `protobuf:"bytes,15747632,opt,name=resourcepolicy,proto3,oneof" json:"resourcepolicy,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -11400,30 +11400,30 @@ func (*PutResourcePolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutResourcePolicyResponse) GetDelegatedadminresourcepolicy() string {
-	if x != nil {
-		return x.Delegatedadminresourcepolicy
+	if x != nil && x.Delegatedadminresourcepolicy != nil {
+		return *x.Delegatedadminresourcepolicy
 	}
 	return ""
 }
 
 func (x *PutResourcePolicyResponse) GetResourcearn() string {
-	if x != nil {
-		return x.Resourcearn
+	if x != nil && x.Resourcearn != nil {
+		return *x.Resourcearn
 	}
 	return ""
 }
 
 func (x *PutResourcePolicyResponse) GetResourcepolicy() string {
-	if x != nil {
-		return x.Resourcepolicy
+	if x != nil && x.Resourcepolicy != nil {
+		return *x.Resourcepolicy
 	}
 	return ""
 }
 
 type Query struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Creationtime  string                 `protobuf:"bytes,103458790,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
-	Queryid       string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
+	Creationtime  *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
+	Queryid       *string                `protobuf:"bytes,110737519,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
 	Querystatus   QueryStatus            `protobuf:"varint,367016406,opt,name=querystatus,proto3,enum=cloudtrail.QueryStatus" json:"querystatus,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11460,15 +11460,15 @@ func (*Query) Descriptor() ([]byte, []int) {
 }
 
 func (x *Query) GetCreationtime() string {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return ""
 }
 
 func (x *Query) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
@@ -11482,7 +11482,7 @@ func (x *Query) GetQuerystatus() QueryStatus {
 
 type QueryIdNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11518,8 +11518,8 @@ func (*QueryIdNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueryIdNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -11587,7 +11587,7 @@ func (x *QueryStatistics) GetTotalresultscount() int32 {
 type QueryStatisticsForDescribeQuery struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Bytesscanned          *int64                 `protobuf:"varint,186950329,opt,name=bytesscanned,proto3,oneof" json:"bytesscanned,omitempty"`
-	Creationtime          string                 `protobuf:"bytes,103458790,opt,name=creationtime,proto3" json:"creationtime,omitempty"`
+	Creationtime          *string                `protobuf:"bytes,103458790,opt,name=creationtime,proto3,oneof" json:"creationtime,omitempty"`
 	Eventsmatched         *int64                 `protobuf:"varint,19501829,opt,name=eventsmatched,proto3,oneof" json:"eventsmatched,omitempty"`
 	Eventsscanned         *int64                 `protobuf:"varint,475241657,opt,name=eventsscanned,proto3,oneof" json:"eventsscanned,omitempty"`
 	Executiontimeinmillis *int32                 `protobuf:"varint,447596178,opt,name=executiontimeinmillis,proto3,oneof" json:"executiontimeinmillis,omitempty"`
@@ -11633,8 +11633,8 @@ func (x *QueryStatisticsForDescribeQuery) GetBytesscanned() int64 {
 }
 
 func (x *QueryStatisticsForDescribeQuery) GetCreationtime() string {
-	if x != nil {
-		return x.Creationtime
+	if x != nil && x.Creationtime != nil {
+		return *x.Creationtime
 	}
 	return ""
 }
@@ -11664,7 +11664,7 @@ type RefreshSchedule struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
 	Frequency     *RefreshScheduleFrequency `protobuf:"bytes,227673762,opt,name=frequency,proto3" json:"frequency,omitempty"`
 	Status        RefreshScheduleStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.RefreshScheduleStatus" json:"status,omitempty"`
-	Timeofday     string                    `protobuf:"bytes,77605358,opt,name=timeofday,proto3" json:"timeofday,omitempty"`
+	Timeofday     *string                   `protobuf:"bytes,77605358,opt,name=timeofday,proto3,oneof" json:"timeofday,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11714,8 +11714,8 @@ func (x *RefreshSchedule) GetStatus() RefreshScheduleStatus {
 }
 
 func (x *RefreshSchedule) GetTimeofday() string {
-	if x != nil {
-		return x.Timeofday
+	if x != nil && x.Timeofday != nil {
+		return *x.Timeofday
 	}
 	return ""
 }
@@ -12002,8 +12002,8 @@ func (x *RequestWidget) GetViewproperties() map[string]string {
 
 type Resource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourcename  string                 `protobuf:"bytes,269834071,opt,name=resourcename,proto3" json:"resourcename,omitempty"`
-	Resourcetype  string                 `protobuf:"bytes,301342558,opt,name=resourcetype,proto3" json:"resourcetype,omitempty"`
+	Resourcename  *string                `protobuf:"bytes,269834071,opt,name=resourcename,proto3,oneof" json:"resourcename,omitempty"`
+	Resourcetype  *string                `protobuf:"bytes,301342558,opt,name=resourcetype,proto3,oneof" json:"resourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12039,22 +12039,22 @@ func (*Resource) Descriptor() ([]byte, []int) {
 }
 
 func (x *Resource) GetResourcename() string {
-	if x != nil {
-		return x.Resourcename
+	if x != nil && x.Resourcename != nil {
+		return *x.Resourcename
 	}
 	return ""
 }
 
 func (x *Resource) GetResourcetype() string {
-	if x != nil {
-		return x.Resourcetype
+	if x != nil && x.Resourcetype != nil {
+		return *x.Resourcetype
 	}
 	return ""
 }
 
 type ResourceARNNotValidException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12090,15 +12090,15 @@ func (*ResourceARNNotValidException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceARNNotValidException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12134,15 +12134,15 @@ func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourcePolicyNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12178,15 +12178,15 @@ func (*ResourcePolicyNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourcePolicyNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourcePolicyNotValidException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12222,15 +12222,15 @@ func (*ResourcePolicyNotValidException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourcePolicyNotValidException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceTag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourceid    string                 `protobuf:"bytes,526146833,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
+	Resourceid    *string                `protobuf:"bytes,526146833,opt,name=resourceid,proto3,oneof" json:"resourceid,omitempty"`
 	Tagslist      []*Tag                 `protobuf:"bytes,497422889,rep,name=tagslist,proto3" json:"tagslist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12267,8 +12267,8 @@ func (*ResourceTag) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceTag) GetResourceid() string {
-	if x != nil {
-		return x.Resourceid
+	if x != nil && x.Resourceid != nil {
+		return *x.Resourceid
 	}
 	return ""
 }
@@ -12282,7 +12282,7 @@ func (x *ResourceTag) GetTagslist() []*Tag {
 
 type ResourceTypeNotSupportedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12318,8 +12318,8 @@ func (*ResourceTypeNotSupportedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceTypeNotSupportedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12372,16 +12372,16 @@ type RestoreEventDataStoreResponse struct {
 	state                        protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Billingmode                  BillingMode              `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=cloudtrail.BillingMode" json:"billingmode,omitempty"`
-	Createdtimestamp             string                   `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Eventdatastorearn            string                   `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
-	Kmskeyid                     string                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Createdtimestamp             *string                  `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Eventdatastorearn            *string                  `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
+	Kmskeyid                     *string                  `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
-	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                  `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -12431,22 +12431,22 @@ func (x *RestoreEventDataStoreResponse) GetBillingmode() BillingMode {
 }
 
 func (x *RestoreEventDataStoreResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *RestoreEventDataStoreResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
 
 func (x *RestoreEventDataStoreResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -12459,8 +12459,8 @@ func (x *RestoreEventDataStoreResponse) GetMultiregionenabled() bool {
 }
 
 func (x *RestoreEventDataStoreResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -12494,15 +12494,15 @@ func (x *RestoreEventDataStoreResponse) GetTerminationprotectionenabled() bool {
 }
 
 func (x *RestoreEventDataStoreResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
 
 type S3BucketDoesNotExistException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12538,8 +12538,8 @@ func (*S3BucketDoesNotExistException) Descriptor() ([]byte, []int) {
 }
 
 func (x *S3BucketDoesNotExistException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12607,7 +12607,7 @@ func (x *S3ImportSource) GetS3Locationuri() string {
 type SearchSampleQueriesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Searchphrase  string                 `protobuf:"bytes,243779077,opt,name=searchphrase,proto3" json:"searchphrase,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12651,8 +12651,8 @@ func (x *SearchSampleQueriesRequest) GetMaxresults() int32 {
 }
 
 func (x *SearchSampleQueriesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -12666,7 +12666,7 @@ func (x *SearchSampleQueriesRequest) GetSearchphrase() string {
 
 type SearchSampleQueriesResponse struct {
 	state         protoimpl.MessageState             `protogen:"open.v1"`
-	Nexttoken     string                             `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                            `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Searchresults []*SearchSampleQueriesSearchResult `protobuf:"bytes,29101186,rep,name=searchresults,proto3" json:"searchresults,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12703,8 +12703,8 @@ func (*SearchSampleQueriesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *SearchSampleQueriesResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -12718,10 +12718,10 @@ func (x *SearchSampleQueriesResponse) GetSearchresults() []*SearchSampleQueriesS
 
 type SearchSampleQueriesSearchResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Relevance     float32                `protobuf:"fixed32,287814281,opt,name=relevance,proto3" json:"relevance,omitempty"`
-	Sql           string                 `protobuf:"bytes,18818720,opt,name=sql,proto3" json:"sql,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Relevance     *float32               `protobuf:"fixed32,287814281,opt,name=relevance,proto3,oneof" json:"relevance,omitempty"`
+	Sql           *string                `protobuf:"bytes,18818720,opt,name=sql,proto3,oneof" json:"sql,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12757,36 +12757,36 @@ func (*SearchSampleQueriesSearchResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *SearchSampleQueriesSearchResult) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *SearchSampleQueriesSearchResult) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *SearchSampleQueriesSearchResult) GetRelevance() float32 {
-	if x != nil {
-		return x.Relevance
+	if x != nil && x.Relevance != nil {
+		return *x.Relevance
 	}
 	return 0
 }
 
 func (x *SearchSampleQueriesSearchResult) GetSql() string {
-	if x != nil {
-		return x.Sql
+	if x != nil && x.Sql != nil {
+		return *x.Sql
 	}
 	return ""
 }
 
 type ServiceQuotaExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12822,8 +12822,8 @@ func (*ServiceQuotaExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServiceQuotaExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12934,7 +12934,7 @@ func (x *StartDashboardRefreshRequest) GetQueryparametervalues() map[string]stri
 
 type StartDashboardRefreshResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Refreshid     string                 `protobuf:"bytes,57407610,opt,name=refreshid,proto3" json:"refreshid,omitempty"`
+	Refreshid     *string                `protobuf:"bytes,57407610,opt,name=refreshid,proto3,oneof" json:"refreshid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12970,8 +12970,8 @@ func (*StartDashboardRefreshResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartDashboardRefreshResponse) GetRefreshid() string {
-	if x != nil {
-		return x.Refreshid
+	if x != nil && x.Refreshid != nil {
+		return *x.Refreshid
 	}
 	return ""
 }
@@ -13059,10 +13059,10 @@ func (*StartEventDataStoreIngestionResponse) Descriptor() ([]byte, []int) {
 type StartImportRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Destinations   []string               `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Endeventtime   string                 `protobuf:"bytes,260441984,opt,name=endeventtime,proto3" json:"endeventtime,omitempty"`
-	Importid       string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
+	Endeventtime   *string                `protobuf:"bytes,260441984,opt,name=endeventtime,proto3,oneof" json:"endeventtime,omitempty"`
+	Importid       *string                `protobuf:"bytes,420153946,opt,name=importid,proto3,oneof" json:"importid,omitempty"`
 	Importsource   *ImportSource          `protobuf:"bytes,41128754,opt,name=importsource,proto3" json:"importsource,omitempty"`
-	Starteventtime string                 `protobuf:"bytes,107272573,opt,name=starteventtime,proto3" json:"starteventtime,omitempty"`
+	Starteventtime *string                `protobuf:"bytes,107272573,opt,name=starteventtime,proto3,oneof" json:"starteventtime,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -13105,15 +13105,15 @@ func (x *StartImportRequest) GetDestinations() []string {
 }
 
 func (x *StartImportRequest) GetEndeventtime() string {
-	if x != nil {
-		return x.Endeventtime
+	if x != nil && x.Endeventtime != nil {
+		return *x.Endeventtime
 	}
 	return ""
 }
 
 func (x *StartImportRequest) GetImportid() string {
-	if x != nil {
-		return x.Importid
+	if x != nil && x.Importid != nil {
+		return *x.Importid
 	}
 	return ""
 }
@@ -13126,22 +13126,22 @@ func (x *StartImportRequest) GetImportsource() *ImportSource {
 }
 
 func (x *StartImportRequest) GetStarteventtime() string {
-	if x != nil {
-		return x.Starteventtime
+	if x != nil && x.Starteventtime != nil {
+		return *x.Starteventtime
 	}
 	return ""
 }
 
 type StartImportResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Createdtimestamp string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
+	Createdtimestamp *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Destinations     []string               `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Endeventtime     string                 `protobuf:"bytes,260441984,opt,name=endeventtime,proto3" json:"endeventtime,omitempty"`
-	Importid         string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
+	Endeventtime     *string                `protobuf:"bytes,260441984,opt,name=endeventtime,proto3,oneof" json:"endeventtime,omitempty"`
+	Importid         *string                `protobuf:"bytes,420153946,opt,name=importid,proto3,oneof" json:"importid,omitempty"`
 	Importsource     *ImportSource          `protobuf:"bytes,41128754,opt,name=importsource,proto3" json:"importsource,omitempty"`
 	Importstatus     ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=cloudtrail.ImportStatus" json:"importstatus,omitempty"`
-	Starteventtime   string                 `protobuf:"bytes,107272573,opt,name=starteventtime,proto3" json:"starteventtime,omitempty"`
-	Updatedtimestamp string                 `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Starteventtime   *string                `protobuf:"bytes,107272573,opt,name=starteventtime,proto3,oneof" json:"starteventtime,omitempty"`
+	Updatedtimestamp *string                `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -13177,8 +13177,8 @@ func (*StartImportResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartImportResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
@@ -13191,15 +13191,15 @@ func (x *StartImportResponse) GetDestinations() []string {
 }
 
 func (x *StartImportResponse) GetEndeventtime() string {
-	if x != nil {
-		return x.Endeventtime
+	if x != nil && x.Endeventtime != nil {
+		return *x.Endeventtime
 	}
 	return ""
 }
 
 func (x *StartImportResponse) GetImportid() string {
-	if x != nil {
-		return x.Importid
+	if x != nil && x.Importid != nil {
+		return *x.Importid
 	}
 	return ""
 }
@@ -13219,15 +13219,15 @@ func (x *StartImportResponse) GetImportstatus() ImportStatus {
 }
 
 func (x *StartImportResponse) GetStarteventtime() string {
-	if x != nil {
-		return x.Starteventtime
+	if x != nil && x.Starteventtime != nil {
+		return *x.Starteventtime
 	}
 	return ""
 }
 
 func (x *StartImportResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
@@ -13314,11 +13314,11 @@ func (*StartLoggingResponse) Descriptor() ([]byte, []int) {
 
 type StartQueryRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Deliverys3Uri                string                 `protobuf:"bytes,230884460,opt,name=deliverys3uri,proto3" json:"deliverys3uri,omitempty"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
-	Queryalias                   string                 `protobuf:"bytes,512762270,opt,name=queryalias,proto3" json:"queryalias,omitempty"`
+	Deliverys3Uri                *string                `protobuf:"bytes,230884460,opt,name=deliverys3uri,proto3,oneof" json:"deliverys3uri,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
+	Queryalias                   *string                `protobuf:"bytes,512762270,opt,name=queryalias,proto3,oneof" json:"queryalias,omitempty"`
 	Queryparameters              []string               `protobuf:"bytes,76317660,rep,name=queryparameters,proto3" json:"queryparameters,omitempty"`
-	Querystatement               string                 `protobuf:"bytes,340852217,opt,name=querystatement,proto3" json:"querystatement,omitempty"`
+	Querystatement               *string                `protobuf:"bytes,340852217,opt,name=querystatement,proto3,oneof" json:"querystatement,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -13354,22 +13354,22 @@ func (*StartQueryRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartQueryRequest) GetDeliverys3Uri() string {
-	if x != nil {
-		return x.Deliverys3Uri
+	if x != nil && x.Deliverys3Uri != nil {
+		return *x.Deliverys3Uri
 	}
 	return ""
 }
 
 func (x *StartQueryRequest) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
 
 func (x *StartQueryRequest) GetQueryalias() string {
-	if x != nil {
-		return x.Queryalias
+	if x != nil && x.Queryalias != nil {
+		return *x.Queryalias
 	}
 	return ""
 }
@@ -13382,16 +13382,16 @@ func (x *StartQueryRequest) GetQueryparameters() []string {
 }
 
 func (x *StartQueryRequest) GetQuerystatement() string {
-	if x != nil {
-		return x.Querystatement
+	if x != nil && x.Querystatement != nil {
+		return *x.Querystatement
 	}
 	return ""
 }
 
 type StartQueryResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Eventdatastoreowneraccountid string                 `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3" json:"eventdatastoreowneraccountid,omitempty"`
-	Queryid                      string                 `protobuf:"bytes,110737519,opt,name=queryid,proto3" json:"queryid,omitempty"`
+	Eventdatastoreowneraccountid *string                `protobuf:"bytes,471609008,opt,name=eventdatastoreowneraccountid,proto3,oneof" json:"eventdatastoreowneraccountid,omitempty"`
+	Queryid                      *string                `protobuf:"bytes,110737519,opt,name=queryid,proto3,oneof" json:"queryid,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -13427,15 +13427,15 @@ func (*StartQueryResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartQueryResponse) GetEventdatastoreowneraccountid() string {
-	if x != nil {
-		return x.Eventdatastoreowneraccountid
+	if x != nil && x.Eventdatastoreowneraccountid != nil {
+		return *x.Eventdatastoreowneraccountid
 	}
 	return ""
 }
 
 func (x *StartQueryResponse) GetQueryid() string {
-	if x != nil {
-		return x.Queryid
+	if x != nil && x.Queryid != nil {
+		return *x.Queryid
 	}
 	return ""
 }
@@ -13566,15 +13566,15 @@ func (x *StopImportRequest) GetImportid() string {
 
 type StopImportResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Createdtimestamp string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
+	Createdtimestamp *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
 	Destinations     []string               `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Endeventtime     string                 `protobuf:"bytes,260441984,opt,name=endeventtime,proto3" json:"endeventtime,omitempty"`
-	Importid         string                 `protobuf:"bytes,420153946,opt,name=importid,proto3" json:"importid,omitempty"`
+	Endeventtime     *string                `protobuf:"bytes,260441984,opt,name=endeventtime,proto3,oneof" json:"endeventtime,omitempty"`
+	Importid         *string                `protobuf:"bytes,420153946,opt,name=importid,proto3,oneof" json:"importid,omitempty"`
 	Importsource     *ImportSource          `protobuf:"bytes,41128754,opt,name=importsource,proto3" json:"importsource,omitempty"`
 	Importstatistics *ImportStatistics      `protobuf:"bytes,48175528,opt,name=importstatistics,proto3" json:"importstatistics,omitempty"`
 	Importstatus     ImportStatus           `protobuf:"varint,129077631,opt,name=importstatus,proto3,enum=cloudtrail.ImportStatus" json:"importstatus,omitempty"`
-	Starteventtime   string                 `protobuf:"bytes,107272573,opt,name=starteventtime,proto3" json:"starteventtime,omitempty"`
-	Updatedtimestamp string                 `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Starteventtime   *string                `protobuf:"bytes,107272573,opt,name=starteventtime,proto3,oneof" json:"starteventtime,omitempty"`
+	Updatedtimestamp *string                `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -13610,8 +13610,8 @@ func (*StopImportResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *StopImportResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
@@ -13624,15 +13624,15 @@ func (x *StopImportResponse) GetDestinations() []string {
 }
 
 func (x *StopImportResponse) GetEndeventtime() string {
-	if x != nil {
-		return x.Endeventtime
+	if x != nil && x.Endeventtime != nil {
+		return *x.Endeventtime
 	}
 	return ""
 }
 
 func (x *StopImportResponse) GetImportid() string {
-	if x != nil {
-		return x.Importid
+	if x != nil && x.Importid != nil {
+		return *x.Importid
 	}
 	return ""
 }
@@ -13659,15 +13659,15 @@ func (x *StopImportResponse) GetImportstatus() ImportStatus {
 }
 
 func (x *StopImportResponse) GetStarteventtime() string {
-	if x != nil {
-		return x.Starteventtime
+	if x != nil && x.Starteventtime != nil {
+		return *x.Starteventtime
 	}
 	return ""
 }
 
 func (x *StopImportResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
@@ -13755,7 +13755,7 @@ func (*StopLoggingResponse) Descriptor() ([]byte, []int) {
 type Tag struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13798,15 +13798,15 @@ func (x *Tag) GetKey() string {
 }
 
 func (x *Tag) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
 
 type TagsLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13842,15 +13842,15 @@ func (*TagsLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TagsLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ThrottlingException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -13886,30 +13886,30 @@ func (*ThrottlingException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ThrottlingException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type Trail struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Cloudwatchlogsloggrouparn  string                 `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3" json:"cloudwatchlogsloggrouparn,omitempty"`
-	Cloudwatchlogsrolearn      string                 `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3" json:"cloudwatchlogsrolearn,omitempty"`
+	Cloudwatchlogsloggrouparn  *string                `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3,oneof" json:"cloudwatchlogsloggrouparn,omitempty"`
+	Cloudwatchlogsrolearn      *string                `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3,oneof" json:"cloudwatchlogsrolearn,omitempty"`
 	Hascustomeventselectors    *bool                  `protobuf:"varint,79311547,opt,name=hascustomeventselectors,proto3,oneof" json:"hascustomeventselectors,omitempty"`
 	Hasinsightselectors        *bool                  `protobuf:"varint,146532978,opt,name=hasinsightselectors,proto3,oneof" json:"hasinsightselectors,omitempty"`
-	Homeregion                 string                 `protobuf:"bytes,300797531,opt,name=homeregion,proto3" json:"homeregion,omitempty"`
+	Homeregion                 *string                `protobuf:"bytes,300797531,opt,name=homeregion,proto3,oneof" json:"homeregion,omitempty"`
 	Includeglobalserviceevents *bool                  `protobuf:"varint,212227451,opt,name=includeglobalserviceevents,proto3,oneof" json:"includeglobalserviceevents,omitempty"`
 	Ismultiregiontrail         *bool                  `protobuf:"varint,468658571,opt,name=ismultiregiontrail,proto3,oneof" json:"ismultiregiontrail,omitempty"`
 	Isorganizationtrail        *bool                  `protobuf:"varint,145256127,opt,name=isorganizationtrail,proto3,oneof" json:"isorganizationtrail,omitempty"`
-	Kmskeyid                   string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                   *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Logfilevalidationenabled   *bool                  `protobuf:"varint,35904346,opt,name=logfilevalidationenabled,proto3,oneof" json:"logfilevalidationenabled,omitempty"`
-	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	S3Bucketname               string                 `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3" json:"s3bucketname,omitempty"`
-	S3Keyprefix                string                 `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3" json:"s3keyprefix,omitempty"`
-	Snstopicarn                string                 `protobuf:"bytes,380025580,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
-	Snstopicname               string                 `protobuf:"bytes,415454800,opt,name=snstopicname,proto3" json:"snstopicname,omitempty"`
-	Trailarn                   string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Name                       *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	S3Bucketname               *string                `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3,oneof" json:"s3bucketname,omitempty"`
+	S3Keyprefix                *string                `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3,oneof" json:"s3keyprefix,omitempty"`
+	Snstopicarn                *string                `protobuf:"bytes,380025580,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
+	Snstopicname               *string                `protobuf:"bytes,415454800,opt,name=snstopicname,proto3,oneof" json:"snstopicname,omitempty"`
+	Trailarn                   *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -13945,15 +13945,15 @@ func (*Trail) Descriptor() ([]byte, []int) {
 }
 
 func (x *Trail) GetCloudwatchlogsloggrouparn() string {
-	if x != nil {
-		return x.Cloudwatchlogsloggrouparn
+	if x != nil && x.Cloudwatchlogsloggrouparn != nil {
+		return *x.Cloudwatchlogsloggrouparn
 	}
 	return ""
 }
 
 func (x *Trail) GetCloudwatchlogsrolearn() string {
-	if x != nil {
-		return x.Cloudwatchlogsrolearn
+	if x != nil && x.Cloudwatchlogsrolearn != nil {
+		return *x.Cloudwatchlogsrolearn
 	}
 	return ""
 }
@@ -13973,8 +13973,8 @@ func (x *Trail) GetHasinsightselectors() bool {
 }
 
 func (x *Trail) GetHomeregion() string {
-	if x != nil {
-		return x.Homeregion
+	if x != nil && x.Homeregion != nil {
+		return *x.Homeregion
 	}
 	return ""
 }
@@ -14001,8 +14001,8 @@ func (x *Trail) GetIsorganizationtrail() bool {
 }
 
 func (x *Trail) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -14015,50 +14015,50 @@ func (x *Trail) GetLogfilevalidationenabled() bool {
 }
 
 func (x *Trail) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *Trail) GetS3Bucketname() string {
-	if x != nil {
-		return x.S3Bucketname
+	if x != nil && x.S3Bucketname != nil {
+		return *x.S3Bucketname
 	}
 	return ""
 }
 
 func (x *Trail) GetS3Keyprefix() string {
-	if x != nil {
-		return x.S3Keyprefix
+	if x != nil && x.S3Keyprefix != nil {
+		return *x.S3Keyprefix
 	}
 	return ""
 }
 
 func (x *Trail) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
 
 func (x *Trail) GetSnstopicname() string {
-	if x != nil {
-		return x.Snstopicname
+	if x != nil && x.Snstopicname != nil {
+		return *x.Snstopicname
 	}
 	return ""
 }
 
 func (x *Trail) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
 
 type TrailAlreadyExistsException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14094,17 +14094,17 @@ func (*TrailAlreadyExistsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrailAlreadyExistsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TrailInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Homeregion    string                 `protobuf:"bytes,300797531,opt,name=homeregion,proto3" json:"homeregion,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Trailarn      string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Homeregion    *string                `protobuf:"bytes,300797531,opt,name=homeregion,proto3,oneof" json:"homeregion,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Trailarn      *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14140,29 +14140,29 @@ func (*TrailInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrailInfo) GetHomeregion() string {
-	if x != nil {
-		return x.Homeregion
+	if x != nil && x.Homeregion != nil {
+		return *x.Homeregion
 	}
 	return ""
 }
 
 func (x *TrailInfo) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *TrailInfo) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
 
 type TrailNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14198,15 +14198,15 @@ func (*TrailNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrailNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TrailNotProvidedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14242,15 +14242,15 @@ func (*TrailNotProvidedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TrailNotProvidedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type UnsupportedOperationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14286,8 +14286,8 @@ func (*UnsupportedOperationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *UnsupportedOperationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -14296,7 +14296,7 @@ type UpdateChannelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Channel       string                 `protobuf:"bytes,90016325,opt,name=channel,proto3" json:"channel,omitempty"`
 	Destinations  []*Destination         `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14346,18 +14346,18 @@ func (x *UpdateChannelRequest) GetDestinations() []*Destination {
 }
 
 func (x *UpdateChannelRequest) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type UpdateChannelResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Channelarn    string                 `protobuf:"bytes,99276476,opt,name=channelarn,proto3" json:"channelarn,omitempty"`
+	Channelarn    *string                `protobuf:"bytes,99276476,opt,name=channelarn,proto3,oneof" json:"channelarn,omitempty"`
 	Destinations  []*Destination         `protobuf:"bytes,404385861,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Source        string                 `protobuf:"bytes,31630329,opt,name=source,proto3" json:"source,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Source        *string                `protobuf:"bytes,31630329,opt,name=source,proto3,oneof" json:"source,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14393,8 +14393,8 @@ func (*UpdateChannelResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateChannelResponse) GetChannelarn() string {
-	if x != nil {
-		return x.Channelarn
+	if x != nil && x.Channelarn != nil {
+		return *x.Channelarn
 	}
 	return ""
 }
@@ -14407,15 +14407,15 @@ func (x *UpdateChannelResponse) GetDestinations() []*Destination {
 }
 
 func (x *UpdateChannelResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *UpdateChannelResponse) GetSource() string {
-	if x != nil {
-		return x.Source
+	if x != nil && x.Source != nil {
+		return *x.Source
 	}
 	return ""
 }
@@ -14490,13 +14490,13 @@ func (x *UpdateDashboardRequest) GetWidgets() []*RequestWidget {
 
 type UpdateDashboardResponse struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Createdtimestamp             string                 `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Dashboardarn                 string                 `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3" json:"dashboardarn,omitempty"`
-	Name                         string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Createdtimestamp             *string                `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Dashboardarn                 *string                `protobuf:"bytes,108051951,opt,name=dashboardarn,proto3,oneof" json:"dashboardarn,omitempty"`
+	Name                         *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Refreshschedule              *RefreshSchedule       `protobuf:"bytes,261773338,opt,name=refreshschedule,proto3" json:"refreshschedule,omitempty"`
 	Terminationprotectionenabled *bool                  `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
 	Type                         DashboardType          `protobuf:"varint,290836590,opt,name=type,proto3,enum=cloudtrail.DashboardType" json:"type,omitempty"`
-	Updatedtimestamp             string                 `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	Widgets                      []*Widget              `protobuf:"bytes,501826147,rep,name=widgets,proto3" json:"widgets,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
@@ -14533,22 +14533,22 @@ func (*UpdateDashboardResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateDashboardResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *UpdateDashboardResponse) GetDashboardarn() string {
-	if x != nil {
-		return x.Dashboardarn
+	if x != nil && x.Dashboardarn != nil {
+		return *x.Dashboardarn
 	}
 	return ""
 }
 
 func (x *UpdateDashboardResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -14575,8 +14575,8 @@ func (x *UpdateDashboardResponse) GetType() DashboardType {
 }
 
 func (x *UpdateDashboardResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
@@ -14593,9 +14593,9 @@ type UpdateEventDataStoreRequest struct {
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Billingmode                  BillingMode              `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=cloudtrail.BillingMode" json:"billingmode,omitempty"`
 	Eventdatastore               string                   `protobuf:"bytes,136801729,opt,name=eventdatastore,proto3" json:"eventdatastore,omitempty"`
-	Kmskeyid                     string                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                     *string                  `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
@@ -14655,8 +14655,8 @@ func (x *UpdateEventDataStoreRequest) GetEventdatastore() string {
 }
 
 func (x *UpdateEventDataStoreRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -14669,8 +14669,8 @@ func (x *UpdateEventDataStoreRequest) GetMultiregionenabled() bool {
 }
 
 func (x *UpdateEventDataStoreRequest) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -14700,18 +14700,18 @@ type UpdateEventDataStoreResponse struct {
 	state                        protoimpl.MessageState   `protogen:"open.v1"`
 	Advancedeventselectors       []*AdvancedEventSelector `protobuf:"bytes,36838194,rep,name=advancedeventselectors,proto3" json:"advancedeventselectors,omitempty"`
 	Billingmode                  BillingMode              `protobuf:"varint,184162880,opt,name=billingmode,proto3,enum=cloudtrail.BillingMode" json:"billingmode,omitempty"`
-	Createdtimestamp             string                   `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3" json:"createdtimestamp,omitempty"`
-	Eventdatastorearn            string                   `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3" json:"eventdatastorearn,omitempty"`
-	Federationrolearn            string                   `protobuf:"bytes,504464364,opt,name=federationrolearn,proto3" json:"federationrolearn,omitempty"`
+	Createdtimestamp             *string                  `protobuf:"bytes,334753274,opt,name=createdtimestamp,proto3,oneof" json:"createdtimestamp,omitempty"`
+	Eventdatastorearn            *string                  `protobuf:"bytes,331732456,opt,name=eventdatastorearn,proto3,oneof" json:"eventdatastorearn,omitempty"`
+	Federationrolearn            *string                  `protobuf:"bytes,504464364,opt,name=federationrolearn,proto3,oneof" json:"federationrolearn,omitempty"`
 	Federationstatus             FederationStatus         `protobuf:"varint,146235383,opt,name=federationstatus,proto3,enum=cloudtrail.FederationStatus" json:"federationstatus,omitempty"`
-	Kmskeyid                     string                   `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                     *string                  `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Multiregionenabled           *bool                    `protobuf:"varint,20620620,opt,name=multiregionenabled,proto3,oneof" json:"multiregionenabled,omitempty"`
-	Name                         string                   `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                         *string                  `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Organizationenabled          *bool                    `protobuf:"varint,480171176,opt,name=organizationenabled,proto3,oneof" json:"organizationenabled,omitempty"`
 	Retentionperiod              *int32                   `protobuf:"varint,196383721,opt,name=retentionperiod,proto3,oneof" json:"retentionperiod,omitempty"`
 	Status                       EventDataStoreStatus     `protobuf:"varint,6222352,opt,name=status,proto3,enum=cloudtrail.EventDataStoreStatus" json:"status,omitempty"`
 	Terminationprotectionenabled *bool                    `protobuf:"varint,376863196,opt,name=terminationprotectionenabled,proto3,oneof" json:"terminationprotectionenabled,omitempty"`
-	Updatedtimestamp             string                   `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3" json:"updatedtimestamp,omitempty"`
+	Updatedtimestamp             *string                  `protobuf:"bytes,44364161,opt,name=updatedtimestamp,proto3,oneof" json:"updatedtimestamp,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -14761,22 +14761,22 @@ func (x *UpdateEventDataStoreResponse) GetBillingmode() BillingMode {
 }
 
 func (x *UpdateEventDataStoreResponse) GetCreatedtimestamp() string {
-	if x != nil {
-		return x.Createdtimestamp
+	if x != nil && x.Createdtimestamp != nil {
+		return *x.Createdtimestamp
 	}
 	return ""
 }
 
 func (x *UpdateEventDataStoreResponse) GetEventdatastorearn() string {
-	if x != nil {
-		return x.Eventdatastorearn
+	if x != nil && x.Eventdatastorearn != nil {
+		return *x.Eventdatastorearn
 	}
 	return ""
 }
 
 func (x *UpdateEventDataStoreResponse) GetFederationrolearn() string {
-	if x != nil {
-		return x.Federationrolearn
+	if x != nil && x.Federationrolearn != nil {
+		return *x.Federationrolearn
 	}
 	return ""
 }
@@ -14789,8 +14789,8 @@ func (x *UpdateEventDataStoreResponse) GetFederationstatus() FederationStatus {
 }
 
 func (x *UpdateEventDataStoreResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -14803,8 +14803,8 @@ func (x *UpdateEventDataStoreResponse) GetMultiregionenabled() bool {
 }
 
 func (x *UpdateEventDataStoreResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -14838,25 +14838,25 @@ func (x *UpdateEventDataStoreResponse) GetTerminationprotectionenabled() bool {
 }
 
 func (x *UpdateEventDataStoreResponse) GetUpdatedtimestamp() string {
-	if x != nil {
-		return x.Updatedtimestamp
+	if x != nil && x.Updatedtimestamp != nil {
+		return *x.Updatedtimestamp
 	}
 	return ""
 }
 
 type UpdateTrailRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Cloudwatchlogsloggrouparn  string                 `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3" json:"cloudwatchlogsloggrouparn,omitempty"`
-	Cloudwatchlogsrolearn      string                 `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3" json:"cloudwatchlogsrolearn,omitempty"`
+	Cloudwatchlogsloggrouparn  *string                `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3,oneof" json:"cloudwatchlogsloggrouparn,omitempty"`
+	Cloudwatchlogsrolearn      *string                `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3,oneof" json:"cloudwatchlogsrolearn,omitempty"`
 	Enablelogfilevalidation    *bool                  `protobuf:"varint,80236930,opt,name=enablelogfilevalidation,proto3,oneof" json:"enablelogfilevalidation,omitempty"`
 	Includeglobalserviceevents *bool                  `protobuf:"varint,212227451,opt,name=includeglobalserviceevents,proto3,oneof" json:"includeglobalserviceevents,omitempty"`
 	Ismultiregiontrail         *bool                  `protobuf:"varint,468658571,opt,name=ismultiregiontrail,proto3,oneof" json:"ismultiregiontrail,omitempty"`
 	Isorganizationtrail        *bool                  `protobuf:"varint,145256127,opt,name=isorganizationtrail,proto3,oneof" json:"isorganizationtrail,omitempty"`
-	Kmskeyid                   string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                   *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	S3Bucketname               string                 `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3" json:"s3bucketname,omitempty"`
-	S3Keyprefix                string                 `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3" json:"s3keyprefix,omitempty"`
-	Snstopicname               string                 `protobuf:"bytes,415454800,opt,name=snstopicname,proto3" json:"snstopicname,omitempty"`
+	S3Bucketname               *string                `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3,oneof" json:"s3bucketname,omitempty"`
+	S3Keyprefix                *string                `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3,oneof" json:"s3keyprefix,omitempty"`
+	Snstopicname               *string                `protobuf:"bytes,415454800,opt,name=snstopicname,proto3,oneof" json:"snstopicname,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -14892,15 +14892,15 @@ func (*UpdateTrailRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateTrailRequest) GetCloudwatchlogsloggrouparn() string {
-	if x != nil {
-		return x.Cloudwatchlogsloggrouparn
+	if x != nil && x.Cloudwatchlogsloggrouparn != nil {
+		return *x.Cloudwatchlogsloggrouparn
 	}
 	return ""
 }
 
 func (x *UpdateTrailRequest) GetCloudwatchlogsrolearn() string {
-	if x != nil {
-		return x.Cloudwatchlogsrolearn
+	if x != nil && x.Cloudwatchlogsrolearn != nil {
+		return *x.Cloudwatchlogsrolearn
 	}
 	return ""
 }
@@ -14934,8 +14934,8 @@ func (x *UpdateTrailRequest) GetIsorganizationtrail() bool {
 }
 
 func (x *UpdateTrailRequest) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -14948,41 +14948,41 @@ func (x *UpdateTrailRequest) GetName() string {
 }
 
 func (x *UpdateTrailRequest) GetS3Bucketname() string {
-	if x != nil {
-		return x.S3Bucketname
+	if x != nil && x.S3Bucketname != nil {
+		return *x.S3Bucketname
 	}
 	return ""
 }
 
 func (x *UpdateTrailRequest) GetS3Keyprefix() string {
-	if x != nil {
-		return x.S3Keyprefix
+	if x != nil && x.S3Keyprefix != nil {
+		return *x.S3Keyprefix
 	}
 	return ""
 }
 
 func (x *UpdateTrailRequest) GetSnstopicname() string {
-	if x != nil {
-		return x.Snstopicname
+	if x != nil && x.Snstopicname != nil {
+		return *x.Snstopicname
 	}
 	return ""
 }
 
 type UpdateTrailResponse struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
-	Cloudwatchlogsloggrouparn  string                 `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3" json:"cloudwatchlogsloggrouparn,omitempty"`
-	Cloudwatchlogsrolearn      string                 `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3" json:"cloudwatchlogsrolearn,omitempty"`
+	Cloudwatchlogsloggrouparn  *string                `protobuf:"bytes,519613355,opt,name=cloudwatchlogsloggrouparn,proto3,oneof" json:"cloudwatchlogsloggrouparn,omitempty"`
+	Cloudwatchlogsrolearn      *string                `protobuf:"bytes,55454690,opt,name=cloudwatchlogsrolearn,proto3,oneof" json:"cloudwatchlogsrolearn,omitempty"`
 	Includeglobalserviceevents *bool                  `protobuf:"varint,212227451,opt,name=includeglobalserviceevents,proto3,oneof" json:"includeglobalserviceevents,omitempty"`
 	Ismultiregiontrail         *bool                  `protobuf:"varint,468658571,opt,name=ismultiregiontrail,proto3,oneof" json:"ismultiregiontrail,omitempty"`
 	Isorganizationtrail        *bool                  `protobuf:"varint,145256127,opt,name=isorganizationtrail,proto3,oneof" json:"isorganizationtrail,omitempty"`
-	Kmskeyid                   string                 `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmskeyid                   *string                `protobuf:"bytes,46523533,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	Logfilevalidationenabled   *bool                  `protobuf:"varint,35904346,opt,name=logfilevalidationenabled,proto3,oneof" json:"logfilevalidationenabled,omitempty"`
-	Name                       string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	S3Bucketname               string                 `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3" json:"s3bucketname,omitempty"`
-	S3Keyprefix                string                 `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3" json:"s3keyprefix,omitempty"`
-	Snstopicarn                string                 `protobuf:"bytes,380025580,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
-	Snstopicname               string                 `protobuf:"bytes,415454800,opt,name=snstopicname,proto3" json:"snstopicname,omitempty"`
-	Trailarn                   string                 `protobuf:"bytes,39585143,opt,name=trailarn,proto3" json:"trailarn,omitempty"`
+	Name                       *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	S3Bucketname               *string                `protobuf:"bytes,320495427,opt,name=s3bucketname,proto3,oneof" json:"s3bucketname,omitempty"`
+	S3Keyprefix                *string                `protobuf:"bytes,206015359,opt,name=s3keyprefix,proto3,oneof" json:"s3keyprefix,omitempty"`
+	Snstopicarn                *string                `protobuf:"bytes,380025580,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
+	Snstopicname               *string                `protobuf:"bytes,415454800,opt,name=snstopicname,proto3,oneof" json:"snstopicname,omitempty"`
+	Trailarn                   *string                `protobuf:"bytes,39585143,opt,name=trailarn,proto3,oneof" json:"trailarn,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -15018,15 +15018,15 @@ func (*UpdateTrailResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateTrailResponse) GetCloudwatchlogsloggrouparn() string {
-	if x != nil {
-		return x.Cloudwatchlogsloggrouparn
+	if x != nil && x.Cloudwatchlogsloggrouparn != nil {
+		return *x.Cloudwatchlogsloggrouparn
 	}
 	return ""
 }
 
 func (x *UpdateTrailResponse) GetCloudwatchlogsrolearn() string {
-	if x != nil {
-		return x.Cloudwatchlogsrolearn
+	if x != nil && x.Cloudwatchlogsrolearn != nil {
+		return *x.Cloudwatchlogsrolearn
 	}
 	return ""
 }
@@ -15053,8 +15053,8 @@ func (x *UpdateTrailResponse) GetIsorganizationtrail() bool {
 }
 
 func (x *UpdateTrailResponse) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
@@ -15067,52 +15067,52 @@ func (x *UpdateTrailResponse) GetLogfilevalidationenabled() bool {
 }
 
 func (x *UpdateTrailResponse) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *UpdateTrailResponse) GetS3Bucketname() string {
-	if x != nil {
-		return x.S3Bucketname
+	if x != nil && x.S3Bucketname != nil {
+		return *x.S3Bucketname
 	}
 	return ""
 }
 
 func (x *UpdateTrailResponse) GetS3Keyprefix() string {
-	if x != nil {
-		return x.S3Keyprefix
+	if x != nil && x.S3Keyprefix != nil {
+		return *x.S3Keyprefix
 	}
 	return ""
 }
 
 func (x *UpdateTrailResponse) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
 
 func (x *UpdateTrailResponse) GetSnstopicname() string {
-	if x != nil {
-		return x.Snstopicname
+	if x != nil && x.Snstopicname != nil {
+		return *x.Snstopicname
 	}
 	return ""
 }
 
 func (x *UpdateTrailResponse) GetTrailarn() string {
-	if x != nil {
-		return x.Trailarn
+	if x != nil && x.Trailarn != nil {
+		return *x.Trailarn
 	}
 	return ""
 }
 
 type Widget struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Queryalias      string                 `protobuf:"bytes,512762270,opt,name=queryalias,proto3" json:"queryalias,omitempty"`
+	Queryalias      *string                `protobuf:"bytes,512762270,opt,name=queryalias,proto3,oneof" json:"queryalias,omitempty"`
 	Queryparameters []string               `protobuf:"bytes,76317660,rep,name=queryparameters,proto3" json:"queryparameters,omitempty"`
-	Querystatement  string                 `protobuf:"bytes,340852217,opt,name=querystatement,proto3" json:"querystatement,omitempty"`
+	Querystatement  *string                `protobuf:"bytes,340852217,opt,name=querystatement,proto3,oneof" json:"querystatement,omitempty"`
 	Viewproperties  map[string]string      `protobuf:"bytes,381974398,rep,name=viewproperties,proto3" json:"viewproperties,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -15149,8 +15149,8 @@ func (*Widget) Descriptor() ([]byte, []int) {
 }
 
 func (x *Widget) GetQueryalias() string {
-	if x != nil {
-		return x.Queryalias
+	if x != nil && x.Queryalias != nil {
+		return *x.Queryalias
 	}
 	return ""
 }
@@ -15163,8 +15163,8 @@ func (x *Widget) GetQueryparameters() []string {
 }
 
 func (x *Widget) GetQuerystatement() string {
-	if x != nil {
-		return x.Querystatement
+	if x != nil && x.Querystatement != nil {
+		return *x.Querystatement
 	}
 	return ""
 }
@@ -15225,26 +15225,37 @@ var File_cloudtrail_proto protoreflect.FileDescriptor
 const file_cloudtrail_proto_rawDesc = "" +
 	"\n" +
 	"\x10cloudtrail.proto\x12\n" +
-	"cloudtrail\x1a\fcommon.proto\x1a\taws.proto\"4\n" +
-	"\x15AccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"?\n" +
-	" AccountHasOngoingImportException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
-	"\x18AccountNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"<\n" +
-	"\x1dAccountNotRegisteredException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"9\n" +
-	"\x1aAccountRegisteredException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"e\n" +
+	"cloudtrail\x1a\fcommon.proto\x1a\taws.proto\"E\n" +
+	"\x15AccessDeniedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" AccountHasOngoingImportException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18AccountNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dAccountNotRegisteredException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aAccountRegisteredException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"e\n" +
 	"\x0eAddTagsRequest\x12\"\n" +
 	"\n" +
 	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
 	"resourceid\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\"\x11\n" +
-	"\x0fAddTagsResponse\"}\n" +
+	"\x0fAddTagsResponse\"\x8b\x01\n" +
 	"\x15AdvancedEventSelector\x12M\n" +
-	"\x0efieldselectors\x18\xb8ښ\xd4\x01 \x03(\v2!.cloudtrail.AdvancedFieldSelectorR\x0efieldselectors\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x81\x02\n" +
+	"\x0efieldselectors\x18\xb8ښ\xd4\x01 \x03(\v2!.cloudtrail.AdvancedFieldSelectorR\x0efieldselectors\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"\x81\x02\n" +
 	"\x15AdvancedFieldSelector\x12\x1e\n" +
 	"\bendswith\x18\xa4\xa1\xfe\xf0\x01 \x03(\tR\bendswith\x12\x1a\n" +
 	"\x06equals\x18\xb5\xbb\xe5\xf4\x01 \x03(\tR\x06equals\x12\x17\n" +
@@ -15257,44 +15268,73 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"startswith\"\xa0\x01\n" +
 	"\x18AggregationConfiguration\x12M\n" +
 	"\reventcategory\x18\xb4\xca\xc2N \x01(\x0e2$.cloudtrail.EventCategoryAggregationR\reventcategory\x125\n" +
-	"\ttemplates\x18\x89\xf7\xab\x1e \x03(\x0e2\x14.cloudtrail.TemplateR\ttemplates\"\xa4\x01\n" +
-	"\x12CancelQueryRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"\xb9\x01\n" +
-	"\x13CancelQueryResponse\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\x1b\n" +
+	"\ttemplates\x18\x89\xf7\xab\x1e \x03(\x0e2\x14.cloudtrail.TemplateR\ttemplates\"\xe2\x01\n" +
+	"\x12CancelQueryRequest\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x01R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12\x1b\n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryidB\x11\n" +
+	"\x0f_eventdatastoreB\x1f\n" +
+	"\x1d_eventdatastoreowneraccountid\"\xdf\x01\n" +
+	"\x13CancelQueryResponse\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x00R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12\x1b\n" +
 	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\x12=\n" +
-	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\"G\n" +
-	"(CannotDelegateManagementAccountException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"C\n" +
-	"\aChannel\x12!\n" +
+	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatusB\x1f\n" +
+	"\x1d_eventdatastoreowneraccountid\"X\n" +
+	"(CannotDelegateManagementAccountException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"channelarn\x18\xbc\xad\xab/ \x01(\tR\n" +
-	"channelarn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"9\n" +
-	"\x1aChannelARNInvalidException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"<\n" +
-	"\x1dChannelAlreadyExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cChannelExistsForEDSException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"?\n" +
-	" ChannelMaxLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
-	"\x18ChannelNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"<\n" +
-	"\x1dCloudTrailARNInvalidException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"B\n" +
-	"#CloudTrailAccessNotEnabledException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"F\n" +
-	"'CloudTrailInvalidClientTokenIdException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"I\n" +
-	"*CloudWatchLogsDeliveryUnavailableException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\">\n" +
-	"\x1fConcurrentModificationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"0\n" +
-	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"Z\n" +
+	"\b_message\"e\n" +
+	"\aChannel\x12&\n" +
+	"\n" +
+	"channelarn\x18\xbc\xad\xab/ \x01(\tH\x00R\n" +
+	"channelarn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\r\n" +
+	"\v_channelarnB\a\n" +
+	"\x05_name\"J\n" +
+	"\x1aChannelARNInvalidException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dChannelAlreadyExistsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cChannelExistsForEDSException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" ChannelMaxLimitExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18ChannelNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dCloudTrailARNInvalidException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#CloudTrailAccessNotEnabledException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"W\n" +
+	"'CloudTrailInvalidClientTokenIdException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Z\n" +
+	"*CloudWatchLogsDeliveryUnavailableException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fConcurrentModificationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11ConflictException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Z\n" +
 	"\x12ContextKeySelector\x12\x1a\n" +
 	"\x06equals\x18\xb5\xbb\xe5\xf4\x01 \x03(\tR\x06equals\x12(\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.cloudtrail.TypeR\x04type\"\xb2\x01\n" +
@@ -15302,108 +15342,138 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
 	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\x12'\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudtrail.TagR\x04tags\"\xd6\x01\n" +
-	"\x15CreateChannelResponse\x12!\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudtrail.TagR\x04tags\"\x88\x02\n" +
+	"\x15CreateChannelResponse\x12&\n" +
 	"\n" +
-	"channelarn\x18\xbc\xad\xab/ \x01(\tR\n" +
-	"channelarn\x12?\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\x12'\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudtrail.TagR\x04tags\"\xd1\x02\n" +
+	"channelarn\x18\xbc\xad\xab/ \x01(\tH\x00R\n" +
+	"channelarn\x88\x01\x01\x12?\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x02R\x06source\x88\x01\x01\x12'\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x0f.cloudtrail.TagR\x04tagsB\r\n" +
+	"\v_channelarnB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_source\"\xd1\x02\n" +
 	"\x16CreateDashboardRequest\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12H\n" +
 	"\x0frefreshschedule\x18\x9a\xb0\xe9| \x01(\v2\x1b.cloudtrail.RefreshScheduleR\x0frefreshschedule\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\x12K\n" +
 	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x00R\x1cterminationprotectionenabled\x88\x01\x01\x127\n" +
 	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x19.cloudtrail.RequestWidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xa5\x03\n" +
-	"\x17CreateDashboardResponse\x12%\n" +
-	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12H\n" +
+	"\x1d_terminationprotectionenabled\"\xc9\x03\n" +
+	"\x17CreateDashboardResponse\x12*\n" +
+	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tH\x00R\fdashboardarn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12H\n" +
 	"\x0frefreshschedule\x18\x9a\xb0\xe9| \x01(\v2\x1b.cloudtrail.RefreshScheduleR\x0frefreshschedule\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x00R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x02R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x120\n" +
-	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xb9\x05\n" +
+	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x0f\n" +
+	"\r_dashboardarnB\a\n" +
+	"\x05_nameB\x1f\n" +
+	"\x1d_terminationprotectionenabled\"\xcb\x05\n" +
 	"\x1bCreateEventDataStoreRequest\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x00R\bkmskeyid\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x01R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12.\n" +
-	"\x0estartingestion\x18\x98\x81\x9eP \x01(\bH\x03R\x0estartingestion\x88\x01\x01\x12/\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x02R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x03R\x0fretentionperiod\x88\x01\x01\x12.\n" +
+	"\x0estartingestion\x18\x98\x81\x9eP \x01(\bH\x04R\x0estartingestion\x88\x01\x01\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x04R\x1cterminationprotectionenabled\x88\x01\x01B\x15\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x05R\x1cterminationprotectionenabled\x88\x01\x01B\v\n" +
+	"\t_kmskeyidB\x15\n" +
 	"\x13_multiregionenabledB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x11\n" +
 	"\x0f_startingestionB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xc5\x06\n" +
+	"\x1d_terminationprotectionenabled\"\xb4\a\n" +
 	"\x1cCreateEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x01R\x11eventdatastorearn\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x02R\bkmskeyid\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x03R\x12multiregionenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x129\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x05R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x06R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12/\n" +
 	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
-	"\x13_multiregionenabledB\x16\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\aR\x1cterminationprotectionenabled\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\bR\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x14\n" +
+	"\x12_eventdatastorearnB\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_multiregionenabledB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xd2\x05\n" +
-	"\x12CreateTrailRequest\x12@\n" +
-	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
-	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tR\x15cloudwatchlogsrolearn\x12@\n" +
-	"\x17enablelogfilevalidation\x18\x82\xa3\xa1& \x01(\bH\x00R\x17enablelogfilevalidation\x88\x01\x01\x12F\n" +
-	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x01R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
-	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x02R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
-	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x03R\x13isorganizationtrail\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12\x15\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"\xd1\x06\n" +
+	"\x12CreateTrailRequest\x12E\n" +
+	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tH\x00R\x19cloudwatchlogsloggrouparn\x88\x01\x01\x12<\n" +
+	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tH\x01R\x15cloudwatchlogsrolearn\x88\x01\x01\x12@\n" +
+	"\x17enablelogfilevalidation\x18\x82\xa3\xa1& \x01(\bH\x02R\x17enablelogfilevalidation\x88\x01\x01\x12F\n" +
+	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x03R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
+	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x04R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
+	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x05R\x13isorganizationtrail\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x06R\bkmskeyid\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12#\n" +
-	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tR\vs3keyprefix\x12&\n" +
-	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tR\fsnstopicname\x12/\n" +
-	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslistB\x1a\n" +
+	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12(\n" +
+	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tH\aR\vs3keyprefix\x88\x01\x01\x12+\n" +
+	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tH\bR\fsnstopicname\x88\x01\x01\x12/\n" +
+	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslistB\x1c\n" +
+	"\x1a_cloudwatchlogsloggrouparnB\x18\n" +
+	"\x16_cloudwatchlogsrolearnB\x1a\n" +
 	"\x18_enablelogfilevalidationB\x1d\n" +
 	"\x1b_includeglobalserviceeventsB\x15\n" +
 	"\x13_ismultiregiontrailB\x16\n" +
-	"\x14_isorganizationtrail\"\xea\x05\n" +
-	"\x13CreateTrailResponse\x12@\n" +
-	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
-	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tR\x15cloudwatchlogsrolearn\x12F\n" +
-	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x00R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
-	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x01R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
-	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x02R\x13isorganizationtrail\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12B\n" +
-	"\x18logfilevalidationenabled\x18ڶ\x8f\x11 \x01(\bH\x03R\x18logfilevalidationenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12#\n" +
-	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tR\vs3keyprefix\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf5\x9a\xb5\x01 \x01(\tR\vsnstopicarn\x12&\n" +
-	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tR\fsnstopicname\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarnB\x1d\n" +
+	"\x14_isorganizationtrailB\v\n" +
+	"\t_kmskeyidB\x0e\n" +
+	"\f_s3keyprefixB\x0f\n" +
+	"\r_snstopicname\"\xb4\a\n" +
+	"\x13CreateTrailResponse\x12E\n" +
+	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tH\x00R\x19cloudwatchlogsloggrouparn\x88\x01\x01\x12<\n" +
+	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tH\x01R\x15cloudwatchlogsrolearn\x88\x01\x01\x12F\n" +
+	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x02R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
+	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x03R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
+	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x04R\x13isorganizationtrail\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x05R\bkmskeyid\x88\x01\x01\x12B\n" +
+	"\x18logfilevalidationenabled\x18ڶ\x8f\x11 \x01(\bH\x06R\x18logfilevalidationenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x12+\n" +
+	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tH\bR\fs3bucketname\x88\x01\x01\x12(\n" +
+	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tH\tR\vs3keyprefix\x88\x01\x01\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf5\x9a\xb5\x01 \x01(\tH\n" +
+	"R\vsnstopicarn\x88\x01\x01\x12+\n" +
+	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tH\vR\fsnstopicname\x88\x01\x01\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\fR\btrailarn\x88\x01\x01B\x1c\n" +
+	"\x1a_cloudwatchlogsloggrouparnB\x18\n" +
+	"\x16_cloudwatchlogsrolearnB\x1d\n" +
 	"\x1b_includeglobalserviceeventsB\x15\n" +
 	"\x13_ismultiregiontrailB\x16\n" +
-	"\x14_isorganizationtrailB\x1b\n" +
-	"\x19_logfilevalidationenabled\"k\n" +
-	"\x0fDashboardDetail\x12%\n" +
-	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x121\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\"A\n" +
-	"\fDataResource\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"J\n" +
-	"+DelegatedAdminAccountLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"3\n" +
+	"\x14_isorganizationtrailB\v\n" +
+	"\t_kmskeyidB\x1b\n" +
+	"\x19_logfilevalidationenabledB\a\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_s3bucketnameB\x0e\n" +
+	"\f_s3keyprefixB\x0e\n" +
+	"\f_snstopicarnB\x0f\n" +
+	"\r_snstopicnameB\v\n" +
+	"\t_trailarn\"\x81\x01\n" +
+	"\x0fDashboardDetail\x12*\n" +
+	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tH\x00R\fdashboardarn\x88\x01\x01\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04typeB\x0f\n" +
+	"\r_dashboardarn\"O\n" +
+	"\fDataResource\x12\x1b\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tH\x00R\x04type\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
+	"\x05_type\"[\n" +
+	"+DelegatedAdminAccountLimitExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"3\n" +
 	"\x14DeleteChannelRequest\x12\x1b\n" +
 	"\achannel\x18Ŕ\xf6* \x01(\tR\achannel\"\x17\n" +
 	"\x15DeleteChannelResponse\">\n" +
@@ -15421,25 +15491,39 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x13DeleteTrailResponse\"j\n" +
 	"+DeregisterOrganizationDelegatedAdminRequest\x12;\n" +
 	"\x17delegatedadminaccountid\x18\xc6\xd0\xea1 \x01(\tR\x17delegatedadminaccountid\".\n" +
-	",DeregisterOrganizationDelegatedAdminResponse\"\xeb\x01\n" +
-	"\x14DescribeQueryRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\"\n" +
+	",DeregisterOrganizationDelegatedAdminResponse\"\xe1\x02\n" +
+	"\x14DescribeQueryRequest\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x01R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tR\n" +
-	"queryalias\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\x12\x1f\n" +
-	"\trefreshid\x18\xfa\xf0\xaf\x1b \x01(\tR\trefreshid\"\xef\x03\n" +
-	"\x15DescribeQueryResponse\x12'\n" +
-	"\rdeliverys3uri\x18숌n \x01(\tR\rdeliverys3uri\x12F\n" +
-	"\x0edeliverystatus\x18\xe0\x97\xb8\xe6\x01 \x01(\x0e2\x1a.cloudtrail.DeliveryStatusR\x0edeliverystatus\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\x19\n" +
-	"\x06prompt\x18\xdc\xde\xef} \x01(\tR\x06prompt\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\x12X\n" +
+	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tH\x02R\n" +
+	"queryalias\x88\x01\x01\x12 \n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tH\x03R\aqueryid\x88\x01\x01\x12$\n" +
+	"\trefreshid\x18\xfa\xf0\xaf\x1b \x01(\tH\x04R\trefreshid\x88\x01\x01B\x11\n" +
+	"\x0f_eventdatastoreB\x1f\n" +
+	"\x1d_eventdatastoreowneraccountidB\r\n" +
+	"\v_queryaliasB\n" +
+	"\n" +
+	"\b_queryidB\f\n" +
+	"\n" +
+	"_refreshid\"\xf8\x04\n" +
+	"\x15DescribeQueryResponse\x12,\n" +
+	"\rdeliverys3uri\x18숌n \x01(\tH\x00R\rdeliverys3uri\x88\x01\x01\x12F\n" +
+	"\x0edeliverystatus\x18\xe0\x97\xb8\xe6\x01 \x01(\x0e2\x1a.cloudtrail.DeliveryStatusR\x0edeliverystatus\x12+\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x01R\ferrormessage\x88\x01\x01\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x02R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12\x1e\n" +
+	"\x06prompt\x18\xdc\xde\xef} \x01(\tH\x03R\x06prompt\x88\x01\x01\x12 \n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tH\x04R\aqueryid\x88\x01\x01\x12X\n" +
 	"\x0fquerystatistics\x18\xd9ӭ| \x01(\v2+.cloudtrail.QueryStatisticsForDescribeQueryR\x0fquerystatistics\x12=\n" +
-	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\x12$\n" +
-	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tR\vquerystring\"\x93\x01\n" +
+	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\x12)\n" +
+	"\vquerystring\x18\xe7\xca\xef\xcf\x01 \x01(\tH\x05R\vquerystring\x88\x01\x01B\x10\n" +
+	"\x0e_deliverys3uriB\x0f\n" +
+	"\r_errormessageB\x1f\n" +
+	"\x1d_eventdatastoreowneraccountidB\t\n" +
+	"\a_promptB\n" +
+	"\n" +
+	"\b_queryidB\x0e\n" +
+	"\f_querystring\"\x93\x01\n" +
 	"\x15DescribeTrailsRequest\x128\n" +
 	"\x13includeshadowtrails\x18\xeb\xbb\xd0_ \x01(\bH\x00R\x13includeshadowtrails\x88\x01\x01\x12(\n" +
 	"\rtrailnamelist\x18\x91\xf9\xc1\xfc\x01 \x03(\tR\rtrailnamelistB\x16\n" +
@@ -15450,56 +15534,88 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x123\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.cloudtrail.DestinationTypeR\x04type\"E\n" +
 	"\x18DisableFederationRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\x9a\x01\n" +
-	"\x19DisableFederationResponse\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12K\n" +
-	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatus\"v\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\xb5\x01\n" +
+	"\x19DisableFederationResponse\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x00R\x11eventdatastorearn\x88\x01\x01\x12K\n" +
+	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatusB\x14\n" +
+	"\x12_eventdatastorearn\"v\n" +
 	"\x17EnableFederationRequest\x12)\n" +
 	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x120\n" +
-	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tR\x11federationrolearn\"\xcb\x01\n" +
-	"\x18EnableFederationResponse\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x120\n" +
-	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tR\x11federationrolearn\x12K\n" +
-	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatus\"\xd7\x02\n" +
-	"\x05Event\x12$\n" +
-	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tR\vaccesskeyid\x12,\n" +
-	"\x0fcloudtrailevent\x18\xa7\x9e\x96\xa4\x01 \x01(\tR\x0fcloudtrailevent\x12\x1c\n" +
-	"\aeventid\x18Ӗݳ\x01 \x01(\tR\aeventid\x12\x1f\n" +
-	"\teventname\x18\x9d\xee\x9e~ \x01(\tR\teventname\x12#\n" +
-	"\veventsource\x18\xbbӅ\x12 \x01(\tR\veventsource\x12\x1f\n" +
-	"\teventtime\x18\xaf\xf0\x83j \x01(\tR\teventtime\x12\x1d\n" +
-	"\breadonly\x18\xf8\xf7\xc3= \x01(\tR\breadonly\x126\n" +
-	"\tresources\x18\x93ђ\xab\x01 \x03(\v2\x14.cloudtrail.ResourceR\tresources\x12\x1e\n" +
-	"\busername\x18ک\xa3\xe0\x01 \x01(\tR\busername\"\xa9\x05\n" +
+	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tR\x11federationrolearn\"\x81\x02\n" +
+	"\x18EnableFederationResponse\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x00R\x11eventdatastorearn\x88\x01\x01\x125\n" +
+	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tH\x01R\x11federationrolearn\x88\x01\x01\x12K\n" +
+	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatusB\x14\n" +
+	"\x12_eventdatastorearnB\x14\n" +
+	"\x12_federationrolearn\"\xf5\x03\n" +
+	"\x05Event\x12)\n" +
+	"\vaccesskeyid\x18\xa0\xb7\xb7\xd8\x01 \x01(\tH\x00R\vaccesskeyid\x88\x01\x01\x121\n" +
+	"\x0fcloudtrailevent\x18\xa7\x9e\x96\xa4\x01 \x01(\tH\x01R\x0fcloudtrailevent\x88\x01\x01\x12!\n" +
+	"\aeventid\x18Ӗݳ\x01 \x01(\tH\x02R\aeventid\x88\x01\x01\x12$\n" +
+	"\teventname\x18\x9d\xee\x9e~ \x01(\tH\x03R\teventname\x88\x01\x01\x12(\n" +
+	"\veventsource\x18\xbbӅ\x12 \x01(\tH\x04R\veventsource\x88\x01\x01\x12$\n" +
+	"\teventtime\x18\xaf\xf0\x83j \x01(\tH\x05R\teventtime\x88\x01\x01\x12\"\n" +
+	"\breadonly\x18\xf8\xf7\xc3= \x01(\tH\x06R\breadonly\x88\x01\x01\x126\n" +
+	"\tresources\x18\x93ђ\xab\x01 \x03(\v2\x14.cloudtrail.ResourceR\tresources\x12#\n" +
+	"\busername\x18ک\xa3\xe0\x01 \x01(\tH\aR\busername\x88\x01\x01B\x0e\n" +
+	"\f_accesskeyidB\x12\n" +
+	"\x10_cloudtraileventB\n" +
+	"\n" +
+	"\b_eventidB\f\n" +
+	"\n" +
+	"_eventnameB\x0e\n" +
+	"\f_eventsourceB\f\n" +
+	"\n" +
+	"_eventtimeB\v\n" +
+	"\t_readonlyB\v\n" +
+	"\t_username\"\x86\x06\n" +
 	"\x0eEventDataStore\x12\\\n" +
-	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
+	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x01R\x11eventdatastorearn\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x02R\x12multiregionenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x129\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x04R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x05R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
-	"\x13_multiregionenabledB\x16\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x06R\x1cterminationprotectionenabled\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\aR\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x14\n" +
+	"\x12_eventdatastorearnB\x15\n" +
+	"\x13_multiregionenabledB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"@\n" +
-	"!EventDataStoreARNInvalidException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"C\n" +
-	"$EventDataStoreAlreadyExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"G\n" +
-	"(EventDataStoreFederationEnabledException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"F\n" +
-	"'EventDataStoreHasOngoingImportException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"F\n" +
-	"'EventDataStoreMaxLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\">\n" +
-	"\x1fEventDataStoreNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"J\n" +
-	"+EventDataStoreTerminationProtectedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xbe\x02\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"Q\n" +
+	"!EventDataStoreARNInvalidException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"T\n" +
+	"$EventDataStoreAlreadyExistsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"X\n" +
+	"(EventDataStoreFederationEnabledException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"W\n" +
+	"'EventDataStoreHasOngoingImportException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"W\n" +
+	"'EventDataStoreMaxLimitExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fEventDataStoreNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"[\n" +
+	"+EventDataStoreTerminationProtectedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xbe\x02\n" +
 	"\rEventSelector\x12A\n" +
 	"\rdataresources\x18\x93\xf9\x91< \x03(\v2\x18.cloudtrail.DataResourceR\rdataresources\x12G\n" +
 	"\x1dexcludemanagementeventsources\x18\xb9\x9d\xcek \x03(\tR\x1dexcludemanagementeventsources\x12@\n" +
@@ -15508,150 +15624,220 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x18_includemanagementevents\"^\n" +
 	"\x14GenerateQueryRequest\x12+\n" +
 	"\x0feventdatastores\x18\xca\xe1\xc6H \x03(\tR\x0feventdatastores\x12\x19\n" +
-	"\x06prompt\x18\xdc\xde\xef} \x01(\tR\x06prompt\"\xaf\x01\n" +
-	"\x15GenerateQueryResponse\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\"\n" +
+	"\x06prompt\x18\xdc\xde\xef} \x01(\tR\x06prompt\"\x81\x02\n" +
+	"\x15GenerateQueryResponse\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x00R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tR\n" +
-	"queryalias\x12*\n" +
-	"\x0equerystatement\x18\xf9\xfbâ\x01 \x01(\tR\x0equerystatement\"8\n" +
-	"\x19GenerateResponseException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"0\n" +
+	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tH\x01R\n" +
+	"queryalias\x88\x01\x01\x12/\n" +
+	"\x0equerystatement\x18\xf9\xfbâ\x01 \x01(\tH\x02R\x0equerystatement\x88\x01\x01B\x1f\n" +
+	"\x1d_eventdatastoreowneraccountidB\r\n" +
+	"\v_queryaliasB\x11\n" +
+	"\x0f_querystatement\"I\n" +
+	"\x19GenerateResponseException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"0\n" +
 	"\x11GetChannelRequest\x12\x1b\n" +
-	"\achannel\x18Ŕ\xf6* \x01(\tR\achannel\"\xb6\x02\n" +
-	"\x12GetChannelResponse\x12!\n" +
+	"\achannel\x18Ŕ\xf6* \x01(\tR\achannel\"\xe8\x02\n" +
+	"\x12GetChannelResponse\x12&\n" +
 	"\n" +
-	"channelarn\x18\xbc\xad\xab/ \x01(\tR\n" +
-	"channelarn\x12?\n" +
+	"channelarn\x18\xbc\xad\xab/ \x01(\tH\x00R\n" +
+	"channelarn\x88\x01\x01\x12?\n" +
 	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12H\n" +
-	"\x0fingestionstatus\x18\x80\xc9\xe5Y \x01(\v2\x1b.cloudtrail.IngestionStatusR\x0fingestionstatus\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\x12@\n" +
-	"\fsourceconfig\x18ז\x81\xc6\x01 \x01(\v2\x18.cloudtrail.SourceConfigR\fsourceconfig\";\n" +
+	"\x0fingestionstatus\x18\x80\xc9\xe5Y \x01(\v2\x1b.cloudtrail.IngestionStatusR\x0fingestionstatus\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x02R\x06source\x88\x01\x01\x12@\n" +
+	"\fsourceconfig\x18ז\x81\xc6\x01 \x01(\v2\x18.cloudtrail.SourceConfigR\fsourceconfigB\r\n" +
+	"\v_channelarnB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_source\";\n" +
 	"\x13GetDashboardRequest\x12$\n" +
-	"\vdashboardid\x18\x97٪\xcd\x01 \x01(\tR\vdashboardid\"\xdb\x04\n" +
-	"\x14GetDashboardResponse\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12%\n" +
-	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x12>\n" +
-	"\x18lastrefreshfailurereason\x18\xdf\xcd\xc0\xeb\x01 \x01(\tR\x18lastrefreshfailurereason\x12(\n" +
-	"\rlastrefreshid\x18\x96ꏂ\x01 \x01(\tR\rlastrefreshid\x12H\n" +
+	"\vdashboardid\x18\x97٪\xcd\x01 \x01(\tR\vdashboardid\"\xde\x05\n" +
+	"\x14GetDashboardResponse\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12*\n" +
+	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tH\x01R\fdashboardarn\x88\x01\x01\x12C\n" +
+	"\x18lastrefreshfailurereason\x18\xdf\xcd\xc0\xeb\x01 \x01(\tH\x02R\x18lastrefreshfailurereason\x88\x01\x01\x12-\n" +
+	"\rlastrefreshid\x18\x96ꏂ\x01 \x01(\tH\x03R\rlastrefreshid\x88\x01\x01\x12H\n" +
 	"\x0frefreshschedule\x18\x9a\xb0\xe9| \x01(\v2\x1b.cloudtrail.RefreshScheduleR\x0frefreshschedule\x126\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1b.cloudtrail.DashboardStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x00R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\x120\n" +
-	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"k\n" +
-	"\x1cGetEventConfigurationRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xf0\x02\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x04R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\x05R\x10updatedtimestamp\x88\x01\x01\x120\n" +
+	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x13\n" +
+	"\x11_createdtimestampB\x0f\n" +
+	"\r_dashboardarnB\x1b\n" +
+	"\x19_lastrefreshfailurereasonB\x10\n" +
+	"\x0e_lastrefreshidB\x1f\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"\x96\x01\n" +
+	"\x1cGetEventConfigurationRequest\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12%\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tH\x01R\ttrailname\x88\x01\x01B\x11\n" +
+	"\x0f_eventdatastoreB\f\n" +
+	"\n" +
+	"_trailname\"\x9d\x03\n" +
 	"\x1dGetEventConfigurationResponse\x12f\n" +
 	"\x19aggregationconfigurations\x18ߤ\xce\xe5\x01 \x03(\v2$.cloudtrail.AggregationConfigurationR\x19aggregationconfigurations\x12T\n" +
-	"\x13contextkeyselectors\x18콌\xa3\x01 \x03(\v2\x1e.cloudtrail.ContextKeySelectorR\x13contextkeyselectors\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12@\n" +
-	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"E\n" +
+	"\x13contextkeyselectors\x18콌\xa3\x01 \x03(\v2\x1e.cloudtrail.ContextKeySelectorR\x13contextkeyselectors\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x00R\x11eventdatastorearn\x88\x01\x01\x12@\n" +
+	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x01R\btrailarn\x88\x01\x01B\x14\n" +
+	"\x12_eventdatastorearnB\v\n" +
+	"\t_trailarn\"E\n" +
 	"\x18GetEventDataStoreRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\xd3\a\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\xdd\b\n" +
 	"\x19GetEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x120\n" +
-	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tR\x11federationrolearn\x12K\n" +
-	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatus\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x12A\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x01R\x11eventdatastorearn\x88\x01\x01\x125\n" +
+	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tH\x02R\x11federationrolearn\x88\x01\x01\x12K\n" +
+	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatus\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x03R\bkmskeyid\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x04R\x12multiregionenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x129\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x06R\x13organizationenabled\x88\x01\x01\x12A\n" +
 	"\rpartitionkeys\x18\xaa\xb2\xd1_ \x03(\v2\x18.cloudtrail.PartitionKeyR\rpartitionkeys\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\aR\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
-	"\x13_multiregionenabledB\x16\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\bR\x1cterminationprotectionenabled\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\tR\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x14\n" +
+	"\x12_eventdatastorearnB\x14\n" +
+	"\x12_federationrolearnB\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_multiregionenabledB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"<\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"<\n" +
 	"\x18GetEventSelectorsRequest\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xdf\x01\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xf1\x01\n" +
 	"\x19GetEventSelectorsResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12E\n" +
-	"\x0eeventselectors\x18\xe0\x9a\xa7\xa4\x01 \x03(\v2\x19.cloudtrail.EventSelectorR\x0eeventselectors\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"2\n" +
+	"\x0eeventselectors\x18\xe0\x9a\xa7\xa4\x01 \x03(\v2\x19.cloudtrail.EventSelectorR\x0eeventselectors\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x00R\btrailarn\x88\x01\x01B\v\n" +
+	"\t_trailarn\"2\n" +
 	"\x10GetImportRequest\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\"\xdb\x03\n" +
-	"\x11GetImportResponse\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12&\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12%\n" +
-	"\fendeventtime\x18\x80\x8f\x98| \x01(\tR\fendeventtime\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12?\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\"\xcf\x04\n" +
+	"\x11GetImportResponse\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12&\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12*\n" +
+	"\fendeventtime\x18\x80\x8f\x98| \x01(\tH\x01R\fendeventtime\x88\x01\x01\x12#\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tH\x02R\bimportid\x88\x01\x01\x12?\n" +
 	"\fimportsource\x18\xb2\xa6\xce\x13 \x01(\v2\x18.cloudtrail.ImportSourceR\fimportsource\x12K\n" +
 	"\x10importstatistics\x18\xa8\xb3\xfc\x16 \x01(\v2\x1c.cloudtrail.ImportStatisticsR\x10importstatistics\x12?\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12)\n" +
-	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tR\x0estarteventtime\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\"i\n" +
-	"\x1aGetInsightSelectorsRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xf0\x01\n" +
-	"\x1bGetInsightSelectorsResponse\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12J\n" +
-	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x124\n" +
-	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tR\x13insightsdestination\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"\x8f\x02\n" +
-	"\x16GetQueryResultsRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x120\n" +
-	"\x0fmaxqueryresults\x18\xe0\xc3\xc49 \x01(\x05H\x00R\x0fmaxqueryresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryidB\x12\n" +
-	"\x10_maxqueryresults\"\xb9\x02\n" +
-	"\x17GetQueryResultsResponse\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12L\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12.\n" +
+	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tH\x03R\x0estarteventtime\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\x04R\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x0f\n" +
+	"\r_endeventtimeB\v\n" +
+	"\t_importidB\x11\n" +
+	"\x0f_starteventtimeB\x13\n" +
+	"\x11_updatedtimestamp\"\x94\x01\n" +
+	"\x1aGetInsightSelectorsRequest\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12%\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tH\x01R\ttrailname\x88\x01\x01B\x11\n" +
+	"\x0f_eventdatastoreB\f\n" +
+	"\n" +
+	"_trailname\"\xba\x02\n" +
+	"\x1bGetInsightSelectorsResponse\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x00R\x11eventdatastorearn\x88\x01\x01\x12J\n" +
+	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x129\n" +
+	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tH\x01R\x13insightsdestination\x88\x01\x01\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x02R\btrailarn\x88\x01\x01B\x14\n" +
+	"\x12_eventdatastorearnB\x16\n" +
+	"\x14_insightsdestinationB\v\n" +
+	"\t_trailarn\"\xe0\x02\n" +
+	"\x16GetQueryResultsRequest\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x01R\x1ceventdatastoreowneraccountid\x88\x01\x01\x120\n" +
+	"\x0fmaxqueryresults\x18\xe0\xc3\xc49 \x01(\x05H\x02R\x0fmaxqueryresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12\x1b\n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryidB\x11\n" +
+	"\x0f_eventdatastoreB\x1f\n" +
+	"\x1d_eventdatastoreowneraccountidB\x12\n" +
+	"\x10_maxqueryresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xe2\x02\n" +
+	"\x17GetQueryResultsResponse\x12+\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x00R\ferrormessage\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12L\n" +
 	"\x0fqueryresultrows\x18\x80\xcc\xc8r \x03(\v2\x1f.cloudtrail.QueryResultRowEntryR\x0fqueryresultrows\x12H\n" +
 	"\x0fquerystatistics\x18\xd9ӭ| \x01(\v2\x1b.cloudtrail.QueryStatisticsR\x0fquerystatistics\x12=\n" +
-	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\"@\n" +
+	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatusB\x0f\n" +
+	"\r_errormessageB\f\n" +
+	"\n" +
+	"_nexttoken\"@\n" +
 	"\x18GetResourcePolicyRequest\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\xb4\x01\n" +
-	"\x19GetResourcePolicyResponse\x12F\n" +
-	"\x1cdelegatedadminresourcepolicy\x18\xf4\xf2\xd2\xf3\x01 \x01(\tR\x1cdelegatedadminresourcepolicy\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"(\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x87\x02\n" +
+	"\x19GetResourcePolicyResponse\x12K\n" +
+	"\x1cdelegatedadminresourcepolicy\x18\xf4\xf2\xd2\xf3\x01 \x01(\tH\x00R\x1cdelegatedadminresourcepolicy\x88\x01\x01\x12)\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x01R\vresourcearn\x88\x01\x01\x12.\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tH\x02R\x0eresourcepolicy\x88\x01\x01B\x1f\n" +
+	"\x1d_delegatedadminresourcepolicyB\x0e\n" +
+	"\f_resourcearnB\x11\n" +
+	"\x0f_resourcepolicy\"(\n" +
 	"\x0fGetTrailRequest\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"?\n" +
 	"\x10GetTrailResponse\x12+\n" +
 	"\x05trail\x18\xe4\xdb\xc9\xe0\x01 \x01(\v2\x11.cloudtrail.TrailR\x05trail\".\n" +
 	"\x15GetTrailStatusRequest\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xbd\b\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xda\f\n" +
 	"\x16GetTrailStatusResponse\x12$\n" +
-	"\tislogging\x18Ͻ\x8b\x1d \x01(\bH\x00R\tislogging\x88\x01\x01\x12O\n" +
-	"!latestcloudwatchlogsdeliveryerror\x18\x9e\xa7\xe3q \x01(\tR!latestcloudwatchlogsdeliveryerror\x12N\n" +
-	" latestcloudwatchlogsdeliverytime\x18\xd1\xcc\xcb\xf6\x01 \x01(\tR latestcloudwatchlogsdeliverytime\x12J\n" +
-	"\x1elatestdeliveryattemptsucceeded\x18\x99\xa4\xb9\xce\x01 \x01(\tR\x1elatestdeliveryattemptsucceeded\x12?\n" +
-	"\x19latestdeliveryattempttime\x18\x8bԂ4 \x01(\tR\x19latestdeliveryattempttime\x123\n" +
-	"\x13latestdeliveryerror\x18\xf1\xb1\x999 \x01(\tR\x13latestdeliveryerror\x122\n" +
-	"\x12latestdeliverytime\x18\xe0\x81\x82\x99\x01 \x01(\tR\x12latestdeliverytime\x12@\n" +
-	"\x19latestdigestdeliveryerror\x18\xe1\xeb\x98\xf5\x01 \x01(\tR\x19latestdigestdeliveryerror\x12>\n" +
-	"\x18latestdigestdeliverytime\x18\xf0\xd3\xf1\xdf\x01 \x01(\tR\x18latestdigestdeliverytime\x12Q\n" +
-	"\"latestnotificationattemptsucceeded\x18\xbc\xe1\xe5\x01 \x01(\tR\"latestnotificationattemptsucceeded\x12G\n" +
-	"\x1dlatestnotificationattempttime\x18\xb0\xfb\xd51 \x01(\tR\x1dlatestnotificationattempttime\x12;\n" +
-	"\x17latestnotificationerror\x18\xda\xf2\xbe| \x01(\tR\x17latestnotificationerror\x128\n" +
-	"\x16latestnotificationtime\x18\x8d\x8c\x7f \x01(\tR\x16latestnotificationtime\x12.\n" +
-	"\x10startloggingtime\x18\xaa\xea٧\x01 \x01(\tR\x10startloggingtime\x12,\n" +
-	"\x0fstoploggingtime\x18\xb8\xec\x86\xe0\x01 \x01(\tR\x0fstoploggingtime\x121\n" +
-	"\x12timeloggingstarted\x18\xaf\x82\xd0\b \x01(\tR\x12timeloggingstarted\x122\n" +
-	"\x12timeloggingstopped\x18߯\xf2\x81\x01 \x01(\tR\x12timeloggingstoppedB\f\n" +
+	"\tislogging\x18Ͻ\x8b\x1d \x01(\bH\x00R\tislogging\x88\x01\x01\x12T\n" +
+	"!latestcloudwatchlogsdeliveryerror\x18\x9e\xa7\xe3q \x01(\tH\x01R!latestcloudwatchlogsdeliveryerror\x88\x01\x01\x12S\n" +
+	" latestcloudwatchlogsdeliverytime\x18\xd1\xcc\xcb\xf6\x01 \x01(\tH\x02R latestcloudwatchlogsdeliverytime\x88\x01\x01\x12O\n" +
+	"\x1elatestdeliveryattemptsucceeded\x18\x99\xa4\xb9\xce\x01 \x01(\tH\x03R\x1elatestdeliveryattemptsucceeded\x88\x01\x01\x12D\n" +
+	"\x19latestdeliveryattempttime\x18\x8bԂ4 \x01(\tH\x04R\x19latestdeliveryattempttime\x88\x01\x01\x128\n" +
+	"\x13latestdeliveryerror\x18\xf1\xb1\x999 \x01(\tH\x05R\x13latestdeliveryerror\x88\x01\x01\x127\n" +
+	"\x12latestdeliverytime\x18\xe0\x81\x82\x99\x01 \x01(\tH\x06R\x12latestdeliverytime\x88\x01\x01\x12E\n" +
+	"\x19latestdigestdeliveryerror\x18\xe1\xeb\x98\xf5\x01 \x01(\tH\aR\x19latestdigestdeliveryerror\x88\x01\x01\x12C\n" +
+	"\x18latestdigestdeliverytime\x18\xf0\xd3\xf1\xdf\x01 \x01(\tH\bR\x18latestdigestdeliverytime\x88\x01\x01\x12V\n" +
+	"\"latestnotificationattemptsucceeded\x18\xbc\xe1\xe5\x01 \x01(\tH\tR\"latestnotificationattemptsucceeded\x88\x01\x01\x12L\n" +
+	"\x1dlatestnotificationattempttime\x18\xb0\xfb\xd51 \x01(\tH\n" +
+	"R\x1dlatestnotificationattempttime\x88\x01\x01\x12@\n" +
+	"\x17latestnotificationerror\x18\xda\xf2\xbe| \x01(\tH\vR\x17latestnotificationerror\x88\x01\x01\x12=\n" +
+	"\x16latestnotificationtime\x18\x8d\x8c\x7f \x01(\tH\fR\x16latestnotificationtime\x88\x01\x01\x123\n" +
+	"\x10startloggingtime\x18\xaa\xea٧\x01 \x01(\tH\rR\x10startloggingtime\x88\x01\x01\x121\n" +
+	"\x0fstoploggingtime\x18\xb8\xec\x86\xe0\x01 \x01(\tH\x0eR\x0fstoploggingtime\x88\x01\x01\x126\n" +
+	"\x12timeloggingstarted\x18\xaf\x82\xd0\b \x01(\tH\x0fR\x12timeloggingstarted\x88\x01\x01\x127\n" +
+	"\x12timeloggingstopped\x18߯\xf2\x81\x01 \x01(\tH\x10R\x12timeloggingstopped\x88\x01\x01B\f\n" +
 	"\n" +
-	"_islogging\"\xea\x01\n" +
-	"\x15ImportFailureListItem\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12 \n" +
-	"\terrortype\x18\xba痾\x01 \x01(\tR\terrortype\x12+\n" +
-	"\x0flastupdatedtime\x18\x96\x85\xb6T \x01(\tR\x0flastupdatedtime\x12\x1e\n" +
-	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12:\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudtrail.ImportFailureStatusR\x06status\"6\n" +
-	"\x17ImportNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
+	"_isloggingB$\n" +
+	"\"_latestcloudwatchlogsdeliveryerrorB#\n" +
+	"!_latestcloudwatchlogsdeliverytimeB!\n" +
+	"\x1f_latestdeliveryattemptsucceededB\x1c\n" +
+	"\x1a_latestdeliveryattempttimeB\x16\n" +
+	"\x14_latestdeliveryerrorB\x15\n" +
+	"\x13_latestdeliverytimeB\x1c\n" +
+	"\x1a_latestdigestdeliveryerrorB\x1b\n" +
+	"\x19_latestdigestdeliverytimeB%\n" +
+	"#_latestnotificationattemptsucceededB \n" +
+	"\x1e_latestnotificationattempttimeB\x1a\n" +
+	"\x18_latestnotificationerrorB\x19\n" +
+	"\x17_latestnotificationtimeB\x13\n" +
+	"\x11_startloggingtimeB\x12\n" +
+	"\x10_stoploggingtimeB\x15\n" +
+	"\x13_timeloggingstartedB\x15\n" +
+	"\x13_timeloggingstopped\"\xbe\x02\n" +
+	"\x15ImportFailureListItem\x12+\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x00R\ferrormessage\x88\x01\x01\x12%\n" +
+	"\terrortype\x18\xba痾\x01 \x01(\tH\x01R\terrortype\x88\x01\x01\x120\n" +
+	"\x0flastupdatedtime\x18\x96\x85\xb6T \x01(\tH\x02R\x0flastupdatedtime\x88\x01\x01\x12#\n" +
+	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tH\x03R\blocation\x88\x01\x01\x12:\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1f.cloudtrail.ImportFailureStatusR\x06statusB\x0f\n" +
+	"\r_errormessageB\f\n" +
+	"\n" +
+	"_errortypeB\x12\n" +
+	"\x10_lastupdatedtimeB\v\n" +
+	"\t_location\"G\n" +
+	"\x17ImportNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"=\n" +
 	"\fImportSource\x12-\n" +
 	"\x02s3\x18ć\x880 \x01(\v2\x1a.cloudtrail.S3ImportSourceR\x02s3\"\xe9\x02\n" +
 	"\x10ImportStatistics\x120\n" +
@@ -15664,331 +15850,537 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x0e_failedentriesB\x11\n" +
 	"\x0f_filescompletedB\x14\n" +
 	"\x12_prefixescompletedB\x10\n" +
-	"\x0e_prefixesfound\"\xf9\x01\n" +
-	"\x0fImportsListItem\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12&\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12?\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\">\n" +
-	"\x1fInactiveEventDataStoreException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"5\n" +
-	"\x16InactiveQueryException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xea\x02\n" +
-	"\x0fIngestionStatus\x12G\n" +
-	"\x1dlatestingestionattempteventid\x18ۻ\xb5a \x01(\tR\x1dlatestingestionattempteventid\x12B\n" +
-	"\x1alatestingestionattempttime\x18\xfd\xf6\xab\x95\x01 \x01(\tR\x1alatestingestionattempttime\x12>\n" +
-	"\x18latestingestionerrorcode\x18\xf0\xba\x8b\xc6\x01 \x01(\tR\x18latestingestionerrorcode\x12G\n" +
-	"\x1dlatestingestionsuccesseventid\x18\xe9\x96\xe6\x0e \x01(\tR\x1dlatestingestionsuccesseventid\x12A\n" +
-	"\x1alatestingestionsuccesstime\x18ϛ\xedW \x01(\tR\x1alatestingestionsuccesstime\"9\n" +
-	"\x1aInsightNotEnabledException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9e\x01\n" +
+	"\x0e_prefixesfound\"\xbf\x02\n" +
+	"\x0fImportsListItem\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12&\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12#\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tH\x01R\bimportid\x88\x01\x01\x12?\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\x02R\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\v\n" +
+	"\t_importidB\x13\n" +
+	"\x11_updatedtimestamp\"O\n" +
+	"\x1fInactiveEventDataStoreException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16InactiveQueryException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa2\x04\n" +
+	"\x0fIngestionStatus\x12L\n" +
+	"\x1dlatestingestionattempteventid\x18ۻ\xb5a \x01(\tH\x00R\x1dlatestingestionattempteventid\x88\x01\x01\x12G\n" +
+	"\x1alatestingestionattempttime\x18\xfd\xf6\xab\x95\x01 \x01(\tH\x01R\x1alatestingestionattempttime\x88\x01\x01\x12C\n" +
+	"\x18latestingestionerrorcode\x18\xf0\xba\x8b\xc6\x01 \x01(\tH\x02R\x18latestingestionerrorcode\x88\x01\x01\x12L\n" +
+	"\x1dlatestingestionsuccesseventid\x18\xe9\x96\xe6\x0e \x01(\tH\x03R\x1dlatestingestionsuccesseventid\x88\x01\x01\x12F\n" +
+	"\x1alatestingestionsuccesstime\x18ϛ\xedW \x01(\tH\x04R\x1alatestingestionsuccesstime\x88\x01\x01B \n" +
+	"\x1e_latestingestionattempteventidB\x1d\n" +
+	"\x1b_latestingestionattempttimeB\x1b\n" +
+	"\x19_latestingestionerrorcodeB \n" +
+	"\x1e_latestingestionsuccesseventidB\x1d\n" +
+	"\x1b_latestingestionsuccesstime\"J\n" +
+	"\x1aInsightNotEnabledException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9e\x01\n" +
 	"\x0fInsightSelector\x12L\n" +
 	"\x0feventcategories\x18\x94\xb5\xe0\x01 \x03(\x0e2\x1f.cloudtrail.SourceEventCategoryR\x0feventcategories\x12=\n" +
-	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\"U\n" +
-	"6InsufficientDependencyServiceAccessPermissionException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"D\n" +
-	"%InsufficientEncryptionPolicyException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"G\n" +
-	"(InsufficientIAMAccessPermissionException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"B\n" +
-	"#InsufficientS3BucketPolicyException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"B\n" +
-	"#InsufficientSnsTopicPolicyException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"H\n" +
-	")InvalidCloudWatchLogsLogGroupArnException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"D\n" +
-	"%InvalidCloudWatchLogsRoleArnException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidDateRangeException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"<\n" +
-	"\x1dInvalidEventCategoryException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"E\n" +
-	"&InvalidEventDataStoreCategoryException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"C\n" +
-	"$InvalidEventDataStoreStatusException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidEventSelectorsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"9\n" +
-	"\x1aInvalidHomeRegionException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cInvalidImportSourceException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"?\n" +
-	" InvalidInsightSelectorsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
-	"\x18InvalidKmsKeyIdException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"?\n" +
-	" InvalidLookupAttributesException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"9\n" +
-	"\x1aInvalidMaxResultsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidNextTokenException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"C\n" +
-	"$InvalidParameterCombinationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidParameterException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidQueryStatementException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\":\n" +
-	"\x1bInvalidQueryStatusException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cInvalidS3BucketNameException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
-	"\x18InvalidS3PrefixException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cInvalidSnsTopicNameException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"5\n" +
-	"\x16InvalidSourceException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cInvalidTagParameterException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidTimeRangeException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"4\n" +
-	"\x15InvalidTokenException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19InvalidTrailNameException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"+\n" +
-	"\fKmsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
-	"\x17KmsKeyDisabledException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"6\n" +
-	"\x17KmsKeyNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"n\n" +
+	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\"f\n" +
+	"6InsufficientDependencyServiceAccessPermissionException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%InsufficientEncryptionPolicyException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"X\n" +
+	"(InsufficientIAMAccessPermissionException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#InsufficientS3BucketPolicyException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#InsufficientSnsTopicPolicyException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Y\n" +
+	")InvalidCloudWatchLogsLogGroupArnException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%InvalidCloudWatchLogsRoleArnException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidDateRangeException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dInvalidEventCategoryException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"V\n" +
+	"&InvalidEventDataStoreCategoryException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"T\n" +
+	"$InvalidEventDataStoreStatusException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidEventSelectorsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aInvalidHomeRegionException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cInvalidImportSourceException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" InvalidInsightSelectorsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18InvalidKmsKeyIdException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" InvalidLookupAttributesException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aInvalidMaxResultsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidNextTokenException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"T\n" +
+	"$InvalidParameterCombinationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidParameterException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidQueryStatementException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bInvalidQueryStatusException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cInvalidS3BucketNameException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18InvalidS3PrefixException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cInvalidSnsTopicNameException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16InvalidSourceException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cInvalidTagParameterException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidTimeRangeException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15InvalidTokenException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidTrailNameException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"<\n" +
+	"\fKmsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17KmsKeyDisabledException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"G\n" +
+	"\x17KmsKeyNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x81\x01\n" +
 	"\x13ListChannelsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"k\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"~\n" +
 	"\x14ListChannelsResponse\x122\n" +
-	"\bchannels\x18\x96\xa9\x82J \x03(\v2\x13.cloudtrail.ChannelR\bchannels\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xc7\x01\n" +
+	"\bchannels\x18\x96\xa9\x82J \x03(\v2\x13.cloudtrail.ChannelR\bchannels\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xee\x01\n" +
 	"\x15ListDashboardsRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\"\n" +
+	"maxresults\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tR\n" +
-	"nameprefix\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x121\n" +
+	"nameprefix\x18\x9b\xf3\xbc\xac\x01 \x01(\tH\x01R\n" +
+	"nameprefix\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x121\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04typeB\r\n" +
-	"\v_maxresults\"y\n" +
+	"\v_maxresultsB\r\n" +
+	"\v_nameprefixB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8c\x01\n" +
 	"\x16ListDashboardsResponse\x12>\n" +
 	"\n" +
 	"dashboards\x18\x99\xa9\xd8| \x03(\v2\x1b.cloudtrail.DashboardDetailR\n" +
-	"dashboards\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"u\n" +
+	"dashboards\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x88\x01\n" +
 	"\x1aListEventDataStoresRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x87\x01\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x9a\x01\n" +
 	"\x1bListEventDataStoresResponse\x12G\n" +
-	"\x0feventdatastores\x18\xca\xe1\xc6H \x03(\v2\x1a.cloudtrail.EventDataStoreR\x0feventdatastores\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
+	"\x0feventdatastores\x18\xca\xe1\xc6H \x03(\v2\x1a.cloudtrail.EventDataStoreR\x0feventdatastores\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xa7\x01\n" +
 	"\x19ListImportFailuresRequest\x12\x1e\n" +
 	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x80\x01\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x93\x01\n" +
 	"\x1aListImportFailuresResponse\x12A\n" +
-	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2!.cloudtrail.ImportFailureListItemR\bfailures\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xd4\x01\n" +
-	"\x12ListImportsRequest\x12$\n" +
-	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\tR\vdestination\x12?\n" +
+	"\bfailures\x18\x87\xa6\xfb\x9f\x01 \x03(\v2!.cloudtrail.ImportFailureListItemR\bfailures\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xfc\x01\n" +
+	"\x12ListImportsRequest\x12)\n" +
+	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\tH\x00R\vdestination\x88\x01\x01\x12?\n" +
 	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"q\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01B\x0e\n" +
+	"\f_destinationB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x84\x01\n" +
 	"\x13ListImportsResponse\x129\n" +
-	"\aimports\x18\x86\xa5\xaa\xed\x01 \x03(\v2\x1b.cloudtrail.ImportsListItemR\aimports\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xb4\x03\n" +
+	"\aimports\x18\x86\xa5\xaa\xed\x01 \x03(\v2\x1b.cloudtrail.ImportsListItemR\aimports\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xeb\x03\n" +
 	"\x17ListInsightsDataRequest\x12?\n" +
 	"\bdatatype\x18\xeeص  \x01(\x0e2 .cloudtrail.ListInsightsDataTypeR\bdatatype\x12W\n" +
 	"\n" +
 	"dimensions\x18ћ\xdf\xdc\x01 \x03(\v23.cloudtrail.ListInsightsDataRequest.DimensionsEntryR\n" +
-	"dimensions\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12(\n" +
+	"dimensions\x12 \n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12(\n" +
 	"\rinsightsource\x18\x8fۄ\xd1\x01 \x01(\tR\rinsightsource\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x1a=\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x03R\tstarttime\x88\x01\x01\x1a=\n" +
 	"\x0fDimensionsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
-	"\v_maxresults\"i\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\n" +
+	"\b_endtimeB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\f\n" +
+	"\n" +
+	"_starttime\"|\n" +
 	"\x18ListInsightsDataResponse\x12,\n" +
-	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x11.cloudtrail.EventR\x06events\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\xed\x03\n" +
+	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x11.cloudtrail.EventR\x06events\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xca\x04\n" +
 	"\x1dListInsightsMetricDataRequest\x12A\n" +
-	"\bdatatype\x18\xeeص  \x01(\x0e2\".cloudtrail.InsightsMetricDataTypeR\bdatatype\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12\x1f\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12\x1f\n" +
+	"\bdatatype\x18\xeeص  \x01(\x0e2\".cloudtrail.InsightsMetricDataTypeR\bdatatype\x12 \n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12$\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tH\x01R\terrorcode\x88\x01\x01\x12\x1f\n" +
 	"\teventname\x18\x9d\xee\x9e~ \x01(\tR\teventname\x12#\n" +
 	"\veventsource\x18\xbbӅ\x12 \x01(\tR\veventsource\x12=\n" +
 	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
-	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x01R\x06period\x88\x01\x01\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailnameB\r\n" +
-	"\v_maxresultsB\t\n" +
-	"\a_period\"\xc4\x02\n" +
-	"\x1eListInsightsMetricDataResponse\x12\x1f\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12\x1f\n" +
-	"\teventname\x18\x9d\xee\x9e~ \x01(\tR\teventname\x12#\n" +
-	"\veventsource\x18\xbbӅ\x12 \x01(\tR\veventsource\x12=\n" +
-	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12!\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x02R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12\x1e\n" +
+	"\x06period\x18\xa5\x88\x929 \x01(\x05H\x04R\x06period\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x05R\tstarttime\x88\x01\x01\x12%\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tH\x06R\ttrailname\x88\x01\x01B\n" +
+	"\n" +
+	"\b_endtimeB\f\n" +
+	"\n" +
+	"_errorcodeB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\t\n" +
+	"\a_periodB\f\n" +
+	"\n" +
+	"_starttimeB\f\n" +
+	"\n" +
+	"_trailname\"\xa4\x03\n" +
+	"\x1eListInsightsMetricDataResponse\x12$\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tH\x00R\terrorcode\x88\x01\x01\x12$\n" +
+	"\teventname\x18\x9d\xee\x9e~ \x01(\tH\x01R\teventname\x88\x01\x01\x12(\n" +
+	"\veventsource\x18\xbbӅ\x12 \x01(\tH\x02R\veventsource\x88\x01\x01\x12=\n" +
+	"\vinsighttype\x18\xb4\xc9\xf3\xfc\x01 \x01(\x0e2\x17.cloudtrail.InsightTypeR\vinsighttype\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x03R\tnexttoken\x88\x01\x01\x12!\n" +
 	"\n" +
 	"timestamps\x18\x91\x90\xe9e \x03(\tR\n" +
-	"timestamps\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\x01R\x06values\"w\n" +
-	"\x15ListPublicKeysRequest\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttime\"y\n" +
-	"\x16ListPublicKeysResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12>\n" +
-	"\rpublickeylist\x18Ⱦ\xfa= \x03(\v2\x15.cloudtrail.PublicKeyR\rpublickeylist\"\x96\x02\n" +
-	"\x12ListQueriesRequest\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12)\n" +
+	"timestamps\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x04R\btrailarn\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\x01R\x06valuesB\f\n" +
+	"\n" +
+	"_errorcodeB\f\n" +
+	"\n" +
+	"_eventnameB\x0e\n" +
+	"\f_eventsourceB\f\n" +
+	"\n" +
+	"_nexttokenB\v\n" +
+	"\t_trailarn\"\xae\x01\n" +
+	"\x15ListPublicKeysRequest\x12 \n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x02R\tstarttime\x88\x01\x01B\n" +
+	"\n" +
+	"\b_endtimeB\f\n" +
+	"\n" +
+	"_nexttokenB\f\n" +
+	"\n" +
+	"_starttime\"\x8c\x01\n" +
+	"\x16ListPublicKeysResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12>\n" +
+	"\rpublickeylist\x18Ⱦ\xfa= \x03(\v2\x15.cloudtrail.PublicKeyR\rpublickeylistB\f\n" +
+	"\n" +
+	"_nexttoken\"\xcd\x02\n" +
+	"\x12ListQueriesRequest\x12 \n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12)\n" +
 	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12=\n" +
-	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\r\n" +
-	"\v_maxresults\"g\n" +
-	"\x13ListQueriesResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12/\n" +
-	"\aqueries\x18\xe4\xfdߑ\x01 \x03(\v2\x11.cloudtrail.QueryR\aqueries\"^\n" +
-	"\x0fListTagsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12*\n" +
-	"\x0eresourceidlist\x18\xb9\xa3\x81\x82\x01 \x03(\tR\x0eresourceidlist\"z\n" +
-	"\x10ListTagsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12E\n" +
-	"\x0fresourcetaglist\x18\xac\x8a\xff\x8f\x01 \x03(\v2\x17.cloudtrail.ResourceTagR\x0fresourcetaglist\"4\n" +
-	"\x11ListTrailsRequest\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"g\n" +
-	"\x12ListTrailsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x120\n" +
-	"\x06trails\x18\xb1\xf3\x89\b \x03(\v2\x15.cloudtrail.TrailInfoR\x06trails\"\x83\x01\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12=\n" +
+	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x03R\tstarttime\x88\x01\x01B\n" +
+	"\n" +
+	"\b_endtimeB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\f\n" +
+	"\n" +
+	"_starttime\"z\n" +
+	"\x13ListQueriesResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12/\n" +
+	"\aqueries\x18\xe4\xfdߑ\x01 \x03(\v2\x11.cloudtrail.QueryR\aqueriesB\f\n" +
+	"\n" +
+	"_nexttoken\"q\n" +
+	"\x0fListTagsRequest\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12*\n" +
+	"\x0eresourceidlist\x18\xb9\xa3\x81\x82\x01 \x03(\tR\x0eresourceidlistB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8d\x01\n" +
+	"\x10ListTagsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12E\n" +
+	"\x0fresourcetaglist\x18\xac\x8a\xff\x8f\x01 \x03(\v2\x17.cloudtrail.ResourceTagR\x0fresourcetaglistB\f\n" +
+	"\n" +
+	"_nexttoken\"G\n" +
+	"\x11ListTrailsRequest\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"z\n" +
+	"\x12ListTrailsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x120\n" +
+	"\x06trails\x18\xb1\xf3\x89\b \x03(\v2\x15.cloudtrail.TrailInfoR\x06trailsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x83\x01\n" +
 	"\x0fLookupAttribute\x12E\n" +
 	"\fattributekey\x18\xb7\xbc\xe81 \x01(\x0e2\x1e.cloudtrail.LookupAttributeKeyR\fattributekey\x12)\n" +
-	"\x0eattributevalue\x18ũ\x92. \x01(\tR\x0eattributevalue\"\xbd\x02\n" +
-	"\x13LookupEventsRequest\x12\x1b\n" +
-	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tR\aendtime\x12B\n" +
+	"\x0eattributevalue\x18ũ\x92. \x01(\tR\x0eattributevalue\"\xf4\x02\n" +
+	"\x13LookupEventsRequest\x12 \n" +
+	"\aendtime\x18\xcc\xef\xbc\x1e \x01(\tH\x00R\aendtime\x88\x01\x01\x12B\n" +
 	"\reventcategory\x18\xb4\xca\xc2N \x01(\x0e2\x19.cloudtrail.EventCategoryR\reventcategory\x12J\n" +
 	"\x10lookupattributes\x18\x87ϩM \x03(\v2\x1b.cloudtrail.LookupAttributeR\x10lookupattributes\x12'\n" +
 	"\n" +
-	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tR\tstarttimeB\r\n" +
-	"\v_maxresults\"e\n" +
+	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x01R\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x02R\tnexttoken\x88\x01\x01\x12%\n" +
+	"\tstarttime\x18\xef\xb4\xe5\xb0\x01 \x01(\tH\x03R\tstarttime\x88\x01\x01B\n" +
+	"\n" +
+	"\b_endtimeB\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\f\n" +
+	"\n" +
+	"_starttime\"x\n" +
 	"\x14LookupEventsResponse\x12,\n" +
-	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x11.cloudtrail.EventR\x06events\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"<\n" +
-	"\x1dMaxConcurrentQueriesException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"E\n" +
-	"&MaximumNumberOfTrailsExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"D\n" +
-	"%NoManagementAccountSLRExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"H\n" +
-	")NotOrganizationManagementAccountException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"D\n" +
-	"%NotOrganizationMasterAccountException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
-	"\x1eOperationNotPermittedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"H\n" +
-	")OrganizationNotInAllFeaturesModeException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
-	"\x1eOrganizationsNotInUseException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"=\n" +
+	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\v2\x11.cloudtrail.EventR\x06events\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"M\n" +
+	"\x1dMaxConcurrentQueriesException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"V\n" +
+	"&MaximumNumberOfTrailsExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%NoManagementAccountSLRExistsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Y\n" +
+	")NotOrganizationManagementAccountException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%NotOrganizationMasterAccountException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eOperationNotPermittedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Y\n" +
+	")OrganizationNotInAllFeaturesModeException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eOrganizationsNotInUseException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"=\n" +
 	"\fPartitionKey\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x16\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"\xaa\x01\n" +
-	"\tPublicKey\x12$\n" +
-	"\vfingerprint\x18\x9c\x88\xd1\xef\x01 \x01(\tR\vfingerprint\x12+\n" +
-	"\x0fvalidityendtime\x18\xc6Ƀ\\ \x01(\tR\x0fvalidityendtime\x120\n" +
-	"\x11validitystarttime\x18\xfdɾ\x89\x01 \x01(\tR\x11validitystarttime\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\fR\x05value\"\xeb\x02\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\tR\x04type\"\x82\x02\n" +
+	"\tPublicKey\x12)\n" +
+	"\vfingerprint\x18\x9c\x88\xd1\xef\x01 \x01(\tH\x00R\vfingerprint\x88\x01\x01\x120\n" +
+	"\x0fvalidityendtime\x18\xc6Ƀ\\ \x01(\tH\x01R\x0fvalidityendtime\x88\x01\x01\x125\n" +
+	"\x11validitystarttime\x18\xfdɾ\x89\x01 \x01(\tH\x02R\x11validitystarttime\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\fH\x03R\x05value\x88\x01\x01B\x0e\n" +
+	"\f_fingerprintB\x12\n" +
+	"\x10_validityendtimeB\x14\n" +
+	"\x12_validitystarttimeB\b\n" +
+	"\x06_value\"\x96\x03\n" +
 	"\x1cPutEventConfigurationRequest\x12f\n" +
 	"\x19aggregationconfigurations\x18ߤ\xce\xe5\x01 \x03(\v2$.cloudtrail.AggregationConfigurationR\x19aggregationconfigurations\x12T\n" +
-	"\x13contextkeyselectors\x18콌\xa3\x01 \x03(\v2\x1e.cloudtrail.ContextKeySelectorR\x13contextkeyselectors\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12@\n" +
-	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xf0\x02\n" +
+	"\x13contextkeyselectors\x18콌\xa3\x01 \x03(\v2\x1e.cloudtrail.ContextKeySelectorR\x13contextkeyselectors\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12@\n" +
+	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12%\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tH\x01R\ttrailname\x88\x01\x01B\x11\n" +
+	"\x0f_eventdatastoreB\f\n" +
+	"\n" +
+	"_trailname\"\x9d\x03\n" +
 	"\x1dPutEventConfigurationResponse\x12f\n" +
 	"\x19aggregationconfigurations\x18ߤ\xce\xe5\x01 \x03(\v2$.cloudtrail.AggregationConfigurationR\x19aggregationconfigurations\x12T\n" +
-	"\x13contextkeyselectors\x18콌\xa3\x01 \x03(\v2\x1e.cloudtrail.ContextKeySelectorR\x13contextkeyselectors\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12@\n" +
-	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"\xe1\x01\n" +
+	"\x13contextkeyselectors\x18콌\xa3\x01 \x03(\v2\x1e.cloudtrail.ContextKeySelectorR\x13contextkeyselectors\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x00R\x11eventdatastorearn\x88\x01\x01\x12@\n" +
+	"\fmaxeventsize\x18\xf3\xbe\xe9\xf6\x01 \x01(\x0e2\x18.cloudtrail.MaxEventSizeR\fmaxeventsize\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x01R\btrailarn\x88\x01\x01B\x14\n" +
+	"\x12_eventdatastorearnB\v\n" +
+	"\t_trailarn\"\xe1\x01\n" +
 	"\x18PutEventSelectorsRequest\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12E\n" +
 	"\x0eeventselectors\x18\xe0\x9a\xa7\xa4\x01 \x03(\v2\x19.cloudtrail.EventSelectorR\x0eeventselectors\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xdf\x01\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xf1\x01\n" +
 	"\x19PutEventSelectorsResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12E\n" +
-	"\x0eeventselectors\x18\xe0\x9a\xa7\xa4\x01 \x03(\v2\x19.cloudtrail.EventSelectorR\x0eeventselectors\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"\xeb\x01\n" +
-	"\x1aPutInsightSelectorsRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12J\n" +
-	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x124\n" +
-	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tR\x13insightsdestination\x12 \n" +
-	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tR\ttrailname\"\xf0\x01\n" +
-	"\x1bPutInsightSelectorsResponse\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12J\n" +
-	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x124\n" +
-	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tR\x13insightsdestination\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"k\n" +
+	"\x0eeventselectors\x18\xe0\x9a\xa7\xa4\x01 \x03(\v2\x19.cloudtrail.EventSelectorR\x0eeventselectors\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x00R\btrailarn\x88\x01\x01B\v\n" +
+	"\t_trailarn\"\xb3\x02\n" +
+	"\x1aPutInsightSelectorsRequest\x12.\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tH\x00R\x0eeventdatastore\x88\x01\x01\x12J\n" +
+	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x129\n" +
+	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tH\x01R\x13insightsdestination\x88\x01\x01\x12%\n" +
+	"\ttrailname\x18\x89\x90\x90\xf2\x01 \x01(\tH\x02R\ttrailname\x88\x01\x01B\x11\n" +
+	"\x0f_eventdatastoreB\x16\n" +
+	"\x14_insightsdestinationB\f\n" +
+	"\n" +
+	"_trailname\"\xba\x02\n" +
+	"\x1bPutInsightSelectorsResponse\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x00R\x11eventdatastorearn\x88\x01\x01\x12J\n" +
+	"\x10insightselectors\x18̌\xd5\x17 \x03(\v2\x1b.cloudtrail.InsightSelectorR\x10insightselectors\x129\n" +
+	"\x13insightsdestination\x18ɩ\x99\xbd\x01 \x01(\tH\x01R\x13insightsdestination\x88\x01\x01\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x02R\btrailarn\x88\x01\x01B\x14\n" +
+	"\x12_eventdatastorearnB\x16\n" +
+	"\x14_insightsdestinationB\v\n" +
+	"\t_trailarn\"k\n" +
 	"\x18PutResourcePolicyRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"\xb4\x01\n" +
-	"\x19PutResourcePolicyResponse\x12F\n" +
-	"\x1cdelegatedadminresourcepolicy\x18\xf4\xf2\xd2\xf3\x01 \x01(\tR\x1cdelegatedadminresourcepolicy\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12)\n" +
-	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"\x8a\x01\n" +
-	"\x05Query\x12%\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\x12=\n" +
-	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatus\"7\n" +
-	"\x18QueryIdNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xd8\x01\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tR\x0eresourcepolicy\"\x87\x02\n" +
+	"\x19PutResourcePolicyResponse\x12K\n" +
+	"\x1cdelegatedadminresourcepolicy\x18\xf4\xf2\xd2\xf3\x01 \x01(\tH\x00R\x1cdelegatedadminresourcepolicy\x88\x01\x01\x12)\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tH\x01R\vresourcearn\x88\x01\x01\x12.\n" +
+	"\x0eresourcepolicy\x18\xb0\x94\xc1\a \x01(\tH\x02R\x0eresourcepolicy\x88\x01\x01B\x1f\n" +
+	"\x1d_delegatedadminresourcepolicyB\x0e\n" +
+	"\f_resourcearnB\x11\n" +
+	"\x0f_resourcepolicy\"\xb1\x01\n" +
+	"\x05Query\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x00R\fcreationtime\x88\x01\x01\x12 \n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tH\x01R\aqueryid\x88\x01\x01\x12=\n" +
+	"\vquerystatus\x18\xd6\xf3\x80\xaf\x01 \x01(\x0e2\x17.cloudtrail.QueryStatusR\vquerystatusB\x0f\n" +
+	"\r_creationtimeB\n" +
+	"\n" +
+	"\b_queryid\"H\n" +
+	"\x18QueryIdNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xd8\x01\n" +
 	"\x0fQueryStatistics\x12*\n" +
 	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x00R\fbytesscanned\x88\x01\x01\x12+\n" +
 	"\fresultscount\x18œ\xe0\xfc\x01 \x01(\x05H\x01R\fresultscount\x88\x01\x01\x124\n" +
 	"\x11totalresultscount\x18\xcd\xc9\xd8O \x01(\x05H\x02R\x11totalresultscount\x88\x01\x01B\x0f\n" +
 	"\r_bytesscannedB\x0f\n" +
 	"\r_resultscountB\x14\n" +
-	"\x12_totalresultscount\"\xdf\x02\n" +
+	"\x12_totalresultscount\"\xf5\x02\n" +
 	"\x1fQueryStatisticsForDescribeQuery\x12*\n" +
-	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x00R\fbytesscanned\x88\x01\x01\x12%\n" +
-	"\fcreationtime\x18\xe6Ϫ1 \x01(\tR\fcreationtime\x12,\n" +
-	"\reventsmatched\x18\x85\xa6\xa6\t \x01(\x03H\x01R\reventsmatched\x88\x01\x01\x12-\n" +
-	"\reventsscanned\x18\xb9\xb9\xce\xe2\x01 \x01(\x03H\x02R\reventsscanned\x88\x01\x01\x12=\n" +
-	"\x15executiontimeinmillis\x18\x92\x8d\xb7\xd5\x01 \x01(\x05H\x03R\x15executiontimeinmillis\x88\x01\x01B\x0f\n" +
-	"\r_bytesscannedB\x10\n" +
+	"\fbytesscanned\x18\xb9ŒY \x01(\x03H\x00R\fbytesscanned\x88\x01\x01\x12*\n" +
+	"\fcreationtime\x18\xe6Ϫ1 \x01(\tH\x01R\fcreationtime\x88\x01\x01\x12,\n" +
+	"\reventsmatched\x18\x85\xa6\xa6\t \x01(\x03H\x02R\reventsmatched\x88\x01\x01\x12-\n" +
+	"\reventsscanned\x18\xb9\xb9\xce\xe2\x01 \x01(\x03H\x03R\reventsscanned\x88\x01\x01\x12=\n" +
+	"\x15executiontimeinmillis\x18\x92\x8d\xb7\xd5\x01 \x01(\x05H\x04R\x15executiontimeinmillis\x88\x01\x01B\x0f\n" +
+	"\r_bytesscannedB\x0f\n" +
+	"\r_creationtimeB\x10\n" +
 	"\x0e_eventsmatchedB\x10\n" +
 	"\x0e_eventsscannedB\x18\n" +
-	"\x16_executiontimeinmillis\"\xb7\x01\n" +
+	"\x16_executiontimeinmillis\"\xca\x01\n" +
 	"\x0fRefreshSchedule\x12E\n" +
 	"\tfrequency\x18\xa2\x8d\xc8l \x01(\v2$.cloudtrail.RefreshScheduleFrequencyR\tfrequency\x12<\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.cloudtrail.RefreshScheduleStatusR\x06status\x12\x1f\n" +
-	"\ttimeofday\x18\xeeӀ% \x01(\tR\ttimeofday\"\x84\x01\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.cloudtrail.RefreshScheduleStatusR\x06status\x12$\n" +
+	"\ttimeofday\x18\xeeӀ% \x01(\tH\x00R\ttimeofday\x88\x01\x01B\f\n" +
+	"\n" +
+	"_timeofday\"\x84\x01\n" +
 	"\x18RefreshScheduleFrequency\x12?\n" +
 	"\x04unit\x18\xa8̅G \x01(\x0e2(.cloudtrail.RefreshScheduleFrequencyUnitR\x04unit\x12\x1d\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x05H\x00R\x05value\x88\x01\x01B\b\n" +
@@ -16008,67 +16400,98 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x0eviewproperties\x18\xfe\ue476\x01 \x03(\v2-.cloudtrail.RequestWidget.ViewpropertiesEntryR\x0eviewproperties\x1aA\n" +
 	"\x13ViewpropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Z\n" +
-	"\bResource\x12&\n" +
-	"\fresourcename\x18\u05eeՀ\x01 \x01(\tR\fresourcename\x12&\n" +
-	"\fresourcetype\x18\u07be؏\x01 \x01(\tR\fresourcetype\";\n" +
-	"\x1cResourceARNNotValidException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\">\n" +
-	"\x1fResourcePolicyNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\">\n" +
-	"\x1fResourcePolicyNotValidException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"b\n" +
-	"\vResourceTag\x12\"\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x86\x01\n" +
+	"\bResource\x12+\n" +
+	"\fresourcename\x18\u05eeՀ\x01 \x01(\tH\x00R\fresourcename\x88\x01\x01\x12+\n" +
+	"\fresourcetype\x18\u07be؏\x01 \x01(\tH\x01R\fresourcetype\x88\x01\x01B\x0f\n" +
+	"\r_resourcenameB\x0f\n" +
+	"\r_resourcetype\"L\n" +
+	"\x1cResourceARNNotValidException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tR\n" +
-	"resourceid\x12/\n" +
-	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslist\"@\n" +
-	"!ResourceTypeNotSupportedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"I\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fResourcePolicyNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fResourcePolicyNotValidException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"v\n" +
+	"\vResourceTag\x12'\n" +
+	"\n" +
+	"resourceid\x18\x91\xba\xf1\xfa\x01 \x01(\tH\x00R\n" +
+	"resourceid\x88\x01\x01\x12/\n" +
+	"\btagslist\x18\xa9\xa4\x98\xed\x01 \x03(\v2\x0f.cloudtrail.TagR\btagslistB\r\n" +
+	"\v_resourceid\"Q\n" +
+	"!ResourceTypeNotSupportedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
 	"\x1cRestoreEventDataStoreRequest\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\x95\x06\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"\x84\a\n" +
 	"\x1dRestoreEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x01R\x11eventdatastorearn\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x02R\bkmskeyid\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x03R\x12multiregionenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x129\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x05R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x06R\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
-	"\x13_multiregionenabledB\x16\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\aR\x1cterminationprotectionenabled\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\bR\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x14\n" +
+	"\x12_eventdatastorearnB\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_multiregionenabledB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"<\n" +
-	"\x1dS3BucketDoesNotExistException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x9d\x01\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"M\n" +
+	"\x1dS3BucketDoesNotExistException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9d\x01\n" +
 	"\x0eS3ImportSource\x127\n" +
 	"\x15s3bucketaccessrolearn\x18\xf7\x9c\xeeW \x01(\tR\x15s3bucketaccessrolearn\x12)\n" +
 	"\x0es3bucketregion\x18\xb2\x99\xddj \x01(\tR\x0es3bucketregion\x12'\n" +
-	"\rs3locationuri\x18\xef\xe2\xa27 \x01(\tR\rs3locationuri\"\x9c\x01\n" +
+	"\rs3locationuri\x18\xef\xe2\xa27 \x01(\tR\rs3locationuri\"\xaf\x01\n" +
 	"\x1aSearchSampleQueriesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12%\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12%\n" +
 	"\fsearchphrase\x18\x85\x8c\x9ft \x01(\tR\fsearchphraseB\r\n" +
-	"\v_maxresults\"\x94\x01\n" +
-	"\x1bSearchSampleQueriesResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12T\n" +
-	"\rsearchresults\x18\x82\x99\xf0\r \x03(\v2+.cloudtrail.SearchSampleQueriesSearchResultR\rsearchresults\"\x94\x01\n" +
-	"\x1fSearchSampleQueriesSearchResult\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\trelevance\x18\x89垉\x01 \x01(\x02R\trelevance\x12\x13\n" +
-	"\x03sql\x18\xa0\xcd\xfc\b \x01(\tR\x03sql\"<\n" +
-	"\x1dServiceQuotaExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xb9\x01\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xa7\x01\n" +
+	"\x1bSearchSampleQueriesResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12T\n" +
+	"\rsearchresults\x18\x82\x99\xf0\r \x03(\v2+.cloudtrail.SearchSampleQueriesSearchResultR\rsearchresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xd7\x01\n" +
+	"\x1fSearchSampleQueriesSearchResult\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12%\n" +
+	"\trelevance\x18\x89垉\x01 \x01(\x02H\x02R\trelevance\x88\x01\x01\x12\x18\n" +
+	"\x03sql\x18\xa0\xcd\xfc\b \x01(\tH\x03R\x03sql\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_relevanceB\x06\n" +
+	"\x04_sql\"M\n" +
+	"\x1dServiceQuotaExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb9\x01\n" +
 	"\fSourceConfig\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x125\n" +
 	"\x11applytoallregions\x18\xfb\x88\xb3\xf4\x01 \x01(\bH\x00R\x11applytoallregions\x88\x01\x01B\x14\n" +
@@ -16078,209 +16501,292 @@ const file_cloudtrail_proto_rawDesc = "" +
 	"\x14queryparametervalues\x18\x81ݐ\xbe\x01 \x03(\v2B.cloudtrail.StartDashboardRefreshRequest.QueryparametervaluesEntryR\x14queryparametervalues\x1aG\n" +
 	"\x19QueryparametervaluesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"@\n" +
-	"\x1dStartDashboardRefreshResponse\x12\x1f\n" +
-	"\trefreshid\x18\xfa\xf0\xaf\x1b \x01(\tR\trefreshid\"P\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"S\n" +
+	"\x1dStartDashboardRefreshResponse\x12$\n" +
+	"\trefreshid\x18\xfa\xf0\xaf\x1b \x01(\tH\x00R\trefreshid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_refreshid\"P\n" +
 	"#StartEventDataStoreIngestionRequest\x12)\n" +
 	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"&\n" +
-	"$StartEventDataStoreIngestionResponse\"\xef\x01\n" +
+	"$StartEventDataStoreIngestionResponse\"\xaf\x02\n" +
 	"\x12StartImportRequest\x12&\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12%\n" +
-	"\fendeventtime\x18\x80\x8f\x98| \x01(\tR\fendeventtime\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12?\n" +
-	"\fimportsource\x18\xb2\xa6\xce\x13 \x01(\v2\x18.cloudtrail.ImportSourceR\fimportsource\x12)\n" +
-	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tR\x0estarteventtime\"\x90\x03\n" +
-	"\x13StartImportResponse\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12&\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12%\n" +
-	"\fendeventtime\x18\x80\x8f\x98| \x01(\tR\fendeventtime\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12?\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12*\n" +
+	"\fendeventtime\x18\x80\x8f\x98| \x01(\tH\x00R\fendeventtime\x88\x01\x01\x12#\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tH\x01R\bimportid\x88\x01\x01\x12?\n" +
+	"\fimportsource\x18\xb2\xa6\xce\x13 \x01(\v2\x18.cloudtrail.ImportSourceR\fimportsource\x12.\n" +
+	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tH\x02R\x0estarteventtime\x88\x01\x01B\x0f\n" +
+	"\r_endeventtimeB\v\n" +
+	"\t_importidB\x11\n" +
+	"\x0f_starteventtime\"\x84\x04\n" +
+	"\x13StartImportResponse\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12&\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12*\n" +
+	"\fendeventtime\x18\x80\x8f\x98| \x01(\tH\x01R\fendeventtime\x88\x01\x01\x12#\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tH\x02R\bimportid\x88\x01\x01\x12?\n" +
 	"\fimportsource\x18\xb2\xa6\xce\x13 \x01(\v2\x18.cloudtrail.ImportSourceR\fimportsource\x12?\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12)\n" +
-	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tR\x0estarteventtime\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\",\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12.\n" +
+	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tH\x03R\x0estarteventtime\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\x04R\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x0f\n" +
+	"\r_endeventtimeB\v\n" +
+	"\t_importidB\x11\n" +
+	"\x0f_starteventtimeB\x13\n" +
+	"\x11_updatedtimestamp\",\n" +
 	"\x13StartLoggingRequest\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x16\n" +
-	"\x14StartLoggingResponse\"\x81\x02\n" +
-	"\x11StartQueryRequest\x12'\n" +
-	"\rdeliverys3uri\x18숌n \x01(\tR\rdeliverys3uri\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\"\n" +
+	"\x14StartLoggingResponse\"\xea\x02\n" +
+	"\x11StartQueryRequest\x12,\n" +
+	"\rdeliverys3uri\x18숌n \x01(\tH\x00R\rdeliverys3uri\x88\x01\x01\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x01R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tR\n" +
-	"queryalias\x12+\n" +
-	"\x0fqueryparameters\x18܇\xb2$ \x03(\tR\x0fqueryparameters\x12*\n" +
-	"\x0equerystatement\x18\xf9\xfbâ\x01 \x01(\tR\x0equerystatement\"y\n" +
-	"\x12StartQueryResponse\x12F\n" +
-	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tR\x1ceventdatastoreowneraccountid\x12\x1b\n" +
-	"\aqueryid\x18\xef\xf0\xe64 \x01(\tR\aqueryid\"O\n" +
+	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tH\x02R\n" +
+	"queryalias\x88\x01\x01\x12+\n" +
+	"\x0fqueryparameters\x18܇\xb2$ \x03(\tR\x0fqueryparameters\x12/\n" +
+	"\x0equerystatement\x18\xf9\xfbâ\x01 \x01(\tH\x03R\x0equerystatement\x88\x01\x01B\x10\n" +
+	"\x0e_deliverys3uriB\x1f\n" +
+	"\x1d_eventdatastoreowneraccountidB\r\n" +
+	"\v_queryaliasB\x11\n" +
+	"\x0f_querystatement\"\xb0\x01\n" +
+	"\x12StartQueryResponse\x12K\n" +
+	"\x1ceventdatastoreowneraccountid\x18\xb0\xdd\xf0\xe0\x01 \x01(\tH\x00R\x1ceventdatastoreowneraccountid\x88\x01\x01\x12 \n" +
+	"\aqueryid\x18\xef\xf0\xe64 \x01(\tH\x01R\aqueryid\x88\x01\x01B\x1f\n" +
+	"\x1d_eventdatastoreowneraccountidB\n" +
+	"\n" +
+	"\b_queryid\"O\n" +
 	"\"StopEventDataStoreIngestionRequest\x12)\n" +
 	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\"%\n" +
 	"#StopEventDataStoreIngestionResponse\"3\n" +
 	"\x11StopImportRequest\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\"\xdc\x03\n" +
-	"\x12StopImportResponse\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12&\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12%\n" +
-	"\fendeventtime\x18\x80\x8f\x98| \x01(\tR\fendeventtime\x12\x1e\n" +
-	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\x12?\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tR\bimportid\"\xd0\x04\n" +
+	"\x12StopImportResponse\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12&\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\tR\fdestinations\x12*\n" +
+	"\fendeventtime\x18\x80\x8f\x98| \x01(\tH\x01R\fendeventtime\x88\x01\x01\x12#\n" +
+	"\bimportid\x18ڔ\xac\xc8\x01 \x01(\tH\x02R\bimportid\x88\x01\x01\x12?\n" +
 	"\fimportsource\x18\xb2\xa6\xce\x13 \x01(\v2\x18.cloudtrail.ImportSourceR\fimportsource\x12K\n" +
 	"\x10importstatistics\x18\xa8\xb3\xfc\x16 \x01(\v2\x1c.cloudtrail.ImportStatisticsR\x10importstatistics\x12?\n" +
-	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12)\n" +
-	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tR\x0estarteventtime\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\"+\n" +
+	"\fimportstatus\x18\xff\xa2\xc6= \x01(\x0e2\x18.cloudtrail.ImportStatusR\fimportstatus\x12.\n" +
+	"\x0estarteventtime\x18\xfd\xb2\x933 \x01(\tH\x03R\x0estarteventtime\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\x04R\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x0f\n" +
+	"\r_endeventtimeB\v\n" +
+	"\t_importidB\x11\n" +
+	"\x0f_starteventtimeB\x13\n" +
+	"\x11_updatedtimestamp\"+\n" +
 	"\x12StopLoggingRequest\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x15\n" +
-	"\x13StopLoggingResponse\"4\n" +
+	"\x13StopLoggingResponse\"C\n" +
 	"\x03Tag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"9\n" +
-	"\x1aTagsLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"2\n" +
-	"\x13ThrottlingException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xb0\a\n" +
-	"\x05Trail\x12@\n" +
-	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
-	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tR\x15cloudwatchlogsrolearn\x12@\n" +
-	"\x17hascustomeventselectors\x18\xbb\xe5\xe8% \x01(\bH\x00R\x17hascustomeventselectors\x88\x01\x01\x128\n" +
-	"\x13hasinsightselectors\x18\xf2\xd4\xefE \x01(\bH\x01R\x13hasinsightselectors\x88\x01\x01\x12\"\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"J\n" +
+	"\x1aTagsLimitExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"homeregion\x18ۜ\xb7\x8f\x01 \x01(\tR\n" +
-	"homeregion\x12F\n" +
-	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x02R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
-	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x03R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
-	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x04R\x13isorganizationtrail\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12B\n" +
-	"\x18logfilevalidationenabled\x18ڶ\x8f\x11 \x01(\bH\x05R\x18logfilevalidationenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12#\n" +
-	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tR\vs3keyprefix\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf5\x9a\xb5\x01 \x01(\tR\vsnstopicarn\x12&\n" +
-	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tR\fsnstopicname\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarnB\x1a\n" +
+	"\b_message\"C\n" +
+	"\x13ThrottlingException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x8e\t\n" +
+	"\x05Trail\x12E\n" +
+	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tH\x00R\x19cloudwatchlogsloggrouparn\x88\x01\x01\x12<\n" +
+	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tH\x01R\x15cloudwatchlogsrolearn\x88\x01\x01\x12@\n" +
+	"\x17hascustomeventselectors\x18\xbb\xe5\xe8% \x01(\bH\x02R\x17hascustomeventselectors\x88\x01\x01\x128\n" +
+	"\x13hasinsightselectors\x18\xf2\xd4\xefE \x01(\bH\x03R\x13hasinsightselectors\x88\x01\x01\x12'\n" +
+	"\n" +
+	"homeregion\x18ۜ\xb7\x8f\x01 \x01(\tH\x04R\n" +
+	"homeregion\x88\x01\x01\x12F\n" +
+	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x05R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
+	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x06R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
+	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\aR\x13isorganizationtrail\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\bR\bkmskeyid\x88\x01\x01\x12B\n" +
+	"\x18logfilevalidationenabled\x18ڶ\x8f\x11 \x01(\bH\tR\x18logfilevalidationenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\n" +
+	"R\x04name\x88\x01\x01\x12+\n" +
+	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tH\vR\fs3bucketname\x88\x01\x01\x12(\n" +
+	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tH\fR\vs3keyprefix\x88\x01\x01\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf5\x9a\xb5\x01 \x01(\tH\rR\vsnstopicarn\x88\x01\x01\x12+\n" +
+	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tH\x0eR\fsnstopicname\x88\x01\x01\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x0fR\btrailarn\x88\x01\x01B\x1c\n" +
+	"\x1a_cloudwatchlogsloggrouparnB\x18\n" +
+	"\x16_cloudwatchlogsrolearnB\x1a\n" +
 	"\x18_hascustomeventselectorsB\x16\n" +
-	"\x14_hasinsightselectorsB\x1d\n" +
+	"\x14_hasinsightselectorsB\r\n" +
+	"\v_homeregionB\x1d\n" +
 	"\x1b_includeglobalserviceeventsB\x15\n" +
 	"\x13_ismultiregiontrailB\x16\n" +
-	"\x14_isorganizationtrailB\x1b\n" +
-	"\x19_logfilevalidationenabled\":\n" +
-	"\x1bTrailAlreadyExistsException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"e\n" +
-	"\tTrailInfo\x12\"\n" +
+	"\x14_isorganizationtrailB\v\n" +
+	"\t_kmskeyidB\x1b\n" +
+	"\x19_logfilevalidationenabledB\a\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_s3bucketnameB\x0e\n" +
+	"\f_s3keyprefixB\x0e\n" +
+	"\f_snstopicarnB\x0f\n" +
+	"\r_snstopicnameB\v\n" +
+	"\t_trailarn\"K\n" +
+	"\x1bTrailAlreadyExistsException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"homeregion\x18ۜ\xb7\x8f\x01 \x01(\tR\n" +
-	"homeregion\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarn\"5\n" +
-	"\x16TrailNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19TrailNotProvidedException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"<\n" +
-	"\x1dUnsupportedOperationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x8b\x01\n" +
+	"\b_message\"\x99\x01\n" +
+	"\tTrailInfo\x12'\n" +
+	"\n" +
+	"homeregion\x18ۜ\xb7\x8f\x01 \x01(\tH\x00R\n" +
+	"homeregion\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\x02R\btrailarn\x88\x01\x01B\r\n" +
+	"\v_homeregionB\a\n" +
+	"\x05_nameB\v\n" +
+	"\t_trailarn\"F\n" +
+	"\x16TrailNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19TrailNotProvidedException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dUnsupportedOperationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x99\x01\n" +
 	"\x14UpdateChannelRequest\x12\x1b\n" +
 	"\achannel\x18Ŕ\xf6* \x01(\tR\achannel\x12?\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xad\x01\n" +
-	"\x15UpdateChannelResponse\x12!\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"\xdf\x01\n" +
+	"\x15UpdateChannelResponse\x12&\n" +
 	"\n" +
-	"channelarn\x18\xbc\xad\xab/ \x01(\tR\n" +
-	"channelarn\x12?\n" +
-	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06source\x18\xf9Ǌ\x0f \x01(\tR\x06source\"\xaf\x02\n" +
+	"channelarn\x18\xbc\xad\xab/ \x01(\tH\x00R\n" +
+	"channelarn\x88\x01\x01\x12?\n" +
+	"\fdestinations\x18\xc5\xe0\xe9\xc0\x01 \x03(\v2\x17.cloudtrail.DestinationR\fdestinations\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1e\n" +
+	"\x06source\x18\xf9Ǌ\x0f \x01(\tH\x02R\x06source\x88\x01\x01B\r\n" +
+	"\v_channelarnB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_source\"\xaf\x02\n" +
 	"\x16UpdateDashboardRequest\x12$\n" +
 	"\vdashboardid\x18\x97٪\xcd\x01 \x01(\tR\vdashboardid\x12H\n" +
 	"\x0frefreshschedule\x18\x9a\xb0\xe9| \x01(\v2\x1b.cloudtrail.RefreshScheduleR\x0frefreshschedule\x12K\n" +
 	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x00R\x1cterminationprotectionenabled\x88\x01\x01\x127\n" +
 	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x19.cloudtrail.RequestWidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xd3\x03\n" +
-	"\x17UpdateDashboardResponse\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x12%\n" +
-	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tR\fdashboardarn\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12H\n" +
+	"\x1d_terminationprotectionenabled\"\xab\x04\n" +
+	"\x17UpdateDashboardResponse\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x12*\n" +
+	"\fdashboardarn\x18\xef\xfb\xc23 \x01(\tH\x01R\fdashboardarn\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12H\n" +
 	"\x0frefreshschedule\x18\x9a\xb0\xe9| \x01(\v2\x1b.cloudtrail.RefreshScheduleR\x0frefreshschedule\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x00R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestamp\x120\n" +
-	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xf0\x04\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x121\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x19.cloudtrail.DashboardTypeR\x04type\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\x04R\x10updatedtimestamp\x88\x01\x01\x120\n" +
+	"\awidgets\x18ㄥ\xef\x01 \x03(\v2\x12.cloudtrail.WidgetR\awidgetsB\x13\n" +
+	"\x11_createdtimestampB\x0f\n" +
+	"\r_dashboardarnB\a\n" +
+	"\x05_nameB\x1f\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"\x90\x05\n" +
 	"\x1bUpdateEventDataStoreRequest\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
 	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12)\n" +
-	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01B\x15\n" +
-	"\x13_multiregionenabledB\x16\n" +
+	"\x0eeventdatastore\x18\xc1\u06ddA \x01(\tR\x0eeventdatastore\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x00R\bkmskeyid\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x01R\x12multiregionenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x129\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x03R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x04R\x0fretentionperiod\x88\x01\x01\x12K\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x05R\x1cterminationprotectionenabled\x88\x01\x01B\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_multiregionenabledB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\x93\a\n" +
+	"\x1d_terminationprotectionenabled\"\x9d\b\n" +
 	"\x1cUpdateEventDataStoreResponse\x12\\\n" +
 	"\x16advancedeventselectors\x18\xb2\xb6\xc8\x11 \x03(\v2!.cloudtrail.AdvancedEventSelectorR\x16advancedeventselectors\x12<\n" +
-	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x12.\n" +
-	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tR\x10createdtimestamp\x120\n" +
-	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tR\x11eventdatastorearn\x120\n" +
-	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tR\x11federationrolearn\x12K\n" +
-	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatus\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x126\n" +
-	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x00R\x12multiregionenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x129\n" +
-	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x01R\x13organizationenabled\x88\x01\x01\x120\n" +
-	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\x02R\x0fretentionperiod\x88\x01\x01\x12;\n" +
+	"\vbillingmode\x18\xc0\xb4\xe8W \x01(\x0e2\x17.cloudtrail.BillingModeR\vbillingmode\x123\n" +
+	"\x10createdtimestamp\x18\xfa\xdbϟ\x01 \x01(\tH\x00R\x10createdtimestamp\x88\x01\x01\x125\n" +
+	"\x11eventdatastorearn\x18諗\x9e\x01 \x01(\tH\x01R\x11eventdatastorearn\x88\x01\x01\x125\n" +
+	"\x11federationrolearn\x18\xec\x87\xc6\xf0\x01 \x01(\tH\x02R\x11federationrolearn\x88\x01\x01\x12K\n" +
+	"\x10federationstatus\x18\xf7\xbf\xddE \x01(\x0e2\x1c.cloudtrail.FederationStatusR\x10federationstatus\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x03R\bkmskeyid\x88\x01\x01\x126\n" +
+	"\x12multiregionenabled\x18\xcc\xca\xea\t \x01(\bH\x04R\x12multiregionenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x129\n" +
+	"\x13organizationenabled\x18\xa8\xa9\xfb\xe4\x01 \x01(\bH\x06R\x13organizationenabled\x88\x01\x01\x120\n" +
+	"\x0fretentionperiod\x18\xe9\xa7\xd2] \x01(\x05H\aR\x0fretentionperiod\x88\x01\x01\x12;\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2 .cloudtrail.EventDataStoreStatusR\x06status\x12K\n" +
-	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\x03R\x1cterminationprotectionenabled\x88\x01\x01\x12-\n" +
-	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tR\x10updatedtimestampB\x15\n" +
-	"\x13_multiregionenabledB\x16\n" +
+	"\x1cterminationprotectionenabled\x18\xdc\xf3ٳ\x01 \x01(\bH\bR\x1cterminationprotectionenabled\x88\x01\x01\x122\n" +
+	"\x10updatedtimestamp\x18\x81\xe3\x93\x15 \x01(\tH\tR\x10updatedtimestamp\x88\x01\x01B\x13\n" +
+	"\x11_createdtimestampB\x14\n" +
+	"\x12_eventdatastorearnB\x14\n" +
+	"\x12_federationrolearnB\v\n" +
+	"\t_kmskeyidB\x15\n" +
+	"\x13_multiregionenabledB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_organizationenabledB\x12\n" +
 	"\x10_retentionperiodB\x1f\n" +
-	"\x1d_terminationprotectionenabled\"\xa1\x05\n" +
-	"\x12UpdateTrailRequest\x12@\n" +
-	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
-	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tR\x15cloudwatchlogsrolearn\x12@\n" +
-	"\x17enablelogfilevalidation\x18\x82\xa3\xa1& \x01(\bH\x00R\x17enablelogfilevalidation\x88\x01\x01\x12F\n" +
-	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x01R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
-	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x02R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
-	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x03R\x13isorganizationtrail\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12#\n" +
-	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tR\vs3keyprefix\x12&\n" +
-	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tR\fsnstopicnameB\x1a\n" +
+	"\x1d_terminationprotectionenabledB\x13\n" +
+	"\x11_updatedtimestamp\"\xb6\x06\n" +
+	"\x12UpdateTrailRequest\x12E\n" +
+	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tH\x00R\x19cloudwatchlogsloggrouparn\x88\x01\x01\x12<\n" +
+	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tH\x01R\x15cloudwatchlogsrolearn\x88\x01\x01\x12@\n" +
+	"\x17enablelogfilevalidation\x18\x82\xa3\xa1& \x01(\bH\x02R\x17enablelogfilevalidation\x88\x01\x01\x12F\n" +
+	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x03R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
+	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x04R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
+	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x05R\x13isorganizationtrail\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x06R\bkmskeyid\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12+\n" +
+	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tH\aR\fs3bucketname\x88\x01\x01\x12(\n" +
+	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tH\bR\vs3keyprefix\x88\x01\x01\x12+\n" +
+	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tH\tR\fsnstopicname\x88\x01\x01B\x1c\n" +
+	"\x1a_cloudwatchlogsloggrouparnB\x18\n" +
+	"\x16_cloudwatchlogsrolearnB\x1a\n" +
 	"\x18_enablelogfilevalidationB\x1d\n" +
 	"\x1b_includeglobalserviceeventsB\x15\n" +
 	"\x13_ismultiregiontrailB\x16\n" +
-	"\x14_isorganizationtrail\"\xea\x05\n" +
-	"\x13UpdateTrailResponse\x12@\n" +
-	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tR\x19cloudwatchlogsloggrouparn\x127\n" +
-	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tR\x15cloudwatchlogsrolearn\x12F\n" +
-	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x00R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
-	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x01R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
-	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x02R\x13isorganizationtrail\x88\x01\x01\x12\x1d\n" +
-	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tR\bkmskeyid\x12B\n" +
-	"\x18logfilevalidationenabled\x18ڶ\x8f\x11 \x01(\bH\x03R\x18logfilevalidationenabled\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12&\n" +
-	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12#\n" +
-	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tR\vs3keyprefix\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf5\x9a\xb5\x01 \x01(\tR\vsnstopicarn\x12&\n" +
-	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tR\fsnstopicname\x12\x1d\n" +
-	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tR\btrailarnB\x1d\n" +
+	"\x14_isorganizationtrailB\v\n" +
+	"\t_kmskeyidB\x0f\n" +
+	"\r_s3bucketnameB\x0e\n" +
+	"\f_s3keyprefixB\x0f\n" +
+	"\r_snstopicname\"\xb4\a\n" +
+	"\x13UpdateTrailResponse\x12E\n" +
+	"\x19cloudwatchlogsloggrouparn\x18\xab\xd7\xe2\xf7\x01 \x01(\tH\x00R\x19cloudwatchlogsloggrouparn\x88\x01\x01\x12<\n" +
+	"\x15cloudwatchlogsrolearn\x18\xe2\u05f8\x1a \x01(\tH\x01R\x15cloudwatchlogsrolearn\x88\x01\x01\x12F\n" +
+	"\x1aincludeglobalserviceevents\x18\xfb\xaa\x99e \x01(\bH\x02R\x1aincludeglobalserviceevents\x88\x01\x01\x127\n" +
+	"\x12ismultiregiontrail\x18\x8bӼ\xdf\x01 \x01(\bH\x03R\x12ismultiregiontrail\x88\x01\x01\x128\n" +
+	"\x13isorganizationtrail\x18\xbfݡE \x01(\bH\x04R\x13isorganizationtrail\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\x8dɗ\x16 \x01(\tH\x05R\bkmskeyid\x88\x01\x01\x12B\n" +
+	"\x18logfilevalidationenabled\x18ڶ\x8f\x11 \x01(\bH\x06R\x18logfilevalidationenabled\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\aR\x04name\x88\x01\x01\x12+\n" +
+	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tH\bR\fs3bucketname\x88\x01\x01\x12(\n" +
+	"\vs3keyprefix\x18\xff\x96\x9eb \x01(\tH\tR\vs3keyprefix\x88\x01\x01\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf5\x9a\xb5\x01 \x01(\tH\n" +
+	"R\vsnstopicarn\x88\x01\x01\x12+\n" +
+	"\fsnstopicname\x18Ь\x8d\xc6\x01 \x01(\tH\vR\fsnstopicname\x88\x01\x01\x12\"\n" +
+	"\btrailarn\x18\xf7\x8a\xf0\x12 \x01(\tH\fR\btrailarn\x88\x01\x01B\x1c\n" +
+	"\x1a_cloudwatchlogsloggrouparnB\x18\n" +
+	"\x16_cloudwatchlogsrolearnB\x1d\n" +
 	"\x1b_includeglobalserviceeventsB\x15\n" +
 	"\x13_ismultiregiontrailB\x16\n" +
-	"\x14_isorganizationtrailB\x1b\n" +
-	"\x19_logfilevalidationenabled\"\x9c\x02\n" +
-	"\x06Widget\x12\"\n" +
+	"\x14_isorganizationtrailB\v\n" +
+	"\t_kmskeyidB\x1b\n" +
+	"\x19_logfilevalidationenabledB\a\n" +
+	"\x05_nameB\x0f\n" +
+	"\r_s3bucketnameB\x0e\n" +
+	"\f_s3keyprefixB\x0e\n" +
+	"\f_snstopicarnB\x0f\n" +
+	"\r_snstopicnameB\v\n" +
+	"\t_trailarn\"\xc8\x02\n" +
+	"\x06Widget\x12'\n" +
 	"\n" +
-	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tR\n" +
-	"queryalias\x12+\n" +
-	"\x0fqueryparameters\x18܇\xb2$ \x03(\tR\x0fqueryparameters\x12*\n" +
-	"\x0equerystatement\x18\xf9\xfbâ\x01 \x01(\tR\x0equerystatement\x12R\n" +
+	"queryalias\x18\x9e\xc3\xc0\xf4\x01 \x01(\tH\x00R\n" +
+	"queryalias\x88\x01\x01\x12+\n" +
+	"\x0fqueryparameters\x18܇\xb2$ \x03(\tR\x0fqueryparameters\x12/\n" +
+	"\x0equerystatement\x18\xf9\xfbâ\x01 \x01(\tH\x01R\x0equerystatement\x88\x01\x01\x12R\n" +
 	"\x0eviewproperties\x18\xfe\ue476\x01 \x03(\v2&.cloudtrail.Widget.ViewpropertiesEntryR\x0eviewproperties\x1aA\n" +
 	"\x13ViewpropertiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x91\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_queryaliasB\x11\n" +
+	"\x0f_querystatement\"\x91\x01\n" +
 	"\x13QueryResultRowEntry\x12@\n" +
 	"\x05value\x18\x01 \x03(\v2*.cloudtrail.QueryResultRowEntry.ValueEntryR\x05value\x1a8\n" +
 	"\n" +
@@ -17012,42 +17518,192 @@ func file_cloudtrail_proto_init() {
 	if File_cloudtrail_proto != nil {
 		return
 	}
+	file_cloudtrail_proto_msgTypes[0].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[1].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[2].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[3].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[4].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[7].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[10].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[11].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[12].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[13].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[14].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[15].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[16].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[17].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[18].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[19].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[20].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[21].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[22].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[23].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[24].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[27].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[28].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[29].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[30].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[31].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[32].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[33].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[34].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[35].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[36].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[49].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[50].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[51].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[55].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[57].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[58].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[59].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[60].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[61].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[62].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[63].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[64].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[65].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[66].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[67].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[69].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[70].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[72].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[74].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[75].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[76].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[78].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[80].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[82].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[83].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[84].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[85].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[86].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[88].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[92].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[93].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[94].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[96].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[97].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[98].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[99].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[100].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[101].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[103].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[104].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[105].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[106].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[107].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[108].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[109].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[110].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[111].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[112].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[113].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[114].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[115].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[116].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[117].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[118].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[119].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[120].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[121].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[122].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[123].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[124].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[125].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[126].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[127].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[128].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[129].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[130].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[131].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[132].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[133].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[134].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[135].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[136].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[137].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[138].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[139].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[140].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[141].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[142].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[143].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[144].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[145].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[146].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[147].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[148].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[149].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[150].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[151].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[152].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[153].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[154].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[155].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[156].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[157].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[158].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[160].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[161].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[162].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[163].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[164].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[165].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[166].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[167].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[168].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[169].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[171].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[172].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[173].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[175].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[176].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[177].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[179].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[180].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[181].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[182].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[183].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[184].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[185].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[191].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[192].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[193].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[194].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[195].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[196].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[197].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[199].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[200].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[202].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[203].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[204].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[205].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[206].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[208].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[211].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[212].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[215].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[216].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[220].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[223].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[224].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[225].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[226].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[227].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[228].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[229].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[230].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[231].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[232].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[233].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[234].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[235].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[236].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[237].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[238].OneofWrappers = []any{}
 	file_cloudtrail_proto_msgTypes[239].OneofWrappers = []any{}
+	file_cloudtrail_proto_msgTypes[240].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

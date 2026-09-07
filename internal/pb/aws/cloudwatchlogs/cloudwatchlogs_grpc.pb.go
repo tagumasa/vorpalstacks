@@ -94,6 +94,7 @@ const (
 	CloudWatchLogsService_GetQueryResults_FullMethodName                          = "/cloudwatchlogs.CloudWatchLogsService/GetQueryResults"
 	CloudWatchLogsService_GetScheduledQuery_FullMethodName                        = "/cloudwatchlogs.CloudWatchLogsService/GetScheduledQuery"
 	CloudWatchLogsService_GetScheduledQueryHistory_FullMethodName                 = "/cloudwatchlogs.CloudWatchLogsService/GetScheduledQueryHistory"
+	CloudWatchLogsService_GetStorageTierPolicy_FullMethodName                     = "/cloudwatchlogs.CloudWatchLogsService/GetStorageTierPolicy"
 	CloudWatchLogsService_GetTransformer_FullMethodName                           = "/cloudwatchlogs.CloudWatchLogsService/GetTransformer"
 	CloudWatchLogsService_ListAggregateLogGroupSummaries_FullMethodName           = "/cloudwatchlogs.CloudWatchLogsService/ListAggregateLogGroupSummaries"
 	CloudWatchLogsService_ListAnomalies_FullMethodName                            = "/cloudwatchlogs.CloudWatchLogsService/ListAnomalies"
@@ -122,6 +123,7 @@ const (
 	CloudWatchLogsService_PutQueryDefinition_FullMethodName                       = "/cloudwatchlogs.CloudWatchLogsService/PutQueryDefinition"
 	CloudWatchLogsService_PutResourcePolicy_FullMethodName                        = "/cloudwatchlogs.CloudWatchLogsService/PutResourcePolicy"
 	CloudWatchLogsService_PutRetentionPolicy_FullMethodName                       = "/cloudwatchlogs.CloudWatchLogsService/PutRetentionPolicy"
+	CloudWatchLogsService_PutStorageTierPolicy_FullMethodName                     = "/cloudwatchlogs.CloudWatchLogsService/PutStorageTierPolicy"
 	CloudWatchLogsService_PutSubscriptionFilter_FullMethodName                    = "/cloudwatchlogs.CloudWatchLogsService/PutSubscriptionFilter"
 	CloudWatchLogsService_PutSyslogConfiguration_FullMethodName                   = "/cloudwatchlogs.CloudWatchLogsService/PutSyslogConfiguration"
 	CloudWatchLogsService_PutTransformer_FullMethodName                           = "/cloudwatchlogs.CloudWatchLogsService/PutTransformer"
@@ -187,7 +189,7 @@ type CloudWatchLogsServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateLogStream(ctx context.Context, in *CreateLogStreamRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Creates a lookup table by uploading CSV data. You can use lookup tables to enrich log data in CloudWatch Logs Insights queries with reference data such as user details, application names, or error ...
+	// Creates a lookup table by uploading CSV data or from CloudWatch Logs query results. You can use lookup tables to enrich log data in CloudWatch Logs queries with reference data such as user details,...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateLookupTable(ctx context.Context, in *CreateLookupTableRequest, opts ...grpc.CallOption) (*CreateLookupTableResponse, error)
@@ -307,7 +309,7 @@ type CloudWatchLogsServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeExportTasks(ctx context.Context, in *DescribeExportTasksRequest, opts ...grpc.CallOption) (*DescribeExportTasksResponse, error)
-	// Returns a list of custom and default field indexes which are discovered in log data. For more information about field index policies, see PutIndexPolicy.
+	// Returns a list of field indexes discovered in log data. By default, the response includes the DEFAULT, CUSTOM, and INACTIVE index categories. To return indexes from other categories, use the indexC...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeFieldIndexes(ctx context.Context, in *DescribeFieldIndexesRequest, opts ...grpc.CallOption) (*DescribeFieldIndexesResponse, error)
@@ -431,6 +433,10 @@ type CloudWatchLogsServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetScheduledQueryHistory(ctx context.Context, in *GetScheduledQueryHistoryRequest, opts ...grpc.CallOption) (*GetScheduledQueryHistoryResponse, error)
+	// Returns the storage tier policy for the account.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetStorageTierPolicy(ctx context.Context, in *GetStorageTierPolicyRequest, opts ...grpc.CallOption) (*GetStorageTierPolicyResponse, error)
 	// Returns the information about the log transformer associated with this log group. This operation returns data only for transformers created at the log group level. To get information for an account...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -543,6 +549,10 @@ type CloudWatchLogsServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	PutRetentionPolicy(ctx context.Context, in *PutRetentionPolicyRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Sets the storage tier policy for the account. When you set the storage tier to INTELLIGENT_TIERING, the service automatically moves log data to the most cost-effective storage tier based on access ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	PutStorageTierPolicy(ctx context.Context, in *PutStorageTierPolicyRequest, opts ...grpc.CallOption) (*PutStorageTierPolicyResponse, error)
 	// Creates or updates a subscription filter and associates it with the specified log group. With subscription filters, you can subscribe to a real-time stream of log events ingested through PutLogEven...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -603,7 +613,7 @@ type CloudWatchLogsServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateLogAnomalyDetector(ctx context.Context, in *UpdateLogAnomalyDetectorRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Updates an existing lookup table by replacing all of its CSV content. After the update completes, queries that use this table will use the new data. This is a full replacement operation. All existi...
+	// Updates an existing lookup table by replacing all of its content with new CSV data or CloudWatch Logs query results. After the update completes, queries that use this table use the new data. This i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateLookupTable(ctx context.Context, in *UpdateLookupTableRequest, opts ...grpc.CallOption) (*UpdateLookupTableResponse, error)
@@ -1331,6 +1341,16 @@ func (c *cloudWatchLogsServiceClient) GetScheduledQueryHistory(ctx context.Conte
 	return out, nil
 }
 
+func (c *cloudWatchLogsServiceClient) GetStorageTierPolicy(ctx context.Context, in *GetStorageTierPolicyRequest, opts ...grpc.CallOption) (*GetStorageTierPolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStorageTierPolicyResponse)
+	err := c.cc.Invoke(ctx, CloudWatchLogsService_GetStorageTierPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cloudWatchLogsServiceClient) GetTransformer(ctx context.Context, in *GetTransformerRequest, opts ...grpc.CallOption) (*GetTransformerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetTransformerResponse)
@@ -1611,6 +1631,16 @@ func (c *cloudWatchLogsServiceClient) PutRetentionPolicy(ctx context.Context, in
 	return out, nil
 }
 
+func (c *cloudWatchLogsServiceClient) PutStorageTierPolicy(ctx context.Context, in *PutStorageTierPolicyRequest, opts ...grpc.CallOption) (*PutStorageTierPolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PutStorageTierPolicyResponse)
+	err := c.cc.Invoke(ctx, CloudWatchLogsService_PutStorageTierPolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *cloudWatchLogsServiceClient) PutSubscriptionFilter(ctx context.Context, in *PutSubscriptionFilterRequest, opts ...grpc.CallOption) (*common.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(common.Empty)
@@ -1827,7 +1857,7 @@ type CloudWatchLogsServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateLogStream(context.Context, *CreateLogStreamRequest) (*common.Empty, error)
-	// Creates a lookup table by uploading CSV data. You can use lookup tables to enrich log data in CloudWatch Logs Insights queries with reference data such as user details, application names, or error ...
+	// Creates a lookup table by uploading CSV data or from CloudWatch Logs query results. You can use lookup tables to enrich log data in CloudWatch Logs queries with reference data such as user details,...
 	// HTTP:
 	// Protocol: awsJson1_1
 	CreateLookupTable(context.Context, *CreateLookupTableRequest) (*CreateLookupTableResponse, error)
@@ -1947,7 +1977,7 @@ type CloudWatchLogsServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeExportTasks(context.Context, *DescribeExportTasksRequest) (*DescribeExportTasksResponse, error)
-	// Returns a list of custom and default field indexes which are discovered in log data. For more information about field index policies, see PutIndexPolicy.
+	// Returns a list of field indexes discovered in log data. By default, the response includes the DEFAULT, CUSTOM, and INACTIVE index categories. To return indexes from other categories, use the indexC...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeFieldIndexes(context.Context, *DescribeFieldIndexesRequest) (*DescribeFieldIndexesResponse, error)
@@ -2071,6 +2101,10 @@ type CloudWatchLogsServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetScheduledQueryHistory(context.Context, *GetScheduledQueryHistoryRequest) (*GetScheduledQueryHistoryResponse, error)
+	// Returns the storage tier policy for the account.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetStorageTierPolicy(context.Context, *GetStorageTierPolicyRequest) (*GetStorageTierPolicyResponse, error)
 	// Returns the information about the log transformer associated with this log group. This operation returns data only for transformers created at the log group level. To get information for an account...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2183,6 +2217,10 @@ type CloudWatchLogsServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	PutRetentionPolicy(context.Context, *PutRetentionPolicyRequest) (*common.Empty, error)
+	// Sets the storage tier policy for the account. When you set the storage tier to INTELLIGENT_TIERING, the service automatically moves log data to the most cost-effective storage tier based on access ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	PutStorageTierPolicy(context.Context, *PutStorageTierPolicyRequest) (*PutStorageTierPolicyResponse, error)
 	// Creates or updates a subscription filter and associates it with the specified log group. With subscription filters, you can subscribe to a real-time stream of log events ingested through PutLogEven...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2243,7 +2281,7 @@ type CloudWatchLogsServiceServer interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateLogAnomalyDetector(context.Context, *UpdateLogAnomalyDetectorRequest) (*common.Empty, error)
-	// Updates an existing lookup table by replacing all of its CSV content. After the update completes, queries that use this table will use the new data. This is a full replacement operation. All existi...
+	// Updates an existing lookup table by replacing all of its content with new CSV data or CloudWatch Logs query results. After the update completes, queries that use this table use the new data. This i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateLookupTable(context.Context, *UpdateLookupTableRequest) (*UpdateLookupTableResponse, error)
@@ -2474,6 +2512,9 @@ func (UnimplementedCloudWatchLogsServiceServer) GetScheduledQuery(context.Contex
 func (UnimplementedCloudWatchLogsServiceServer) GetScheduledQueryHistory(context.Context, *GetScheduledQueryHistoryRequest) (*GetScheduledQueryHistoryResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetScheduledQueryHistory not implemented")
 }
+func (UnimplementedCloudWatchLogsServiceServer) GetStorageTierPolicy(context.Context, *GetStorageTierPolicyRequest) (*GetStorageTierPolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetStorageTierPolicy not implemented")
+}
 func (UnimplementedCloudWatchLogsServiceServer) GetTransformer(context.Context, *GetTransformerRequest) (*GetTransformerResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetTransformer not implemented")
 }
@@ -2557,6 +2598,9 @@ func (UnimplementedCloudWatchLogsServiceServer) PutResourcePolicy(context.Contex
 }
 func (UnimplementedCloudWatchLogsServiceServer) PutRetentionPolicy(context.Context, *PutRetentionPolicyRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutRetentionPolicy not implemented")
+}
+func (UnimplementedCloudWatchLogsServiceServer) PutStorageTierPolicy(context.Context, *PutStorageTierPolicyRequest) (*PutStorageTierPolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutStorageTierPolicy not implemented")
 }
 func (UnimplementedCloudWatchLogsServiceServer) PutSubscriptionFilter(context.Context, *PutSubscriptionFilterRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutSubscriptionFilter not implemented")
@@ -3908,6 +3952,24 @@ func _CloudWatchLogsService_GetScheduledQueryHistory_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CloudWatchLogsService_GetStorageTierPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetStorageTierPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudWatchLogsServiceServer).GetStorageTierPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CloudWatchLogsService_GetStorageTierPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudWatchLogsServiceServer).GetStorageTierPolicy(ctx, req.(*GetStorageTierPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _CloudWatchLogsService_GetTransformer_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetTransformerRequest)
 	if err := dec(in); err != nil {
@@ -4408,6 +4470,24 @@ func _CloudWatchLogsService_PutRetentionPolicy_Handler(srv interface{}, ctx cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CloudWatchLogsServiceServer).PutRetentionPolicy(ctx, req.(*PutRetentionPolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _CloudWatchLogsService_PutStorageTierPolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutStorageTierPolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CloudWatchLogsServiceServer).PutStorageTierPolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: CloudWatchLogsService_PutStorageTierPolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CloudWatchLogsServiceServer).PutStorageTierPolicy(ctx, req.(*PutStorageTierPolicyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -5010,6 +5090,10 @@ var CloudWatchLogsService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CloudWatchLogsService_GetScheduledQueryHistory_Handler,
 		},
 		{
+			MethodName: "GetStorageTierPolicy",
+			Handler:    _CloudWatchLogsService_GetStorageTierPolicy_Handler,
+		},
+		{
 			MethodName: "GetTransformer",
 			Handler:    _CloudWatchLogsService_GetTransformer_Handler,
 		},
@@ -5120,6 +5204,10 @@ var CloudWatchLogsService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PutRetentionPolicy",
 			Handler:    _CloudWatchLogsService_PutRetentionPolicy_Handler,
+		},
+		{
+			MethodName: "PutStorageTierPolicy",
+			Handler:    _CloudWatchLogsService_PutStorageTierPolicy_Handler,
 		},
 		{
 			MethodName: "PutSubscriptionFilter",

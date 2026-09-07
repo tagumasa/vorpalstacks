@@ -5,56 +5,26 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"strings"
 	"time"
 
-	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
+	"vorpalstacks/internal/utils/aws/arn"
 )
-
-// captureStreamChange generates a DynamoDB Streams record for the given
-// item change if the table has streaming enabled. This is the legacy
-// non-transactional version used only where a transaction is not available.
-// Prefer captureStreamChangeTxn for new call sites.
-func (s *DynamoDBService) captureStreamChange(ctx context.Context, reqCtx *request.RequestContext, table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue) {
-	if table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
-		return
-	}
-
-	streamViewType := table.StreamSpecification.StreamViewType
-	streamArn := table.StreamArn
-
-	keysResp, newImageResp, oldImageResp := s.buildStreamImages(streamViewType, keys, newImage, oldImage)
-
-	store, err := s.GetCachedStoreForRegion(reqCtx.GetRegion())
-	if err != nil {
-		logs.Warn("failed to get store for stream capture",
-			logs.String("table", table.Name), logs.Err(err))
-		return
-	}
-
-	_, err = store.Streams().AddRecord(
-		table.Name,
-		streamArn,
-		string(streamViewType),
-		eventName,
-		keysResp,
-		newImageResp,
-		oldImageResp,
-		nil,
-	)
-	if err != nil {
-		logs.Warn("failed to capture stream record",
-			logs.String("table", table.Name), logs.Err(err))
-	}
-}
 
 // captureStreamChangeTxn writes a stream record within the same storage
 // transaction as the item mutation, ensuring atomicity. If the transaction
 // rolls back, the stream record is also discarded.
 func (s *DynamoDBService) captureStreamChangeTxn(txn *dbstore.DynamoDBTxn, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue) {
+	s.captureStreamChangeTxnAs(txn, store, table, eventName, keys, newImage, oldImage, nil)
+}
+
+// captureStreamChangeTxnAs is captureStreamChangeTxn with the actor identity
+// AWS attaches to service-initiated records; global-table replication marks
+// its records with the Service principal so consumers can tell replicated
+// writes from direct client writes.
+func (s *DynamoDBService) captureStreamChangeTxnAs(txn *dbstore.DynamoDBTxn, store dbstore.DynamoDBStoreInterface, table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue, userIdentity *dbstore.StreamUserIdentity) {
 	if table == nil || table.StreamSpecification == nil || !table.StreamSpecification.StreamEnabled {
 		return
 	}
@@ -62,7 +32,7 @@ func (s *DynamoDBService) captureStreamChangeTxn(txn *dbstore.DynamoDBTxn, store
 	streamViewType := table.StreamSpecification.StreamViewType
 	streamArn := table.StreamArn
 
-	keysResp, newImageResp, oldImageResp := s.buildStreamImages(streamViewType, keys, newImage, oldImage)
+	keysResp, newImageResp, oldImageResp := dbstore.BuildStreamImages(streamViewType, keys, newImage, oldImage)
 
 	_, err := store.Streams().AddRecordTxn(
 		txn.RawTxn(),
@@ -73,7 +43,7 @@ func (s *DynamoDBService) captureStreamChangeTxn(txn *dbstore.DynamoDBTxn, store
 		keysResp,
 		newImageResp,
 		oldImageResp,
-		nil,
+		userIdentity,
 	)
 	if err != nil {
 		logs.Error("failed to capture stream record in transaction",
@@ -81,42 +51,85 @@ func (s *DynamoDBService) captureStreamChangeTxn(txn *dbstore.DynamoDBTxn, store
 	}
 }
 
-// buildStreamImages converts the raw attribute values into the response
-// format expected by stream consumers, filtered by the StreamViewType.
-func (s *DynamoDBService) buildStreamImages(streamViewType dbstore.StreamViewType, keys, newImage, oldImage map[string]*dbstore.AttributeValue) (keysResp, newImageResp, oldImageResp map[string]interface{}) {
-	keysResp = buildItemResponse(keys)
-
-	switch streamViewType {
-	case dbstore.StreamViewTypeNewImage:
-		if newImage != nil {
-			newImageResp = buildItemResponse(newImage)
-		}
-	case dbstore.StreamViewTypeOldImage:
-		if oldImage != nil {
-			oldImageResp = buildItemResponse(oldImage)
-		}
-	case dbstore.StreamViewTypeNewAndOldImages:
-		if newImage != nil {
-			newImageResp = buildItemResponse(newImage)
-		}
-		if oldImage != nil {
-			oldImageResp = buildItemResponse(oldImage)
-		}
-	case dbstore.StreamViewTypeKeysOnly:
-		// Only keys are included.
+// streamEventForWrite maps a committed write's shape to its DynamoDB
+// Streams event name: REMOVE for deletions, INSERT for creations, MODIFY for
+// every other write.
+func streamEventForWrite(isDelete, wasNew bool) dbstore.StreamEventName {
+	if isDelete {
+		return dbstore.StreamEventRemove
 	}
-
-	return keysResp, newImageResp, oldImageResp
+	if wasNew {
+		return dbstore.StreamEventInsert
+	}
+	return dbstore.StreamEventModify
 }
 
-// kinesisDestinationRecord is the JSON payload sent to Kinesis Data Streams
-// when a table has a Kinesis streaming destination configured.
-type kinesisDestinationRecord struct {
-	Keys                        map[string]interface{} `json:"Keys,omitempty"`
-	NewImage                    map[string]interface{} `json:"NewImage,omitempty"`
-	OldImage                    map[string]interface{} `json:"OldImage,omitempty"`
-	EventName                   string                 `json:"eventName"`
-	ApproximateCreationDateTime int64                  `json:"ApproximateCreationDateTime"`
+// emitChangePropagation fires the asynchronous side effects every committed
+// item change owes: delivery to the table's Kinesis data stream destinations
+// and replication to the global table's replica regions. It runs after the
+// storage transaction has committed; replicaOp builds the destination-region
+// write for the change's post-image (or removal), and a nil table or replicaOp
+// leaves only the parts the caller actually has.
+func (s *DynamoDBService) emitChangePropagation(store dbstore.DynamoDBStoreInterface, region string, table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue, replicaOp func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error) {
+	s.sendToKinesisDestinations(table, eventName, keys, newImage, oldImage)
+	if table == nil || replicaOp == nil {
+		return
+	}
+	s.replicateToGlobalTableReplicas(store, region, table.Name, replicaOp)
+}
+
+// kinesisDestinationEnvelope is the JSON document DynamoDB writes into a
+// Kinesis data stream destination for one item change: the DynamoDB Streams
+// record's dynamodb envelope carrying the key and images, with the timestamp
+// precision the destination is configured for.
+type kinesisDestinationEnvelope struct {
+	EventName string                       `json:"eventName"`
+	DynamoDB  kinesisDestinationRecordData `json:"dynamodb"`
+}
+
+type kinesisDestinationRecordData struct {
+	Keys                                 map[string]interface{} `json:"Keys,omitempty"`
+	NewImage                             map[string]interface{} `json:"NewImage,omitempty"`
+	OldImage                             map[string]interface{} `json:"OldImage,omitempty"`
+	ApproximateCreationDateTime          int64                  `json:"ApproximateCreationDateTime"`
+	ApproximateCreationDateTimePrecision string                 `json:"ApproximateCreationDateTimePrecision"`
+}
+
+// kinesisRecordForDestination builds one destination's payload and Kinesis
+// partition key. ApproximateCreationDateTimePrecision is a per-destination
+// setting (UpdateKinesisStreamingDestination), so the timestamp is formatted
+// here for this destination only — MILLISECOND unless the destination asks
+// for MICROSECOND. The partition key comes from the table's HASH attribute:
+// AWS does not document the derivation, and the HASH value keeps every
+// record of one item on the same Kinesis shard.
+func kinesisRecordForDestination(dest *dbstore.KinesisDataStreamDestination, table *dbstore.Table, eventName dbstore.StreamEventName, keys, newImage, oldImage map[string]*dbstore.AttributeValue, now time.Time) ([]byte, string) {
+	precision := dest.ApproximateCreationDateTimePrecision
+	var createdAt int64
+	if precision == kinesisPrecisionMicrosecond {
+		createdAt = now.UnixMicro()
+	} else {
+		precision = kinesisPrecisionMillisecond
+		createdAt = now.UnixMilli()
+	}
+
+	data := kinesisDestinationRecordData{
+		Keys:                                 buildItemResponse(keys),
+		ApproximateCreationDateTime:          createdAt,
+		ApproximateCreationDateTimePrecision: precision,
+	}
+	if newImage != nil {
+		data.NewImage = buildItemResponse(newImage)
+	}
+	if oldImage != nil {
+		data.OldImage = buildItemResponse(oldImage)
+	}
+
+	// The payload is pure JSON data, so marshalling cannot fail.
+	payload, _ := json.Marshal(kinesisDestinationEnvelope{
+		EventName: string(eventName),
+		DynamoDB:  data,
+	})
+	return payload, extractPartitionKeyForKinesis(keys, getHashKeyName(table))
 }
 
 // sendToKinesisDestinations dispatches item change records to all active
@@ -135,57 +148,21 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 		return
 	}
 
-	keysResp := buildItemResponse(keys)
-	// ApproximateCreationDateTime carries millisecond timestamps by default;
-	// a destination configured for MICROSECOND precision receives
-	// microsecond timestamps instead.
 	now := time.Now()
-	precision := kinesisPrecisionMillisecond
-	for _, dest := range table.KinesisDataStreamDestinations {
-		if dest.DestinationStatus == kinesisDestinationActive && dest.ApproximateCreationDateTimePrecision != "" {
-			precision = dest.ApproximateCreationDateTimePrecision
-			break
-		}
-	}
-	var createdAt int64
-	if precision == kinesisPrecisionMicrosecond {
-		createdAt = now.UnixMicro()
-	} else {
-		createdAt = now.UnixMilli()
-	}
-	record := kinesisDestinationRecord{
-		Keys:                        keysResp,
-		EventName:                   string(eventName),
-		ApproximateCreationDateTime: createdAt,
-	}
-	if newImage != nil {
-		record.NewImage = buildItemResponse(newImage)
-	}
-	if oldImage != nil {
-		record.OldImage = buildItemResponse(oldImage)
-	}
-
-	data, err := json.Marshal(record)
-	if err != nil {
-		logs.Warn("failed to marshal Kinesis destination record",
-			logs.String("table", table.Name), logs.Err(err))
-		return
-	}
-	// The Kinesis store keeps record payloads in their wire representation
-	// (base64 text), matching records written through the Kinesis API, so
-	// GetRecords consumers decode every record the same way.
-	wireData := base64.StdEncoding.EncodeToString(data)
-
-	partitionKey := extractPartitionKeyForKinesis(keys)
-
 	for _, dest := range table.KinesisDataStreamDestinations {
 		if dest.DestinationStatus != kinesisDestinationActive {
 			continue
 		}
-		streamName := parseStreamNameFromARN(dest.StreamArn)
+		streamName := arn.ExtractStreamNameFromARN(dest.StreamArn)
 		if streamName == "" {
 			continue
 		}
+		payload, partitionKey := kinesisRecordForDestination(dest, table, eventName, keys, newImage, oldImage, now)
+		// The Kinesis store keeps record payloads in their wire representation
+		// (base64 text), matching records written through the Kinesis API, so
+		// GetRecords consumers decode every record the same way.
+		wireData := base64.StdEncoding.EncodeToString(payload)
+
 		go func(sn, pk, payload string) {
 			defer func() { resilience.RecoverPanic("dynamodb Kinesis destination emit") }()
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -198,11 +175,14 @@ func (s *DynamoDBService) sendToKinesisDestinations(table *dbstore.Table, eventN
 	}
 }
 
-// extractPartitionKeyForKinesis extracts a string partition key from the item's
-// key attributes for use as the Kinesis partition key.
-func extractPartitionKeyForKinesis(keys map[string]*dbstore.AttributeValue) string {
-	for _, v := range keys {
-		if v != nil {
+// extractPartitionKeyForKinesis renders the item's HASH key attribute as the
+// Kinesis partition key. AWS does not document the derivation; using the
+// HASH attribute's value is deterministic per item (map iteration order
+// never selects it), and anything the HASH attribute cannot render falls
+// back to a constant key.
+func extractPartitionKeyForKinesis(keys map[string]*dbstore.AttributeValue, pkName string) string {
+	if pkName != "" {
+		if v := keys[pkName]; v != nil {
 			if v.S != nil {
 				return *v.S
 			}
@@ -214,16 +194,6 @@ func extractPartitionKeyForKinesis(keys map[string]*dbstore.AttributeValue) stri
 	return "default"
 }
 
-// parseStreamNameFromARN extracts the stream name from a Kinesis ARN.
-// Format: arn:aws:kinesis:<region>:<account>:stream/<name>
-func parseStreamNameFromARN(arn string) string {
-	idx := strings.LastIndex(arn, "/")
-	if idx < 0 || idx+1 >= len(arn) {
-		return ""
-	}
-	return arn[idx+1:]
-}
-
 // replicateToGlobalTableReplicas propagates item changes to all other
 // replica regions if the table is part of a global table. This implements
 // the multi-active replication behaviour of DynamoDB Global Tables.
@@ -233,7 +203,7 @@ func parseStreamNameFromARN(arn string) string {
 // use destStore.Update(ctx, ...) so that index entries, item count, and
 // table size are updated atomically.
 func (s *DynamoDBService) replicateToGlobalTableReplicas(sourceStore dbstore.DynamoDBStoreInterface, sourceRegion, tableName string, op func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error) {
-	if s.busStoreFactory == nil {
+	if s.storageManager == nil {
 		return
 	}
 
@@ -270,9 +240,12 @@ func (s *DynamoDBService) replicateToGlobalTableReplicas(sourceStore dbstore.Dyn
 
 // replicaPutOp returns a replica-region operation that stores a committed
 // item together with its index entries and table counters, mirroring the
-// write path of putItemCore.
-func replicaPutOp(table *dbstore.Table, key, attrs map[string]*dbstore.AttributeValue) func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
-	itemSize := calculateItemSize(attrs)
+// write path of putItemCore. When the replica table itself streams, the
+// replicated write captures a stream record in the replica's own stream,
+// marked with the replication service identity; a replicated write never
+// re-replicates or delivers to the replica's Kinesis destinations.
+func (s *DynamoDBService) replicaPutOp(table *dbstore.Table, key, attrs map[string]*dbstore.AttributeValue) func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
+	itemSize := dbstore.CalculateItemSize(attrs)
 	return func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
 		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			existing, getErr := txn.GetItem(table.Name, key)
@@ -308,10 +281,18 @@ func replicaPutOp(table *dbstore.Table, key, attrs map[string]*dbstore.Attribute
 					return upErr
 				}
 			} else {
-				oldSize := calculateItemSize(existing.Attributes)
+				oldSize := dbstore.CalculateItemSize(existing.Attributes)
 				if upErr := txn.UpdateTableSize(table.Name, itemSize-oldSize); upErr != nil {
 					return upErr
 				}
+			}
+
+			if repTable, tblErr := txn.GetTable(table.Name); tblErr == nil {
+				var oldAttrs map[string]*dbstore.AttributeValue
+				if !isNewRep && existing != nil {
+					oldAttrs = existing.Attributes
+				}
+				s.captureStreamChangeTxnAs(txn, destStore, repTable, streamEventForWrite(false, isNewRep), key, attrs, oldAttrs, dbstore.ReplicationServiceIdentity)
 			}
 			return nil
 		})
@@ -320,8 +301,10 @@ func replicaPutOp(table *dbstore.Table, key, attrs map[string]*dbstore.Attribute
 
 // replicaDeleteOp returns a replica-region operation that removes a
 // committed item together with its index entries and table counters,
-// mirroring the write path of deleteItemCore.
-func replicaDeleteOp(table *dbstore.Table, key map[string]*dbstore.AttributeValue) func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
+// mirroring the write path of deleteItemCore, and captures the removal in
+// the replica table's own stream when it streams, marked with the
+// replication service identity.
+func (s *DynamoDBService) replicaDeleteOp(table *dbstore.Table, key map[string]*dbstore.AttributeValue) func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
 	return func(ctx context.Context, destStore dbstore.DynamoDBStoreInterface) error {
 		return destStore.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 			existing, getErr := txn.GetItem(table.Name, key)
@@ -340,9 +323,13 @@ func replicaDeleteOp(table *dbstore.Table, key map[string]*dbstore.AttributeValu
 			if upErr := txn.UpdateItemCount(table.Name, -1); upErr != nil {
 				return upErr
 			}
-			existingSize := calculateItemSize(existing.Attributes)
+			existingSize := dbstore.CalculateItemSize(existing.Attributes)
 			if upErr := txn.UpdateTableSize(table.Name, -existingSize); upErr != nil {
 				return upErr
+			}
+
+			if repTable, tblErr := txn.GetTable(table.Name); tblErr == nil {
+				s.captureStreamChangeTxnAs(txn, destStore, repTable, dbstore.StreamEventRemove, key, nil, existing.Attributes, dbstore.ReplicationServiceIdentity)
 			}
 			return nil
 		})

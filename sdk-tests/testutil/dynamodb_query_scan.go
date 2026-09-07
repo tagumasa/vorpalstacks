@@ -463,6 +463,233 @@ func (r *TestRunner) dynamoDBPaginationTests(ctx context.Context, client *dynamo
 		return nil
 	}))
 
+	results = append(results, r.RunTest("dynamodb", "Scan_MultiPagePagination", func() error {
+		scanTable := fmt.Sprintf("ScanPag-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, scanTable, withDynamoHashKey("pk"))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		for i := 0; i < 8; i++ {
+			_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(scanTable),
+				Item: map[string]types.AttributeValue{
+					"pk": &types.AttributeValueMemberS{Value: fmt.Sprintf("item-%d", i)},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %d: %v", i, err)
+			}
+		}
+
+		var pks []string
+		var exclusiveStartKey map[string]types.AttributeValue
+		pageCount := 0
+		for {
+			resp, err := client.Scan(ctx, &dynamodb.ScanInput{
+				TableName:         aws.String(scanTable),
+				Limit:             aws.Int32(2),
+				ExclusiveStartKey: exclusiveStartKey,
+			})
+			if err != nil {
+				return fmt.Errorf("scan page: %v", err)
+			}
+			pageCount++
+			for _, item := range resp.Items {
+				pk, ok := item["pk"].(*types.AttributeValueMemberS)
+				if !ok {
+					return fmt.Errorf("item without pk attribute")
+				}
+				pks = append(pks, pk.Value)
+			}
+			if resp.LastEvaluatedKey == nil {
+				break
+			}
+			exclusiveStartKey = resp.LastEvaluatedKey
+			if pageCount > 10 {
+				return fmt.Errorf("pagination did not terminate after %d pages", pageCount)
+			}
+		}
+
+		if len(pks) != 8 {
+			return fmt.Errorf("expected 8 items across pages, got %d (%v)", len(pks), pks)
+		}
+		if pageCount < 3 {
+			return fmt.Errorf("expected at least 3 pages with Limit=2, got %d", pageCount)
+		}
+		seen := map[string]bool{}
+		for _, pk := range pks {
+			if seen[pk] {
+				return fmt.Errorf("duplicate item across scan pages: %s", pk)
+			}
+			seen[pk] = true
+		}
+		for i := 1; i < len(pks); i++ {
+			if pks[i] < pks[i-1] {
+				return fmt.Errorf("scan pages must advance in storage order, got %v", pks)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_ReversePagination", func() error {
+		revTable := fmt.Sprintf("RevPag-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, revTable, withDynamoKeySchema(
+			[]types.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("sk"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			[]types.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+				{AttributeName: aws.String("sk"), KeyType: types.KeyTypeRange},
+			},
+		))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		for i := 0; i < 6; i++ {
+			_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(revTable),
+				Item: map[string]types.AttributeValue{
+					"pk": &types.AttributeValueMemberS{Value: "rev"},
+					"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("sk-%02d", i)},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put sk-%02d: %v", i, err)
+			}
+		}
+
+		var sks []string
+		var exclusiveStartKey map[string]types.AttributeValue
+		pageCount := 0
+		for {
+			resp, err := client.Query(ctx, &dynamodb.QueryInput{
+				TableName:              aws.String(revTable),
+				KeyConditionExpression: aws.String("pk = :pk"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":pk": &types.AttributeValueMemberS{Value: "rev"},
+				},
+				Limit:             aws.Int32(2),
+				ScanIndexForward:  aws.Bool(false),
+				ExclusiveStartKey: exclusiveStartKey,
+			})
+			if err != nil {
+				return fmt.Errorf("query page: %v", err)
+			}
+			pageCount++
+			for _, item := range resp.Items {
+				sk, ok := item["sk"].(*types.AttributeValueMemberS)
+				if !ok {
+					return fmt.Errorf("item without sk attribute")
+				}
+				sks = append(sks, sk.Value)
+			}
+			if resp.LastEvaluatedKey == nil {
+				break
+			}
+			exclusiveStartKey = resp.LastEvaluatedKey
+			if pageCount > 10 {
+				return fmt.Errorf("pagination did not terminate after %d pages", pageCount)
+			}
+		}
+
+		if len(sks) != 6 {
+			return fmt.Errorf("expected 6 items across reverse pages, got %d (%v)", len(sks), sks)
+		}
+		if pageCount < 3 {
+			return fmt.Errorf("expected at least 3 pages with Limit=2, got %d", pageCount)
+		}
+		for i := 1; i < len(sks); i++ {
+			if sks[i] > sks[i-1] {
+				return fmt.Errorf("reverse pages must yield descending sort keys, got %v", sks)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_SortKeyCondition_Pagination", func() error {
+		condTable := fmt.Sprintf("CondPag-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, condTable, withDynamoKeySchema(
+			[]types.AttributeDefinition{
+				{AttributeName: aws.String("pk"), AttributeType: types.ScalarAttributeTypeS},
+				{AttributeName: aws.String("sk"), AttributeType: types.ScalarAttributeTypeS},
+			},
+			[]types.KeySchemaElement{
+				{AttributeName: aws.String("pk"), KeyType: types.KeyTypeHash},
+				{AttributeName: aws.String("sk"), KeyType: types.KeyTypeRange},
+			},
+		))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		for i := 0; i < 8; i++ {
+			_, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(condTable),
+				Item: map[string]types.AttributeValue{
+					"pk": &types.AttributeValueMemberS{Value: "cond"},
+					"sk": &types.AttributeValueMemberS{Value: fmt.Sprintf("sk-%02d", i)},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put sk-%02d: %v", i, err)
+			}
+		}
+
+		var sks []string
+		var exclusiveStartKey map[string]types.AttributeValue
+		pageCount := 0
+		for {
+			resp, err := client.Query(ctx, &dynamodb.QueryInput{
+				TableName:              aws.String(condTable),
+				KeyConditionExpression: aws.String("pk = :pk AND sk BETWEEN :lo AND :hi"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":pk": &types.AttributeValueMemberS{Value: "cond"},
+					":lo": &types.AttributeValueMemberS{Value: "sk-02"},
+					":hi": &types.AttributeValueMemberS{Value: "sk-05"},
+				},
+				Limit:             aws.Int32(2),
+				ExclusiveStartKey: exclusiveStartKey,
+			})
+			if err != nil {
+				return fmt.Errorf("query page: %v", err)
+			}
+			pageCount++
+			for _, item := range resp.Items {
+				sk, ok := item["sk"].(*types.AttributeValueMemberS)
+				if !ok {
+					return fmt.Errorf("item without sk attribute")
+				}
+				sks = append(sks, sk.Value)
+			}
+			if resp.LastEvaluatedKey == nil {
+				break
+			}
+			exclusiveStartKey = resp.LastEvaluatedKey
+			if pageCount > 10 {
+				return fmt.Errorf("pagination did not terminate after %d pages", pageCount)
+			}
+		}
+
+		// Only the four items inside the BETWEEN bounds may be returned, and
+		// each page of two must have advanced through them in order.
+		want := []string{"sk-02", "sk-03", "sk-04", "sk-05"}
+		if len(sks) != len(want) {
+			return fmt.Errorf("expected %v across pages, got %v", want, sks)
+		}
+		for i := range want {
+			if sks[i] != want[i] {
+				return fmt.Errorf("expected %v across pages, got %v", want, sks)
+			}
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("dynamodb", "ListGlobalTables_Pagination", func() error {
 		pagGT1 := fmt.Sprintf("PagGT-%d-1", time.Now().UnixNano())
 		pagGT2 := fmt.Sprintf("PagGT-%d-2", time.Now().UnixNano())

@@ -1,6 +1,7 @@
 package timestreamquery
 
 import (
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
 
@@ -30,7 +31,7 @@ func toPbScheduledQuery(summary *ScheduledQuerySummary) *pb.ScheduledQuery {
 	sq := &pb.ScheduledQuery{
 		Arn:          summary.ARN,
 		Name:         summary.Name,
-		Creationtime: summary.CreationTime.Format(timeutils.ISO8601UTCFormat),
+		Creationtime: proto.String(summary.CreationTime.Format(timeutils.ISO8601UTCFormat)),
 		State:        pb.ScheduledQueryState_SCHEDULED_QUERY_STATE_ENABLED,
 	}
 
@@ -49,25 +50,25 @@ func toPbScheduledQuery(summary *ScheduledQuerySummary) *pb.ScheduledQuery {
 			},
 		}
 		if summary.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix != "" {
-			sq.Errorreportconfiguration.S3Configuration.Objectkeyprefix = summary.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix
+			sq.Errorreportconfiguration.S3Configuration.Objectkeyprefix = proto.String(summary.ErrorReportConfiguration.S3Configuration.ObjectKeyPrefix)
 		}
 	}
 
 	if summary.TargetConfiguration != nil && summary.TargetConfiguration.TimestreamConfiguration != nil {
 		sq.Targetdestination = &pb.TargetDestination{
 			Timestreamdestination: &pb.TimestreamDestination{
-				Databasename: summary.TargetConfiguration.TimestreamConfiguration.DatabaseName,
-				Tablename:    summary.TargetConfiguration.TimestreamConfiguration.TableName,
+				Databasename: proto.String(summary.TargetConfiguration.TimestreamConfiguration.DatabaseName),
+				Tablename:    proto.String(summary.TargetConfiguration.TimestreamConfiguration.TableName),
 			},
 		}
 	}
 
 	if !summary.PreviousRunTime.IsZero() {
-		sq.Previousinvocationtime = summary.PreviousRunTime.Format(timeutils.ISO8601UTCFormat)
+		sq.Previousinvocationtime = proto.String(summary.PreviousRunTime.Format(timeutils.ISO8601UTCFormat))
 	}
 
 	if !summary.NextRunTime.IsZero() {
-		sq.Nextinvocationtime = summary.NextRunTime.Format(timeutils.ISO8601UTCFormat)
+		sq.Nextinvocationtime = proto.String(summary.NextRunTime.Format(timeutils.ISO8601UTCFormat))
 	}
 
 	return sq

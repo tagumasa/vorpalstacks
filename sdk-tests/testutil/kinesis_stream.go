@@ -31,11 +31,8 @@ func (r *TestRunner) kinesisStreamTests(ctx context.Context, client *kinesis.Cli
 			return err
 		}
 		created = true
-		time.Sleep(500 * time.Millisecond)
 
-		descResp, err := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{
-			StreamName: aws.String(streamName),
-		})
+		descResp, err := kinesisDescribeWhenReady(ctx, client, streamName, 10*time.Second)
 		if err != nil {
 			return fmt.Errorf("describe after create: %v", err)
 		}
@@ -150,15 +147,20 @@ func (r *TestRunner) kinesisStreamTests(ctx context.Context, client *kinesis.Cli
 			return err
 		}
 		defer client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(sn)})
-		time.Sleep(500 * time.Millisecond)
 
-		tagResp, err := client.ListTagsForStream(ctx, &kinesis.ListTagsForStreamInput{
-			StreamName: aws.String(sn),
-		})
-		if err != nil {
-			return fmt.Errorf("list tags: %v", err)
+		var tagMap map[string]string
+		if werr := waitFor(250*time.Millisecond, 10*time.Second, func() bool {
+			tagResp, err := client.ListTagsForStream(ctx, &kinesis.ListTagsForStreamInput{
+				StreamName: aws.String(sn),
+			})
+			if err != nil {
+				return false
+			}
+			tagMap = kinesisTagMap(tagResp.Tags)
+			return tagMap["Environment"] == "test"
+		}); werr != nil {
+			return fmt.Errorf("list tags: %v", werr)
 		}
-		tagMap := kinesisTagMap(tagResp.Tags)
 		if tagMap["Environment"] != "test" {
 			return fmt.Errorf("tag Environment: got %q, want %q", tagMap["Environment"], "test")
 		}
@@ -177,7 +179,9 @@ func (r *TestRunner) kinesisStreamTests(ctx context.Context, client *kinesis.Cli
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		time.Sleep(500 * time.Millisecond)
+		if _, werr := kinesisDescribeWhenReady(ctx, client, delSn, 10*time.Second); werr != nil {
+			return fmt.Errorf("stream not ready before delete: %v", werr)
+		}
 
 		_, err = client.DeleteStream(ctx, &kinesis.DeleteStreamInput{
 			StreamName: aws.String(delSn),

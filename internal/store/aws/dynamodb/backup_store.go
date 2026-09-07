@@ -2,10 +2,10 @@
 package dynamodb
 
 import (
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
+	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -30,28 +30,20 @@ func NewBackupStore(store storage.BasicStorage, accountId, region string) *Backu
 
 // Get retrieves a backup by its ARN.
 func (s *BackupStore) Get(backupArn string) (*Backup, error) {
-	backupName := extractBackupNameFromARN(backupArn)
+	backupName := svcarn.ExtractBackupNameFromARN(backupArn)
 	if backupName == "" {
 		return nil, ErrBackupNotFound
 	}
 	return s.GetByName(backupName)
 }
 
-func extractBackupNameFromARN(backupArn string) string {
-	parts := strings.Split(backupArn, "/")
-	if len(parts) >= 4 {
-		return parts[len(parts)-1]
-	}
-	return ""
-}
-
 // GetByName retrieves a backup by its name.
 func (s *BackupStore) GetByName(backupName string) (*Backup, error) {
-	var backup Backup
-	if err := s.BaseStore.Get(backupName, &backup); err != nil {
+	var pbBackup pb.Backup
+	if err := s.BaseStore.GetProto(backupName, &pbBackup); err != nil {
 		return nil, err
 	}
-	return &backup, nil
+	return ProtoToBackup(&pbBackup), nil
 }
 
 // Create creates a new backup for a DynamoDB table.
@@ -74,7 +66,7 @@ func (s *BackupStore) Create(backupName, tableName, tableArn string, tableSize i
 		BackupSizeBytes:        tableSize,
 	}
 
-	if err := s.BaseStore.Put(backupName, backup); err != nil {
+	if err := s.BaseStore.PutProto(backupName, BackupToProto(backup)); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +75,7 @@ func (s *BackupStore) Create(backupName, tableName, tableArn string, tableSize i
 
 // Put stores a backup.
 func (s *BackupStore) Put(backup *Backup) error {
-	return s.BaseStore.Put(backup.BackupName, backup)
+	return s.BaseStore.PutProto(backup.BackupName, BackupToProto(backup))
 }
 
 // Delete deletes a backup by name and removes any associated item snapshot.
@@ -104,20 +96,20 @@ func (s *BackupStore) List(marker string, limit int, tableName string) ([]*Backu
 		MaxItems: limit,
 	}
 
-	filter := func(b *Backup) bool {
+	result, err := common.ListProto[*pb.Backup](s.BaseStore, opts, func() *pb.Backup { return &pb.Backup{} }, func(pbBackup *pb.Backup) bool {
 		if tableName == "" {
 			return true
 		}
-		return b.SourceTableName == tableName
-	}
-
-	result, err := common.List[Backup](s.BaseStore, opts, filter)
+		return pbBackup.SourceTableName == tableName
+	})
 	if err != nil {
 		return nil, "", err
 	}
 
 	backups := make([]*Backup, len(result.Items))
-	copy(backups, result.Items)
+	for i, pbBackup := range result.Items {
+		backups[i] = ProtoToBackup(pbBackup)
+	}
 
 	if !result.IsTruncated {
 		return backups, "", nil
@@ -131,25 +123,25 @@ func (s *BackupStore) ARNBuilder() *svcarn.DynamoDBBuilder {
 }
 
 // snapshotKey returns the storage key for the item snapshot of a backup.
-// The "#" prefix ensures common.List skips this key (it only unmarshals
-// keys that do not start with "#"), preventing the snapshot JSON array
-// from breaking ListBackups which expects Backup structs.
+// The "#" prefix ensures common.ListProto skips this key (it only unmarshals
+// keys that do not start with "#"), preventing the snapshot record from
+// breaking ListBackups which expects Backup records.
 func snapshotKey(backupName string) string {
 	return "#" + backupName + "__snapshot"
 }
 
-// SaveSnapshot stores all items for a backup as a single JSON blob.
+// SaveSnapshot stores all items for a backup as a single protobuf record.
 func (s *BackupStore) SaveSnapshot(backupName string, items []*Item) error {
-	return s.BaseStore.Put(snapshotKey(backupName), items)
+	return s.BaseStore.PutProto(snapshotKey(backupName), backupSnapshotToProto(items))
 }
 
 // GetSnapshot loads the item snapshot for a backup.
 func (s *BackupStore) GetSnapshot(backupName string) ([]*Item, error) {
-	var items []*Item
-	if err := s.BaseStore.Get(snapshotKey(backupName), &items); err != nil {
+	var pbSnapshot pb.BackupSnapshot
+	if err := s.BaseStore.GetProto(snapshotKey(backupName), &pbSnapshot); err != nil {
 		return nil, err
 	}
-	return items, nil
+	return protoToBackupSnapshot(&pbSnapshot), nil
 }
 
 // DeleteSnapshot removes the item snapshot for a backup.

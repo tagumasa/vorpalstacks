@@ -120,14 +120,14 @@ func pbToDeleteBucketInput(msg *pb.DeleteBucketRequest) AdminDeleteBucketInput {
 }
 
 func pbToListObjectsInput(msg *pb.ListObjectsV2Request) AdminListObjectsInput {
-	marker := msg.Continuationtoken
+	marker := msg.GetContinuationtoken()
 	if marker == "" {
-		marker = msg.Startafter
+		marker = msg.GetStartafter()
 	}
 	return AdminListObjectsInput{
 		Bucket:    msg.Bucket,
-		Prefix:    msg.Prefix,
-		Delimiter: msg.Delimiter,
+		Prefix:    msg.GetPrefix(),
+		Delimiter: msg.GetDelimiter(),
 		Marker:    marker,
 		MaxKeys:   int(msg.GetMaxkeys()),
 	}
@@ -137,7 +137,7 @@ func pbToHeadObjectInput(msg *pb.HeadObjectRequest) AdminHeadObjectInput {
 	return AdminHeadObjectInput{
 		Bucket:    msg.Bucket,
 		Key:       msg.Key,
-		VersionID: msg.Versionid,
+		VersionID: msg.GetVersionid(),
 	}
 }
 
@@ -145,7 +145,7 @@ func pbToGetObjectInput(msg *pb.GetObjectRequest) AdminGetObjectInput {
 	return AdminGetObjectInput{
 		Bucket:    msg.Bucket,
 		Key:       msg.Key,
-		VersionID: msg.Versionid,
+		VersionID: msg.GetVersionid(),
 	}
 }
 
@@ -154,7 +154,7 @@ func pbToPutObjectInput(msg *pb.PutObjectRequest) AdminPutObjectInput {
 		Bucket:      msg.Bucket,
 		Key:         msg.Key,
 		Body:        msg.Body,
-		ContentType: msg.Contenttype,
+		ContentType: msg.GetContenttype(),
 		Metadata:    msg.Metadata,
 	}
 }
@@ -163,7 +163,7 @@ func pbToDeleteObjectInput(msg *pb.DeleteObjectRequest) AdminDeleteObjectInput {
 	return AdminDeleteObjectInput{
 		Bucket:    msg.Bucket,
 		Key:       msg.Key,
-		VersionID: msg.Versionid,
+		VersionID: msg.GetVersionid(),
 	}
 }
 
@@ -172,7 +172,7 @@ func pbToDeleteObjectsInput(msg *pb.DeleteObjectsRequest) AdminDeleteObjectsInpu
 	for _, o := range msg.Delete.Objects {
 		objects = append(objects, AdminObjectIdentifier{
 			Key:       o.Key,
-			VersionID: o.Versionid,
+			VersionID: o.GetVersionid(),
 		})
 	}
 	return AdminDeleteObjectsInput{
@@ -190,7 +190,7 @@ func pbToCopyObjectInput(msg *pb.CopyObjectRequest) AdminCopyObjectInput {
 		Bucket:       msg.Bucket,
 		Key:          msg.Key,
 		CopySource:   msg.Copysource,
-		ContentType:  msg.Contenttype,
+		ContentType:  msg.GetContenttype(),
 		StorageClass: storageClass,
 	}
 }
@@ -203,16 +203,16 @@ func listBucketsResultToPb(result *AdminListBucketsResult) *pb.ListBucketsOutput
 	var buckets []*pb.Bucket
 	for _, b := range result.Buckets {
 		buckets = append(buckets, &pb.Bucket{
-			Name:         b.Name,
-			Creationdate: b.CreationDate.Format(timeutils.ISO8601UTCFormat),
-			Bucketregion: b.Region,
+			Name:         proto.String(b.Name),
+			Creationdate: proto.String(b.CreationDate.Format(timeutils.ISO8601UTCFormat)),
+			Bucketregion: proto.String(b.Region),
 		})
 	}
 	return &pb.ListBucketsOutput{Buckets: buckets}
 }
 
 func createBucketResultToPb(result *AdminCreateBucketResult) *pb.CreateBucketOutput {
-	return &pb.CreateBucketOutput{Location: result.Location}
+	return &pb.CreateBucketOutput{Location: proto.String(result.Location)}
 }
 
 func listObjectsResultToPb(result *AdminListObjectsResult, in AdminListObjectsInput, maxKeys int) *pb.ListObjectsV2Output {
@@ -222,9 +222,9 @@ func listObjectsResultToPb(result *AdminListObjectsResult, in AdminListObjectsIn
 			continue
 		}
 		contents = append(contents, &pb.Object{
-			Key:          obj.Key,
-			Lastmodified: obj.LastModified.Format(timeutils.ISO8601UTCFormat),
-			Etag:         formatETag(obj.ETag),
+			Key:          proto.String(obj.Key),
+			Lastmodified: proto.String(obj.LastModified.Format(timeutils.ISO8601UTCFormat)),
+			Etag:         proto.String(formatETag(obj.ETag)),
 			Size:         proto.Int64(obj.Size),
 			Storageclass: pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD,
 		})
@@ -232,23 +232,23 @@ func listObjectsResultToPb(result *AdminListObjectsResult, in AdminListObjectsIn
 
 	var commonPrefixes []*pb.CommonPrefix
 	for _, p := range result.CommonPrefixes {
-		commonPrefixes = append(commonPrefixes, &pb.CommonPrefix{Prefix: p})
+		commonPrefixes = append(commonPrefixes, &pb.CommonPrefix{Prefix: proto.String(p)})
 	}
 
 	output := &pb.ListObjectsV2Output{
-		Name:              in.Bucket,
-		Prefix:            in.Prefix,
-		Delimiter:         in.Delimiter,
+		Name:              proto.String(in.Bucket),
+		Prefix:            proto.String(in.Prefix),
+		Delimiter:         proto.String(in.Delimiter),
 		Maxkeys:           proto.Int32(int32(maxKeys)),
 		Keycount:          proto.Int32(int32(len(contents) + len(commonPrefixes))),
 		Istruncated:       proto.Bool(result.IsTruncated),
 		Contents:          contents,
 		Commonprefixes:    commonPrefixes,
-		Continuationtoken: in.Marker,
-		Startafter:        in.Marker,
+		Continuationtoken: proto.String(in.Marker),
+		Startafter:        proto.String(in.Marker),
 	}
 	if result.IsTruncated && result.NextMarker != "" {
-		output.Nextcontinuationtoken = result.NextMarker
+		output.Nextcontinuationtoken = proto.String(result.NextMarker)
 	}
 	return output
 }
@@ -259,22 +259,22 @@ func headObjectResultToPb(result *AdminHeadObjectResult) *pb.HeadObjectOutput {
 
 	out := &pb.HeadObjectOutput{
 		Contentlength:      proto.Int64(mf.contentLength),
-		Contenttype:        mf.contentType,
-		Contentencoding:    mf.contentEncoding,
-		Contentlanguage:    mf.contentLanguage,
-		Contentdisposition: mf.contentDisposition,
-		Cachecontrol:       mf.cacheControl,
-		Etag:               mf.etag,
-		Lastmodified:       mf.lastModified,
+		Contenttype:        proto.String(mf.contentType),
+		Contentencoding:    proto.String(mf.contentEncoding),
+		Contentlanguage:    proto.String(mf.contentLanguage),
+		Contentdisposition: proto.String(mf.contentDisposition),
+		Cachecontrol:       proto.String(mf.cacheControl),
+		Etag:               proto.String(mf.etag),
+		Lastmodified:       proto.String(mf.lastModified),
 		Storageclass:       pb.StorageClass_STORAGE_CLASS_STANDARD,
-		Versionid:          mf.versionID,
-		Acceptranges:       "bytes",
+		Versionid:          proto.String(mf.versionID),
+		Acceptranges:       proto.String("bytes"),
 	}
 	if mf.metadata != nil {
 		out.Metadata = mf.metadata
 	}
 	out.Serversideencryption = mf.sseType
-	out.Ssekmskeyid = mf.kmsKeyID
+	out.Ssekmskeyid = proto.String(mf.kmsKeyID)
 	return out
 }
 
@@ -284,38 +284,38 @@ func getObjectResultToPb(result *AdminGetObjectResult) *pb.GetObjectOutput {
 
 	out := &pb.GetObjectOutput{
 		Contentlength:      proto.Int64(mf.contentLength),
-		Contenttype:        mf.contentType,
-		Contentencoding:    mf.contentEncoding,
-		Contentlanguage:    mf.contentLanguage,
-		Contentdisposition: mf.contentDisposition,
-		Cachecontrol:       mf.cacheControl,
-		Etag:               mf.etag,
-		Lastmodified:       mf.lastModified,
-		Versionid:          mf.versionID,
-		Acceptranges:       "bytes",
+		Contenttype:        proto.String(mf.contentType),
+		Contentencoding:    proto.String(mf.contentEncoding),
+		Contentlanguage:    proto.String(mf.contentLanguage),
+		Contentdisposition: proto.String(mf.contentDisposition),
+		Cachecontrol:       proto.String(mf.cacheControl),
+		Etag:               proto.String(mf.etag),
+		Lastmodified:       proto.String(mf.lastModified),
+		Versionid:          proto.String(mf.versionID),
+		Acceptranges:       proto.String("bytes"),
 		Body:               result.Body,
 	}
 	if mf.metadata != nil {
 		out.Metadata = mf.metadata
 	}
 	out.Serversideencryption = mf.sseType
-	out.Ssekmskeyid = mf.kmsKeyID
+	out.Ssekmskeyid = proto.String(mf.kmsKeyID)
 	return out
 }
 
 func putObjectResultToPb(result *AdminPutObjectResult) *pb.PutObjectOutput {
 	out := &pb.PutObjectOutput{
-		Etag:      result.ETag,
-		Versionid: result.VersionID,
+		Etag:      proto.String(result.ETag),
+		Versionid: proto.String(result.VersionID),
 		Size:      proto.Int64(result.Size),
 	}
-	out.Ssekmskeyid = result.KMSKeyID
+	out.Ssekmskeyid = proto.String(result.KMSKeyID)
 	return out
 }
 
 func deleteObjectResultToPb(result *AdminDeleteObjectResult) *pb.DeleteObjectOutput {
 	return &pb.DeleteObjectOutput{
-		Versionid:    result.VersionID,
+		Versionid:    proto.String(result.VersionID),
 		Deletemarker: proto.Bool(result.IsDeleteMarker),
 	}
 }
@@ -324,19 +324,19 @@ func deleteObjectsResultToPb(result *AdminDeleteObjectsResult) *pb.DeleteObjects
 	var deleted []*pb.DeletedObject
 	for _, d := range result.Deleted {
 		deleted = append(deleted, &pb.DeletedObject{
-			Key:                   d.Key,
-			Versionid:             d.VersionID,
+			Key:                   proto.String(d.Key),
+			Versionid:             proto.String(d.VersionID),
 			Deletemarker:          proto.Bool(d.DeleteMarker),
-			Deletemarkerversionid: d.DeleteMarkerVersionID,
+			Deletemarkerversionid: proto.String(d.DeleteMarkerVersionID),
 		})
 	}
 
 	var errors []*pb.Error
 	for _, e := range result.Errors {
 		errors = append(errors, &pb.Error{
-			Key:     e.Key,
-			Code:    e.Code,
-			Message: e.Message,
+			Key:     proto.String(e.Key),
+			Code:    proto.String(e.Code),
+			Message: proto.String(e.Message),
 		})
 	}
 
@@ -349,8 +349,8 @@ func deleteObjectsResultToPb(result *AdminDeleteObjectsResult) *pb.DeleteObjects
 func copyObjectResultToPb(result *AdminCopyObjectResult) *pb.CopyObjectOutput {
 	return &pb.CopyObjectOutput{
 		Copyobjectresult: &pb.CopyObjectResult{
-			Etag:         result.ETag,
-			Lastmodified: result.LastModified,
+			Etag:         proto.String(result.ETag),
+			Lastmodified: proto.String(result.LastModified),
 		},
 	}
 }

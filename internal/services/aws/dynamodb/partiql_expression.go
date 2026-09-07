@@ -1,9 +1,7 @@
 package dynamodb
 
 import (
-	"math/big"
 	"regexp"
-	"strconv"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -41,6 +39,11 @@ func evaluateExpr(attrs map[string]*dbstore.AttributeValue, expr sqlparser.Expr,
 	}
 }
 
+// evaluateComparison applies DynamoDB type semantics: equality requires the
+// same type with the same payload (a string "1" never equals a number 1,
+// a binary never equals the empty string), and ordering is defined only for
+// same-type S/N/B operands. A cross-type <> holds because the operands are
+// not equal.
 func evaluateComparison(attrs map[string]*dbstore.AttributeValue, cmp *sqlparser.ComparisonExpr, params *partiQLParams) bool {
 	attrName := extractColName(cmp.Left)
 	if attrName == "" {
@@ -52,28 +55,49 @@ func evaluateComparison(attrs map[string]*dbstore.AttributeValue, cmp *sqlparser
 		return false
 	}
 
-	leftVal := getAttrValue(attr)
-	rightVal := extractValue(cmp.Right, params)
+	right := whereOperand(cmp.Right, attrs, params)
+	if right == nil {
+		return false
+	}
 
 	switch cmp.Operator {
 	case sqlparser.EqualStr:
-		return valuesEqual(leftVal, rightVal)
+		return attributeValuesEqual(attr, right)
 	case sqlparser.NotEqualStr:
-		return !valuesEqual(leftVal, rightVal)
+		return !attributeValuesEqual(attr, right)
 	case sqlparser.LessThanStr:
-		return compareValues(leftVal, rightVal) < 0
+		c, ok := compareOrderedValues(attr, right)
+		return ok && c < 0
 	case sqlparser.GreaterThanStr:
-		return compareValues(leftVal, rightVal) > 0
+		c, ok := compareOrderedValues(attr, right)
+		return ok && c > 0
 	case sqlparser.LessEqualStr:
-		return compareValues(leftVal, rightVal) <= 0
+		c, ok := compareOrderedValues(attr, right)
+		return ok && c <= 0
 	case sqlparser.GreaterEqualStr:
-		return compareValues(leftVal, rightVal) >= 0
+		c, ok := compareOrderedValues(attr, right)
+		return ok && c >= 0
 	case sqlparser.InStr:
 		return evaluateIn(attrs, cmp, params)
 	case sqlparser.LikeStr:
-		return evaluateLike(leftVal, rightVal)
+		return evaluateLike(attr, right)
 	}
 	return false
+}
+
+// whereOperand resolves the right-hand side of a comparison to an
+// AttributeValue: a literal or bound parameter through the shared value
+// materialiser, a column reference to the referenced attribute's value.
+// An unresolvable operand never matches.
+func whereOperand(expr sqlparser.Expr, attrs map[string]*dbstore.AttributeValue, params *partiQLParams) *dbstore.AttributeValue {
+	if col, ok := expr.(*sqlparser.ColName); ok {
+		return attrs[col.Name.String()]
+	}
+	v, err := exprToAttributeValueWithParams(expr, params)
+	if err != nil {
+		return nil
+	}
+	return v
 }
 
 func extractColName(expr sqlparser.Expr) string {
@@ -84,69 +108,6 @@ func extractColName(expr sqlparser.Expr) string {
 		return string(e.Val)
 	}
 	return ""
-}
-
-func extractValue(expr sqlparser.Expr, params *partiQLParams) string {
-	switch e := expr.(type) {
-	case *sqlparser.SQLVal:
-		switch e.Type {
-		case sqlparser.StrVal:
-			return string(e.Val)
-		case sqlparser.IntVal, sqlparser.FloatVal:
-			return string(e.Val)
-		case sqlparser.ValArg:
-			if strings.HasPrefix(string(e.Val), ":") {
-				idxStr := strings.TrimPrefix(string(e.Val), ":v")
-				if idx, err := strconv.Atoi(idxStr); err == nil && params != nil && idx > 0 && idx <= len(params.Parameters) {
-					return paramToString(params.Parameters[idx-1])
-				}
-			}
-			return string(e.Val)
-		}
-	case *sqlparser.ColName:
-		return e.Name.String()
-	}
-	return ""
-}
-
-func getAttrValue(attr *dbstore.AttributeValue) string {
-	switch {
-	case attr.S != nil:
-		return *attr.S
-	case attr.N != nil:
-		return *attr.N
-	case attr.BOOL != nil:
-		if *attr.BOOL {
-			return "true"
-		}
-		return "false"
-	case attr.NULL != nil && *attr.NULL:
-		return "null"
-	}
-	return ""
-}
-
-func compareValues(a, b string) int {
-	numA, okA := new(big.Rat).SetString(a)
-	numB, okB := new(big.Rat).SetString(b)
-	if okA && okB {
-		return numA.Cmp(numB)
-	}
-	if a < b {
-		return -1
-	} else if a > b {
-		return 1
-	}
-	return 0
-}
-
-func valuesEqual(a, b string) bool {
-	numA, okA := new(big.Rat).SetString(a)
-	numB, okB := new(big.Rat).SetString(b)
-	if okA && okB {
-		return numA.Cmp(numB) == 0
-	}
-	return a == b
 }
 
 func evaluateIsExpr(attrs map[string]*dbstore.AttributeValue, is *sqlparser.IsExpr, params *partiQLParams) bool {
@@ -176,14 +137,24 @@ func evaluateRangeCond(attrs map[string]*dbstore.AttributeValue, rc *sqlparser.R
 		return false
 	}
 
-	val := getAttrValue(attr)
-	from := extractValue(rc.From, params)
-	to := extractValue(rc.To, params)
+	from := whereOperand(rc.From, attrs, params)
+	to := whereOperand(rc.To, attrs, params)
+	if from == nil || to == nil {
+		return false
+	}
 
 	if rc.Operator == sqlparser.BetweenStr {
-		return compareValues(val, from) >= 0 && compareValues(val, to) <= 0
+		cFrom, okFrom := compareOrderedValues(attr, from)
+		cTo, okTo := compareOrderedValues(attr, to)
+		return okFrom && okTo && cFrom >= 0 && cTo <= 0
 	}
-	return compareValues(val, from) < 0 || compareValues(val, to) > 0
+	// NOT BETWEEN: an operand pair that cannot be ordered does not match.
+	cFrom, okFrom := compareOrderedValues(attr, from)
+	if okFrom && cFrom < 0 {
+		return true
+	}
+	cTo, okTo := compareOrderedValues(attr, to)
+	return okTo && cTo > 0
 }
 
 func evaluateIn(attrs map[string]*dbstore.AttributeValue, cmp *sqlparser.ComparisonExpr, params *partiQLParams) bool {
@@ -197,24 +168,26 @@ func evaluateIn(attrs map[string]*dbstore.AttributeValue, cmp *sqlparser.Compari
 		return false
 	}
 
-	val := getAttrValue(attr)
-
 	tuple, ok := cmp.Right.(sqlparser.ValTuple)
 	if !ok {
 		return false
 	}
 
 	for _, item := range tuple {
-		if valuesEqual(extractValue(item, params), val) {
+		if v := whereOperand(item, attrs, params); v != nil && attributeValuesEqual(attr, v) {
 			return true
 		}
 	}
 	return false
 }
 
-func evaluateLike(value, pattern string) bool {
-	regex := likeToRegex(pattern)
-	matched, _ := regexp.MatchString("^"+regex+"$", value)
+// evaluateLike matches SQL LIKE patterns; only string operands participate.
+func evaluateLike(value, pattern *dbstore.AttributeValue) bool {
+	if value.S == nil || pattern.S == nil {
+		return false
+	}
+	regex := likeToRegex(*pattern.S)
+	matched, _ := regexp.MatchString("^"+regex+"$", *value.S)
 	return matched
 }
 
@@ -231,36 +204,4 @@ func likeToRegex(pattern string) string {
 		}
 	}
 	return result.String()
-}
-
-func paramToString(param interface{}) string {
-	switch v := param.(type) {
-	case map[string]interface{}:
-		if s, ok := v["S"].(string); ok {
-			return s
-		}
-		if n, ok := v["N"].(string); ok {
-			return n
-		}
-		if b, ok := v["BOOL"].(bool); ok {
-			if b {
-				return "true"
-			}
-			return "false"
-		}
-	case string:
-		return v
-	case float64:
-		return strconv.FormatFloat(v, 'f', -1, 64)
-	case int:
-		return strconv.FormatInt(int64(v), 10)
-	case int64:
-		return strconv.FormatInt(v, 10)
-	case bool:
-		if v {
-			return "true"
-		}
-		return "false"
-	}
-	return "null"
 }

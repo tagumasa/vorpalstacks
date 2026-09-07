@@ -53,6 +53,9 @@ const (
 	// CognitoIdentityProviderServiceAdminCreateUserProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's AdminCreateUser RPC.
 	CognitoIdentityProviderServiceAdminCreateUserProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminCreateUser"
+	// CognitoIdentityProviderServiceAdminDeleteSoftwareTokenProcedure is the fully-qualified name of
+	// the CognitoIdentityProviderService's AdminDeleteSoftwareToken RPC.
+	CognitoIdentityProviderServiceAdminDeleteSoftwareTokenProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminDeleteSoftwareToken"
 	// CognitoIdentityProviderServiceAdminDeleteUserProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's AdminDeleteUser RPC.
 	CognitoIdentityProviderServiceAdminDeleteUserProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminDeleteUser"
@@ -77,6 +80,9 @@ const (
 	// CognitoIdentityProviderServiceAdminGetUserProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's AdminGetUser RPC.
 	CognitoIdentityProviderServiceAdminGetUserProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminGetUser"
+	// CognitoIdentityProviderServiceAdminGetUserAuthFactorsProcedure is the fully-qualified name of the
+	// CognitoIdentityProviderService's AdminGetUserAuthFactors RPC.
+	CognitoIdentityProviderServiceAdminGetUserAuthFactorsProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminGetUserAuthFactors"
 	// CognitoIdentityProviderServiceAdminInitiateAuthProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's AdminInitiateAuth RPC.
 	CognitoIdentityProviderServiceAdminInitiateAuthProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/AdminInitiateAuth"
@@ -228,6 +234,9 @@ const (
 	// CognitoIdentityProviderServiceDescribeTermsProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's DescribeTerms RPC.
 	CognitoIdentityProviderServiceDescribeTermsProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeTerms"
+	// CognitoIdentityProviderServiceDescribeTermsByClientProcedure is the fully-qualified name of the
+	// CognitoIdentityProviderService's DescribeTermsByClient RPC.
+	CognitoIdentityProviderServiceDescribeTermsByClientProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeTermsByClient"
 	// CognitoIdentityProviderServiceDescribeUserImportJobProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's DescribeUserImportJob RPC.
 	CognitoIdentityProviderServiceDescribeUserImportJobProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/DescribeUserImportJob"
@@ -246,6 +255,9 @@ const (
 	// CognitoIdentityProviderServiceForgotPasswordProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's ForgotPassword RPC.
 	CognitoIdentityProviderServiceForgotPasswordProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/ForgotPassword"
+	// CognitoIdentityProviderServiceGetClientTokenProcedure is the fully-qualified name of the
+	// CognitoIdentityProviderService's GetClientToken RPC.
+	CognitoIdentityProviderServiceGetClientTokenProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/GetClientToken"
 	// CognitoIdentityProviderServiceGetCSVHeaderProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's GetCSVHeader RPC.
 	CognitoIdentityProviderServiceGetCSVHeaderProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/GetCSVHeader"
@@ -261,6 +273,9 @@ const (
 	// CognitoIdentityProviderServiceGetLogDeliveryConfigurationProcedure is the fully-qualified name of
 	// the CognitoIdentityProviderService's GetLogDeliveryConfiguration RPC.
 	CognitoIdentityProviderServiceGetLogDeliveryConfigurationProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/GetLogDeliveryConfiguration"
+	// CognitoIdentityProviderServiceGetProvisionedLimitProcedure is the fully-qualified name of the
+	// CognitoIdentityProviderService's GetProvisionedLimit RPC.
+	CognitoIdentityProviderServiceGetProvisionedLimitProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/GetProvisionedLimit"
 	// CognitoIdentityProviderServiceGetSigningCertificateProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's GetSigningCertificate RPC.
 	CognitoIdentityProviderServiceGetSigningCertificateProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/GetSigningCertificate"
@@ -390,6 +405,9 @@ const (
 	// CognitoIdentityProviderServiceUpdateManagedLoginBrandingProcedure is the fully-qualified name of
 	// the CognitoIdentityProviderService's UpdateManagedLoginBranding RPC.
 	CognitoIdentityProviderServiceUpdateManagedLoginBrandingProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateManagedLoginBranding"
+	// CognitoIdentityProviderServiceUpdateProvisionedLimitProcedure is the fully-qualified name of the
+	// CognitoIdentityProviderService's UpdateProvisionedLimit RPC.
+	CognitoIdentityProviderServiceUpdateProvisionedLimitProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateProvisionedLimit"
 	// CognitoIdentityProviderServiceUpdateResourceServerProcedure is the fully-qualified name of the
 	// CognitoIdentityProviderService's UpdateResourceServer RPC.
 	CognitoIdentityProviderServiceUpdateResourceServerProcedure = "/cognitoidentityprovider.CognitoIdentityProviderService/UpdateResourceServer"
@@ -442,6 +460,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminCreateUser(context.Context, *connect.Request[cognitoidentityprovider.AdminCreateUserRequest]) (*connect.Response[cognitoidentityprovider.AdminCreateUserResponse], error)
+	// Deletes a user's registered time-based one-time password (TOTP) multi-factor authentication (MFA) factor, also known as a software token. After this operation, the user can no longer sign in with T...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminDeleteSoftwareToken(context.Context, *connect.Request[cognitoidentityprovider.AdminDeleteSoftwareTokenRequest]) (*connect.Response[cognitoidentityprovider.AdminDeleteSoftwareTokenResponse], error)
 	// Deletes a user profile in your user pool. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you must use IAM credentials...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -474,6 +496,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminGetUser(context.Context, *connect.Request[cognitoidentityprovider.AdminGetUserRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserResponse], error)
+	// Lists the authentication options for a user in a user pool. Returns the following: The user's multi-factor authentication (MFA) preferences. The user's options for choice-based authentication with ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminGetUserAuthFactors(context.Context, *connect.Request[cognitoidentityprovider.AdminGetUserAuthFactorsRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserAuthFactorsResponse], error)
 	// Starts sign-in for applications with a server-side component, for example a traditional web application. This operation specifies the authentication flow that you'd like to begin. The authenticatio...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -674,6 +700,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeTerms(context.Context, *connect.Request[cognitoidentityprovider.DescribeTermsRequest]) (*connect.Response[cognitoidentityprovider.DescribeTermsResponse], error)
+	// Returns details for the terms documents that are associated with an app client, identified by the app client ID, user pool ID, and terms name. For more information, see Terms documents. To call Des...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeTermsByClient(context.Context, *connect.Request[cognitoidentityprovider.DescribeTermsByClientRequest]) (*connect.Response[cognitoidentityprovider.DescribeTermsByClientResponse], error)
 	// Describes a user import job. For more information about user CSV import, see Importing users from a CSV file.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -686,7 +716,7 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolClient(context.Context, *connect.Request[cognitoidentityprovider.DescribeUserPoolClientRequest]) (*connect.Response[cognitoidentityprovider.DescribeUserPoolClientResponse], error)
-	// Given a user pool domain name, returns information about the domain configuration. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For thi...
+	// Given a user pool domain name, returns information about the domain configuration. This operation doesn't return results when you query a prefix domain in a secondary Region. Prefix domains are Reg...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolDomain(context.Context, *connect.Request[cognitoidentityprovider.DescribeUserPoolDomainRequest]) (*connect.Response[cognitoidentityprovider.DescribeUserPoolDomainResponse], error)
@@ -698,6 +728,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ForgotPassword(context.Context, *connect.Request[cognitoidentityprovider.ForgotPasswordRequest]) (*connect.Response[cognitoidentityprovider.ForgotPasswordResponse], error)
+	// Issues an access token for machine-to-machine (M2M) authorization. Your app client provides its client ID and secret, and receives an access token that authorizes requests to your resource servers....
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetClientToken(context.Context, *connect.Request[cognitoidentityprovider.GetClientTokenRequest]) (*connect.Response[cognitoidentityprovider.GetClientTokenResponse], error)
 	// Given a user pool ID, generates a comma-separated value (CSV) list populated with available user attributes in the user pool. This list is the header for the CSV file that determines the users in a...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -718,6 +752,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetLogDeliveryConfiguration(context.Context, *connect.Request[cognitoidentityprovider.GetLogDeliveryConfigurationRequest]) (*connect.Response[cognitoidentityprovider.GetLogDeliveryConfigurationResponse], error)
+	// Returns the current provisioned limit for a specific API category. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you...
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetProvisionedLimit(context.Context, *connect.Request[cognitoidentityprovider.GetProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.GetProvisionedLimitResponse], error)
 	// Given a user pool ID, returns the signing certificate for SAML 2.0 federation. Issued certificates are valid for 10 years from the date of issue. Amazon Cognito issues and assigns a new signing cer...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -890,6 +928,10 @@ type CognitoIdentityProviderServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateManagedLoginBranding(context.Context, *connect.Request[cognitoidentityprovider.UpdateManagedLoginBrandingRequest]) (*connect.Response[cognitoidentityprovider.UpdateManagedLoginBrandingResponse], error)
+	// Sets the provisioned limit for a specific API category. The value must be between the default limit and your account-level maximum limit in Service Quotas. Managed login user pools don't support ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateProvisionedLimit(context.Context, *connect.Request[cognitoidentityprovider.UpdateProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.UpdateProvisionedLimitResponse], error)
 	// Updates the name and scopes of a resource server. All other fields are read-only. For more information about resource servers, see Access control with resource servers. If you don't provide a value...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -970,6 +1012,12 @@ func NewCognitoIdentityProviderServiceClient(httpClient connect.HTTPClient, base
 			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminCreateUser")),
 			connect.WithClientOptions(opts...),
 		),
+		adminDeleteSoftwareToken: connect.NewClient[cognitoidentityprovider.AdminDeleteSoftwareTokenRequest, cognitoidentityprovider.AdminDeleteSoftwareTokenResponse](
+			httpClient,
+			baseURL+CognitoIdentityProviderServiceAdminDeleteSoftwareTokenProcedure,
+			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminDeleteSoftwareToken")),
+			connect.WithClientOptions(opts...),
+		),
 		adminDeleteUser: connect.NewClient[cognitoidentityprovider.AdminDeleteUserRequest, common.Empty](
 			httpClient,
 			baseURL+CognitoIdentityProviderServiceAdminDeleteUserProcedure,
@@ -1016,6 +1064,12 @@ func NewCognitoIdentityProviderServiceClient(httpClient connect.HTTPClient, base
 			httpClient,
 			baseURL+CognitoIdentityProviderServiceAdminGetUserProcedure,
 			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminGetUser")),
+			connect.WithClientOptions(opts...),
+		),
+		adminGetUserAuthFactors: connect.NewClient[cognitoidentityprovider.AdminGetUserAuthFactorsRequest, cognitoidentityprovider.AdminGetUserAuthFactorsResponse](
+			httpClient,
+			baseURL+CognitoIdentityProviderServiceAdminGetUserAuthFactorsProcedure,
+			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminGetUserAuthFactors")),
 			connect.WithClientOptions(opts...),
 		),
 		adminInitiateAuth: connect.NewClient[cognitoidentityprovider.AdminInitiateAuthRequest, cognitoidentityprovider.AdminInitiateAuthResponse](
@@ -1318,6 +1372,12 @@ func NewCognitoIdentityProviderServiceClient(httpClient connect.HTTPClient, base
 			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("DescribeTerms")),
 			connect.WithClientOptions(opts...),
 		),
+		describeTermsByClient: connect.NewClient[cognitoidentityprovider.DescribeTermsByClientRequest, cognitoidentityprovider.DescribeTermsByClientResponse](
+			httpClient,
+			baseURL+CognitoIdentityProviderServiceDescribeTermsByClientProcedure,
+			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("DescribeTermsByClient")),
+			connect.WithClientOptions(opts...),
+		),
 		describeUserImportJob: connect.NewClient[cognitoidentityprovider.DescribeUserImportJobRequest, cognitoidentityprovider.DescribeUserImportJobResponse](
 			httpClient,
 			baseURL+CognitoIdentityProviderServiceDescribeUserImportJobProcedure,
@@ -1354,6 +1414,12 @@ func NewCognitoIdentityProviderServiceClient(httpClient connect.HTTPClient, base
 			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("ForgotPassword")),
 			connect.WithClientOptions(opts...),
 		),
+		getClientToken: connect.NewClient[cognitoidentityprovider.GetClientTokenRequest, cognitoidentityprovider.GetClientTokenResponse](
+			httpClient,
+			baseURL+CognitoIdentityProviderServiceGetClientTokenProcedure,
+			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("GetClientToken")),
+			connect.WithClientOptions(opts...),
+		),
 		getCSVHeader: connect.NewClient[cognitoidentityprovider.GetCSVHeaderRequest, cognitoidentityprovider.GetCSVHeaderResponse](
 			httpClient,
 			baseURL+CognitoIdentityProviderServiceGetCSVHeaderProcedure,
@@ -1382,6 +1448,12 @@ func NewCognitoIdentityProviderServiceClient(httpClient connect.HTTPClient, base
 			httpClient,
 			baseURL+CognitoIdentityProviderServiceGetLogDeliveryConfigurationProcedure,
 			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("GetLogDeliveryConfiguration")),
+			connect.WithClientOptions(opts...),
+		),
+		getProvisionedLimit: connect.NewClient[cognitoidentityprovider.GetProvisionedLimitRequest, cognitoidentityprovider.GetProvisionedLimitResponse](
+			httpClient,
+			baseURL+CognitoIdentityProviderServiceGetProvisionedLimitProcedure,
+			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("GetProvisionedLimit")),
 			connect.WithClientOptions(opts...),
 		),
 		getSigningCertificate: connect.NewClient[cognitoidentityprovider.GetSigningCertificateRequest, cognitoidentityprovider.GetSigningCertificateResponse](
@@ -1642,6 +1714,12 @@ func NewCognitoIdentityProviderServiceClient(httpClient connect.HTTPClient, base
 			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("UpdateManagedLoginBranding")),
 			connect.WithClientOptions(opts...),
 		),
+		updateProvisionedLimit: connect.NewClient[cognitoidentityprovider.UpdateProvisionedLimitRequest, cognitoidentityprovider.UpdateProvisionedLimitResponse](
+			httpClient,
+			baseURL+CognitoIdentityProviderServiceUpdateProvisionedLimitProcedure,
+			connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("UpdateProvisionedLimit")),
+			connect.WithClientOptions(opts...),
+		),
 		updateResourceServer: connect.NewClient[cognitoidentityprovider.UpdateResourceServerRequest, cognitoidentityprovider.UpdateResourceServerResponse](
 			httpClient,
 			baseURL+CognitoIdentityProviderServiceUpdateResourceServerProcedure,
@@ -1706,6 +1784,7 @@ type cognitoIdentityProviderServiceClient struct {
 	adminAddUserToGroup                  *connect.Client[cognitoidentityprovider.AdminAddUserToGroupRequest, common.Empty]
 	adminConfirmSignUp                   *connect.Client[cognitoidentityprovider.AdminConfirmSignUpRequest, cognitoidentityprovider.AdminConfirmSignUpResponse]
 	adminCreateUser                      *connect.Client[cognitoidentityprovider.AdminCreateUserRequest, cognitoidentityprovider.AdminCreateUserResponse]
+	adminDeleteSoftwareToken             *connect.Client[cognitoidentityprovider.AdminDeleteSoftwareTokenRequest, cognitoidentityprovider.AdminDeleteSoftwareTokenResponse]
 	adminDeleteUser                      *connect.Client[cognitoidentityprovider.AdminDeleteUserRequest, common.Empty]
 	adminDeleteUserAttributes            *connect.Client[cognitoidentityprovider.AdminDeleteUserAttributesRequest, cognitoidentityprovider.AdminDeleteUserAttributesResponse]
 	adminDisableProviderForUser          *connect.Client[cognitoidentityprovider.AdminDisableProviderForUserRequest, cognitoidentityprovider.AdminDisableProviderForUserResponse]
@@ -1714,6 +1793,7 @@ type cognitoIdentityProviderServiceClient struct {
 	adminForgetDevice                    *connect.Client[cognitoidentityprovider.AdminForgetDeviceRequest, common.Empty]
 	adminGetDevice                       *connect.Client[cognitoidentityprovider.AdminGetDeviceRequest, cognitoidentityprovider.AdminGetDeviceResponse]
 	adminGetUser                         *connect.Client[cognitoidentityprovider.AdminGetUserRequest, cognitoidentityprovider.AdminGetUserResponse]
+	adminGetUserAuthFactors              *connect.Client[cognitoidentityprovider.AdminGetUserAuthFactorsRequest, cognitoidentityprovider.AdminGetUserAuthFactorsResponse]
 	adminInitiateAuth                    *connect.Client[cognitoidentityprovider.AdminInitiateAuthRequest, cognitoidentityprovider.AdminInitiateAuthResponse]
 	adminLinkProviderForUser             *connect.Client[cognitoidentityprovider.AdminLinkProviderForUserRequest, cognitoidentityprovider.AdminLinkProviderForUserResponse]
 	adminListDevices                     *connect.Client[cognitoidentityprovider.AdminListDevicesRequest, cognitoidentityprovider.AdminListDevicesResponse]
@@ -1764,17 +1844,20 @@ type cognitoIdentityProviderServiceClient struct {
 	describeResourceServer               *connect.Client[cognitoidentityprovider.DescribeResourceServerRequest, cognitoidentityprovider.DescribeResourceServerResponse]
 	describeRiskConfiguration            *connect.Client[cognitoidentityprovider.DescribeRiskConfigurationRequest, cognitoidentityprovider.DescribeRiskConfigurationResponse]
 	describeTerms                        *connect.Client[cognitoidentityprovider.DescribeTermsRequest, cognitoidentityprovider.DescribeTermsResponse]
+	describeTermsByClient                *connect.Client[cognitoidentityprovider.DescribeTermsByClientRequest, cognitoidentityprovider.DescribeTermsByClientResponse]
 	describeUserImportJob                *connect.Client[cognitoidentityprovider.DescribeUserImportJobRequest, cognitoidentityprovider.DescribeUserImportJobResponse]
 	describeUserPool                     *connect.Client[cognitoidentityprovider.DescribeUserPoolRequest, cognitoidentityprovider.DescribeUserPoolResponse]
 	describeUserPoolClient               *connect.Client[cognitoidentityprovider.DescribeUserPoolClientRequest, cognitoidentityprovider.DescribeUserPoolClientResponse]
 	describeUserPoolDomain               *connect.Client[cognitoidentityprovider.DescribeUserPoolDomainRequest, cognitoidentityprovider.DescribeUserPoolDomainResponse]
 	forgetDevice                         *connect.Client[cognitoidentityprovider.ForgetDeviceRequest, common.Empty]
 	forgotPassword                       *connect.Client[cognitoidentityprovider.ForgotPasswordRequest, cognitoidentityprovider.ForgotPasswordResponse]
+	getClientToken                       *connect.Client[cognitoidentityprovider.GetClientTokenRequest, cognitoidentityprovider.GetClientTokenResponse]
 	getCSVHeader                         *connect.Client[cognitoidentityprovider.GetCSVHeaderRequest, cognitoidentityprovider.GetCSVHeaderResponse]
 	getDevice                            *connect.Client[cognitoidentityprovider.GetDeviceRequest, cognitoidentityprovider.GetDeviceResponse]
 	getGroup                             *connect.Client[cognitoidentityprovider.GetGroupRequest, cognitoidentityprovider.GetGroupResponse]
 	getIdentityProviderByIdentifier      *connect.Client[cognitoidentityprovider.GetIdentityProviderByIdentifierRequest, cognitoidentityprovider.GetIdentityProviderByIdentifierResponse]
 	getLogDeliveryConfiguration          *connect.Client[cognitoidentityprovider.GetLogDeliveryConfigurationRequest, cognitoidentityprovider.GetLogDeliveryConfigurationResponse]
+	getProvisionedLimit                  *connect.Client[cognitoidentityprovider.GetProvisionedLimitRequest, cognitoidentityprovider.GetProvisionedLimitResponse]
 	getSigningCertificate                *connect.Client[cognitoidentityprovider.GetSigningCertificateRequest, cognitoidentityprovider.GetSigningCertificateResponse]
 	getTokensFromRefreshToken            *connect.Client[cognitoidentityprovider.GetTokensFromRefreshTokenRequest, cognitoidentityprovider.GetTokensFromRefreshTokenResponse]
 	getUICustomization                   *connect.Client[cognitoidentityprovider.GetUICustomizationRequest, cognitoidentityprovider.GetUICustomizationResponse]
@@ -1818,6 +1901,7 @@ type cognitoIdentityProviderServiceClient struct {
 	updateGroup                          *connect.Client[cognitoidentityprovider.UpdateGroupRequest, cognitoidentityprovider.UpdateGroupResponse]
 	updateIdentityProvider               *connect.Client[cognitoidentityprovider.UpdateIdentityProviderRequest, cognitoidentityprovider.UpdateIdentityProviderResponse]
 	updateManagedLoginBranding           *connect.Client[cognitoidentityprovider.UpdateManagedLoginBrandingRequest, cognitoidentityprovider.UpdateManagedLoginBrandingResponse]
+	updateProvisionedLimit               *connect.Client[cognitoidentityprovider.UpdateProvisionedLimitRequest, cognitoidentityprovider.UpdateProvisionedLimitResponse]
 	updateResourceServer                 *connect.Client[cognitoidentityprovider.UpdateResourceServerRequest, cognitoidentityprovider.UpdateResourceServerResponse]
 	updateTerms                          *connect.Client[cognitoidentityprovider.UpdateTermsRequest, cognitoidentityprovider.UpdateTermsResponse]
 	updateUserAttributes                 *connect.Client[cognitoidentityprovider.UpdateUserAttributesRequest, cognitoidentityprovider.UpdateUserAttributesResponse]
@@ -1856,6 +1940,12 @@ func (c *cognitoIdentityProviderServiceClient) AdminConfirmSignUp(ctx context.Co
 // AdminCreateUser calls cognitoidentityprovider.CognitoIdentityProviderService.AdminCreateUser.
 func (c *cognitoIdentityProviderServiceClient) AdminCreateUser(ctx context.Context, req *connect.Request[cognitoidentityprovider.AdminCreateUserRequest]) (*connect.Response[cognitoidentityprovider.AdminCreateUserResponse], error) {
 	return c.adminCreateUser.CallUnary(ctx, req)
+}
+
+// AdminDeleteSoftwareToken calls
+// cognitoidentityprovider.CognitoIdentityProviderService.AdminDeleteSoftwareToken.
+func (c *cognitoIdentityProviderServiceClient) AdminDeleteSoftwareToken(ctx context.Context, req *connect.Request[cognitoidentityprovider.AdminDeleteSoftwareTokenRequest]) (*connect.Response[cognitoidentityprovider.AdminDeleteSoftwareTokenResponse], error) {
+	return c.adminDeleteSoftwareToken.CallUnary(ctx, req)
 }
 
 // AdminDeleteUser calls cognitoidentityprovider.CognitoIdentityProviderService.AdminDeleteUser.
@@ -1898,6 +1988,12 @@ func (c *cognitoIdentityProviderServiceClient) AdminGetDevice(ctx context.Contex
 // AdminGetUser calls cognitoidentityprovider.CognitoIdentityProviderService.AdminGetUser.
 func (c *cognitoIdentityProviderServiceClient) AdminGetUser(ctx context.Context, req *connect.Request[cognitoidentityprovider.AdminGetUserRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserResponse], error) {
 	return c.adminGetUser.CallUnary(ctx, req)
+}
+
+// AdminGetUserAuthFactors calls
+// cognitoidentityprovider.CognitoIdentityProviderService.AdminGetUserAuthFactors.
+func (c *cognitoIdentityProviderServiceClient) AdminGetUserAuthFactors(ctx context.Context, req *connect.Request[cognitoidentityprovider.AdminGetUserAuthFactorsRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserAuthFactorsResponse], error) {
+	return c.adminGetUserAuthFactors.CallUnary(ctx, req)
 }
 
 // AdminInitiateAuth calls cognitoidentityprovider.CognitoIdentityProviderService.AdminInitiateAuth.
@@ -2187,6 +2283,12 @@ func (c *cognitoIdentityProviderServiceClient) DescribeTerms(ctx context.Context
 	return c.describeTerms.CallUnary(ctx, req)
 }
 
+// DescribeTermsByClient calls
+// cognitoidentityprovider.CognitoIdentityProviderService.DescribeTermsByClient.
+func (c *cognitoIdentityProviderServiceClient) DescribeTermsByClient(ctx context.Context, req *connect.Request[cognitoidentityprovider.DescribeTermsByClientRequest]) (*connect.Response[cognitoidentityprovider.DescribeTermsByClientResponse], error) {
+	return c.describeTermsByClient.CallUnary(ctx, req)
+}
+
 // DescribeUserImportJob calls
 // cognitoidentityprovider.CognitoIdentityProviderService.DescribeUserImportJob.
 func (c *cognitoIdentityProviderServiceClient) DescribeUserImportJob(ctx context.Context, req *connect.Request[cognitoidentityprovider.DescribeUserImportJobRequest]) (*connect.Response[cognitoidentityprovider.DescribeUserImportJobResponse], error) {
@@ -2220,6 +2322,11 @@ func (c *cognitoIdentityProviderServiceClient) ForgotPassword(ctx context.Contex
 	return c.forgotPassword.CallUnary(ctx, req)
 }
 
+// GetClientToken calls cognitoidentityprovider.CognitoIdentityProviderService.GetClientToken.
+func (c *cognitoIdentityProviderServiceClient) GetClientToken(ctx context.Context, req *connect.Request[cognitoidentityprovider.GetClientTokenRequest]) (*connect.Response[cognitoidentityprovider.GetClientTokenResponse], error) {
+	return c.getClientToken.CallUnary(ctx, req)
+}
+
 // GetCSVHeader calls cognitoidentityprovider.CognitoIdentityProviderService.GetCSVHeader.
 func (c *cognitoIdentityProviderServiceClient) GetCSVHeader(ctx context.Context, req *connect.Request[cognitoidentityprovider.GetCSVHeaderRequest]) (*connect.Response[cognitoidentityprovider.GetCSVHeaderResponse], error) {
 	return c.getCSVHeader.CallUnary(ctx, req)
@@ -2245,6 +2352,12 @@ func (c *cognitoIdentityProviderServiceClient) GetIdentityProviderByIdentifier(c
 // cognitoidentityprovider.CognitoIdentityProviderService.GetLogDeliveryConfiguration.
 func (c *cognitoIdentityProviderServiceClient) GetLogDeliveryConfiguration(ctx context.Context, req *connect.Request[cognitoidentityprovider.GetLogDeliveryConfigurationRequest]) (*connect.Response[cognitoidentityprovider.GetLogDeliveryConfigurationResponse], error) {
 	return c.getLogDeliveryConfiguration.CallUnary(ctx, req)
+}
+
+// GetProvisionedLimit calls
+// cognitoidentityprovider.CognitoIdentityProviderService.GetProvisionedLimit.
+func (c *cognitoIdentityProviderServiceClient) GetProvisionedLimit(ctx context.Context, req *connect.Request[cognitoidentityprovider.GetProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.GetProvisionedLimitResponse], error) {
+	return c.getProvisionedLimit.CallUnary(ctx, req)
 }
 
 // GetSigningCertificate calls
@@ -2489,6 +2602,12 @@ func (c *cognitoIdentityProviderServiceClient) UpdateManagedLoginBranding(ctx co
 	return c.updateManagedLoginBranding.CallUnary(ctx, req)
 }
 
+// UpdateProvisionedLimit calls
+// cognitoidentityprovider.CognitoIdentityProviderService.UpdateProvisionedLimit.
+func (c *cognitoIdentityProviderServiceClient) UpdateProvisionedLimit(ctx context.Context, req *connect.Request[cognitoidentityprovider.UpdateProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.UpdateProvisionedLimitResponse], error) {
+	return c.updateProvisionedLimit.CallUnary(ctx, req)
+}
+
 // UpdateResourceServer calls
 // cognitoidentityprovider.CognitoIdentityProviderService.UpdateResourceServer.
 func (c *cognitoIdentityProviderServiceClient) UpdateResourceServer(ctx context.Context, req *connect.Request[cognitoidentityprovider.UpdateResourceServerRequest]) (*connect.Response[cognitoidentityprovider.UpdateResourceServerResponse], error) {
@@ -2564,6 +2683,10 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminCreateUser(context.Context, *connect.Request[cognitoidentityprovider.AdminCreateUserRequest]) (*connect.Response[cognitoidentityprovider.AdminCreateUserResponse], error)
+	// Deletes a user's registered time-based one-time password (TOTP) multi-factor authentication (MFA) factor, also known as a software token. After this operation, the user can no longer sign in with T...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminDeleteSoftwareToken(context.Context, *connect.Request[cognitoidentityprovider.AdminDeleteSoftwareTokenRequest]) (*connect.Response[cognitoidentityprovider.AdminDeleteSoftwareTokenResponse], error)
 	// Deletes a user profile in your user pool. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you must use IAM credentials...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2596,6 +2719,10 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AdminGetUser(context.Context, *connect.Request[cognitoidentityprovider.AdminGetUserRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserResponse], error)
+	// Lists the authentication options for a user in a user pool. Returns the following: The user's multi-factor authentication (MFA) preferences. The user's options for choice-based authentication with ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	AdminGetUserAuthFactors(context.Context, *connect.Request[cognitoidentityprovider.AdminGetUserAuthFactorsRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserAuthFactorsResponse], error)
 	// Starts sign-in for applications with a server-side component, for example a traditional web application. This operation specifies the authentication flow that you'd like to begin. The authenticatio...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2796,6 +2923,10 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeTerms(context.Context, *connect.Request[cognitoidentityprovider.DescribeTermsRequest]) (*connect.Response[cognitoidentityprovider.DescribeTermsResponse], error)
+	// Returns details for the terms documents that are associated with an app client, identified by the app client ID, user pool ID, and terms name. For more information, see Terms documents. To call Des...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeTermsByClient(context.Context, *connect.Request[cognitoidentityprovider.DescribeTermsByClientRequest]) (*connect.Response[cognitoidentityprovider.DescribeTermsByClientResponse], error)
 	// Describes a user import job. For more information about user CSV import, see Importing users from a CSV file.
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2808,7 +2939,7 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolClient(context.Context, *connect.Request[cognitoidentityprovider.DescribeUserPoolClientRequest]) (*connect.Response[cognitoidentityprovider.DescribeUserPoolClientResponse], error)
-	// Given a user pool domain name, returns information about the domain configuration. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For thi...
+	// Given a user pool domain name, returns information about the domain configuration. This operation doesn't return results when you query a prefix domain in a secondary Region. Prefix domains are Reg...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DescribeUserPoolDomain(context.Context, *connect.Request[cognitoidentityprovider.DescribeUserPoolDomainRequest]) (*connect.Response[cognitoidentityprovider.DescribeUserPoolDomainResponse], error)
@@ -2820,6 +2951,10 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ForgotPassword(context.Context, *connect.Request[cognitoidentityprovider.ForgotPasswordRequest]) (*connect.Response[cognitoidentityprovider.ForgotPasswordResponse], error)
+	// Issues an access token for machine-to-machine (M2M) authorization. Your app client provides its client ID and secret, and receives an access token that authorizes requests to your resource servers....
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetClientToken(context.Context, *connect.Request[cognitoidentityprovider.GetClientTokenRequest]) (*connect.Response[cognitoidentityprovider.GetClientTokenResponse], error)
 	// Given a user pool ID, generates a comma-separated value (CSV) list populated with available user attributes in the user pool. This list is the header for the CSV file that determines the users in a...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -2840,6 +2975,10 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetLogDeliveryConfiguration(context.Context, *connect.Request[cognitoidentityprovider.GetLogDeliveryConfigurationRequest]) (*connect.Response[cognitoidentityprovider.GetLogDeliveryConfigurationResponse], error)
+	// Returns the current provisioned limit for a specific API category. Amazon Cognito evaluates Identity and Access Management (IAM) policies in requests for this API operation. For this operation, you...
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetProvisionedLimit(context.Context, *connect.Request[cognitoidentityprovider.GetProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.GetProvisionedLimitResponse], error)
 	// Given a user pool ID, returns the signing certificate for SAML 2.0 federation. Issued certificates are valid for 10 years from the date of issue. Amazon Cognito issues and assigns a new signing cer...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -3012,6 +3151,10 @@ type CognitoIdentityProviderServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateManagedLoginBranding(context.Context, *connect.Request[cognitoidentityprovider.UpdateManagedLoginBrandingRequest]) (*connect.Response[cognitoidentityprovider.UpdateManagedLoginBrandingResponse], error)
+	// Sets the provisioned limit for a specific API category. The value must be between the default limit and your account-level maximum limit in Service Quotas. Managed login user pools don't support ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateProvisionedLimit(context.Context, *connect.Request[cognitoidentityprovider.UpdateProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.UpdateProvisionedLimitResponse], error)
 	// Updates the name and scopes of a resource server. All other fields are read-only. For more information about resource servers, see Access control with resource servers. If you don't provide a value...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -3087,6 +3230,12 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminCreateUser")),
 		connect.WithHandlerOptions(opts...),
 	)
+	cognitoIdentityProviderServiceAdminDeleteSoftwareTokenHandler := connect.NewUnaryHandler(
+		CognitoIdentityProviderServiceAdminDeleteSoftwareTokenProcedure,
+		svc.AdminDeleteSoftwareToken,
+		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminDeleteSoftwareToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	cognitoIdentityProviderServiceAdminDeleteUserHandler := connect.NewUnaryHandler(
 		CognitoIdentityProviderServiceAdminDeleteUserProcedure,
 		svc.AdminDeleteUser,
@@ -3133,6 +3282,12 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 		CognitoIdentityProviderServiceAdminGetUserProcedure,
 		svc.AdminGetUser,
 		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminGetUser")),
+		connect.WithHandlerOptions(opts...),
+	)
+	cognitoIdentityProviderServiceAdminGetUserAuthFactorsHandler := connect.NewUnaryHandler(
+		CognitoIdentityProviderServiceAdminGetUserAuthFactorsProcedure,
+		svc.AdminGetUserAuthFactors,
+		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("AdminGetUserAuthFactors")),
 		connect.WithHandlerOptions(opts...),
 	)
 	cognitoIdentityProviderServiceAdminInitiateAuthHandler := connect.NewUnaryHandler(
@@ -3435,6 +3590,12 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("DescribeTerms")),
 		connect.WithHandlerOptions(opts...),
 	)
+	cognitoIdentityProviderServiceDescribeTermsByClientHandler := connect.NewUnaryHandler(
+		CognitoIdentityProviderServiceDescribeTermsByClientProcedure,
+		svc.DescribeTermsByClient,
+		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("DescribeTermsByClient")),
+		connect.WithHandlerOptions(opts...),
+	)
 	cognitoIdentityProviderServiceDescribeUserImportJobHandler := connect.NewUnaryHandler(
 		CognitoIdentityProviderServiceDescribeUserImportJobProcedure,
 		svc.DescribeUserImportJob,
@@ -3471,6 +3632,12 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("ForgotPassword")),
 		connect.WithHandlerOptions(opts...),
 	)
+	cognitoIdentityProviderServiceGetClientTokenHandler := connect.NewUnaryHandler(
+		CognitoIdentityProviderServiceGetClientTokenProcedure,
+		svc.GetClientToken,
+		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("GetClientToken")),
+		connect.WithHandlerOptions(opts...),
+	)
 	cognitoIdentityProviderServiceGetCSVHeaderHandler := connect.NewUnaryHandler(
 		CognitoIdentityProviderServiceGetCSVHeaderProcedure,
 		svc.GetCSVHeader,
@@ -3499,6 +3666,12 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 		CognitoIdentityProviderServiceGetLogDeliveryConfigurationProcedure,
 		svc.GetLogDeliveryConfiguration,
 		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("GetLogDeliveryConfiguration")),
+		connect.WithHandlerOptions(opts...),
+	)
+	cognitoIdentityProviderServiceGetProvisionedLimitHandler := connect.NewUnaryHandler(
+		CognitoIdentityProviderServiceGetProvisionedLimitProcedure,
+		svc.GetProvisionedLimit,
+		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("GetProvisionedLimit")),
 		connect.WithHandlerOptions(opts...),
 	)
 	cognitoIdentityProviderServiceGetSigningCertificateHandler := connect.NewUnaryHandler(
@@ -3759,6 +3932,12 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("UpdateManagedLoginBranding")),
 		connect.WithHandlerOptions(opts...),
 	)
+	cognitoIdentityProviderServiceUpdateProvisionedLimitHandler := connect.NewUnaryHandler(
+		CognitoIdentityProviderServiceUpdateProvisionedLimitProcedure,
+		svc.UpdateProvisionedLimit,
+		connect.WithSchema(cognitoIdentityProviderServiceMethods.ByName("UpdateProvisionedLimit")),
+		connect.WithHandlerOptions(opts...),
+	)
 	cognitoIdentityProviderServiceUpdateResourceServerHandler := connect.NewUnaryHandler(
 		CognitoIdentityProviderServiceUpdateResourceServerProcedure,
 		svc.UpdateResourceServer,
@@ -3825,6 +4004,8 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 			cognitoIdentityProviderServiceAdminConfirmSignUpHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceAdminCreateUserProcedure:
 			cognitoIdentityProviderServiceAdminCreateUserHandler.ServeHTTP(w, r)
+		case CognitoIdentityProviderServiceAdminDeleteSoftwareTokenProcedure:
+			cognitoIdentityProviderServiceAdminDeleteSoftwareTokenHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceAdminDeleteUserProcedure:
 			cognitoIdentityProviderServiceAdminDeleteUserHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceAdminDeleteUserAttributesProcedure:
@@ -3841,6 +4022,8 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 			cognitoIdentityProviderServiceAdminGetDeviceHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceAdminGetUserProcedure:
 			cognitoIdentityProviderServiceAdminGetUserHandler.ServeHTTP(w, r)
+		case CognitoIdentityProviderServiceAdminGetUserAuthFactorsProcedure:
+			cognitoIdentityProviderServiceAdminGetUserAuthFactorsHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceAdminInitiateAuthProcedure:
 			cognitoIdentityProviderServiceAdminInitiateAuthHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceAdminLinkProviderForUserProcedure:
@@ -3941,6 +4124,8 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 			cognitoIdentityProviderServiceDescribeRiskConfigurationHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceDescribeTermsProcedure:
 			cognitoIdentityProviderServiceDescribeTermsHandler.ServeHTTP(w, r)
+		case CognitoIdentityProviderServiceDescribeTermsByClientProcedure:
+			cognitoIdentityProviderServiceDescribeTermsByClientHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceDescribeUserImportJobProcedure:
 			cognitoIdentityProviderServiceDescribeUserImportJobHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceDescribeUserPoolProcedure:
@@ -3953,6 +4138,8 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 			cognitoIdentityProviderServiceForgetDeviceHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceForgotPasswordProcedure:
 			cognitoIdentityProviderServiceForgotPasswordHandler.ServeHTTP(w, r)
+		case CognitoIdentityProviderServiceGetClientTokenProcedure:
+			cognitoIdentityProviderServiceGetClientTokenHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceGetCSVHeaderProcedure:
 			cognitoIdentityProviderServiceGetCSVHeaderHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceGetDeviceProcedure:
@@ -3963,6 +4150,8 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 			cognitoIdentityProviderServiceGetIdentityProviderByIdentifierHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceGetLogDeliveryConfigurationProcedure:
 			cognitoIdentityProviderServiceGetLogDeliveryConfigurationHandler.ServeHTTP(w, r)
+		case CognitoIdentityProviderServiceGetProvisionedLimitProcedure:
+			cognitoIdentityProviderServiceGetProvisionedLimitHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceGetSigningCertificateProcedure:
 			cognitoIdentityProviderServiceGetSigningCertificateHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceGetTokensFromRefreshTokenProcedure:
@@ -4049,6 +4238,8 @@ func NewCognitoIdentityProviderServiceHandler(svc CognitoIdentityProviderService
 			cognitoIdentityProviderServiceUpdateIdentityProviderHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceUpdateManagedLoginBrandingProcedure:
 			cognitoIdentityProviderServiceUpdateManagedLoginBrandingHandler.ServeHTTP(w, r)
+		case CognitoIdentityProviderServiceUpdateProvisionedLimitProcedure:
+			cognitoIdentityProviderServiceUpdateProvisionedLimitHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceUpdateResourceServerProcedure:
 			cognitoIdentityProviderServiceUpdateResourceServerHandler.ServeHTTP(w, r)
 		case CognitoIdentityProviderServiceUpdateTermsProcedure:
@@ -4096,6 +4287,10 @@ func (UnimplementedCognitoIdentityProviderServiceHandler) AdminCreateUser(contex
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.AdminCreateUser is not implemented"))
 }
 
+func (UnimplementedCognitoIdentityProviderServiceHandler) AdminDeleteSoftwareToken(context.Context, *connect.Request[cognitoidentityprovider.AdminDeleteSoftwareTokenRequest]) (*connect.Response[cognitoidentityprovider.AdminDeleteSoftwareTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.AdminDeleteSoftwareToken is not implemented"))
+}
+
 func (UnimplementedCognitoIdentityProviderServiceHandler) AdminDeleteUser(context.Context, *connect.Request[cognitoidentityprovider.AdminDeleteUserRequest]) (*connect.Response[common.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.AdminDeleteUser is not implemented"))
 }
@@ -4126,6 +4321,10 @@ func (UnimplementedCognitoIdentityProviderServiceHandler) AdminGetDevice(context
 
 func (UnimplementedCognitoIdentityProviderServiceHandler) AdminGetUser(context.Context, *connect.Request[cognitoidentityprovider.AdminGetUserRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.AdminGetUser is not implemented"))
+}
+
+func (UnimplementedCognitoIdentityProviderServiceHandler) AdminGetUserAuthFactors(context.Context, *connect.Request[cognitoidentityprovider.AdminGetUserAuthFactorsRequest]) (*connect.Response[cognitoidentityprovider.AdminGetUserAuthFactorsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.AdminGetUserAuthFactors is not implemented"))
 }
 
 func (UnimplementedCognitoIdentityProviderServiceHandler) AdminInitiateAuth(context.Context, *connect.Request[cognitoidentityprovider.AdminInitiateAuthRequest]) (*connect.Response[cognitoidentityprovider.AdminInitiateAuthResponse], error) {
@@ -4328,6 +4527,10 @@ func (UnimplementedCognitoIdentityProviderServiceHandler) DescribeTerms(context.
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.DescribeTerms is not implemented"))
 }
 
+func (UnimplementedCognitoIdentityProviderServiceHandler) DescribeTermsByClient(context.Context, *connect.Request[cognitoidentityprovider.DescribeTermsByClientRequest]) (*connect.Response[cognitoidentityprovider.DescribeTermsByClientResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.DescribeTermsByClient is not implemented"))
+}
+
 func (UnimplementedCognitoIdentityProviderServiceHandler) DescribeUserImportJob(context.Context, *connect.Request[cognitoidentityprovider.DescribeUserImportJobRequest]) (*connect.Response[cognitoidentityprovider.DescribeUserImportJobResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.DescribeUserImportJob is not implemented"))
 }
@@ -4352,6 +4555,10 @@ func (UnimplementedCognitoIdentityProviderServiceHandler) ForgotPassword(context
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.ForgotPassword is not implemented"))
 }
 
+func (UnimplementedCognitoIdentityProviderServiceHandler) GetClientToken(context.Context, *connect.Request[cognitoidentityprovider.GetClientTokenRequest]) (*connect.Response[cognitoidentityprovider.GetClientTokenResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.GetClientToken is not implemented"))
+}
+
 func (UnimplementedCognitoIdentityProviderServiceHandler) GetCSVHeader(context.Context, *connect.Request[cognitoidentityprovider.GetCSVHeaderRequest]) (*connect.Response[cognitoidentityprovider.GetCSVHeaderResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.GetCSVHeader is not implemented"))
 }
@@ -4370,6 +4577,10 @@ func (UnimplementedCognitoIdentityProviderServiceHandler) GetIdentityProviderByI
 
 func (UnimplementedCognitoIdentityProviderServiceHandler) GetLogDeliveryConfiguration(context.Context, *connect.Request[cognitoidentityprovider.GetLogDeliveryConfigurationRequest]) (*connect.Response[cognitoidentityprovider.GetLogDeliveryConfigurationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.GetLogDeliveryConfiguration is not implemented"))
+}
+
+func (UnimplementedCognitoIdentityProviderServiceHandler) GetProvisionedLimit(context.Context, *connect.Request[cognitoidentityprovider.GetProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.GetProvisionedLimitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.GetProvisionedLimit is not implemented"))
 }
 
 func (UnimplementedCognitoIdentityProviderServiceHandler) GetSigningCertificate(context.Context, *connect.Request[cognitoidentityprovider.GetSigningCertificateRequest]) (*connect.Response[cognitoidentityprovider.GetSigningCertificateResponse], error) {
@@ -4542,6 +4753,10 @@ func (UnimplementedCognitoIdentityProviderServiceHandler) UpdateIdentityProvider
 
 func (UnimplementedCognitoIdentityProviderServiceHandler) UpdateManagedLoginBranding(context.Context, *connect.Request[cognitoidentityprovider.UpdateManagedLoginBrandingRequest]) (*connect.Response[cognitoidentityprovider.UpdateManagedLoginBrandingResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.UpdateManagedLoginBranding is not implemented"))
+}
+
+func (UnimplementedCognitoIdentityProviderServiceHandler) UpdateProvisionedLimit(context.Context, *connect.Request[cognitoidentityprovider.UpdateProvisionedLimitRequest]) (*connect.Response[cognitoidentityprovider.UpdateProvisionedLimitResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("cognitoidentityprovider.CognitoIdentityProviderService.UpdateProvisionedLimit is not implemented"))
 }
 
 func (UnimplementedCognitoIdentityProviderServiceHandler) UpdateResourceServer(context.Context, *connect.Request[cognitoidentityprovider.UpdateResourceServerRequest]) (*connect.Response[cognitoidentityprovider.UpdateResourceServerResponse], error) {

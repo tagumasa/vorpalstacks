@@ -5,6 +5,7 @@ import (
 
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
+	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
 
 // ---------------------------------------------------------------------------
@@ -139,4 +140,39 @@ func (s *DynamoDBService) updateContributorInsightsCore(ctx context.Context, req
 		"TableName":                 tableName,
 		"ContributorInsightsStatus": status,
 	}, nil
+}
+
+// describeContributorInsightsCore owns the DescribeContributorInsights read:
+// the optional index name is validated against the resource-name rules, and
+// the status, rules, and mode come from the resolved table.
+func (s *DynamoDBService) describeContributorInsightsCore(table *dbstore.Table, params map[string]interface{}) (map[string]interface{}, error) {
+	indexName := request.GetStringParam(params, "IndexName")
+	if indexName != "" {
+		if !validateResourceName(indexName) {
+			return nil, ErrInvalidParameter
+		}
+	}
+
+	status := "DISABLED"
+	if table.ContributorInsightsEnabled {
+		status = "ENABLED"
+	}
+
+	result := map[string]interface{}{
+		"TableName":                 table.Name,
+		"ContributorInsightsStatus": status,
+	}
+	if ruleNames := ContributorInsightsRuleNames(table); len(ruleNames) > 0 {
+		result["ContributorInsightsRuleList"] = ruleNames
+	}
+	if !table.ContributorInsightsUpdatedAt.IsZero() {
+		result["LastUpdateDateTime"] = table.ContributorInsightsUpdatedAt.Unix()
+	}
+	if table.ContributorInsightsMode != "" {
+		result["ContributorInsightsMode"] = table.ContributorInsightsMode
+	}
+	if indexName != "" {
+		result["IndexName"] = indexName
+	}
+	return result, nil
 }

@@ -11,130 +11,33 @@ import (
 
 // getNestedAttributeValue resolves a document path (e.g. "a.b.c" or
 // "a[0].b") against an item's attributes, navigating Map and List
-// AttributeValue types. Returns nil if any segment is missing.
-func getNestedAttributeValue(attrs map[string]*dbstore.AttributeValue, path string) *dbstore.AttributeValue {
+// AttributeValue types. Returns nil if any segment is missing. A malformed
+// path — an invalid bracket index, or a path that does not begin with an
+// attribute name — is a request error, not a missing attribute.
+func getNestedAttributeValue(attrs map[string]*dbstore.AttributeValue, path string) (*dbstore.AttributeValue, error) {
 	if attrs == nil || path == "" {
-		return nil
+		return nil, nil
 	}
 	// Fast path: top-level attribute (no dots or brackets).
 	if !strings.ContainsAny(path, ".[") {
-		return attrs[path]
+		return attrs[path], nil
 	}
-	parts := splitDocPath(path)
-	var current *dbstore.AttributeValue
-	ok := false
-	for i, part := range parts {
-		if i == 0 {
-			current, ok = attrs[part.name]
-			if !ok || current == nil {
-				return nil
-			}
-		} else {
-			if current == nil {
-				return nil
-			}
-			if part.name != "" {
-				if current.M != nil {
-					v, exists := current.M[part.name]
-					if !exists || v == nil {
-						return nil
-					}
-					current = v
-				} else {
-					return nil
-				}
-			}
-		}
-		if part.index >= 0 && current != nil {
-			if current.L == nil || part.index >= len(current.L) {
-				return nil
-			}
-			current = current.L[part.index]
-		}
+	parts, err := parseDocPath(path)
+	if err != nil {
+		return nil, err
 	}
-	return current
-}
-
-type docPathPart struct {
-	name  string
-	index int
-}
-
-func splitDocPath(path string) []docPathPart {
-	var parts []docPathPart
-	segment := ""
-	i := 0
-	for i < len(path) {
-		ch := path[i]
-		if ch == '.' {
-			if segment != "" {
-				parts = append(parts, docPathPart{name: segment, index: -1})
-				segment = ""
-			}
-			i++
-			continue
-		}
-		if ch == '[' {
-			if segment != "" {
-				parts = append(parts, docPathPart{name: segment, index: -1})
-				segment = ""
-			}
-			// Parse the index until ']'
-			j := i + 1
-			for j < len(path) && path[j] != ']' {
-				j++
-			}
-			if j < len(path) {
-				idxStr := path[i+1 : j]
-				idx, err := strconv.Atoi(idxStr)
-				if err == nil {
-					if len(parts) > 0 && parts[len(parts)-1].index == -1 {
-						parts[len(parts)-1].index = idx
-					} else {
-						parts = append(parts, docPathPart{name: "", index: idx})
-					}
-				}
-				i = j + 1
-				continue
-			}
-		}
-		segment += string(ch)
-		i++
-	}
-	if segment != "" {
-		parts = append(parts, docPathPart{name: segment, index: -1})
-	}
-	return parts
+	return getDocPathValue(attrs, parts), nil
 }
 
 // attributeNestedExists checks whether a document path exists in the item.
-func attributeNestedExists(attrs map[string]*dbstore.AttributeValue, path string) bool {
-	return getNestedAttributeValue(attrs, path) != nil
-}
-
-// skipToKeyMap drops the items already covered by an exclusive start key.
-// The traversal direction decides which remaining side of the cursor is
-// unreturned: a forward page continues with the first item that sorts after
-// the cursor, a reverse page with the first item that sorts before it.
-func skipToKeyMap(items []*dbstore.Item, exclusiveStartKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string, forward bool) []*dbstore.Item {
-	if exclusiveStartKey == nil {
-		return items
+// A malformed path is a request error, so callers report it instead of
+// answering as if the attribute were missing.
+func attributeNestedExists(attrs map[string]*dbstore.AttributeValue, path string) (bool, error) {
+	value, err := getNestedAttributeValue(attrs, path)
+	if err != nil {
+		return false, err
 	}
-	for i, item := range items {
-		if itemKeyMatches(mergeIndexKey(item, table, indexName), exclusiveStartKey) {
-			if i+1 < len(items) {
-				return items[i+1:]
-			}
-			return nil
-		}
-	}
-	for i, item := range items {
-		cmp := itemKeyCompares(mergeIndexKey(item, table, indexName), exclusiveStartKey, table, indexName)
-		if (forward && cmp > 0) || (!forward && cmp < 0) {
-			return items[i:]
-		}
-	}
-	return nil
+	return value != nil, nil
 }
 
 func getHashKeyName(table *dbstore.Table) string {
@@ -144,91 +47,6 @@ func getHashKeyName(table *dbstore.Table) string {
 		}
 	}
 	return ""
-}
-
-func getHashKeyNameForIndex(table *dbstore.Table, indexName string) string {
-	if indexName == "" {
-		return getHashKeyName(table)
-	}
-	for _, gsi := range table.GlobalSecondaryIndexes {
-		if gsi.IndexName == indexName {
-			for _, ks := range gsi.KeySchema {
-				if ks.KeyType == dbstore.KeyTypeHash {
-					return ks.AttributeName
-				}
-			}
-			return ""
-		}
-	}
-	for _, lsi := range table.LocalSecondaryIndexes {
-		if lsi.IndexName == indexName {
-			for _, ks := range lsi.KeySchema {
-				if ks.KeyType == dbstore.KeyTypeHash {
-					return ks.AttributeName
-				}
-			}
-			return ""
-		}
-	}
-	return ""
-}
-
-func itemKeySortsAfter(itemKey, startKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string) bool {
-	return itemKeyCompares(itemKey, startKey, table, indexName) > 0
-}
-
-// itemKeyCompares orders itemKey against startKey by the index key schema:
-// negative when itemKey sorts before startKey, zero when the keys are equal,
-// positive when it sorts after.
-func itemKeyCompares(itemKey, startKey map[string]*dbstore.AttributeValue, table *dbstore.Table, indexName string) int {
-	if len(startKey) == 0 {
-		return 1
-	}
-	hashKeyName := getHashKeyNameForIndex(table, indexName)
-	if hashKeyName == "" {
-		return 1
-	}
-	startVal, ok := startKey[hashKeyName]
-	if ok {
-		itemVal, ok := itemKey[hashKeyName]
-		if !ok {
-			return -1
-		}
-		cmp := genericCompare(itemVal, startVal)
-		if cmp != 0 {
-			return cmp
-		}
-	}
-	sortKeyName := getSortKeyName(table, indexName)
-	if sortKeyName != "" {
-		if startVal, ok := startKey[sortKeyName]; ok {
-			itemVal, ok := itemKey[sortKeyName]
-			if !ok {
-				return -1
-			}
-			return genericCompare(itemVal, startVal)
-		}
-	}
-	return 1
-}
-
-func itemKeyMatches(itemKey, searchKey map[string]*dbstore.AttributeValue) bool {
-	if itemKey == nil || searchKey == nil {
-		return false
-	}
-	if len(itemKey) != len(searchKey) {
-		return false
-	}
-	for k, v := range itemKey {
-		searchV, ok := searchKey[k]
-		if !ok {
-			return false
-		}
-		if !attributeValuesEqual(v, searchV) {
-			return false
-		}
-	}
-	return true
 }
 
 func evaluateConditionExpression(item *dbstore.Item, conditionExpr string, exprAttrNames map[string]string, exprAttrValues map[string]*dbstore.AttributeValue) (bool, error) {
@@ -402,7 +220,10 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 				if funcName == "attribute_exists" || funcName == "attribute_not_exists" {
 					if len(args) >= 1 {
 						attrName := resolveName(args[0], names)
-						exists := attributeNestedExists(item.Attributes, attrName)
+						exists, existsErr := attributeNestedExists(item.Attributes, attrName)
+						if existsErr != nil {
+							return false, existsErr
+						}
 						if funcName == "attribute_exists" {
 							return exists, nil
 						}
@@ -426,7 +247,10 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 			if len(attrToken) >= 2 && attrToken[0] == '(' && attrToken[len(attrToken)-1] == ')' {
 				attrName := attrToken[1 : len(attrToken)-1]
 				attrName = resolveName(attrName, names)
-				exists := attributeNestedExists(item.Attributes, attrName)
+				exists, existsErr := attributeNestedExists(item.Attributes, attrName)
+				if existsErr != nil {
+					return false, existsErr
+				}
 				if funcName == "attribute_exists" {
 					return exists, nil
 				}
@@ -441,7 +265,10 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 
 	if len(tokens) >= 5 && strings.EqualFold(tokens[1], "BETWEEN") && strings.EqualFold(tokens[3], "AND") {
 		attrName := resolveName(tokens[0], names)
-		attr := getNestedAttributeValue(item.Attributes, attrName)
+		attr, attrErr := getNestedAttributeValue(item.Attributes, attrName)
+		if attrErr != nil {
+			return false, attrErr
+		}
 		if attr == nil {
 			return false, nil
 		}
@@ -455,7 +282,10 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 
 	if len(tokens) >= 4 && strings.EqualFold(tokens[1], "IN") {
 		attrName := resolveName(tokens[0], names)
-		attr := getNestedAttributeValue(item.Attributes, attrName)
+		attr, attrErr := getNestedAttributeValue(item.Attributes, attrName)
+		if attrErr != nil {
+			return false, attrErr
+		}
 		if attr == nil {
 			return false, nil
 		}
@@ -476,7 +306,10 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 		if strings.HasPrefix(tokens[0], "size(") && strings.HasSuffix(tokens[0], ")") {
 			pathStr := tokens[0][5 : len(tokens[0])-1]
 			attrName := resolveName(pathStr, names)
-			attr := getNestedAttributeValue(item.Attributes, attrName)
+			attr, attrErr := getNestedAttributeValue(item.Attributes, attrName)
+			if attrErr != nil {
+				return false, attrErr
+			}
 			if attr == nil {
 				return false, nil
 			}
@@ -497,7 +330,10 @@ func evaluateSimpleCondition(item *dbstore.Item, expr string, names map[string]s
 		}
 		value := resolveValue(tokens[2], values, names)
 
-		attr := getNestedAttributeValue(item.Attributes, attrName)
+		attr, attrErr := getNestedAttributeValue(item.Attributes, attrName)
+		if attrErr != nil {
+			return false, attrErr
+		}
 		if attr == nil {
 			if op == "=" && value != nil && value.NULL != nil && *value.NULL {
 				return true, nil
@@ -528,7 +364,10 @@ func evaluateFunctionCondition(item *dbstore.Item, tokens []string, names map[st
 	valToken := strings.TrimSpace(args[1])
 
 	attrName := resolveName(path, names)
-	attr := getNestedAttributeValue(item.Attributes, attrName)
+	attr, attrErr := getNestedAttributeValue(item.Attributes, attrName)
+	if attrErr != nil {
+		return false, attrErr
+	}
 	if attr == nil {
 		return false, nil
 	}
@@ -592,7 +431,10 @@ func evaluateAttributeType(item *dbstore.Item, args []string, names map[string]s
 	typeToken := strings.TrimSpace(args[1])
 
 	attrName := resolveName(path, names)
-	attr := getNestedAttributeValue(item.Attributes, attrName)
+	attr, attrErr := getNestedAttributeValue(item.Attributes, attrName)
+	if attrErr != nil {
+		return false, attrErr
+	}
 	if attr == nil {
 		return false, nil
 	}

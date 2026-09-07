@@ -1772,7 +1772,7 @@ type ByteMatchSet struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Bytematchsetid  string                 `protobuf:"bytes,62033398,opt,name=bytematchsetid,proto3" json:"bytematchsetid,omitempty"`
 	Bytematchtuples []*ByteMatchTuple      `protobuf:"bytes,3234744,rep,name=bytematchtuples,proto3" json:"bytematchtuples,omitempty"`
-	Name            string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name            *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1822,8 +1822,8 @@ func (x *ByteMatchSet) GetBytematchtuples() []*ByteMatchTuple {
 }
 
 func (x *ByteMatchSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -2055,7 +2055,7 @@ func (x *CreateByteMatchSetRequest) GetName() string {
 type CreateByteMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Bytematchset  *ByteMatchSet          `protobuf:"bytes,9496489,opt,name=bytematchset,proto3" json:"bytematchset,omitempty"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2098,8 +2098,8 @@ func (x *CreateByteMatchSetResponse) GetBytematchset() *ByteMatchSet {
 }
 
 func (x *CreateByteMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2158,7 +2158,7 @@ func (x *CreateGeoMatchSetRequest) GetName() string {
 
 type CreateGeoMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Geomatchset   *GeoMatchSet           `protobuf:"bytes,84933666,opt,name=geomatchset,proto3" json:"geomatchset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2195,8 +2195,8 @@ func (*CreateGeoMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateGeoMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2262,7 +2262,7 @@ func (x *CreateIPSetRequest) GetName() string {
 
 type CreateIPSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Ipset         *IPSet                 `protobuf:"bytes,436412565,opt,name=ipset,proto3" json:"ipset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2299,8 +2299,8 @@ func (*CreateIPSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateIPSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2398,7 +2398,7 @@ func (x *CreateRateBasedRuleRequest) GetTags() []*Tag {
 
 type CreateRateBasedRuleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Rule          *RateBasedRule         `protobuf:"bytes,475696372,opt,name=rule,proto3" json:"rule,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2435,8 +2435,8 @@ func (*CreateRateBasedRuleResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRateBasedRuleResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2502,7 +2502,7 @@ func (x *CreateRegexMatchSetRequest) GetName() string {
 
 type CreateRegexMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Regexmatchset *RegexMatchSet         `protobuf:"bytes,534067456,opt,name=regexmatchset,proto3" json:"regexmatchset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2539,8 +2539,8 @@ func (*CreateRegexMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRegexMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2606,7 +2606,7 @@ func (x *CreateRegexPatternSetRequest) GetName() string {
 
 type CreateRegexPatternSetResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken     string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken     *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Regexpatternset *RegexPatternSet       `protobuf:"bytes,9374915,opt,name=regexpatternset,proto3" json:"regexpatternset,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -2643,8 +2643,8 @@ func (*CreateRegexPatternSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRegexPatternSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2726,7 +2726,7 @@ func (x *CreateRuleGroupRequest) GetTags() []*Tag {
 
 type CreateRuleGroupResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Rulegroup     *RuleGroup             `protobuf:"bytes,267398571,opt,name=rulegroup,proto3" json:"rulegroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2763,8 +2763,8 @@ func (*CreateRuleGroupResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRuleGroupResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2846,7 +2846,7 @@ func (x *CreateRuleRequest) GetTags() []*Tag {
 
 type CreateRuleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Rule          *Rule                  `protobuf:"bytes,475696372,opt,name=rule,proto3" json:"rule,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2883,8 +2883,8 @@ func (*CreateRuleResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRuleResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -2950,7 +2950,7 @@ func (x *CreateSizeConstraintSetRequest) GetName() string {
 
 type CreateSizeConstraintSetResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken       string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken       *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Sizeconstraintset *SizeConstraintSet     `protobuf:"bytes,166385770,opt,name=sizeconstraintset,proto3" json:"sizeconstraintset,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -2987,8 +2987,8 @@ func (*CreateSizeConstraintSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateSizeConstraintSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3054,7 +3054,7 @@ func (x *CreateSqlInjectionMatchSetRequest) GetName() string {
 
 type CreateSqlInjectionMatchSetResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken          string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken          *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Sqlinjectionmatchset *SqlInjectionMatchSet  `protobuf:"bytes,60356588,opt,name=sqlinjectionmatchset,proto3" json:"sqlinjectionmatchset,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -3091,8 +3091,8 @@ func (*CreateSqlInjectionMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateSqlInjectionMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3286,7 +3286,7 @@ func (x *CreateWebACLRequest) GetTags() []*Tag {
 
 type CreateWebACLResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Webacl        *WebACL                `protobuf:"bytes,343373504,opt,name=webacl,proto3" json:"webacl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3323,8 +3323,8 @@ func (*CreateWebACLResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateWebACLResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3390,7 +3390,7 @@ func (x *CreateXssMatchSetRequest) GetName() string {
 
 type CreateXssMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	Xssmatchset   *XssMatchSet           `protobuf:"bytes,169555847,opt,name=xssmatchset,proto3" json:"xssmatchset,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3427,8 +3427,8 @@ func (*CreateXssMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateXssMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3494,7 +3494,7 @@ func (x *DeleteByteMatchSetRequest) GetChangetoken() string {
 
 type DeleteByteMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3530,8 +3530,8 @@ func (*DeleteByteMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteByteMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3590,7 +3590,7 @@ func (x *DeleteGeoMatchSetRequest) GetGeomatchsetid() string {
 
 type DeleteGeoMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3626,8 +3626,8 @@ func (*DeleteGeoMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteGeoMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3686,7 +3686,7 @@ func (x *DeleteIPSetRequest) GetIpsetid() string {
 
 type DeleteIPSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3722,8 +3722,8 @@ func (*DeleteIPSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteIPSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -3942,7 +3942,7 @@ func (x *DeleteRateBasedRuleRequest) GetRuleid() string {
 
 type DeleteRateBasedRuleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3978,8 +3978,8 @@ func (*DeleteRateBasedRuleResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteRateBasedRuleResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4038,7 +4038,7 @@ func (x *DeleteRegexMatchSetRequest) GetRegexmatchsetid() string {
 
 type DeleteRegexMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4074,8 +4074,8 @@ func (*DeleteRegexMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteRegexMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4134,7 +4134,7 @@ func (x *DeleteRegexPatternSetRequest) GetRegexpatternsetid() string {
 
 type DeleteRegexPatternSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4170,8 +4170,8 @@ func (*DeleteRegexPatternSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteRegexPatternSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4230,7 +4230,7 @@ func (x *DeleteRuleGroupRequest) GetRulegroupid() string {
 
 type DeleteRuleGroupResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4266,8 +4266,8 @@ func (*DeleteRuleGroupResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteRuleGroupResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4326,7 +4326,7 @@ func (x *DeleteRuleRequest) GetRuleid() string {
 
 type DeleteRuleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4362,8 +4362,8 @@ func (*DeleteRuleResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteRuleResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4422,7 +4422,7 @@ func (x *DeleteSizeConstraintSetRequest) GetSizeconstraintsetid() string {
 
 type DeleteSizeConstraintSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4458,8 +4458,8 @@ func (*DeleteSizeConstraintSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteSizeConstraintSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4518,7 +4518,7 @@ func (x *DeleteSqlInjectionMatchSetRequest) GetSqlinjectionmatchsetid() string {
 
 type DeleteSqlInjectionMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4554,8 +4554,8 @@ func (*DeleteSqlInjectionMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteSqlInjectionMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4614,7 +4614,7 @@ func (x *DeleteWebACLRequest) GetWebaclid() string {
 
 type DeleteWebACLResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4650,8 +4650,8 @@ func (*DeleteWebACLResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteWebACLResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4710,7 +4710,7 @@ func (x *DeleteXssMatchSetRequest) GetXssmatchsetid() string {
 
 type DeleteXssMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4746,8 +4746,8 @@ func (*DeleteXssMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteXssMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -4798,7 +4798,7 @@ func (x *ExcludedRule) GetRuleid() string {
 
 type FieldToMatch struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Data          string                 `protobuf:"bytes,525498822,opt,name=data,proto3" json:"data,omitempty"`
+	Data          *string                `protobuf:"bytes,525498822,opt,name=data,proto3,oneof" json:"data,omitempty"`
 	Type          MatchFieldType         `protobuf:"varint,290836590,opt,name=type,proto3,enum=waf.MatchFieldType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4835,8 +4835,8 @@ func (*FieldToMatch) Descriptor() ([]byte, []int) {
 }
 
 func (x *FieldToMatch) GetData() string {
-	if x != nil {
-		return x.Data
+	if x != nil && x.Data != nil {
+		return *x.Data
 	}
 	return ""
 }
@@ -4904,7 +4904,7 @@ type GeoMatchSet struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Geomatchconstraints []*GeoMatchConstraint  `protobuf:"bytes,161026282,rep,name=geomatchconstraints,proto3" json:"geomatchconstraints,omitempty"`
 	Geomatchsetid       string                 `protobuf:"bytes,514346837,opt,name=geomatchsetid,proto3" json:"geomatchsetid,omitempty"`
-	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -4954,8 +4954,8 @@ func (x *GeoMatchSet) GetGeomatchsetid() string {
 }
 
 func (x *GeoMatchSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -5190,7 +5190,7 @@ func (*GetChangeTokenRequest) Descriptor() ([]byte, []int) {
 
 type GetChangeTokenResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5226,8 +5226,8 @@ func (*GetChangeTokenResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetChangeTokenResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -5630,7 +5630,7 @@ func (x *GetPermissionPolicyRequest) GetResourcearn() string {
 
 type GetPermissionPolicyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Policy        string                 `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy        *string                `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5666,15 +5666,15 @@ func (*GetPermissionPolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPermissionPolicyResponse) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
 
 type GetRateBasedRuleManagedKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Ruleid        string                 `protobuf:"bytes,430449567,opt,name=ruleid,proto3" json:"ruleid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5711,8 +5711,8 @@ func (*GetRateBasedRuleManagedKeysRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRateBasedRuleManagedKeysRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -5727,7 +5727,7 @@ func (x *GetRateBasedRuleManagedKeysRequest) GetRuleid() string {
 type GetRateBasedRuleManagedKeysResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Managedkeys   []string               `protobuf:"bytes,225455355,rep,name=managedkeys,proto3" json:"managedkeys,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5770,8 +5770,8 @@ func (x *GetRateBasedRuleManagedKeysResponse) GetManagedkeys() []string {
 }
 
 func (x *GetRateBasedRuleManagedKeysResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -6698,8 +6698,8 @@ func (x *GetXssMatchSetResponse) GetXssmatchset() *XssMatchSet {
 
 type HTTPHeader struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6735,27 +6735,27 @@ func (*HTTPHeader) Descriptor() ([]byte, []int) {
 }
 
 func (x *HTTPHeader) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *HTTPHeader) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
 
 type HTTPRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clientip      string                 `protobuf:"bytes,247557856,opt,name=clientip,proto3" json:"clientip,omitempty"`
-	Country       string                 `protobuf:"bytes,83164786,opt,name=country,proto3" json:"country,omitempty"`
-	Httpversion   string                 `protobuf:"bytes,12814936,opt,name=httpversion,proto3" json:"httpversion,omitempty"`
+	Clientip      *string                `protobuf:"bytes,247557856,opt,name=clientip,proto3,oneof" json:"clientip,omitempty"`
+	Country       *string                `protobuf:"bytes,83164786,opt,name=country,proto3,oneof" json:"country,omitempty"`
+	Httpversion   *string                `protobuf:"bytes,12814936,opt,name=httpversion,proto3,oneof" json:"httpversion,omitempty"`
 	Headers       []*HTTPHeader          `protobuf:"bytes,323967370,rep,name=headers,proto3" json:"headers,omitempty"`
-	Method        string                 `protobuf:"bytes,413321041,opt,name=method,proto3" json:"method,omitempty"`
-	Uri           string                 `protobuf:"bytes,443116318,opt,name=uri,proto3" json:"uri,omitempty"`
+	Method        *string                `protobuf:"bytes,413321041,opt,name=method,proto3,oneof" json:"method,omitempty"`
+	Uri           *string                `protobuf:"bytes,443116318,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6791,22 +6791,22 @@ func (*HTTPRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *HTTPRequest) GetClientip() string {
-	if x != nil {
-		return x.Clientip
+	if x != nil && x.Clientip != nil {
+		return *x.Clientip
 	}
 	return ""
 }
 
 func (x *HTTPRequest) GetCountry() string {
-	if x != nil {
-		return x.Country
+	if x != nil && x.Country != nil {
+		return *x.Country
 	}
 	return ""
 }
 
 func (x *HTTPRequest) GetHttpversion() string {
-	if x != nil {
-		return x.Httpversion
+	if x != nil && x.Httpversion != nil {
+		return *x.Httpversion
 	}
 	return ""
 }
@@ -6819,15 +6819,15 @@ func (x *HTTPRequest) GetHeaders() []*HTTPHeader {
 }
 
 func (x *HTTPRequest) GetMethod() string {
-	if x != nil {
-		return x.Method
+	if x != nil && x.Method != nil {
+		return *x.Method
 	}
 	return ""
 }
 
 func (x *HTTPRequest) GetUri() string {
-	if x != nil {
-		return x.Uri
+	if x != nil && x.Uri != nil {
+		return *x.Uri
 	}
 	return ""
 }
@@ -6836,7 +6836,7 @@ type IPSet struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Ipsetdescriptors []*IPSetDescriptor     `protobuf:"bytes,320792515,rep,name=ipsetdescriptors,proto3" json:"ipsetdescriptors,omitempty"`
 	Ipsetid          string                 `protobuf:"bytes,346763066,opt,name=ipsetid,proto3" json:"ipsetid,omitempty"`
-	Name             string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name             *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -6886,8 +6886,8 @@ func (x *IPSet) GetIpsetid() string {
 }
 
 func (x *IPSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -7051,8 +7051,8 @@ func (x *IPSetUpdate) GetIpsetdescriptor() *IPSetDescriptor {
 type ListActivatedRulesInRuleGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
-	Rulegroupid   string                 `protobuf:"bytes,287757320,opt,name=rulegroupid,proto3" json:"rulegroupid,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
+	Rulegroupid   *string                `protobuf:"bytes,287757320,opt,name=rulegroupid,proto3,oneof" json:"rulegroupid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7095,15 +7095,15 @@ func (x *ListActivatedRulesInRuleGroupRequest) GetLimit() int32 {
 }
 
 func (x *ListActivatedRulesInRuleGroupRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 func (x *ListActivatedRulesInRuleGroupRequest) GetRulegroupid() string {
-	if x != nil {
-		return x.Rulegroupid
+	if x != nil && x.Rulegroupid != nil {
+		return *x.Rulegroupid
 	}
 	return ""
 }
@@ -7111,7 +7111,7 @@ func (x *ListActivatedRulesInRuleGroupRequest) GetRulegroupid() string {
 type ListActivatedRulesInRuleGroupResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Activatedrules []*ActivatedRule       `protobuf:"bytes,75723620,rep,name=activatedrules,proto3" json:"activatedrules,omitempty"`
-	Nextmarker     string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker     *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -7154,8 +7154,8 @@ func (x *ListActivatedRulesInRuleGroupResponse) GetActivatedrules() []*Activated
 }
 
 func (x *ListActivatedRulesInRuleGroupResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7163,7 +7163,7 @@ func (x *ListActivatedRulesInRuleGroupResponse) GetNextmarker() string {
 type ListByteMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7206,8 +7206,8 @@ func (x *ListByteMatchSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListByteMatchSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7215,7 +7215,7 @@ func (x *ListByteMatchSetsRequest) GetNextmarker() string {
 type ListByteMatchSetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Bytematchsets []*ByteMatchSetSummary `protobuf:"bytes,521993666,rep,name=bytematchsets,proto3" json:"bytematchsets,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7258,8 +7258,8 @@ func (x *ListByteMatchSetsResponse) GetBytematchsets() []*ByteMatchSetSummary {
 }
 
 func (x *ListByteMatchSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7267,7 +7267,7 @@ func (x *ListByteMatchSetsResponse) GetNextmarker() string {
 type ListGeoMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7310,8 +7310,8 @@ func (x *ListGeoMatchSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListGeoMatchSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7319,7 +7319,7 @@ func (x *ListGeoMatchSetsRequest) GetNextmarker() string {
 type ListGeoMatchSetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Geomatchsets  []*GeoMatchSetSummary  `protobuf:"bytes,170538263,rep,name=geomatchsets,proto3" json:"geomatchsets,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7362,8 +7362,8 @@ func (x *ListGeoMatchSetsResponse) GetGeomatchsets() []*GeoMatchSetSummary {
 }
 
 func (x *ListGeoMatchSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7371,7 +7371,7 @@ func (x *ListGeoMatchSetsResponse) GetNextmarker() string {
 type ListIPSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7414,8 +7414,8 @@ func (x *ListIPSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListIPSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7423,7 +7423,7 @@ func (x *ListIPSetsRequest) GetNextmarker() string {
 type ListIPSetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ipsets        []*IPSetSummary        `protobuf:"bytes,434949030,rep,name=ipsets,proto3" json:"ipsets,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7466,8 +7466,8 @@ func (x *ListIPSetsResponse) GetIpsets() []*IPSetSummary {
 }
 
 func (x *ListIPSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7475,7 +7475,7 @@ func (x *ListIPSetsResponse) GetNextmarker() string {
 type ListLoggingConfigurationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7518,8 +7518,8 @@ func (x *ListLoggingConfigurationsRequest) GetLimit() int32 {
 }
 
 func (x *ListLoggingConfigurationsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7527,7 +7527,7 @@ func (x *ListLoggingConfigurationsRequest) GetNextmarker() string {
 type ListLoggingConfigurationsResponse struct {
 	state                 protoimpl.MessageState  `protogen:"open.v1"`
 	Loggingconfigurations []*LoggingConfiguration `protobuf:"bytes,387361734,rep,name=loggingconfigurations,proto3" json:"loggingconfigurations,omitempty"`
-	Nextmarker            string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker            *string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -7570,8 +7570,8 @@ func (x *ListLoggingConfigurationsResponse) GetLoggingconfigurations() []*Loggin
 }
 
 func (x *ListLoggingConfigurationsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7579,7 +7579,7 @@ func (x *ListLoggingConfigurationsResponse) GetNextmarker() string {
 type ListRateBasedRulesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7622,15 +7622,15 @@ func (x *ListRateBasedRulesRequest) GetLimit() int32 {
 }
 
 func (x *ListRateBasedRulesRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListRateBasedRulesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Rules         []*RuleSummary         `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7667,8 +7667,8 @@ func (*ListRateBasedRulesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRateBasedRulesResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7683,7 +7683,7 @@ func (x *ListRateBasedRulesResponse) GetRules() []*RuleSummary {
 type ListRegexMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7726,15 +7726,15 @@ func (x *ListRegexMatchSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListRegexMatchSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListRegexMatchSetsResponse struct {
 	state          protoimpl.MessageState  `protogen:"open.v1"`
-	Nextmarker     string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker     *string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Regexmatchsets []*RegexMatchSetSummary `protobuf:"bytes,145228901,rep,name=regexmatchsets,proto3" json:"regexmatchsets,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -7771,8 +7771,8 @@ func (*ListRegexMatchSetsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRegexMatchSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7787,7 +7787,7 @@ func (x *ListRegexMatchSetsResponse) GetRegexmatchsets() []*RegexMatchSetSummary
 type ListRegexPatternSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7830,15 +7830,15 @@ func (x *ListRegexPatternSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListRegexPatternSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListRegexPatternSetsResponse struct {
 	state            protoimpl.MessageState    `protogen:"open.v1"`
-	Nextmarker       string                    `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker       *string                   `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Regexpatternsets []*RegexPatternSetSummary `protobuf:"bytes,305199780,rep,name=regexpatternsets,proto3" json:"regexpatternsets,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -7875,8 +7875,8 @@ func (*ListRegexPatternSetsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRegexPatternSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7891,7 +7891,7 @@ func (x *ListRegexPatternSetsResponse) GetRegexpatternsets() []*RegexPatternSetS
 type ListRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7934,15 +7934,15 @@ func (x *ListRuleGroupsRequest) GetLimit() int32 {
 }
 
 func (x *ListRuleGroupsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListRuleGroupsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Rulegroups    []*RuleGroupSummary    `protobuf:"bytes,270019740,rep,name=rulegroups,proto3" json:"rulegroups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7979,8 +7979,8 @@ func (*ListRuleGroupsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRuleGroupsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -7995,7 +7995,7 @@ func (x *ListRuleGroupsResponse) GetRulegroups() []*RuleGroupSummary {
 type ListRulesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8038,15 +8038,15 @@ func (x *ListRulesRequest) GetLimit() int32 {
 }
 
 func (x *ListRulesRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListRulesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Rules         []*RuleSummary         `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8083,8 +8083,8 @@ func (*ListRulesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRulesResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8099,7 +8099,7 @@ func (x *ListRulesResponse) GetRules() []*RuleSummary {
 type ListSizeConstraintSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8142,15 +8142,15 @@ func (x *ListSizeConstraintSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListSizeConstraintSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListSizeConstraintSetsResponse struct {
 	state              protoimpl.MessageState      `protogen:"open.v1"`
-	Nextmarker         string                      `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker         *string                     `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Sizeconstraintsets []*SizeConstraintSetSummary `protobuf:"bytes,380776687,rep,name=sizeconstraintsets,proto3" json:"sizeconstraintsets,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -8187,8 +8187,8 @@ func (*ListSizeConstraintSetsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSizeConstraintSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8203,7 +8203,7 @@ func (x *ListSizeConstraintSetsResponse) GetSizeconstraintsets() []*SizeConstrai
 type ListSqlInjectionMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8246,15 +8246,15 @@ func (x *ListSqlInjectionMatchSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListSqlInjectionMatchSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListSqlInjectionMatchSetsResponse struct {
 	state                 protoimpl.MessageState         `protogen:"open.v1"`
-	Nextmarker            string                         `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker            *string                        `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Sqlinjectionmatchsets []*SqlInjectionMatchSetSummary `protobuf:"bytes,30262345,rep,name=sqlinjectionmatchsets,proto3" json:"sqlinjectionmatchsets,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -8291,8 +8291,8 @@ func (*ListSqlInjectionMatchSetsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSqlInjectionMatchSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8307,7 +8307,7 @@ func (x *ListSqlInjectionMatchSetsResponse) GetSqlinjectionmatchsets() []*SqlInj
 type ListSubscribedRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8350,15 +8350,15 @@ func (x *ListSubscribedRuleGroupsRequest) GetLimit() int32 {
 }
 
 func (x *ListSubscribedRuleGroupsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListSubscribedRuleGroupsResponse struct {
 	state         protoimpl.MessageState        `protogen:"open.v1"`
-	Nextmarker    string                        `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                       `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Rulegroups    []*SubscribedRuleGroupSummary `protobuf:"bytes,270019740,rep,name=rulegroups,proto3" json:"rulegroups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8395,8 +8395,8 @@ func (*ListSubscribedRuleGroupsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSubscribedRuleGroupsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8411,7 +8411,7 @@ func (x *ListSubscribedRuleGroupsResponse) GetRulegroups() []*SubscribedRuleGrou
 type ListTagsForResourceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8455,8 +8455,8 @@ func (x *ListTagsForResourceRequest) GetLimit() int32 {
 }
 
 func (x *ListTagsForResourceRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8470,7 +8470,7 @@ func (x *ListTagsForResourceRequest) GetResourcearn() string {
 
 type ListTagsForResourceResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker         string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker         *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Taginfoforresource *TagInfoForResource    `protobuf:"bytes,8132955,opt,name=taginfoforresource,proto3" json:"taginfoforresource,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -8507,8 +8507,8 @@ func (*ListTagsForResourceResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsForResourceResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8523,7 +8523,7 @@ func (x *ListTagsForResourceResponse) GetTaginfoforresource() *TagInfoForResourc
 type ListWebACLsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8566,15 +8566,15 @@ func (x *ListWebACLsRequest) GetLimit() int32 {
 }
 
 func (x *ListWebACLsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListWebACLsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Webacls       []*WebACLSummary       `protobuf:"bytes,68158245,rep,name=webacls,proto3" json:"webacls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8611,8 +8611,8 @@ func (*ListWebACLsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListWebACLsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -8627,7 +8627,7 @@ func (x *ListWebACLsResponse) GetWebacls() []*WebACLSummary {
 type ListXssMatchSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8670,15 +8670,15 @@ func (x *ListXssMatchSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListXssMatchSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type ListXssMatchSetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Xssmatchsets  []*XssMatchSetSummary  `protobuf:"bytes,500766384,rep,name=xssmatchsets,proto3" json:"xssmatchsets,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8715,8 +8715,8 @@ func (*ListXssMatchSetsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListXssMatchSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -9027,8 +9027,8 @@ func (*PutPermissionPolicyResponse) Descriptor() ([]byte, []int) {
 type RateBasedRule struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Matchpredicates []*Predicate           `protobuf:"bytes,480711449,rep,name=matchpredicates,proto3" json:"matchpredicates,omitempty"`
-	Metricname      string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Name            string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Metricname      *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Name            *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Ratekey         RateKey                `protobuf:"varint,31421727,opt,name=ratekey,proto3,enum=waf.RateKey" json:"ratekey,omitempty"`
 	Ratelimit       int64                  `protobuf:"varint,70042947,opt,name=ratelimit,proto3" json:"ratelimit,omitempty"`
 	Ruleid          string                 `protobuf:"bytes,430449567,opt,name=ruleid,proto3" json:"ruleid,omitempty"`
@@ -9074,15 +9074,15 @@ func (x *RateBasedRule) GetMatchpredicates() []*Predicate {
 }
 
 func (x *RateBasedRule) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *RateBasedRule) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -9110,8 +9110,8 @@ func (x *RateBasedRule) GetRuleid() string {
 
 type RegexMatchSet struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Name             string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Regexmatchsetid  string                 `protobuf:"bytes,82287635,opt,name=regexmatchsetid,proto3" json:"regexmatchsetid,omitempty"`
+	Name             *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Regexmatchsetid  *string                `protobuf:"bytes,82287635,opt,name=regexmatchsetid,proto3,oneof" json:"regexmatchsetid,omitempty"`
 	Regexmatchtuples []*RegexMatchTuple     `protobuf:"bytes,252918587,rep,name=regexmatchtuples,proto3" json:"regexmatchtuples,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -9148,15 +9148,15 @@ func (*RegexMatchSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *RegexMatchSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *RegexMatchSet) GetRegexmatchsetid() string {
-	if x != nil {
-		return x.Regexmatchsetid
+	if x != nil && x.Regexmatchsetid != nil {
+		return *x.Regexmatchsetid
 	}
 	return ""
 }
@@ -9334,7 +9334,7 @@ func (x *RegexMatchTuple) GetTexttransformation() TextTransformation {
 
 type RegexPatternSet struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Regexpatternsetid   string                 `protobuf:"bytes,96220912,opt,name=regexpatternsetid,proto3" json:"regexpatternsetid,omitempty"`
 	Regexpatternstrings []string               `protobuf:"bytes,488771049,rep,name=regexpatternstrings,proto3" json:"regexpatternstrings,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -9372,8 +9372,8 @@ func (*RegexPatternSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *RegexPatternSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -9498,8 +9498,8 @@ func (x *RegexPatternSetUpdate) GetRegexpatternstring() string {
 
 type Rule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Metricname    string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Metricname    *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Predicates    []*Predicate           `protobuf:"bytes,315759288,rep,name=predicates,proto3" json:"predicates,omitempty"`
 	Ruleid        string                 `protobuf:"bytes,430449567,opt,name=ruleid,proto3" json:"ruleid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -9537,15 +9537,15 @@ func (*Rule) Descriptor() ([]byte, []int) {
 }
 
 func (x *Rule) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *Rule) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -9566,8 +9566,8 @@ func (x *Rule) GetRuleid() string {
 
 type RuleGroup struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Metricname    string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Metricname    *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Rulegroupid   string                 `protobuf:"bytes,287757320,opt,name=rulegroupid,proto3" json:"rulegroupid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9604,15 +9604,15 @@ func (*RuleGroup) Descriptor() ([]byte, []int) {
 }
 
 func (x *RuleGroup) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *RuleGroup) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -9834,10 +9834,10 @@ func (x *RuleUpdate) GetPredicate() *Predicate {
 
 type SampledHTTPRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Action              string                 `protobuf:"bytes,175614240,opt,name=action,proto3" json:"action,omitempty"`
+	Action              *string                `protobuf:"bytes,175614240,opt,name=action,proto3,oneof" json:"action,omitempty"`
 	Request             *HTTPRequest           `protobuf:"bytes,38093139,opt,name=request,proto3" json:"request,omitempty"`
-	Rulewithinrulegroup string                 `protobuf:"bytes,58580650,opt,name=rulewithinrulegroup,proto3" json:"rulewithinrulegroup,omitempty"`
-	Timestamp           string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Rulewithinrulegroup *string                `protobuf:"bytes,58580650,opt,name=rulewithinrulegroup,proto3,oneof" json:"rulewithinrulegroup,omitempty"`
+	Timestamp           *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	Weight              int64                  `protobuf:"varint,422581466,opt,name=weight,proto3" json:"weight,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -9874,8 +9874,8 @@ func (*SampledHTTPRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *SampledHTTPRequest) GetAction() string {
-	if x != nil {
-		return x.Action
+	if x != nil && x.Action != nil {
+		return *x.Action
 	}
 	return ""
 }
@@ -9888,15 +9888,15 @@ func (x *SampledHTTPRequest) GetRequest() *HTTPRequest {
 }
 
 func (x *SampledHTTPRequest) GetRulewithinrulegroup() string {
-	if x != nil {
-		return x.Rulewithinrulegroup
+	if x != nil && x.Rulewithinrulegroup != nil {
+		return *x.Rulewithinrulegroup
 	}
 	return ""
 }
 
 func (x *SampledHTTPRequest) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
@@ -9978,7 +9978,7 @@ func (x *SizeConstraint) GetTexttransformation() TextTransformation {
 
 type SizeConstraintSet struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Sizeconstraintsetid string                 `protobuf:"bytes,277959757,opt,name=sizeconstraintsetid,proto3" json:"sizeconstraintsetid,omitempty"`
 	Sizeconstraints     []*SizeConstraint      `protobuf:"bytes,498335321,rep,name=sizeconstraints,proto3" json:"sizeconstraints,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -10016,8 +10016,8 @@ func (*SizeConstraintSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *SizeConstraintSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -10142,7 +10142,7 @@ func (x *SizeConstraintSetUpdate) GetSizeconstraint() *SizeConstraint {
 
 type SqlInjectionMatchSet struct {
 	state                   protoimpl.MessageState    `protogen:"open.v1"`
-	Name                    string                    `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name                    *string                   `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Sqlinjectionmatchsetid  string                    `protobuf:"bytes,386225735,opt,name=sqlinjectionmatchsetid,proto3" json:"sqlinjectionmatchsetid,omitempty"`
 	Sqlinjectionmatchtuples []*SqlInjectionMatchTuple `protobuf:"bytes,74495631,rep,name=sqlinjectionmatchtuples,proto3" json:"sqlinjectionmatchtuples,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -10180,8 +10180,8 @@ func (*SqlInjectionMatchSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *SqlInjectionMatchSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -10470,7 +10470,7 @@ func (x *Tag) GetValue() string {
 
 type TagInfoForResource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
+	Resourcearn   *string                `protobuf:"bytes,369516653,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
 	Taglist       []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10507,8 +10507,8 @@ func (*TagInfoForResource) Descriptor() ([]byte, []int) {
 }
 
 func (x *TagInfoForResource) GetResourcearn() string {
-	if x != nil {
-		return x.Resourcearn
+	if x != nil && x.Resourcearn != nil {
+		return *x.Resourcearn
 	}
 	return ""
 }
@@ -10810,7 +10810,7 @@ func (x *UpdateByteMatchSetRequest) GetUpdates() []*ByteMatchSetUpdate {
 
 type UpdateByteMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10846,8 +10846,8 @@ func (*UpdateByteMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateByteMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -10914,7 +10914,7 @@ func (x *UpdateGeoMatchSetRequest) GetUpdates() []*GeoMatchSetUpdate {
 
 type UpdateGeoMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10950,8 +10950,8 @@ func (*UpdateGeoMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateGeoMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11018,7 +11018,7 @@ func (x *UpdateIPSetRequest) GetUpdates() []*IPSetUpdate {
 
 type UpdateIPSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11054,8 +11054,8 @@ func (*UpdateIPSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateIPSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11130,7 +11130,7 @@ func (x *UpdateRateBasedRuleRequest) GetUpdates() []*RuleUpdate {
 
 type UpdateRateBasedRuleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11166,8 +11166,8 @@ func (*UpdateRateBasedRuleResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateRateBasedRuleResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11234,7 +11234,7 @@ func (x *UpdateRegexMatchSetRequest) GetUpdates() []*RegexMatchSetUpdate {
 
 type UpdateRegexMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11270,8 +11270,8 @@ func (*UpdateRegexMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateRegexMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11338,7 +11338,7 @@ func (x *UpdateRegexPatternSetRequest) GetUpdates() []*RegexPatternSetUpdate {
 
 type UpdateRegexPatternSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11374,8 +11374,8 @@ func (*UpdateRegexPatternSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateRegexPatternSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11442,7 +11442,7 @@ func (x *UpdateRuleGroupRequest) GetUpdates() []*RuleGroupUpdate {
 
 type UpdateRuleGroupResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11478,8 +11478,8 @@ func (*UpdateRuleGroupResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateRuleGroupResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11546,7 +11546,7 @@ func (x *UpdateRuleRequest) GetUpdates() []*RuleUpdate {
 
 type UpdateRuleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11582,8 +11582,8 @@ func (*UpdateRuleResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateRuleResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11650,7 +11650,7 @@ func (x *UpdateSizeConstraintSetRequest) GetUpdates() []*SizeConstraintSetUpdate
 
 type UpdateSizeConstraintSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11686,8 +11686,8 @@ func (*UpdateSizeConstraintSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateSizeConstraintSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11754,7 +11754,7 @@ func (x *UpdateSqlInjectionMatchSetRequest) GetUpdates() []*SqlInjectionMatchSet
 
 type UpdateSqlInjectionMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11790,8 +11790,8 @@ func (*UpdateSqlInjectionMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateSqlInjectionMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11866,7 +11866,7 @@ func (x *UpdateWebACLRequest) GetWebaclid() string {
 
 type UpdateWebACLResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11902,8 +11902,8 @@ func (*UpdateWebACLResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateWebACLResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
@@ -11970,7 +11970,7 @@ func (x *UpdateXssMatchSetRequest) GetXssmatchsetid() string {
 
 type UpdateXssMatchSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Changetoken   string                 `protobuf:"bytes,73590123,opt,name=changetoken,proto3" json:"changetoken,omitempty"`
+	Changetoken   *string                `protobuf:"bytes,73590123,opt,name=changetoken,proto3,oneof" json:"changetoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12006,15 +12006,15 @@ func (*UpdateXssMatchSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *UpdateXssMatchSetResponse) GetChangetoken() string {
-	if x != nil {
-		return x.Changetoken
+	if x != nil && x.Changetoken != nil {
+		return *x.Changetoken
 	}
 	return ""
 }
 
 type WAFBadRequestException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12050,15 +12050,15 @@ func (*WAFBadRequestException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFBadRequestException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFDisallowedNameException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12094,17 +12094,17 @@ func (*WAFDisallowedNameException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFDisallowedNameException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFEntityMigrationException struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Migrationerrorreason string                 `protobuf:"bytes,351537368,opt,name=migrationerrorreason,proto3" json:"migrationerrorreason,omitempty"`
+	Migrationerrorreason *string                `protobuf:"bytes,351537368,opt,name=migrationerrorreason,proto3,oneof" json:"migrationerrorreason,omitempty"`
 	Migrationerrortype   MigrationErrorType     `protobuf:"varint,53702508,opt,name=migrationerrortype,proto3,enum=waf.MigrationErrorType" json:"migrationerrortype,omitempty"`
-	Message              string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message              *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -12140,8 +12140,8 @@ func (*WAFEntityMigrationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFEntityMigrationException) GetMigrationerrorreason() string {
-	if x != nil {
-		return x.Migrationerrorreason
+	if x != nil && x.Migrationerrorreason != nil {
+		return *x.Migrationerrorreason
 	}
 	return ""
 }
@@ -12154,15 +12154,15 @@ func (x *WAFEntityMigrationException) GetMigrationerrortype() MigrationErrorType
 }
 
 func (x *WAFEntityMigrationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFInternalErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12198,8 +12198,8 @@ func (*WAFInternalErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFInternalErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12242,7 +12242,7 @@ func (*WAFInvalidAccountException) Descriptor() ([]byte, []int) {
 
 type WAFInvalidOperationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12278,8 +12278,8 @@ func (*WAFInvalidOperationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFInvalidOperationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12287,7 +12287,7 @@ func (x *WAFInvalidOperationException) GetMessage() string {
 type WAFInvalidParameterException struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
 	Field         ParameterExceptionField  `protobuf:"varint,125985384,opt,name=field,proto3,enum=waf.ParameterExceptionField" json:"field,omitempty"`
-	Parameter     string                   `protobuf:"bytes,363921681,opt,name=parameter,proto3" json:"parameter,omitempty"`
+	Parameter     *string                  `protobuf:"bytes,363921681,opt,name=parameter,proto3,oneof" json:"parameter,omitempty"`
 	Reason        ParameterExceptionReason `protobuf:"varint,413359642,opt,name=reason,proto3,enum=waf.ParameterExceptionReason" json:"reason,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12331,8 +12331,8 @@ func (x *WAFInvalidParameterException) GetField() ParameterExceptionField {
 }
 
 func (x *WAFInvalidParameterException) GetParameter() string {
-	if x != nil {
-		return x.Parameter
+	if x != nil && x.Parameter != nil {
+		return *x.Parameter
 	}
 	return ""
 }
@@ -12346,7 +12346,7 @@ func (x *WAFInvalidParameterException) GetReason() ParameterExceptionReason {
 
 type WAFInvalidPermissionPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12382,15 +12382,15 @@ func (*WAFInvalidPermissionPolicyException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFInvalidPermissionPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFInvalidRegexPatternException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12426,15 +12426,15 @@ func (*WAFInvalidRegexPatternException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFInvalidRegexPatternException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFLimitsExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12470,15 +12470,15 @@ func (*WAFLimitsExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFLimitsExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFNonEmptyEntityException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12514,15 +12514,15 @@ func (*WAFNonEmptyEntityException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFNonEmptyEntityException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFNonexistentContainerException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12558,15 +12558,15 @@ func (*WAFNonexistentContainerException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFNonexistentContainerException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFNonexistentItemException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12602,15 +12602,15 @@ func (*WAFNonexistentItemException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFNonexistentItemException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFReferencedItemException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12646,15 +12646,15 @@ func (*WAFReferencedItemException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFReferencedItemException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFServiceLinkedRoleErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12690,15 +12690,15 @@ func (*WAFServiceLinkedRoleErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFServiceLinkedRoleErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFStaleDataException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12734,15 +12734,15 @@ func (*WAFStaleDataException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFStaleDataException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFSubscriptionNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12778,15 +12778,15 @@ func (*WAFSubscriptionNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFSubscriptionNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFTagOperationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12822,15 +12822,15 @@ func (*WAFTagOperationException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFTagOperationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFTagOperationInternalErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12866,8 +12866,8 @@ func (*WAFTagOperationInternalErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *WAFTagOperationInternalErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12963,10 +12963,10 @@ func (x *WafOverrideAction) GetType() WafOverrideActionType {
 type WebACL struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Defaultaction *WafAction             `protobuf:"bytes,322663861,opt,name=defaultaction,proto3" json:"defaultaction,omitempty"`
-	Metricname    string                 `protobuf:"bytes,106340219,opt,name=metricname,proto3" json:"metricname,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Metricname    *string                `protobuf:"bytes,106340219,opt,name=metricname,proto3,oneof" json:"metricname,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Rules         []*ActivatedRule       `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
-	Webaclarn     string                 `protobuf:"bytes,82506659,opt,name=webaclarn,proto3" json:"webaclarn,omitempty"`
+	Webaclarn     *string                `protobuf:"bytes,82506659,opt,name=webaclarn,proto3,oneof" json:"webaclarn,omitempty"`
 	Webaclid      string                 `protobuf:"bytes,161274579,opt,name=webaclid,proto3" json:"webaclid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -13010,15 +13010,15 @@ func (x *WebACL) GetDefaultaction() *WafAction {
 }
 
 func (x *WebACL) GetMetricname() string {
-	if x != nil {
-		return x.Metricname
+	if x != nil && x.Metricname != nil {
+		return *x.Metricname
 	}
 	return ""
 }
 
 func (x *WebACL) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -13031,8 +13031,8 @@ func (x *WebACL) GetRules() []*ActivatedRule {
 }
 
 func (x *WebACL) GetWebaclarn() string {
-	if x != nil {
-		return x.Webaclarn
+	if x != nil && x.Webaclarn != nil {
+		return *x.Webaclarn
 	}
 	return ""
 }
@@ -13150,7 +13150,7 @@ func (x *WebACLUpdate) GetActivatedrule() *ActivatedRule {
 
 type XssMatchSet struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name           *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Xssmatchsetid  string                 `protobuf:"bytes,56643900,opt,name=xssmatchsetid,proto3" json:"xssmatchsetid,omitempty"`
 	Xssmatchtuples []*XssMatchTuple       `protobuf:"bytes,302316050,rep,name=xssmatchtuples,proto3" json:"xssmatchtuples,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -13188,8 +13188,8 @@ func (*XssMatchSet) Descriptor() ([]byte, []int) {
 }
 
 func (x *XssMatchSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -13375,11 +13375,12 @@ const file_waf_proto_rawDesc = "" +
 	"\x0eoverrideaction\x18\xc8\xc6\xfc\xf5\x01 \x01(\v2\x16.waf.WafOverrideActionR\x0eoverrideaction\x12\x1d\n" +
 	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05R\bpriority\x12\x1a\n" +
 	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\x12(\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.waf.WafRuleTypeR\x04type\"\x92\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.waf.WafRuleTypeR\x04type\"\xa0\x01\n" +
 	"\fByteMatchSet\x12)\n" +
 	"\x0ebytematchsetid\x18\xf6\x9b\xca\x1d \x01(\tR\x0ebytematchsetid\x12@\n" +
-	"\x0fbytematchtuples\x18\xb8\xb7\xc5\x01 \x03(\v2\x13.waf.ByteMatchTupleR\x0fbytematchtuples\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"W\n" +
+	"\x0fbytematchtuples\x18\xb8\xb7\xc5\x01 \x03(\v2\x13.waf.ByteMatchTupleR\x0fbytematchtuples\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"W\n" +
 	"\x13ByteMatchSetSummary\x12)\n" +
 	"\x0ebytematchsetid\x18\xf6\x9b\xca\x1d \x01(\tR\x0ebytematchsetid\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x82\x01\n" +
@@ -13393,23 +13394,26 @@ const file_waf_proto_rawDesc = "" +
 	"\x12texttransformation\x18视\xb3\x01 \x01(\x0e2\x17.waf.TextTransformationR\x12texttransformation\"W\n" +
 	"\x19CreateByteMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"{\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x90\x01\n" +
 	"\x1aCreateByteMatchSetResponse\x128\n" +
-	"\fbytematchset\x18\xa9\xcf\xc3\x04 \x01(\v2\x11.waf.ByteMatchSetR\fbytematchset\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"V\n" +
+	"\fbytematchset\x18\xa9\xcf\xc3\x04 \x01(\v2\x11.waf.ByteMatchSetR\fbytematchset\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"V\n" +
 	"\x18CreateGeoMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"w\n" +
-	"\x19CreateGeoMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x125\n" +
-	"\vgeomatchset\x18\xa2\xf8\xbf( \x01(\v2\x10.waf.GeoMatchSetR\vgeomatchset\"P\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8c\x01\n" +
+	"\x19CreateGeoMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x125\n" +
+	"\vgeomatchset\x18\xa2\xf8\xbf( \x01(\v2\x10.waf.GeoMatchSetR\vgeomatchsetB\x0e\n" +
+	"\f_changetoken\"P\n" +
 	"\x12CreateIPSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"`\n" +
-	"\x13CreateIPSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12$\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"u\n" +
+	"\x13CreateIPSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12$\n" +
 	"\x05ipset\x18\x95\xc1\x8c\xd0\x01 \x01(\v2\n" +
-	".waf.IPSetR\x05ipset\"\xe9\x01\n" +
+	".waf.IPSetR\x05ipsetB\x0e\n" +
+	"\f_changetoken\"\xe9\x01\n" +
 	"\x1aCreateRateBasedRuleRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12!\n" +
 	"\n" +
@@ -13418,54 +13422,61 @@ const file_waf_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12)\n" +
 	"\aratekey\x18\x9f\xea\xfd\x0e \x01(\x0e2\f.waf.RateKeyR\aratekey\x12\x1f\n" +
 	"\tratelimit\x18Ê\xb3! \x01(\x03R\tratelimit\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"n\n" +
-	"\x1bCreateRateBasedRuleResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12*\n" +
-	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x12.waf.RateBasedRuleR\x04rule\"X\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"\x83\x01\n" +
+	"\x1bCreateRateBasedRuleResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12*\n" +
+	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x12.waf.RateBasedRuleR\x04ruleB\x0e\n" +
+	"\f_changetoken\"X\n" +
 	"\x1aCreateRegexMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x80\x01\n" +
-	"\x1bCreateRegexMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12<\n" +
-	"\rregexmatchset\x18\x80\xf2\xd4\xfe\x01 \x01(\v2\x12.waf.RegexMatchSetR\rregexmatchset\"Z\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x95\x01\n" +
+	"\x1bCreateRegexMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12<\n" +
+	"\rregexmatchset\x18\x80\xf2\xd4\xfe\x01 \x01(\v2\x12.waf.RegexMatchSetR\rregexmatchsetB\x0e\n" +
+	"\f_changetoken\"Z\n" +
 	"\x1cCreateRegexPatternSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x87\x01\n" +
-	"\x1dCreateRegexPatternSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12A\n" +
-	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x14.waf.RegexPatternSetR\x0fregexpatternset\"\x99\x01\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x9c\x01\n" +
+	"\x1dCreateRegexPatternSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12A\n" +
+	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x14.waf.RegexPatternSetR\x0fregexpatternsetB\x0e\n" +
+	"\f_changetoken\"\x99\x01\n" +
 	"\x16CreateRuleGroupRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12!\n" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"o\n" +
-	"\x17CreateRuleGroupResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12/\n" +
-	"\trulegroup\x18\xab\xdb\xc0\x7f \x01(\v2\x0e.waf.RuleGroupR\trulegroup\"\x94\x01\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"\x84\x01\n" +
+	"\x17CreateRuleGroupResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12/\n" +
+	"\trulegroup\x18\xab\xdb\xc0\x7f \x01(\v2\x0e.waf.RuleGroupR\trulegroupB\x0e\n" +
+	"\f_changetoken\"\x94\x01\n" +
 	"\x11CreateRuleRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12!\n" +
 	"\n" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"\\\n" +
-	"\x12CreateRuleResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12!\n" +
-	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\t.waf.RuleR\x04rule\"\\\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"q\n" +
+	"\x12CreateRuleResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12!\n" +
+	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\t.waf.RuleR\x04ruleB\x0e\n" +
+	"\f_changetoken\"\\\n" +
 	"\x1eCreateSizeConstraintSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8f\x01\n" +
-	"\x1fCreateSizeConstraintSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12G\n" +
-	"\x11sizeconstraintset\x18갫O \x01(\v2\x16.waf.SizeConstraintSetR\x11sizeconstraintset\"_\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xa4\x01\n" +
+	"\x1fCreateSizeConstraintSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12G\n" +
+	"\x11sizeconstraintset\x18갫O \x01(\v2\x16.waf.SizeConstraintSetR\x11sizeconstraintsetB\x0e\n" +
+	"\f_changetoken\"_\n" +
 	"!CreateSqlInjectionMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x9b\x01\n" +
-	"\"CreateSqlInjectionMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12P\n" +
-	"\x14sqlinjectionmatchset\x18\xec\xef\xe3\x1c \x01(\v2\x19.waf.SqlInjectionMatchSetR\x14sqlinjectionmatchset\"\xc2\x01\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xb0\x01\n" +
+	"\"CreateSqlInjectionMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12P\n" +
+	"\x14sqlinjectionmatchset\x18\xec\xef\xe3\x1c \x01(\v2\x19.waf.SqlInjectionMatchSetR\x14sqlinjectionmatchsetB\x0e\n" +
+	"\f_changetoken\"\xc2\x01\n" +
 	"!CreateWebACLMigrationStackRequest\x12<\n" +
 	"\x15ignoreunsupportedtype\x18\x8b\xba\xddQ \x01(\bH\x00R\x15ignoreunsupportedtype\x88\x01\x01\x12&\n" +
 	"\fs3bucketname\x18þ\xe9\x98\x01 \x01(\tR\fs3bucketname\x12\x1d\n" +
@@ -13480,31 +13491,36 @@ const file_waf_proto_rawDesc = "" +
 	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
 	"metricname\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"d\n" +
-	"\x14CreateWebACLResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12'\n" +
-	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\v.waf.WebACLR\x06webacl\"V\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"y\n" +
+	"\x14CreateWebACLResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x12'\n" +
+	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\v.waf.WebACLR\x06webaclB\x0e\n" +
+	"\f_changetoken\"V\n" +
 	"\x18CreateXssMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"w\n" +
-	"\x19CreateXssMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x125\n" +
-	"\vxssmatchset\x18\x87\xef\xecP \x01(\v2\x10.waf.XssMatchSetR\vxssmatchset\"k\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8c\x01\n" +
+	"\x19CreateXssMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01\x125\n" +
+	"\vxssmatchset\x18\x87\xef\xecP \x01(\v2\x10.waf.XssMatchSetR\vxssmatchsetB\x0e\n" +
+	"\f_changetoken\"k\n" +
 	"\x19DeleteByteMatchSetRequest\x12)\n" +
 	"\x0ebytematchsetid\x18\xf6\x9b\xca\x1d \x01(\tR\x0ebytematchsetid\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"A\n" +
-	"\x1aDeleteByteMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"i\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"V\n" +
+	"\x1aDeleteByteMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"i\n" +
 	"\x18DeleteGeoMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12(\n" +
-	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\"@\n" +
-	"\x19DeleteGeoMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"W\n" +
+	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\"U\n" +
+	"\x19DeleteGeoMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"W\n" +
 	"\x12DeleteIPSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1c\n" +
-	"\aipsetid\x18\xbaެ\xa5\x01 \x01(\tR\aipsetid\":\n" +
-	"\x13DeleteIPSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"I\n" +
+	"\aipsetid\x18\xbaެ\xa5\x01 \x01(\tR\aipsetid\"O\n" +
+	"\x13DeleteIPSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"I\n" +
 	"!DeleteLoggingConfigurationRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"$\n" +
 	"\"DeleteLoggingConfigurationResponse\"E\n" +
@@ -13513,61 +13529,72 @@ const file_waf_proto_rawDesc = "" +
 	"\x1eDeletePermissionPolicyResponse\"]\n" +
 	"\x1aDeleteRateBasedRuleRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"B\n" +
-	"\x1bDeleteRateBasedRuleResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"n\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"W\n" +
+	"\x1bDeleteRateBasedRuleResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"n\n" +
 	"\x1aDeleteRegexMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12+\n" +
-	"\x0fregexmatchsetid\x18\x93\xb8\x9e' \x01(\tR\x0fregexmatchsetid\"B\n" +
-	"\x1bDeleteRegexMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"t\n" +
+	"\x0fregexmatchsetid\x18\x93\xb8\x9e' \x01(\tR\x0fregexmatchsetid\"W\n" +
+	"\x1bDeleteRegexMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"t\n" +
 	"\x1cDeleteRegexPatternSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12/\n" +
-	"\x11regexpatternsetid\x18\xf0\xed\xf0- \x01(\tR\x11regexpatternsetid\"D\n" +
-	"\x1dDeleteRegexPatternSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"c\n" +
+	"\x11regexpatternsetid\x18\xf0\xed\xf0- \x01(\tR\x11regexpatternsetid\"Y\n" +
+	"\x1dDeleteRegexPatternSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"c\n" +
 	"\x16DeleteRuleGroupRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12$\n" +
-	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\">\n" +
-	"\x17DeleteRuleGroupResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"T\n" +
+	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\"S\n" +
+	"\x17DeleteRuleGroupResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"T\n" +
 	"\x11DeleteRuleRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"9\n" +
-	"\x12DeleteRuleResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"{\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"N\n" +
+	"\x12DeleteRuleResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"{\n" +
 	"\x1eDeleteSizeConstraintSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x124\n" +
-	"\x13sizeconstraintsetid\x18ͨń\x01 \x01(\tR\x13sizeconstraintsetid\"F\n" +
-	"\x1fDeleteSizeConstraintSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x84\x01\n" +
+	"\x13sizeconstraintsetid\x18ͨń\x01 \x01(\tR\x13sizeconstraintsetid\"[\n" +
+	"\x1fDeleteSizeConstraintSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\x84\x01\n" +
 	"!DeleteSqlInjectionMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12:\n" +
-	"\x16sqlinjectionmatchsetid\x18Ǭ\x95\xb8\x01 \x01(\tR\x16sqlinjectionmatchsetid\"I\n" +
-	"\"DeleteSqlInjectionMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"Y\n" +
+	"\x16sqlinjectionmatchsetid\x18Ǭ\x95\xb8\x01 \x01(\tR\x16sqlinjectionmatchsetid\"^\n" +
+	"\"DeleteSqlInjectionMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"Y\n" +
 	"\x13DeleteWebACLRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1d\n" +
-	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\";\n" +
-	"\x14DeleteWebACLResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"h\n" +
+	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\"P\n" +
+	"\x14DeleteWebACLResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"h\n" +
 	"\x18DeleteXssMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12'\n" +
-	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\"@\n" +
-	"\x19DeleteXssMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"*\n" +
+	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\"U\n" +
+	"\x19DeleteXssMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"*\n" +
 	"\fExcludedRule\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"S\n" +
-	"\fFieldToMatch\x12\x16\n" +
-	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\tR\x04data\x12+\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x13.waf.MatchFieldTypeR\x04type\"\x81\x01\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"a\n" +
+	"\fFieldToMatch\x12\x1b\n" +
+	"\x04data\x18\xc6\xf3\xc9\xfa\x01 \x01(\tH\x00R\x04data\x88\x01\x01\x12+\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x13.waf.MatchFieldTypeR\x04typeB\a\n" +
+	"\x05_data\"\x81\x01\n" +
 	"\x12GeoMatchConstraint\x123\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1b.waf.GeoMatchConstraintTypeR\x04type\x126\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x0e2\x1c.waf.GeoMatchConstraintValueR\x05value\"\x9c\x01\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\x0e2\x1c.waf.GeoMatchConstraintValueR\x05value\"\xaa\x01\n" +
 	"\vGeoMatchSet\x12L\n" +
 	"\x13geomatchconstraints\x18\xea\xa1\xe4L \x03(\v2\x17.waf.GeoMatchConstraintR\x13geomatchconstraints\x12(\n" +
-	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"U\n" +
+	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"U\n" +
 	"\x12GeoMatchSetSummary\x12(\n" +
 	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8d\x01\n" +
@@ -13578,9 +13605,10 @@ const file_waf_proto_rawDesc = "" +
 	"\x0ebytematchsetid\x18\xf6\x9b\xca\x1d \x01(\tR\x0ebytematchsetid\"S\n" +
 	"\x17GetByteMatchSetResponse\x128\n" +
 	"\fbytematchset\x18\xa9\xcf\xc3\x04 \x01(\v2\x11.waf.ByteMatchSetR\fbytematchset\"\x17\n" +
-	"\x15GetChangeTokenRequest\"=\n" +
-	"\x16GetChangeTokenResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"B\n" +
+	"\x15GetChangeTokenRequest\"R\n" +
+	"\x16GetChangeTokenResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"B\n" +
 	"\x1bGetChangeTokenStatusRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"g\n" +
 	"\x1cGetChangeTokenStatusResponse\x12G\n" +
@@ -13599,19 +13627,22 @@ const file_waf_proto_rawDesc = "" +
 	"\x1fGetLoggingConfigurationResponse\x12Q\n" +
 	"\x14loggingconfiguration\x18\xb5\xa8\x99\xab\x01 \x01(\v2\x19.waf.LoggingConfigurationR\x14loggingconfiguration\"B\n" +
 	"\x1aGetPermissionPolicyRequest\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"9\n" +
-	"\x1bGetPermissionPolicyResponse\x12\x1a\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\"d\n" +
-	"\"GetRateBasedRuleManagedKeysRequest\x12\"\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"I\n" +
+	"\x1bGetPermissionPolicyResponse\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x00R\x06policy\x88\x01\x01B\t\n" +
+	"\a_policy\"x\n" +
+	"\"GetRateBasedRuleManagedKeysRequest\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"n\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12\x1a\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleidB\r\n" +
+	"\v_nextmarker\"\x82\x01\n" +
 	"#GetRateBasedRuleManagedKeysResponse\x12#\n" +
-	"\vmanagedkeys\x18\xfb\xd9\xc0k \x03(\tR\vmanagedkeys\x12\"\n" +
+	"\vmanagedkeys\x18\xfb\xd9\xc0k \x03(\tR\vmanagedkeys\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"5\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"5\n" +
 	"\x17GetRateBasedRuleRequest\x12\x1a\n" +
 	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"F\n" +
 	"\x18GetRateBasedRuleResponse\x12*\n" +
@@ -13661,22 +13692,31 @@ const file_waf_proto_rawDesc = "" +
 	"\x15GetXssMatchSetRequest\x12'\n" +
 	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\"O\n" +
 	"\x16GetXssMatchSetResponse\x125\n" +
-	"\vxssmatchset\x18\x87\xef\xecP \x01(\v2\x10.waf.XssMatchSetR\vxssmatchset\"=\n" +
+	"\vxssmatchset\x18\x87\xef\xecP \x01(\v2\x10.waf.XssMatchSetR\vxssmatchset\"Z\n" +
 	"\n" +
-	"HTTPHeader\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xcf\x01\n" +
-	"\vHTTPRequest\x12\x1d\n" +
-	"\bclientip\x18\xe0݅v \x01(\tR\bclientip\x12\x1b\n" +
-	"\acountry\x18\xf2\xfc\xd3' \x01(\tR\acountry\x12#\n" +
-	"\vhttpversion\x18ؔ\x8e\x06 \x01(\tR\vhttpversion\x12-\n" +
-	"\aheaders\x18\x8a\xb3\xbd\x9a\x01 \x03(\v2\x0f.waf.HTTPHeaderR\aheaders\x12\x1a\n" +
-	"\x06method\x18ю\x8b\xc5\x01 \x01(\tR\x06method\x12\x14\n" +
-	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tR\x03uri\"\x82\x01\n" +
+	"HTTPHeader\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_value\"\xa4\x02\n" +
+	"\vHTTPRequest\x12\"\n" +
+	"\bclientip\x18\xe0݅v \x01(\tH\x00R\bclientip\x88\x01\x01\x12 \n" +
+	"\acountry\x18\xf2\xfc\xd3' \x01(\tH\x01R\acountry\x88\x01\x01\x12(\n" +
+	"\vhttpversion\x18ؔ\x8e\x06 \x01(\tH\x02R\vhttpversion\x88\x01\x01\x12-\n" +
+	"\aheaders\x18\x8a\xb3\xbd\x9a\x01 \x03(\v2\x0f.waf.HTTPHeaderR\aheaders\x12\x1f\n" +
+	"\x06method\x18ю\x8b\xc5\x01 \x01(\tH\x03R\x06method\x88\x01\x01\x12\x19\n" +
+	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tH\x04R\x03uri\x88\x01\x01B\v\n" +
+	"\t_clientipB\n" +
+	"\n" +
+	"\b_countryB\x0e\n" +
+	"\f_httpversionB\t\n" +
+	"\a_methodB\x06\n" +
+	"\x04_uri\"\x90\x01\n" +
 	"\x05IPSet\x12D\n" +
 	"\x10ipsetdescriptors\x18\xc3\xcf\xfb\x98\x01 \x03(\v2\x14.waf.IPSetDescriptorR\x10ipsetdescriptors\x12\x1c\n" +
-	"\aipsetid\x18\xbaެ\xa5\x01 \x01(\tR\aipsetid\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"]\n" +
+	"\aipsetid\x18\xbaެ\xa5\x01 \x01(\tR\aipsetid\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"]\n" +
 	"\x0fIPSetDescriptor\x120\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x18.waf.IPSetDescriptorTypeR\x04type\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"C\n" +
@@ -13685,189 +13725,222 @@ const file_waf_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"~\n" +
 	"\vIPSetUpdate\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x11.waf.ChangeActionR\x06action\x12A\n" +
-	"\x0fipsetdescriptor\x18\x86\xb4\xf7k \x01(\v2\x14.waf.IPSetDescriptorR\x0fipsetdescriptor\"\x99\x01\n" +
+	"\x0fipsetdescriptor\x18\x86\xb4\xf7k \x01(\v2\x14.waf.IPSetDescriptorR\x0fipsetdescriptor\"\xc2\x01\n" +
 	"$ListActivatedRulesInRuleGroupRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12$\n" +
-	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupidB\b\n" +
-	"\x06_limit\"\x8a\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12)\n" +
+	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tH\x02R\vrulegroupid\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarkerB\x0e\n" +
+	"\f_rulegroupid\"\x9e\x01\n" +
 	"%ListActivatedRulesInRuleGroupResponse\x12=\n" +
-	"\x0eactivatedrules\x18\xe4\xe6\x8d$ \x03(\v2\x12.waf.ActivatedRuleR\x0eactivatedrules\x12\"\n" +
+	"\x0eactivatedrules\x18\xe4\xe6\x8d$ \x03(\v2\x12.waf.ActivatedRuleR\x0eactivatedrules\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"g\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"{\n" +
 	"\x18ListByteMatchSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x83\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x97\x01\n" +
 	"\x19ListByteMatchSetsResponse\x12B\n" +
-	"\rbytematchsets\x18\xc2\xfb\xf3\xf8\x01 \x03(\v2\x18.waf.ByteMatchSetSummaryR\rbytematchsets\x12\"\n" +
+	"\rbytematchsets\x18\xc2\xfb\xf3\xf8\x01 \x03(\v2\x18.waf.ByteMatchSetSummaryR\rbytematchsets\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"f\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"z\n" +
 	"\x17ListGeoMatchSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"~\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x92\x01\n" +
 	"\x18ListGeoMatchSetsResponse\x12>\n" +
-	"\fgeomatchsets\x18\x97\xea\xa8Q \x03(\v2\x17.waf.GeoMatchSetSummaryR\fgeomatchsets\x12\"\n" +
+	"\fgeomatchsets\x18\x97\xea\xa8Q \x03(\v2\x17.waf.GeoMatchSetSummaryR\fgeomatchsets\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"`\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"t\n" +
 	"\x11ListIPSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"g\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"{\n" +
 	"\x12ListIPSetsResponse\x12-\n" +
-	"\x06ipsets\x18\xa6\x97\xb3\xcf\x01 \x03(\v2\x11.waf.IPSetSummaryR\x06ipsets\x12\"\n" +
+	"\x06ipsets\x18\xa6\x97\xb3\xcf\x01 \x03(\v2\x11.waf.IPSetSummaryR\x06ipsets\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"o\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"\x83\x01\n" +
 	" ListLoggingConfigurationsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x9c\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xb0\x01\n" +
 	"!ListLoggingConfigurationsResponse\x12S\n" +
-	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x19.waf.LoggingConfigurationR\x15loggingconfigurations\x12\"\n" +
+	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x19.waf.LoggingConfigurationR\x15loggingconfigurations\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"h\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"|\n" +
 	"\x19ListRateBasedRulesRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"k\n" +
-	"\x1aListRateBasedRulesResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x7f\n" +
+	"\x1aListRateBasedRulesResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12)\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rules\"h\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12)\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rulesB\r\n" +
+	"\v_nextmarker\"|\n" +
 	"\x19ListRegexMatchSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x86\x01\n" +
-	"\x1aListRegexMatchSetsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x9a\x01\n" +
+	"\x1aListRegexMatchSetsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12D\n" +
-	"\x0eregexmatchsets\x18删E \x03(\v2\x19.waf.RegexMatchSetSummaryR\x0eregexmatchsets\"j\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12D\n" +
+	"\x0eregexmatchsets\x18删E \x03(\v2\x19.waf.RegexMatchSetSummaryR\x0eregexmatchsetsB\r\n" +
+	"\v_nextmarker\"~\n" +
 	"\x1bListRegexPatternSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x8f\x01\n" +
-	"\x1cListRegexPatternSetsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xa3\x01\n" +
+	"\x1cListRegexPatternSetsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12K\n" +
-	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1b.waf.RegexPatternSetSummaryR\x10regexpatternsets\"d\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12K\n" +
+	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1b.waf.RegexPatternSetSummaryR\x10regexpatternsetsB\r\n" +
+	"\v_nextmarker\"x\n" +
 	"\x15ListRuleGroupsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"w\n" +
-	"\x16ListRuleGroupsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x8b\x01\n" +
+	"\x16ListRuleGroupsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x129\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x129\n" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x15.waf.RuleGroupSummaryR\n" +
-	"rulegroups\"_\n" +
+	"rulegroupsB\r\n" +
+	"\v_nextmarker\"s\n" +
 	"\x10ListRulesRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"b\n" +
-	"\x11ListRulesResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"v\n" +
+	"\x11ListRulesResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12)\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rules\"l\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12)\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x10.waf.RuleSummaryR\x05rulesB\r\n" +
+	"\v_nextmarker\"\x80\x01\n" +
 	"\x1dListSizeConstraintSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x97\x01\n" +
-	"\x1eListSizeConstraintSetsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xab\x01\n" +
+	"\x1eListSizeConstraintSetsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12Q\n" +
-	"\x12sizeconstraintsets\x18\xef\xe1ȵ\x01 \x03(\v2\x1d.waf.SizeConstraintSetSummaryR\x12sizeconstraintsets\"o\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12Q\n" +
+	"\x12sizeconstraintsets\x18\xef\xe1ȵ\x01 \x03(\v2\x1d.waf.SizeConstraintSetSummaryR\x12sizeconstraintsetsB\r\n" +
+	"\v_nextmarker\"\x83\x01\n" +
 	" ListSqlInjectionMatchSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\xa2\x01\n" +
-	"!ListSqlInjectionMatchSetsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xb6\x01\n" +
+	"!ListSqlInjectionMatchSetsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12Y\n" +
-	"\x15sqlinjectionmatchsets\x18Ɉ\xb7\x0e \x03(\v2 .waf.SqlInjectionMatchSetSummaryR\x15sqlinjectionmatchsets\"n\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12Y\n" +
+	"\x15sqlinjectionmatchsets\x18Ɉ\xb7\x0e \x03(\v2 .waf.SqlInjectionMatchSetSummaryR\x15sqlinjectionmatchsetsB\r\n" +
+	"\v_nextmarker\"\x82\x01\n" +
 	"\x1fListSubscribedRuleGroupsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x8b\x01\n" +
-	" ListSubscribedRuleGroupsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x9f\x01\n" +
+	" ListSubscribedRuleGroupsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12C\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12C\n" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x1f.waf.SubscribedRuleGroupSummaryR\n" +
-	"rulegroups\"\x8f\x01\n" +
+	"rulegroupsB\r\n" +
+	"\v_nextmarker\"\xa3\x01\n" +
 	"\x1aListTagsForResourceRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12$\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\b\n" +
-	"\x06_limit\"\x8d\x01\n" +
-	"\x1bListTagsForResourceResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xa1\x01\n" +
+	"\x1bListTagsForResourceResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12J\n" +
-	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x17.waf.TagInfoForResourceR\x12taginfoforresource\"a\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12J\n" +
+	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x17.waf.TagInfoForResourceR\x12taginfoforresourceB\r\n" +
+	"\v_nextmarker\"u\n" +
 	"\x12ListWebACLsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"j\n" +
-	"\x13ListWebACLsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"~\n" +
+	"\x13ListWebACLsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12/\n" +
-	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x12.waf.WebACLSummaryR\awebacls\"f\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12/\n" +
+	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x12.waf.WebACLSummaryR\awebaclsB\r\n" +
+	"\v_nextmarker\"z\n" +
 	"\x17ListXssMatchSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarkerB\b\n" +
-	"\x06_limit\"\x7f\n" +
-	"\x18ListXssMatchSetsResponse\x12\"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\b\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x93\x01\n" +
+	"\x18ListXssMatchSetsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12?\n" +
-	"\fxssmatchsets\x18\xb0\xad\xe4\xee\x01 \x03(\v2\x17.waf.XssMatchSetSummaryR\fxssmatchsets\"\xb3\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12?\n" +
+	"\fxssmatchsets\x18\xb0\xad\xe4\xee\x01 \x03(\v2\x17.waf.XssMatchSetSummaryR\fxssmatchsetsB\r\n" +
+	"\v_nextmarker\"\xb3\x01\n" +
 	"\x14LoggingConfiguration\x127\n" +
 	"\x15logdestinationconfigs\x18\xbf\x87\xc3\n" +
 	" \x03(\tR\x15logdestinationconfigs\x12<\n" +
@@ -13886,20 +13959,24 @@ const file_waf_proto_rawDesc = "" +
 	"\x1aPutPermissionPolicyRequest\x12\x1a\n" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x1d\n" +
-	"\x1bPutPermissionPolicyResponse\"\xef\x01\n" +
+	"\x1bPutPermissionPolicyResponse\"\x91\x02\n" +
 	"\rRateBasedRule\x12<\n" +
-	"\x0fmatchpredicates\x18\x99\xa6\x9c\xe5\x01 \x03(\v2\x0e.waf.PredicateR\x0fmatchpredicates\x12!\n" +
+	"\x0fmatchpredicates\x18\x99\xa6\x9c\xe5\x01 \x03(\v2\x0e.waf.PredicateR\x0fmatchpredicates\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12)\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x00R\n" +
+	"metricname\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12)\n" +
 	"\aratekey\x18\x9f\xea\xfd\x0e \x01(\x0e2\f.waf.RateKeyR\aratekey\x12\x1f\n" +
 	"\tratelimit\x18Ê\xb3! \x01(\x03R\tratelimit\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"\x98\x01\n" +
-	"\rRegexMatchSet\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12+\n" +
-	"\x0fregexmatchsetid\x18\x93\xb8\x9e' \x01(\tR\x0fregexmatchsetid\x12C\n" +
-	"\x10regexmatchtuples\x18\xbb\xf6\xccx \x03(\v2\x14.waf.RegexMatchTupleR\x10regexmatchtuples\"Z\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleidB\r\n" +
+	"\v_metricnameB\a\n" +
+	"\x05_name\"\xbf\x01\n" +
+	"\rRegexMatchSet\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x120\n" +
+	"\x0fregexmatchsetid\x18\x93\xb8\x9e' \x01(\tH\x01R\x0fregexmatchsetid\x88\x01\x01\x12C\n" +
+	"\x10regexmatchtuples\x18\xbb\xf6\xccx \x03(\v2\x14.waf.RegexMatchTupleR\x10regexmatchtuplesB\a\n" +
+	"\x05_nameB\x12\n" +
+	"\x10_regexmatchsetid\"Z\n" +
 	"\x14RegexMatchSetSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12+\n" +
 	"\x0fregexmatchsetid\x18\x93\xb8\x9e' \x01(\tR\x0fregexmatchsetid\"\x87\x01\n" +
@@ -13909,32 +13986,37 @@ const file_waf_proto_rawDesc = "" +
 	"\x0fRegexMatchTuple\x129\n" +
 	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x11.waf.FieldToMatchR\ffieldtomatch\x12/\n" +
 	"\x11regexpatternsetid\x18\xf0\xed\xf0- \x01(\tR\x11regexpatternsetid\x12K\n" +
-	"\x12texttransformation\x18视\xb3\x01 \x01(\x0e2\x17.waf.TextTransformationR\x12texttransformation\"\x8f\x01\n" +
-	"\x0fRegexPatternSet\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12/\n" +
+	"\x12texttransformation\x18视\xb3\x01 \x01(\x0e2\x17.waf.TextTransformationR\x12texttransformation\"\x9d\x01\n" +
+	"\x0fRegexPatternSet\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12/\n" +
 	"\x11regexpatternsetid\x18\xf0\xed\xf0- \x01(\tR\x11regexpatternsetid\x124\n" +
-	"\x13regexpatternstrings\x18雈\xe9\x01 \x03(\tR\x13regexpatternstrings\"`\n" +
+	"\x13regexpatternstrings\x18雈\xe9\x01 \x03(\tR\x13regexpatternstringsB\a\n" +
+	"\x05_name\"`\n" +
 	"\x16RegexPatternSetSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12/\n" +
 	"\x11regexpatternsetid\x18\xf0\xed\xf0- \x01(\tR\x11regexpatternsetid\"y\n" +
 	"\x15RegexPatternSetUpdate\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x11.waf.ChangeActionR\x06action\x122\n" +
-	"\x12regexpatternstring\x18\x8c\x96\xc0\x85\x01 \x01(\tR\x12regexpatternstring\"\x90\x01\n" +
-	"\x04Rule\x12!\n" +
+	"\x12regexpatternstring\x18\x8c\x96\xc0\x85\x01 \x01(\tR\x12regexpatternstring\"\xb2\x01\n" +
+	"\x04Rule\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x122\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x00R\n" +
+	"metricname\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x122\n" +
 	"\n" +
 	"predicates\x18\xb8\xb5Ȗ\x01 \x03(\v2\x0e.waf.PredicateR\n" +
 	"predicates\x12\x1a\n" +
-	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\"k\n" +
-	"\tRuleGroup\x12!\n" +
+	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleidB\r\n" +
+	"\v_metricnameB\a\n" +
+	"\x05_name\"\x8d\x01\n" +
+	"\tRuleGroup\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12$\n" +
-	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\"O\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x00R\n" +
+	"metricname\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12$\n" +
+	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupidB\r\n" +
+	"\v_metricnameB\a\n" +
+	"\x05_name\"O\n" +
 	"\x10RuleGroupSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12$\n" +
 	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\"}\n" +
@@ -13947,32 +14029,38 @@ const file_waf_proto_rawDesc = "" +
 	"\n" +
 	"RuleUpdate\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x11.waf.ChangeActionR\x06action\x120\n" +
-	"\tpredicate\x18\xbf\x91\xcb\xf6\x01 \x01(\v2\x0e.waf.PredicateR\tpredicate\"\xd0\x01\n" +
-	"\x12SampledHTTPRequest\x12\x19\n" +
-	"\x06action\x18\xa0\xd2\xdeS \x01(\tR\x06action\x12-\n" +
-	"\arequest\x18ӂ\x95\x12 \x01(\v2\x10.waf.HTTPRequestR\arequest\x123\n" +
-	"\x13rulewithinrulegroup\x18\xaa\xbd\xf7\x1b \x01(\tR\x13rulewithinrulegroup\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12\x1a\n" +
-	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weight\"\xfb\x01\n" +
+	"\tpredicate\x18\xbf\x91\xcb\xf6\x01 \x01(\v2\x0e.waf.PredicateR\tpredicate\"\x90\x02\n" +
+	"\x12SampledHTTPRequest\x12\x1e\n" +
+	"\x06action\x18\xa0\xd2\xdeS \x01(\tH\x00R\x06action\x88\x01\x01\x12-\n" +
+	"\arequest\x18ӂ\x95\x12 \x01(\v2\x10.waf.HTTPRequestR\arequest\x128\n" +
+	"\x13rulewithinrulegroup\x18\xaa\xbd\xf7\x1b \x01(\tH\x01R\x13rulewithinrulegroup\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x02R\ttimestamp\x88\x01\x01\x12\x1a\n" +
+	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weightB\t\n" +
+	"\a_actionB\x16\n" +
+	"\x14_rulewithinrulegroupB\f\n" +
+	"\n" +
+	"_timestamp\"\xfb\x01\n" +
 	"\x0eSizeConstraint\x12J\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x17.waf.ComparisonOperatorR\x12comparisonoperator\x129\n" +
 	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x11.waf.FieldToMatchR\ffieldtomatch\x12\x15\n" +
 	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\x12K\n" +
-	"\x12texttransformation\x18视\xb3\x01 \x01(\x0e2\x17.waf.TextTransformationR\x12texttransformation\"\xa3\x01\n" +
-	"\x11SizeConstraintSet\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x124\n" +
+	"\x12texttransformation\x18视\xb3\x01 \x01(\x0e2\x17.waf.TextTransformationR\x12texttransformation\"\xb1\x01\n" +
+	"\x11SizeConstraintSet\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x124\n" +
 	"\x13sizeconstraintsetid\x18ͨń\x01 \x01(\tR\x13sizeconstraintsetid\x12A\n" +
-	"\x0fsizeconstraints\x18\xd9\xfc\xcf\xed\x01 \x03(\v2\x13.waf.SizeConstraintR\x0fsizeconstraints\"g\n" +
+	"\x0fsizeconstraints\x18\xd9\xfc\xcf\xed\x01 \x03(\v2\x13.waf.SizeConstraintR\x0fsizeconstraintsB\a\n" +
+	"\x05_name\"g\n" +
 	"\x18SizeConstraintSetSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x124\n" +
 	"\x13sizeconstraintsetid\x18ͨń\x01 \x01(\tR\x13sizeconstraintsetid\"\x87\x01\n" +
 	"\x17SizeConstraintSetUpdate\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x11.waf.ChangeActionR\x06action\x12>\n" +
-	"\x0esizeconstraint\x18\xbc\xbe\xa9\t \x01(\v2\x13.waf.SizeConstraintR\x0esizeconstraint\"\xc3\x01\n" +
-	"\x14SqlInjectionMatchSet\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12:\n" +
+	"\x0esizeconstraint\x18\xbc\xbe\xa9\t \x01(\v2\x13.waf.SizeConstraintR\x0esizeconstraint\"\xd1\x01\n" +
+	"\x14SqlInjectionMatchSet\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12:\n" +
 	"\x16sqlinjectionmatchsetid\x18Ǭ\x95\xb8\x01 \x01(\tR\x16sqlinjectionmatchsetid\x12X\n" +
-	"\x17sqlinjectionmatchtuples\x18\x8f\xed\xc2# \x03(\v2\x1b.waf.SqlInjectionMatchTupleR\x17sqlinjectionmatchtuples\"p\n" +
+	"\x17sqlinjectionmatchtuples\x18\x8f\xed\xc2# \x03(\v2\x1b.waf.SqlInjectionMatchTupleR\x17sqlinjectionmatchtuplesB\a\n" +
+	"\x05_name\"p\n" +
 	"\x1bSqlInjectionMatchSetSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12:\n" +
 	"\x16sqlinjectionmatchsetid\x18Ǭ\x95\xb8\x01 \x01(\tR\x16sqlinjectionmatchsetid\"\xa2\x01\n" +
@@ -13990,10 +14078,11 @@ const file_waf_proto_rawDesc = "" +
 	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"b\n" +
-	"\x12TagInfoForResource\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12&\n" +
-	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.waf.TagR\ataglist\"\\\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"w\n" +
+	"\x12TagInfoForResource\x12)\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tH\x00R\vresourcearn\x88\x01\x01\x12&\n" +
+	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\b.waf.TagR\ataglistB\x0e\n" +
+	"\f_resourcearn\"\\\n" +
 	"\x12TagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.waf.TagR\x04tags\"\x15\n" +
@@ -14009,141 +14098,195 @@ const file_waf_proto_rawDesc = "" +
 	"\x19UpdateByteMatchSetRequest\x12)\n" +
 	"\x0ebytematchsetid\x18\xf6\x9b\xca\x1d \x01(\tR\x0ebytematchsetid\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x124\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x17.waf.ByteMatchSetUpdateR\aupdates\"A\n" +
-	"\x1aUpdateByteMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x9e\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x17.waf.ByteMatchSetUpdateR\aupdates\"V\n" +
+	"\x1aUpdateByteMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\x9e\x01\n" +
 	"\x18UpdateGeoMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12(\n" +
 	"\rgeomatchsetid\x18՞\xa1\xf5\x01 \x01(\tR\rgeomatchsetid\x123\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x16.waf.GeoMatchSetUpdateR\aupdates\"@\n" +
-	"\x19UpdateGeoMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x86\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x16.waf.GeoMatchSetUpdateR\aupdates\"U\n" +
+	"\x19UpdateGeoMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\x86\x01\n" +
 	"\x12UpdateIPSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1c\n" +
 	"\aipsetid\x18\xbaެ\xa5\x01 \x01(\tR\aipsetid\x12-\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x10.waf.IPSetUpdateR\aupdates\":\n" +
-	"\x13UpdateIPSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\xac\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x10.waf.IPSetUpdateR\aupdates\"O\n" +
+	"\x13UpdateIPSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\xac\x01\n" +
 	"\x1aUpdateRateBasedRuleRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1f\n" +
 	"\tratelimit\x18Ê\xb3! \x01(\x03R\tratelimit\x12\x1a\n" +
 	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\x12,\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x0f.waf.RuleUpdateR\aupdates\"B\n" +
-	"\x1bUpdateRateBasedRuleResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\xa5\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x0f.waf.RuleUpdateR\aupdates\"W\n" +
+	"\x1bUpdateRateBasedRuleResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\xa5\x01\n" +
 	"\x1aUpdateRegexMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12+\n" +
 	"\x0fregexmatchsetid\x18\x93\xb8\x9e' \x01(\tR\x0fregexmatchsetid\x125\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x18.waf.RegexMatchSetUpdateR\aupdates\"B\n" +
-	"\x1bUpdateRegexMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\xad\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x18.waf.RegexMatchSetUpdateR\aupdates\"W\n" +
+	"\x1bUpdateRegexMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\xad\x01\n" +
 	"\x1cUpdateRegexPatternSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12/\n" +
 	"\x11regexpatternsetid\x18\xf0\xed\xf0- \x01(\tR\x11regexpatternsetid\x127\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x1a.waf.RegexPatternSetUpdateR\aupdates\"D\n" +
-	"\x1dUpdateRegexPatternSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x96\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x1a.waf.RegexPatternSetUpdateR\aupdates\"Y\n" +
+	"\x1dUpdateRegexPatternSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\x96\x01\n" +
 	"\x16UpdateRuleGroupRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12$\n" +
 	"\vrulegroupid\x18\x88\xa8\x9b\x89\x01 \x01(\tR\vrulegroupid\x121\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x14.waf.RuleGroupUpdateR\aupdates\">\n" +
-	"\x17UpdateRuleGroupResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x82\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x14.waf.RuleGroupUpdateR\aupdates\"S\n" +
+	"\x17UpdateRuleGroupResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\x82\x01\n" +
 	"\x11UpdateRuleRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12\x1a\n" +
 	"\x06ruleid\x18\x9fǠ\xcd\x01 \x01(\tR\x06ruleid\x12,\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x0f.waf.RuleUpdateR\aupdates\"9\n" +
-	"\x12UpdateRuleResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\xb6\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x0f.waf.RuleUpdateR\aupdates\"N\n" +
+	"\x12UpdateRuleResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\xb6\x01\n" +
 	"\x1eUpdateSizeConstraintSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x124\n" +
 	"\x13sizeconstraintsetid\x18ͨń\x01 \x01(\tR\x13sizeconstraintsetid\x129\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x1c.waf.SizeConstraintSetUpdateR\aupdates\"F\n" +
-	"\x1fUpdateSizeConstraintSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\xc2\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x1c.waf.SizeConstraintSetUpdateR\aupdates\"[\n" +
+	"\x1fUpdateSizeConstraintSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\xc2\x01\n" +
 	"!UpdateSqlInjectionMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x12:\n" +
 	"\x16sqlinjectionmatchsetid\x18Ǭ\x95\xb8\x01 \x01(\tR\x16sqlinjectionmatchsetid\x12<\n" +
-	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x1f.waf.SqlInjectionMatchSetUpdateR\aupdates\"I\n" +
-	"\"UpdateSqlInjectionMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\xc3\x01\n" +
+	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x1f.waf.SqlInjectionMatchSetUpdateR\aupdates\"^\n" +
+	"\"UpdateSqlInjectionMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\xc3\x01\n" +
 	"\x13UpdateWebACLRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x128\n" +
 	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x0e.waf.WafActionR\rdefaultaction\x12.\n" +
 	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x11.waf.WebACLUpdateR\aupdates\x12\x1d\n" +
-	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\";\n" +
-	"\x14UpdateWebACLResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"\x9d\x01\n" +
+	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\"P\n" +
+	"\x14UpdateWebACLResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"\x9d\x01\n" +
 	"\x18UpdateXssMatchSetRequest\x12#\n" +
 	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\x123\n" +
 	"\aupdates\x18\xa6\xeb\xc1A \x03(\v2\x16.waf.XssMatchSetUpdateR\aupdates\x12'\n" +
-	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\"@\n" +
-	"\x19UpdateXssMatchSetResponse\x12#\n" +
-	"\vchangetoken\x18\xebʋ# \x01(\tR\vchangetoken\"5\n" +
-	"\x16WAFBadRequestException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aWAFDisallowedNameException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbe\x01\n" +
-	"\x1bWAFEntityMigrationException\x126\n" +
-	"\x14migrationerrorreason\x18ؑЧ\x01 \x01(\tR\x14migrationerrorreason\x12J\n" +
-	"\x12migrationerrortype\x18\xec\xde\xcd\x19 \x01(\x0e2\x17.waf.MigrationErrorTypeR\x12migrationerrortype\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19WAFInternalErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x1c\n" +
-	"\x1aWAFInvalidAccountException\";\n" +
-	"\x1cWAFInvalidOperationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb2\x01\n" +
+	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\"U\n" +
+	"\x19UpdateXssMatchSetResponse\x12(\n" +
+	"\vchangetoken\x18\xebʋ# \x01(\tH\x00R\vchangetoken\x88\x01\x01B\x0e\n" +
+	"\f_changetoken\"F\n" +
+	"\x16WAFBadRequestException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aWAFDisallowedNameException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xed\x01\n" +
+	"\x1bWAFEntityMigrationException\x12;\n" +
+	"\x14migrationerrorreason\x18ؑЧ\x01 \x01(\tH\x00R\x14migrationerrorreason\x88\x01\x01\x12J\n" +
+	"\x12migrationerrortype\x18\xec\xde\xcd\x19 \x01(\x0e2\x17.waf.MigrationErrorTypeR\x12migrationerrortype\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x01R\amessage\x88\x01\x01B\x17\n" +
+	"\x15_migrationerrorreasonB\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19WAFInternalErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x1c\n" +
+	"\x1aWAFInvalidAccountException\"L\n" +
+	"\x1cWAFInvalidOperationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xc5\x01\n" +
 	"\x1cWAFInvalidParameterException\x125\n" +
-	"\x05field\x18\xe8ĉ< \x01(\x0e2\x1c.waf.ParameterExceptionFieldR\x05field\x12 \n" +
-	"\tparameter\x18\x91\x82ĭ\x01 \x01(\tR\tparameter\x129\n" +
-	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1d.waf.ParameterExceptionReasonR\x06reason\"B\n" +
-	"#WAFInvalidPermissionPolicyException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\">\n" +
-	"\x1fWAFInvalidRegexPatternException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aWAFLimitsExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aWAFNonEmptyEntityException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"?\n" +
-	" WAFNonexistentContainerException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\":\n" +
-	"\x1bWAFNonexistentItemException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"9\n" +
-	"\x1aWAFReferencedItemException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"WAFServiceLinkedRoleErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15WAFStaleDataException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"?\n" +
-	" WAFSubscriptionNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18WAFTagOperationException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"D\n" +
-	"%WAFTagOperationInternalErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
+	"\x05field\x18\xe8ĉ< \x01(\x0e2\x1c.waf.ParameterExceptionFieldR\x05field\x12%\n" +
+	"\tparameter\x18\x91\x82ĭ\x01 \x01(\tH\x00R\tparameter\x88\x01\x01\x129\n" +
+	"\x06reason\x18\x9a\xbc\x8d\xc5\x01 \x01(\x0e2\x1d.waf.ParameterExceptionReasonR\x06reasonB\f\n" +
+	"\n" +
+	"_parameter\"S\n" +
+	"#WAFInvalidPermissionPolicyException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"O\n" +
+	"\x1fWAFInvalidRegexPatternException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aWAFLimitsExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aWAFNonEmptyEntityException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" WAFNonexistentContainerException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bWAFNonexistentItemException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aWAFReferencedItemException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"WAFServiceLinkedRoleErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15WAFStaleDataException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" WAFSubscriptionNotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18WAFTagOperationException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%WAFTagOperationInternalErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"7\n" +
 	"\tWafAction\x12*\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x12.waf.WafActionTypeR\x04type\"G\n" +
 	"\x11WafOverrideAction\x122\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.waf.WafOverrideActionTypeR\x04type\"\xe9\x01\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x1a.waf.WafOverrideActionTypeR\x04type\"\x9e\x02\n" +
 	"\x06WebACL\x128\n" +
-	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x0e.waf.WafActionR\rdefaultaction\x12!\n" +
+	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x0e.waf.WafActionR\rdefaultaction\x12&\n" +
 	"\n" +
-	"metricname\x18\xfb\xbe\xda2 \x01(\tR\n" +
-	"metricname\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12+\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x12.waf.ActivatedRuleR\x05rules\x12\x1f\n" +
-	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarn\x12\x1d\n" +
-	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\"E\n" +
+	"metricname\x18\xfb\xbe\xda2 \x01(\tH\x00R\n" +
+	"metricname\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12+\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x12.waf.ActivatedRuleR\x05rules\x12$\n" +
+	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tH\x02R\twebaclarn\x88\x01\x01\x12\x1d\n" +
+	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclidB\r\n" +
+	"\v_metricnameB\a\n" +
+	"\x05_nameB\f\n" +
+	"\n" +
+	"_webaclarn\"E\n" +
 	"\rWebACLSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x1d\n" +
 	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\"z\n" +
 	"\fWebACLUpdate\x12,\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x11.waf.ChangeActionR\x06action\x12<\n" +
-	"\ractivatedrule\x18\x83\xd1Ĭ\x01 \x01(\v2\x12.waf.ActivatedRuleR\ractivatedrule\"\x8d\x01\n" +
-	"\vXssMatchSet\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12'\n" +
+	"\ractivatedrule\x18\x83\xd1Ĭ\x01 \x01(\v2\x12.waf.ActivatedRuleR\ractivatedrule\"\x9b\x01\n" +
+	"\vXssMatchSet\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12'\n" +
 	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\x12>\n" +
-	"\x0exssmatchtuples\x18\x92\xf4\x93\x90\x01 \x03(\v2\x12.waf.XssMatchTupleR\x0exssmatchtuples\"T\n" +
+	"\x0exssmatchtuples\x18\x92\xf4\x93\x90\x01 \x03(\v2\x12.waf.XssMatchTupleR\x0exssmatchtuplesB\a\n" +
+	"\x05_name\"T\n" +
 	"\x12XssMatchSetSummary\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12'\n" +
 	"\rxssmatchsetid\x18\xbc\xa2\x81\x1b \x01(\tR\rxssmatchsetid\"~\n" +
@@ -15140,25 +15283,116 @@ func file_waf_proto_init() {
 	if File_waf_proto != nil {
 		return
 	}
+	file_waf_proto_msgTypes[1].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[6].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[8].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[10].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[12].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[14].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[16].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[18].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[20].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[22].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[24].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[25].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[28].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[30].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[32].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[34].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[36].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[42].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[44].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[46].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[48].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[50].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[52].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[54].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[56].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[58].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[60].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[62].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[68].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[78].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[79].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[80].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[92].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[101].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[102].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[103].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[107].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[108].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[109].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[110].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[111].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[112].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[113].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[114].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[115].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[116].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[117].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[118].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[119].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[120].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[121].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[122].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[123].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[124].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[125].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[126].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[127].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[128].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[129].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[130].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[131].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[132].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[133].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[134].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[135].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[136].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[137].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[138].OneofWrappers = []any{}
 	file_waf_proto_msgTypes[140].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[145].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[146].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[150].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[153].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[154].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[159].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[161].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[164].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[170].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[177].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[179].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[181].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[183].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[185].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[187].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[189].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[191].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[193].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[195].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[197].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[199].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[200].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[201].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[202].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[203].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[205].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[206].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[207].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[208].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[209].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[210].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[211].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[212].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[213].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[214].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[215].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[216].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[217].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[218].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[221].OneofWrappers = []any{}
+	file_waf_proto_msgTypes[224].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

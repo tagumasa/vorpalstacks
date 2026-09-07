@@ -4,7 +4,6 @@ package dynamodb
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"hash/fnv"
@@ -109,6 +108,10 @@ func deepCopyAttributeValue(v *dbstore.AttributeValue) *dbstore.AttributeValue {
 	return cpy
 }
 
+// buildKeyString renders a table key map as a deterministic identity string
+// for TransactWriteItems conflict and idempotency detection. Attribute
+// names and values are rendered with the store's key component encoding,
+// which is injective over all legal name and value bytes.
 func buildKeyString(tableName string, key map[string]*dbstore.AttributeValue) string {
 	names := make([]string, 0, len(key))
 	for k := range key {
@@ -119,28 +122,7 @@ func buildKeyString(tableName string, key map[string]*dbstore.AttributeValue) st
 	result := tableName + "#"
 	for _, k := range names {
 		v := key[k]
-		result += k + "="
-		if v.S != nil {
-			result += "S:" + escapeKeyPart(*v.S)
-		} else if v.N != nil {
-			result += "N:" + *v.N
-		} else if v.B != nil {
-			result += "B:" + base64.StdEncoding.EncodeToString(v.B)
-		}
-		result += ";"
-	}
-	return result
-}
-
-func escapeKeyPart(s string) string {
-	result := ""
-	for _, c := range s {
-		switch c {
-		case '\\', ';', '=', '#':
-			result += "\\" + string(c)
-		default:
-			result += string(c)
-		}
+		result += dbstore.EncodeKeyValue(&dbstore.AttributeValue{S: &k}) + "=" + dbstore.EncodeKeyValue(v) + ";"
 	}
 	return result
 }

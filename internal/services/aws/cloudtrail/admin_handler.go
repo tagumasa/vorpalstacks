@@ -54,15 +54,15 @@ func (h *AdminHandler) ListTrails(ctx context.Context, req *connect.Request[pb.L
 	var trailInfos []*pb.TrailInfo
 	for _, t := range result.Items {
 		trailInfos = append(trailInfos, &pb.TrailInfo{
-			Name:       t.Name,
-			Trailarn:   t.TrailARN,
-			Homeregion: t.HomeRegion,
+			Name:       proto.String(t.Name),
+			Trailarn:   proto.String(t.TrailARN),
+			Homeregion: proto.String(t.HomeRegion),
 		})
 	}
 
 	return connect.NewResponse(&pb.ListTrailsResponse{
 		Trails:    trailInfos,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -102,19 +102,19 @@ func (h *AdminHandler) CreateTrail(ctx context.Context, req *connect.Request[pb.
 	}
 
 	return connect.NewResponse(&pb.CreateTrailResponse{
-		Name:                       created.Name,
-		Trailarn:                   created.TrailARN,
-		S3Bucketname:               created.S3BucketName,
-		S3Keyprefix:                created.S3KeyPrefix,
-		Snstopicname:               created.SnsTopicName,
-		Snstopicarn:                created.SnsTopicARN,
+		Name:                       proto.String(created.Name),
+		Trailarn:                   proto.String(created.TrailARN),
+		S3Bucketname:               proto.String(created.S3BucketName),
+		S3Keyprefix:                proto.String(created.S3KeyPrefix),
+		Snstopicname:               proto.String(created.SnsTopicName),
+		Snstopicarn:                proto.String(created.SnsTopicARN),
 		Includeglobalserviceevents: proto.Bool(created.IncludeGlobalServiceEvents),
 		Ismultiregiontrail:         proto.Bool(created.IsMultiRegionTrail),
 		Isorganizationtrail:        proto.Bool(created.IsOrganizationTrail),
 		Logfilevalidationenabled:   proto.Bool(created.LogFileValidationEnabled),
-		Cloudwatchlogsloggrouparn:  created.CloudWatchLogsLogGroupARN,
-		Cloudwatchlogsrolearn:      created.CloudWatchLogsRoleARN,
-		Kmskeyid:                   created.KMSKeyID,
+		Cloudwatchlogsloggrouparn:  proto.String(created.CloudWatchLogsLogGroupARN),
+		Cloudwatchlogsrolearn:      proto.String(created.CloudWatchLogsRoleARN),
+		Kmskeyid:                   proto.String(created.KMSKeyID),
 	}), nil
 }
 

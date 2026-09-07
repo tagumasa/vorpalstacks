@@ -101,3 +101,31 @@ func TestFnv32a(t *testing.T) {
 		})
 	}
 }
+
+func TestFieldIsOptional(t *testing.T) {
+	tests := []struct {
+		name     string
+		field    FieldData
+		optional bool
+	}{
+		{"non-required string", FieldData{Type: "string"}, true},
+		{"required string", FieldData{Type: "string", IsRequired: true}, false},
+		{"non-required bytes", FieldData{Type: "bytes"}, true},
+		{"non-required double", FieldData{Type: "double"}, true},
+		{"non-required float", FieldData{Type: "float"}, true},
+		{"non-required int32", FieldData{Type: "int32"}, true},
+		{"non-required int64", FieldData{Type: "int64"}, true},
+		{"bool even when required", FieldData{Type: "bool", IsRequired: true}, true},
+		{"repeated string", FieldData{Type: "repeated string"}, false},
+		{"repeated message", FieldData{Type: "repeated Tag"}, false},
+		{"map field", FieldData{Type: "map<string, string>"}, false},
+		{"message reference", FieldData{Type: "SomeShape"}, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := fieldIsOptional(tt.field); got != tt.optional {
+				t.Errorf("fieldIsOptional(%+v) = %v, want %v", tt.field, got, tt.optional)
+			}
+		})
+	}
+}

@@ -99,7 +99,7 @@ func (s *RDSService) describeDBInstancesCore(stores *rdsStores, in DescribeDBIns
 	for _, i := range instances {
 		pbInstances = append(pbInstances, instanceToPb(i, s.accountId))
 	}
-	return &pb.DBInstanceMessage{Dbinstances: pbInstances, Marker: nextMarker}, nil
+	return &pb.DBInstanceMessage{Dbinstances: pbInstances, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) createDBInstanceCore(stores *rdsStores, in CreateDBInstanceInput) (*pb.CreateDBInstanceResult, error) {
@@ -347,7 +347,7 @@ func (s *RDSService) describeDBSnapshotsCore(stores *rdsStores, in DescribeDBSna
 	for _, snap := range snapshots {
 		pbSnapshots = append(pbSnapshots, dbSnapshotToPb(snap, s.accountId))
 	}
-	return &pb.DBSnapshotMessage{Dbsnapshots: pbSnapshots, Marker: nextMarker}, nil
+	return &pb.DBSnapshotMessage{Dbsnapshots: pbSnapshots, Marker: proto.String(nextMarker)}, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -356,54 +356,54 @@ func (s *RDSService) describeDBSnapshotsCore(stores *rdsStores, in DescribeDBSna
 
 func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 	p := &pb.DBInstance{
-		Dbinstanceidentifier:               i.DBInstanceIdentifier,
-		Dbclusteridentifier:                i.DBClusterIdentifier,
-		Engine:                             i.Engine,
-		Engineversion:                      i.EngineVersion,
-		Dbinstanceclass:                    i.DBInstanceClass,
-		Dbinstancestatus:                   i.DBInstanceStatus,
-		Availabilityzone:                   i.AvailabilityZone,
-		Preferredmaintenancewindow:         i.PreferredMaintenanceWindow,
-		Preferredbackupwindow:              i.PreferredBackupWindow,
+		Dbinstanceidentifier:               proto.String(i.DBInstanceIdentifier),
+		Dbclusteridentifier:                proto.String(i.DBClusterIdentifier),
+		Engine:                             proto.String(i.Engine),
+		Engineversion:                      proto.String(i.EngineVersion),
+		Dbinstanceclass:                    proto.String(i.DBInstanceClass),
+		Dbinstancestatus:                   proto.String(i.DBInstanceStatus),
+		Availabilityzone:                   proto.String(i.AvailabilityZone),
+		Preferredmaintenancewindow:         proto.String(i.PreferredMaintenanceWindow),
+		Preferredbackupwindow:              proto.String(i.PreferredBackupWindow),
 		Enabledcloudwatchlogsexports:       i.EnabledCloudwatchLogsExports,
 		Iamdatabaseauthenticationenabled:   proto.Bool(i.IAMDatabaseAuthenticationEnabled),
 		Publiclyaccessible:                 proto.Bool(i.PubliclyAccessible),
 		Autominorversionupgrade:            proto.Bool(i.AutoMinorVersionUpgrade),
 		Copytagstosnapshot:                 proto.Bool(i.CopyTagsToSnapshot),
-		Dbinstancearn:                      i.DBInstanceArn,
+		Dbinstancearn:                      proto.String(i.DBInstanceArn),
 		Allocatedstorage:                   proto.Int32(i.AllocatedStorage),
-		Masterusername:                     i.MasterUsername,
-		Storagetype:                        i.StorageType,
+		Masterusername:                     proto.String(i.MasterUsername),
+		Storagetype:                        proto.String(i.StorageType),
 		Backupretentionperiod:              proto.Int32(i.BackupRetentionPeriod),
-		Licensemodel:                       i.LicenseModel,
+		Licensemodel:                       proto.String(i.LicenseModel),
 		Storageencrypted:                   proto.Bool(i.StorageEncrypted),
-		Kmskeyid:                           i.KmsKeyId,
+		Kmskeyid:                           proto.String(i.KmsKeyId),
 		Deletionprotection:                 proto.Bool(i.DeletionProtection),
 		Multiaz:                            proto.Bool(i.MultiAZ),
-		Secondaryavailabilityzone:          i.SecondaryAvailabilityZone,
+		Secondaryavailabilityzone:          proto.String(i.SecondaryAvailabilityZone),
 		Iops:                               proto.Int32(i.Iops),
 		Maxallocatedstorage:                proto.Int32(i.MaxAllocatedStorage),
 		Storagethroughput:                  proto.Int32(i.StorageThroughput),
 		Monitoringinterval:                 proto.Int32(i.MonitoringInterval),
-		Enhancedmonitoringresourcearn:      i.EnhancedMonitoringResourceArn,
+		Enhancedmonitoringresourcearn:      proto.String(i.EnhancedMonitoringResourceArn),
 		Performanceinsightsenabled:         proto.Bool(i.PerformanceInsightsEnabled),
-		Performanceinsightskmskeyid:        i.PerformanceInsightsKMSKeyId,
+		Performanceinsightskmskeyid:        proto.String(i.PerformanceInsightsKMSKeyId),
 		Performanceinsightsretentionperiod: proto.Int32(i.PerformanceInsightsRetentionPeriod),
-		Cacertificateidentifier:            i.CACertificateIdentifier,
-		Dbiresourceid:                      i.DbiResourceId,
+		Cacertificateidentifier:            proto.String(i.CACertificateIdentifier),
+		Dbiresourceid:                      proto.String(i.DbiResourceId),
 		Dbinstanceport:                     proto.Int32(i.Port),
 		Vpcsecuritygroups:                  vpcSecurityGroupsToPb(i.VpcSecurityGroupIds),
 		Optiongroupmemberships:             optionGroupMembershipsToPb(i.OptionGroupName),
 	}
 	if i.InstanceCreateTime != nil {
-		p.Instancecreatetime = i.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat)
+		p.Instancecreatetime = proto.String(i.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if i.LatestRestorableTime != nil {
-		p.Latestrestorabletime = i.LatestRestorableTime.Format(timeutils.ISO8601UTCFormat)
+		p.Latestrestorabletime = proto.String(i.LatestRestorableTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if i.Endpoint != nil {
 		p.Endpoint = &pb.Endpoint{
-			Address: i.Endpoint.Address,
+			Address: proto.String(i.Endpoint.Address),
 			Port:    proto.Int32(int32(i.Endpoint.Port)),
 		}
 	}
@@ -412,35 +412,35 @@ func instanceToPb(i *storerds.DBInstance, accountId string) *pb.DBInstance {
 
 func dbSnapshotToPb(s *storerds.DBInstanceSnapshot, accountId string) *pb.DBSnapshot {
 	p := &pb.DBSnapshot{
-		Dbsnapshotidentifier:             s.DBSnapshotIdentifier,
-		Dbinstanceidentifier:             s.DBInstanceIdentifier,
-		Engine:                           s.Engine,
-		Engineversion:                    s.EngineVersion,
-		Snapshottype:                     s.SnapshotType,
-		Status:                           s.Status,
+		Dbsnapshotidentifier:             proto.String(s.DBSnapshotIdentifier),
+		Dbinstanceidentifier:             proto.String(s.DBInstanceIdentifier),
+		Engine:                           proto.String(s.Engine),
+		Engineversion:                    proto.String(s.EngineVersion),
+		Snapshottype:                     proto.String(s.SnapshotType),
+		Status:                           proto.String(s.Status),
 		Allocatedstorage:                 proto.Int32(int32(s.AllocatedStorage)),
-		Storagetype:                      s.StorageType,
+		Storagetype:                      proto.String(s.StorageType),
 		Port:                             proto.Int32(int32(s.Port)),
-		Availabilityzone:                 s.AvailabilityZone,
-		Vpcid:                            s.VpcId,
-		Masterusername:                   s.MasterUsername,
-		Licensemodel:                     s.LicenseModel,
+		Availabilityzone:                 proto.String(s.AvailabilityZone),
+		Vpcid:                            proto.String(s.VpcId),
+		Masterusername:                   proto.String(s.MasterUsername),
+		Licensemodel:                     proto.String(s.LicenseModel),
 		Encrypted:                        proto.Bool(s.StorageEncrypted),
-		Kmskeyid:                         s.KmsKeyId,
-		Dbsnapshotarn:                    s.DBSnapshotArn,
+		Kmskeyid:                         proto.String(s.KmsKeyId),
+		Dbsnapshotarn:                    proto.String(s.DBSnapshotArn),
 		Iamdatabaseauthenticationenabled: proto.Bool(s.IAMDatabaseAuthEnabled),
-		Optiongroupname:                  s.OptionGroupName,
+		Optiongroupname:                  proto.String(s.OptionGroupName),
 	}
 	if s.SnapshotCreateTime != nil {
-		p.Snapshotcreatetime = s.SnapshotCreateTime.Format(timeutils.ISO8601UTCFormat)
+		p.Snapshotcreatetime = proto.String(s.SnapshotCreateTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if s.InstanceCreateTime != nil {
-		p.Instancecreatetime = s.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat)
+		p.Instancecreatetime = proto.String(s.InstanceCreateTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if len(s.TagList) > 0 {
 		p.Taglist = make([]*pb.Tag, 0, len(s.TagList))
 		for _, t := range s.TagList {
-			p.Taglist = append(p.Taglist, &pb.Tag{Key: t.Key, Value: t.Value})
+			p.Taglist = append(p.Taglist, &pb.Tag{Key: proto.String(t.Key), Value: proto.String(t.Value)})
 		}
 	}
 	return p
@@ -453,8 +453,8 @@ func vpcSecurityGroupsToPb(ids []string) []*pb.VpcSecurityGroupMembership {
 	out := make([]*pb.VpcSecurityGroupMembership, 0, len(ids))
 	for _, id := range ids {
 		out = append(out, &pb.VpcSecurityGroupMembership{
-			Vpcsecuritygroupid: id,
-			Status:             "active",
+			Vpcsecuritygroupid: proto.String(id),
+			Status:             proto.String("active"),
 		})
 	}
 	return out
@@ -465,7 +465,7 @@ func optionGroupMembershipsToPb(name string) []*pb.OptionGroupMembership {
 		return nil
 	}
 	return []*pb.OptionGroupMembership{
-		{Optiongroupname: name, Status: "in-sync"},
+		{Optiongroupname: proto.String(name), Status: proto.String("in-sync")},
 	}
 }
 

@@ -13,6 +13,11 @@ import "aws.proto";
 // SESv2Service provides sesv2 API operations.
 service SESv2Service {
 
+  // Associates an S/MIME certificate with an email identity. After the certificate is active, Amazon SES API v2 can add an S/MIME signature to messages that you send from the associated address when si...
+  // HTTP: POST /v2/email/identity/certificates
+  // Protocol: restJson1
+  rpc AssociateEmailIdentityCertificate(AssociateEmailIdentityCertificateRequest) returns (AssociateEmailIdentityCertificateResponse);
+
   // Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second ...
   // HTTP: POST /v2/email/metrics/batch
   // Protocol: restJson1
@@ -162,6 +167,11 @@ service SESv2Service {
   // HTTP: POST /v2/email/tenants/resources/delete
   // Protocol: restJson1
   rpc DeleteTenantResourceAssociation(DeleteTenantResourceAssociationRequest) returns (DeleteTenantResourceAssociationResponse);
+
+  // Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address....
+  // HTTP: POST /v2/email/identity/certificates/delete
+  // Protocol: restJson1
+  rpc DisassociateEmailIdentityCertificate(DisassociateEmailIdentityCertificateRequest) returns (DisassociateEmailIdentityCertificateResponse);
 
   // Obtain information about the email-sending status and capabilities of your Amazon SES account in the current Amazon Web Services Region.
   // HTTP: GET /v2/email/account
@@ -328,6 +338,11 @@ service SESv2Service {
   // Protocol: restJson1
   rpc ListEmailIdentities(ListEmailIdentitiesRequest) returns (ListEmailIdentitiesResponse);
 
+  // Lists the S/MIME certificates that are associated with the specified email identity. The results include certificates in all states, such as PROVISIONING, ACTIVE, INACTIVE, DEPROVISIONING, and FAIL...
+  // HTTP: POST /v2/email/identity/certificates/list
+  // Protocol: restJson1
+  rpc ListEmailIdentityCertificates(ListEmailIdentityCertificatesRequest) returns (ListEmailIdentityCertificatesResponse);
+
   // Lists the email templates present in your Amazon SES account in the current Amazon Web Services Region. You can execute this operation no more than once per second.
   // HTTP: GET /v2/email/templates
   // Protocol: restJson1
@@ -392,6 +407,11 @@ service SESv2Service {
   // HTTP: POST /v2/email/account/details
   // Protocol: restJson1
   rpc PutAccountDetails(PutAccountDetailsRequest) returns (PutAccountDetailsResponse);
+
+  // Set the pricing plan for your Amazon SES account.
+  // HTTP: PUT /v2/email/account/pricing-attributes
+  // Protocol: restJson1
+  rpc PutAccountPricingAttributes(PutAccountPricingAttributesRequest) returns (PutAccountPricingAttributesResponse);
 
   // Enable or disable the ability of your account to send email.
   // HTTP: PUT /v2/email/account/sending
@@ -528,6 +548,11 @@ service SESv2Service {
   // Protocol: restJson1
   rpc UntagResource(UntagResourceRequest) returns (UntagResourceResponse);
 
+  // Updates an existing configuration set. This operation performs a partial update. Only the attributes that you include in the request are updated; any omitted attribute is left unchanged.
+  // HTTP: POST /v2/email/update-configuration-sets
+  // Protocol: restJson1
+  rpc UpdateConfigurationSet(UpdateConfigurationSetRequest) returns (UpdateConfigurationSetResponse);
+
   // Update the configuration of an event destination for a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you ca...
   // HTTP: PUT /v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}
   // Protocol: restJson1
@@ -584,9 +609,9 @@ message AccountDetails {
 
   ReviewDetails reviewdetails = 378909498;
 
-  string usecasedescription = 141053987;
+  optional string usecasedescription = 141053987;
 
-  string websiteurl = 201971828;
+  optional string websiteurl = 201971828;
 
 }
 
@@ -596,7 +621,7 @@ message AccountDetails {
 
 message AccountSuspendedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -606,7 +631,7 @@ message AccountSuspendedException {
 
 message AlreadyExistsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -616,7 +641,29 @@ message AlreadyExistsException {
 
 message ArchivingOptions {
 
-  string archivearn = 56866685;
+  optional string archivearn = 56866685;
+
+}
+
+
+
+// A request to associate an S/MIME certificate with an email identity.
+
+message AssociateEmailIdentityCertificateRequest {
+
+  string certificatearn = 92693880;
+
+  string emailidentity = 136088090;
+
+  optional string fromaddress = 84397700;
+
+}
+
+
+
+// An HTTP 200 response if the request succeeds, or an error message if the request fails.
+
+message AssociateEmailIdentityCertificateResponse {
 
 }
 
@@ -626,15 +673,15 @@ message ArchivingOptions {
 
 message Attachment {
 
-  string contentdescription = 29266325;
+  optional string contentdescription = 29266325;
 
   AttachmentContentDisposition contentdisposition = 120040130;
 
-  string contentid = 431030096;
+  optional string contentid = 431030096;
 
   AttachmentContentTransferEncoding contenttransferencoding = 400458117;
 
-  string contenttype = 333064851;
+  optional string contenttype = 333064851;
 
   string filename = 536729737;
 
@@ -670,7 +717,7 @@ enum AttachmentContentTransferEncoding {
 
 message BadRequestException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -732,11 +779,11 @@ enum BehaviorOnMxFailure {
 
 message BlacklistEntry {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string listingtime = 480893551;
+  optional string listingtime = 480893551;
 
-  string rblname = 317446625;
+  optional string rblname = 317446625;
 
 }
 
@@ -758,11 +805,11 @@ message Body {
 
 message Bounce {
 
-  string bouncesubtype = 297220246;
+  optional string bouncesubtype = 297220246;
 
   BounceType bouncetype = 490222550;
 
-  string diagnosticcode = 20043524;
+  optional string diagnosticcode = 20043524;
 
 }
 
@@ -808,9 +855,9 @@ message BulkEmailEntry {
 
 message BulkEmailEntryResult {
 
-  string error = 328047858;
+  optional string error = 328047858;
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
   BulkEmailStatus status = 6222352;
 
@@ -898,9 +945,9 @@ message CloudWatchDimensionConfiguration {
 
 message Complaint {
 
-  string complaintfeedbacktype = 251430634;
+  optional string complaintfeedbacktype = 251430634;
 
-  string complaintsubtype = 351511425;
+  optional string complaintsubtype = 351511425;
 
 }
 
@@ -910,7 +957,17 @@ message Complaint {
 
 message ConcurrentModificationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// An object that overrides settings for a single email sending request. An override applies only to the message or messages in the request that contains it. It doesn't change your account-level setti...
+
+message ConfigurationOverrides {
+
+  TrackingConfigurationOverrides tracking = 511476381;
 
 }
 
@@ -920,7 +977,7 @@ message ConcurrentModificationException {
 
 message ConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -930,9 +987,9 @@ message ConflictException {
 
 message Contact {
 
-  string emailaddress = 488814806;
+  optional string emailaddress = 488814806;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   repeated TopicPreference topicdefaultpreferences = 477710170;
 
@@ -958,9 +1015,9 @@ enum ContactLanguage {
 
 message ContactList {
 
-  string contactlistname = 338288369;
+  optional string contactlistname = 338288369;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
 }
 
@@ -992,7 +1049,7 @@ enum ContactListImportAction {
 
 message Content {
 
-  string charset = 348272428;
+  optional string charset = 348272428;
 
   string data = 525498822;
 
@@ -1032,6 +1089,8 @@ message CreateConfigurationSetRequest {
 
   DeliveryOptions deliveryoptions = 332764278;
 
+  MessageSecurityOptions messagesecurityoptions = 354640621;
+
   ReputationOptions reputationoptions = 98302085;
 
   SendingOptions sendingoptions = 319193106;
@@ -1060,7 +1119,7 @@ message CreateContactListRequest {
 
   string contactlistname = 338288369;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   repeated Tag tags = 381526209;
 
@@ -1078,7 +1137,7 @@ message CreateContactListResponse {
 
 message CreateContactRequest {
 
-  string attributesdata = 497271421;
+  optional string attributesdata = 497271421;
 
   string contactlistname = 338288369;
 
@@ -1158,7 +1217,7 @@ message CreateDeliverabilityTestReportRequest {
 
   string fromemailaddress = 93506822;
 
-  string reportname = 526054737;
+  optional string reportname = 526054737;
 
   repeated Tag tags = 381526209;
 
@@ -1204,7 +1263,7 @@ message CreateEmailIdentityPolicyResponse {
 
 message CreateEmailIdentityRequest {
 
-  string configurationsetname = 403457485;
+  optional string configurationsetname = 403457485;
 
   DkimSigningAttributes dkimsigningattributes = 81684873;
 
@@ -1268,7 +1327,7 @@ message CreateExportJobRequest {
 
 message CreateExportJobResponse {
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
 }
 
@@ -1290,7 +1349,7 @@ message CreateImportJobRequest {
 
 message CreateImportJobResponse {
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
 }
 
@@ -1314,7 +1373,7 @@ message CreateMultiRegionEndpointRequest {
 
 message CreateMultiRegionEndpointResponse {
 
-  string endpointid = 35808946;
+  optional string endpointid = 35808946;
 
   Status status = 6222352;
 
@@ -1360,7 +1419,7 @@ message CreateTenantResourceAssociationResponse {
 
 message CreateTenantResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   SendingStatus sendingstatus = 420634540;
 
@@ -1368,11 +1427,11 @@ message CreateTenantResponse {
 
   repeated Tag tags = 381526209;
 
-  string tenantarn = 19777181;
+  optional string tenantarn = 19777181;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -1382,15 +1441,15 @@ message CreateTenantResponse {
 
 message CustomVerificationEmailTemplateMetadata {
 
-  string failureredirectionurl = 376073007;
+  optional string failureredirectionurl = 376073007;
 
-  string fromemailaddress = 93506822;
+  optional string fromemailaddress = 93506822;
 
-  string successredirectionurl = 513750768;
+  optional string successredirectionurl = 513750768;
 
-  string templatename = 480529457;
+  optional string templatename = 480529457;
 
-  string templatesubject = 144653738;
+  optional string templatesubject = 144653738;
 
 }
 
@@ -1402,7 +1461,7 @@ message DailyVolume {
 
   repeated DomainIspPlacement domainispplacements = 63848508;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
   VolumeStatistics volumestatistics = 331663309;
 
@@ -1446,7 +1505,7 @@ message DedicatedIp {
 
   string ip = 183031933;
 
-  string poolname = 81872585;
+  optional string poolname = 81872585;
 
   int32 warmuppercentage = 389585846;
 
@@ -1463,6 +1522,14 @@ message DedicatedIpPool {
   string poolname = 81872585;
 
   ScalingMode scalingmode = 210356138;
+
+}
+
+
+
+// Specifies the default signing scheme, in which Amazon SES API v2 doesn't apply S/MIME signing to messages sent with the configuration set.
+
+message DefaultSigningScheme {
 
 }
 
@@ -1654,7 +1721,7 @@ message DeleteSuppressedDestinationRequest {
 
   string emailaddress = 488814806;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -1722,17 +1789,17 @@ enum DeliverabilityDashboardAccountStatus {
 
 message DeliverabilityTestReport {
 
-  string createdate = 37690514;
+  optional string createdate = 37690514;
 
   DeliverabilityTestStatus deliverabilityteststatus = 71311387;
 
-  string fromemailaddress = 93506822;
+  optional string fromemailaddress = 93506822;
 
-  string reportid = 420903847;
+  optional string reportid = 420903847;
 
-  string reportname = 526054737;
+  optional string reportname = 526054737;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
 }
 
@@ -1772,7 +1839,7 @@ message DeliveryOptions {
 
   optional int64 maxdeliveryseconds = 16229983;
 
-  string sendingpoolname = 89398333;
+  optional string sendingpoolname = 89398333;
 
   TlsPolicy tlspolicy = 127629;
 
@@ -1816,13 +1883,33 @@ enum DimensionValueSource {
 
 
 
+// A request to remove the association between an S/MIME certificate and an email identity.
+
+message DisassociateEmailIdentityCertificateRequest {
+
+  string emailidentity = 136088090;
+
+  optional string fromaddress = 84397700;
+
+}
+
+
+
+// An HTTP 200 response if the request succeeds, or an error message if the request fails.
+
+message DisassociateEmailIdentityCertificateResponse {
+
+}
+
+
+
 // An object that contains information about the DKIM authentication status for an email identity. Amazon SES determines the authentication status by searching for specific records in the DNS configur...
 
 message DkimAttributes {
 
   DkimSigningKeyLength currentsigningkeylength = 260519333;
 
-  string lastkeygenerationtimestamp = 455425631;
+  optional string lastkeygenerationtimestamp = 455425631;
 
   DkimSigningKeyLength nextsigningkeylength = 307141083;
 
@@ -1830,7 +1917,7 @@ message DkimAttributes {
 
   optional bool signingenabled = 289566486;
 
-  string signinghostedzone = 442955686;
+  optional string signinghostedzone = 442955686;
 
   DkimStatus status = 6222352;
 
@@ -1846,9 +1933,9 @@ message DkimSigningAttributes {
 
   DkimSigningAttributesOrigin domainsigningattributesorigin = 248837556;
 
-  string domainsigningprivatekey = 502133867;
+  optional string domainsigningprivatekey = 502133867;
 
-  string domainsigningselector = 454592926;
+  optional string domainsigningselector = 454592926;
 
   DkimSigningKeyLength nextsigningkeylength = 307141083;
 
@@ -1868,53 +1955,57 @@ enum DkimSigningAttributesOrigin {
 
   DKIM_SIGNING_ATTRIBUTES_ORIGIN_EXTERNAL = 4;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_WEST_1 = 5;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_GOV_WEST_1 = 5;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTH_1 = 6;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_WEST_1 = 6;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_NORTHEAST_1 = 7;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTH_1 = 7;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_5 = 8;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_GOV_EAST_1 = 8;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES = 9;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_NORTHEAST_1 = 9;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_2 = 10;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_5 = 10;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_CA_WEST_1 = 11;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES = 11;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_NORTHEAST_2 = 12;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_2 = 12;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_SA_EAST_1 = 13;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_CA_WEST_1 = 13;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_WEST_3 = 14;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_NORTHEAST_2 = 14;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_SOUTH_1 = 15;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_SA_EAST_1 = 15;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTH_2 = 16;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_WEST_3 = 16;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_EAST_2 = 17;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_SOUTH_1 = 17;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_NORTH_1 = 18;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTH_2 = 18;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_WEST_1 = 19;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_EAST_2 = 19;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_1 = 20;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_NORTH_1 = 20;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AF_SOUTH_1 = 21;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_WEST_1 = 21;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_WEST_2 = 22;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_1 = 22;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_WEST_2 = 23;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AF_SOUTH_1 = 23;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_3 = 24;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_WEST_2 = 24;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_ME_SOUTH_1 = 25;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_WEST_2 = 25;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_EAST_1 = 26;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_AP_SOUTHEAST_3 = 26;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_CENTRAL_1 = 27;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_ME_SOUTH_1 = 27;
 
-  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_IL_CENTRAL_1 = 28;
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_US_EAST_1 = 28;
+
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_EU_CENTRAL_1 = 29;
+
+  DKIM_SIGNING_ATTRIBUTES_ORIGIN_AWS_SES_IL_CENTRAL_1 = 30;
 
 }
 
@@ -1950,33 +2041,33 @@ enum DkimStatus {
 
 message DomainDeliverabilityCampaign {
 
-  string campaignid = 299715775;
+  optional string campaignid = 299715775;
 
-  double deleterate = 56287481;
+  optional double deleterate = 56287481;
 
   repeated string esps = 526407961;
 
-  string firstseendatetime = 77536972;
+  optional string firstseendatetime = 77536972;
 
-  string fromaddress = 84397700;
+  optional string fromaddress = 84397700;
 
-  string imageurl = 361905604;
+  optional string imageurl = 361905604;
 
   optional int64 inboxcount = 96442763;
 
-  string lastseendatetime = 2010772;
+  optional string lastseendatetime = 2010772;
 
   optional int64 projectedvolume = 71581402;
 
-  double readdeleterate = 249983513;
+  optional double readdeleterate = 249983513;
 
-  double readrate = 412487272;
+  optional double readrate = 412487272;
 
   repeated string sendingips = 344517626;
 
   optional int64 spamcount = 224064008;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
 }
 
@@ -1986,11 +2077,11 @@ message DomainDeliverabilityCampaign {
 
 message DomainDeliverabilityTrackingOption {
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
   InboxPlacementTrackingOption inboxplacementtrackingoption = 155827259;
 
-  string subscriptionstartdate = 514104205;
+  optional string subscriptionstartdate = 514104205;
 
 }
 
@@ -2000,13 +2091,13 @@ message DomainDeliverabilityTrackingOption {
 
 message DomainIspPlacement {
 
-  double inboxpercentage = 81442932;
+  optional double inboxpercentage = 81442932;
 
   optional int64 inboxrawcount = 215061115;
 
-  string ispname = 79681213;
+  optional string ispname = 79681213;
 
-  double spampercentage = 364813289;
+  optional double spampercentage = 364813289;
 
   optional int64 spamrawcount = 440722366;
 
@@ -2074,11 +2165,11 @@ message EmailContent {
 
 message EmailInsights {
 
-  string destination = 457443680;
+  optional string destination = 457443680;
 
   repeated InsightsEvent events = 3416229;
 
-  string isp = 177492896;
+  optional string isp = 177492896;
 
 }
 
@@ -2088,11 +2179,11 @@ message EmailInsights {
 
 message EmailTemplateContent {
 
-  string html = 396489713;
+  optional string html = 396489713;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
-  string text = 504638815;
+  optional string text = 504638815;
 
 }
 
@@ -2102,9 +2193,9 @@ message EmailTemplateContent {
 
 message EmailTemplateMetadata {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string templatename = 480529457;
+  optional string templatename = 480529457;
 
 }
 
@@ -2232,7 +2323,7 @@ message ExportDestination {
 
   DataFormat dataformat = 89652083;
 
-  string s3url = 407792021;
+  optional string s3url = 407792021;
 
 }
 
@@ -2242,13 +2333,13 @@ message ExportDestination {
 
 message ExportJobSummary {
 
-  string completedtimestamp = 333312139;
+  optional string completedtimestamp = 333312139;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   ExportSourceType exportsourcetype = 248243607;
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
   JobStatus jobstatus = 108973639;
 
@@ -2294,9 +2385,9 @@ message ExportStatistics {
 
 message FailureInfo {
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string failedrecordss3url = 275984286;
+  optional string failedrecordss3url = 275984286;
 
 }
 
@@ -2328,7 +2419,9 @@ message GetAccountResponse {
 
   AccountDetails details = 247611974;
 
-  string enforcementstatus = 367265820;
+  optional string enforcementstatus = 367265820;
+
+  PricingAttributes pricingattributes = 156687405;
 
   optional bool productionaccessenabled = 471167534;
 
@@ -2400,9 +2493,11 @@ message GetConfigurationSetResponse {
 
   ArchivingOptions archivingoptions = 54783281;
 
-  string configurationsetname = 403457485;
+  optional string configurationsetname = 403457485;
 
   DeliveryOptions deliveryoptions = 332764278;
+
+  MessageSecurityOptions messagesecurityoptions = 354640621;
 
   ReputationOptions reputationoptions = 98302085;
 
@@ -2430,13 +2525,13 @@ message GetContactListRequest {
 
 message GetContactListResponse {
 
-  string contactlistname = 338288369;
+  optional string contactlistname = 338288369;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   repeated Tag tags = 381526209;
 
@@ -2458,15 +2553,15 @@ message GetContactRequest {
 
 message GetContactResponse {
 
-  string attributesdata = 497271421;
+  optional string attributesdata = 497271421;
 
-  string contactlistname = 338288369;
+  optional string contactlistname = 338288369;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string emailaddress = 488814806;
+  optional string emailaddress = 488814806;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   repeated TopicPreference topicdefaultpreferences = 477710170;
 
@@ -2492,19 +2587,19 @@ message GetCustomVerificationEmailTemplateRequest {
 
 message GetCustomVerificationEmailTemplateResponse {
 
-  string failureredirectionurl = 376073007;
+  optional string failureredirectionurl = 376073007;
 
-  string fromemailaddress = 93506822;
+  optional string fromemailaddress = 93506822;
 
-  string successredirectionurl = 513750768;
+  optional string successredirectionurl = 513750768;
 
   repeated Tag tags = 381526209;
 
-  string templatecontent = 528973453;
+  optional string templatecontent = 528973453;
 
-  string templatename = 480529457;
+  optional string templatename = 480529457;
 
-  string templatesubject = 144653738;
+  optional string templatesubject = 144653738;
 
 }
 
@@ -2554,11 +2649,11 @@ message GetDedicatedIpResponse {
 
 message GetDedicatedIpsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
-  string poolname = 81872585;
+  optional string poolname = 81872585;
 
 }
 
@@ -2570,7 +2665,7 @@ message GetDedicatedIpsResponse {
 
   repeated DedicatedIp dedicatedips = 349154529;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2596,7 +2691,7 @@ message GetDeliverabilityDashboardOptionsResponse {
 
   repeated DomainDeliverabilityTrackingOption pendingexpirationsubscribeddomains = 188697179;
 
-  string subscriptionexpirydate = 381693284;
+  optional string subscriptionexpirydate = 381693284;
 
 }
 
@@ -2620,7 +2715,7 @@ message GetDeliverabilityTestReportResponse {
 
   repeated IspPlacement ispplacements = 334564328;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   PlacementStatistics overallplacement = 259723246;
 
@@ -2730,7 +2825,7 @@ message GetEmailIdentityRequest {
 
 message GetEmailIdentityResponse {
 
-  string configurationsetname = 403457485;
+  optional string configurationsetname = 403457485;
 
   DkimAttributes dkimattributes = 256039632;
 
@@ -2792,9 +2887,9 @@ message GetExportJobRequest {
 
 message GetExportJobResponse {
 
-  string completedtimestamp = 333312139;
+  optional string completedtimestamp = 333312139;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   ExportDataSource exportdatasource = 308051423;
 
@@ -2804,7 +2899,7 @@ message GetExportJobResponse {
 
   FailureInfo failureinfo = 451945802;
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
   JobStatus jobstatus = 108973639;
 
@@ -2828,9 +2923,9 @@ message GetImportJobRequest {
 
 message GetImportJobResponse {
 
-  string completedtimestamp = 333312139;
+  optional string completedtimestamp = 333312139;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   optional int32 failedrecordscount = 528801670;
 
@@ -2840,7 +2935,7 @@ message GetImportJobResponse {
 
   ImportDestination importdestination = 146287461;
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
   JobStatus jobstatus = 108973639;
 
@@ -2866,13 +2961,13 @@ message GetMessageInsightsResponse {
 
   repeated MessageTag emailtags = 215809691;
 
-  string fromemailaddress = 93506822;
+  optional string fromemailaddress = 93506822;
 
   repeated EmailInsights insights = 3076585;
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
 }
 
@@ -2892,13 +2987,13 @@ message GetMultiRegionEndpointRequest {
 
 message GetMultiRegionEndpointResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string endpointid = 35808946;
+  optional string endpointid = 35808946;
 
-  string endpointname = 209534392;
+  optional string endpointname = 209534392;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   repeated Route routes = 321835704;
 
@@ -2936,7 +3031,7 @@ message GetSuppressedDestinationRequest {
 
   string emailaddress = 488814806;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -3004,11 +3099,43 @@ enum HttpsPolicy {
 
 
 
+// An object that contains information about an S/MIME certificate that's associated with an email identity.
+
+message IdentityCertificate {
+
+  optional string certificatearn = 92693880;
+
+  optional string certificateexpirytime = 210271267;
+
+  optional string fromaddress = 84397700;
+
+  IdentityCertificateStatus status = 6222352;
+
+}
+
+
+
+enum IdentityCertificateStatus {
+
+  IDENTITY_CERTIFICATE_STATUS_DEPROVISIONING = 0;
+
+  IDENTITY_CERTIFICATE_STATUS_PROVISIONING = 1;
+
+  IDENTITY_CERTIFICATE_STATUS_ACTIVE = 2;
+
+  IDENTITY_CERTIFICATE_STATUS_INACTIVE = 3;
+
+  IDENTITY_CERTIFICATE_STATUS_FAILED = 4;
+
+}
+
+
+
 // Information about an email identity.
 
 message IdentityInfo {
 
-  string identityname = 251627009;
+  optional string identityname = 251627009;
 
   IdentityType identitytype = 499274628;
 
@@ -3070,13 +3197,13 @@ enum ImportDestinationType {
 
 message ImportJobSummary {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   optional int32 failedrecordscount = 528801670;
 
   ImportDestination importdestination = 146287461;
 
-  string jobid = 108489298;
+  optional string jobid = 108489298;
 
   JobStatus jobstatus = 108973639;
 
@@ -3104,7 +3231,7 @@ message InsightsEvent {
 
   EventDetails details = 247611974;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   EventType type = 290836590;
 
@@ -3116,7 +3243,7 @@ message InsightsEvent {
 
 message InternalServiceErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3126,7 +3253,7 @@ message InternalServiceErrorException {
 
 message InvalidNextTokenException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3136,7 +3263,7 @@ message InvalidNextTokenException {
 
 message IspPlacement {
 
-  string ispname = 79681213;
+  optional string ispname = 79681213;
 
   PlacementStatistics placementstatistics = 449703852;
 
@@ -3176,7 +3303,7 @@ message KinesisFirehoseDestination {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3186,7 +3313,7 @@ message LimitExceededException {
 
 message ListConfigurationSetsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3200,7 +3327,7 @@ message ListConfigurationSetsResponse {
 
   repeated string configurationsets = 287812245;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3208,7 +3335,7 @@ message ListConfigurationSetsResponse {
 
 message ListContactListsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3220,7 +3347,7 @@ message ListContactListsResponse {
 
   repeated ContactList contactlists = 367303753;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3244,7 +3371,7 @@ message ListContactsRequest {
 
   ListContactsFilter filter = 346669208;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3256,7 +3383,7 @@ message ListContactsResponse {
 
   repeated Contact contacts = 145625361;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3266,7 +3393,7 @@ message ListContactsResponse {
 
 message ListCustomVerificationEmailTemplatesRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3280,7 +3407,7 @@ message ListCustomVerificationEmailTemplatesResponse {
 
   repeated CustomVerificationEmailTemplateMetadata customverificationemailtemplates = 449684503;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3290,7 +3417,7 @@ message ListCustomVerificationEmailTemplatesResponse {
 
 message ListDedicatedIpPoolsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3304,7 +3431,7 @@ message ListDedicatedIpPoolsResponse {
 
   repeated string dedicatedippools = 224971511;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3314,7 +3441,7 @@ message ListDedicatedIpPoolsResponse {
 
 message ListDeliverabilityTestReportsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3328,7 +3455,7 @@ message ListDeliverabilityTestReportsResponse {
 
   repeated DeliverabilityTestReport deliverabilitytestreports = 226879076;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3340,7 +3467,7 @@ message ListDomainDeliverabilityCampaignsRequest {
 
   string enddate = 77486543;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3358,7 +3485,7 @@ message ListDomainDeliverabilityCampaignsResponse {
 
   repeated DomainDeliverabilityCampaign domaindeliverabilitycampaigns = 99285708;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3368,7 +3495,7 @@ message ListDomainDeliverabilityCampaignsResponse {
 
 message ListEmailIdentitiesRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3382,7 +3509,33 @@ message ListEmailIdentitiesResponse {
 
   repeated IdentityInfo emailidentities = 182046870;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
+
+}
+
+
+
+// A request to list the S/MIME certificates that are associated with an email identity.
+
+message ListEmailIdentityCertificatesRequest {
+
+  string emailidentity = 136088090;
+
+  optional string nexttoken = 216957566;
+
+  optional int32 pagesize = 438340024;
+
+}
+
+
+
+// Information about the S/MIME certificates that are associated with an email identity.
+
+message ListEmailIdentityCertificatesResponse {
+
+  repeated IdentityCertificate certificates = 411978970;
+
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3392,7 +3545,7 @@ message ListEmailIdentitiesResponse {
 
 message ListEmailTemplatesRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3404,7 +3557,7 @@ message ListEmailTemplatesRequest {
 
 message ListEmailTemplatesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated EmailTemplateMetadata templatesmetadata = 29103678;
 
@@ -3420,7 +3573,7 @@ message ListExportJobsRequest {
 
   JobStatus jobstatus = 108973639;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3434,7 +3587,7 @@ message ListExportJobsResponse {
 
   repeated ExportJobSummary exportjobs = 428957132;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3446,7 +3599,7 @@ message ListImportJobsRequest {
 
   ImportDestinationType importdestinationtype = 338152013;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3460,7 +3613,7 @@ message ListImportJobsResponse {
 
   repeated ImportJobSummary importjobs = 95920397;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3472,7 +3625,7 @@ message ListManagementOptions {
 
   string contactlistname = 338288369;
 
-  string topicname = 446010240;
+  optional string topicname = 446010240;
 
 }
 
@@ -3482,7 +3635,7 @@ message ListManagementOptions {
 
 message ListMultiRegionEndpointsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3496,7 +3649,7 @@ message ListMultiRegionEndpointsResponse {
 
   repeated MultiRegionEndpoint multiregionendpoints = 190926753;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -3522,7 +3675,7 @@ message ListRecommendationsRequest {
 
   map<string, string> filter = 346669208;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3534,7 +3687,7 @@ message ListRecommendationsRequest {
 
 message ListRecommendationsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Recommendation recommendations = 513799432;
 
@@ -3548,7 +3701,7 @@ message ListReputationEntitiesRequest {
 
   map<string, string> filter = 346669208;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3560,7 +3713,7 @@ message ListReputationEntitiesRequest {
 
 message ListReputationEntitiesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ReputationEntity reputationentities = 15832950;
 
@@ -3572,7 +3725,7 @@ message ListReputationEntitiesResponse {
 
 message ListResourceTenantsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3586,7 +3739,7 @@ message ListResourceTenantsRequest {
 
 message ListResourceTenantsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ResourceTenantMetadata resourcetenants = 465346835;
 
@@ -3598,17 +3751,17 @@ message ListResourceTenantsResponse {
 
 message ListSuppressedDestinationsRequest {
 
-  string enddate = 77486543;
+  optional string enddate = 77486543;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
   repeated SuppressionListReason reasons = 176801663;
 
-  string startdate = 445135996;
+  optional string startdate = 445135996;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -3618,7 +3771,7 @@ message ListSuppressedDestinationsRequest {
 
 message ListSuppressedDestinationsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated SuppressedDestinationSummary suppresseddestinationsummaries = 399108924;
 
@@ -3656,7 +3809,7 @@ message ListTenantResourcesRequest {
 
   map<string, string> filter = 346669208;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3670,7 +3823,7 @@ message ListTenantResourcesRequest {
 
 message ListTenantResourcesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated TenantResource tenantresources = 121330067;
 
@@ -3682,7 +3835,7 @@ message ListTenantResourcesResponse {
 
 message ListTenantsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 pagesize = 438340024;
 
@@ -3694,7 +3847,7 @@ message ListTenantsRequest {
 
 message ListTenantsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated TenantInfo tenants = 190961283;
 
@@ -3720,7 +3873,7 @@ message MailFromAttributes {
 
 message MailFromDomainNotVerifiedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3832,7 +3985,17 @@ message MessageInsightsFilters {
 
 message MessageRejected {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+// An object that defines the message-level security options that apply to messages that you send using the configuration set. Currently, these options determine whether Amazon SES API v2 adds an S/MI...
+
+message MessageSecurityOptions {
+
+  SigningScheme signingscheme = 7685220;
 
 }
 
@@ -3892,9 +4055,9 @@ message MetricDataError {
 
   QueryErrorCode code = 425572629;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3904,7 +4067,7 @@ message MetricDataError {
 
 message MetricDataResult {
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   repeated string timestamps = 213534737;
 
@@ -3956,13 +4119,13 @@ message MetricsDataSource {
 
 message MultiRegionEndpoint {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string endpointid = 35808946;
+  optional string endpointid = 35808946;
 
-  string endpointname = 209534392;
+  optional string endpointname = 209534392;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   repeated string regions = 36200107;
 
@@ -3976,7 +4139,7 @@ message MultiRegionEndpoint {
 
 message NotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3988,7 +4151,7 @@ message OverallVolume {
 
   repeated DomainIspPlacement domainispplacements = 63848508;
 
-  double readratepercent = 458603677;
+  optional double readratepercent = 458603677;
 
   VolumeStatistics volumestatistics = 331663309;
 
@@ -4000,7 +4163,7 @@ message OverallVolume {
 
 message PinpointDestination {
 
-  string applicationarn = 524185341;
+  optional string applicationarn = 524185341;
 
 }
 
@@ -4010,15 +4173,41 @@ message PinpointDestination {
 
 message PlacementStatistics {
 
-  double dkimpercentage = 434155899;
+  optional double dkimpercentage = 434155899;
 
-  double inboxpercentage = 81442932;
+  optional double inboxpercentage = 81442932;
 
-  double missingpercentage = 466437664;
+  optional double missingpercentage = 466437664;
 
-  double spampercentage = 364813289;
+  optional double spampercentage = 364813289;
 
-  double spfpercentage = 52331233;
+  optional double spfpercentage = 52331233;
+
+}
+
+
+
+// The pricing attributes that apply to your Amazon SES account, including the currently active pricing plan and any scheduled change.
+
+message PricingAttributes {
+
+  PricingPlan currentplan = 182710082;
+
+  PricingPlan nextplan = 132683228;
+
+}
+
+
+
+enum PricingPlan {
+
+  PRICING_PLAN_ENTERPRISE = 0;
+
+  PRICING_PLAN_NONE = 1;
+
+  PRICING_PLAN_PRO = 2;
+
+  PRICING_PLAN_ESSENTIALS = 3;
 
 }
 
@@ -4054,7 +4243,7 @@ message PutAccountDetailsRequest {
 
   optional bool productionaccessenabled = 471167534;
 
-  string usecasedescription = 141053987;
+  optional string usecasedescription = 141053987;
 
   string websiteurl = 201971828;
 
@@ -4065,6 +4254,24 @@ message PutAccountDetailsRequest {
 // An HTTP 200 response if the request succeeds, or an error message if the request fails.
 
 message PutAccountDetailsResponse {
+
+}
+
+
+
+// A request to set the pricing plan for your Amazon SES account.
+
+message PutAccountPricingAttributesRequest {
+
+  PricingPlan plan = 514547251;
+
+}
+
+
+
+// An HTTP 200 response if the request succeeds, or an error response if the request fails.
+
+message PutAccountPricingAttributesResponse {
 
 }
 
@@ -4128,7 +4335,7 @@ message PutAccountVdmAttributesResponse {
 
 message PutConfigurationSetArchivingOptionsRequest {
 
-  string archivearn = 56866685;
+  optional string archivearn = 56866685;
 
   string configurationsetname = 403457485;
 
@@ -4152,7 +4359,7 @@ message PutConfigurationSetDeliveryOptionsRequest {
 
   optional int64 maxdeliveryseconds = 16229983;
 
-  string sendingpoolname = 89398333;
+  optional string sendingpoolname = 89398333;
 
   TlsPolicy tlspolicy = 127629;
 
@@ -4238,7 +4445,7 @@ message PutConfigurationSetTrackingOptionsRequest {
 
   string configurationsetname = 403457485;
 
-  string customredirectdomain = 72478039;
+  optional string customredirectdomain = 72478039;
 
   HttpsPolicy httpspolicy = 147115397;
 
@@ -4358,7 +4565,7 @@ message PutDeliverabilityDashboardOptionResponse {
 
 message PutEmailIdentityConfigurationSetAttributesRequest {
 
-  string configurationsetname = 403457485;
+  optional string configurationsetname = 403457485;
 
   string emailidentity = 136088090;
 
@@ -4416,7 +4623,7 @@ message PutEmailIdentityDkimSigningAttributesResponse {
 
   repeated string dkimtokens = 307118741;
 
-  string signinghostedzone = 442955686;
+  optional string signinghostedzone = 442955686;
 
 }
 
@@ -4450,7 +4657,7 @@ message PutEmailIdentityMailFromAttributesRequest {
 
   string emailidentity = 136088090;
 
-  string mailfromdomain = 512250671;
+  optional string mailfromdomain = 512250671;
 
 }
 
@@ -4472,7 +4679,7 @@ message PutSuppressedDestinationRequest {
 
   SuppressionListReason reason = 20005178;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -4532,15 +4739,15 @@ message RawMessage {
 
 message Recommendation {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   RecommendationImpact impact = 75836600;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
   RecommendationStatus status = 6222352;
 
@@ -4606,7 +4813,7 @@ message ReplacementEmailContent {
 
 message ReplacementTemplate {
 
-  string replacementtemplatedata = 382231110;
+  optional string replacementtemplatedata = 382231110;
 
 }
 
@@ -4620,13 +4827,13 @@ message ReputationEntity {
 
   StatusRecord customermanagedstatus = 21835973;
 
-  string reputationentityreference = 414929111;
+  optional string reputationentityreference = 414929111;
 
   ReputationEntityType reputationentitytype = 98287826;
 
   RecommendationImpact reputationimpact = 345570753;
 
-  string reputationmanagementpolicy = 202871484;
+  optional string reputationmanagementpolicy = 202871484;
 
   SendingStatus sendingstatusaggregate = 10196739;
 
@@ -4660,7 +4867,7 @@ enum ReputationEntityType {
 
 message ReputationOptions {
 
-  string lastfreshstart = 156685530;
+  optional string lastfreshstart = 156685530;
 
   optional bool reputationmetricsenabled = 440357917;
 
@@ -4672,13 +4879,13 @@ message ReputationOptions {
 
 message ResourceTenantMetadata {
 
-  string associatedtimestamp = 169517010;
+  optional string associatedtimestamp = 169517010;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -4700,7 +4907,7 @@ enum ResourceType {
 
 message ReviewDetails {
 
-  string caseid = 181380677;
+  optional string caseid = 181380677;
 
   ReviewStatus status = 6222352;
 
@@ -4746,9 +4953,9 @@ message RouteDetails {
 
 message SOARecord {
 
-  string adminemail = 289730349;
+  optional string adminemail = 289730349;
 
-  string primarynameserver = 522614982;
+  optional string primarynameserver = 522614982;
 
   optional int64 serialnumber = 418274661;
 
@@ -4772,25 +4979,27 @@ message SendBulkEmailRequest {
 
   repeated BulkEmailEntry bulkemailentries = 509093366;
 
-  string configurationsetname = 403457485;
+  ConfigurationOverrides configurationoverrides = 291366511;
+
+  optional string configurationsetname = 403457485;
 
   BulkEmailContent defaultcontent = 178026400;
 
   repeated MessageTag defaultemailtags = 272909972;
 
-  string endpointid = 35808946;
+  optional string endpointid = 35808946;
 
-  string feedbackforwardingemailaddress = 237438826;
+  optional string feedbackforwardingemailaddress = 237438826;
 
-  string feedbackforwardingemailaddressidentityarn = 5181499;
+  optional string feedbackforwardingemailaddressidentityarn = 5181499;
 
-  string fromemailaddress = 93506822;
+  optional string fromemailaddress = 93506822;
 
-  string fromemailaddressidentityarn = 171860335;
+  optional string fromemailaddressidentityarn = 171860335;
 
   repeated string replytoaddresses = 498368923;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -4810,7 +5019,7 @@ message SendBulkEmailResponse {
 
 message SendCustomVerificationEmailRequest {
 
-  string configurationsetname = 403457485;
+  optional string configurationsetname = 403457485;
 
   string emailaddress = 488814806;
 
@@ -4824,7 +5033,7 @@ message SendCustomVerificationEmailRequest {
 
 message SendCustomVerificationEmailResponse {
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
 }
 
@@ -4834,7 +5043,9 @@ message SendCustomVerificationEmailResponse {
 
 message SendEmailRequest {
 
-  string configurationsetname = 403457485;
+  ConfigurationOverrides configurationoverrides = 291366511;
+
+  optional string configurationsetname = 403457485;
 
   EmailContent content = 23568227;
 
@@ -4842,21 +5053,21 @@ message SendEmailRequest {
 
   repeated MessageTag emailtags = 215809691;
 
-  string endpointid = 35808946;
+  optional string endpointid = 35808946;
 
-  string feedbackforwardingemailaddress = 237438826;
+  optional string feedbackforwardingemailaddress = 237438826;
 
-  string feedbackforwardingemailaddressidentityarn = 5181499;
+  optional string feedbackforwardingemailaddressidentityarn = 5181499;
 
-  string fromemailaddress = 93506822;
+  optional string fromemailaddress = 93506822;
 
-  string fromemailaddressidentityarn = 171860335;
+  optional string fromemailaddressidentityarn = 171860335;
 
   ListManagementOptions listmanagementoptions = 419995741;
 
   repeated string replytoaddresses = 498368923;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -4866,7 +5077,7 @@ message SendEmailRequest {
 
 message SendEmailResponse {
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
 }
 
@@ -4876,11 +5087,11 @@ message SendEmailResponse {
 
 message SendQuota {
 
-  double max24hoursend = 390803852;
+  optional double max24hoursend = 390803852;
 
-  double maxsendrate = 331016098;
+  optional double maxsendrate = 331016098;
 
-  double sentlast24hours = 272279377;
+  optional double sentlast24hours = 272279377;
 
 }
 
@@ -4900,7 +5111,7 @@ message SendingOptions {
 
 message SendingPausedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -4913,6 +5124,36 @@ enum SendingStatus {
   SENDING_STATUS_REINSTATED = 1;
 
   SENDING_STATUS_ENABLED = 2;
+
+}
+
+
+
+enum SignatureFormat {
+
+  SIGNATURE_FORMAT_DETACHED = 0;
+
+}
+
+
+
+// Specifies the signing scheme to apply to messages sent with a configuration set. This is a union type, so you specify exactly one of its members.
+
+message SigningScheme {
+
+  DefaultSigningScheme defaultscheme = 42365702;
+
+  SmimeSigningScheme smimescheme = 252102706;
+
+}
+
+
+
+// Specifies that Amazon SES API v2 signs messages sent with the configuration set using S/MIME.
+
+message SmimeSigningScheme {
+
+  SignatureFormat signatureformat = 424814715;
 
 }
 
@@ -4946,9 +5187,9 @@ enum Status {
 
 message StatusRecord {
 
-  string cause = 283421889;
+  optional string cause = 283421889;
 
-  string lastupdatedtimestamp = 133309845;
+  optional string lastupdatedtimestamp = 133309845;
 
   SendingStatus status = 6222352;
 
@@ -4978,7 +5219,7 @@ message SuppressedDestination {
 
   SuppressionListReason reason = 20005178;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -4988,9 +5229,9 @@ message SuppressedDestination {
 
 message SuppressedDestinationAttributes {
 
-  string feedbackid = 291096336;
+  optional string feedbackid = 291096336;
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
 }
 
@@ -5166,13 +5407,13 @@ message Template {
 
   repeated MessageHeader headers = 323967370;
 
-  string templatearn = 384599199;
+  optional string templatearn = 384599199;
 
   EmailTemplateContent templatecontent = 528973453;
 
-  string templatedata = 284145300;
+  optional string templatedata = 284145300;
 
-  string templatename = 480529457;
+  optional string templatename = 480529457;
 
 }
 
@@ -5182,7 +5423,7 @@ message Template {
 
 message Tenant {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   SendingStatus sendingstatus = 420634540;
 
@@ -5190,11 +5431,11 @@ message Tenant {
 
   repeated Tag tags = 381526209;
 
-  string tenantarn = 19777181;
+  optional string tenantarn = 19777181;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -5204,13 +5445,13 @@ message Tenant {
 
 message TenantInfo {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string tenantarn = 19777181;
+  optional string tenantarn = 19777181;
 
-  string tenantid = 211549185;
+  optional string tenantid = 211549185;
 
-  string tenantname = 173338119;
+  optional string tenantname = 173338119;
 
 }
 
@@ -5220,7 +5461,7 @@ message TenantInfo {
 
 message TenantResource {
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
   ResourceType resourcetype = 301342558;
 
@@ -5276,7 +5517,7 @@ enum TlsPolicy {
 
 message TooManyRequestsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -5288,7 +5529,7 @@ message Topic {
 
   SubscriptionStatus defaultsubscriptionstatus = 212540838;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string displayname = 418161847;
 
@@ -5302,7 +5543,7 @@ message Topic {
 
 message TopicFilter {
 
-  string topicname = 446010240;
+  optional string topicname = 446010240;
 
   optional bool usedefaultifpreferenceunavailable = 534808888;
 
@@ -5317,6 +5558,18 @@ message TopicPreference {
   SubscriptionStatus subscriptionstatus = 444964671;
 
   string topicname = 446010240;
+
+}
+
+
+
+// An object that overrides, for a single email sending request, the engagement tracking settings that would otherwise apply. Use these overrides to turn open tracking or click tracking on or off for ...
+
+message TrackingConfigurationOverrides {
+
+  FeatureStatus clicktrackingenabled = 357863968;
+
+  FeatureStatus opentrackingenabled = 281869850;
 
 }
 
@@ -5372,11 +5625,31 @@ message UpdateConfigurationSetEventDestinationResponse {
 
 
 
+// A request to update the configuration of an existing configuration set.
+
+message UpdateConfigurationSetRequest {
+
+  string configurationsetname = 403457485;
+
+  MessageSecurityOptions messagesecurityoptions = 354640621;
+
+}
+
+
+
+// An HTTP 200 response if the request succeeds, or an error message if the request fails.
+
+message UpdateConfigurationSetResponse {
+
+}
+
+
+
 message UpdateContactListRequest {
 
   string contactlistname = 338288369;
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   repeated Topic topics = 219850038;
 
@@ -5392,7 +5665,7 @@ message UpdateContactListResponse {
 
 message UpdateContactRequest {
 
-  string attributesdata = 497271421;
+  optional string attributesdata = 497271421;
 
   string contactlistname = 338288369;
 
@@ -5584,9 +5857,9 @@ message VerificationInfo {
 
   VerificationError errortype = 398848954;
 
-  string lastcheckedtimestamp = 337895587;
+  optional string lastcheckedtimestamp = 337895587;
 
-  string lastsuccesstimestamp = 446188237;
+  optional string lastsuccesstimestamp = 446188237;
 
   SOARecord soarecord = 456865288;
 

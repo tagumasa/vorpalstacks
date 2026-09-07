@@ -1,10 +1,12 @@
 package testutil
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -106,19 +108,57 @@ func (r *TestRunner) dynamoDBExportImportTests(ctx context.Context, client *dyna
 			return fmt.Errorf("completed export must report BilledSizeBytes")
 		}
 
-		// The exported data itself must hold the as-of values; the
-		// objects of one export live under its ARN path.
-		keys, err := listExportedObjectKeys(ctx, s3Client, bucket, "AWSDynamoDB/"+exportArn)
-		if err != nil {
-			return err
+		// The exported data must hold the as-of values. The completed
+		// export's ExportManifest names manifest-files.json, whose JSON
+		// lines point at the gzip-compressed DYNAMODB_JSON data files —
+		// the documented consumer path through the export layout.
+		manifestURL := aws.ToString(desc.ExportManifest)
+		if manifestURL == "" {
+			return fmt.Errorf("completed export must report ExportManifest")
 		}
-		values := map[string]string{}
-		for _, key := range keys {
-			obj, err := s3Client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(key)})
-			if err != nil {
-				return fmt.Errorf("get exported object %s: %w", key, err)
+		manifestKey := strings.TrimPrefix(manifestURL, "s3://"+bucket+"/")
+		manifestObj, err := s3Client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(manifestKey)})
+		if err != nil {
+			return fmt.Errorf("get files manifest %s: %w", manifestKey, err)
+		}
+		type manifestEntry struct {
+			ItemCount     int64  `json:"itemCount"`
+			DataFileS3Key string `json:"dataFileS3Key"`
+		}
+		// manifest-files.json is JSON lines: one entry object per line.
+		var entries []manifestEntry
+		manifestDec := json.NewDecoder(manifestObj.Body)
+		for {
+			var entry manifestEntry
+			if err := manifestDec.Decode(&entry); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				manifestObj.Body.Close()
+				return fmt.Errorf("decode files manifest: %w", err)
 			}
-			dec := json.NewDecoder(obj.Body)
+			entries = append(entries, entry)
+		}
+		manifestObj.Body.Close()
+		if len(entries) == 0 {
+			return fmt.Errorf("files manifest lists no data files")
+		}
+		if entries[0].ItemCount != 2 {
+			return fmt.Errorf("manifest itemCount = %d, want 2", entries[0].ItemCount)
+		}
+
+		values := map[string]string{}
+		for _, entry := range entries {
+			obj, err := s3Client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(bucket), Key: aws.String(entry.DataFileS3Key)})
+			if err != nil {
+				return fmt.Errorf("get exported data %s: %w", entry.DataFileS3Key, err)
+			}
+			gz, gzErr := gzip.NewReader(obj.Body)
+			if gzErr != nil {
+				obj.Body.Close()
+				return fmt.Errorf("data file %s is not gzip: %w", entry.DataFileS3Key, gzErr)
+			}
+			dec := json.NewDecoder(gz)
 			for {
 				var line struct {
 					Item map[string]map[string]string
@@ -132,6 +172,7 @@ func (r *TestRunner) dynamoDBExportImportTests(ctx context.Context, client *dyna
 					}
 				}
 			}
+			gz.Close()
 			obj.Body.Close()
 		}
 		if len(values) != 2 || values["k1"] != "v1" || values["k2"] != "keep" {
@@ -270,6 +311,94 @@ func (r *TestRunner) dynamoDBExportImportTests(ctx context.Context, client *dyna
 	}))
 	defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(importTable)})
 
+	results = append(results, r.RunTest("dynamodb", "ImportTable_ItemValidationFailures", func() error {
+		// Source data with a duplicate key (a documented overwrite, not an
+		// error), a wrong key-type line, and an unparsable line.
+		badPrefix := fmt.Sprintf("import-bad-%d/", suffix)
+		body := strings.Join([]string{
+			`{"Item":{"id":{"N":"1"},"v":{"S":"one"}}}`,
+			`{"Item":{"id":{"N":"1"},"v":{"S":"two"}}}`,
+			`{"Item":{"id":{"S":"x"},"v":{"S":"bad"}}}`,
+			`garbage-not-json`,
+		}, "\n") + "\n"
+		if _, err := s3Client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(bucket),
+			Key:    aws.String(badPrefix + "data.json"),
+			Body:   strings.NewReader(body),
+		}); err != nil {
+			return fmt.Errorf("write import source: %w", err)
+		}
+
+		badTable := fmt.Sprintf("ExpImpBadItems-%d", suffix)
+		defer client.DeleteTable(ctx, &dynamodb.DeleteTableInput{TableName: aws.String(badTable)})
+		out, err := client.ImportTable(ctx, &dynamodb.ImportTableInput{
+			InputFormat: types.InputFormatDynamodbJson,
+			S3BucketSource: &types.S3BucketSource{
+				S3Bucket:    aws.String(bucket),
+				S3KeyPrefix: aws.String(badPrefix),
+			},
+			TableCreationParameters: &types.TableCreationParameters{
+				TableName: aws.String(badTable),
+				AttributeDefinitions: []types.AttributeDefinition{
+					{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeN},
+				},
+				KeySchema: []types.KeySchemaElement{
+					{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+				},
+				BillingMode: types.BillingModePayPerRequest,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("import: %w", err)
+		}
+		final, err := pollImportStatus(ctx, client, aws.ToString(out.ImportTableDescription.ImportArn))
+		if err != nil {
+			return err
+		}
+		// Items that fail validation are skipped and counted; the job ends
+		// FAILED with the item-validation failure code.
+		if final.ImportStatus != types.ImportStatusFailed {
+			return fmt.Errorf("import status = %q, want FAILED when items fail validation", final.ImportStatus)
+		}
+		if aws.ToString(final.FailureCode) != "ItemValidationError" {
+			return fmt.Errorf("failure code = %q, want ItemValidationError", aws.ToString(final.FailureCode))
+		}
+		// Three lines parsed into items (both N-keyed lines plus the
+		// mistyped one); two loaded (the duplicate overwrites), two errors
+		// (mistyped key, unparsable line).
+		if final.ProcessedItemCount != 3 {
+			return fmt.Errorf("ProcessedItemCount = %d, want 3", final.ProcessedItemCount)
+		}
+		if final.ImportedItemCount != 2 {
+			return fmt.Errorf("ImportedItemCount = %d, want 2", final.ImportedItemCount)
+		}
+		if final.ErrorCount != 2 {
+			return fmt.Errorf("ErrorCount = %d, want 2", final.ErrorCount)
+		}
+
+		// The table holds the single distinct item with the last write's
+		// value; the mistyped line stored nothing.
+		desc, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(badTable)})
+		if err != nil {
+			return fmt.Errorf("describe table: %w", err)
+		}
+		if aws.ToInt64(desc.Table.ItemCount) != 1 {
+			return fmt.Errorf("table ItemCount = %d, want 1 distinct item (overwrites must not double-count)", aws.ToInt64(desc.Table.ItemCount))
+		}
+		item, err := client.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName:      aws.String(badTable),
+			Key:            map[string]types.AttributeValue{"id": &types.AttributeValueMemberN{Value: "1"}},
+			ConsistentRead: aws.Bool(true),
+		})
+		if err != nil {
+			return fmt.Errorf("get imported item: %w", err)
+		}
+		if attr, ok := item.Item["v"].(*types.AttributeValueMemberS); !ok || attr.Value != "two" {
+			return fmt.Errorf("imported item value = %+v, want two (last write wins)", item.Item["v"])
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("dynamodb", "ImportTable_UnknownBucket_Fails", func() error {
 		out, err := client.ImportTable(ctx, &dynamodb.ImportTableInput{
 			InputFormat: types.InputFormatDynamodbJson,
@@ -397,30 +526,6 @@ func pollImportStatus(ctx context.Context, client *dynamodb.Client, importArn st
 			return nil, fmt.Errorf("import %s did not finish in time", importArn)
 		}
 		time.Sleep(150 * time.Millisecond)
-	}
-}
-
-// listExportedObjectKeys lists the data objects the export wrote under the
-// given prefix.
-func listExportedObjectKeys(ctx context.Context, s3Client *s3.Client, bucket, prefix string) ([]string, error) {
-	var keys []string
-	var marker *string
-	for {
-		out, err := s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
-			Bucket:     aws.String(bucket),
-			Prefix:     aws.String(prefix),
-			StartAfter: marker,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("list exported objects: %w", err)
-		}
-		for _, obj := range out.Contents {
-			keys = append(keys, aws.ToString(obj.Key))
-		}
-		if !aws.ToBool(out.IsTruncated) || len(out.Contents) == 0 {
-			return keys, nil
-		}
-		marker = out.Contents[len(out.Contents)-1].Key
 	}
 }
 

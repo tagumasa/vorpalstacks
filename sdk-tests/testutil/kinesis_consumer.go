@@ -27,9 +27,7 @@ func (r *TestRunner) kinesisConsumerTests(ctx context.Context, client *kinesis.C
 		if err != nil {
 			return fmt.Errorf("create: %v", err)
 		}
-		time.Sleep(500 * time.Millisecond)
-
-		descResp, descErr := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
+		descResp, descErr := kinesisDescribeWhenReady(ctx, client, streamName, 10*time.Second)
 		if descErr != nil {
 			return fmt.Errorf("describe: %v", descErr)
 		}

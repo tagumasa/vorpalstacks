@@ -43,10 +43,10 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 	}
 
 	maxItems := 100
-	if req.Msg.Maxitems != "" {
-		mi, err := strconv.Atoi(req.Msg.Maxitems)
+	if req.Msg.GetMaxitems() != "" {
+		mi, err := strconv.Atoi(req.Msg.GetMaxitems())
 		if err != nil {
-			return nil, svcerrors.AWSErrorToGRPC(fmt.Errorf("invalid max_items: %s", req.Msg.Maxitems))
+			return nil, svcerrors.AWSErrorToGRPC(fmt.Errorf("invalid max_items: %s", req.Msg.GetMaxitems()))
 		}
 		if mi > 0 {
 			maxItems = mi
@@ -54,7 +54,7 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 	}
 
 	result, err := h.service.listHostedZonesCore(stores, ListHostedZonesInput{
-		Marker:   req.Msg.Marker,
+		Marker:   req.Msg.GetMarker(),
 		MaxItems: maxItems,
 	})
 	if err != nil {
@@ -70,7 +70,7 @@ func (h *AdminHandler) ListHostedZones(ctx context.Context, req *connect.Request
 		Hostedzones: zones,
 		Istruncated: proto.Bool(result.IsTruncated),
 		Marker:      result.Marker,
-		Nextmarker:  result.NextMarker,
+		Nextmarker:  proto.String(result.NextMarker),
 	}), nil
 }
 
@@ -87,14 +87,14 @@ func (h *AdminHandler) CreateHostedZone(ctx context.Context, req *connect.Reques
 	}
 
 	if req.Msg.Hostedzoneconfig != nil {
-		input.Comment = req.Msg.Hostedzoneconfig.Comment
+		input.Comment = req.Msg.Hostedzoneconfig.GetComment()
 		if req.Msg.Hostedzoneconfig.GetPrivatezone() {
 			input.PrivateZone = true
 		}
 	}
 
 	if req.Msg.Vpc != nil {
-		input.VPCID = req.Msg.Vpc.Vpcid
+		input.VPCID = req.Msg.Vpc.GetVpcid()
 		input.VPCRegion = protoVPCRegionToAWS(req.Msg.Vpc.Vpcregion)
 	}
 

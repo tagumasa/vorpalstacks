@@ -18,6 +18,11 @@ service KinesisService {
   // Protocol: awsJson1_1
   rpc AddTagsToStream(AddTagsToStreamInput) returns (common.Empty);
 
+  // Creates a channel that delivers records from a Kinesis data stream to a destination. A channel reads records from the specified stream and writes them to streaming tables on Apache Iceberg (Amazon ...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc CreateChannel(CreateChannelInput) returns (CreateChannelOutput);
+
   // Creates a Kinesis data stream. A stream captures and transports data records that are continuously emitted from different data sources or producers. Scale-out within a stream is explicitly supporte...
   // HTTP:  
   // Protocol: awsJson1_1
@@ -27,6 +32,11 @@ service KinesisService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DecreaseStreamRetentionPeriod(DecreaseStreamRetentionPeriodInput) returns (common.Empty);
+
+  // Deletes the specified channel. Deleting a channel stops delivery from the source stream to the destination. Data already delivered to the destination is not deleted. A stream cannot be deleted whil...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DeleteChannel(DeleteChannelInput) returns (common.Empty);
 
   // Delete a policy for the specified data stream or consumer. Request patterns can be one of the following: Data stream pattern: arn:aws.*:kinesis:.*:\d{12}:.*stream/\S+ Consumer pattern: ^(arn):aws.*...
   // HTTP:  
@@ -47,6 +57,11 @@ service KinesisService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc DescribeAccountSettings(DescribeAccountSettingsInput) returns (DescribeAccountSettingsOutput);
+
+  // Describes the specified channel, including its configuration and current status. Use this operation to verify that a channel reached the ACTIVE state after creation, or to diagnose a channel in the...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc DescribeChannel(DescribeChannelInput) returns (DescribeChannelOutput);
 
   // Describes the shard limits and usage for the account. If you update your account limits, the old limits might be returned for a few minutes. This operation has a limit of one transaction per second...
   // HTTP:  
@@ -97,6 +112,11 @@ service KinesisService {
   // HTTP:  
   // Protocol: awsJson1_1
   rpc IncreaseStreamRetentionPeriod(IncreaseStreamRetentionPeriodInput) returns (common.Empty);
+
+  // Lists the channels in your account. You can filter the results by source stream. The results are paginated. Use the NextToken value returned in the response to retrieve additional results. Use this...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc ListChannels(ListChannelsInput) returns (ListChannelsOutput);
 
   // Lists the shards in a stream and provides information about each shard. This operation has a limit of 1000 transactions per second per data stream. When invoking this API, you must use either the S...
   // HTTP:  
@@ -188,6 +208,11 @@ service KinesisService {
   // Protocol: awsJson1_1
   rpc UpdateAccountSettings(UpdateAccountSettingsInput) returns (UpdateAccountSettingsOutput);
 
+  // Updates the data freshness interval or the Amazon CloudWatch Logs configuration of an existing channel. You cannot change the destination, source stream, record format, schema, encryption configura...
+  // HTTP:  
+  // Protocol: awsJson1_1
+  rpc UpdateChannel(UpdateChannelInput) returns (UpdateChannelOutput);
+
   // This allows you to update the MaxRecordSize of a single record that you can write to, and read from a stream. You can ingest and digest single records up to 10240 KiB.
   // HTTP:  
   // Protocol: awsJson1_1
@@ -203,7 +228,7 @@ service KinesisService {
   // Protocol: awsJson1_1
   rpc UpdateStreamMode(UpdateStreamModeInput) returns (common.Empty);
 
-  // Updates the warm throughput configuration for the specified Amazon Kinesis Data Streams on-demand data stream. This operation allows you to proactively scale your on-demand data stream to a specifi...
+  // Updates the warm throughput configuration for the specified Amazon Kinesis Data Streams on-demand data stream. Updates the warm throughput configuration for the specified on-demand data stream. Use...
   // HTTP:  
   // Protocol: awsJson1_1
   rpc UpdateStreamWarmThroughput(UpdateStreamWarmThroughputInput) returns (UpdateStreamWarmThroughputOutput);
@@ -216,7 +241,7 @@ service KinesisService {
 
 message AccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -226,13 +251,173 @@ message AccessDeniedException {
 
 message AddTagsToStreamInput {
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
   map<string, string> tags = 381526209;
+
+}
+
+
+
+// Describes the configuration and current status of a channel.
+
+message ChannelDescription {
+
+  string channelarn = 94066492;
+
+  string channelcreationtimestamp = 145937564;
+
+  string channelid = 88159210;
+
+  string channelname = 225552288;
+
+  ChannelStatus channelstatus = 16775279;
+
+  optional string channelstatusreason = 523450091;
+
+  ChannelEncryptionConfiguration encryptionconfiguration = 225764215;
+
+  ChannelLoggingConfiguration loggingconfiguration = 359027765;
+
+  S3DestinationDescription s3destinationconfiguration = 139497190;
+
+  S3TablesDestinationDescription s3tablesdestinationconfiguration = 516027597;
+
+  string serviceexecutionrolearn = 460998766;
+
+  repeated ChannelStreamDescription streamconfigurationlist = 120505478;
+
+}
+
+
+
+enum ChannelDestinationType {
+
+  CHANNEL_DESTINATION_TYPE_S3 = 0;
+
+  CHANNEL_DESTINATION_TYPE_S3_TABLES = 1;
+
+}
+
+
+
+// Specifies the Amazon Web Services KMS key that Amazon Kinesis Data Streams uses to encrypt data delivered to the channel's destination.
+
+message ChannelEncryptionConfiguration {
+
+  ChannelEncryptionType encryptiontype = 264007605;
+
+  string keyid = 275906594;
+
+}
+
+
+
+enum ChannelEncryptionType {
+
+  CHANNEL_ENCRYPTION_TYPE_KMS = 0;
+
+}
+
+
+
+// The Amazon CloudWatch Logs configuration for a channel.
+
+message ChannelLoggingConfiguration {
+
+  CloudWatchLogs cloudwatchlogs = 469506783;
+
+}
+
+
+
+// The updated Amazon CloudWatch Logs configuration for a channel. Used in UpdateChannel.
+
+message ChannelLoggingUpdateInput {
+
+  CloudWatchLogsUpdateInput cloudwatchlogs = 469506783;
+
+}
+
+
+
+enum ChannelStatus {
+
+  CHANNEL_STATUS_UPDATING = 0;
+
+  CHANNEL_STATUS_ACTIVE = 1;
+
+  CHANNEL_STATUS_DELETING = 2;
+
+  CHANNEL_STATUS_CREATING = 3;
+
+  CHANNEL_STATUS_FAILED = 4;
+
+}
+
+
+
+// Specifies the source stream and record configuration when creating a channel.
+
+message ChannelStreamConfiguration {
+
+  RecordConfiguration recordconfiguration = 512927143;
+
+  string streamarn = 508213725;
+
+}
+
+
+
+// Describes the source stream of a channel.
+
+message ChannelStreamDescription {
+
+  RecordConfiguration recordconfiguration = 512927143;
+
+  string streamarn = 508213725;
+
+  string streamcreationtimestamp = 224951013;
+
+}
+
+
+
+// Identifies a source stream associated with a channel.
+
+message ChannelStreamIdentifier {
+
+  string streamarn = 508213725;
+
+  string streamcreationtimestamp = 224951013;
+
+}
+
+
+
+// A summary of a channel, returned by ListChannels.
+
+message ChannelSummary {
+
+  string channelarn = 94066492;
+
+  string channelcreationtimestamp = 145937564;
+
+  ChannelDestinationType channeldestinationtype = 443543549;
+
+  string channelid = 88159210;
+
+  string channelname = 225552288;
+
+  ChannelStatus channelstatus = 16775279;
+
+  optional string channelstatusreason = 523450091;
+
+  repeated ChannelStreamIdentifier streams = 51587139;
 
 }
 
@@ -247,6 +432,34 @@ message ChildShard {
   repeated string parentshards = 152621201;
 
   string shardid = 66410951;
+
+}
+
+
+
+// The Amazon CloudWatch Logs settings for channel logging.
+
+message CloudWatchLogs {
+
+  optional bool enabled = 478602303;
+
+  optional string loggroupname = 172831084;
+
+  optional string logstreamname = 56256835;
+
+}
+
+
+
+// The updated Amazon CloudWatch Logs settings for a channel.
+
+message CloudWatchLogsUpdateInput {
+
+  optional bool enabled = 478602303;
+
+  optional string loggroupname = 172831084;
+
+  optional string logstreamname = 56256835;
 
 }
 
@@ -298,6 +511,36 @@ enum ConsumerStatus {
 
 
 
+message CreateChannelInput {
+
+  string channelname = 225552288;
+
+  ChannelEncryptionConfiguration encryptionconfiguration = 225764215;
+
+  ChannelLoggingConfiguration loggingconfiguration = 359027765;
+
+  S3DestinationConfiguration s3destinationconfiguration = 139497190;
+
+  S3TablesDestinationConfiguration s3tablesdestinationconfiguration = 516027597;
+
+  string serviceexecutionrolearn = 460998766;
+
+  repeated ChannelStreamConfiguration streamconfigurationlist = 120505478;
+
+  map<string, string> tags = 381526209;
+
+}
+
+
+
+message CreateChannelOutput {
+
+  ChannelDescription channeldescription = 254603503;
+
+}
+
+
+
 // Represents the input for CreateStream.
 
 message CreateStreamInput {
@@ -318,17 +561,39 @@ message CreateStreamInput {
 
 
 
+// The Amazon S3 dead-letter queue configuration for records that cannot be delivered.
+
+message DeadLetterQueueS3Configuration {
+
+  string bucketarn = 260893883;
+
+  optional string erroroutputprefix = 303950805;
+
+  string expectedbucketowner = 132066983;
+
+}
+
+
+
 // Represents the input for DecreaseStreamRetentionPeriod.
 
 message DecreaseStreamRetentionPeriodInput {
 
   int32 retentionperiodhours = 396381944;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
+
+}
+
+
+
+message DeleteChannelInput {
+
+  string channelarn = 94066492;
 
 }
 
@@ -338,7 +603,7 @@ message DeleteResourcePolicyInput {
 
   string resourcearn = 369516653;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -350,11 +615,11 @@ message DeleteStreamInput {
 
   optional bool enforceconsumerdeletion = 513184424;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -362,13 +627,13 @@ message DeleteStreamInput {
 
 message DeregisterStreamConsumerInput {
 
-  string consumerarn = 41107441;
+  optional string consumerarn = 41107441;
 
-  string consumername = 70979235;
+  optional string consumername = 70979235;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -388,6 +653,22 @@ message DescribeAccountSettingsOutput {
 
 
 
+message DescribeChannelInput {
+
+  string channelarn = 94066492;
+
+}
+
+
+
+message DescribeChannelOutput {
+
+  ChannelDescription channeldescription = 254603503;
+
+}
+
+
+
 message DescribeLimitsInput {
 
 }
@@ -395,6 +676,10 @@ message DescribeLimitsInput {
 
 
 message DescribeLimitsOutput {
+
+  optional int32 channelcount = 369813244;
+
+  optional int32 channelcountlimit = 195537703;
 
   int32 ondemandstreamcount = 386875707;
 
@@ -410,13 +695,13 @@ message DescribeLimitsOutput {
 
 message DescribeStreamConsumerInput {
 
-  string consumerarn = 41107441;
+  optional string consumerarn = 41107441;
 
-  string consumername = 70979235;
+  optional string consumername = 70979235;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -434,15 +719,15 @@ message DescribeStreamConsumerOutput {
 
 message DescribeStreamInput {
 
-  string exclusivestartshardid = 44771587;
+  optional string exclusivestartshardid = 44771587;
 
   optional int32 limit = 412502741;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -460,11 +745,11 @@ message DescribeStreamOutput {
 
 message DescribeStreamSummaryInput {
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -484,11 +769,21 @@ message DisableEnhancedMonitoringInput {
 
   repeated MetricsName shardlevelmetrics = 406711021;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
+
+}
+
+
+
+// The request was rejected because the DryRun parameter was specified.
+
+message DryRunOperationException {
+
+  optional string message = 82970853;
 
 }
 
@@ -500,11 +795,11 @@ message EnableEnhancedMonitoringInput {
 
   repeated MetricsName shardlevelmetrics = 406711021;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -538,9 +833,9 @@ message EnhancedMonitoringOutput {
 
   repeated MetricsName desiredshardlevelmetrics = 231120285;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -550,7 +845,7 @@ message EnhancedMonitoringOutput {
 
 message ExpiredIteratorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -560,7 +855,7 @@ message ExpiredIteratorException {
 
 message ExpiredNextTokenException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -570,13 +865,15 @@ message ExpiredNextTokenException {
 
 message GetRecordsInput {
 
+  optional bool dryrun = 92204984;
+
   optional int32 limit = 412502741;
 
   string sharditerator = 379619650;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -590,7 +887,7 @@ message GetRecordsOutput {
 
   optional int64 millisbehindlatest = 456422057;
 
-  string nextsharditerator = 442470571;
+  optional string nextsharditerator = 442470571;
 
   repeated Record records = 423557454;
 
@@ -602,7 +899,7 @@ message GetResourcePolicyInput {
 
   string resourcearn = 369516653;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -620,19 +917,21 @@ message GetResourcePolicyOutput {
 
 message GetShardIteratorInput {
 
+  optional bool dryrun = 92204984;
+
   string shardid = 66410951;
 
   ShardIteratorType sharditeratortype = 229371818;
 
-  string startingsequencenumber = 88770150;
+  optional string startingsequencenumber = 88770150;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
 }
 
@@ -642,7 +941,7 @@ message GetShardIteratorInput {
 
 message GetShardIteratorOutput {
 
-  string sharditerator = 379619650;
+  optional string sharditerator = 379619650;
 
 }
 
@@ -666,11 +965,11 @@ message IncreaseStreamRetentionPeriodInput {
 
   int32 retentionperiodhours = 396381944;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -680,7 +979,7 @@ message IncreaseStreamRetentionPeriodInput {
 
 message InternalFailureException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -690,7 +989,7 @@ message InternalFailureException {
 
 message InvalidArgumentException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -700,7 +999,7 @@ message InvalidArgumentException {
 
 message KMSAccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -710,7 +1009,7 @@ message KMSAccessDeniedException {
 
 message KMSDisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -720,7 +1019,7 @@ message KMSDisabledException {
 
 message KMSInvalidStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -730,7 +1029,7 @@ message KMSInvalidStateException {
 
 message KMSNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -740,7 +1039,7 @@ message KMSNotFoundException {
 
 message KMSOptInRequired {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -750,7 +1049,7 @@ message KMSOptInRequired {
 
 message KMSThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -760,7 +1059,29 @@ message KMSThrottlingException {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+message ListChannelsInput {
+
+  optional int32 maxresults = 275174450;
+
+  optional string nexttoken = 216957566;
+
+  repeated StreamFilter streamfilter = 49265752;
+
+}
+
+
+
+message ListChannelsOutput {
+
+  repeated ChannelSummary channelsummaries = 318198809;
+
+  optional string nexttoken = 216957566;
 
 }
 
@@ -768,21 +1089,21 @@ message LimitExceededException {
 
 message ListShardsInput {
 
-  string exclusivestartshardid = 44771587;
+  optional string exclusivestartshardid = 44771587;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   ShardFilter shardfilter = 230254710;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamcreationtimestamp = 224951013;
+  optional string streamcreationtimestamp = 224951013;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -790,7 +1111,7 @@ message ListShardsInput {
 
 message ListShardsOutput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Shard shards = 437117641;
 
@@ -802,13 +1123,13 @@ message ListStreamConsumersInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string streamarn = 508213725;
 
-  string streamcreationtimestamp = 224951013;
+  optional string streamcreationtimestamp = 224951013;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -818,7 +1139,7 @@ message ListStreamConsumersOutput {
 
   repeated Consumer consumers = 348153455;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -828,11 +1149,11 @@ message ListStreamConsumersOutput {
 
 message ListStreamsInput {
 
-  string exclusivestartstreamname = 431108955;
+  optional string exclusivestartstreamname = 431108955;
 
   optional int32 limit = 412502741;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -844,7 +1165,7 @@ message ListStreamsOutput {
 
   optional bool hasmorestreams = 181206864;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string streamnames = 530210288;
 
@@ -858,7 +1179,7 @@ message ListTagsForResourceInput {
 
   string resourcearn = 369516653;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -876,15 +1197,15 @@ message ListTagsForResourceOutput {
 
 message ListTagsForStreamInput {
 
-  string exclusivestarttagkey = 470465287;
+  optional string exclusivestarttagkey = 470465287;
 
   optional int32 limit = 412502741;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -910,11 +1231,11 @@ message MergeShardsInput {
 
   string shardtomerge = 473343671;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -966,11 +1287,11 @@ enum MinimumThroughputBillingCommitmentInputStatus {
 
 message MinimumThroughputBillingCommitmentOutput {
 
-  string earliestallowedendat = 77927885;
+  optional string earliestallowedendat = 77927885;
 
-  string endedat = 104122351;
+  optional string endedat = 104122351;
 
-  string startedat = 77629404;
+  optional string startedat = 77629404;
 
   MinimumThroughputBillingCommitmentOutputStatus status = 6222352;
 
@@ -990,11 +1311,41 @@ enum MinimumThroughputBillingCommitmentOutputStatus {
 
 
 
+// Specifies a single partition field.
+
+message PartitionField {
+
+  string sourcename = 497856572;
+
+  PartitionTransform transform = 226667452;
+
+}
+
+
+
+// Specifies how the destination table is partitioned.
+
+message PartitionSpec {
+
+  repeated PartitionField partitionfields = 346252273;
+
+}
+
+
+
+enum PartitionTransform {
+
+  PARTITION_TRANSFORM_TIME_HOUR = 0;
+
+}
+
+
+
 // The request rate for the stream is too high, or the requested data is too large for the available throughput. Reduce the frequency or size of your requests. For more information, see Streams Limits...
 
 message ProvisionedThroughputExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1006,17 +1357,19 @@ message PutRecordInput {
 
   bytes data = 525498822;
 
-  string explicithashkey = 438141821;
+  optional bool dryrun = 92204984;
+
+  optional string explicithashkey = 438141821;
 
   string partitionkey = 379379617;
 
-  string sequencenumberforordering = 73727749;
+  optional string sequencenumberforordering = 73727749;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -1040,13 +1393,15 @@ message PutRecordOutput {
 
 message PutRecordsInput {
 
+  optional bool dryrun = 92204984;
+
   repeated PutRecordsRequestEntry records = 423557454;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -1072,7 +1427,7 @@ message PutRecordsRequestEntry {
 
   bytes data = 525498822;
 
-  string explicithashkey = 438141821;
+  optional string explicithashkey = 438141821;
 
   string partitionkey = 379379617;
 
@@ -1084,13 +1439,13 @@ message PutRecordsRequestEntry {
 
 message PutRecordsResultEntry {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string sequencenumber = 98094362;
+  optional string sequencenumber = 98094362;
 
-  string shardid = 66410951;
+  optional string shardid = 66410951;
 
 }
 
@@ -1102,7 +1457,7 @@ message PutResourcePolicyInput {
 
   string resourcearn = 369516653;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -1112,7 +1467,7 @@ message PutResourcePolicyInput {
 
 message Record {
 
-  string approximatearrivaltimestamp = 95039887;
+  optional string approximatearrivaltimestamp = 95039887;
 
   bytes data = 525498822;
 
@@ -1126,13 +1481,39 @@ message Record {
 
 
 
+// Specifies the format of records read from the source stream.
+
+message RecordConfiguration {
+
+  optional string gsrschemaarn = 255722480;
+
+  RecordFormatType recordformattype = 415069928;
+
+}
+
+
+
+enum RecordFormatType {
+
+  RECORD_FORMAT_TYPE_JSON = 0;
+
+  RECORD_FORMAT_TYPE_BYTE_ARRAY = 1;
+
+  RECORD_FORMAT_TYPE_STRING = 2;
+
+  RECORD_FORMAT_TYPE_GSR_JSON = 3;
+
+}
+
+
+
 message RegisterStreamConsumerInput {
 
   string consumername = 70979235;
 
   string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
   map<string, string> tags = 381526209;
 
@@ -1152,11 +1533,11 @@ message RegisterStreamConsumerOutput {
 
 message RemoveTagsFromStreamInput {
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
   repeated string tagkeys = 320659964;
 
@@ -1168,7 +1549,7 @@ message RemoveTagsFromStreamInput {
 
 message ResourceInUseException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1178,7 +1559,155 @@ message ResourceInUseException {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
+
+}
+
+
+
+enum S3CompressionType {
+
+  S3_COMPRESSION_TYPE_NONE = 0;
+
+  S3_COMPRESSION_TYPE_GZIP = 1;
+
+  S3_COMPRESSION_TYPE_ZSTD = 2;
+
+}
+
+
+
+// The configuration for delivery to a general purpose Amazon S3 bucket. Used in CreateChannel.
+
+message S3DestinationConfiguration {
+
+  optional int32 datafreshnessinseconds = 531205357;
+
+  DeadLetterQueueS3Configuration deadletterqueues3configuration = 331479219;
+
+  S3StorageConfiguration storageconfiguration = 324437133;
+
+}
+
+
+
+// The configuration for delivery to a general purpose Amazon S3 bucket. Returned in ChannelDescription.
+
+message S3DestinationDescription {
+
+  int32 datafreshnessinseconds = 531205357;
+
+  DeadLetterQueueS3Configuration deadletterqueues3configuration = 331479219;
+
+  S3StorageConfiguration storageconfiguration = 324437133;
+
+}
+
+
+
+// The updated configuration for a general purpose Amazon S3 destination. Used in UpdateChannel. Only DataFreshnessInSeconds can be updated.
+
+message S3DestinationUpdateInput {
+
+  int32 datafreshnessinseconds = 531205357;
+
+}
+
+
+
+enum S3StorageClass {
+
+  S3_STORAGE_CLASS_STANDARD = 0;
+
+  S3_STORAGE_CLASS_GLACIER_IR = 1;
+
+  S3_STORAGE_CLASS_INTELLIGENT_TIERING = 2;
+
+}
+
+
+
+// The Amazon S3 storage settings for a general purpose Amazon S3 destination.
+
+message S3StorageConfiguration {
+
+  string bucketarn = 260893883;
+
+  S3CompressionType compressiontype = 335198942;
+
+  string expectedbucketowner = 132066983;
+
+  optional string outputkeytemplate = 216170386;
+
+  S3StorageClass storageclass = 393282631;
+
+}
+
+
+
+enum S3TablesCompressionType {
+
+  S3_TABLES_COMPRESSION_TYPE_SNAPPY = 0;
+
+  S3_TABLES_COMPRESSION_TYPE_NONE = 1;
+
+  S3_TABLES_COMPRESSION_TYPE_ZSTD = 2;
+
+}
+
+
+
+// Specifies a destination streaming table on Apache Iceberg.
+
+message S3TablesConfiguration {
+
+  S3TablesCompressionType compressiontype = 335198942;
+
+  string namespace = 355353153;
+
+  PartitionSpec partitionspec = 262159947;
+
+  string tablebucketarn = 463206245;
+
+  string tablename = 272020061;
+
+}
+
+
+
+// The configuration for delivery to streaming tables on Apache Iceberg. Used in CreateChannel.
+
+message S3TablesDestinationConfiguration {
+
+  optional int32 datafreshnessinseconds = 531205357;
+
+  DeadLetterQueueS3Configuration deadletterqueues3configuration = 331479219;
+
+  repeated S3TablesConfiguration s3tablesconfigurationlist = 436082857;
+
+}
+
+
+
+// The configuration for delivery to streaming tables on Apache Iceberg. Returned in ChannelDescription.
+
+message S3TablesDestinationDescription {
+
+  int32 datafreshnessinseconds = 531205357;
+
+  DeadLetterQueueS3Configuration deadletterqueues3configuration = 331479219;
+
+  repeated S3TablesConfiguration s3tablesconfigurationlist = 436082857;
+
+}
+
+
+
+// The updated configuration for a streaming table destination. Used in UpdateChannel. Only DataFreshnessInSeconds can be updated.
+
+message S3TablesDestinationUpdateInput {
+
+  int32 datafreshnessinseconds = 531205357;
 
 }
 
@@ -1196,7 +1725,7 @@ enum ScalingType {
 
 message SequenceNumberRange {
 
-  string endingsequencenumber = 328882583;
+  optional string endingsequencenumber = 328882583;
 
   string startingsequencenumber = 88770150;
 
@@ -1208,11 +1737,11 @@ message SequenceNumberRange {
 
 message Shard {
 
-  string adjacentparentshardid = 310461245;
+  optional string adjacentparentshardid = 310461245;
 
   HashKeyRange hashkeyrange = 981486;
 
-  string parentshardid = 431117103;
+  optional string parentshardid = 431117103;
 
   SequenceNumberRange sequencenumberrange = 86578567;
 
@@ -1226,9 +1755,9 @@ message Shard {
 
 message ShardFilter {
 
-  string shardid = 66410951;
+  optional string shardid = 66410951;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   ShardFilterType type = 290836590;
 
@@ -1278,11 +1807,11 @@ message SplitShardInput {
 
   string shardtosplit = 124434671;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -1294,11 +1823,11 @@ message StartStreamEncryptionInput {
 
   string keyid = 275906594;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -1308,9 +1837,9 @@ message StartStreamEncryptionInput {
 
 message StartingPosition {
 
-  string sequencenumber = 98094362;
+  optional string sequencenumber = 98094362;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   ShardIteratorType type = 290836590;
 
@@ -1324,11 +1853,11 @@ message StopStreamEncryptionInput {
 
   string keyid = 275906594;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
 }
 
@@ -1344,7 +1873,7 @@ message StreamDescription {
 
   optional bool hasmoreshards = 10836604;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   int32 retentionperiodhours = 396381944;
 
@@ -1368,13 +1897,15 @@ message StreamDescription {
 
 message StreamDescriptionSummary {
 
+  optional int32 channelcount = 369813244;
+
   optional int32 consumercount = 448084721;
 
   EncryptionType encryptiontype = 264007605;
 
   repeated EnhancedMetrics enhancedmonitoring = 452259826;
 
-  string keyid = 275906594;
+  optional string keyid = 275906594;
 
   optional int32 maxrecordsizeinkib = 197267253;
 
@@ -1386,7 +1917,7 @@ message StreamDescriptionSummary {
 
   string streamcreationtimestamp = 224951013;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
   StreamModeDetails streammodedetails = 12139665;
 
@@ -1395,6 +1926,18 @@ message StreamDescriptionSummary {
   StreamStatus streamstatus = 245792976;
 
   WarmThroughputObject warmthroughput = 290598659;
+
+}
+
+
+
+// Filters ListChannels results by source stream.
+
+message StreamFilter {
+
+  string streamarn = 508213725;
+
+  optional string streamcreationtimestamp = 224951013;
 
 }
 
@@ -1440,7 +1983,7 @@ message StreamSummary {
 
   string streamarn = 508213725;
 
-  string streamcreationtimestamp = 224951013;
+  optional string streamcreationtimestamp = 224951013;
 
   StreamModeDetails streammodedetails = 12139665;
 
@@ -1500,11 +2043,13 @@ message SubscribeToShardInput {
 
   string consumerarn = 41107441;
 
+  optional bool dryrun = 92204984;
+
   string shardid = 66410951;
 
   StartingPosition startingposition = 428771919;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -1524,7 +2069,7 @@ message Tag {
 
   string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -1534,7 +2079,7 @@ message TagResourceInput {
 
   string resourcearn = 369516653;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
   map<string, string> tags = 381526209;
 
@@ -1546,7 +2091,7 @@ message UntagResourceInput {
 
   string resourcearn = 369516653;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
   repeated string tagkeys = 320659964;
 
@@ -1570,13 +2115,35 @@ message UpdateAccountSettingsOutput {
 
 
 
+message UpdateChannelInput {
+
+  string channelarn = 94066492;
+
+  ChannelLoggingUpdateInput loggingconfiguration = 359027765;
+
+  S3DestinationUpdateInput s3destinationconfiguration = 139497190;
+
+  S3TablesDestinationUpdateInput s3tablesdestinationconfiguration = 516027597;
+
+}
+
+
+
+message UpdateChannelOutput {
+
+  ChannelDescription channeldescription = 254603503;
+
+}
+
+
+
 message UpdateMaxRecordSizeInput {
 
   int32 maxrecordsizeinkib = 197267253;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
 }
 
@@ -1586,11 +2153,11 @@ message UpdateShardCountInput {
 
   ScalingType scalingtype = 34064531;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
   int32 targetshardcount = 361168816;
 
@@ -1602,9 +2169,9 @@ message UpdateShardCountOutput {
 
   optional int32 currentshardcount = 21258174;
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
   optional int32 targetshardcount = 361168816;
 
@@ -1616,7 +2183,7 @@ message UpdateStreamModeInput {
 
   string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
   StreamModeDetails streammodedetails = 12139665;
 
@@ -1628,11 +2195,11 @@ message UpdateStreamModeInput {
 
 message UpdateStreamWarmThroughputInput {
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamid = 415266497;
+  optional string streamid = 415266497;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
   int32 warmthroughputmibps = 259219704;
 
@@ -1642,9 +2209,9 @@ message UpdateStreamWarmThroughputInput {
 
 message UpdateStreamWarmThroughputOutput {
 
-  string streamarn = 508213725;
+  optional string streamarn = 508213725;
 
-  string streamname = 470703047;
+  optional string streamname = 470703047;
 
   WarmThroughputObject warmthroughput = 290598659;
 
@@ -1656,7 +2223,7 @@ message UpdateStreamWarmThroughputOutput {
 
 message ValidationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

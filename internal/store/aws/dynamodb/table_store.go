@@ -22,7 +22,6 @@ type TableStore struct {
 	arnBuilder       *svcarn.DynamoDBBuilder
 	keyLocker        common.KeyLocker
 	region           string
-	classStore       *common.BaseStore
 	autoScalingStore *common.BaseStore
 }
 
@@ -33,7 +32,6 @@ func NewTableStore(store storage.BasicStorage, accountId, region string) *TableS
 		TagStore:         common.NewTagStoreWithRegion(store, "dynamodb", region),
 		arnBuilder:       svcarn.NewARNBuilder(accountId, region).DynamoDB(),
 		region:           region,
-		classStore:       common.NewBaseStore(store.Bucket("dynamodb_table_class-"+region), "dynamodb"),
 		autoScalingStore: common.NewBaseStore(store.Bucket("dynamodb_autoscaling-"+region), "dynamodb"),
 	}
 }
@@ -44,81 +42,146 @@ func (s *TableStore) Get(name string) (*Table, error) {
 	if err := s.BaseStore.GetProto(name, &pbTable); err != nil {
 		return nil, err
 	}
-	table := ProtoToTable(&pbTable)
+	return ProtoToTable(&pbTable), nil
+}
 
-	var classData map[string]string
-	if err := s.classStore.Get(name, &classData); err == nil {
-		if tc, ok := classData["tc"]; ok {
-			table.TableClass = tc
-		}
-	}
-	return table, nil
+// CreateTableParams carries every field TableStore.Create persists. Name,
+// KeySchema and BillingMode are required; the rest are optional.
+type CreateTableParams struct {
+	Name                      string
+	KeySchema                 []*KeySchemaElement
+	AttributeDefinitions      []*AttributeDefinition
+	BillingMode               BillingMode
+	ProvisionedThroughput     *ProvisionedThroughput
+	GlobalSecondaryIndexes    []*GlobalSecondaryIndex
+	LocalSecondaryIndexes     []*LocalSecondaryIndex
+	StreamSpecification       *StreamSpecification
+	Tags                      []types.Tag
+	DeletionProtectionEnabled bool
 }
 
 // Create creates a new DynamoDB table.
-func (s *TableStore) Create(
-	name string,
-	keySchema []*KeySchemaElement,
-	attributeDefinitions []*AttributeDefinition,
-	billingMode BillingMode,
-	provisionedThroughput *ProvisionedThroughput,
-	gsi []*GlobalSecondaryIndex,
-	lsi []*LocalSecondaryIndex,
-	streamSpec *StreamSpecification,
-	tags []types.Tag,
-	deletionProtectionEnabled bool,
-) (*Table, error) {
-	s.keyLocker.Lock(name)
-	defer s.keyLocker.Unlock(name)
-	if s.Exists(name) {
+func (s *TableStore) Create(params CreateTableParams) (*Table, error) {
+	s.keyLocker.Lock(params.Name)
+	defer s.keyLocker.Unlock(params.Name)
+	if s.Exists(params.Name) {
 		return nil, ErrTableAlreadyExists
 	}
 
 	now := time.Now().UTC()
 	table := &Table{
-		Name:                      name,
-		ARN:                       s.arnBuilder.Table(name),
+		Name:                      params.Name,
+		ARN:                       s.arnBuilder.Table(params.Name),
 		Status:                    TableStatusActive,
 		CreationDateTime:          now,
 		LastUpdatedDateTime:       now,
-		KeySchema:                 keySchema,
-		AttributeDefinitions:      attributeDefinitions,
-		BillingMode:               billingMode,
-		ProvisionedThroughput:     provisionedThroughput,
-		GlobalSecondaryIndexes:    gsi,
-		LocalSecondaryIndexes:     lsi,
-		StreamSpecification:       streamSpec,
-		Tags:                      tags,
+		KeySchema:                 params.KeySchema,
+		AttributeDefinitions:      params.AttributeDefinitions,
+		BillingMode:               params.BillingMode,
+		ProvisionedThroughput:     params.ProvisionedThroughput,
+		GlobalSecondaryIndexes:    params.GlobalSecondaryIndexes,
+		LocalSecondaryIndexes:     params.LocalSecondaryIndexes,
+		StreamSpecification:       params.StreamSpecification,
+		Tags:                      params.Tags,
 		TableSizeBytes:            0,
 		ItemCount:                 0,
-		DeletionProtectionEnabled: deletionProtectionEnabled,
+		DeletionProtectionEnabled: params.DeletionProtectionEnabled,
 	}
 
 	for _, g := range table.GlobalSecondaryIndexes {
 		g.IndexArn = table.ARN + "/index/" + g.IndexName
 	}
 
-	if streamSpec != nil && streamSpec.StreamEnabled {
+	if params.StreamSpecification != nil && params.StreamSpecification.StreamEnabled {
 		table.StreamArn = table.ARN + "/stream/" + now.Format("2006-01-02T15:04:05.000")
 		table.LatestStreamLabel = now.Format("2006-01-02T15:04:05.000")
 	}
 
-	if err := s.BaseStore.PutProto(name, TableToProto(table)); err != nil {
+	if err := s.BaseStore.PutProto(params.Name, TableToProto(table)); err != nil {
 		return nil, err
 	}
 
 	return table, nil
 }
 
-// Put stores or updates a DynamoDB table.
+// Put stores or updates a DynamoDB table under its record lock. Callers
+// that read the table before writing it must use Update instead, which
+// holds the lock across both halves of the read-modify-write.
 func (s *TableStore) Put(table *Table) error {
-	if err := s.BaseStore.PutProto(table.Name, TableToProto(table)); err != nil {
-		return err
+	return s.keyLocker.WithLock(table.Name, func() error {
+		return s.put(table)
+	})
+}
+
+// put writes the table record without locking; the caller must already hold
+// the table's record lock.
+func (s *TableStore) put(table *Table) error {
+	return s.BaseStore.PutProto(table.Name, TableToProto(table))
+}
+
+// Update loads the table under its record lock, applies mutate to it, and
+// persists the result. A mutate error aborts without writing. This is the
+// single locked read-modify-write path for whole table records: the
+// storage layer is read-committed, so an unlocked Get→Put sequence can
+// lose concurrent changes (metric deltas, settings writes).
+func (s *TableStore) Update(name string, mutate func(*Table) error) (*Table, error) {
+	var updated *Table
+	err := s.keyLocker.WithLock(name, func() error {
+		table, err := s.Get(name)
+		if err != nil {
+			return err
+		}
+		if err := mutate(table); err != nil {
+			return err
+		}
+		if err := s.put(table); err != nil {
+			return err
+		}
+		updated = table
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	if table.TableClass != "" {
-		return s.classStore.Put(table.Name, map[string]string{"tc": table.TableClass})
+	return updated, nil
+}
+
+// WithTableLock runs fn while holding the table's record lock, serialising
+// it against Update, Put, applyMetricDeltas, and the post-commit metric
+// flush. DeleteTable uses it so a cascade (including its commit) cannot
+// interleave with a concurrent flush that would otherwise write the record
+// back after the cascade deleted it. fn must not queue table metric deltas
+// for this table: the post-commit flush inside store.Update takes the same
+// lock.
+func (s *TableStore) WithTableLock(name string, fn func() error) error {
+	return s.keyLocker.WithLock(name, fn)
+}
+
+// applyMetricDeltas adds item-count and size deltas to a table record under
+// the table's record lock. The read and the write both happen inside the
+// lock with immediate (non-batch) writes, so concurrent metric flushes and
+// locked table updates cannot lose increments. A table that no longer
+// exists (deleted after the carrying write committed) is not an error: its
+// counters no longer exist.
+func (s *TableStore) applyMetricDeltas(name string, countDelta, sizeDelta int64) error {
+	if countDelta == 0 && sizeDelta == 0 {
+		return nil
 	}
-	return nil
+	_, err := s.Update(name, func(table *Table) error {
+		table.ItemCount += countDelta
+		if table.ItemCount < 0 {
+			table.ItemCount = 0
+		}
+		table.TableSizeBytes += sizeDelta
+		if table.TableSizeBytes < 0 {
+			table.TableSizeBytes = 0
+		}
+		return nil
+	})
+	if err != nil && common.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 // Delete removes a DynamoDB table by name.
@@ -153,34 +216,16 @@ func (s *TableStore) List(marker string, limit int) ([]*Table, string, error) {
 	return tables, result.NextMarker, nil
 }
 
-// UpdateItemCount updates the item count for a DynamoDB table.
+// UpdateItemCount updates the item count for a DynamoDB table through the
+// locked metric-delta path shared with the post-commit flush.
 func (s *TableStore) UpdateItemCount(name string, delta int64) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
-		table.ItemCount += delta
-		if table.ItemCount < 0 {
-			table.ItemCount = 0
-		}
-		return s.Put(table)
-	})
+	return s.applyMetricDeltas(name, delta, 0)
 }
 
-// UpdateTableSize updates the table size for a DynamoDB table.
+// UpdateTableSize updates the table size for a DynamoDB table through the
+// locked metric-delta path shared with the post-commit flush.
 func (s *TableStore) UpdateTableSize(name string, delta int64) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
-		table.TableSizeBytes += delta
-		if table.TableSizeBytes < 0 {
-			table.TableSizeBytes = 0
-		}
-		return s.Put(table)
-	})
+	return s.applyMetricDeltas(name, 0, delta)
 }
 
 // ARNBuilder returns the ARN builder for DynamoDB tables.
@@ -193,36 +238,13 @@ func (s *TableStore) Tags() *common.TagStore {
 	return s.TagStore
 }
 
-// GetPartitionKey returns the partition key attribute name for a table.
-func (s *TableStore) GetPartitionKey(table *Table) string {
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == KeyTypeHash {
-			return ks.AttributeName
-		}
-	}
-	return ""
-}
-
-// GetSortKey returns the sort key attribute name for a table.
-func (s *TableStore) GetSortKey(table *Table) string {
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == KeyTypeRange {
-			return ks.AttributeName
-		}
-	}
-	return ""
-}
-
 // SetTimeToLive sets the time-to-live specification for a DynamoDB table.
 func (s *TableStore) SetTimeToLive(name string, ttl *TimeToLiveSpecification) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
+	_, err := s.Update(name, func(table *Table) error {
 		table.TimeToLive = ttl
-		return s.Put(table)
+		return nil
 	})
+	return err
 }
 
 // GetTimeToLive returns the time-to-live specification for a DynamoDB table.
@@ -236,14 +258,11 @@ func (s *TableStore) GetTimeToLive(name string) (*TimeToLiveSpecification, error
 
 // SetPointInTimeRecovery sets the point-in-time recovery description for a DynamoDB table.
 func (s *TableStore) SetPointInTimeRecovery(name string, pitr *PointInTimeRecoveryDescription) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
+	_, err := s.Update(name, func(table *Table) error {
 		table.PointInTimeRecovery = pitr
-		return s.Put(table)
+		return nil
 	})
+	return err
 }
 
 // GetPointInTimeRecovery returns the point-in-time recovery description for a DynamoDB table.
@@ -257,15 +276,12 @@ func (s *TableStore) GetPointInTimeRecovery(name string) (*PointInTimeRecoveryDe
 
 // SetResourcePolicy sets the resource policy for a DynamoDB table.
 func (s *TableStore) SetResourcePolicy(name string, policy string) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
+	_, err := s.Update(name, func(table *Table) error {
 		table.ResourcePolicy = policy
 		table.ResourcePolicyRevisionId++
-		return s.Put(table)
+		return nil
 	})
+	return err
 }
 
 // GetResourcePolicyRevisionId returns the current resource policy revision
@@ -289,62 +305,53 @@ func (s *TableStore) GetResourcePolicy(name string) (string, error) {
 
 // DeleteResourcePolicy removes the resource policy from a DynamoDB table.
 func (s *TableStore) DeleteResourcePolicy(name string) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
+	_, err := s.Update(name, func(table *Table) error {
 		table.ResourcePolicy = ""
-		return s.Put(table)
+		return nil
 	})
+	return err
 }
 
 // SetKinesisStreamingDestination sets the Kinesis streaming destination for a DynamoDB table.
 func (s *TableStore) SetKinesisStreamingDestination(name string, destinations []*KinesisDataStreamDestination) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
+	_, err := s.Update(name, func(table *Table) error {
 		table.KinesisDataStreamDestinations = destinations
-		return s.Put(table)
+		return nil
 	})
+	return err
 }
 
 // SetContributorInsights enables or disables contributor insights for a DynamoDB table.
 // When mode is empty, the existing ContributorInsightsMode is preserved.
 func (s *TableStore) SetContributorInsights(name string, enabled bool, mode string) error {
-	return s.keyLocker.WithLock(name, func() error {
-		table, err := s.Get(name)
-		if err != nil {
-			return err
-		}
+	_, err := s.Update(name, func(table *Table) error {
 		table.ContributorInsightsEnabled = enabled
 		if mode != "" {
 			table.ContributorInsightsMode = mode
 		}
 		table.ContributorInsightsUpdatedAt = time.Now().UTC()
-		return s.Put(table)
+		return nil
 	})
+	return err
 }
 
-// SetAutoScalingSettings stores the auto-scaling settings for a table.
-// The settings are stored separately from the table proto to avoid
-// schema changes. Auto-scaling policy execution (Application Auto Scaling)
-// is not implemented; these settings round-trip for API compatibility.
-func (s *TableStore) SetAutoScalingSettings(name string, settings map[string]interface{}) error {
-	return s.autoScalingStore.Put(name, settings)
+// SetAutoScalingSettings stores the auto-scaling settings for a table as a
+// typed protobuf record. Auto-scaling policy execution (Application Auto
+// Scaling) is not implemented; these settings round-trip for API
+// compatibility.
+func (s *TableStore) SetAutoScalingSettings(name string, settings *TableReplicaAutoScalingSettings) error {
+	return s.autoScalingStore.PutProto(name, tableReplicaAutoScalingToProto(settings))
 }
 
-// GetAutoScalingSettings returns the stored auto-scaling settings for a table.
-// Returns nil if no settings have been stored.
-func (s *TableStore) GetAutoScalingSettings(name string) (map[string]interface{}, error) {
-	var settings map[string]interface{}
-	if err := s.autoScalingStore.Get(name, &settings); err != nil {
+// GetAutoScalingSettings returns the stored auto-scaling settings for a
+// table. Returns nil if no settings have been stored.
+func (s *TableStore) GetAutoScalingSettings(name string) (*TableReplicaAutoScalingSettings, error) {
+	var pbSettings pb.TableReplicaAutoScalingSettings
+	if err := s.autoScalingStore.GetProto(name, &pbSettings); err != nil {
 		if common.IsNotFound(err) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return settings, nil
+	return protoToTableReplicaAutoScaling(&pbSettings), nil
 }

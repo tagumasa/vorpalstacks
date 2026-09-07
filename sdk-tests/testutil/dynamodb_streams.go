@@ -208,5 +208,82 @@ func (r *TestRunner) dynamoDBStreamsTests(ctx context.Context, client *dynamodb.
 		return fmt.Errorf("stream %s not listed", streamArn)
 	}))
 
+	// Writes committed through ExecuteTransaction capture stream records in
+	// the same storage transaction: INSERT, UPDATE and DELETE statements each
+	// produce their event.
+	results = append(results, r.RunTest("dynamodb", "Streams_ExecuteTransaction_CapturesWriteRecords", func() error {
+		txnTable := fmt.Sprintf("streams-executetx-%d", suffix)
+		cleanupTable, err := createDynamoTestTable(ctx, client, txnTable,
+			withDynamoStream(dynamodbtypes.StreamViewTypeNewAndOldImages))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+		if err := waitKinesisDestTableActive(ctx, client, txnTable); err != nil {
+			return err
+		}
+
+		for _, key := range []string{"tx-u", "tx-d"} {
+			if _, err := client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(txnTable),
+				Item: map[string]dynamodbtypes.AttributeValue{
+					"id":  &dynamodbtypes.AttributeValueMemberS{Value: key},
+					"val": &dynamodbtypes.AttributeValueMemberS{Value: "seed"},
+				},
+			}); err != nil {
+				return err
+			}
+		}
+
+		if _, err := client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
+			TransactStatements: []dynamodbtypes.ParameterizedStatement{
+				{Statement: aws.String("INSERT INTO \"" + txnTable + "\" VALUE {'id': 'tx-i', 'val': 'inserted'}")},
+				{Statement: aws.String("UPDATE \"" + txnTable + "\" SET val = 'updated' WHERE id = 'tx-u'")},
+				{Statement: aws.String("DELETE FROM \"" + txnTable + "\" WHERE id = 'tx-d'")},
+			},
+		}); err != nil {
+			return err
+		}
+
+		tblDesc, err := client.DescribeTable(ctx, &dynamodb.DescribeTableInput{TableName: aws.String(txnTable)})
+		if err != nil || tblDesc.Table.LatestStreamArn == nil {
+			return fmt.Errorf("describe table for stream ARN: %v", err)
+		}
+		txDesc, err := sc.DescribeStream(ctx, &dynamodbstreams.DescribeStreamInput{StreamArn: tblDesc.Table.LatestStreamArn})
+		if err != nil || len(txDesc.StreamDescription.Shards) == 0 {
+			return fmt.Errorf("describe stream: %v", err)
+		}
+		itResp, err := sc.GetShardIterator(ctx, &dynamodbstreams.GetShardIteratorInput{
+			StreamArn:         tblDesc.Table.LatestStreamArn,
+			ShardId:           txDesc.StreamDescription.Shards[0].ShardId,
+			ShardIteratorType: streamtypes.ShardIteratorTypeTrimHorizon,
+		})
+		if err != nil {
+			return err
+		}
+		recResp, err := sc.GetRecords(ctx, &dynamodbstreams.GetRecordsInput{ShardIterator: itResp.ShardIterator})
+		if err != nil {
+			return err
+		}
+		// Two seeded puts then the transaction's three statements.
+		if len(recResp.Records) != 5 {
+			return fmt.Errorf("expected 5 captured records, got %d", len(recResp.Records))
+		}
+		wantEvents := []string{"INSERT", "INSERT", "INSERT", "MODIFY", "REMOVE"}
+		for i, want := range wantEvents {
+			if string(recResp.Records[i].EventName) != want {
+				return fmt.Errorf("record %d event = %s, want %s", i, recResp.Records[i].EventName, want)
+			}
+		}
+		modified := recResp.Records[3].Dynamodb
+		if modified == nil || modified.NewImage == nil {
+			return fmt.Errorf("MODIFY record carries no new image: %+v", modified)
+		}
+		if v, ok := modified.NewImage["val"].(*streamtypes.AttributeValueMemberS); !ok || v.Value != "updated" {
+			return fmt.Errorf("MODIFY new image val mismatch: %v", modified.NewImage["val"])
+		}
+		return nil
+	}))
+
 	return results
 }

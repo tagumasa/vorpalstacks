@@ -315,7 +315,7 @@ func (x *AddPermissionRequest) GetQueueurl() string {
 
 type BatchEntryIdsNotDistinct struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -351,15 +351,15 @@ func (*BatchEntryIdsNotDistinct) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchEntryIdsNotDistinct) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type BatchRequestTooLong struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -395,8 +395,8 @@ func (*BatchRequestTooLong) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchRequestTooLong) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -405,7 +405,7 @@ type BatchResultErrorEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          string                 `protobuf:"bytes,425572629,opt,name=code,proto3" json:"code,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Senderfault   *bool                  `protobuf:"varint,28412929,opt,name=senderfault,proto3,oneof" json:"senderfault,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -456,8 +456,8 @@ func (x *BatchResultErrorEntry) GetId() string {
 }
 
 func (x *BatchResultErrorEntry) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -887,7 +887,7 @@ func (x *CreateQueueRequest) GetTags() map[string]string {
 
 type CreateQueueResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Queueurl      string                 `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
+	Queueurl      *string                `protobuf:"bytes,510632138,opt,name=queueurl,proto3,oneof" json:"queueurl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -923,8 +923,8 @@ func (*CreateQueueResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateQueueResult) GetQueueurl() string {
-	if x != nil {
-		return x.Queueurl
+	if x != nil && x.Queueurl != nil {
+		return *x.Queueurl
 	}
 	return ""
 }
@@ -1227,7 +1227,7 @@ func (x *DeleteQueueRequest) GetQueueurl() string {
 
 type EmptyBatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1263,8 +1263,8 @@ func (*EmptyBatchRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *EmptyBatchRequest) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1368,7 +1368,7 @@ func (x *GetQueueAttributesResult) GetAttributes() map[string]string {
 type GetQueueUrlRequest struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Queuename              string                 `protobuf:"bytes,154364636,opt,name=queuename,proto3" json:"queuename,omitempty"`
-	Queueownerawsaccountid string                 `protobuf:"bytes,248813375,opt,name=queueownerawsaccountid,proto3" json:"queueownerawsaccountid,omitempty"`
+	Queueownerawsaccountid *string                `protobuf:"bytes,248813375,opt,name=queueownerawsaccountid,proto3,oneof" json:"queueownerawsaccountid,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1411,15 +1411,15 @@ func (x *GetQueueUrlRequest) GetQueuename() string {
 }
 
 func (x *GetQueueUrlRequest) GetQueueownerawsaccountid() string {
-	if x != nil {
-		return x.Queueownerawsaccountid
+	if x != nil && x.Queueownerawsaccountid != nil {
+		return *x.Queueownerawsaccountid
 	}
 	return ""
 }
 
 type GetQueueUrlResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Queueurl      string                 `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
+	Queueurl      *string                `protobuf:"bytes,510632138,opt,name=queueurl,proto3,oneof" json:"queueurl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1455,15 +1455,15 @@ func (*GetQueueUrlResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetQueueUrlResult) GetQueueurl() string {
-	if x != nil {
-		return x.Queueurl
+	if x != nil && x.Queueurl != nil {
+		return *x.Queueurl
 	}
 	return ""
 }
 
 type InvalidAddress struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1499,15 +1499,15 @@ func (*InvalidAddress) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidAddress) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidAttributeName struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1543,15 +1543,15 @@ func (*InvalidAttributeName) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidAttributeName) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidAttributeValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1587,15 +1587,15 @@ func (*InvalidAttributeValue) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidAttributeValue) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidBatchEntryId struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1631,8 +1631,8 @@ func (*InvalidBatchEntryId) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidBatchEntryId) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1675,7 +1675,7 @@ func (*InvalidIdFormat) Descriptor() ([]byte, []int) {
 
 type InvalidMessageContents struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1711,15 +1711,15 @@ func (*InvalidMessageContents) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidMessageContents) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidSecurity struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1755,15 +1755,15 @@ func (*InvalidSecurity) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidSecurity) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsAccessDenied struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1799,15 +1799,15 @@ func (*KmsAccessDenied) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsAccessDenied) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsDisabled struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1843,15 +1843,15 @@ func (*KmsDisabled) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsDisabled) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsInvalidKeyUsage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1887,15 +1887,15 @@ func (*KmsInvalidKeyUsage) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsInvalidKeyUsage) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsInvalidState struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1931,15 +1931,15 @@ func (*KmsInvalidState) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsInvalidState) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsNotFound struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1975,15 +1975,15 @@ func (*KmsNotFound) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsNotFound) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsOptInRequired struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2019,15 +2019,15 @@ func (*KmsOptInRequired) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsOptInRequired) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KmsThrottled struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2063,8 +2063,8 @@ func (*KmsThrottled) Descriptor() ([]byte, []int) {
 }
 
 func (x *KmsThrottled) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2072,7 +2072,7 @@ func (x *KmsThrottled) GetMessage() string {
 type ListDeadLetterSourceQueuesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queueurl      string                 `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2116,8 +2116,8 @@ func (x *ListDeadLetterSourceQueuesRequest) GetMaxresults() int32 {
 }
 
 func (x *ListDeadLetterSourceQueuesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2131,7 +2131,7 @@ func (x *ListDeadLetterSourceQueuesRequest) GetQueueurl() string {
 
 type ListDeadLetterSourceQueuesResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queueurls     []string               `protobuf:"bytes,475536111,rep,name=queueurls,proto3" json:"queueurls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2168,8 +2168,8 @@ func (*ListDeadLetterSourceQueuesResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDeadLetterSourceQueuesResult) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2281,13 +2281,13 @@ type ListMessageMoveTasksResultEntry struct {
 	state                             protoimpl.MessageState `protogen:"open.v1"`
 	Approximatenumberofmessagesmoved  *int64                 `protobuf:"varint,510181657,opt,name=approximatenumberofmessagesmoved,proto3,oneof" json:"approximatenumberofmessagesmoved,omitempty"`
 	Approximatenumberofmessagestomove *int64                 `protobuf:"varint,108945690,opt,name=approximatenumberofmessagestomove,proto3,oneof" json:"approximatenumberofmessagestomove,omitempty"`
-	Destinationarn                    string                 `protobuf:"bytes,375726595,opt,name=destinationarn,proto3" json:"destinationarn,omitempty"`
-	Failurereason                     string                 `protobuf:"bytes,232322142,opt,name=failurereason,proto3" json:"failurereason,omitempty"`
+	Destinationarn                    *string                `protobuf:"bytes,375726595,opt,name=destinationarn,proto3,oneof" json:"destinationarn,omitempty"`
+	Failurereason                     *string                `protobuf:"bytes,232322142,opt,name=failurereason,proto3,oneof" json:"failurereason,omitempty"`
 	Maxnumberofmessagespersecond      *int32                 `protobuf:"varint,335779921,opt,name=maxnumberofmessagespersecond,proto3,oneof" json:"maxnumberofmessagespersecond,omitempty"`
-	Sourcearn                         string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
+	Sourcearn                         *string                `protobuf:"bytes,439903072,opt,name=sourcearn,proto3,oneof" json:"sourcearn,omitempty"`
 	Startedtimestamp                  *int64                 `protobuf:"varint,397447975,opt,name=startedtimestamp,proto3,oneof" json:"startedtimestamp,omitempty"`
-	Status                            string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
-	Taskhandle                        string                 `protobuf:"bytes,190544291,opt,name=taskhandle,proto3" json:"taskhandle,omitempty"`
+	Status                            *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	Taskhandle                        *string                `protobuf:"bytes,190544291,opt,name=taskhandle,proto3,oneof" json:"taskhandle,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
 }
@@ -2337,15 +2337,15 @@ func (x *ListMessageMoveTasksResultEntry) GetApproximatenumberofmessagestomove()
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetDestinationarn() string {
-	if x != nil {
-		return x.Destinationarn
+	if x != nil && x.Destinationarn != nil {
+		return *x.Destinationarn
 	}
 	return ""
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetFailurereason() string {
-	if x != nil {
-		return x.Failurereason
+	if x != nil && x.Failurereason != nil {
+		return *x.Failurereason
 	}
 	return ""
 }
@@ -2358,8 +2358,8 @@ func (x *ListMessageMoveTasksResultEntry) GetMaxnumberofmessagespersecond() int3
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetSourcearn() string {
-	if x != nil {
-		return x.Sourcearn
+	if x != nil && x.Sourcearn != nil {
+		return *x.Sourcearn
 	}
 	return ""
 }
@@ -2372,15 +2372,15 @@ func (x *ListMessageMoveTasksResultEntry) GetStartedtimestamp() int64 {
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
 
 func (x *ListMessageMoveTasksResultEntry) GetTaskhandle() string {
-	if x != nil {
-		return x.Taskhandle
+	if x != nil && x.Taskhandle != nil {
+		return *x.Taskhandle
 	}
 	return ""
 }
@@ -2476,8 +2476,8 @@ func (x *ListQueueTagsResult) GetTags() map[string]string {
 type ListQueuesRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults      *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken       string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
-	Queuenameprefix string                 `protobuf:"bytes,269478416,opt,name=queuenameprefix,proto3" json:"queuenameprefix,omitempty"`
+	Nexttoken       *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
+	Queuenameprefix *string                `protobuf:"bytes,269478416,opt,name=queuenameprefix,proto3,oneof" json:"queuenameprefix,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -2520,22 +2520,22 @@ func (x *ListQueuesRequest) GetMaxresults() int32 {
 }
 
 func (x *ListQueuesRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 func (x *ListQueuesRequest) GetQueuenameprefix() string {
-	if x != nil {
-		return x.Queuenameprefix
+	if x != nil && x.Queuenameprefix != nil {
+		return *x.Queuenameprefix
 	}
 	return ""
 }
 
 type ListQueuesResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Queueurls     []string               `protobuf:"bytes,62522575,rep,name=queueurls,proto3" json:"queueurls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2572,8 +2572,8 @@ func (*ListQueuesResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListQueuesResult) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2588,12 +2588,12 @@ func (x *ListQueuesResult) GetQueueurls() []string {
 type Message struct {
 	state                  protoimpl.MessageState            `protogen:"open.v1"`
 	Attributes             map[string]string                 `protobuf:"bytes,209638581,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Body                   string                            `protobuf:"bytes,42602646,opt,name=body,proto3" json:"body,omitempty"`
-	Md5Ofbody              string                            `protobuf:"bytes,229335371,opt,name=md5ofbody,proto3" json:"md5ofbody,omitempty"`
-	Md5Ofmessageattributes string                            `protobuf:"bytes,499647077,opt,name=md5ofmessageattributes,proto3" json:"md5ofmessageattributes,omitempty"`
+	Body                   *string                           `protobuf:"bytes,42602646,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Md5Ofbody              *string                           `protobuf:"bytes,229335371,opt,name=md5ofbody,proto3,oneof" json:"md5ofbody,omitempty"`
+	Md5Ofmessageattributes *string                           `protobuf:"bytes,499647077,opt,name=md5ofmessageattributes,proto3,oneof" json:"md5ofmessageattributes,omitempty"`
 	Messageattributes      map[string]*MessageAttributeValue `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Messageid              string                            `protobuf:"bytes,360526634,opt,name=messageid,proto3" json:"messageid,omitempty"`
-	Receipthandle          string                            `protobuf:"bytes,134471750,opt,name=receipthandle,proto3" json:"receipthandle,omitempty"`
+	Messageid              *string                           `protobuf:"bytes,360526634,opt,name=messageid,proto3,oneof" json:"messageid,omitempty"`
+	Receipthandle          *string                           `protobuf:"bytes,134471750,opt,name=receipthandle,proto3,oneof" json:"receipthandle,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2636,22 +2636,22 @@ func (x *Message) GetAttributes() map[string]string {
 }
 
 func (x *Message) GetBody() string {
-	if x != nil {
-		return x.Body
+	if x != nil && x.Body != nil {
+		return *x.Body
 	}
 	return ""
 }
 
 func (x *Message) GetMd5Ofbody() string {
-	if x != nil {
-		return x.Md5Ofbody
+	if x != nil && x.Md5Ofbody != nil {
+		return *x.Md5Ofbody
 	}
 	return ""
 }
 
 func (x *Message) GetMd5Ofmessageattributes() string {
-	if x != nil {
-		return x.Md5Ofmessageattributes
+	if x != nil && x.Md5Ofmessageattributes != nil {
+		return *x.Md5Ofmessageattributes
 	}
 	return ""
 }
@@ -2664,15 +2664,15 @@ func (x *Message) GetMessageattributes() map[string]*MessageAttributeValue {
 }
 
 func (x *Message) GetMessageid() string {
-	if x != nil {
-		return x.Messageid
+	if x != nil && x.Messageid != nil {
+		return *x.Messageid
 	}
 	return ""
 }
 
 func (x *Message) GetReceipthandle() string {
-	if x != nil {
-		return x.Receipthandle
+	if x != nil && x.Receipthandle != nil {
+		return *x.Receipthandle
 	}
 	return ""
 }
@@ -2680,10 +2680,10 @@ func (x *Message) GetReceipthandle() string {
 type MessageAttributeValue struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Binarylistvalues [][]byte               `protobuf:"bytes,158345259,rep,name=binarylistvalues,proto3" json:"binarylistvalues,omitempty"`
-	Binaryvalue      []byte                 `protobuf:"bytes,255476278,opt,name=binaryvalue,proto3" json:"binaryvalue,omitempty"`
+	Binaryvalue      []byte                 `protobuf:"bytes,255476278,opt,name=binaryvalue,proto3,oneof" json:"binaryvalue,omitempty"`
 	Datatype         string                 `protobuf:"bytes,67988590,opt,name=datatype,proto3" json:"datatype,omitempty"`
 	Stringlistvalues []string               `protobuf:"bytes,86527527,rep,name=stringlistvalues,proto3" json:"stringlistvalues,omitempty"`
-	Stringvalue      string                 `protobuf:"bytes,184416138,opt,name=stringvalue,proto3" json:"stringvalue,omitempty"`
+	Stringvalue      *string                `protobuf:"bytes,184416138,opt,name=stringvalue,proto3,oneof" json:"stringvalue,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2747,8 +2747,8 @@ func (x *MessageAttributeValue) GetStringlistvalues() []string {
 }
 
 func (x *MessageAttributeValue) GetStringvalue() string {
-	if x != nil {
-		return x.Stringvalue
+	if x != nil && x.Stringvalue != nil {
+		return *x.Stringvalue
 	}
 	return ""
 }
@@ -2792,10 +2792,10 @@ func (*MessageNotInflight) Descriptor() ([]byte, []int) {
 type MessageSystemAttributeValue struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Binarylistvalues [][]byte               `protobuf:"bytes,158345259,rep,name=binarylistvalues,proto3" json:"binarylistvalues,omitempty"`
-	Binaryvalue      []byte                 `protobuf:"bytes,255476278,opt,name=binaryvalue,proto3" json:"binaryvalue,omitempty"`
+	Binaryvalue      []byte                 `protobuf:"bytes,255476278,opt,name=binaryvalue,proto3,oneof" json:"binaryvalue,omitempty"`
 	Datatype         string                 `protobuf:"bytes,67988590,opt,name=datatype,proto3" json:"datatype,omitempty"`
 	Stringlistvalues []string               `protobuf:"bytes,86527527,rep,name=stringlistvalues,proto3" json:"stringlistvalues,omitempty"`
-	Stringvalue      string                 `protobuf:"bytes,184416138,opt,name=stringvalue,proto3" json:"stringvalue,omitempty"`
+	Stringvalue      *string                `protobuf:"bytes,184416138,opt,name=stringvalue,proto3,oneof" json:"stringvalue,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -2859,15 +2859,15 @@ func (x *MessageSystemAttributeValue) GetStringlistvalues() []string {
 }
 
 func (x *MessageSystemAttributeValue) GetStringvalue() string {
-	if x != nil {
-		return x.Stringvalue
+	if x != nil && x.Stringvalue != nil {
+		return *x.Stringvalue
 	}
 	return ""
 }
 
 type OverLimit struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2903,15 +2903,15 @@ func (*OverLimit) Descriptor() ([]byte, []int) {
 }
 
 func (x *OverLimit) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PurgeQueueInProgress struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2947,8 +2947,8 @@ func (*PurgeQueueInProgress) Descriptor() ([]byte, []int) {
 }
 
 func (x *PurgeQueueInProgress) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -2999,7 +2999,7 @@ func (x *PurgeQueueRequest) GetQueueurl() string {
 
 type QueueDeletedRecently struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3035,15 +3035,15 @@ func (*QueueDeletedRecently) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueueDeletedRecently) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type QueueDoesNotExist struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3079,15 +3079,15 @@ func (*QueueDoesNotExist) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueueDoesNotExist) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type QueueNameExists struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3123,15 +3123,15 @@ func (*QueueNameExists) Descriptor() ([]byte, []int) {
 }
 
 func (x *QueueNameExists) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ReceiptHandleIsInvalid struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3167,8 +3167,8 @@ func (*ReceiptHandleIsInvalid) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReceiptHandleIsInvalid) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3180,7 +3180,7 @@ type ReceiveMessageRequest struct {
 	Messageattributenames       []string                     `protobuf:"bytes,332558373,rep,name=messageattributenames,proto3" json:"messageattributenames,omitempty"`
 	Messagesystemattributenames []MessageSystemAttributeName `protobuf:"varint,42109014,rep,packed,name=messagesystemattributenames,proto3,enum=sqs.MessageSystemAttributeName" json:"messagesystemattributenames,omitempty"`
 	Queueurl                    string                       `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
-	Receiverequestattemptid     string                       `protobuf:"bytes,455135954,opt,name=receiverequestattemptid,proto3" json:"receiverequestattemptid,omitempty"`
+	Receiverequestattemptid     *string                      `protobuf:"bytes,455135954,opt,name=receiverequestattemptid,proto3,oneof" json:"receiverequestattemptid,omitempty"`
 	Visibilitytimeout           *int32                       `protobuf:"varint,460820073,opt,name=visibilitytimeout,proto3,oneof" json:"visibilitytimeout,omitempty"`
 	Waittimeseconds             *int32                       `protobuf:"varint,398991863,opt,name=waittimeseconds,proto3,oneof" json:"waittimeseconds,omitempty"`
 	unknownFields               protoimpl.UnknownFields
@@ -3253,8 +3253,8 @@ func (x *ReceiveMessageRequest) GetQueueurl() string {
 }
 
 func (x *ReceiveMessageRequest) GetReceiverequestattemptid() string {
-	if x != nil {
-		return x.Receiverequestattemptid
+	if x != nil && x.Receiverequestattemptid != nil {
+		return *x.Receiverequestattemptid
 	}
 	return ""
 }
@@ -3371,7 +3371,7 @@ func (x *RemovePermissionRequest) GetQueueurl() string {
 
 type RequestThrottled struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3407,15 +3407,15 @@ func (*RequestThrottled) Descriptor() ([]byte, []int) {
 }
 
 func (x *RequestThrottled) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3451,8 +3451,8 @@ func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3515,8 +3515,8 @@ type SendMessageBatchRequestEntry struct {
 	Id                      string                                  `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Messageattributes       map[string]*MessageAttributeValue       `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Messagebody             string                                  `protobuf:"bytes,56920001,opt,name=messagebody,proto3" json:"messagebody,omitempty"`
-	Messagededuplicationid  string                                  `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3" json:"messagededuplicationid,omitempty"`
-	Messagegroupid          string                                  `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3" json:"messagegroupid,omitempty"`
+	Messagededuplicationid  *string                                 `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3,oneof" json:"messagededuplicationid,omitempty"`
+	Messagegroupid          *string                                 `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3,oneof" json:"messagegroupid,omitempty"`
 	Messagesystemattributes map[string]*MessageSystemAttributeValue `protobuf:"bytes,194951997,rep,name=messagesystemattributes,proto3" json:"messagesystemattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -3581,15 +3581,15 @@ func (x *SendMessageBatchRequestEntry) GetMessagebody() string {
 }
 
 func (x *SendMessageBatchRequestEntry) GetMessagededuplicationid() string {
-	if x != nil {
-		return x.Messagededuplicationid
+	if x != nil && x.Messagededuplicationid != nil {
+		return *x.Messagededuplicationid
 	}
 	return ""
 }
 
 func (x *SendMessageBatchRequestEntry) GetMessagegroupid() string {
-	if x != nil {
-		return x.Messagegroupid
+	if x != nil && x.Messagegroupid != nil {
+		return *x.Messagegroupid
 	}
 	return ""
 }
@@ -3656,11 +3656,11 @@ func (x *SendMessageBatchResult) GetSuccessful() []*SendMessageBatchResultEntry 
 type SendMessageBatchResultEntry struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	Id                           string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Md5Ofmessageattributes       string                 `protobuf:"bytes,499647077,opt,name=md5ofmessageattributes,proto3" json:"md5ofmessageattributes,omitempty"`
+	Md5Ofmessageattributes       *string                `protobuf:"bytes,499647077,opt,name=md5ofmessageattributes,proto3,oneof" json:"md5ofmessageattributes,omitempty"`
 	Md5Ofmessagebody             string                 `protobuf:"bytes,28462758,opt,name=md5ofmessagebody,proto3" json:"md5ofmessagebody,omitempty"`
-	Md5Ofmessagesystemattributes string                 `protobuf:"bytes,304512206,opt,name=md5ofmessagesystemattributes,proto3" json:"md5ofmessagesystemattributes,omitempty"`
+	Md5Ofmessagesystemattributes *string                `protobuf:"bytes,304512206,opt,name=md5ofmessagesystemattributes,proto3,oneof" json:"md5ofmessagesystemattributes,omitempty"`
 	Messageid                    string                 `protobuf:"bytes,360526634,opt,name=messageid,proto3" json:"messageid,omitempty"`
-	Sequencenumber               string                 `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3" json:"sequencenumber,omitempty"`
+	Sequencenumber               *string                `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3,oneof" json:"sequencenumber,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3703,8 +3703,8 @@ func (x *SendMessageBatchResultEntry) GetId() string {
 }
 
 func (x *SendMessageBatchResultEntry) GetMd5Ofmessageattributes() string {
-	if x != nil {
-		return x.Md5Ofmessageattributes
+	if x != nil && x.Md5Ofmessageattributes != nil {
+		return *x.Md5Ofmessageattributes
 	}
 	return ""
 }
@@ -3717,8 +3717,8 @@ func (x *SendMessageBatchResultEntry) GetMd5Ofmessagebody() string {
 }
 
 func (x *SendMessageBatchResultEntry) GetMd5Ofmessagesystemattributes() string {
-	if x != nil {
-		return x.Md5Ofmessagesystemattributes
+	if x != nil && x.Md5Ofmessagesystemattributes != nil {
+		return *x.Md5Ofmessagesystemattributes
 	}
 	return ""
 }
@@ -3731,8 +3731,8 @@ func (x *SendMessageBatchResultEntry) GetMessageid() string {
 }
 
 func (x *SendMessageBatchResultEntry) GetSequencenumber() string {
-	if x != nil {
-		return x.Sequencenumber
+	if x != nil && x.Sequencenumber != nil {
+		return *x.Sequencenumber
 	}
 	return ""
 }
@@ -3742,8 +3742,8 @@ type SendMessageRequest struct {
 	Delayseconds            *int32                                  `protobuf:"varint,48268198,opt,name=delayseconds,proto3,oneof" json:"delayseconds,omitempty"`
 	Messageattributes       map[string]*MessageAttributeValue       `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Messagebody             string                                  `protobuf:"bytes,56920001,opt,name=messagebody,proto3" json:"messagebody,omitempty"`
-	Messagededuplicationid  string                                  `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3" json:"messagededuplicationid,omitempty"`
-	Messagegroupid          string                                  `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3" json:"messagegroupid,omitempty"`
+	Messagededuplicationid  *string                                 `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3,oneof" json:"messagededuplicationid,omitempty"`
+	Messagegroupid          *string                                 `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3,oneof" json:"messagegroupid,omitempty"`
 	Messagesystemattributes map[string]*MessageSystemAttributeValue `protobuf:"bytes,194951997,rep,name=messagesystemattributes,proto3" json:"messagesystemattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Queueurl                string                                  `protobuf:"bytes,510632138,opt,name=queueurl,proto3" json:"queueurl,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -3802,15 +3802,15 @@ func (x *SendMessageRequest) GetMessagebody() string {
 }
 
 func (x *SendMessageRequest) GetMessagededuplicationid() string {
-	if x != nil {
-		return x.Messagededuplicationid
+	if x != nil && x.Messagededuplicationid != nil {
+		return *x.Messagededuplicationid
 	}
 	return ""
 }
 
 func (x *SendMessageRequest) GetMessagegroupid() string {
-	if x != nil {
-		return x.Messagegroupid
+	if x != nil && x.Messagegroupid != nil {
+		return *x.Messagegroupid
 	}
 	return ""
 }
@@ -3831,11 +3831,11 @@ func (x *SendMessageRequest) GetQueueurl() string {
 
 type SendMessageResult struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Md5Ofmessageattributes       string                 `protobuf:"bytes,499647077,opt,name=md5ofmessageattributes,proto3" json:"md5ofmessageattributes,omitempty"`
-	Md5Ofmessagebody             string                 `protobuf:"bytes,28462758,opt,name=md5ofmessagebody,proto3" json:"md5ofmessagebody,omitempty"`
-	Md5Ofmessagesystemattributes string                 `protobuf:"bytes,304512206,opt,name=md5ofmessagesystemattributes,proto3" json:"md5ofmessagesystemattributes,omitempty"`
-	Messageid                    string                 `protobuf:"bytes,360526634,opt,name=messageid,proto3" json:"messageid,omitempty"`
-	Sequencenumber               string                 `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3" json:"sequencenumber,omitempty"`
+	Md5Ofmessageattributes       *string                `protobuf:"bytes,499647077,opt,name=md5ofmessageattributes,proto3,oneof" json:"md5ofmessageattributes,omitempty"`
+	Md5Ofmessagebody             *string                `protobuf:"bytes,28462758,opt,name=md5ofmessagebody,proto3,oneof" json:"md5ofmessagebody,omitempty"`
+	Md5Ofmessagesystemattributes *string                `protobuf:"bytes,304512206,opt,name=md5ofmessagesystemattributes,proto3,oneof" json:"md5ofmessagesystemattributes,omitempty"`
+	Messageid                    *string                `protobuf:"bytes,360526634,opt,name=messageid,proto3,oneof" json:"messageid,omitempty"`
+	Sequencenumber               *string                `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3,oneof" json:"sequencenumber,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -3871,36 +3871,36 @@ func (*SendMessageResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *SendMessageResult) GetMd5Ofmessageattributes() string {
-	if x != nil {
-		return x.Md5Ofmessageattributes
+	if x != nil && x.Md5Ofmessageattributes != nil {
+		return *x.Md5Ofmessageattributes
 	}
 	return ""
 }
 
 func (x *SendMessageResult) GetMd5Ofmessagebody() string {
-	if x != nil {
-		return x.Md5Ofmessagebody
+	if x != nil && x.Md5Ofmessagebody != nil {
+		return *x.Md5Ofmessagebody
 	}
 	return ""
 }
 
 func (x *SendMessageResult) GetMd5Ofmessagesystemattributes() string {
-	if x != nil {
-		return x.Md5Ofmessagesystemattributes
+	if x != nil && x.Md5Ofmessagesystemattributes != nil {
+		return *x.Md5Ofmessagesystemattributes
 	}
 	return ""
 }
 
 func (x *SendMessageResult) GetMessageid() string {
-	if x != nil {
-		return x.Messageid
+	if x != nil && x.Messageid != nil {
+		return *x.Messageid
 	}
 	return ""
 }
 
 func (x *SendMessageResult) GetSequencenumber() string {
-	if x != nil {
-		return x.Sequencenumber
+	if x != nil && x.Sequencenumber != nil {
+		return *x.Sequencenumber
 	}
 	return ""
 }
@@ -3959,7 +3959,7 @@ func (x *SetQueueAttributesRequest) GetQueueurl() string {
 
 type StartMessageMoveTaskRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Destinationarn               string                 `protobuf:"bytes,375726595,opt,name=destinationarn,proto3" json:"destinationarn,omitempty"`
+	Destinationarn               *string                `protobuf:"bytes,375726595,opt,name=destinationarn,proto3,oneof" json:"destinationarn,omitempty"`
 	Maxnumberofmessagespersecond *int32                 `protobuf:"varint,335779921,opt,name=maxnumberofmessagespersecond,proto3,oneof" json:"maxnumberofmessagespersecond,omitempty"`
 	Sourcearn                    string                 `protobuf:"bytes,439903072,opt,name=sourcearn,proto3" json:"sourcearn,omitempty"`
 	unknownFields                protoimpl.UnknownFields
@@ -3997,8 +3997,8 @@ func (*StartMessageMoveTaskRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMessageMoveTaskRequest) GetDestinationarn() string {
-	if x != nil {
-		return x.Destinationarn
+	if x != nil && x.Destinationarn != nil {
+		return *x.Destinationarn
 	}
 	return ""
 }
@@ -4019,7 +4019,7 @@ func (x *StartMessageMoveTaskRequest) GetSourcearn() string {
 
 type StartMessageMoveTaskResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Taskhandle    string                 `protobuf:"bytes,190544291,opt,name=taskhandle,proto3" json:"taskhandle,omitempty"`
+	Taskhandle    *string                `protobuf:"bytes,190544291,opt,name=taskhandle,proto3,oneof" json:"taskhandle,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4055,8 +4055,8 @@ func (*StartMessageMoveTaskResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *StartMessageMoveTaskResult) GetTaskhandle() string {
-	if x != nil {
-		return x.Taskhandle
+	if x != nil && x.Taskhandle != nil {
+		return *x.Taskhandle
 	}
 	return ""
 }
@@ -4115,7 +4115,7 @@ func (x *TagQueueRequest) GetTags() map[string]string {
 
 type TooManyEntriesInBatchRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4151,15 +4151,15 @@ func (*TooManyEntriesInBatchRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyEntriesInBatchRequest) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type UnsupportedOperation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4195,8 +4195,8 @@ func (*UnsupportedOperation) Descriptor() ([]byte, []int) {
 }
 
 func (x *UnsupportedOperation) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4262,16 +4262,22 @@ const file_sqs_proto_rawDesc = "" +
 	"\rawsaccountids\x18Ώ\x90\xc7\x01 \x03(\tR\rawsaccountids\x12\x1b\n" +
 	"\aactions\x18\x85\xea\xfe2 \x03(\tR\aactions\x12\x18\n" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"7\n" +
-	"\x18BatchEntryIdsNotDistinct\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13BatchRequestTooLong\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9a\x01\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"H\n" +
+	"\x18BatchEntryIdsNotDistinct\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13BatchRequestTooLong\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xab\x01\n" +
 	"\x15BatchResultErrorEntry\x12\x16\n" +
 	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tR\x04code\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12(\n" +
-	"\vsenderfault\x18\x81\x98\xc6\r \x01(\bH\x00R\vsenderfault\x88\x01\x01B\x0e\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12(\n" +
+	"\vsenderfault\x18\x81\x98\xc6\r \x01(\bH\x01R\vsenderfault\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x0e\n" +
 	"\f_senderfault\"A\n" +
 	"\x1cCancelMessageMoveTaskRequest\x12!\n" +
 	"\n" +
@@ -4310,9 +4316,10 @@ const file_sqs_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"3\n" +
-	"\x11CreateQueueResult\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"~\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"E\n" +
+	"\x11CreateQueueResult\x12#\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tH\x00R\bqueueurl\x88\x01\x01B\v\n" +
+	"\t_queueurl\"~\n" +
 	"\x19DeleteMessageBatchRequest\x12A\n" +
 	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2#.sqs.DeleteMessageBatchRequestEntryR\aentries\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"]\n" +
@@ -4330,9 +4337,11 @@ const file_sqs_proto_rawDesc = "" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x12'\n" +
 	"\rreceipthandle\x18\xc6\xc0\x8f@ \x01(\tR\rreceipthandle\"4\n" +
 	"\x12DeleteQueueRequest\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"0\n" +
-	"\x11EmptyBatchRequest\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x80\x01\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"A\n" +
+	"\x11EmptyBatchRequest\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x80\x01\n" +
 	"\x19GetQueueAttributesRequest\x12C\n" +
 	"\x0eattributenames\x18\x8e\xba\x8c\xbc\x01 \x03(\x0e2\x17.sqs.QueueAttributeNameR\x0eattributenames\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\xab\x01\n" +
@@ -4342,49 +4351,81 @@ const file_sqs_proto_rawDesc = "" +
 	"attributes\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"p\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x90\x01\n" +
 	"\x12GetQueueUrlRequest\x12\x1f\n" +
-	"\tqueuename\x18\xdc\xd5\xcdI \x01(\tR\tqueuename\x129\n" +
-	"\x16queueownerawsaccountid\x18\xbf\xae\xd2v \x01(\tR\x16queueownerawsaccountid\"3\n" +
-	"\x11GetQueueUrlResult\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"-\n" +
-	"\x0eInvalidAddress\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14InvalidAttributeName\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15InvalidAttributeValue\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
-	"\x13InvalidBatchEntryId\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x11\n" +
-	"\x0fInvalidIdFormat\"5\n" +
-	"\x16InvalidMessageContents\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\".\n" +
-	"\x0fInvalidSecurity\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\".\n" +
-	"\x0fKmsAccessDenied\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"*\n" +
-	"\vKmsDisabled\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12KmsInvalidKeyUsage\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\".\n" +
-	"\x0fKmsInvalidState\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"*\n" +
-	"\vKmsNotFound\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"/\n" +
-	"\x10KmsOptInRequired\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"+\n" +
-	"\fKmsThrottled\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9c\x01\n" +
+	"\tqueuename\x18\xdc\xd5\xcdI \x01(\tR\tqueuename\x12>\n" +
+	"\x16queueownerawsaccountid\x18\xbf\xae\xd2v \x01(\tH\x00R\x16queueownerawsaccountid\x88\x01\x01B\x19\n" +
+	"\x17_queueownerawsaccountid\"E\n" +
+	"\x11GetQueueUrlResult\x12#\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tH\x00R\bqueueurl\x88\x01\x01B\v\n" +
+	"\t_queueurl\">\n" +
+	"\x0eInvalidAddress\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14InvalidAttributeName\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15InvalidAttributeValue\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"C\n" +
+	"\x13InvalidBatchEntryId\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x11\n" +
+	"\x0fInvalidIdFormat\"F\n" +
+	"\x16InvalidMessageContents\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"?\n" +
+	"\x0fInvalidSecurity\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"?\n" +
+	"\x0fKmsAccessDenied\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\";\n" +
+	"\vKmsDisabled\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12KmsInvalidKeyUsage\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"?\n" +
+	"\x0fKmsInvalidState\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\";\n" +
+	"\vKmsNotFound\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"@\n" +
+	"\x10KmsOptInRequired\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"<\n" +
+	"\fKmsThrottled\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xaf\x01\n" +
 	"!ListDeadLetterSourceQueuesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1e\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurlB\r\n" +
-	"\v_maxresults\"e\n" +
-	" ListDeadLetterSourceQueuesResult\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12 \n" +
-	"\tqueueurls\x18\xef\xb5\xe0\xe2\x01 \x03(\tR\tqueueurls\"w\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"x\n" +
+	" ListDeadLetterSourceQueuesResult\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12 \n" +
+	"\tqueueurls\x18\xef\xb5\xe0\xe2\x01 \x03(\tR\tqueueurlsB\f\n" +
+	"\n" +
+	"_nexttoken\"w\n" +
 	"\x1bListMessageMoveTasksRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
@@ -4392,114 +4433,153 @@ const file_sqs_proto_rawDesc = "" +
 	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearnB\r\n" +
 	"\v_maxresults\"`\n" +
 	"\x1aListMessageMoveTasksResult\x12B\n" +
-	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2$.sqs.ListMessageMoveTasksResultEntryR\aresults\"\x84\x05\n" +
+	"\aresults\x18\x96\xcd\xe0\xe7\x01 \x03(\v2$.sqs.ListMessageMoveTasksResultEntryR\aresults\"\xea\x05\n" +
 	"\x1fListMessageMoveTasksResultEntry\x12S\n" +
 	" approximatenumberofmessagesmoved\x18\x99\x82\xa3\xf3\x01 \x01(\x03H\x00R approximatenumberofmessagesmoved\x88\x01\x01\x12T\n" +
-	"!approximatenumberofmessagestomove\x18\x9a\xc2\xf93 \x01(\x03H\x01R!approximatenumberofmessagestomove\x88\x01\x01\x12*\n" +
-	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tR\x0edestinationarn\x12'\n" +
-	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tR\rfailurereason\x12K\n" +
-	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05H\x02R\x1cmaxnumberofmessagespersecond\x88\x01\x01\x12 \n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearn\x123\n" +
-	"\x10startedtimestamp\x18\xa7\xa6½\x01 \x01(\x03H\x03R\x10startedtimestamp\x88\x01\x01\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\x12!\n" +
+	"!approximatenumberofmessagestomove\x18\x9a\xc2\xf93 \x01(\x03H\x01R!approximatenumberofmessagestomove\x88\x01\x01\x12/\n" +
+	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tH\x02R\x0edestinationarn\x88\x01\x01\x12,\n" +
+	"\rfailurereason\x18\xde\xe8\xe3n \x01(\tH\x03R\rfailurereason\x88\x01\x01\x12K\n" +
+	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05H\x04R\x1cmaxnumberofmessagespersecond\x88\x01\x01\x12%\n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tH\x05R\tsourcearn\x88\x01\x01\x123\n" +
+	"\x10startedtimestamp\x18\xa7\xa6½\x01 \x01(\x03H\x06R\x10startedtimestamp\x88\x01\x01\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\aR\x06status\x88\x01\x01\x12&\n" +
 	"\n" +
-	"taskhandle\x18\xa3\xf3\xedZ \x01(\tR\n" +
-	"taskhandleB#\n" +
+	"taskhandle\x18\xa3\xf3\xedZ \x01(\tH\bR\n" +
+	"taskhandle\x88\x01\x01B#\n" +
 	"!_approximatenumberofmessagesmovedB$\n" +
-	"\"_approximatenumberofmessagestomoveB\x1f\n" +
-	"\x1d_maxnumberofmessagespersecondB\x13\n" +
-	"\x11_startedtimestamp\"6\n" +
+	"\"_approximatenumberofmessagestomoveB\x11\n" +
+	"\x0f_destinationarnB\x10\n" +
+	"\x0e_failurereasonB\x1f\n" +
+	"\x1d_maxnumberofmessagespersecondB\f\n" +
+	"\n" +
+	"_sourcearnB\x13\n" +
+	"\x11_startedtimestampB\t\n" +
+	"\a_statusB\r\n" +
+	"\v_taskhandle\"6\n" +
 	"\x14ListQueueTagsRequest\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\x8a\x01\n" +
 	"\x13ListQueueTagsResult\x12:\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\".sqs.ListQueueTagsResult.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9a\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc6\x01\n" +
 	"\x11ListQueuesRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12,\n" +
-	"\x0fqueuenameprefix\x18\x90Կ\x80\x01 \x01(\tR\x0fqueuenameprefixB\r\n" +
-	"\v_maxresults\"T\n" +
-	"\x10ListQueuesResult\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1f\n" +
-	"\tqueueurls\x18ω\xe8\x1d \x03(\tR\tqueueurls\"\x80\x04\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01\x121\n" +
+	"\x0fqueuenameprefix\x18\x90Կ\x80\x01 \x01(\tH\x02R\x0fqueuenameprefix\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttokenB\x12\n" +
+	"\x10_queuenameprefix\"g\n" +
+	"\x10ListQueuesResult\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12\x1f\n" +
+	"\tqueueurls\x18ω\xe8\x1d \x03(\tR\tqueueurlsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xeb\x04\n" +
 	"\aMessage\x12?\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2\x1c.sqs.Message.AttributesEntryR\n" +
-	"attributes\x12\x15\n" +
-	"\x04body\x18\x96\xa1\xa8\x14 \x01(\tR\x04body\x12\x1f\n" +
-	"\tmd5ofbody\x18\xcb\u00adm \x01(\tR\tmd5ofbody\x12:\n" +
-	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tR\x16md5ofmessageattributes\x12T\n" +
-	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v2#.sqs.Message.MessageattributesEntryR\x11messageattributes\x12 \n" +
-	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12'\n" +
-	"\rreceipthandle\x18\xc6\xc0\x8f@ \x01(\tR\rreceipthandle\x1a=\n" +
+	"attributes\x12\x1a\n" +
+	"\x04body\x18\x96\xa1\xa8\x14 \x01(\tH\x00R\x04body\x88\x01\x01\x12$\n" +
+	"\tmd5ofbody\x18\xcb\u00adm \x01(\tH\x01R\tmd5ofbody\x88\x01\x01\x12?\n" +
+	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tH\x02R\x16md5ofmessageattributes\x88\x01\x01\x12T\n" +
+	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v2#.sqs.Message.MessageattributesEntryR\x11messageattributes\x12%\n" +
+	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tH\x03R\tmessageid\x88\x01\x01\x12,\n" +
+	"\rreceipthandle\x18\xc6\xc0\x8f@ \x01(\tH\x04R\rreceipthandle\x88\x01\x01\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a`\n" +
 	"\x16MessageattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
-	"\x05value\x18\x02 \x01(\v2\x1a.sqs.MessageAttributeValueR\x05value:\x028\x01\"\xde\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x1a.sqs.MessageAttributeValueR\x05value:\x028\x01B\a\n" +
+	"\x05_bodyB\f\n" +
+	"\n" +
+	"_md5ofbodyB\x19\n" +
+	"\x17_md5ofmessageattributesB\f\n" +
+	"\n" +
+	"_messageidB\x10\n" +
+	"\x0e_receipthandle\"\x88\x02\n" +
 	"\x15MessageAttributeValue\x12-\n" +
-	"\x10binarylistvalues\x18\xab\xd0\xc0K \x03(\fR\x10binarylistvalues\x12#\n" +
-	"\vbinaryvalue\x18\xb6\x84\xe9y \x01(\fR\vbinaryvalue\x12\x1d\n" +
+	"\x10binarylistvalues\x18\xab\xd0\xc0K \x03(\fR\x10binarylistvalues\x12(\n" +
+	"\vbinaryvalue\x18\xb6\x84\xe9y \x01(\fH\x00R\vbinaryvalue\x88\x01\x01\x12\x1d\n" +
 	"\bdatatype\x18\xeeص  \x01(\tR\bdatatype\x12-\n" +
-	"\x10stringlistvalues\x18\xa7\x9c\xa1) \x03(\tR\x10stringlistvalues\x12#\n" +
-	"\vstringvalue\x18\x8a\xef\xf7W \x01(\tR\vstringvalue\"\x14\n" +
-	"\x12MessageNotInflight\"\xe4\x01\n" +
+	"\x10stringlistvalues\x18\xa7\x9c\xa1) \x03(\tR\x10stringlistvalues\x12(\n" +
+	"\vstringvalue\x18\x8a\xef\xf7W \x01(\tH\x01R\vstringvalue\x88\x01\x01B\x0e\n" +
+	"\f_binaryvalueB\x0e\n" +
+	"\f_stringvalue\"\x14\n" +
+	"\x12MessageNotInflight\"\x8e\x02\n" +
 	"\x1bMessageSystemAttributeValue\x12-\n" +
-	"\x10binarylistvalues\x18\xab\xd0\xc0K \x03(\fR\x10binarylistvalues\x12#\n" +
-	"\vbinaryvalue\x18\xb6\x84\xe9y \x01(\fR\vbinaryvalue\x12\x1d\n" +
+	"\x10binarylistvalues\x18\xab\xd0\xc0K \x03(\fR\x10binarylistvalues\x12(\n" +
+	"\vbinaryvalue\x18\xb6\x84\xe9y \x01(\fH\x00R\vbinaryvalue\x88\x01\x01\x12\x1d\n" +
 	"\bdatatype\x18\xeeص  \x01(\tR\bdatatype\x12-\n" +
-	"\x10stringlistvalues\x18\xa7\x9c\xa1) \x03(\tR\x10stringlistvalues\x12#\n" +
-	"\vstringvalue\x18\x8a\xef\xf7W \x01(\tR\vstringvalue\"(\n" +
-	"\tOverLimit\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14PurgeQueueInProgress\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
+	"\x10stringlistvalues\x18\xa7\x9c\xa1) \x03(\tR\x10stringlistvalues\x12(\n" +
+	"\vstringvalue\x18\x8a\xef\xf7W \x01(\tH\x01R\vstringvalue\x88\x01\x01B\x0e\n" +
+	"\f_binaryvalueB\x0e\n" +
+	"\f_stringvalue\"9\n" +
+	"\tOverLimit\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14PurgeQueueInProgress\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"3\n" +
 	"\x11PurgeQueueRequest\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"3\n" +
-	"\x14QueueDeletedRecently\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"0\n" +
-	"\x11QueueDoesNotExist\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\".\n" +
-	"\x0fQueueNameExists\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16ReceiptHandleIsInvalid\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xc0\x04\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"D\n" +
+	"\x14QueueDeletedRecently\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"A\n" +
+	"\x11QueueDoesNotExist\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"?\n" +
+	"\x0fQueueNameExists\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16ReceiptHandleIsInvalid\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe1\x04\n" +
 	"\x15ReceiveMessageRequest\x12C\n" +
 	"\x0eattributenames\x18\x8e\xba\x8c\xbc\x01 \x03(\x0e2\x17.sqs.QueueAttributeNameR\x0eattributenames\x128\n" +
 	"\x13maxnumberofmessages\x18\xc6\xe5\xd8B \x01(\x05H\x00R\x13maxnumberofmessages\x88\x01\x01\x128\n" +
 	"\x15messageattributenames\x18\xa5\xe0ɞ\x01 \x03(\tR\x15messageattributenames\x12d\n" +
 	"\x1bmessagesystemattributenames\x18\u0590\x8a\x14 \x03(\x0e2\x1f.sqs.MessageSystemAttributeNameR\x1bmessagesystemattributenames\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x12<\n" +
-	"\x17receiverequestattemptid\x18ҥ\x83\xd9\x01 \x01(\tR\x17receiverequestattemptid\x125\n" +
-	"\x11visibilitytimeout\x18\xe9\x9c\xde\xdb\x01 \x01(\x05H\x01R\x11visibilitytimeout\x88\x01\x01\x121\n" +
-	"\x0fwaittimeseconds\x18\xf7à\xbe\x01 \x01(\x05H\x02R\x0fwaittimeseconds\x88\x01\x01B\x16\n" +
-	"\x14_maxnumberofmessagesB\x14\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x12A\n" +
+	"\x17receiverequestattemptid\x18ҥ\x83\xd9\x01 \x01(\tH\x01R\x17receiverequestattemptid\x88\x01\x01\x125\n" +
+	"\x11visibilitytimeout\x18\xe9\x9c\xde\xdb\x01 \x01(\x05H\x02R\x11visibilitytimeout\x88\x01\x01\x121\n" +
+	"\x0fwaittimeseconds\x18\xf7à\xbe\x01 \x01(\x05H\x03R\x0fwaittimeseconds\x88\x01\x01B\x16\n" +
+	"\x14_maxnumberofmessagesB\x1a\n" +
+	"\x18_receiverequestattemptidB\x14\n" +
 	"\x12_visibilitytimeoutB\x12\n" +
 	"\x10_waittimeseconds\"D\n" +
 	"\x14ReceiveMessageResult\x12,\n" +
 	"\bmessages\x18ֿ\x84\xc3\x01 \x03(\v2\f.sqs.MessageR\bmessages\"S\n" +
 	"\x17RemovePermissionRequest\x12\x18\n" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"/\n" +
-	"\x10RequestThrottled\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"z\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"@\n" +
+	"\x10RequestThrottled\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"z\n" +
 	"\x17SendMessageBatchRequest\x12?\n" +
 	"\aentries\x18\x94Ų\xe5\x01 \x03(\v2!.sqs.SendMessageBatchRequestEntryR\aentries\x12\x1e\n" +
-	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\xb4\x05\n" +
+	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\"\xec\x05\n" +
 	"\x1cSendMessageBatchRequestEntry\x12*\n" +
 	"\fdelayseconds\x18\xa6\x87\x82\x17 \x01(\x05H\x00R\fdelayseconds\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12i\n" +
 	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v28.sqs.SendMessageBatchRequestEntry.MessageattributesEntryR\x11messageattributes\x12#\n" +
-	"\vmessagebody\x18\xc1\x8f\x92\x1b \x01(\tR\vmessagebody\x12:\n" +
-	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tR\x16messagededuplicationid\x12*\n" +
-	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tR\x0emessagegroupid\x12{\n" +
+	"\vmessagebody\x18\xc1\x8f\x92\x1b \x01(\tR\vmessagebody\x12?\n" +
+	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tH\x01R\x16messagededuplicationid\x88\x01\x01\x12/\n" +
+	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tH\x02R\x0emessagegroupid\x88\x01\x01\x12{\n" +
 	"\x17messagesystemattributes\x18\xbd\xf6\xfa\\ \x03(\v2>.sqs.SendMessageBatchRequestEntry.MessagesystemattributesEntryR\x17messagesystemattributes\x1a`\n" +
 	"\x16MessageattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
@@ -4507,25 +4587,30 @@ const file_sqs_proto_rawDesc = "" +
 	"\x1cMessagesystemattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
 	"\x05value\x18\x02 \x01(\v2 .sqs.MessageSystemAttributeValueR\x05value:\x028\x01B\x0f\n" +
-	"\r_delayseconds\"\x96\x01\n" +
+	"\r_delaysecondsB\x19\n" +
+	"\x17_messagededuplicationidB\x11\n" +
+	"\x0f_messagegroupid\"\x96\x01\n" +
 	"\x16SendMessageBatchResult\x126\n" +
 	"\x06failed\x18Շ\xe7\xab\x01 \x03(\v2\x1a.sqs.BatchResultErrorEntryR\x06failed\x12D\n" +
 	"\n" +
 	"successful\x18\x9c\xbb\xec\xc4\x01 \x03(\v2 .sqs.SendMessageBatchResultEntryR\n" +
-	"successful\"\xb1\x02\n" +
+	"successful\"\x8f\x03\n" +
 	"\x1bSendMessageBatchResultEntry\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12:\n" +
-	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tR\x16md5ofmessageattributes\x12-\n" +
-	"\x10md5ofmessagebody\x18\xa6\x9d\xc9\r \x01(\tR\x10md5ofmessagebody\x12F\n" +
-	"\x1cmd5ofmessagesystemattributes\x18\xce\xf9\x99\x91\x01 \x01(\tR\x1cmd5ofmessagesystemattributes\x12 \n" +
-	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12)\n" +
-	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\"\xa2\x05\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12?\n" +
+	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tH\x00R\x16md5ofmessageattributes\x88\x01\x01\x12-\n" +
+	"\x10md5ofmessagebody\x18\xa6\x9d\xc9\r \x01(\tR\x10md5ofmessagebody\x12K\n" +
+	"\x1cmd5ofmessagesystemattributes\x18\xce\xf9\x99\x91\x01 \x01(\tH\x01R\x1cmd5ofmessagesystemattributes\x88\x01\x01\x12 \n" +
+	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12.\n" +
+	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tH\x02R\x0esequencenumber\x88\x01\x01B\x19\n" +
+	"\x17_md5ofmessageattributesB\x1f\n" +
+	"\x1d_md5ofmessagesystemattributesB\x11\n" +
+	"\x0f_sequencenumber\"\xda\x05\n" +
 	"\x12SendMessageRequest\x12*\n" +
 	"\fdelayseconds\x18\xa6\x87\x82\x17 \x01(\x05H\x00R\fdelayseconds\x88\x01\x01\x12_\n" +
 	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v2..sqs.SendMessageRequest.MessageattributesEntryR\x11messageattributes\x12#\n" +
-	"\vmessagebody\x18\xc1\x8f\x92\x1b \x01(\tR\vmessagebody\x12:\n" +
-	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tR\x16messagededuplicationid\x12*\n" +
-	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tR\x0emessagegroupid\x12q\n" +
+	"\vmessagebody\x18\xc1\x8f\x92\x1b \x01(\tR\vmessagebody\x12?\n" +
+	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tH\x01R\x16messagededuplicationid\x88\x01\x01\x12/\n" +
+	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tH\x02R\x0emessagegroupid\x88\x01\x01\x12q\n" +
 	"\x17messagesystemattributes\x18\xbd\xf6\xfa\\ \x03(\v24.sqs.SendMessageRequest.MessagesystemattributesEntryR\x17messagesystemattributes\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x1a`\n" +
 	"\x16MessageattributesEntry\x12\x10\n" +
@@ -4534,13 +4619,21 @@ const file_sqs_proto_rawDesc = "" +
 	"\x1cMessagesystemattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x126\n" +
 	"\x05value\x18\x02 \x01(\v2 .sqs.MessageSystemAttributeValueR\x05value:\x028\x01B\x0f\n" +
-	"\r_delayseconds\"\x93\x02\n" +
-	"\x11SendMessageResult\x12:\n" +
-	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tR\x16md5ofmessageattributes\x12-\n" +
-	"\x10md5ofmessagebody\x18\xa6\x9d\xc9\r \x01(\tR\x10md5ofmessagebody\x12F\n" +
-	"\x1cmd5ofmessagesystemattributes\x18\xce\xf9\x99\x91\x01 \x01(\tR\x1cmd5ofmessagesystemattributes\x12 \n" +
-	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12)\n" +
-	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\"\xcd\x01\n" +
+	"\r_delaysecondsB\x19\n" +
+	"\x17_messagededuplicationidB\x11\n" +
+	"\x0f_messagegroupid\"\x9e\x03\n" +
+	"\x11SendMessageResult\x12?\n" +
+	"\x16md5ofmessageattributes\x18儠\xee\x01 \x01(\tH\x00R\x16md5ofmessageattributes\x88\x01\x01\x122\n" +
+	"\x10md5ofmessagebody\x18\xa6\x9d\xc9\r \x01(\tH\x01R\x10md5ofmessagebody\x88\x01\x01\x12K\n" +
+	"\x1cmd5ofmessagesystemattributes\x18\xce\xf9\x99\x91\x01 \x01(\tH\x02R\x1cmd5ofmessagesystemattributes\x88\x01\x01\x12%\n" +
+	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tH\x03R\tmessageid\x88\x01\x01\x12.\n" +
+	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tH\x04R\x0esequencenumber\x88\x01\x01B\x19\n" +
+	"\x17_md5ofmessageattributesB\x13\n" +
+	"\x11_md5ofmessagebodyB\x1f\n" +
+	"\x1d_md5ofmessagesystemattributesB\f\n" +
+	"\n" +
+	"_messageidB\x11\n" +
+	"\x0f_sequencenumber\"\xcd\x01\n" +
 	"\x19SetQueueAttributesRequest\x12Q\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2..sqs.SetQueueAttributesRequest.AttributesEntryR\n" +
@@ -4548,26 +4641,32 @@ const file_sqs_proto_rawDesc = "" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd9\x01\n" +
-	"\x1bStartMessageMoveTaskRequest\x12*\n" +
-	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tR\x0edestinationarn\x12K\n" +
-	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05H\x00R\x1cmaxnumberofmessagespersecond\x88\x01\x01\x12 \n" +
-	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearnB\x1f\n" +
-	"\x1d_maxnumberofmessagespersecond\"?\n" +
-	"\x1aStartMessageMoveTaskResult\x12!\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf1\x01\n" +
+	"\x1bStartMessageMoveTaskRequest\x12/\n" +
+	"\x0edestinationarn\x18\x83Ĕ\xb3\x01 \x01(\tH\x00R\x0edestinationarn\x88\x01\x01\x12K\n" +
+	"\x1cmaxnumberofmessagespersecond\x18Ѱ\x8e\xa0\x01 \x01(\x05H\x01R\x1cmaxnumberofmessagespersecond\x88\x01\x01\x12 \n" +
+	"\tsourcearn\x18\xe0\xc6\xe1\xd1\x01 \x01(\tR\tsourcearnB\x11\n" +
+	"\x0f_destinationarnB\x1f\n" +
+	"\x1d_maxnumberofmessagespersecond\"S\n" +
+	"\x1aStartMessageMoveTaskResult\x12&\n" +
 	"\n" +
-	"taskhandle\x18\xa3\xf3\xedZ \x01(\tR\n" +
-	"taskhandle\"\xa2\x01\n" +
+	"taskhandle\x18\xa3\xf3\xedZ \x01(\tH\x00R\n" +
+	"taskhandle\x88\x01\x01B\r\n" +
+	"\v_taskhandle\"\xa2\x01\n" +
 	"\x0fTagQueueRequest\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x126\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\x1e.sqs.TagQueueRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\";\n" +
-	"\x1cTooManyEntriesInBatchRequest\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14UnsupportedOperation\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"Q\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"L\n" +
+	"\x1cTooManyEntriesInBatchRequest\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14UnsupportedOperation\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Q\n" +
 	"\x11UntagQueueRequest\x12\x1e\n" +
 	"\bqueueurl\x18\xca\xc1\xbe\xf3\x01 \x01(\tR\bqueueurl\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys*\xab\x04\n" +
@@ -4835,17 +4934,54 @@ func file_sqs_proto_init() {
 	if File_sqs_proto != nil {
 		return
 	}
+	file_sqs_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[2].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[3].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[5].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[7].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[12].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[19].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[22].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[23].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[24].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[25].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[26].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[27].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[29].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[30].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[31].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[32].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[33].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[34].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[35].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[36].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[37].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[38].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[39].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[40].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[42].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[45].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[46].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[47].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[48].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[50].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[51].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[52].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[54].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[55].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[56].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[57].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[58].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[61].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[62].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[64].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[66].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[67].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[68].OneofWrappers = []any{}
 	file_sqs_proto_msgTypes[70].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[71].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[73].OneofWrappers = []any{}
+	file_sqs_proto_msgTypes[74].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

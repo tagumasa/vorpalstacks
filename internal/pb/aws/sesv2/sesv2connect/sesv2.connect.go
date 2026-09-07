@@ -36,6 +36,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// SESv2ServiceAssociateEmailIdentityCertificateProcedure is the fully-qualified name of the
+	// SESv2Service's AssociateEmailIdentityCertificate RPC.
+	SESv2ServiceAssociateEmailIdentityCertificateProcedure = "/sesv2.SESv2Service/AssociateEmailIdentityCertificate"
 	// SESv2ServiceBatchGetMetricDataProcedure is the fully-qualified name of the SESv2Service's
 	// BatchGetMetricData RPC.
 	SESv2ServiceBatchGetMetricDataProcedure = "/sesv2.SESv2Service/BatchGetMetricData"
@@ -126,6 +129,9 @@ const (
 	// SESv2ServiceDeleteTenantResourceAssociationProcedure is the fully-qualified name of the
 	// SESv2Service's DeleteTenantResourceAssociation RPC.
 	SESv2ServiceDeleteTenantResourceAssociationProcedure = "/sesv2.SESv2Service/DeleteTenantResourceAssociation"
+	// SESv2ServiceDisassociateEmailIdentityCertificateProcedure is the fully-qualified name of the
+	// SESv2Service's DisassociateEmailIdentityCertificate RPC.
+	SESv2ServiceDisassociateEmailIdentityCertificateProcedure = "/sesv2.SESv2Service/DisassociateEmailIdentityCertificate"
 	// SESv2ServiceGetAccountProcedure is the fully-qualified name of the SESv2Service's GetAccount RPC.
 	SESv2ServiceGetAccountProcedure = "/sesv2.SESv2Service/GetAccount"
 	// SESv2ServiceGetBlacklistReportsProcedure is the fully-qualified name of the SESv2Service's
@@ -222,6 +228,9 @@ const (
 	// SESv2ServiceListEmailIdentitiesProcedure is the fully-qualified name of the SESv2Service's
 	// ListEmailIdentities RPC.
 	SESv2ServiceListEmailIdentitiesProcedure = "/sesv2.SESv2Service/ListEmailIdentities"
+	// SESv2ServiceListEmailIdentityCertificatesProcedure is the fully-qualified name of the
+	// SESv2Service's ListEmailIdentityCertificates RPC.
+	SESv2ServiceListEmailIdentityCertificatesProcedure = "/sesv2.SESv2Service/ListEmailIdentityCertificates"
 	// SESv2ServiceListEmailTemplatesProcedure is the fully-qualified name of the SESv2Service's
 	// ListEmailTemplates RPC.
 	SESv2ServiceListEmailTemplatesProcedure = "/sesv2.SESv2Service/ListEmailTemplates"
@@ -261,6 +270,9 @@ const (
 	// SESv2ServicePutAccountDetailsProcedure is the fully-qualified name of the SESv2Service's
 	// PutAccountDetails RPC.
 	SESv2ServicePutAccountDetailsProcedure = "/sesv2.SESv2Service/PutAccountDetails"
+	// SESv2ServicePutAccountPricingAttributesProcedure is the fully-qualified name of the
+	// SESv2Service's PutAccountPricingAttributes RPC.
+	SESv2ServicePutAccountPricingAttributesProcedure = "/sesv2.SESv2Service/PutAccountPricingAttributes"
 	// SESv2ServicePutAccountSendingAttributesProcedure is the fully-qualified name of the
 	// SESv2Service's PutAccountSendingAttributes RPC.
 	SESv2ServicePutAccountSendingAttributesProcedure = "/sesv2.SESv2Service/PutAccountSendingAttributes"
@@ -341,6 +353,9 @@ const (
 	// SESv2ServiceUntagResourceProcedure is the fully-qualified name of the SESv2Service's
 	// UntagResource RPC.
 	SESv2ServiceUntagResourceProcedure = "/sesv2.SESv2Service/UntagResource"
+	// SESv2ServiceUpdateConfigurationSetProcedure is the fully-qualified name of the SESv2Service's
+	// UpdateConfigurationSet RPC.
+	SESv2ServiceUpdateConfigurationSetProcedure = "/sesv2.SESv2Service/UpdateConfigurationSet"
 	// SESv2ServiceUpdateConfigurationSetEventDestinationProcedure is the fully-qualified name of the
 	// SESv2Service's UpdateConfigurationSetEventDestination RPC.
 	SESv2ServiceUpdateConfigurationSetEventDestinationProcedure = "/sesv2.SESv2Service/UpdateConfigurationSetEventDestination"
@@ -369,6 +384,10 @@ const (
 
 // SESv2ServiceClient is a client for the sesv2.SESv2Service service.
 type SESv2ServiceClient interface {
+	// Associates an S/MIME certificate with an email identity. After the certificate is active, Amazon SES API v2 can add an S/MIME signature to messages that you send from the associated address when si...
+	// HTTP: POST /v2/email/identity/certificates
+	// Protocol: restJson1
+	AssociateEmailIdentityCertificate(context.Context, *connect.Request[sesv2.AssociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.AssociateEmailIdentityCertificateResponse], error)
 	// Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second ...
 	// HTTP: POST /v2/email/metrics/batch
 	// Protocol: restJson1
@@ -489,6 +508,10 @@ type SESv2ServiceClient interface {
 	// HTTP: POST /v2/email/tenants/resources/delete
 	// Protocol: restJson1
 	DeleteTenantResourceAssociation(context.Context, *connect.Request[sesv2.DeleteTenantResourceAssociationRequest]) (*connect.Response[sesv2.DeleteTenantResourceAssociationResponse], error)
+	// Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address....
+	// HTTP: POST /v2/email/identity/certificates/delete
+	// Protocol: restJson1
+	DisassociateEmailIdentityCertificate(context.Context, *connect.Request[sesv2.DisassociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.DisassociateEmailIdentityCertificateResponse], error)
 	// Obtain information about the email-sending status and capabilities of your Amazon SES account in the current Amazon Web Services Region.
 	// HTTP: GET /v2/email/account
 	// Protocol: restJson1
@@ -621,6 +644,10 @@ type SESv2ServiceClient interface {
 	// HTTP: GET /v2/email/identities
 	// Protocol: restJson1
 	ListEmailIdentities(context.Context, *connect.Request[sesv2.ListEmailIdentitiesRequest]) (*connect.Response[sesv2.ListEmailIdentitiesResponse], error)
+	// Lists the S/MIME certificates that are associated with the specified email identity. The results include certificates in all states, such as PROVISIONING, ACTIVE, INACTIVE, DEPROVISIONING, and FAIL...
+	// HTTP: POST /v2/email/identity/certificates/list
+	// Protocol: restJson1
+	ListEmailIdentityCertificates(context.Context, *connect.Request[sesv2.ListEmailIdentityCertificatesRequest]) (*connect.Response[sesv2.ListEmailIdentityCertificatesResponse], error)
 	// Lists the email templates present in your Amazon SES account in the current Amazon Web Services Region. You can execute this operation no more than once per second.
 	// HTTP: GET /v2/email/templates
 	// Protocol: restJson1
@@ -673,6 +700,10 @@ type SESv2ServiceClient interface {
 	// HTTP: POST /v2/email/account/details
 	// Protocol: restJson1
 	PutAccountDetails(context.Context, *connect.Request[sesv2.PutAccountDetailsRequest]) (*connect.Response[sesv2.PutAccountDetailsResponse], error)
+	// Set the pricing plan for your Amazon SES account.
+	// HTTP: PUT /v2/email/account/pricing-attributes
+	// Protocol: restJson1
+	PutAccountPricingAttributes(context.Context, *connect.Request[sesv2.PutAccountPricingAttributesRequest]) (*connect.Response[sesv2.PutAccountPricingAttributesResponse], error)
 	// Enable or disable the ability of your account to send email.
 	// HTTP: PUT /v2/email/account/sending
 	// Protocol: restJson1
@@ -780,6 +811,10 @@ type SESv2ServiceClient interface {
 	// HTTP: DELETE /v2/email/tags
 	// Protocol: restJson1
 	UntagResource(context.Context, *connect.Request[sesv2.UntagResourceRequest]) (*connect.Response[sesv2.UntagResourceResponse], error)
+	// Updates an existing configuration set. This operation performs a partial update. Only the attributes that you include in the request are updated; any omitted attribute is left unchanged.
+	// HTTP: POST /v2/email/update-configuration-sets
+	// Protocol: restJson1
+	UpdateConfigurationSet(context.Context, *connect.Request[sesv2.UpdateConfigurationSetRequest]) (*connect.Response[sesv2.UpdateConfigurationSetResponse], error)
 	// Update the configuration of an event destination for a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you ca...
 	// HTTP: PUT /v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}
 	// Protocol: restJson1
@@ -825,6 +860,12 @@ func NewSESv2ServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 	baseURL = strings.TrimRight(baseURL, "/")
 	sESv2ServiceMethods := sesv2.File_sesv2_proto.Services().ByName("SESv2Service").Methods()
 	return &sESv2ServiceClient{
+		associateEmailIdentityCertificate: connect.NewClient[sesv2.AssociateEmailIdentityCertificateRequest, sesv2.AssociateEmailIdentityCertificateResponse](
+			httpClient,
+			baseURL+SESv2ServiceAssociateEmailIdentityCertificateProcedure,
+			connect.WithSchema(sESv2ServiceMethods.ByName("AssociateEmailIdentityCertificate")),
+			connect.WithClientOptions(opts...),
+		),
 		batchGetMetricData: connect.NewClient[sesv2.BatchGetMetricDataRequest, sesv2.BatchGetMetricDataResponse](
 			httpClient,
 			baseURL+SESv2ServiceBatchGetMetricDataProcedure,
@@ -1003,6 +1044,12 @@ func NewSESv2ServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+SESv2ServiceDeleteTenantResourceAssociationProcedure,
 			connect.WithSchema(sESv2ServiceMethods.ByName("DeleteTenantResourceAssociation")),
+			connect.WithClientOptions(opts...),
+		),
+		disassociateEmailIdentityCertificate: connect.NewClient[sesv2.DisassociateEmailIdentityCertificateRequest, sesv2.DisassociateEmailIdentityCertificateResponse](
+			httpClient,
+			baseURL+SESv2ServiceDisassociateEmailIdentityCertificateProcedure,
+			connect.WithSchema(sESv2ServiceMethods.ByName("DisassociateEmailIdentityCertificate")),
 			connect.WithClientOptions(opts...),
 		),
 		getAccount: connect.NewClient[sesv2.GetAccountRequest, sesv2.GetAccountResponse](
@@ -1203,6 +1250,12 @@ func NewSESv2ServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(sESv2ServiceMethods.ByName("ListEmailIdentities")),
 			connect.WithClientOptions(opts...),
 		),
+		listEmailIdentityCertificates: connect.NewClient[sesv2.ListEmailIdentityCertificatesRequest, sesv2.ListEmailIdentityCertificatesResponse](
+			httpClient,
+			baseURL+SESv2ServiceListEmailIdentityCertificatesProcedure,
+			connect.WithSchema(sESv2ServiceMethods.ByName("ListEmailIdentityCertificates")),
+			connect.WithClientOptions(opts...),
+		),
 		listEmailTemplates: connect.NewClient[sesv2.ListEmailTemplatesRequest, sesv2.ListEmailTemplatesResponse](
 			httpClient,
 			baseURL+SESv2ServiceListEmailTemplatesProcedure,
@@ -1279,6 +1332,12 @@ func NewSESv2ServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			httpClient,
 			baseURL+SESv2ServicePutAccountDetailsProcedure,
 			connect.WithSchema(sESv2ServiceMethods.ByName("PutAccountDetails")),
+			connect.WithClientOptions(opts...),
+		),
+		putAccountPricingAttributes: connect.NewClient[sesv2.PutAccountPricingAttributesRequest, sesv2.PutAccountPricingAttributesResponse](
+			httpClient,
+			baseURL+SESv2ServicePutAccountPricingAttributesProcedure,
+			connect.WithSchema(sESv2ServiceMethods.ByName("PutAccountPricingAttributes")),
 			connect.WithClientOptions(opts...),
 		),
 		putAccountSendingAttributes: connect.NewClient[sesv2.PutAccountSendingAttributesRequest, sesv2.PutAccountSendingAttributesResponse](
@@ -1443,6 +1502,12 @@ func NewSESv2ServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(sESv2ServiceMethods.ByName("UntagResource")),
 			connect.WithClientOptions(opts...),
 		),
+		updateConfigurationSet: connect.NewClient[sesv2.UpdateConfigurationSetRequest, sesv2.UpdateConfigurationSetResponse](
+			httpClient,
+			baseURL+SESv2ServiceUpdateConfigurationSetProcedure,
+			connect.WithSchema(sESv2ServiceMethods.ByName("UpdateConfigurationSet")),
+			connect.WithClientOptions(opts...),
+		),
 		updateConfigurationSetEventDestination: connect.NewClient[sesv2.UpdateConfigurationSetEventDestinationRequest, sesv2.UpdateConfigurationSetEventDestinationResponse](
 			httpClient,
 			baseURL+SESv2ServiceUpdateConfigurationSetEventDestinationProcedure,
@@ -1496,6 +1561,7 @@ func NewSESv2ServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // sESv2ServiceClient implements SESv2ServiceClient.
 type sESv2ServiceClient struct {
+	associateEmailIdentityCertificate           *connect.Client[sesv2.AssociateEmailIdentityCertificateRequest, sesv2.AssociateEmailIdentityCertificateResponse]
 	batchGetMetricData                          *connect.Client[sesv2.BatchGetMetricDataRequest, sesv2.BatchGetMetricDataResponse]
 	cancelExportJob                             *connect.Client[sesv2.CancelExportJobRequest, sesv2.CancelExportJobResponse]
 	createConfigurationSet                      *connect.Client[sesv2.CreateConfigurationSetRequest, sesv2.CreateConfigurationSetResponse]
@@ -1526,6 +1592,7 @@ type sESv2ServiceClient struct {
 	deleteSuppressedDestination                 *connect.Client[sesv2.DeleteSuppressedDestinationRequest, sesv2.DeleteSuppressedDestinationResponse]
 	deleteTenant                                *connect.Client[sesv2.DeleteTenantRequest, sesv2.DeleteTenantResponse]
 	deleteTenantResourceAssociation             *connect.Client[sesv2.DeleteTenantResourceAssociationRequest, sesv2.DeleteTenantResourceAssociationResponse]
+	disassociateEmailIdentityCertificate        *connect.Client[sesv2.DisassociateEmailIdentityCertificateRequest, sesv2.DisassociateEmailIdentityCertificateResponse]
 	getAccount                                  *connect.Client[sesv2.GetAccountRequest, sesv2.GetAccountResponse]
 	getBlacklistReports                         *connect.Client[sesv2.GetBlacklistReportsRequest, sesv2.GetBlacklistReportsResponse]
 	getConfigurationSet                         *connect.Client[sesv2.GetConfigurationSetRequest, sesv2.GetConfigurationSetResponse]
@@ -1559,6 +1626,7 @@ type sESv2ServiceClient struct {
 	listDeliverabilityTestReports               *connect.Client[sesv2.ListDeliverabilityTestReportsRequest, sesv2.ListDeliverabilityTestReportsResponse]
 	listDomainDeliverabilityCampaigns           *connect.Client[sesv2.ListDomainDeliverabilityCampaignsRequest, sesv2.ListDomainDeliverabilityCampaignsResponse]
 	listEmailIdentities                         *connect.Client[sesv2.ListEmailIdentitiesRequest, sesv2.ListEmailIdentitiesResponse]
+	listEmailIdentityCertificates               *connect.Client[sesv2.ListEmailIdentityCertificatesRequest, sesv2.ListEmailIdentityCertificatesResponse]
 	listEmailTemplates                          *connect.Client[sesv2.ListEmailTemplatesRequest, sesv2.ListEmailTemplatesResponse]
 	listExportJobs                              *connect.Client[sesv2.ListExportJobsRequest, sesv2.ListExportJobsResponse]
 	listImportJobs                              *connect.Client[sesv2.ListImportJobsRequest, sesv2.ListImportJobsResponse]
@@ -1572,6 +1640,7 @@ type sESv2ServiceClient struct {
 	listTenants                                 *connect.Client[sesv2.ListTenantsRequest, sesv2.ListTenantsResponse]
 	putAccountDedicatedIpWarmupAttributes       *connect.Client[sesv2.PutAccountDedicatedIpWarmupAttributesRequest, sesv2.PutAccountDedicatedIpWarmupAttributesResponse]
 	putAccountDetails                           *connect.Client[sesv2.PutAccountDetailsRequest, sesv2.PutAccountDetailsResponse]
+	putAccountPricingAttributes                 *connect.Client[sesv2.PutAccountPricingAttributesRequest, sesv2.PutAccountPricingAttributesResponse]
 	putAccountSendingAttributes                 *connect.Client[sesv2.PutAccountSendingAttributesRequest, sesv2.PutAccountSendingAttributesResponse]
 	putAccountSuppressionAttributes             *connect.Client[sesv2.PutAccountSuppressionAttributesRequest, sesv2.PutAccountSuppressionAttributesResponse]
 	putAccountVdmAttributes                     *connect.Client[sesv2.PutAccountVdmAttributesRequest, sesv2.PutAccountVdmAttributesResponse]
@@ -1599,6 +1668,7 @@ type sESv2ServiceClient struct {
 	tagResource                                 *connect.Client[sesv2.TagResourceRequest, sesv2.TagResourceResponse]
 	testRenderEmailTemplate                     *connect.Client[sesv2.TestRenderEmailTemplateRequest, sesv2.TestRenderEmailTemplateResponse]
 	untagResource                               *connect.Client[sesv2.UntagResourceRequest, sesv2.UntagResourceResponse]
+	updateConfigurationSet                      *connect.Client[sesv2.UpdateConfigurationSetRequest, sesv2.UpdateConfigurationSetResponse]
 	updateConfigurationSetEventDestination      *connect.Client[sesv2.UpdateConfigurationSetEventDestinationRequest, sesv2.UpdateConfigurationSetEventDestinationResponse]
 	updateContact                               *connect.Client[sesv2.UpdateContactRequest, sesv2.UpdateContactResponse]
 	updateContactList                           *connect.Client[sesv2.UpdateContactListRequest, sesv2.UpdateContactListResponse]
@@ -1607,6 +1677,11 @@ type sESv2ServiceClient struct {
 	updateEmailTemplate                         *connect.Client[sesv2.UpdateEmailTemplateRequest, sesv2.UpdateEmailTemplateResponse]
 	updateReputationEntityCustomerManagedStatus *connect.Client[sesv2.UpdateReputationEntityCustomerManagedStatusRequest, sesv2.UpdateReputationEntityCustomerManagedStatusResponse]
 	updateReputationEntityPolicy                *connect.Client[sesv2.UpdateReputationEntityPolicyRequest, sesv2.UpdateReputationEntityPolicyResponse]
+}
+
+// AssociateEmailIdentityCertificate calls sesv2.SESv2Service.AssociateEmailIdentityCertificate.
+func (c *sESv2ServiceClient) AssociateEmailIdentityCertificate(ctx context.Context, req *connect.Request[sesv2.AssociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.AssociateEmailIdentityCertificateResponse], error) {
+	return c.associateEmailIdentityCertificate.CallUnary(ctx, req)
 }
 
 // BatchGetMetricData calls sesv2.SESv2Service.BatchGetMetricData.
@@ -1761,6 +1836,12 @@ func (c *sESv2ServiceClient) DeleteTenant(ctx context.Context, req *connect.Requ
 // DeleteTenantResourceAssociation calls sesv2.SESv2Service.DeleteTenantResourceAssociation.
 func (c *sESv2ServiceClient) DeleteTenantResourceAssociation(ctx context.Context, req *connect.Request[sesv2.DeleteTenantResourceAssociationRequest]) (*connect.Response[sesv2.DeleteTenantResourceAssociationResponse], error) {
 	return c.deleteTenantResourceAssociation.CallUnary(ctx, req)
+}
+
+// DisassociateEmailIdentityCertificate calls
+// sesv2.SESv2Service.DisassociateEmailIdentityCertificate.
+func (c *sESv2ServiceClient) DisassociateEmailIdentityCertificate(ctx context.Context, req *connect.Request[sesv2.DisassociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.DisassociateEmailIdentityCertificateResponse], error) {
+	return c.disassociateEmailIdentityCertificate.CallUnary(ctx, req)
 }
 
 // GetAccount calls sesv2.SESv2Service.GetAccount.
@@ -1930,6 +2011,11 @@ func (c *sESv2ServiceClient) ListEmailIdentities(ctx context.Context, req *conne
 	return c.listEmailIdentities.CallUnary(ctx, req)
 }
 
+// ListEmailIdentityCertificates calls sesv2.SESv2Service.ListEmailIdentityCertificates.
+func (c *sESv2ServiceClient) ListEmailIdentityCertificates(ctx context.Context, req *connect.Request[sesv2.ListEmailIdentityCertificatesRequest]) (*connect.Response[sesv2.ListEmailIdentityCertificatesResponse], error) {
+	return c.listEmailIdentityCertificates.CallUnary(ctx, req)
+}
+
 // ListEmailTemplates calls sesv2.SESv2Service.ListEmailTemplates.
 func (c *sESv2ServiceClient) ListEmailTemplates(ctx context.Context, req *connect.Request[sesv2.ListEmailTemplatesRequest]) (*connect.Response[sesv2.ListEmailTemplatesResponse], error) {
 	return c.listEmailTemplates.CallUnary(ctx, req)
@@ -1994,6 +2080,11 @@ func (c *sESv2ServiceClient) PutAccountDedicatedIpWarmupAttributes(ctx context.C
 // PutAccountDetails calls sesv2.SESv2Service.PutAccountDetails.
 func (c *sESv2ServiceClient) PutAccountDetails(ctx context.Context, req *connect.Request[sesv2.PutAccountDetailsRequest]) (*connect.Response[sesv2.PutAccountDetailsResponse], error) {
 	return c.putAccountDetails.CallUnary(ctx, req)
+}
+
+// PutAccountPricingAttributes calls sesv2.SESv2Service.PutAccountPricingAttributes.
+func (c *sESv2ServiceClient) PutAccountPricingAttributes(ctx context.Context, req *connect.Request[sesv2.PutAccountPricingAttributesRequest]) (*connect.Response[sesv2.PutAccountPricingAttributesResponse], error) {
+	return c.putAccountPricingAttributes.CallUnary(ctx, req)
 }
 
 // PutAccountSendingAttributes calls sesv2.SESv2Service.PutAccountSendingAttributes.
@@ -2135,6 +2226,11 @@ func (c *sESv2ServiceClient) UntagResource(ctx context.Context, req *connect.Req
 	return c.untagResource.CallUnary(ctx, req)
 }
 
+// UpdateConfigurationSet calls sesv2.SESv2Service.UpdateConfigurationSet.
+func (c *sESv2ServiceClient) UpdateConfigurationSet(ctx context.Context, req *connect.Request[sesv2.UpdateConfigurationSetRequest]) (*connect.Response[sesv2.UpdateConfigurationSetResponse], error) {
+	return c.updateConfigurationSet.CallUnary(ctx, req)
+}
+
 // UpdateConfigurationSetEventDestination calls
 // sesv2.SESv2Service.UpdateConfigurationSetEventDestination.
 func (c *sESv2ServiceClient) UpdateConfigurationSetEventDestination(ctx context.Context, req *connect.Request[sesv2.UpdateConfigurationSetEventDestinationRequest]) (*connect.Response[sesv2.UpdateConfigurationSetEventDestinationResponse], error) {
@@ -2180,6 +2276,10 @@ func (c *sESv2ServiceClient) UpdateReputationEntityPolicy(ctx context.Context, r
 
 // SESv2ServiceHandler is an implementation of the sesv2.SESv2Service service.
 type SESv2ServiceHandler interface {
+	// Associates an S/MIME certificate with an email identity. After the certificate is active, Amazon SES API v2 can add an S/MIME signature to messages that you send from the associated address when si...
+	// HTTP: POST /v2/email/identity/certificates
+	// Protocol: restJson1
+	AssociateEmailIdentityCertificate(context.Context, *connect.Request[sesv2.AssociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.AssociateEmailIdentityCertificateResponse], error)
 	// Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second ...
 	// HTTP: POST /v2/email/metrics/batch
 	// Protocol: restJson1
@@ -2300,6 +2400,10 @@ type SESv2ServiceHandler interface {
 	// HTTP: POST /v2/email/tenants/resources/delete
 	// Protocol: restJson1
 	DeleteTenantResourceAssociation(context.Context, *connect.Request[sesv2.DeleteTenantResourceAssociationRequest]) (*connect.Response[sesv2.DeleteTenantResourceAssociationResponse], error)
+	// Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address....
+	// HTTP: POST /v2/email/identity/certificates/delete
+	// Protocol: restJson1
+	DisassociateEmailIdentityCertificate(context.Context, *connect.Request[sesv2.DisassociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.DisassociateEmailIdentityCertificateResponse], error)
 	// Obtain information about the email-sending status and capabilities of your Amazon SES account in the current Amazon Web Services Region.
 	// HTTP: GET /v2/email/account
 	// Protocol: restJson1
@@ -2432,6 +2536,10 @@ type SESv2ServiceHandler interface {
 	// HTTP: GET /v2/email/identities
 	// Protocol: restJson1
 	ListEmailIdentities(context.Context, *connect.Request[sesv2.ListEmailIdentitiesRequest]) (*connect.Response[sesv2.ListEmailIdentitiesResponse], error)
+	// Lists the S/MIME certificates that are associated with the specified email identity. The results include certificates in all states, such as PROVISIONING, ACTIVE, INACTIVE, DEPROVISIONING, and FAIL...
+	// HTTP: POST /v2/email/identity/certificates/list
+	// Protocol: restJson1
+	ListEmailIdentityCertificates(context.Context, *connect.Request[sesv2.ListEmailIdentityCertificatesRequest]) (*connect.Response[sesv2.ListEmailIdentityCertificatesResponse], error)
 	// Lists the email templates present in your Amazon SES account in the current Amazon Web Services Region. You can execute this operation no more than once per second.
 	// HTTP: GET /v2/email/templates
 	// Protocol: restJson1
@@ -2484,6 +2592,10 @@ type SESv2ServiceHandler interface {
 	// HTTP: POST /v2/email/account/details
 	// Protocol: restJson1
 	PutAccountDetails(context.Context, *connect.Request[sesv2.PutAccountDetailsRequest]) (*connect.Response[sesv2.PutAccountDetailsResponse], error)
+	// Set the pricing plan for your Amazon SES account.
+	// HTTP: PUT /v2/email/account/pricing-attributes
+	// Protocol: restJson1
+	PutAccountPricingAttributes(context.Context, *connect.Request[sesv2.PutAccountPricingAttributesRequest]) (*connect.Response[sesv2.PutAccountPricingAttributesResponse], error)
 	// Enable or disable the ability of your account to send email.
 	// HTTP: PUT /v2/email/account/sending
 	// Protocol: restJson1
@@ -2591,6 +2703,10 @@ type SESv2ServiceHandler interface {
 	// HTTP: DELETE /v2/email/tags
 	// Protocol: restJson1
 	UntagResource(context.Context, *connect.Request[sesv2.UntagResourceRequest]) (*connect.Response[sesv2.UntagResourceResponse], error)
+	// Updates an existing configuration set. This operation performs a partial update. Only the attributes that you include in the request are updated; any omitted attribute is left unchanged.
+	// HTTP: POST /v2/email/update-configuration-sets
+	// Protocol: restJson1
+	UpdateConfigurationSet(context.Context, *connect.Request[sesv2.UpdateConfigurationSetRequest]) (*connect.Response[sesv2.UpdateConfigurationSetResponse], error)
 	// Update the configuration of an event destination for a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you ca...
 	// HTTP: PUT /v2/email/configuration-sets/{ConfigurationSetName}/event-destinations/{EventDestinationName}
 	// Protocol: restJson1
@@ -2632,6 +2748,12 @@ type SESv2ServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
 	sESv2ServiceMethods := sesv2.File_sesv2_proto.Services().ByName("SESv2Service").Methods()
+	sESv2ServiceAssociateEmailIdentityCertificateHandler := connect.NewUnaryHandler(
+		SESv2ServiceAssociateEmailIdentityCertificateProcedure,
+		svc.AssociateEmailIdentityCertificate,
+		connect.WithSchema(sESv2ServiceMethods.ByName("AssociateEmailIdentityCertificate")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sESv2ServiceBatchGetMetricDataHandler := connect.NewUnaryHandler(
 		SESv2ServiceBatchGetMetricDataProcedure,
 		svc.BatchGetMetricData,
@@ -2810,6 +2932,12 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 		SESv2ServiceDeleteTenantResourceAssociationProcedure,
 		svc.DeleteTenantResourceAssociation,
 		connect.WithSchema(sESv2ServiceMethods.ByName("DeleteTenantResourceAssociation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sESv2ServiceDisassociateEmailIdentityCertificateHandler := connect.NewUnaryHandler(
+		SESv2ServiceDisassociateEmailIdentityCertificateProcedure,
+		svc.DisassociateEmailIdentityCertificate,
+		connect.WithSchema(sESv2ServiceMethods.ByName("DisassociateEmailIdentityCertificate")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sESv2ServiceGetAccountHandler := connect.NewUnaryHandler(
@@ -3010,6 +3138,12 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(sESv2ServiceMethods.ByName("ListEmailIdentities")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sESv2ServiceListEmailIdentityCertificatesHandler := connect.NewUnaryHandler(
+		SESv2ServiceListEmailIdentityCertificatesProcedure,
+		svc.ListEmailIdentityCertificates,
+		connect.WithSchema(sESv2ServiceMethods.ByName("ListEmailIdentityCertificates")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sESv2ServiceListEmailTemplatesHandler := connect.NewUnaryHandler(
 		SESv2ServiceListEmailTemplatesProcedure,
 		svc.ListEmailTemplates,
@@ -3086,6 +3220,12 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 		SESv2ServicePutAccountDetailsProcedure,
 		svc.PutAccountDetails,
 		connect.WithSchema(sESv2ServiceMethods.ByName("PutAccountDetails")),
+		connect.WithHandlerOptions(opts...),
+	)
+	sESv2ServicePutAccountPricingAttributesHandler := connect.NewUnaryHandler(
+		SESv2ServicePutAccountPricingAttributesProcedure,
+		svc.PutAccountPricingAttributes,
+		connect.WithSchema(sESv2ServiceMethods.ByName("PutAccountPricingAttributes")),
 		connect.WithHandlerOptions(opts...),
 	)
 	sESv2ServicePutAccountSendingAttributesHandler := connect.NewUnaryHandler(
@@ -3250,6 +3390,12 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(sESv2ServiceMethods.ByName("UntagResource")),
 		connect.WithHandlerOptions(opts...),
 	)
+	sESv2ServiceUpdateConfigurationSetHandler := connect.NewUnaryHandler(
+		SESv2ServiceUpdateConfigurationSetProcedure,
+		svc.UpdateConfigurationSet,
+		connect.WithSchema(sESv2ServiceMethods.ByName("UpdateConfigurationSet")),
+		connect.WithHandlerOptions(opts...),
+	)
 	sESv2ServiceUpdateConfigurationSetEventDestinationHandler := connect.NewUnaryHandler(
 		SESv2ServiceUpdateConfigurationSetEventDestinationProcedure,
 		svc.UpdateConfigurationSetEventDestination,
@@ -3300,6 +3446,8 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 	)
 	return "/sesv2.SESv2Service/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case SESv2ServiceAssociateEmailIdentityCertificateProcedure:
+			sESv2ServiceAssociateEmailIdentityCertificateHandler.ServeHTTP(w, r)
 		case SESv2ServiceBatchGetMetricDataProcedure:
 			sESv2ServiceBatchGetMetricDataHandler.ServeHTTP(w, r)
 		case SESv2ServiceCancelExportJobProcedure:
@@ -3360,6 +3508,8 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 			sESv2ServiceDeleteTenantHandler.ServeHTTP(w, r)
 		case SESv2ServiceDeleteTenantResourceAssociationProcedure:
 			sESv2ServiceDeleteTenantResourceAssociationHandler.ServeHTTP(w, r)
+		case SESv2ServiceDisassociateEmailIdentityCertificateProcedure:
+			sESv2ServiceDisassociateEmailIdentityCertificateHandler.ServeHTTP(w, r)
 		case SESv2ServiceGetAccountProcedure:
 			sESv2ServiceGetAccountHandler.ServeHTTP(w, r)
 		case SESv2ServiceGetBlacklistReportsProcedure:
@@ -3426,6 +3576,8 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 			sESv2ServiceListDomainDeliverabilityCampaignsHandler.ServeHTTP(w, r)
 		case SESv2ServiceListEmailIdentitiesProcedure:
 			sESv2ServiceListEmailIdentitiesHandler.ServeHTTP(w, r)
+		case SESv2ServiceListEmailIdentityCertificatesProcedure:
+			sESv2ServiceListEmailIdentityCertificatesHandler.ServeHTTP(w, r)
 		case SESv2ServiceListEmailTemplatesProcedure:
 			sESv2ServiceListEmailTemplatesHandler.ServeHTTP(w, r)
 		case SESv2ServiceListExportJobsProcedure:
@@ -3452,6 +3604,8 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 			sESv2ServicePutAccountDedicatedIpWarmupAttributesHandler.ServeHTTP(w, r)
 		case SESv2ServicePutAccountDetailsProcedure:
 			sESv2ServicePutAccountDetailsHandler.ServeHTTP(w, r)
+		case SESv2ServicePutAccountPricingAttributesProcedure:
+			sESv2ServicePutAccountPricingAttributesHandler.ServeHTTP(w, r)
 		case SESv2ServicePutAccountSendingAttributesProcedure:
 			sESv2ServicePutAccountSendingAttributesHandler.ServeHTTP(w, r)
 		case SESv2ServicePutAccountSuppressionAttributesProcedure:
@@ -3506,6 +3660,8 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 			sESv2ServiceTestRenderEmailTemplateHandler.ServeHTTP(w, r)
 		case SESv2ServiceUntagResourceProcedure:
 			sESv2ServiceUntagResourceHandler.ServeHTTP(w, r)
+		case SESv2ServiceUpdateConfigurationSetProcedure:
+			sESv2ServiceUpdateConfigurationSetHandler.ServeHTTP(w, r)
 		case SESv2ServiceUpdateConfigurationSetEventDestinationProcedure:
 			sESv2ServiceUpdateConfigurationSetEventDestinationHandler.ServeHTTP(w, r)
 		case SESv2ServiceUpdateContactProcedure:
@@ -3530,6 +3686,10 @@ func NewSESv2ServiceHandler(svc SESv2ServiceHandler, opts ...connect.HandlerOpti
 
 // UnimplementedSESv2ServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedSESv2ServiceHandler struct{}
+
+func (UnimplementedSESv2ServiceHandler) AssociateEmailIdentityCertificate(context.Context, *connect.Request[sesv2.AssociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.AssociateEmailIdentityCertificateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.AssociateEmailIdentityCertificate is not implemented"))
+}
 
 func (UnimplementedSESv2ServiceHandler) BatchGetMetricData(context.Context, *connect.Request[sesv2.BatchGetMetricDataRequest]) (*connect.Response[sesv2.BatchGetMetricDataResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.BatchGetMetricData is not implemented"))
@@ -3649,6 +3809,10 @@ func (UnimplementedSESv2ServiceHandler) DeleteTenant(context.Context, *connect.R
 
 func (UnimplementedSESv2ServiceHandler) DeleteTenantResourceAssociation(context.Context, *connect.Request[sesv2.DeleteTenantResourceAssociationRequest]) (*connect.Response[sesv2.DeleteTenantResourceAssociationResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.DeleteTenantResourceAssociation is not implemented"))
+}
+
+func (UnimplementedSESv2ServiceHandler) DisassociateEmailIdentityCertificate(context.Context, *connect.Request[sesv2.DisassociateEmailIdentityCertificateRequest]) (*connect.Response[sesv2.DisassociateEmailIdentityCertificateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.DisassociateEmailIdentityCertificate is not implemented"))
 }
 
 func (UnimplementedSESv2ServiceHandler) GetAccount(context.Context, *connect.Request[sesv2.GetAccountRequest]) (*connect.Response[sesv2.GetAccountResponse], error) {
@@ -3783,6 +3947,10 @@ func (UnimplementedSESv2ServiceHandler) ListEmailIdentities(context.Context, *co
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.ListEmailIdentities is not implemented"))
 }
 
+func (UnimplementedSESv2ServiceHandler) ListEmailIdentityCertificates(context.Context, *connect.Request[sesv2.ListEmailIdentityCertificatesRequest]) (*connect.Response[sesv2.ListEmailIdentityCertificatesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.ListEmailIdentityCertificates is not implemented"))
+}
+
 func (UnimplementedSESv2ServiceHandler) ListEmailTemplates(context.Context, *connect.Request[sesv2.ListEmailTemplatesRequest]) (*connect.Response[sesv2.ListEmailTemplatesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.ListEmailTemplates is not implemented"))
 }
@@ -3833,6 +4001,10 @@ func (UnimplementedSESv2ServiceHandler) PutAccountDedicatedIpWarmupAttributes(co
 
 func (UnimplementedSESv2ServiceHandler) PutAccountDetails(context.Context, *connect.Request[sesv2.PutAccountDetailsRequest]) (*connect.Response[sesv2.PutAccountDetailsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.PutAccountDetails is not implemented"))
+}
+
+func (UnimplementedSESv2ServiceHandler) PutAccountPricingAttributes(context.Context, *connect.Request[sesv2.PutAccountPricingAttributesRequest]) (*connect.Response[sesv2.PutAccountPricingAttributesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.PutAccountPricingAttributes is not implemented"))
 }
 
 func (UnimplementedSESv2ServiceHandler) PutAccountSendingAttributes(context.Context, *connect.Request[sesv2.PutAccountSendingAttributesRequest]) (*connect.Response[sesv2.PutAccountSendingAttributesResponse], error) {
@@ -3941,6 +4113,10 @@ func (UnimplementedSESv2ServiceHandler) TestRenderEmailTemplate(context.Context,
 
 func (UnimplementedSESv2ServiceHandler) UntagResource(context.Context, *connect.Request[sesv2.UntagResourceRequest]) (*connect.Response[sesv2.UntagResourceResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.UntagResource is not implemented"))
+}
+
+func (UnimplementedSESv2ServiceHandler) UpdateConfigurationSet(context.Context, *connect.Request[sesv2.UpdateConfigurationSetRequest]) (*connect.Response[sesv2.UpdateConfigurationSetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("sesv2.SESv2Service.UpdateConfigurationSet is not implemented"))
 }
 
 func (UnimplementedSESv2ServiceHandler) UpdateConfigurationSetEventDestination(context.Context, *connect.Request[sesv2.UpdateConfigurationSetEventDestinationRequest]) (*connect.Response[sesv2.UpdateConfigurationSetEventDestinationResponse], error) {

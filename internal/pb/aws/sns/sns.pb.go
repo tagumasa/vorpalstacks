@@ -319,7 +319,7 @@ func (x *AddPermissionInput) GetTopicarn() string {
 
 type AuthorizationErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -355,15 +355,15 @@ func (*AuthorizationErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *AuthorizationErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type BatchEntryIdsNotDistinctException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -399,15 +399,15 @@ func (*BatchEntryIdsNotDistinctException) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchEntryIdsNotDistinctException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type BatchRequestTooLongException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -443,8 +443,8 @@ func (*BatchRequestTooLongException) Descriptor() ([]byte, []int) {
 }
 
 func (x *BatchRequestTooLongException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -453,7 +453,7 @@ type BatchResultErrorEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Code          string                 `protobuf:"bytes,425572629,opt,name=code,proto3" json:"code,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	Senderfault   *bool                  `protobuf:"varint,28412929,opt,name=senderfault,proto3,oneof" json:"senderfault,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -504,8 +504,8 @@ func (x *BatchResultErrorEntry) GetId() string {
 }
 
 func (x *BatchResultErrorEntry) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -607,7 +607,7 @@ func (x *CheckIfPhoneNumberIsOptedOutResponse) GetIsoptedout() bool {
 
 type ConcurrentAccessException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -643,15 +643,15 @@ func (*ConcurrentAccessException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConcurrentAccessException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ConfirmSubscriptionInput struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Authenticateonunsubscribe string                 `protobuf:"bytes,529251911,opt,name=authenticateonunsubscribe,proto3" json:"authenticateonunsubscribe,omitempty"`
+	Authenticateonunsubscribe *string                `protobuf:"bytes,529251911,opt,name=authenticateonunsubscribe,proto3,oneof" json:"authenticateonunsubscribe,omitempty"`
 	Token                     string                 `protobuf:"bytes,439704531,opt,name=token,proto3" json:"token,omitempty"`
 	Topicarn                  string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -689,8 +689,8 @@ func (*ConfirmSubscriptionInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConfirmSubscriptionInput) GetAuthenticateonunsubscribe() string {
-	if x != nil {
-		return x.Authenticateonunsubscribe
+	if x != nil && x.Authenticateonunsubscribe != nil {
+		return *x.Authenticateonunsubscribe
 	}
 	return ""
 }
@@ -711,7 +711,7 @@ func (x *ConfirmSubscriptionInput) GetTopicarn() string {
 
 type ConfirmSubscriptionResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Subscriptionarn string                 `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3" json:"subscriptionarn,omitempty"`
+	Subscriptionarn *string                `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3,oneof" json:"subscriptionarn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -747,15 +747,15 @@ func (*ConfirmSubscriptionResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConfirmSubscriptionResponse) GetSubscriptionarn() string {
-	if x != nil {
-		return x.Subscriptionarn
+	if x != nil && x.Subscriptionarn != nil {
+		return *x.Subscriptionarn
 	}
 	return ""
 }
 
 type CreateEndpointResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Endpointarn   string                 `protobuf:"bytes,32228660,opt,name=endpointarn,proto3" json:"endpointarn,omitempty"`
+	Endpointarn   *string                `protobuf:"bytes,32228660,opt,name=endpointarn,proto3,oneof" json:"endpointarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -791,8 +791,8 @@ func (*CreateEndpointResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateEndpointResponse) GetEndpointarn() string {
-	if x != nil {
-		return x.Endpointarn
+	if x != nil && x.Endpointarn != nil {
+		return *x.Endpointarn
 	}
 	return ""
 }
@@ -859,7 +859,7 @@ func (x *CreatePlatformApplicationInput) GetPlatform() string {
 
 type CreatePlatformApplicationResponse struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Platformapplicationarn string                 `protobuf:"bytes,241250568,opt,name=platformapplicationarn,proto3" json:"platformapplicationarn,omitempty"`
+	Platformapplicationarn *string                `protobuf:"bytes,241250568,opt,name=platformapplicationarn,proto3,oneof" json:"platformapplicationarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -895,8 +895,8 @@ func (*CreatePlatformApplicationResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreatePlatformApplicationResponse) GetPlatformapplicationarn() string {
-	if x != nil {
-		return x.Platformapplicationarn
+	if x != nil && x.Platformapplicationarn != nil {
+		return *x.Platformapplicationarn
 	}
 	return ""
 }
@@ -904,7 +904,7 @@ func (x *CreatePlatformApplicationResponse) GetPlatformapplicationarn() string {
 type CreatePlatformEndpointInput struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Attributes             map[string]string      `protobuf:"bytes,209638581,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Customuserdata         string                 `protobuf:"bytes,388962962,opt,name=customuserdata,proto3" json:"customuserdata,omitempty"`
+	Customuserdata         *string                `protobuf:"bytes,388962962,opt,name=customuserdata,proto3,oneof" json:"customuserdata,omitempty"`
 	Platformapplicationarn string                 `protobuf:"bytes,241250568,opt,name=platformapplicationarn,proto3" json:"platformapplicationarn,omitempty"`
 	Token                  string                 `protobuf:"bytes,439704531,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -949,8 +949,8 @@ func (x *CreatePlatformEndpointInput) GetAttributes() map[string]string {
 }
 
 func (x *CreatePlatformEndpointInput) GetCustomuserdata() string {
-	if x != nil {
-		return x.Customuserdata
+	if x != nil && x.Customuserdata != nil {
+		return *x.Customuserdata
 	}
 	return ""
 }
@@ -1060,7 +1060,7 @@ func (*CreateSMSSandboxPhoneNumberResult) Descriptor() ([]byte, []int) {
 type CreateTopicInput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Attributes           map[string]string      `protobuf:"bytes,209638581,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Dataprotectionpolicy string                 `protobuf:"bytes,519444573,opt,name=dataprotectionpolicy,proto3" json:"dataprotectionpolicy,omitempty"`
+	Dataprotectionpolicy *string                `protobuf:"bytes,519444573,opt,name=dataprotectionpolicy,proto3,oneof" json:"dataprotectionpolicy,omitempty"`
 	Name                 string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Tags                 []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -1105,8 +1105,8 @@ func (x *CreateTopicInput) GetAttributes() map[string]string {
 }
 
 func (x *CreateTopicInput) GetDataprotectionpolicy() string {
-	if x != nil {
-		return x.Dataprotectionpolicy
+	if x != nil && x.Dataprotectionpolicy != nil {
+		return *x.Dataprotectionpolicy
 	}
 	return ""
 }
@@ -1127,7 +1127,7 @@ func (x *CreateTopicInput) GetTags() []*Tag {
 
 type CreateTopicResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Topicarn      string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
+	Topicarn      *string                `protobuf:"bytes,30652956,opt,name=topicarn,proto3,oneof" json:"topicarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1163,8 +1163,8 @@ func (*CreateTopicResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateTopicResponse) GetTopicarn() string {
-	if x != nil {
-		return x.Topicarn
+	if x != nil && x.Topicarn != nil {
+		return *x.Topicarn
 	}
 	return ""
 }
@@ -1383,7 +1383,7 @@ func (x *DeleteTopicInput) GetTopicarn() string {
 
 type EmptyBatchRequestException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1419,8 +1419,8 @@ func (*EmptyBatchRequestException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EmptyBatchRequestException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1428,7 +1428,7 @@ func (x *EmptyBatchRequestException) GetMessage() string {
 type Endpoint struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Attributes    map[string]string      `protobuf:"bytes,209638581,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Endpointarn   string                 `protobuf:"bytes,32228660,opt,name=endpointarn,proto3" json:"endpointarn,omitempty"`
+	Endpointarn   *string                `protobuf:"bytes,32228660,opt,name=endpointarn,proto3,oneof" json:"endpointarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1471,15 +1471,15 @@ func (x *Endpoint) GetAttributes() map[string]string {
 }
 
 func (x *Endpoint) GetEndpointarn() string {
-	if x != nil {
-		return x.Endpointarn
+	if x != nil && x.Endpointarn != nil {
+		return *x.Endpointarn
 	}
 	return ""
 }
 
 type EndpointDisabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1515,15 +1515,15 @@ func (*EndpointDisabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *EndpointDisabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type FilterPolicyLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1559,8 +1559,8 @@ func (*FilterPolicyLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *FilterPolicyLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -1611,7 +1611,7 @@ func (x *GetDataProtectionPolicyInput) GetResourcearn() string {
 
 type GetDataProtectionPolicyResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Dataprotectionpolicy string                 `protobuf:"bytes,519444573,opt,name=dataprotectionpolicy,proto3" json:"dataprotectionpolicy,omitempty"`
+	Dataprotectionpolicy *string                `protobuf:"bytes,519444573,opt,name=dataprotectionpolicy,proto3,oneof" json:"dataprotectionpolicy,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -1647,8 +1647,8 @@ func (*GetDataProtectionPolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDataProtectionPolicyResponse) GetDataprotectionpolicy() string {
-	if x != nil {
-		return x.Dataprotectionpolicy
+	if x != nil && x.Dataprotectionpolicy != nil {
+		return *x.Dataprotectionpolicy
 	}
 	return ""
 }
@@ -2175,7 +2175,7 @@ func (x *GetTopicAttributesResponse) GetAttributes() map[string]string {
 
 type InternalErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2211,15 +2211,15 @@ func (*InternalErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InternalErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidBatchEntryIdException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2255,15 +2255,15 @@ func (*InvalidBatchEntryIdException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidBatchEntryIdException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2299,15 +2299,15 @@ func (*InvalidParameterException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidParameterValueException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2343,15 +2343,15 @@ func (*InvalidParameterValueException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidParameterValueException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidSecurityException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2387,15 +2387,15 @@ func (*InvalidSecurityException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidSecurityException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type InvalidStateException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2431,15 +2431,15 @@ func (*InvalidStateException) Descriptor() ([]byte, []int) {
 }
 
 func (x *InvalidStateException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSAccessDeniedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2475,15 +2475,15 @@ func (*KMSAccessDeniedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSAccessDeniedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSDisabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2519,15 +2519,15 @@ func (*KMSDisabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSDisabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSInvalidStateException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2563,15 +2563,15 @@ func (*KMSInvalidStateException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSInvalidStateException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2607,15 +2607,15 @@ func (*KMSNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSOptInRequired struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2651,15 +2651,15 @@ func (*KMSOptInRequired) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSOptInRequired) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type KMSThrottlingException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2695,15 +2695,15 @@ func (*KMSThrottlingException) Descriptor() ([]byte, []int) {
 }
 
 func (x *KMSThrottlingException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ListEndpointsByPlatformApplicationInput struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken              string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken              *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Platformapplicationarn string                 `protobuf:"bytes,241250568,opt,name=platformapplicationarn,proto3" json:"platformapplicationarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -2740,8 +2740,8 @@ func (*ListEndpointsByPlatformApplicationInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListEndpointsByPlatformApplicationInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2756,7 +2756,7 @@ func (x *ListEndpointsByPlatformApplicationInput) GetPlatformapplicationarn() st
 type ListEndpointsByPlatformApplicationResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Endpoints     []*Endpoint            `protobuf:"bytes,16210494,rep,name=endpoints,proto3" json:"endpoints,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2799,8 +2799,8 @@ func (x *ListEndpointsByPlatformApplicationResponse) GetEndpoints() []*Endpoint 
 }
 
 func (x *ListEndpointsByPlatformApplicationResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2808,7 +2808,7 @@ func (x *ListEndpointsByPlatformApplicationResponse) GetNexttoken() string {
 type ListOriginationNumbersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2851,15 +2851,15 @@ func (x *ListOriginationNumbersRequest) GetMaxresults() int32 {
 }
 
 func (x *ListOriginationNumbersRequest) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListOriginationNumbersResult struct {
 	state         protoimpl.MessageState    `protogen:"open.v1"`
-	Nexttoken     string                    `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                   `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Phonenumbers  []*PhoneNumberInformation `protobuf:"bytes,457192616,rep,name=phonenumbers,proto3" json:"phonenumbers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2896,8 +2896,8 @@ func (*ListOriginationNumbersResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListOriginationNumbersResult) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -2911,7 +2911,7 @@ func (x *ListOriginationNumbersResult) GetPhonenumbers() []*PhoneNumberInformati
 
 type ListPhoneNumbersOptedOutInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2947,15 +2947,15 @@ func (*ListPhoneNumbersOptedOutInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPhoneNumbersOptedOutInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListPhoneNumbersOptedOutResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,115833246,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,115833246,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Phonenumbers  []string               `protobuf:"bytes,156149576,rep,name=phonenumbers,proto3" json:"phonenumbers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2992,8 +2992,8 @@ func (*ListPhoneNumbersOptedOutResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPhoneNumbersOptedOutResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3007,7 +3007,7 @@ func (x *ListPhoneNumbersOptedOutResponse) GetPhonenumbers() []string {
 
 type ListPlatformApplicationsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3043,15 +3043,15 @@ func (*ListPlatformApplicationsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPlatformApplicationsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListPlatformApplicationsResponse struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken            string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken            *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Platformapplications []*PlatformApplication `protobuf:"bytes,209735978,rep,name=platformapplications,proto3" json:"platformapplications,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -3088,8 +3088,8 @@ func (*ListPlatformApplicationsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPlatformApplicationsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3104,7 +3104,7 @@ func (x *ListPlatformApplicationsResponse) GetPlatformapplications() []*Platform
 type ListSMSSandboxPhoneNumbersInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Maxresults    *int32                 `protobuf:"varint,275174450,opt,name=maxresults,proto3,oneof" json:"maxresults,omitempty"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3147,15 +3147,15 @@ func (x *ListSMSSandboxPhoneNumbersInput) GetMaxresults() int32 {
 }
 
 func (x *ListSMSSandboxPhoneNumbersInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListSMSSandboxPhoneNumbersResult struct {
 	state         protoimpl.MessageState   `protogen:"open.v1"`
-	Nexttoken     string                   `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                  `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Phonenumbers  []*SMSSandboxPhoneNumber `protobuf:"bytes,457192616,rep,name=phonenumbers,proto3" json:"phonenumbers,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3192,8 +3192,8 @@ func (*ListSMSSandboxPhoneNumbersResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSMSSandboxPhoneNumbersResult) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3207,7 +3207,7 @@ func (x *ListSMSSandboxPhoneNumbersResult) GetPhonenumbers() []*SMSSandboxPhoneN
 
 type ListSubscriptionsByTopicInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Topicarn      string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3244,8 +3244,8 @@ func (*ListSubscriptionsByTopicInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSubscriptionsByTopicInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3259,7 +3259,7 @@ func (x *ListSubscriptionsByTopicInput) GetTopicarn() string {
 
 type ListSubscriptionsByTopicResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Subscriptions []*Subscription        `protobuf:"bytes,169711430,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3296,8 +3296,8 @@ func (*ListSubscriptionsByTopicResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSubscriptionsByTopicResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3311,7 +3311,7 @@ func (x *ListSubscriptionsByTopicResponse) GetSubscriptions() []*Subscription {
 
 type ListSubscriptionsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3347,15 +3347,15 @@ func (*ListSubscriptionsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSubscriptionsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListSubscriptionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Subscriptions []*Subscription        `protobuf:"bytes,169711430,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3392,8 +3392,8 @@ func (*ListSubscriptionsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSubscriptionsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3495,7 +3495,7 @@ func (x *ListTagsForResourceResponse) GetTags() []*Tag {
 
 type ListTopicsInput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3531,15 +3531,15 @@ func (*ListTopicsInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTopicsInput) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
 
 type ListTopicsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nexttoken     string                 `protobuf:"bytes,216957566,opt,name=nexttoken,proto3" json:"nexttoken,omitempty"`
+	Nexttoken     *string                `protobuf:"bytes,216957566,opt,name=nexttoken,proto3,oneof" json:"nexttoken,omitempty"`
 	Topics        []*Topic               `protobuf:"bytes,219850038,rep,name=topics,proto3" json:"topics,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3576,8 +3576,8 @@ func (*ListTopicsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTopicsResponse) GetNexttoken() string {
-	if x != nil {
-		return x.Nexttoken
+	if x != nil && x.Nexttoken != nil {
+		return *x.Nexttoken
 	}
 	return ""
 }
@@ -3591,9 +3591,9 @@ func (x *ListTopicsResponse) GetTopics() []*Topic {
 
 type MessageAttributeValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Binaryvalue   []byte                 `protobuf:"bytes,255476278,opt,name=binaryvalue,proto3" json:"binaryvalue,omitempty"`
+	Binaryvalue   []byte                 `protobuf:"bytes,255476278,opt,name=binaryvalue,proto3,oneof" json:"binaryvalue,omitempty"`
 	Datatype      string                 `protobuf:"bytes,67988590,opt,name=datatype,proto3" json:"datatype,omitempty"`
-	Stringvalue   string                 `protobuf:"bytes,184416138,opt,name=stringvalue,proto3" json:"stringvalue,omitempty"`
+	Stringvalue   *string                `protobuf:"bytes,184416138,opt,name=stringvalue,proto3,oneof" json:"stringvalue,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3643,15 +3643,15 @@ func (x *MessageAttributeValue) GetDatatype() string {
 }
 
 func (x *MessageAttributeValue) GetStringvalue() string {
-	if x != nil {
-		return x.Stringvalue
+	if x != nil && x.Stringvalue != nil {
+		return *x.Stringvalue
 	}
 	return ""
 }
 
 type NotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3687,8 +3687,8 @@ func (*NotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -3775,7 +3775,7 @@ func (*OptInPhoneNumberResponse) Descriptor() ([]byte, []int) {
 
 type OptedOutException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3811,20 +3811,20 @@ func (*OptedOutException) Descriptor() ([]byte, []int) {
 }
 
 func (x *OptedOutException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PhoneNumberInformation struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Createdat          string                 `protobuf:"bytes,258192751,opt,name=createdat,proto3" json:"createdat,omitempty"`
-	Iso2Countrycode    string                 `protobuf:"bytes,283246908,opt,name=iso2countrycode,proto3" json:"iso2countrycode,omitempty"`
+	Createdat          *string                `protobuf:"bytes,258192751,opt,name=createdat,proto3,oneof" json:"createdat,omitempty"`
+	Iso2Countrycode    *string                `protobuf:"bytes,283246908,opt,name=iso2countrycode,proto3,oneof" json:"iso2countrycode,omitempty"`
 	Numbercapabilities []NumberCapability     `protobuf:"varint,54004711,rep,packed,name=numbercapabilities,proto3,enum=sns.NumberCapability" json:"numbercapabilities,omitempty"`
-	Phonenumber        string                 `protobuf:"bytes,379600239,opt,name=phonenumber,proto3" json:"phonenumber,omitempty"`
+	Phonenumber        *string                `protobuf:"bytes,379600239,opt,name=phonenumber,proto3,oneof" json:"phonenumber,omitempty"`
 	Routetype          RouteType              `protobuf:"varint,170172127,opt,name=routetype,proto3,enum=sns.RouteType" json:"routetype,omitempty"`
-	Status             string                 `protobuf:"bytes,6222352,opt,name=status,proto3" json:"status,omitempty"`
+	Status             *string                `protobuf:"bytes,6222352,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3860,15 +3860,15 @@ func (*PhoneNumberInformation) Descriptor() ([]byte, []int) {
 }
 
 func (x *PhoneNumberInformation) GetCreatedat() string {
-	if x != nil {
-		return x.Createdat
+	if x != nil && x.Createdat != nil {
+		return *x.Createdat
 	}
 	return ""
 }
 
 func (x *PhoneNumberInformation) GetIso2Countrycode() string {
-	if x != nil {
-		return x.Iso2Countrycode
+	if x != nil && x.Iso2Countrycode != nil {
+		return *x.Iso2Countrycode
 	}
 	return ""
 }
@@ -3881,8 +3881,8 @@ func (x *PhoneNumberInformation) GetNumbercapabilities() []NumberCapability {
 }
 
 func (x *PhoneNumberInformation) GetPhonenumber() string {
-	if x != nil {
-		return x.Phonenumber
+	if x != nil && x.Phonenumber != nil {
+		return *x.Phonenumber
 	}
 	return ""
 }
@@ -3895,8 +3895,8 @@ func (x *PhoneNumberInformation) GetRoutetype() RouteType {
 }
 
 func (x *PhoneNumberInformation) GetStatus() string {
-	if x != nil {
-		return x.Status
+	if x != nil && x.Status != nil {
+		return *x.Status
 	}
 	return ""
 }
@@ -3904,7 +3904,7 @@ func (x *PhoneNumberInformation) GetStatus() string {
 type PlatformApplication struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
 	Attributes             map[string]string      `protobuf:"bytes,209638581,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Platformapplicationarn string                 `protobuf:"bytes,241250568,opt,name=platformapplicationarn,proto3" json:"platformapplicationarn,omitempty"`
+	Platformapplicationarn *string                `protobuf:"bytes,241250568,opt,name=platformapplicationarn,proto3,oneof" json:"platformapplicationarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -3947,15 +3947,15 @@ func (x *PlatformApplication) GetAttributes() map[string]string {
 }
 
 func (x *PlatformApplication) GetPlatformapplicationarn() string {
-	if x != nil {
-		return x.Platformapplicationarn
+	if x != nil && x.Platformapplicationarn != nil {
+		return *x.Platformapplicationarn
 	}
 	return ""
 }
 
 type PlatformApplicationDisabledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3991,8 +3991,8 @@ func (*PlatformApplicationDisabledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *PlatformApplicationDisabledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -4054,10 +4054,10 @@ type PublishBatchRequestEntry struct {
 	Id                     string                            `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Message                string                            `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
 	Messageattributes      map[string]*MessageAttributeValue `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Messagededuplicationid string                            `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3" json:"messagededuplicationid,omitempty"`
-	Messagegroupid         string                            `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3" json:"messagegroupid,omitempty"`
-	Messagestructure       string                            `protobuf:"bytes,402672330,opt,name=messagestructure,proto3" json:"messagestructure,omitempty"`
-	Subject                string                            `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
+	Messagededuplicationid *string                           `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3,oneof" json:"messagededuplicationid,omitempty"`
+	Messagegroupid         *string                           `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3,oneof" json:"messagegroupid,omitempty"`
+	Messagestructure       *string                           `protobuf:"bytes,402672330,opt,name=messagestructure,proto3,oneof" json:"messagestructure,omitempty"`
+	Subject                *string                           `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -4114,29 +4114,29 @@ func (x *PublishBatchRequestEntry) GetMessageattributes() map[string]*MessageAtt
 }
 
 func (x *PublishBatchRequestEntry) GetMessagededuplicationid() string {
-	if x != nil {
-		return x.Messagededuplicationid
+	if x != nil && x.Messagededuplicationid != nil {
+		return *x.Messagededuplicationid
 	}
 	return ""
 }
 
 func (x *PublishBatchRequestEntry) GetMessagegroupid() string {
-	if x != nil {
-		return x.Messagegroupid
+	if x != nil && x.Messagegroupid != nil {
+		return *x.Messagegroupid
 	}
 	return ""
 }
 
 func (x *PublishBatchRequestEntry) GetMessagestructure() string {
-	if x != nil {
-		return x.Messagestructure
+	if x != nil && x.Messagestructure != nil {
+		return *x.Messagestructure
 	}
 	return ""
 }
 
 func (x *PublishBatchRequestEntry) GetSubject() string {
-	if x != nil {
-		return x.Subject
+	if x != nil && x.Subject != nil {
+		return *x.Subject
 	}
 	return ""
 }
@@ -4195,9 +4195,9 @@ func (x *PublishBatchResponse) GetSuccessful() []*PublishBatchResultEntry {
 
 type PublishBatchResultEntry struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Messageid      string                 `protobuf:"bytes,360526634,opt,name=messageid,proto3" json:"messageid,omitempty"`
-	Sequencenumber string                 `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3" json:"sequencenumber,omitempty"`
+	Id             *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Messageid      *string                `protobuf:"bytes,360526634,opt,name=messageid,proto3,oneof" json:"messageid,omitempty"`
+	Sequencenumber *string                `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3,oneof" json:"sequencenumber,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4233,22 +4233,22 @@ func (*PublishBatchResultEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *PublishBatchResultEntry) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *PublishBatchResultEntry) GetMessageid() string {
-	if x != nil {
-		return x.Messageid
+	if x != nil && x.Messageid != nil {
+		return *x.Messageid
 	}
 	return ""
 }
 
 func (x *PublishBatchResultEntry) GetSequencenumber() string {
-	if x != nil {
-		return x.Sequencenumber
+	if x != nil && x.Sequencenumber != nil {
+		return *x.Sequencenumber
 	}
 	return ""
 }
@@ -4257,13 +4257,13 @@ type PublishInput struct {
 	state                  protoimpl.MessageState            `protogen:"open.v1"`
 	Message                string                            `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
 	Messageattributes      map[string]*MessageAttributeValue `protobuf:"bytes,56443766,rep,name=messageattributes,proto3" json:"messageattributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Messagededuplicationid string                            `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3" json:"messagededuplicationid,omitempty"`
-	Messagegroupid         string                            `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3" json:"messagegroupid,omitempty"`
-	Messagestructure       string                            `protobuf:"bytes,402672330,opt,name=messagestructure,proto3" json:"messagestructure,omitempty"`
-	Phonenumber            string                            `protobuf:"bytes,379600239,opt,name=phonenumber,proto3" json:"phonenumber,omitempty"`
-	Subject                string                            `protobuf:"bytes,7939312,opt,name=subject,proto3" json:"subject,omitempty"`
-	Targetarn              string                            `protobuf:"bytes,217664144,opt,name=targetarn,proto3" json:"targetarn,omitempty"`
-	Topicarn               string                            `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
+	Messagededuplicationid *string                           `protobuf:"bytes,379560665,opt,name=messagededuplicationid,proto3,oneof" json:"messagededuplicationid,omitempty"`
+	Messagegroupid         *string                           `protobuf:"bytes,419537435,opt,name=messagegroupid,proto3,oneof" json:"messagegroupid,omitempty"`
+	Messagestructure       *string                           `protobuf:"bytes,402672330,opt,name=messagestructure,proto3,oneof" json:"messagestructure,omitempty"`
+	Phonenumber            *string                           `protobuf:"bytes,379600239,opt,name=phonenumber,proto3,oneof" json:"phonenumber,omitempty"`
+	Subject                *string                           `protobuf:"bytes,7939312,opt,name=subject,proto3,oneof" json:"subject,omitempty"`
+	Targetarn              *string                           `protobuf:"bytes,217664144,opt,name=targetarn,proto3,oneof" json:"targetarn,omitempty"`
+	Topicarn               *string                           `protobuf:"bytes,30652956,opt,name=topicarn,proto3,oneof" json:"topicarn,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -4313,58 +4313,58 @@ func (x *PublishInput) GetMessageattributes() map[string]*MessageAttributeValue 
 }
 
 func (x *PublishInput) GetMessagededuplicationid() string {
-	if x != nil {
-		return x.Messagededuplicationid
+	if x != nil && x.Messagededuplicationid != nil {
+		return *x.Messagededuplicationid
 	}
 	return ""
 }
 
 func (x *PublishInput) GetMessagegroupid() string {
-	if x != nil {
-		return x.Messagegroupid
+	if x != nil && x.Messagegroupid != nil {
+		return *x.Messagegroupid
 	}
 	return ""
 }
 
 func (x *PublishInput) GetMessagestructure() string {
-	if x != nil {
-		return x.Messagestructure
+	if x != nil && x.Messagestructure != nil {
+		return *x.Messagestructure
 	}
 	return ""
 }
 
 func (x *PublishInput) GetPhonenumber() string {
-	if x != nil {
-		return x.Phonenumber
+	if x != nil && x.Phonenumber != nil {
+		return *x.Phonenumber
 	}
 	return ""
 }
 
 func (x *PublishInput) GetSubject() string {
-	if x != nil {
-		return x.Subject
+	if x != nil && x.Subject != nil {
+		return *x.Subject
 	}
 	return ""
 }
 
 func (x *PublishInput) GetTargetarn() string {
-	if x != nil {
-		return x.Targetarn
+	if x != nil && x.Targetarn != nil {
+		return *x.Targetarn
 	}
 	return ""
 }
 
 func (x *PublishInput) GetTopicarn() string {
-	if x != nil {
-		return x.Topicarn
+	if x != nil && x.Topicarn != nil {
+		return *x.Topicarn
 	}
 	return ""
 }
 
 type PublishResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Messageid      string                 `protobuf:"bytes,360526634,opt,name=messageid,proto3" json:"messageid,omitempty"`
-	Sequencenumber string                 `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3" json:"sequencenumber,omitempty"`
+	Messageid      *string                `protobuf:"bytes,360526634,opt,name=messageid,proto3,oneof" json:"messageid,omitempty"`
+	Sequencenumber *string                `protobuf:"bytes,98094362,opt,name=sequencenumber,proto3,oneof" json:"sequencenumber,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -4400,15 +4400,15 @@ func (*PublishResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *PublishResponse) GetMessageid() string {
-	if x != nil {
-		return x.Messageid
+	if x != nil && x.Messageid != nil {
+		return *x.Messageid
 	}
 	return ""
 }
 
 func (x *PublishResponse) GetSequencenumber() string {
-	if x != nil {
-		return x.Sequencenumber
+	if x != nil && x.Sequencenumber != nil {
+		return *x.Sequencenumber
 	}
 	return ""
 }
@@ -4519,7 +4519,7 @@ func (x *RemovePermissionInput) GetTopicarn() string {
 
 type ReplayLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4555,15 +4555,15 @@ func (*ReplayLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReplayLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type ResourceNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4599,15 +4599,15 @@ func (*ResourceNotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ResourceNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type SMSSandboxPhoneNumber struct {
 	state         protoimpl.MessageState                  `protogen:"open.v1"`
-	Phonenumber   string                                  `protobuf:"bytes,379600239,opt,name=phonenumber,proto3" json:"phonenumber,omitempty"`
+	Phonenumber   *string                                 `protobuf:"bytes,379600239,opt,name=phonenumber,proto3,oneof" json:"phonenumber,omitempty"`
 	Status        SMSSandboxPhoneNumberVerificationStatus `protobuf:"varint,6222352,opt,name=status,proto3,enum=sns.SMSSandboxPhoneNumberVerificationStatus" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4644,8 +4644,8 @@ func (*SMSSandboxPhoneNumber) Descriptor() ([]byte, []int) {
 }
 
 func (x *SMSSandboxPhoneNumber) GetPhonenumber() string {
-	if x != nil {
-		return x.Phonenumber
+	if x != nil && x.Phonenumber != nil {
+		return *x.Phonenumber
 	}
 	return ""
 }
@@ -4844,7 +4844,7 @@ func (*SetSMSAttributesResponse) Descriptor() ([]byte, []int) {
 type SetSubscriptionAttributesInput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Attributename   string                 `protobuf:"bytes,352717485,opt,name=attributename,proto3" json:"attributename,omitempty"`
-	Attributevalue  string                 `protobuf:"bytes,96769221,opt,name=attributevalue,proto3" json:"attributevalue,omitempty"`
+	Attributevalue  *string                `protobuf:"bytes,96769221,opt,name=attributevalue,proto3,oneof" json:"attributevalue,omitempty"`
 	Subscriptionarn string                 `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3" json:"subscriptionarn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -4888,8 +4888,8 @@ func (x *SetSubscriptionAttributesInput) GetAttributename() string {
 }
 
 func (x *SetSubscriptionAttributesInput) GetAttributevalue() string {
-	if x != nil {
-		return x.Attributevalue
+	if x != nil && x.Attributevalue != nil {
+		return *x.Attributevalue
 	}
 	return ""
 }
@@ -4904,7 +4904,7 @@ func (x *SetSubscriptionAttributesInput) GetSubscriptionarn() string {
 type SetTopicAttributesInput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Attributename  string                 `protobuf:"bytes,352717485,opt,name=attributename,proto3" json:"attributename,omitempty"`
-	Attributevalue string                 `protobuf:"bytes,96769221,opt,name=attributevalue,proto3" json:"attributevalue,omitempty"`
+	Attributevalue *string                `protobuf:"bytes,96769221,opt,name=attributevalue,proto3,oneof" json:"attributevalue,omitempty"`
 	Topicarn       string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -4948,8 +4948,8 @@ func (x *SetTopicAttributesInput) GetAttributename() string {
 }
 
 func (x *SetTopicAttributesInput) GetAttributevalue() string {
-	if x != nil {
-		return x.Attributevalue
+	if x != nil && x.Attributevalue != nil {
+		return *x.Attributevalue
 	}
 	return ""
 }
@@ -4963,7 +4963,7 @@ func (x *SetTopicAttributesInput) GetTopicarn() string {
 
 type StaleTagException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4999,8 +4999,8 @@ func (*StaleTagException) Descriptor() ([]byte, []int) {
 }
 
 func (x *StaleTagException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5008,7 +5008,7 @@ func (x *StaleTagException) GetMessage() string {
 type SubscribeInput struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Attributes            map[string]string      `protobuf:"bytes,209638581,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Endpoint              string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
+	Endpoint              *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
 	Protocol              string                 `protobuf:"bytes,173534166,opt,name=protocol,proto3" json:"protocol,omitempty"`
 	Returnsubscriptionarn *bool                  `protobuf:"varint,78754574,opt,name=returnsubscriptionarn,proto3,oneof" json:"returnsubscriptionarn,omitempty"`
 	Topicarn              string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
@@ -5054,8 +5054,8 @@ func (x *SubscribeInput) GetAttributes() map[string]string {
 }
 
 func (x *SubscribeInput) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
@@ -5083,7 +5083,7 @@ func (x *SubscribeInput) GetTopicarn() string {
 
 type SubscribeResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Subscriptionarn string                 `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3" json:"subscriptionarn,omitempty"`
+	Subscriptionarn *string                `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3,oneof" json:"subscriptionarn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -5119,19 +5119,19 @@ func (*SubscribeResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubscribeResponse) GetSubscriptionarn() string {
-	if x != nil {
-		return x.Subscriptionarn
+	if x != nil && x.Subscriptionarn != nil {
+		return *x.Subscriptionarn
 	}
 	return ""
 }
 
 type Subscription struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Endpoint        string                 `protobuf:"bytes,132634269,opt,name=endpoint,proto3" json:"endpoint,omitempty"`
-	Owner           string                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
-	Protocol        string                 `protobuf:"bytes,173534166,opt,name=protocol,proto3" json:"protocol,omitempty"`
-	Subscriptionarn string                 `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3" json:"subscriptionarn,omitempty"`
-	Topicarn        string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
+	Endpoint        *string                `protobuf:"bytes,132634269,opt,name=endpoint,proto3,oneof" json:"endpoint,omitempty"`
+	Owner           *string                `protobuf:"bytes,455261813,opt,name=owner,proto3,oneof" json:"owner,omitempty"`
+	Protocol        *string                `protobuf:"bytes,173534166,opt,name=protocol,proto3,oneof" json:"protocol,omitempty"`
+	Subscriptionarn *string                `protobuf:"bytes,279547820,opt,name=subscriptionarn,proto3,oneof" json:"subscriptionarn,omitempty"`
+	Topicarn        *string                `protobuf:"bytes,30652956,opt,name=topicarn,proto3,oneof" json:"topicarn,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -5167,43 +5167,43 @@ func (*Subscription) Descriptor() ([]byte, []int) {
 }
 
 func (x *Subscription) GetEndpoint() string {
-	if x != nil {
-		return x.Endpoint
+	if x != nil && x.Endpoint != nil {
+		return *x.Endpoint
 	}
 	return ""
 }
 
 func (x *Subscription) GetOwner() string {
-	if x != nil {
-		return x.Owner
+	if x != nil && x.Owner != nil {
+		return *x.Owner
 	}
 	return ""
 }
 
 func (x *Subscription) GetProtocol() string {
-	if x != nil {
-		return x.Protocol
+	if x != nil && x.Protocol != nil {
+		return *x.Protocol
 	}
 	return ""
 }
 
 func (x *Subscription) GetSubscriptionarn() string {
-	if x != nil {
-		return x.Subscriptionarn
+	if x != nil && x.Subscriptionarn != nil {
+		return *x.Subscriptionarn
 	}
 	return ""
 }
 
 func (x *Subscription) GetTopicarn() string {
-	if x != nil {
-		return x.Topicarn
+	if x != nil && x.Topicarn != nil {
+		return *x.Topicarn
 	}
 	return ""
 }
 
 type SubscriptionLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5239,8 +5239,8 @@ func (*SubscriptionLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *SubscriptionLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5299,7 +5299,7 @@ func (x *Tag) GetValue() string {
 
 type TagLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5335,15 +5335,15 @@ func (*TagLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TagLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TagPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5379,8 +5379,8 @@ func (*TagPolicyException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TagPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5475,7 +5475,7 @@ func (*TagResourceResponse) Descriptor() ([]byte, []int) {
 
 type ThrottledException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5511,15 +5511,15 @@ func (*ThrottledException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ThrottledException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type TooManyEntriesInBatchRequestException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5555,15 +5555,15 @@ func (*TooManyEntriesInBatchRequestException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyEntriesInBatchRequestException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type Topic struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Topicarn      string                 `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
+	Topicarn      *string                `protobuf:"bytes,30652956,opt,name=topicarn,proto3,oneof" json:"topicarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5599,15 +5599,15 @@ func (*Topic) Descriptor() ([]byte, []int) {
 }
 
 func (x *Topic) GetTopicarn() string {
-	if x != nil {
-		return x.Topicarn
+	if x != nil && x.Topicarn != nil {
+		return *x.Topicarn
 	}
 	return ""
 }
 
 type TopicLimitExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5643,8 +5643,8 @@ func (*TopicLimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TopicLimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -5783,7 +5783,7 @@ func (*UntagResourceResponse) Descriptor() ([]byte, []int) {
 
 type UserErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5819,8 +5819,8 @@ func (*UserErrorException) Descriptor() ([]byte, []int) {
 }
 
 func (x *UserErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -6020,18 +6020,26 @@ const file_sns_proto_rawDesc = "" +
 	"actionname\x18\xbd\x88\x8c7 \x03(\tR\n" +
 	"actionname\x12\x18\n" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\":\n" +
-	"\x1bAuthorizationErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"@\n" +
-	"!BatchEntryIdsNotDistinctException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cBatchRequestTooLongException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x9a\x01\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"K\n" +
+	"\x1bAuthorizationErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Q\n" +
+	"!BatchEntryIdsNotDistinctException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cBatchRequestTooLongException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xab\x01\n" +
 	"\x15BatchResultErrorEntry\x12\x16\n" +
 	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tR\x04code\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12(\n" +
-	"\vsenderfault\x18\x81\x98\xc6\r \x01(\bH\x00R\vsenderfault\x88\x01\x01B\x0e\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12(\n" +
+	"\vsenderfault\x18\x81\x98\xc6\r \x01(\bH\x01R\vsenderfault\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x0e\n" +
 	"\f_senderfault\"H\n" +
 	"!CheckIfPhoneNumberIsOptedOutInput\x12#\n" +
 	"\vphonenumber\x18\x8f\xc7\xc8J \x01(\tR\vphonenumber\"^\n" +
@@ -6039,17 +6047,22 @@ const file_sns_proto_rawDesc = "" +
 	"\n" +
 	"isoptedout\x18Χ\x9e\xcd\x01 \x01(\bH\x00R\n" +
 	"isoptedout\x88\x01\x01B\r\n" +
-	"\v_isoptedout\"8\n" +
-	"\x19ConcurrentAccessException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x95\x01\n" +
-	"\x18ConfirmSubscriptionInput\x12@\n" +
-	"\x19authenticateonunsubscribe\x18\xc7\xfc\xae\xfc\x01 \x01(\tR\x19authenticateonunsubscribe\x12\x18\n" +
+	"\v_isoptedout\"I\n" +
+	"\x19ConcurrentAccessException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xb8\x01\n" +
+	"\x18ConfirmSubscriptionInput\x12E\n" +
+	"\x19authenticateonunsubscribe\x18\xc7\xfc\xae\xfc\x01 \x01(\tH\x00R\x19authenticateonunsubscribe\x88\x01\x01\x12\x18\n" +
 	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"K\n" +
-	"\x1bConfirmSubscriptionResponse\x12,\n" +
-	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tR\x0fsubscriptionarn\"=\n" +
-	"\x16CreateEndpointResponse\x12#\n" +
-	"\vendpointarn\x18\xb4\x8a\xaf\x0f \x01(\tR\vendpointarn\"\xee\x01\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarnB\x1c\n" +
+	"\x1a_authenticateonunsubscribe\"d\n" +
+	"\x1bConfirmSubscriptionResponse\x121\n" +
+	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tH\x00R\x0fsubscriptionarn\x88\x01\x01B\x12\n" +
+	"\x10_subscriptionarn\"R\n" +
+	"\x16CreateEndpointResponse\x12(\n" +
+	"\vendpointarn\x18\xb4\x8a\xaf\x0f \x01(\tH\x00R\vendpointarn\x88\x01\x01B\x0e\n" +
+	"\f_endpointarn\"\xee\x01\n" +
 	"\x1eCreatePlatformApplicationInput\x12V\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v23.sns.CreatePlatformApplicationInput.AttributesEntryR\n" +
@@ -6058,35 +6071,39 @@ const file_sns_proto_rawDesc = "" +
 	"\bplatform\x18\xd3\xdd\xcb\xdf\x01 \x01(\tR\bplatform\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"^\n" +
-	"!CreatePlatformApplicationResponse\x129\n" +
-	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tR\x16platformapplicationarn\"\xb2\x02\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"~\n" +
+	"!CreatePlatformApplicationResponse\x12>\n" +
+	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tH\x00R\x16platformapplicationarn\x88\x01\x01B\x19\n" +
+	"\x17_platformapplicationarn\"\xca\x02\n" +
 	"\x1bCreatePlatformEndpointInput\x12S\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v20.sns.CreatePlatformEndpointInput.AttributesEntryR\n" +
-	"attributes\x12*\n" +
-	"\x0ecustomuserdata\x18\x92\xb5\xbc\xb9\x01 \x01(\tR\x0ecustomuserdata\x129\n" +
+	"attributes\x12/\n" +
+	"\x0ecustomuserdata\x18\x92\xb5\xbc\xb9\x01 \x01(\tH\x00R\x0ecustomuserdata\x88\x01\x01\x129\n" +
 	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tR\x16platformapplicationarn\x12\x18\n" +
 	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x89\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_customuserdata\"\x89\x01\n" +
 	" CreateSMSSandboxPhoneNumberInput\x12?\n" +
 	"\flanguagecode\x18\x83\x80\xb6\x86\x01 \x01(\x0e2\x17.sns.LanguageCodeStringR\flanguagecode\x12$\n" +
 	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumber\"#\n" +
-	"!CreateSMSSandboxPhoneNumberResult\"\x8c\x02\n" +
+	"!CreateSMSSandboxPhoneNumberResult\"\xaa\x02\n" +
 	"\x10CreateTopicInput\x12H\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2%.sns.CreateTopicInput.AttributesEntryR\n" +
-	"attributes\x126\n" +
-	"\x14dataprotectionpolicy\x18ݰ\xd8\xf7\x01 \x01(\tR\x14dataprotectionpolicy\x12\x15\n" +
+	"attributes\x12;\n" +
+	"\x14dataprotectionpolicy\x18ݰ\xd8\xf7\x01 \x01(\tH\x00R\x14dataprotectionpolicy\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sns.TagR\x04tags\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"4\n" +
-	"\x13CreateTopicResponse\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\":\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x17\n" +
+	"\x15_dataprotectionpolicy\"F\n" +
+	"\x13CreateTopicResponse\x12\"\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tH\x00R\btopicarn\x88\x01\x01B\v\n" +
+	"\t_topicarn\":\n" +
 	"\x13DeleteEndpointInput\x12#\n" +
 	"\vendpointarn\x18\xb4\x8a\xaf\x0f \x01(\tR\vendpointarn\"[\n" +
 	"\x1eDeletePlatformApplicationInput\x129\n" +
@@ -6095,25 +6112,33 @@ const file_sns_proto_rawDesc = "" +
 	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumber\"#\n" +
 	"!DeleteSMSSandboxPhoneNumberResult\"1\n" +
 	"\x10DeleteTopicInput\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"9\n" +
-	"\x1aEmptyBatchRequestException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xb0\x01\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"J\n" +
+	"\x1aEmptyBatchRequestException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xc5\x01\n" +
 	"\bEndpoint\x12@\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2\x1d.sns.Endpoint.AttributesEntryR\n" +
-	"attributes\x12#\n" +
-	"\vendpointarn\x18\xb4\x8a\xaf\x0f \x01(\tR\vendpointarn\x1a=\n" +
+	"attributes\x12(\n" +
+	"\vendpointarn\x18\xb4\x8a\xaf\x0f \x01(\tH\x00R\vendpointarn\x88\x01\x01\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"8\n" +
-	"\x19EndpointDisabledException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"A\n" +
-	"\"FilterPolicyLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"D\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_endpointarn\"I\n" +
+	"\x19EndpointDisabledException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"FilterPolicyLimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
 	"\x1cGetDataProtectionPolicyInput\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"Y\n" +
-	"\x1fGetDataProtectionPolicyResponse\x126\n" +
-	"\x14dataprotectionpolicy\x18ݰ\xd8\xf7\x01 \x01(\tR\x14dataprotectionpolicy\"A\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"w\n" +
+	"\x1fGetDataProtectionPolicyResponse\x12;\n" +
+	"\x14dataprotectionpolicy\x18ݰ\xd8\xf7\x01 \x01(\tH\x00R\x14dataprotectionpolicy\x88\x01\x01B\x17\n" +
+	"\x15_dataprotectionpolicy\"A\n" +
 	"\x1aGetEndpointAttributesInput\x12#\n" +
 	"\vendpointarn\x18\xb4\x8a\xaf\x0f \x01(\tR\vendpointarn\"\xb5\x01\n" +
 	"\x1dGetEndpointAttributesResponse\x12U\n" +
@@ -6164,166 +6189,262 @@ const file_sns_proto_rawDesc = "" +
 	"attributes\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"5\n" +
-	"\x16InternalErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\";\n" +
-	"\x1cInvalidBatchEntryIdException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19InvalidParameterException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"=\n" +
-	"\x1eInvalidParameterValueException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18InvalidSecurityException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
-	"\x15InvalidStateException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18KMSAccessDeniedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14KMSDisabledException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"7\n" +
-	"\x18KMSInvalidStateException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"3\n" +
-	"\x14KMSNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"/\n" +
-	"\x10KMSOptInRequired\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"5\n" +
-	"\x16KMSThrottlingException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x85\x01\n" +
-	"'ListEndpointsByPlatformApplicationInput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x129\n" +
-	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tR\x16platformapplicationarn\"}\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"F\n" +
+	"\x16InternalErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cInvalidBatchEntryIdException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19InvalidParameterException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"N\n" +
+	"\x1eInvalidParameterValueException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18InvalidSecurityException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"E\n" +
+	"\x15InvalidStateException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18KMSAccessDeniedException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14KMSDisabledException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18KMSInvalidStateException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"D\n" +
+	"\x14KMSNotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"@\n" +
+	"\x10KMSOptInRequired\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"F\n" +
+	"\x16KMSThrottlingException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x98\x01\n" +
+	"'ListEndpointsByPlatformApplicationInput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x129\n" +
+	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tR\x16platformapplicationarnB\f\n" +
+	"\n" +
+	"_nexttoken\"\x90\x01\n" +
 	"*ListEndpointsByPlatformApplicationResponse\x12.\n" +
-	"\tendpoints\x18\xbe\xb4\xdd\a \x03(\v2\r.sns.EndpointR\tendpoints\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"x\n" +
+	"\tendpoints\x18\xbe\xb4\xdd\a \x03(\v2\r.sns.EndpointR\tendpoints\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x8b\x01\n" +
 	"\x1dListOriginationNumbersRequest\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x84\x01\n" +
-	"\x1cListOriginationNumbersResult\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12C\n" +
-	"\fphonenumbers\x18\xa8\xe9\x80\xda\x01 \x03(\v2\x1b.sns.PhoneNumberInformationR\fphonenumbers\"@\n" +
-	"\x1dListPhoneNumbersOptedOutInput\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\"j\n" +
-	" ListPhoneNumbersOptedOutResponse\x12\x1f\n" +
-	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tR\tnexttoken\x12%\n" +
-	"\fphonenumbers\x18\xc8κJ \x03(\tR\fphonenumbers\"@\n" +
-	"\x1dListPlatformApplicationsInput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\x94\x01\n" +
-	" ListPlatformApplicationsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12O\n" +
-	"\x14platformapplications\x18\xaa\xa2\x81d \x03(\v2\x18.sns.PlatformApplicationR\x14platformapplications\"z\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x97\x01\n" +
+	"\x1cListOriginationNumbersResult\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12C\n" +
+	"\fphonenumbers\x18\xa8\xe9\x80\xda\x01 \x03(\v2\x1b.sns.PhoneNumberInformationR\fphonenumbersB\f\n" +
+	"\n" +
+	"_nexttoken\"S\n" +
+	"\x1dListPhoneNumbersOptedOutInput\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"}\n" +
+	" ListPhoneNumbersOptedOutResponse\x12$\n" +
+	"\tnexttoken\x18\x9e\xf3\x9d7 \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12%\n" +
+	"\fphonenumbers\x18\xc8κJ \x03(\tR\fphonenumbersB\f\n" +
+	"\n" +
+	"_nexttoken\"S\n" +
+	"\x1dListPlatformApplicationsInput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\xa7\x01\n" +
+	" ListPlatformApplicationsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12O\n" +
+	"\x14platformapplications\x18\xaa\xa2\x81d \x03(\v2\x18.sns.PlatformApplicationR\x14platformapplicationsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x8d\x01\n" +
 	"\x1fListSMSSandboxPhoneNumbersInput\x12'\n" +
 	"\n" +
 	"maxresults\x18\xb2\xa8\x9b\x83\x01 \x01(\x05H\x00R\n" +
-	"maxresults\x88\x01\x01\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttokenB\r\n" +
-	"\v_maxresults\"\x87\x01\n" +
-	" ListSMSSandboxPhoneNumbersResult\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12B\n" +
-	"\fphonenumbers\x18\xa8\xe9\x80\xda\x01 \x03(\v2\x1a.sns.SMSSandboxPhoneNumberR\fphonenumbers\"_\n" +
-	"\x1dListSubscriptionsByTopicInput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\x7f\n" +
-	" ListSubscriptionsByTopicResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12:\n" +
-	"\rsubscriptions\x18Ʈ\xf6P \x03(\v2\x11.sns.SubscriptionR\rsubscriptions\"9\n" +
-	"\x16ListSubscriptionsInput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"x\n" +
-	"\x19ListSubscriptionsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12:\n" +
-	"\rsubscriptions\x18Ʈ\xf6P \x03(\v2\x11.sns.SubscriptionR\rsubscriptions\"B\n" +
+	"maxresults\x88\x01\x01\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x01R\tnexttoken\x88\x01\x01B\r\n" +
+	"\v_maxresultsB\f\n" +
+	"\n" +
+	"_nexttoken\"\x9a\x01\n" +
+	" ListSMSSandboxPhoneNumbersResult\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12B\n" +
+	"\fphonenumbers\x18\xa8\xe9\x80\xda\x01 \x03(\v2\x1a.sns.SMSSandboxPhoneNumberR\fphonenumbersB\f\n" +
+	"\n" +
+	"_nexttoken\"r\n" +
+	"\x1dListSubscriptionsByTopicInput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12\x1d\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarnB\f\n" +
+	"\n" +
+	"_nexttoken\"\x92\x01\n" +
+	" ListSubscriptionsByTopicResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12:\n" +
+	"\rsubscriptions\x18Ʈ\xf6P \x03(\v2\x11.sns.SubscriptionR\rsubscriptionsB\f\n" +
+	"\n" +
+	"_nexttoken\"L\n" +
+	"\x16ListSubscriptionsInput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"\x8b\x01\n" +
+	"\x19ListSubscriptionsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12:\n" +
+	"\rsubscriptions\x18Ʈ\xf6P \x03(\v2\x11.sns.SubscriptionR\rsubscriptionsB\f\n" +
+	"\n" +
+	"_nexttoken\"B\n" +
 	"\x1aListTagsForResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"?\n" +
 	"\x1bListTagsForResourceResponse\x12 \n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sns.TagR\x04tags\"2\n" +
-	"\x0fListTopicsInput\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\"\\\n" +
-	"\x12ListTopicsResponse\x12\x1f\n" +
-	"\tnexttoken\x18\xfe\x84\xbag \x01(\tR\tnexttoken\x12%\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sns.TagR\x04tags\"E\n" +
+	"\x0fListTopicsInput\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_nexttoken\"o\n" +
+	"\x12ListTopicsResponse\x12$\n" +
+	"\tnexttoken\x18\xfe\x84\xbag \x01(\tH\x00R\tnexttoken\x88\x01\x01\x12%\n" +
 	"\x06topics\x18\xb6\xca\xeah \x03(\v2\n" +
-	".sns.TopicR\x06topics\"\x80\x01\n" +
-	"\x15MessageAttributeValue\x12#\n" +
-	"\vbinaryvalue\x18\xb6\x84\xe9y \x01(\fR\vbinaryvalue\x12\x1d\n" +
-	"\bdatatype\x18\xeeص  \x01(\tR\bdatatype\x12#\n" +
-	"\vstringvalue\x18\x8a\xef\xf7W \x01(\tR\vstringvalue\"0\n" +
-	"\x11NotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"<\n" +
+	".sns.TopicR\x06topicsB\f\n" +
+	"\n" +
+	"_nexttoken\"\xaa\x01\n" +
+	"\x15MessageAttributeValue\x12(\n" +
+	"\vbinaryvalue\x18\xb6\x84\xe9y \x01(\fH\x00R\vbinaryvalue\x88\x01\x01\x12\x1d\n" +
+	"\bdatatype\x18\xeeص  \x01(\tR\bdatatype\x12(\n" +
+	"\vstringvalue\x18\x8a\xef\xf7W \x01(\tH\x01R\vstringvalue\x88\x01\x01B\x0e\n" +
+	"\f_binaryvalueB\x0e\n" +
+	"\f_stringvalue\"A\n" +
+	"\x11NotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"<\n" +
 	"\x15OptInPhoneNumberInput\x12#\n" +
 	"\vphonenumber\x18\x8f\xc7\xc8J \x01(\tR\vphonenumber\"\x1a\n" +
-	"\x18OptInPhoneNumberResponse\"0\n" +
-	"\x11OptedOutException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xa3\x02\n" +
-	"\x16PhoneNumberInformation\x12\x1f\n" +
-	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tR\tcreatedat\x12,\n" +
-	"\x0fiso2countrycode\x18\xbc\x82\x88\x87\x01 \x01(\tR\x0fiso2countrycode\x12H\n" +
-	"\x12numbercapabilities\x18\xe7\x97\xe0\x19 \x03(\x0e2\x15.sns.NumberCapabilityR\x12numbercapabilities\x12$\n" +
-	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumber\x12/\n" +
-	"\troutetype\x18߽\x92Q \x01(\x0e2\x0e.sns.RouteTypeR\troutetype\x12\x19\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"\xdc\x01\n" +
+	"\x18OptInPhoneNumberResponse\"A\n" +
+	"\x11OptedOutException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xf4\x02\n" +
+	"\x16PhoneNumberInformation\x12$\n" +
+	"\tcreatedat\x18\xef\xea\x8e{ \x01(\tH\x00R\tcreatedat\x88\x01\x01\x121\n" +
+	"\x0fiso2countrycode\x18\xbc\x82\x88\x87\x01 \x01(\tH\x01R\x0fiso2countrycode\x88\x01\x01\x12H\n" +
+	"\x12numbercapabilities\x18\xe7\x97\xe0\x19 \x03(\x0e2\x15.sns.NumberCapabilityR\x12numbercapabilities\x12)\n" +
+	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x02R\vphonenumber\x88\x01\x01\x12/\n" +
+	"\troutetype\x18߽\x92Q \x01(\x0e2\x0e.sns.RouteTypeR\troutetype\x12\x1e\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tH\x03R\x06status\x88\x01\x01B\f\n" +
+	"\n" +
+	"_createdatB\x12\n" +
+	"\x10_iso2countrycodeB\x0e\n" +
+	"\f_phonenumberB\t\n" +
+	"\a_status\"\xfc\x01\n" +
 	"\x13PlatformApplication\x12K\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2(.sns.PlatformApplication.AttributesEntryR\n" +
-	"attributes\x129\n" +
-	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tR\x16platformapplicationarn\x1a=\n" +
+	"attributes\x12>\n" +
+	"\x16platformapplicationarn\x18\x88\xe2\x84s \x01(\tH\x00R\x16platformapplicationarn\x88\x01\x01\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"C\n" +
-	"$PlatformApplicationDisabledException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x95\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x19\n" +
+	"\x17_platformapplicationarn\"T\n" +
+	"$PlatformApplicationDisabledException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x95\x01\n" +
 	"\x11PublishBatchInput\x12a\n" +
 	"\x1apublishbatchrequestentries\x18\x88\xbe\x85\x9c\x01 \x03(\v2\x1d.sns.PublishBatchRequestEntryR\x1apublishbatchrequestentries\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\xc9\x03\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\xac\x04\n" +
 	"\x18PublishBatchRequestEntry\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12e\n" +
-	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v24.sns.PublishBatchRequestEntry.MessageattributesEntryR\x11messageattributes\x12:\n" +
-	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tR\x16messagededuplicationid\x12*\n" +
-	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tR\x0emessagegroupid\x12.\n" +
-	"\x10messagestructure\x18ʕ\x81\xc0\x01 \x01(\tR\x10messagestructure\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\x1a`\n" +
+	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v24.sns.PublishBatchRequestEntry.MessageattributesEntryR\x11messageattributes\x12?\n" +
+	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tH\x00R\x16messagededuplicationid\x88\x01\x01\x12/\n" +
+	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tH\x01R\x0emessagegroupid\x88\x01\x01\x123\n" +
+	"\x10messagestructure\x18ʕ\x81\xc0\x01 \x01(\tH\x02R\x10messagestructure\x88\x01\x01\x12 \n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x03R\asubject\x88\x01\x01\x1a`\n" +
 	"\x16MessageattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
-	"\x05value\x18\x02 \x01(\v2\x1a.sns.MessageAttributeValueR\x05value:\x028\x01\"\x90\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x1a.sns.MessageAttributeValueR\x05value:\x028\x01B\x19\n" +
+	"\x17_messagededuplicationidB\x11\n" +
+	"\x0f_messagegroupidB\x13\n" +
+	"\x11_messagestructureB\n" +
+	"\n" +
+	"\b_subject\"\x90\x01\n" +
 	"\x14PublishBatchResponse\x126\n" +
 	"\x06failed\x18Շ\xe7\xab\x01 \x03(\v2\x1a.sns.BatchResultErrorEntryR\x06failed\x12@\n" +
 	"\n" +
 	"successful\x18\x9c\xbb\xec\xc4\x01 \x03(\v2\x1c.sns.PublishBatchResultEntryR\n" +
-	"successful\"z\n" +
-	"\x17PublishBatchResultEntry\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12 \n" +
-	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12)\n" +
-	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\"\x83\x04\n" +
+	"successful\"\xb1\x01\n" +
+	"\x17PublishBatchResultEntry\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12%\n" +
+	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tH\x01R\tmessageid\x88\x01\x01\x12.\n" +
+	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tH\x02R\x0esequencenumber\x88\x01\x01B\x05\n" +
+	"\x03_idB\f\n" +
+	"\n" +
+	"_messageidB\x11\n" +
+	"\x0f_sequencenumber\"\xa0\x05\n" +
 	"\fPublishInput\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12Y\n" +
-	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v2(.sns.PublishInput.MessageattributesEntryR\x11messageattributes\x12:\n" +
-	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tR\x16messagededuplicationid\x12*\n" +
-	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tR\x0emessagegroupid\x12.\n" +
-	"\x10messagestructure\x18ʕ\x81\xc0\x01 \x01(\tR\x10messagestructure\x12$\n" +
-	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumber\x12\x1b\n" +
-	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tR\asubject\x12\x1f\n" +
-	"\ttargetarn\x18\x90\x95\xe5g \x01(\tR\ttargetarn\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\x1a`\n" +
+	"\x11messageattributes\x18\xf6\x86\xf5\x1a \x03(\v2(.sns.PublishInput.MessageattributesEntryR\x11messageattributes\x12?\n" +
+	"\x16messagededuplicationid\x18\xd9\xc5\xfe\xb4\x01 \x01(\tH\x00R\x16messagededuplicationid\x88\x01\x01\x12/\n" +
+	"\x0emessagegroupid\x18\x9bĆ\xc8\x01 \x01(\tH\x01R\x0emessagegroupid\x88\x01\x01\x123\n" +
+	"\x10messagestructure\x18ʕ\x81\xc0\x01 \x01(\tH\x02R\x10messagestructure\x88\x01\x01\x12)\n" +
+	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x03R\vphonenumber\x88\x01\x01\x12 \n" +
+	"\asubject\x18\xf0\xc9\xe4\x03 \x01(\tH\x04R\asubject\x88\x01\x01\x12$\n" +
+	"\ttargetarn\x18\x90\x95\xe5g \x01(\tH\x05R\ttargetarn\x88\x01\x01\x12\"\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tH\x06R\btopicarn\x88\x01\x01\x1a`\n" +
 	"\x16MessageattributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
-	"\x05value\x18\x02 \x01(\v2\x1a.sns.MessageAttributeValueR\x05value:\x028\x01\"^\n" +
-	"\x0fPublishResponse\x12 \n" +
-	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tR\tmessageid\x12)\n" +
-	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tR\x0esequencenumber\"|\n" +
+	"\x05value\x18\x02 \x01(\v2\x1a.sns.MessageAttributeValueR\x05value:\x028\x01B\x19\n" +
+	"\x17_messagededuplicationidB\x11\n" +
+	"\x0f_messagegroupidB\x13\n" +
+	"\x11_messagestructureB\x0e\n" +
+	"\f_phonenumberB\n" +
+	"\n" +
+	"\b_subjectB\f\n" +
+	"\n" +
+	"_targetarnB\v\n" +
+	"\t_topicarn\"\x89\x01\n" +
+	"\x0fPublishResponse\x12%\n" +
+	"\tmessageid\x18\xaa\xe6\xf4\xab\x01 \x01(\tH\x00R\tmessageid\x88\x01\x01\x12.\n" +
+	"\x0esequencenumber\x18\x9a\x9a\xe3. \x01(\tH\x01R\x0esequencenumber\x88\x01\x01B\f\n" +
+	"\n" +
+	"_messageidB\x11\n" +
+	"\x0f_sequencenumber\"|\n" +
 	"\x1cPutDataProtectionPolicyInput\x126\n" +
 	"\x14dataprotectionpolicy\x18ݰ\xd8\xf7\x01 \x01(\tR\x14dataprotectionpolicy\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"P\n" +
 	"\x15RemovePermissionInput\x12\x18\n" +
 	"\x05label\x18\x9e\xe5\xb3\xf6\x01 \x01(\tR\x05label\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\";\n" +
-	"\x1cReplayLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"8\n" +
-	"\x19ResourceNotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\x86\x01\n" +
-	"\x15SMSSandboxPhoneNumber\x12$\n" +
-	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tR\vphonenumber\x12G\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2,.sns.SMSSandboxPhoneNumberVerificationStatusR\x06status\"\xd4\x01\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"L\n" +
+	"\x1cReplayLimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19ResourceNotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9b\x01\n" +
+	"\x15SMSSandboxPhoneNumber\x12)\n" +
+	"\vphonenumber\x18\xef\xfa\x80\xb5\x01 \x01(\tH\x00R\vphonenumber\x88\x01\x01\x12G\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2,.sns.SMSSandboxPhoneNumberVerificationStatusR\x06statusB\x0e\n" +
+	"\f_phonenumber\"\xd4\x01\n" +
 	"\x1aSetEndpointAttributesInput\x12R\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2/.sns.SetEndpointAttributesInput.AttributesEntryR\n" +
@@ -6347,66 +6468,92 @@ const file_sns_proto_rawDesc = "" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x1a\n" +
-	"\x18SetSMSAttributesResponse\"\xa3\x01\n" +
+	"\x18SetSMSAttributesResponse\"\xbb\x01\n" +
 	"\x1eSetSubscriptionAttributesInput\x12(\n" +
-	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12)\n" +
-	"\x0eattributevalue\x18ũ\x92. \x01(\tR\x0eattributevalue\x12,\n" +
-	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tR\x0fsubscriptionarn\"\x8d\x01\n" +
+	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12.\n" +
+	"\x0eattributevalue\x18ũ\x92. \x01(\tH\x00R\x0eattributevalue\x88\x01\x01\x12,\n" +
+	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tR\x0fsubscriptionarnB\x11\n" +
+	"\x0f_attributevalue\"\xa5\x01\n" +
 	"\x17SetTopicAttributesInput\x12(\n" +
-	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12)\n" +
-	"\x0eattributevalue\x18ũ\x92. \x01(\tR\x0eattributevalue\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"0\n" +
-	"\x11StaleTagException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xcc\x02\n" +
+	"\rattributename\x18\xad\x95\x98\xa8\x01 \x01(\tR\rattributename\x12.\n" +
+	"\x0eattributevalue\x18ũ\x92. \x01(\tH\x00R\x0eattributevalue\x88\x01\x01\x12\x1d\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarnB\x11\n" +
+	"\x0f_attributevalue\"A\n" +
+	"\x11StaleTagException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xde\x02\n" +
 	"\x0eSubscribeInput\x12F\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2#.sns.SubscribeInput.AttributesEntryR\n" +
-	"attributes\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12\x1d\n" +
+	"attributes\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x00R\bendpoint\x88\x01\x01\x12\x1d\n" +
 	"\bprotocol\x18\xd6\xd7\xdfR \x01(\tR\bprotocol\x12<\n" +
-	"\x15returnsubscriptionarn\x18\x8e\xe6\xc6% \x01(\bH\x00R\x15returnsubscriptionarn\x88\x01\x01\x12\x1d\n" +
+	"\x15returnsubscriptionarn\x18\x8e\xe6\xc6% \x01(\bH\x01R\x15returnsubscriptionarn\x88\x01\x01\x12\x1d\n" +
 	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\x1a=\n" +
 	"\x0fAttributesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_returnsubscriptionarn\"A\n" +
-	"\x11SubscribeResponse\x12,\n" +
-	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tR\x0fsubscriptionarn\"\xb3\x01\n" +
-	"\fSubscription\x12\x1d\n" +
-	"\bendpoint\x18\x9d\xad\x9f? \x01(\tR\bendpoint\x12\x18\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tR\x05owner\x12\x1d\n" +
-	"\bprotocol\x18\xd6\xd7\xdfR \x01(\tR\bprotocol\x12,\n" +
-	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tR\x0fsubscriptionarn\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"A\n" +
-	"\"SubscriptionLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"4\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\v\n" +
+	"\t_endpointB\x18\n" +
+	"\x16_returnsubscriptionarn\"Z\n" +
+	"\x11SubscribeResponse\x121\n" +
+	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tH\x00R\x0fsubscriptionarn\x88\x01\x01B\x12\n" +
+	"\x10_subscriptionarn\"\x91\x02\n" +
+	"\fSubscription\x12\"\n" +
+	"\bendpoint\x18\x9d\xad\x9f? \x01(\tH\x00R\bendpoint\x88\x01\x01\x12\x1d\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\tH\x01R\x05owner\x88\x01\x01\x12\"\n" +
+	"\bprotocol\x18\xd6\xd7\xdfR \x01(\tH\x02R\bprotocol\x88\x01\x01\x121\n" +
+	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tH\x03R\x0fsubscriptionarn\x88\x01\x01\x12\"\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tH\x04R\btopicarn\x88\x01\x01B\v\n" +
+	"\t_endpointB\b\n" +
+	"\x06_ownerB\v\n" +
+	"\t_protocolB\x12\n" +
+	"\x10_subscriptionarnB\v\n" +
+	"\t_topicarn\"R\n" +
+	"\"SubscriptionLimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"8\n" +
-	"\x19TagLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"1\n" +
-	"\x12TagPolicyException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\\\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"I\n" +
+	"\x19TagLimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"B\n" +
+	"\x12TagPolicyException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\\\n" +
 	"\x12TagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12 \n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\b.sns.TagR\x04tags\"\x15\n" +
-	"\x13TagResourceResponse\"1\n" +
-	"\x12ThrottledException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"D\n" +
-	"%TooManyEntriesInBatchRequestException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"&\n" +
-	"\x05Topic\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\":\n" +
-	"\x1bTopicLimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"@\n" +
+	"\x13TagResourceResponse\"B\n" +
+	"\x12ThrottledException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%TooManyEntriesInBatchRequestException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"8\n" +
+	"\x05Topic\x12\"\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tH\x00R\btopicarn\x88\x01\x01B\v\n" +
+	"\t_topicarn\"K\n" +
+	"\x1bTopicLimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"@\n" +
 	"\x10UnsubscribeInput\x12,\n" +
 	"\x0fsubscriptionarn\x18\xac\x9f\xa6\x85\x01 \x01(\tR\x0fsubscriptionarn\"Z\n" +
 	"\x14UntagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x17\n" +
-	"\x15UntagResourceResponse\"1\n" +
-	"\x12UserErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"2\n" +
+	"\x15UntagResourceResponse\"B\n" +
+	"\x12UserErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"2\n" +
 	"\x13ValidationException\x12\x1b\n" +
 	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"O\n" +
 	"\x15VerificationException\x12\x1b\n" +
@@ -6775,12 +6922,80 @@ func file_sns_proto_init() {
 	if File_sns_proto != nil {
 		return
 	}
+	file_sns_proto_msgTypes[1].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[2].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[3].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[4].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[6].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[7].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[8].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[9].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[10].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[12].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[13].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[16].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[17].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[23].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[24].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[25].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[26].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[28].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[36].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[41].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[42].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[43].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[44].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[45].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[46].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[47].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[48].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[49].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[50].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[51].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[52].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[53].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[54].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[55].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[56].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[57].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[58].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[59].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[60].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[61].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[62].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[63].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[64].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[65].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[66].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[69].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[70].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[71].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[72].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[75].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[76].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[77].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[78].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[80].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[82].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[83].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[84].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[87].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[88].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[89].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[94].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[95].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[96].OneofWrappers = []any{}
 	file_sns_proto_msgTypes[97].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[98].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[99].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[100].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[102].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[103].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[106].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[107].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[108].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[109].OneofWrappers = []any{}
+	file_sns_proto_msgTypes[113].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

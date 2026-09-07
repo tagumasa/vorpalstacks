@@ -190,3 +190,51 @@ func mergeIndexKey(item *dbstore.Item, table *dbstore.Table, indexName string) m
 	}
 	return merged
 }
+
+// primaryKeyFromStartKey extracts the table's primary key attributes from an
+// ExclusiveStartKey. An index read's start key carries the primary key
+// alongside the index keys, so the primary key is always derivable from a
+// well-formed start key; nil means the start key is incomplete and cannot
+// anchor pagination at an item's storage position.
+func primaryKeyFromStartKey(table *dbstore.Table, esk map[string]*dbstore.AttributeValue) map[string]*dbstore.AttributeValue {
+	pk := make(map[string]*dbstore.AttributeValue, len(table.KeySchema))
+	for _, ks := range table.KeySchema {
+		v, ok := esk[ks.AttributeName]
+		if !ok || v == nil {
+			return nil
+		}
+		pk[ks.AttributeName] = v
+	}
+	return pk
+}
+
+// indexMarkerFromStartKey derives the secondary-index bucket key an
+// ExclusiveStartKey points at, mirroring the store's GSI/LSI key
+// composition — table, index, encoded hash, encoded sort (when the index
+// has one), encoded primary key. The hash value is the encoded partition
+// value the query already resolved. Returns "" when the start key lacks the
+// pieces to name one index entry.
+func indexMarkerFromStartKey(table *dbstore.Table, indexName, encodedHashValue string, esk map[string]*dbstore.AttributeValue) string {
+	primaryKey := primaryKeyFromStartKey(table, esk)
+	if primaryKey == nil {
+		return ""
+	}
+	primaryKeyStr := dbstore.EncodeItemKey(table.Name, primaryKey, table)
+	if primaryKeyStr == "" {
+		return ""
+	}
+
+	_, sortName, _ := indexKeyAttributeNames(table, indexName)
+	if sortName != "" {
+		sortAttr, ok := esk[sortName]
+		if !ok || sortAttr == nil {
+			return ""
+		}
+		encodedSort := dbstore.EncodeKeyValue(sortAttr)
+		if encodedSort == "" {
+			return ""
+		}
+		return table.Name + dbstore.KeySep + indexName + dbstore.KeySep + encodedHashValue + dbstore.KeySep + encodedSort + dbstore.KeySep + primaryKeyStr
+	}
+	return table.Name + dbstore.KeySep + indexName + dbstore.KeySep + encodedHashValue + dbstore.KeySep + primaryKeyStr
+}

@@ -58,7 +58,7 @@ func toPbStreamDescription(stream *kinesisstore.Stream, shards []*kinesisstore.S
 
 	if stream.EncryptionType != "" {
 		sd.Encryptiontype = toPbEncryptionType(stream.EncryptionType)
-		sd.Keyid = stream.KeyID
+		sd.Keyid = proto.String(stream.KeyID)
 	}
 
 	return sd
@@ -71,7 +71,7 @@ func toPbStreamSummary(s *kinesisstore.Stream) *pb.StreamSummary {
 		Streamname:              s.StreamName,
 		Streamarn:               s.StreamARN,
 		Streamstatus:            toPbStreamStatus(s.StreamStatus),
-		Streamcreationtimestamp: s.CreatedAt.Format(timeutils.ISO8601UTCFormat),
+		Streamcreationtimestamp: proto.String(s.CreatedAt.Format(timeutils.ISO8601UTCFormat)),
 	}
 	if s.StreamModeDetails != nil {
 		summary.Streammodedetails = &pb.StreamModeDetails{
@@ -85,7 +85,7 @@ func toPbStreamSummary(s *kinesisstore.Stream) *pb.StreamSummary {
 func toPbShard(shard *kinesisstore.Shard) *pb.Shard {
 	s := &pb.Shard{
 		Shardid:       shard.ShardID,
-		Parentshardid: shard.ParentShardID,
+		Parentshardid: proto.String(shard.ParentShardID),
 	}
 
 	if shard.HashKeyRange != nil {
@@ -98,12 +98,12 @@ func toPbShard(shard *kinesisstore.Shard) *pb.Shard {
 	if shard.SequenceNumberRange != nil {
 		s.Sequencenumberrange = &pb.SequenceNumberRange{
 			Startingsequencenumber: shard.SequenceNumberRange.StartingSequenceNumber,
-			Endingsequencenumber:   shard.SequenceNumberRange.EndingSequenceNumber,
+			Endingsequencenumber:   proto.String(shard.SequenceNumberRange.EndingSequenceNumber),
 		}
 	}
 
 	if shard.AdjacentParentShardID != "" {
-		s.Adjacentparentshardid = shard.AdjacentParentShardID
+		s.Adjacentparentshardid = proto.String(shard.AdjacentParentShardID)
 	}
 
 	return s

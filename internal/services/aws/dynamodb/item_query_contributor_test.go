@@ -26,12 +26,12 @@ func TestQueryRecordsContributorEvent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("store: %v", err)
 	}
-	if _, err := store.Tables().Create(
-		"QTbl",
-		[]*dbstore.KeySchemaElement{{AttributeName: "pk", KeyType: dbstore.KeyTypeHash}, {AttributeName: "sk", KeyType: dbstore.KeyTypeRange}},
-		[]*dbstore.AttributeDefinition{{AttributeName: "pk", AttributeType: dbstore.ScalarAttributeTypeS}, {AttributeName: "sk", AttributeType: dbstore.ScalarAttributeTypeS}},
-		dbstore.BillingModePayPerRequest, nil, nil, nil, nil, nil, false,
-	); err != nil {
+	if _, err := store.Tables().Create(dbstore.CreateTableParams{
+		Name:                 "QTbl",
+		KeySchema:            []*dbstore.KeySchemaElement{{AttributeName: "pk", KeyType: dbstore.KeyTypeHash}, {AttributeName: "sk", KeyType: dbstore.KeyTypeRange}},
+		AttributeDefinitions: []*dbstore.AttributeDefinition{{AttributeName: "pk", AttributeType: dbstore.ScalarAttributeTypeS}, {AttributeName: "sk", AttributeType: dbstore.ScalarAttributeTypeS}},
+		BillingMode:          dbstore.BillingModePayPerRequest,
+	}); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	tbl, err := store.Tables().Get("QTbl")

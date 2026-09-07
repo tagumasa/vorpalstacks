@@ -23,34 +23,10 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	tableName := table.Name
 
-	item, itemErr := parseItem(req.Parameters["Item"])
-	if itemErr != nil || item == nil {
-		return nil, ErrInvalidParameter
-	}
-
-	if itemSize := calculateItemSize(item); itemSize > maxItemSizeBytes {
-		return nil, ErrInvalidParameter
-	}
-
-	key := s.extractKeyFromItem(table, item)
-	if key == nil {
-		return nil, ErrMissingKey
-	}
-
-	if !validateKeyValueNotEmpty(key) {
-		return nil, ErrInvalidParameter
-	}
-
-	if err := validateItemKeyTypes(table, item); err != nil {
-		return nil, err
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
+	// Tolerant extraction: a missing or malformed Item parses to nil and
+	// putItemCore rejects it (the derived key cannot be empty).
+	item, _ := parseItem(req.Parameters["Item"])
 
 	conditionExpr := request.GetStringParam(req.Parameters, "ConditionExpression")
 	exprAttrNames, exprAttrValues, err := getExpressionAttributes(req.Parameters)
@@ -58,50 +34,31 @@ func (s *DynamoDBService) PutItem(ctx context.Context, reqCtx *request.RequestCo
 		return nil, err
 	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
-	// PutItem and DeleteItem recognise only NONE and ALL_OLD (model
-	// ReturnValue enum); any other value is rejected rather than ignored.
-	if returnValues != "" && returnValues != "NONE" && returnValues != "ALL_OLD" {
-		return nil, ErrInvalidParameter
-	}
 
-	// Build condition checker callback from ConditionExpression.
-	var condChecker ConditionChecker
-	if conditionExpr != "" {
-		condChecker = func(existing *dbstore.Item, isNotFound bool) error {
-			var evalItem *dbstore.Item
-			if isNotFound {
-				evalItem = &dbstore.Item{
-					TableName:  tableName,
-					Key:        key,
-					Attributes: make(map[string]*dbstore.AttributeValue),
-				}
-			} else {
-				evalItem = existing
-			}
-			met, evalErr := evaluateConditionExpression(evalItem, conditionExpr, exprAttrNames, exprAttrValues)
-			if evalErr != nil {
-				return evalErr
-			}
-			if !met {
-				return ErrConditionalCheckFailed
-			}
-			return nil
-		}
-	}
-
-	_, oldItem, err := s.putItemCore(ctx, store, reqCtx.GetRegion(), table, key, item, condChecker)
+	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
+	result, err := s.putItemCore(ctx, store, reqCtx.GetRegion(), PutItemCoreInput{
+		Table:        table,
+		Item:         item,
+		Condition:    conditionSpec{Expr: conditionExpr, Names: exprAttrNames, Values: exprAttrValues},
+		ReturnValues: returnValues,
+	})
+	if err != nil {
+		return nil, err
+	}
+	key := result.StoredItem.Key
+
 	resp := map[string]interface{}{}
-	if returnValues == "ALL_OLD" && oldItem != nil {
-		resp["Attributes"] = buildItemResponse(oldItem.Attributes)
+	if returnValues == "ALL_OLD" && result.OldItem != nil {
+		resp["Attributes"] = buildItemResponse(result.OldItem.Attributes)
 	}
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, 1.0)
+		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithVector(table.Name, 1.0, vectorWriteCapacityForItems(table, result.StoredItem))
 	}
 
 	if request.GetStringParam(req.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {
@@ -119,26 +76,16 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
-	tableName := table.Name
 
-	key, keyErr := parseKey(req.Parameters["Key"])
-	if keyErr != nil || key == nil {
-		return nil, ErrInvalidParameter
-	}
-
-	if !validateKeyValueNotEmpty(key) {
-		return nil, ErrInvalidParameter
-	}
-
-	if err := validateKeyTypes(table, key); err != nil {
-		return nil, err
-	}
+	// Tolerant extraction: a missing or malformed Key parses to nil and
+	// getItemCore rejects it via the empty-key rule.
+	key, _ := parseKey(req.Parameters["Key"])
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	item, err := s.getItemCore(ctx, store, tableName, key)
+	item, err := s.getItemCore(ctx, store, table, key)
 	if err != nil {
 		if isItemNotFound(err) {
 			return response.EmptyResponse(), nil
@@ -164,7 +111,7 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 		// consistent ones; the underlying store is always strongly
 		// consistent, so the flag only affects the reported charge.
 		capacityUnits := rcuPerItem(request.GetBoolParam(req.Parameters, "ConsistentRead"), "", table)
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, capacityUnits)
+		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(table.Name, capacityUnits)
 	}
 
 	return resp, nil
@@ -172,29 +119,16 @@ func (s *DynamoDBService) GetItem(ctx context.Context, reqCtx *request.RequestCo
 
 // DeleteItem removes an item from the specified table using the provided key.
 func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	table, err := s.validateAndGetTable(reqCtx, req.Parameters)
+	// A write: resolve through the ACTIVE-required path like PutItem and
+	// UpdateItem — a table mid-restore (CREATING) must not be mutated.
+	table, err := s.validateAndGetActiveTable(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
-	tableName := table.Name
 
-	key, keyErr := parseKey(req.Parameters["Key"])
-	if keyErr != nil || key == nil {
-		return nil, ErrInvalidParameter
-	}
-
-	if !validateKeyValueNotEmpty(key) {
-		return nil, ErrInvalidParameter
-	}
-
-	if err := validateKeyTypes(table, key); err != nil {
-		return nil, err
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
+	// Tolerant extraction: a missing or malformed Key parses to nil and
+	// deleteItemCore rejects it via the empty-key rule.
+	key, _ := parseKey(req.Parameters["Key"])
 
 	conditionExpr := request.GetStringParam(req.Parameters, "ConditionExpression")
 	exprAttrNames, exprAttrValues, err := getExpressionAttributes(req.Parameters)
@@ -202,50 +136,30 @@ func (s *DynamoDBService) DeleteItem(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 	returnValues := request.GetStringParam(req.Parameters, "ReturnValues")
-	// PutItem and DeleteItem recognise only NONE and ALL_OLD (model
-	// ReturnValue enum); any other value is rejected rather than ignored.
-	if returnValues != "" && returnValues != "NONE" && returnValues != "ALL_OLD" {
-		return nil, ErrInvalidParameter
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
 
-	// Build condition checker callback from ConditionExpression.
-	var condChecker ConditionChecker
-	if conditionExpr != "" {
-		condChecker = func(existing *dbstore.Item, isNotFound bool) error {
-			var evalItem *dbstore.Item
-			if isNotFound {
-				evalItem = &dbstore.Item{
-					TableName:  tableName,
-					Key:        key,
-					Attributes: make(map[string]*dbstore.AttributeValue),
-				}
-			} else {
-				evalItem = existing
-			}
-			met, evalErr := evaluateConditionExpression(evalItem, conditionExpr, exprAttrNames, exprAttrValues)
-			if evalErr != nil {
-				return evalErr
-			}
-			if !met {
-				return ErrConditionalCheckFailed
-			}
-			return nil
-		}
-	}
-
-	oldItem, err := s.deleteItemCore(ctx, store, reqCtx.GetRegion(), table, key, condChecker)
+	result, err := s.deleteItemCore(ctx, store, reqCtx.GetRegion(), DeleteItemCoreInput{
+		Table:        table,
+		Key:          key,
+		Condition:    conditionSpec{Expr: conditionExpr, Names: exprAttrNames, Values: exprAttrValues},
+		ReturnValues: returnValues,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	resp := map[string]interface{}{}
-	if returnValues == "ALL_OLD" && oldItem != nil {
-		resp["Attributes"] = buildItemResponse(oldItem.Attributes)
+	if returnValues == "ALL_OLD" && result.OldItem != nil {
+		resp["Attributes"] = buildItemResponse(result.OldItem.Attributes)
 	}
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(tableName, 1.0)
+		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithVector(table.Name, 1.0, vectorWriteCapacityForItems(table, result.OldItem))
 	}
 
 	if request.GetStringParam(req.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {
@@ -264,17 +178,9 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 		return nil, err
 	}
 
-	key, keyErr := parseKey(req.Parameters["Key"])
-	if keyErr != nil || key == nil {
-		return nil, ErrInvalidParameter
-	}
-	if !validateKeyValueNotEmpty(key) {
-		return nil, ErrInvalidParameter
-	}
-
-	if err := validateKeyTypes(table, key); err != nil {
-		return nil, err
-	}
+	// Tolerant extraction: a missing or malformed Key parses to nil and
+	// updateItemCore rejects it via the empty-key rule.
+	key, _ := parseKey(req.Parameters["Key"])
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -285,10 +191,6 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 	updateExpr := request.GetStringParam(req.Parameters, "UpdateExpression")
 	conditionExpr := request.GetStringParam(req.Parameters, "ConditionExpression")
 	attrs := req.Parameters["AttributeUpdates"]
-
-	if updateExpr != "" && attrs != nil {
-		return nil, ErrInvalidParameter
-	}
 
 	exprAttrNames, exprAttrValues, err := getExpressionAttributes(req.Parameters)
 	if err != nil {
@@ -330,7 +232,7 @@ func (s *DynamoDBService) UpdateItem(ctx context.Context, reqCtx *request.Reques
 
 	returnConsumedCapacity := getReturnConsumedCapacity(req.Parameters)
 	if returnConsumedCapacity == "TOTAL" || returnConsumedCapacity == "INDEXES" {
-		resp["ConsumedCapacity"] = buildConsumedCapacityResponse(table.Name, 1.0)
+		resp["ConsumedCapacity"] = buildConsumedCapacityResponseWithVector(table.Name, 1.0, vectorWriteCapacityForItems(table, result.StoredItem))
 	}
 
 	if request.GetStringParam(req.Parameters, "ReturnItemCollectionMetrics") == "SIZE" {

@@ -80,7 +80,7 @@ func (s *RDSService) describeDBClustersCore(stores *rdsStores, in DescribeDBClus
 	for _, c := range clusters {
 		pbClusters = append(pbClusters, clusterToPb(c, s.accountId))
 	}
-	return &pb.DBClusterMessage{Dbclusters: pbClusters, Marker: nextMarker}, nil
+	return &pb.DBClusterMessage{Dbclusters: pbClusters, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) createDBClusterCore(stores *rdsStores, in CreateDBClusterInput) (*pb.CreateDBClusterResult, error) {
@@ -220,7 +220,7 @@ func (s *RDSService) describeDBClusterSnapshotsCore(stores *rdsStores, in Descri
 	for _, snap := range snapshots {
 		pbSnapshots = append(pbSnapshots, snapshotToPb(snap, s.accountId))
 	}
-	return &pb.DBClusterSnapshotMessage{Dbclustersnapshots: pbSnapshots, Marker: nextMarker}, nil
+	return &pb.DBClusterSnapshotMessage{Dbclustersnapshots: pbSnapshots, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeDBClusterEndpointsCore(stores *rdsStores, in DescribeDBClusterEndpointsInput) (*pb.DBClusterEndpointMessage, error) {
@@ -238,21 +238,21 @@ func (s *RDSService) describeDBClusterEndpointsCore(stores *rdsStores, in Descri
 			continue
 		}
 		pbEndpoints = append(pbEndpoints, &pb.DBClusterEndpoint{
-			Dbclusterendpointidentifier: ep.DBClusterEndpointIdentifier,
-			Dbclusteridentifier:         ep.DBClusterIdentifier,
-			Endpoint:                    ep.Endpoint,
-			Status:                      ep.Status,
-			Endpointtype:                ep.EndpointType,
+			Dbclusterendpointidentifier: proto.String(ep.DBClusterEndpointIdentifier),
+			Dbclusteridentifier:         proto.String(ep.DBClusterIdentifier),
+			Endpoint:                    proto.String(ep.Endpoint),
+			Status:                      proto.String(ep.Status),
+			Endpointtype:                proto.String(ep.EndpointType),
 			Excludedmembers:             ep.ExcludedMembers,
 			Staticmembers:               ep.StaticMembers,
-			Dbclusterendpointarn:        ep.DBClusterEndpointArn,
+			Dbclusterendpointarn:        proto.String(ep.DBClusterEndpointArn),
 		})
 	}
 
 	pbEndpoints, nextMarker := paginateRDSItems(pbEndpoints, in.Marker, in.MaxRecords, func(e *pb.DBClusterEndpoint) string {
-		return e.Dbclusterendpointidentifier
+		return e.GetDbclusterendpointidentifier()
 	})
-	return &pb.DBClusterEndpointMessage{Dbclusterendpoints: pbEndpoints, Marker: nextMarker}, nil
+	return &pb.DBClusterEndpointMessage{Dbclusterendpoints: pbEndpoints, Marker: proto.String(nextMarker)}, nil
 }
 
 func (s *RDSService) describeDBClusterParametersCore(stores *rdsStores, in DescribeDBClusterParametersInput) (*pb.DBClusterParameterGroupDetails, error) {
@@ -271,35 +271,35 @@ func (s *RDSService) describeDBClusterParametersCore(stores *rdsStores, in Descr
 	for _, dp := range defaultParams {
 		if mod, ok := userMods[dp.name]; ok {
 			pbParams = append(pbParams, &pb.Parameter{
-				Parametername:  mod.ParameterName,
-				Parametervalue: mod.ParameterValue,
-				Description:    mod.Description,
-				Source:         mod.Source,
-				Applytype:      mod.ApplyType,
-				Datatype:       mod.DataType,
+				Parametername:  proto.String(mod.ParameterName),
+				Parametervalue: proto.String(mod.ParameterValue),
+				Description:    proto.String(mod.Description),
+				Source:         proto.String(mod.Source),
+				Applytype:      proto.String(mod.ApplyType),
+				Datatype:       proto.String(mod.DataType),
 				Ismodifiable:   proto.Bool(mod.IsModifiable),
 			})
 			delete(userMods, dp.name)
 		} else {
 			pbParams = append(pbParams, &pb.Parameter{
-				Parametername:  dp.name,
-				Parametervalue: dp.value,
-				Description:    dp.desc,
-				Source:         dp.source,
-				Applytype:      dp.apply,
-				Datatype:       dp.dtype,
+				Parametername:  proto.String(dp.name),
+				Parametervalue: proto.String(dp.value),
+				Description:    proto.String(dp.desc),
+				Source:         proto.String(dp.source),
+				Applytype:      proto.String(dp.apply),
+				Datatype:       proto.String(dp.dtype),
 				Ismodifiable:   proto.Bool(dp.modifiable == "true"),
 			})
 		}
 	}
 	for _, p := range userMods {
 		pbParams = append(pbParams, &pb.Parameter{
-			Parametername:  p.ParameterName,
-			Parametervalue: p.ParameterValue,
-			Description:    p.Description,
-			Source:         p.Source,
-			Applytype:      p.ApplyType,
-			Datatype:       p.DataType,
+			Parametername:  proto.String(p.ParameterName),
+			Parametervalue: proto.String(p.ParameterValue),
+			Description:    proto.String(p.Description),
+			Source:         proto.String(p.Source),
+			Applytype:      proto.String(p.ApplyType),
+			Datatype:       proto.String(p.DataType),
 			Ismodifiable:   proto.Bool(p.IsModifiable),
 		})
 	}
@@ -307,7 +307,7 @@ func (s *RDSService) describeDBClusterParametersCore(stores *rdsStores, in Descr
 
 	return &pb.DBClusterParameterGroupDetails{
 		Parameters: pbParams,
-		Marker:     "",
+		Marker:     proto.String(""),
 	}, nil
 }
 
@@ -317,51 +317,51 @@ func (s *RDSService) describeDBClusterParametersCore(stores *rdsStores, in Descr
 
 func clusterToPb(c *storerds.DBCluster, accountId string) *pb.DBCluster {
 	p := &pb.DBCluster{
-		Dbclusteridentifier:              c.DBClusterIdentifier,
-		Engine:                           c.Engine,
-		Engineversion:                    c.EngineVersion,
-		Status:                           c.Status,
-		Masterusername:                   c.MasterUsername,
-		Databasename:                     c.DatabaseName,
+		Dbclusteridentifier:              proto.String(c.DBClusterIdentifier),
+		Engine:                           proto.String(c.Engine),
+		Engineversion:                    proto.String(c.EngineVersion),
+		Status:                           proto.String(c.Status),
+		Masterusername:                   proto.String(c.MasterUsername),
+		Databasename:                     proto.String(c.DatabaseName),
 		Port:                             proto.Int32(int32(c.Port)),
 		Backupretentionperiod:            proto.Int32(int32(c.BackupRetentionPeriod)),
-		Preferredbackupwindow:            c.PreferredBackupWindow,
-		Preferredmaintenancewindow:       c.PreferredMaintenanceWindow,
+		Preferredbackupwindow:            proto.String(c.PreferredBackupWindow),
+		Preferredmaintenancewindow:       proto.String(c.PreferredMaintenanceWindow),
 		Multiaz:                          proto.Bool(c.MultiAZ),
-		Dbclusterparametergroup:          c.DBClusterParameterGroupName,
-		Dbsubnetgroup:                    c.DBSubnetGroupName,
+		Dbclusterparametergroup:          proto.String(c.DBClusterParameterGroupName),
+		Dbsubnetgroup:                    proto.String(c.DBSubnetGroupName),
 		Storageencrypted:                 proto.Bool(c.StorageEncrypted),
-		Kmskeyid:                         c.KmsKeyId,
+		Kmskeyid:                         proto.String(c.KmsKeyId),
 		Copytagstosnapshot:               proto.Bool(c.CopyTagsToSnapshot),
 		Deletionprotection:               proto.Bool(c.DeletionProtection),
 		Enabledcloudwatchlogsexports:     c.EnabledCloudwatchLogsExports,
 		Iamdatabaseauthenticationenabled: proto.Bool(c.IAMDatabaseAuthenticationEnabled),
-		Dbclusterarn:                     c.DBClusterArn,
-		Replicationsourceidentifier:      c.ReplicationSourceIdentifier,
-		Globalclusteridentifier:          c.GlobalClusterIdentifier,
-		Storagetype:                      c.StorageType,
+		Dbclusterarn:                     proto.String(c.DBClusterArn),
+		Replicationsourceidentifier:      proto.String(c.ReplicationSourceIdentifier),
+		Globalclusteridentifier:          proto.String(c.GlobalClusterIdentifier),
+		Storagetype:                      proto.String(c.StorageType),
 		Availabilityzones:                c.AvailabilityZones,
 	}
 	if c.ClusterCreateTime != nil {
-		p.Clustercreatetime = c.ClusterCreateTime.Format(timeutils.ISO8601UTCFormat)
+		p.Clustercreatetime = proto.String(c.ClusterCreateTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if c.EarliestRestorableTime != nil {
-		p.Earliestrestorabletime = c.EarliestRestorableTime.Format(timeutils.ISO8601UTCFormat)
+		p.Earliestrestorabletime = proto.String(c.EarliestRestorableTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if c.LatestRestorableTime != nil {
-		p.Latestrestorabletime = c.LatestRestorableTime.Format(timeutils.ISO8601UTCFormat)
+		p.Latestrestorabletime = proto.String(c.LatestRestorableTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if c.ServerlessV2ScalingConfiguration != nil {
 		p.Serverlessv2Scalingconfiguration = &pb.ServerlessV2ScalingConfigurationInfo{
-			Mincapacity: c.ServerlessV2ScalingConfiguration.MinCapacity,
-			Maxcapacity: c.ServerlessV2ScalingConfiguration.MaxCapacity,
+			Mincapacity: proto.Float64(c.ServerlessV2ScalingConfiguration.MinCapacity),
+			Maxcapacity: proto.Float64(c.ServerlessV2ScalingConfiguration.MaxCapacity),
 		}
 	}
 	for _, r := range c.AssociatedRoles {
 		p.Associatedroles = append(p.Associatedroles, &pb.DBClusterRole{
-			Rolearn:     r.RoleArn,
-			Featurename: r.FeatureName,
-			Status:      r.Status,
+			Rolearn:     proto.String(r.RoleArn),
+			Featurename: proto.String(r.FeatureName),
+			Status:      proto.String(r.Status),
 		})
 	}
 	if c.Endpoint != nil {
@@ -369,30 +369,30 @@ func clusterToPb(c *storerds.DBCluster, accountId string) *pb.DBCluster {
 		if c.Endpoint.Port > 0 {
 			endpointStr = fmt.Sprintf("%s:%d", c.Endpoint.Address, c.Endpoint.Port)
 		}
-		p.Endpoint = endpointStr
-		p.Readerendpoint = endpointStr
+		p.Endpoint = proto.String(endpointStr)
+		p.Readerendpoint = proto.String(endpointStr)
 	}
 	return p
 }
 
 func snapshotToPb(s *storerds.DBClusterSnapshot, accountId string) *pb.DBClusterSnapshot {
 	p := &pb.DBClusterSnapshot{
-		Dbclustersnapshotidentifier: s.DBClusterSnapshotIdentifier,
-		Dbclusteridentifier:         s.DBClusterIdentifier,
-		Engine:                      s.Engine,
-		Engineversion:               s.EngineVersion,
-		Status:                      s.Status,
+		Dbclustersnapshotidentifier: proto.String(s.DBClusterSnapshotIdentifier),
+		Dbclusteridentifier:         proto.String(s.DBClusterIdentifier),
+		Engine:                      proto.String(s.Engine),
+		Engineversion:               proto.String(s.EngineVersion),
+		Status:                      proto.String(s.Status),
 		Port:                        proto.Int32(int32(s.Port)),
-		Vpcid:                       s.VpcId,
+		Vpcid:                       proto.String(s.VpcId),
 		Storageencrypted:            proto.Bool(s.StorageEncrypted),
-		Kmskeyid:                    s.KmsKeyId,
-		Dbclustersnapshotarn:        s.DBSnapshotArn,
+		Kmskeyid:                    proto.String(s.KmsKeyId),
+		Dbclustersnapshotarn:        proto.String(s.DBSnapshotArn),
 	}
 	if s.SnapshotCreateTime != nil {
-		p.Snapshotcreatetime = s.SnapshotCreateTime.Format(timeutils.ISO8601UTCFormat)
+		p.Snapshotcreatetime = proto.String(s.SnapshotCreateTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	if s.ClusterCreateTime != nil {
-		p.Clustercreatetime = s.ClusterCreateTime.Format(timeutils.ISO8601UTCFormat)
+		p.Clustercreatetime = proto.String(s.ClusterCreateTime.Format(timeutils.ISO8601UTCFormat))
 	}
 	return p
 }

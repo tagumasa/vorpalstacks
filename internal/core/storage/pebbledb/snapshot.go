@@ -80,6 +80,8 @@ func (s *SnapshotScanner) NewLazyIterator(start, end []byte) *LazyIterator {
 		encryptor: s.db.encryptor,
 		ttlOpts:   ttlOpts,
 		first:     true,
+		seekFirst: iter.First,
+		move:      iter.Next,
 	}
 }
 

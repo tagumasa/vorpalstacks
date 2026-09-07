@@ -107,3 +107,39 @@ func TestStreamStoreOldestSequenceWithoutRecords(t *testing.T) {
 		t.Fatalf("expected floor 0 for a table without records, got %d", floor)
 	}
 }
+
+// The shard-iterator signing key is generated once, persisted in the stream
+// bucket, and read back unchanged by a later store instance over the same
+// storage — restarts must not invalidate iterators issued before them.
+func TestIteratorSigningKeyGeneratedOnceAndPersisted(t *testing.T) {
+	st, err := storage.Open(t.TempDir())
+	if err != nil {
+		t.Fatalf("open storage: %v", err)
+	}
+	defer st.Close()
+
+	first := NewStreamStore(st, "123456789012", "us-east-1")
+	key1, err := first.IteratorSigningKey()
+	if err != nil {
+		t.Fatalf("first key: %v", err)
+	}
+	if len(key1) != 32 {
+		t.Fatalf("key length = %d, want 32", len(key1))
+	}
+	again, err := first.IteratorSigningKey()
+	if err != nil {
+		t.Fatalf("cached key: %v", err)
+	}
+	if string(key1) != string(again) {
+		t.Fatalf("cached key must be stable within one store")
+	}
+
+	reopened := NewStreamStore(st, "123456789012", "us-east-1")
+	key2, err := reopened.IteratorSigningKey()
+	if err != nil {
+		t.Fatalf("reopened key: %v", err)
+	}
+	if string(key1) != string(key2) {
+		t.Fatalf("key must survive a store reopen")
+	}
+}

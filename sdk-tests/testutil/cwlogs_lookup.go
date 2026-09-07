@@ -556,7 +556,7 @@ func (tc *cwlogsTestCtx) lookupTableTests() []TestResult {
 				table = getResp
 				break
 			}
-			time.Sleep(3 * time.Second)
+			time.Sleep(1 * time.Second)
 		}
 		if table == nil {
 			return fmt.Errorf("lookup table %s was not populated by the scheduled query", tableName)

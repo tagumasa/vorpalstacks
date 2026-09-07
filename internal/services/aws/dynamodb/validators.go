@@ -188,16 +188,16 @@ func validateResourceName(name string) bool {
 	return resourceNameRegex.MatchString(name)
 }
 
-// validateTableName is an alias for validateResourceName, retained for
-// call-site clarity when validating a table name specifically.
-func validateTableName(name string) bool {
-	return validateResourceName(name)
-}
-
 // validateIndexName reports whether a secondary-index name meets the same
 // constraints as table names (Smithy IndexName: len 3-255, pattern).
-func validateIndexName(name string) bool {
-	return validateResourceName(name)
+// validateVectorDistanceFunction reports whether fn is one of the modelled
+// vector distance functions.
+func validateVectorDistanceFunction(fn string) bool {
+	switch fn {
+	case "COSINE", "EUCLIDEAN", "DOT_PRODUCT":
+		return true
+	}
+	return false
 }
 
 // ---------------------------------------------------------------------------
@@ -292,8 +292,13 @@ func validateProjectionRequired(projMap map[string]interface{}) bool {
 
 // validateKeyAttributeValue reports whether every value in key uses one of
 // the types allowed for DynamoDB keys: S, N, or B (Smithy KeySchemaAttribute).
-// Empty values are also rejected.
+// Empty values are also rejected. A key with no members cannot address an
+// item (the wire Key member is required), so an empty map is invalid too —
+// this is the Core-side rejection of a missing or unparseable Key.
 func validateKeyAttributeValue(key map[string]*dbstore.AttributeValue) bool {
+	if len(key) == 0 {
+		return false
+	}
 	for _, av := range key {
 		if av == nil {
 			return false
@@ -335,7 +340,7 @@ func validateGSICreateRequired(create map[string]interface{}) bool {
 	if indexName == "" {
 		return false
 	}
-	if !validateIndexName(indexName) {
+	if !validateResourceName(indexName) {
 		return false
 	}
 	keySchema := parseKeySchema(create)
@@ -345,14 +350,56 @@ func validateGSICreateRequired(create map[string]interface{}) bool {
 	return validateKeySchema(keySchema)
 }
 
-// validateBillingModeConsistency reports whether PROVISIONED billing mode
-// is paired with a ProvisionedThroughput value. PAY_PER_REQUEST is always
-// consistent.
+// validateBillingModeConsistency reports whether the billing mode and the
+// provisioned throughput pair is valid: PROVISIONED requires throughput
+// settings with both units at least 1, and PAY_PER_REQUEST rejects them —
+// on-demand tables have no provisioned capacity ("ProvisionedThroughput
+// cannot be specified when BillingMode is PAY_PER_REQUEST").
 func validateBillingModeConsistency(billingMode dbstore.BillingMode, provThroughput *dbstore.ProvisionedThroughput) bool {
 	if billingMode == dbstore.BillingModeProvisioned {
-		return provThroughput != nil
+		return validateProvisionedThroughputValues(provThroughput)
+	}
+	if billingMode == dbstore.BillingModePayPerRequest {
+		return provThroughput == nil
 	}
 	return true
+}
+
+// validateProvisionedThroughputValues reports whether both capacity values
+// fall inside the model's PositiveLongObject range (minimum 1).
+func validateProvisionedThroughputValues(pt *dbstore.ProvisionedThroughput) bool {
+	return pt != nil &&
+		pt.ReadCapacityUnits >= 1 && pt.WriteCapacityUnits >= 1 &&
+		pt.ReadCapacityUnits <= dbstore.TableMaxReadCapacityUnits &&
+		pt.WriteCapacityUnits <= dbstore.TableMaxWriteCapacityUnits
+}
+
+// validateBillingModeValue reports whether the billing mode is one of the
+// BillingMode enum values (Smithy: PROVISIONED | PAY_PER_REQUEST).
+func validateBillingModeValue(bm dbstore.BillingMode) bool {
+	return bm == dbstore.BillingModeProvisioned || bm == dbstore.BillingModePayPerRequest
+}
+
+// validateTableClassValue reports whether the table class is one of the
+// TableClass enum values (Smithy: STANDARD | STANDARD_INFREQUENT_ACCESS).
+func validateTableClassValue(tableClass string) bool {
+	return tableClass == string(dbstore.TableClassStandard) || tableClass == string(dbstore.TableClassStandardInfrequentAccess)
+}
+
+// validateStreamSpecification rejects a streaming table whose view type is
+// not one of the StreamViewType enum values (Smithy: NEW_IMAGE |
+// OLD_IMAGE | NEW_AND_OLD_IMAGES | KEYS_ONLY). A disabled specification
+// carries no view type to validate.
+func validateStreamSpecification(spec *dbstore.StreamSpecification) error {
+	if spec == nil || !spec.StreamEnabled {
+		return nil
+	}
+	switch spec.StreamViewType {
+	case dbstore.StreamViewTypeNewImage, dbstore.StreamViewTypeOldImage,
+		dbstore.StreamViewTypeNewAndOldImages, dbstore.StreamViewTypeKeysOnly:
+		return nil
+	}
+	return ErrInvalidParameter
 }
 
 // ---------------------------------------------------------------------------
@@ -403,7 +450,7 @@ func validateBracketIndex(idxStr string) (int, error) {
 }
 
 // ---------------------------------------------------------------------------
-// Smithy HIGH-tier validators
+// Statement, S3 target and quota validators (export/import plane)
 // ---------------------------------------------------------------------------
 
 // validatePartiQLStatement reports whether stmt satisfies the PartiQL
@@ -464,14 +511,8 @@ func validateS3SseKmsKeyId(keyId string) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Smithy MEDIUM-tier validators
+// Tagging, scan and list-pagination validators
 // ---------------------------------------------------------------------------
-
-// validateGlobalTableName is an alias for validateResourceName; retained
-// for call-site clarity (Smithy TableName: len 3-255, pattern).
-func validateGlobalTableName(name string) bool {
-	return validateResourceName(name)
-}
 
 // validateTagKey reports whether key satisfies the tag key length
 // constraint (Smithy TagKeyString: len 1-128).
@@ -551,7 +592,7 @@ func validateListGlobalTablesLimit(limit int) bool {
 }
 
 // ---------------------------------------------------------------------------
-// Smithy LOW-tier validators
+// Name, token and expression-attribute validators
 // ---------------------------------------------------------------------------
 
 // validatePolicyRevisionId reports whether id satisfies the resource-policy

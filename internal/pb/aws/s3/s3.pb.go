@@ -2476,19 +2476,21 @@ func (ObjectOwnership) EnumDescriptor() ([]byte, []int) {
 type ObjectStorageClass int32
 
 const (
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_OUTPOSTS            ObjectStorageClass = 0
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE     ObjectStorageClass = 1
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY  ObjectStorageClass = 2
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_DEEP_ARCHIVE        ObjectStorageClass = 3
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_SNOW                ObjectStorageClass = 4
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_ONEZONE_IA          ObjectStorageClass = 5
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD_IA         ObjectStorageClass = 6
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER             ObjectStorageClass = 7
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD            ObjectStorageClass = 8
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_FSX_ONTAP           ObjectStorageClass = 9
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER_IR          ObjectStorageClass = 10
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_FSX_OPENZFS         ObjectStorageClass = 11
-	ObjectStorageClass_OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING ObjectStorageClass = 12
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_OUTPOSTS                 ObjectStorageClass = 0
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE          ObjectStorageClass = 1
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM ObjectStorageClass = 2
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY       ObjectStorageClass = 3
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_DEEP_ARCHIVE             ObjectStorageClass = 4
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_SNOW                     ObjectStorageClass = 5
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_ONEZONE_IA               ObjectStorageClass = 6
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD_IA              ObjectStorageClass = 7
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_AWS_BACKUP_WARM          ObjectStorageClass = 8
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER                  ObjectStorageClass = 9
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD                 ObjectStorageClass = 10
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_FSX_ONTAP                ObjectStorageClass = 11
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER_IR               ObjectStorageClass = 12
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_FSX_OPENZFS              ObjectStorageClass = 13
+	ObjectStorageClass_OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING      ObjectStorageClass = 14
 )
 
 // Enum value maps for ObjectStorageClass.
@@ -2496,32 +2498,36 @@ var (
 	ObjectStorageClass_name = map[int32]string{
 		0:  "OBJECT_STORAGE_CLASS_OUTPOSTS",
 		1:  "OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE",
-		2:  "OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY",
-		3:  "OBJECT_STORAGE_CLASS_DEEP_ARCHIVE",
-		4:  "OBJECT_STORAGE_CLASS_SNOW",
-		5:  "OBJECT_STORAGE_CLASS_ONEZONE_IA",
-		6:  "OBJECT_STORAGE_CLASS_STANDARD_IA",
-		7:  "OBJECT_STORAGE_CLASS_GLACIER",
-		8:  "OBJECT_STORAGE_CLASS_STANDARD",
-		9:  "OBJECT_STORAGE_CLASS_FSX_ONTAP",
-		10: "OBJECT_STORAGE_CLASS_GLACIER_IR",
-		11: "OBJECT_STORAGE_CLASS_FSX_OPENZFS",
-		12: "OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING",
+		2:  "OBJECT_STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM",
+		3:  "OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY",
+		4:  "OBJECT_STORAGE_CLASS_DEEP_ARCHIVE",
+		5:  "OBJECT_STORAGE_CLASS_SNOW",
+		6:  "OBJECT_STORAGE_CLASS_ONEZONE_IA",
+		7:  "OBJECT_STORAGE_CLASS_STANDARD_IA",
+		8:  "OBJECT_STORAGE_CLASS_AWS_BACKUP_WARM",
+		9:  "OBJECT_STORAGE_CLASS_GLACIER",
+		10: "OBJECT_STORAGE_CLASS_STANDARD",
+		11: "OBJECT_STORAGE_CLASS_FSX_ONTAP",
+		12: "OBJECT_STORAGE_CLASS_GLACIER_IR",
+		13: "OBJECT_STORAGE_CLASS_FSX_OPENZFS",
+		14: "OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING",
 	}
 	ObjectStorageClass_value = map[string]int32{
-		"OBJECT_STORAGE_CLASS_OUTPOSTS":            0,
-		"OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE":     1,
-		"OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY":  2,
-		"OBJECT_STORAGE_CLASS_DEEP_ARCHIVE":        3,
-		"OBJECT_STORAGE_CLASS_SNOW":                4,
-		"OBJECT_STORAGE_CLASS_ONEZONE_IA":          5,
-		"OBJECT_STORAGE_CLASS_STANDARD_IA":         6,
-		"OBJECT_STORAGE_CLASS_GLACIER":             7,
-		"OBJECT_STORAGE_CLASS_STANDARD":            8,
-		"OBJECT_STORAGE_CLASS_FSX_ONTAP":           9,
-		"OBJECT_STORAGE_CLASS_GLACIER_IR":          10,
-		"OBJECT_STORAGE_CLASS_FSX_OPENZFS":         11,
-		"OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING": 12,
+		"OBJECT_STORAGE_CLASS_OUTPOSTS":                 0,
+		"OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE":          1,
+		"OBJECT_STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM": 2,
+		"OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY":       3,
+		"OBJECT_STORAGE_CLASS_DEEP_ARCHIVE":             4,
+		"OBJECT_STORAGE_CLASS_SNOW":                     5,
+		"OBJECT_STORAGE_CLASS_ONEZONE_IA":               6,
+		"OBJECT_STORAGE_CLASS_STANDARD_IA":              7,
+		"OBJECT_STORAGE_CLASS_AWS_BACKUP_WARM":          8,
+		"OBJECT_STORAGE_CLASS_GLACIER":                  9,
+		"OBJECT_STORAGE_CLASS_STANDARD":                 10,
+		"OBJECT_STORAGE_CLASS_FSX_ONTAP":                11,
+		"OBJECT_STORAGE_CLASS_GLACIER_IR":               12,
+		"OBJECT_STORAGE_CLASS_FSX_OPENZFS":              13,
+		"OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING":      14,
 	}
 )
 
@@ -3294,7 +3300,8 @@ const (
 	ServerSideEncryption_SERVER_SIDE_ENCRYPTION_AWS_KMS      ServerSideEncryption = 0
 	ServerSideEncryption_SERVER_SIDE_ENCRYPTION_AWS_KMS_DSSE ServerSideEncryption = 1
 	ServerSideEncryption_SERVER_SIDE_ENCRYPTION_AES256       ServerSideEncryption = 2
-	ServerSideEncryption_SERVER_SIDE_ENCRYPTION_AWS_FSX      ServerSideEncryption = 3
+	ServerSideEncryption_SERVER_SIDE_ENCRYPTION_AWS_BACKUP   ServerSideEncryption = 3
+	ServerSideEncryption_SERVER_SIDE_ENCRYPTION_AWS_FSX      ServerSideEncryption = 4
 )
 
 // Enum value maps for ServerSideEncryption.
@@ -3303,13 +3310,15 @@ var (
 		0: "SERVER_SIDE_ENCRYPTION_AWS_KMS",
 		1: "SERVER_SIDE_ENCRYPTION_AWS_KMS_DSSE",
 		2: "SERVER_SIDE_ENCRYPTION_AES256",
-		3: "SERVER_SIDE_ENCRYPTION_AWS_FSX",
+		3: "SERVER_SIDE_ENCRYPTION_AWS_BACKUP",
+		4: "SERVER_SIDE_ENCRYPTION_AWS_FSX",
 	}
 	ServerSideEncryption_value = map[string]int32{
 		"SERVER_SIDE_ENCRYPTION_AWS_KMS":      0,
 		"SERVER_SIDE_ENCRYPTION_AWS_KMS_DSSE": 1,
 		"SERVER_SIDE_ENCRYPTION_AES256":       2,
-		"SERVER_SIDE_ENCRYPTION_AWS_FSX":      3,
+		"SERVER_SIDE_ENCRYPTION_AWS_BACKUP":   3,
+		"SERVER_SIDE_ENCRYPTION_AWS_FSX":      4,
 	}
 )
 
@@ -3435,19 +3444,21 @@ func (SseKmsEncryptedObjectsStatus) EnumDescriptor() ([]byte, []int) {
 type StorageClass int32
 
 const (
-	StorageClass_STORAGE_CLASS_OUTPOSTS            StorageClass = 0
-	StorageClass_STORAGE_CLASS_EXPRESS_ONEZONE     StorageClass = 1
-	StorageClass_STORAGE_CLASS_REDUCED_REDUNDANCY  StorageClass = 2
-	StorageClass_STORAGE_CLASS_DEEP_ARCHIVE        StorageClass = 3
-	StorageClass_STORAGE_CLASS_SNOW                StorageClass = 4
-	StorageClass_STORAGE_CLASS_ONEZONE_IA          StorageClass = 5
-	StorageClass_STORAGE_CLASS_STANDARD_IA         StorageClass = 6
-	StorageClass_STORAGE_CLASS_GLACIER             StorageClass = 7
-	StorageClass_STORAGE_CLASS_STANDARD            StorageClass = 8
-	StorageClass_STORAGE_CLASS_FSX_ONTAP           StorageClass = 9
-	StorageClass_STORAGE_CLASS_GLACIER_IR          StorageClass = 10
-	StorageClass_STORAGE_CLASS_FSX_OPENZFS         StorageClass = 11
-	StorageClass_STORAGE_CLASS_INTELLIGENT_TIERING StorageClass = 12
+	StorageClass_STORAGE_CLASS_OUTPOSTS                 StorageClass = 0
+	StorageClass_STORAGE_CLASS_EXPRESS_ONEZONE          StorageClass = 1
+	StorageClass_STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM StorageClass = 2
+	StorageClass_STORAGE_CLASS_REDUCED_REDUNDANCY       StorageClass = 3
+	StorageClass_STORAGE_CLASS_DEEP_ARCHIVE             StorageClass = 4
+	StorageClass_STORAGE_CLASS_SNOW                     StorageClass = 5
+	StorageClass_STORAGE_CLASS_ONEZONE_IA               StorageClass = 6
+	StorageClass_STORAGE_CLASS_STANDARD_IA              StorageClass = 7
+	StorageClass_STORAGE_CLASS_AWS_BACKUP_WARM          StorageClass = 8
+	StorageClass_STORAGE_CLASS_GLACIER                  StorageClass = 9
+	StorageClass_STORAGE_CLASS_STANDARD                 StorageClass = 10
+	StorageClass_STORAGE_CLASS_FSX_ONTAP                StorageClass = 11
+	StorageClass_STORAGE_CLASS_GLACIER_IR               StorageClass = 12
+	StorageClass_STORAGE_CLASS_FSX_OPENZFS              StorageClass = 13
+	StorageClass_STORAGE_CLASS_INTELLIGENT_TIERING      StorageClass = 14
 )
 
 // Enum value maps for StorageClass.
@@ -3455,32 +3466,36 @@ var (
 	StorageClass_name = map[int32]string{
 		0:  "STORAGE_CLASS_OUTPOSTS",
 		1:  "STORAGE_CLASS_EXPRESS_ONEZONE",
-		2:  "STORAGE_CLASS_REDUCED_REDUNDANCY",
-		3:  "STORAGE_CLASS_DEEP_ARCHIVE",
-		4:  "STORAGE_CLASS_SNOW",
-		5:  "STORAGE_CLASS_ONEZONE_IA",
-		6:  "STORAGE_CLASS_STANDARD_IA",
-		7:  "STORAGE_CLASS_GLACIER",
-		8:  "STORAGE_CLASS_STANDARD",
-		9:  "STORAGE_CLASS_FSX_ONTAP",
-		10: "STORAGE_CLASS_GLACIER_IR",
-		11: "STORAGE_CLASS_FSX_OPENZFS",
-		12: "STORAGE_CLASS_INTELLIGENT_TIERING",
+		2:  "STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM",
+		3:  "STORAGE_CLASS_REDUCED_REDUNDANCY",
+		4:  "STORAGE_CLASS_DEEP_ARCHIVE",
+		5:  "STORAGE_CLASS_SNOW",
+		6:  "STORAGE_CLASS_ONEZONE_IA",
+		7:  "STORAGE_CLASS_STANDARD_IA",
+		8:  "STORAGE_CLASS_AWS_BACKUP_WARM",
+		9:  "STORAGE_CLASS_GLACIER",
+		10: "STORAGE_CLASS_STANDARD",
+		11: "STORAGE_CLASS_FSX_ONTAP",
+		12: "STORAGE_CLASS_GLACIER_IR",
+		13: "STORAGE_CLASS_FSX_OPENZFS",
+		14: "STORAGE_CLASS_INTELLIGENT_TIERING",
 	}
 	StorageClass_value = map[string]int32{
-		"STORAGE_CLASS_OUTPOSTS":            0,
-		"STORAGE_CLASS_EXPRESS_ONEZONE":     1,
-		"STORAGE_CLASS_REDUCED_REDUNDANCY":  2,
-		"STORAGE_CLASS_DEEP_ARCHIVE":        3,
-		"STORAGE_CLASS_SNOW":                4,
-		"STORAGE_CLASS_ONEZONE_IA":          5,
-		"STORAGE_CLASS_STANDARD_IA":         6,
-		"STORAGE_CLASS_GLACIER":             7,
-		"STORAGE_CLASS_STANDARD":            8,
-		"STORAGE_CLASS_FSX_ONTAP":           9,
-		"STORAGE_CLASS_GLACIER_IR":          10,
-		"STORAGE_CLASS_FSX_OPENZFS":         11,
-		"STORAGE_CLASS_INTELLIGENT_TIERING": 12,
+		"STORAGE_CLASS_OUTPOSTS":                 0,
+		"STORAGE_CLASS_EXPRESS_ONEZONE":          1,
+		"STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM": 2,
+		"STORAGE_CLASS_REDUCED_REDUNDANCY":       3,
+		"STORAGE_CLASS_DEEP_ARCHIVE":             4,
+		"STORAGE_CLASS_SNOW":                     5,
+		"STORAGE_CLASS_ONEZONE_IA":               6,
+		"STORAGE_CLASS_STANDARD_IA":              7,
+		"STORAGE_CLASS_AWS_BACKUP_WARM":          8,
+		"STORAGE_CLASS_GLACIER":                  9,
+		"STORAGE_CLASS_STANDARD":                 10,
+		"STORAGE_CLASS_FSX_ONTAP":                11,
+		"STORAGE_CLASS_GLACIER_IR":               12,
+		"STORAGE_CLASS_FSX_OPENZFS":              13,
+		"STORAGE_CLASS_INTELLIGENT_TIERING":      14,
 	}
 )
 
@@ -3983,8 +3998,8 @@ func (x *AbortMultipartUploadOutput) GetRequestcharged() RequestCharged {
 type AbortMultipartUploadRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Ifmatchinitiatedtime string                 `protobuf:"bytes,444607790,opt,name=ifmatchinitiatedtime,proto3" json:"ifmatchinitiatedtime,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Ifmatchinitiatedtime *string                `protobuf:"bytes,444607790,opt,name=ifmatchinitiatedtime,proto3,oneof" json:"ifmatchinitiatedtime,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Uploadid             string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
@@ -4030,15 +4045,15 @@ func (x *AbortMultipartUploadRequest) GetBucket() string {
 }
 
 func (x *AbortMultipartUploadRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *AbortMultipartUploadRequest) GetIfmatchinitiatedtime() string {
-	if x != nil {
-		return x.Ifmatchinitiatedtime
+	if x != nil && x.Ifmatchinitiatedtime != nil {
+		return *x.Ifmatchinitiatedtime
 	}
 	return ""
 }
@@ -4242,7 +4257,7 @@ func (*AccessDenied) Descriptor() ([]byte, []int) {
 
 type AnalyticsAndOperator struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prefix        string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4279,8 +4294,8 @@ func (*AnalyticsAndOperator) Descriptor() ([]byte, []int) {
 }
 
 func (x *AnalyticsAndOperator) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -4399,7 +4414,7 @@ func (x *AnalyticsExportDestination) GetS3Bucketdestination() *AnalyticsS3Bucket
 type AnalyticsFilter struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	And           *AnalyticsAndOperator  `protobuf:"bytes,297135431,opt,name=and,proto3" json:"and,omitempty"`
-	Prefix        string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tag           *Tag                   `protobuf:"bytes,411259956,opt,name=tag,proto3" json:"tag,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -4443,8 +4458,8 @@ func (x *AnalyticsFilter) GetAnd() *AnalyticsAndOperator {
 }
 
 func (x *AnalyticsFilter) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -4459,9 +4474,9 @@ func (x *AnalyticsFilter) GetTag() *Tag {
 type AnalyticsS3BucketDestination struct {
 	state           protoimpl.MessageState      `protogen:"open.v1"`
 	Bucket          string                      `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Bucketaccountid string                      `protobuf:"bytes,235438976,opt,name=bucketaccountid,proto3" json:"bucketaccountid,omitempty"`
+	Bucketaccountid *string                     `protobuf:"bytes,235438976,opt,name=bucketaccountid,proto3,oneof" json:"bucketaccountid,omitempty"`
 	Format          AnalyticsS3ExportFileFormat `protobuf:"varint,531693427,opt,name=format,proto3,enum=s3.AnalyticsS3ExportFileFormat" json:"format,omitempty"`
-	Prefix          string                      `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix          *string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -4504,8 +4519,8 @@ func (x *AnalyticsS3BucketDestination) GetBucket() string {
 }
 
 func (x *AnalyticsS3BucketDestination) GetBucketaccountid() string {
-	if x != nil {
-		return x.Bucketaccountid
+	if x != nil && x.Bucketaccountid != nil {
+		return *x.Bucketaccountid
 	}
 	return ""
 }
@@ -4518,8 +4533,8 @@ func (x *AnalyticsS3BucketDestination) GetFormat() AnalyticsS3ExportFileFormat {
 }
 
 func (x *AnalyticsS3BucketDestination) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -4528,7 +4543,7 @@ type AnnotationEntry struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Annotationname    string                 `protobuf:"bytes,356848972,opt,name=annotationname,proto3" json:"annotationname,omitempty"`
 	Checksumalgorithm []ChecksumAlgorithm    `protobuf:"varint,257294512,rep,packed,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
+	Etag              *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
 	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
 	Replicationstatus ReplicationStatus      `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Size              int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
@@ -4581,8 +4596,8 @@ func (x *AnnotationEntry) GetChecksumalgorithm() []ChecksumAlgorithm {
 }
 
 func (x *AnnotationEntry) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
@@ -4684,7 +4699,7 @@ type AnnotationTableConfiguration struct {
 	state                   protoimpl.MessageState                `protogen:"open.v1"`
 	Configurationstate      AnnotationConfigurationState          `protobuf:"varint,458329211,opt,name=configurationstate,proto3,enum=s3.AnnotationConfigurationState" json:"configurationstate,omitempty"`
 	Encryptionconfiguration *MetadataTableEncryptionConfiguration `protobuf:"bytes,225764215,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
-	Role                    string                                `protobuf:"bytes,271285818,opt,name=role,proto3" json:"role,omitempty"`
+	Role                    *string                               `protobuf:"bytes,271285818,opt,name=role,proto3,oneof" json:"role,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -4734,8 +4749,8 @@ func (x *AnnotationTableConfiguration) GetEncryptionconfiguration() *MetadataTab
 }
 
 func (x *AnnotationTableConfiguration) GetRole() string {
-	if x != nil {
-		return x.Role
+	if x != nil && x.Role != nil {
+		return *x.Role
 	}
 	return ""
 }
@@ -4744,10 +4759,10 @@ type AnnotationTableConfigurationResult struct {
 	state              protoimpl.MessageState       `protogen:"open.v1"`
 	Configurationstate AnnotationConfigurationState `protobuf:"varint,458329211,opt,name=configurationstate,proto3,enum=s3.AnnotationConfigurationState" json:"configurationstate,omitempty"`
 	Error              *ErrorDetails                `protobuf:"bytes,328047858,opt,name=error,proto3" json:"error,omitempty"`
-	Role               string                       `protobuf:"bytes,271285818,opt,name=role,proto3" json:"role,omitempty"`
-	Tablearn           string                       `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
-	Tablename          string                       `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Tablestatus        string                       `protobuf:"bytes,207908810,opt,name=tablestatus,proto3" json:"tablestatus,omitempty"`
+	Role               *string                      `protobuf:"bytes,271285818,opt,name=role,proto3,oneof" json:"role,omitempty"`
+	Tablearn           *string                      `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
+	Tablename          *string                      `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
+	Tablestatus        *string                      `protobuf:"bytes,207908810,opt,name=tablestatus,proto3,oneof" json:"tablestatus,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4797,29 +4812,29 @@ func (x *AnnotationTableConfigurationResult) GetError() *ErrorDetails {
 }
 
 func (x *AnnotationTableConfigurationResult) GetRole() string {
-	if x != nil {
-		return x.Role
+	if x != nil && x.Role != nil {
+		return *x.Role
 	}
 	return ""
 }
 
 func (x *AnnotationTableConfigurationResult) GetTablearn() string {
-	if x != nil {
-		return x.Tablearn
+	if x != nil && x.Tablearn != nil {
+		return *x.Tablearn
 	}
 	return ""
 }
 
 func (x *AnnotationTableConfigurationResult) GetTablename() string {
-	if x != nil {
-		return x.Tablename
+	if x != nil && x.Tablename != nil {
+		return *x.Tablename
 	}
 	return ""
 }
 
 func (x *AnnotationTableConfigurationResult) GetTablestatus() string {
-	if x != nil {
-		return x.Tablestatus
+	if x != nil && x.Tablestatus != nil {
+		return *x.Tablestatus
 	}
 	return ""
 }
@@ -4828,7 +4843,7 @@ type AnnotationTableConfigurationUpdates struct {
 	state                   protoimpl.MessageState                `protogen:"open.v1"`
 	Configurationstate      AnnotationConfigurationState          `protobuf:"varint,458329211,opt,name=configurationstate,proto3,enum=s3.AnnotationConfigurationState" json:"configurationstate,omitempty"`
 	Encryptionconfiguration *MetadataTableEncryptionConfiguration `protobuf:"bytes,225764215,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
-	Role                    string                                `protobuf:"bytes,271285818,opt,name=role,proto3" json:"role,omitempty"`
+	Role                    *string                               `protobuf:"bytes,271285818,opt,name=role,proto3,oneof" json:"role,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -4878,8 +4893,8 @@ func (x *AnnotationTableConfigurationUpdates) GetEncryptionconfiguration() *Meta
 }
 
 func (x *AnnotationTableConfigurationUpdates) GetRole() string {
-	if x != nil {
-		return x.Role
+	if x != nil && x.Role != nil {
+		return *x.Role
 	}
 	return ""
 }
@@ -4930,10 +4945,10 @@ func (x *BlockedEncryptionTypes) GetEncryptiontype() []EncryptionType {
 
 type Bucket struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Bucketarn     string                 `protobuf:"bytes,255683899,opt,name=bucketarn,proto3" json:"bucketarn,omitempty"`
-	Bucketregion  string                 `protobuf:"bytes,309298816,opt,name=bucketregion,proto3" json:"bucketregion,omitempty"`
-	Creationdate  string                 `protobuf:"bytes,288222305,opt,name=creationdate,proto3" json:"creationdate,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Bucketarn     *string                `protobuf:"bytes,255683899,opt,name=bucketarn,proto3,oneof" json:"bucketarn,omitempty"`
+	Bucketregion  *string                `protobuf:"bytes,309298816,opt,name=bucketregion,proto3,oneof" json:"bucketregion,omitempty"`
+	Creationdate  *string                `protobuf:"bytes,288222305,opt,name=creationdate,proto3,oneof" json:"creationdate,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4969,29 +4984,29 @@ func (*Bucket) Descriptor() ([]byte, []int) {
 }
 
 func (x *Bucket) GetBucketarn() string {
-	if x != nil {
-		return x.Bucketarn
+	if x != nil && x.Bucketarn != nil {
+		return *x.Bucketarn
 	}
 	return ""
 }
 
 func (x *Bucket) GetBucketregion() string {
-	if x != nil {
-		return x.Bucketregion
+	if x != nil && x.Bucketregion != nil {
+		return *x.Bucketregion
 	}
 	return ""
 }
 
 func (x *Bucket) GetCreationdate() string {
-	if x != nil {
-		return x.Creationdate
+	if x != nil && x.Creationdate != nil {
+		return *x.Creationdate
 	}
 	return ""
 }
 
 func (x *Bucket) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -5258,7 +5273,7 @@ type CORSRule struct {
 	Allowedmethods []string               `protobuf:"bytes,56383476,rep,name=allowedmethods,proto3" json:"allowedmethods,omitempty"`
 	Allowedorigins []string               `protobuf:"bytes,19474107,rep,name=allowedorigins,proto3" json:"allowedorigins,omitempty"`
 	Exposeheaders  []string               `protobuf:"bytes,290364554,rep,name=exposeheaders,proto3" json:"exposeheaders,omitempty"`
-	Id             string                 `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
+	Id             *string                `protobuf:"bytes,384363361,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Maxageseconds  *int32                 `protobuf:"varint,315057526,opt,name=maxageseconds,proto3,oneof" json:"maxageseconds,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -5323,8 +5338,8 @@ func (x *CORSRule) GetExposeheaders() []string {
 }
 
 func (x *CORSRule) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -5339,12 +5354,12 @@ func (x *CORSRule) GetMaxageseconds() int32 {
 type CSVInput struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Allowquotedrecorddelimiter *bool                  `protobuf:"varint,268967449,opt,name=allowquotedrecorddelimiter,proto3,oneof" json:"allowquotedrecorddelimiter,omitempty"`
-	Comments                   string                 `protobuf:"bytes,307768056,opt,name=comments,proto3" json:"comments,omitempty"`
-	Fielddelimiter             string                 `protobuf:"bytes,88917725,opt,name=fielddelimiter,proto3" json:"fielddelimiter,omitempty"`
+	Comments                   *string                `protobuf:"bytes,307768056,opt,name=comments,proto3,oneof" json:"comments,omitempty"`
+	Fielddelimiter             *string                `protobuf:"bytes,88917725,opt,name=fielddelimiter,proto3,oneof" json:"fielddelimiter,omitempty"`
 	Fileheaderinfo             FileHeaderInfo         `protobuf:"varint,43578219,opt,name=fileheaderinfo,proto3,enum=s3.FileHeaderInfo" json:"fileheaderinfo,omitempty"`
-	Quotecharacter             string                 `protobuf:"bytes,24331231,opt,name=quotecharacter,proto3" json:"quotecharacter,omitempty"`
-	Quoteescapecharacter       string                 `protobuf:"bytes,378770328,opt,name=quoteescapecharacter,proto3" json:"quoteescapecharacter,omitempty"`
-	Recorddelimiter            string                 `protobuf:"bytes,299337270,opt,name=recorddelimiter,proto3" json:"recorddelimiter,omitempty"`
+	Quotecharacter             *string                `protobuf:"bytes,24331231,opt,name=quotecharacter,proto3,oneof" json:"quotecharacter,omitempty"`
+	Quoteescapecharacter       *string                `protobuf:"bytes,378770328,opt,name=quoteescapecharacter,proto3,oneof" json:"quoteescapecharacter,omitempty"`
+	Recorddelimiter            *string                `protobuf:"bytes,299337270,opt,name=recorddelimiter,proto3,oneof" json:"recorddelimiter,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -5387,15 +5402,15 @@ func (x *CSVInput) GetAllowquotedrecorddelimiter() bool {
 }
 
 func (x *CSVInput) GetComments() string {
-	if x != nil {
-		return x.Comments
+	if x != nil && x.Comments != nil {
+		return *x.Comments
 	}
 	return ""
 }
 
 func (x *CSVInput) GetFielddelimiter() string {
-	if x != nil {
-		return x.Fielddelimiter
+	if x != nil && x.Fielddelimiter != nil {
+		return *x.Fielddelimiter
 	}
 	return ""
 }
@@ -5408,33 +5423,33 @@ func (x *CSVInput) GetFileheaderinfo() FileHeaderInfo {
 }
 
 func (x *CSVInput) GetQuotecharacter() string {
-	if x != nil {
-		return x.Quotecharacter
+	if x != nil && x.Quotecharacter != nil {
+		return *x.Quotecharacter
 	}
 	return ""
 }
 
 func (x *CSVInput) GetQuoteescapecharacter() string {
-	if x != nil {
-		return x.Quoteescapecharacter
+	if x != nil && x.Quoteescapecharacter != nil {
+		return *x.Quoteescapecharacter
 	}
 	return ""
 }
 
 func (x *CSVInput) GetRecorddelimiter() string {
-	if x != nil {
-		return x.Recorddelimiter
+	if x != nil && x.Recorddelimiter != nil {
+		return *x.Recorddelimiter
 	}
 	return ""
 }
 
 type CSVOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Fielddelimiter       string                 `protobuf:"bytes,88917725,opt,name=fielddelimiter,proto3" json:"fielddelimiter,omitempty"`
-	Quotecharacter       string                 `protobuf:"bytes,24331231,opt,name=quotecharacter,proto3" json:"quotecharacter,omitempty"`
-	Quoteescapecharacter string                 `protobuf:"bytes,378770328,opt,name=quoteescapecharacter,proto3" json:"quoteescapecharacter,omitempty"`
+	Fielddelimiter       *string                `protobuf:"bytes,88917725,opt,name=fielddelimiter,proto3,oneof" json:"fielddelimiter,omitempty"`
+	Quotecharacter       *string                `protobuf:"bytes,24331231,opt,name=quotecharacter,proto3,oneof" json:"quotecharacter,omitempty"`
+	Quoteescapecharacter *string                `protobuf:"bytes,378770328,opt,name=quoteescapecharacter,proto3,oneof" json:"quoteescapecharacter,omitempty"`
 	Quotefields          QuoteFields            `protobuf:"varint,136837903,opt,name=quotefields,proto3,enum=s3.QuoteFields" json:"quotefields,omitempty"`
-	Recorddelimiter      string                 `protobuf:"bytes,299337270,opt,name=recorddelimiter,proto3" json:"recorddelimiter,omitempty"`
+	Recorddelimiter      *string                `protobuf:"bytes,299337270,opt,name=recorddelimiter,proto3,oneof" json:"recorddelimiter,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -5470,22 +5485,22 @@ func (*CSVOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CSVOutput) GetFielddelimiter() string {
-	if x != nil {
-		return x.Fielddelimiter
+	if x != nil && x.Fielddelimiter != nil {
+		return *x.Fielddelimiter
 	}
 	return ""
 }
 
 func (x *CSVOutput) GetQuotecharacter() string {
-	if x != nil {
-		return x.Quotecharacter
+	if x != nil && x.Quotecharacter != nil {
+		return *x.Quotecharacter
 	}
 	return ""
 }
 
 func (x *CSVOutput) GetQuoteescapecharacter() string {
-	if x != nil {
-		return x.Quoteescapecharacter
+	if x != nil && x.Quoteescapecharacter != nil {
+		return *x.Quoteescapecharacter
 	}
 	return ""
 }
@@ -5498,25 +5513,25 @@ func (x *CSVOutput) GetQuotefields() QuoteFields {
 }
 
 func (x *CSVOutput) GetRecorddelimiter() string {
-	if x != nil {
-		return x.Recorddelimiter
+	if x != nil && x.Recorddelimiter != nil {
+		return *x.Recorddelimiter
 	}
 	return ""
 }
 
 type Checksum struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Checksumcrc32     string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C    string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5       string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1      string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256    string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512    string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Checksumcrc32     *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C    *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5       *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1      *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256    *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512    *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype      ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
+	Checksumxxhash128 *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3   *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64  *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -5552,50 +5567,50 @@ func (*Checksum) Descriptor() ([]byte, []int) {
 }
 
 func (x *Checksum) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -5608,29 +5623,29 @@ func (x *Checksum) GetChecksumtype() ChecksumType {
 }
 
 func (x *Checksum) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *Checksum) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 type CommonPrefix struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prefix        string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5666,35 +5681,35 @@ func (*CommonPrefix) Descriptor() ([]byte, []int) {
 }
 
 func (x *CommonPrefix) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
 
 type CompleteMultipartUploadOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Bucket               *string                `protobuf:"bytes,55457112,opt,name=bucket,proto3,oneof" json:"bucket,omitempty"`
 	Bucketkeyenabled     *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Checksumcrc32        string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C       string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme    string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5          string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1         string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256       string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512       string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Checksumcrc32        *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C       *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme    *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5          *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1         *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256       *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512       *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype         ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag                 string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Expiration           string                 `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Location             string                 `protobuf:"bytes,465604039,opt,name=location,proto3" json:"location,omitempty"`
+	Checksumxxhash128    *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3      *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64     *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag                 *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Expiration           *string                `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
+	Key                  *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Location             *string                `protobuf:"bytes,465604039,opt,name=location,proto3,oneof" json:"location,omitempty"`
 	Requestcharged       RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Ssekmskeyid          string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssekmskeyid          *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
-	Versionid            string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid            *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -5730,8 +5745,8 @@ func (*CompleteMultipartUploadOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CompleteMultipartUploadOutput) GetBucket() string {
-	if x != nil {
-		return x.Bucket
+	if x != nil && x.Bucket != nil {
+		return *x.Bucket
 	}
 	return ""
 }
@@ -5744,50 +5759,50 @@ func (x *CompleteMultipartUploadOutput) GetBucketkeyenabled() bool {
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -5800,50 +5815,50 @@ func (x *CompleteMultipartUploadOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadOutput) GetLocation() string {
-	if x != nil {
-		return x.Location
+	if x != nil && x.Location != nil {
+		return *x.Location
 	}
 	return ""
 }
@@ -5856,8 +5871,8 @@ func (x *CompleteMultipartUploadOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *CompleteMultipartUploadOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -5870,8 +5885,8 @@ func (x *CompleteMultipartUploadOutput) GetServersideencryption() ServerSideEncr
 }
 
 func (x *CompleteMultipartUploadOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -5879,27 +5894,27 @@ func (x *CompleteMultipartUploadOutput) GetVersionid() string {
 type CompleteMultipartUploadRequest struct {
 	state                protoimpl.MessageState    `protogen:"open.v1"`
 	Bucket               string                    `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Checksumcrc32        string                    `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C       string                    `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme    string                    `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5          string                    `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1         string                    `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256       string                    `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512       string                    `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Checksumcrc32        *string                   `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C       *string                   `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme    *string                   `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5          *string                   `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1         *string                   `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256       *string                   `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512       *string                   `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype         ChecksumType              `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128    string                    `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3      string                    `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64     string                    `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Expectedbucketowner  string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Ifmatch              string                    `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ifnonematch          string                    `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
+	Checksumxxhash128    *string                   `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3      *string                   `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64     *string                   `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Expectedbucketowner  *string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Ifmatch              *string                   `protobuf:"bytes,93178704,opt,name=ifmatch,proto3,oneof" json:"ifmatch,omitempty"`
+	Ifnonematch          *string                   `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3,oneof" json:"ifnonematch,omitempty"`
 	Key                  string                    `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Mpuobjectsize        *int64                    `protobuf:"varint,522430190,opt,name=mpuobjectsize,proto3,oneof" json:"mpuobjectsize,omitempty"`
 	Multipartupload      *CompletedMultipartUpload `protobuf:"bytes,362466695,opt,name=multipartupload,proto3" json:"multipartupload,omitempty"`
 	Requestpayer         RequestPayer              `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey       string                    `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5    string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
+	Ssecustomeralgorithm *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey       *string                   `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5    *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
 	Uploadid             string                    `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -5943,50 +5958,50 @@ func (x *CompleteMultipartUploadRequest) GetBucket() string {
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -5999,43 +6014,43 @@ func (x *CompleteMultipartUploadRequest) GetChecksumtype() ChecksumType {
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetIfmatch() string {
-	if x != nil {
-		return x.Ifmatch
+	if x != nil && x.Ifmatch != nil {
+		return *x.Ifmatch
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetIfnonematch() string {
-	if x != nil {
-		return x.Ifnonematch
+	if x != nil && x.Ifnonematch != nil {
+		return *x.Ifnonematch
 	}
 	return ""
 }
@@ -6069,22 +6084,22 @@ func (x *CompleteMultipartUploadRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *CompleteMultipartUploadRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *CompleteMultipartUploadRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
@@ -6142,17 +6157,17 @@ func (x *CompletedMultipartUpload) GetParts() []*CompletedPart {
 
 type CompletedPart struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Checksumcrc32     string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C    string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5       string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1      string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256    string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512    string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
+	Checksumcrc32     *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C    *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5       *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1      *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256    *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512    *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128 *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3   *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64  *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag              *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
 	Partnumber        *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -6189,78 +6204,78 @@ func (*CompletedPart) Descriptor() ([]byte, []int) {
 }
 
 func (x *CompletedPart) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *CompletedPart) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
@@ -6274,8 +6289,8 @@ func (x *CompletedPart) GetPartnumber() int32 {
 
 type Condition struct {
 	state                       protoimpl.MessageState `protogen:"open.v1"`
-	Httperrorcodereturnedequals string                 `protobuf:"bytes,172790163,opt,name=httperrorcodereturnedequals,proto3" json:"httperrorcodereturnedequals,omitempty"`
-	Keyprefixequals             string                 `protobuf:"bytes,334847946,opt,name=keyprefixequals,proto3" json:"keyprefixequals,omitempty"`
+	Httperrorcodereturnedequals *string                `protobuf:"bytes,172790163,opt,name=httperrorcodereturnedequals,proto3,oneof" json:"httperrorcodereturnedequals,omitempty"`
+	Keyprefixequals             *string                `protobuf:"bytes,334847946,opt,name=keyprefixequals,proto3,oneof" json:"keyprefixequals,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
 }
@@ -6311,15 +6326,15 @@ func (*Condition) Descriptor() ([]byte, []int) {
 }
 
 func (x *Condition) GetHttperrorcodereturnedequals() string {
-	if x != nil {
-		return x.Httperrorcodereturnedequals
+	if x != nil && x.Httperrorcodereturnedequals != nil {
+		return *x.Httperrorcodereturnedequals
 	}
 	return ""
 }
 
 func (x *Condition) GetKeyprefixequals() string {
-	if x != nil {
-		return x.Keyprefixequals
+	if x != nil && x.Keyprefixequals != nil {
+		return *x.Keyprefixequals
 	}
 	return ""
 }
@@ -6364,15 +6379,15 @@ type CopyObjectOutput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Bucketkeyenabled        *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
 	Copyobjectresult        *CopyObjectResult      `protobuf:"bytes,84805307,opt,name=copyobjectresult,proto3" json:"copyobjectresult,omitempty"`
-	Copysourceversionid     string                 `protobuf:"bytes,257134375,opt,name=copysourceversionid,proto3" json:"copysourceversionid,omitempty"`
-	Expiration              string                 `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
+	Copysourceversionid     *string                `protobuf:"bytes,257134375,opt,name=copysourceversionid,proto3,oneof" json:"copysourceversionid,omitempty"`
+	Expiration              *string                `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
 	Requestcharged          RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Ssecustomeralgorithm    string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5       string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmsencryptioncontext string                 `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid             string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm    *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5       *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmsencryptioncontext *string                `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid             *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption    ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
-	Versionid               string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid               *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -6422,15 +6437,15 @@ func (x *CopyObjectOutput) GetCopyobjectresult() *CopyObjectResult {
 }
 
 func (x *CopyObjectOutput) GetCopysourceversionid() string {
-	if x != nil {
-		return x.Copysourceversionid
+	if x != nil && x.Copysourceversionid != nil {
+		return *x.Copysourceversionid
 	}
 	return ""
 }
 
 func (x *CopyObjectOutput) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
@@ -6443,29 +6458,29 @@ func (x *CopyObjectOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *CopyObjectOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *CopyObjectOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *CopyObjectOutput) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *CopyObjectOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -6478,8 +6493,8 @@ func (x *CopyObjectOutput) GetServersideencryption() ServerSideEncryption {
 }
 
 func (x *CopyObjectOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -6490,46 +6505,46 @@ type CopyObjectRequest struct {
 	Annotationdirective            AnnotationDirective       `protobuf:"varint,273366230,opt,name=annotationdirective,proto3,enum=s3.AnnotationDirective" json:"annotationdirective,omitempty"`
 	Bucket                         string                    `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bucketkeyenabled               *bool                     `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Cachecontrol                   string                    `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3" json:"cachecontrol,omitempty"`
+	Cachecontrol                   *string                   `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3,oneof" json:"cachecontrol,omitempty"`
 	Checksumalgorithm              ChecksumAlgorithm         `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentdisposition             string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contentencoding                string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
-	Contentlanguage                string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
-	Contenttype                    string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
+	Contentdisposition             *string                   `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contentencoding                *string                   `protobuf:"bytes,317106228,opt,name=contentencoding,proto3,oneof" json:"contentencoding,omitempty"`
+	Contentlanguage                *string                   `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3,oneof" json:"contentlanguage,omitempty"`
+	Contenttype                    *string                   `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
 	Copysource                     string                    `protobuf:"bytes,152315650,opt,name=copysource,proto3" json:"copysource,omitempty"`
-	Copysourceifmatch              string                    `protobuf:"bytes,512868332,opt,name=copysourceifmatch,proto3" json:"copysourceifmatch,omitempty"`
-	Copysourceifmodifiedsince      string                    `protobuf:"bytes,301576082,opt,name=copysourceifmodifiedsince,proto3" json:"copysourceifmodifiedsince,omitempty"`
-	Copysourceifnonematch          string                    `protobuf:"bytes,237403010,opt,name=copysourceifnonematch,proto3" json:"copysourceifnonematch,omitempty"`
-	Copysourceifunmodifiedsince    string                    `protobuf:"bytes,130556417,opt,name=copysourceifunmodifiedsince,proto3" json:"copysourceifunmodifiedsince,omitempty"`
-	Copysourcessecustomeralgorithm string                    `protobuf:"bytes,465017156,opt,name=copysourcessecustomeralgorithm,proto3" json:"copysourcessecustomeralgorithm,omitempty"`
-	Copysourcessecustomerkey       string                    `protobuf:"bytes,289313102,opt,name=copysourcessecustomerkey,proto3" json:"copysourcessecustomerkey,omitempty"`
-	Copysourcessecustomerkeymd5    string                    `protobuf:"bytes,408962492,opt,name=copysourcessecustomerkeymd5,proto3" json:"copysourcessecustomerkeymd5,omitempty"`
-	Expectedbucketowner            string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Expectedsourcebucketowner      string                    `protobuf:"bytes,283238582,opt,name=expectedsourcebucketowner,proto3" json:"expectedsourcebucketowner,omitempty"`
-	Expires                        string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
-	Grantfullcontrol               string                    `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
-	Grantread                      string                    `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
-	Grantreadacp                   string                    `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3" json:"grantreadacp,omitempty"`
-	Grantwriteacp                  string                    `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3" json:"grantwriteacp,omitempty"`
-	Ifmatch                        string                    `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ifnonematch                    string                    `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
+	Copysourceifmatch              *string                   `protobuf:"bytes,512868332,opt,name=copysourceifmatch,proto3,oneof" json:"copysourceifmatch,omitempty"`
+	Copysourceifmodifiedsince      *string                   `protobuf:"bytes,301576082,opt,name=copysourceifmodifiedsince,proto3,oneof" json:"copysourceifmodifiedsince,omitempty"`
+	Copysourceifnonematch          *string                   `protobuf:"bytes,237403010,opt,name=copysourceifnonematch,proto3,oneof" json:"copysourceifnonematch,omitempty"`
+	Copysourceifunmodifiedsince    *string                   `protobuf:"bytes,130556417,opt,name=copysourceifunmodifiedsince,proto3,oneof" json:"copysourceifunmodifiedsince,omitempty"`
+	Copysourcessecustomeralgorithm *string                   `protobuf:"bytes,465017156,opt,name=copysourcessecustomeralgorithm,proto3,oneof" json:"copysourcessecustomeralgorithm,omitempty"`
+	Copysourcessecustomerkey       *string                   `protobuf:"bytes,289313102,opt,name=copysourcessecustomerkey,proto3,oneof" json:"copysourcessecustomerkey,omitempty"`
+	Copysourcessecustomerkeymd5    *string                   `protobuf:"bytes,408962492,opt,name=copysourcessecustomerkeymd5,proto3,oneof" json:"copysourcessecustomerkeymd5,omitempty"`
+	Expectedbucketowner            *string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Expectedsourcebucketowner      *string                   `protobuf:"bytes,283238582,opt,name=expectedsourcebucketowner,proto3,oneof" json:"expectedsourcebucketowner,omitempty"`
+	Expires                        *string                   `protobuf:"bytes,128582948,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
+	Grantfullcontrol               *string                   `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3,oneof" json:"grantfullcontrol,omitempty"`
+	Grantread                      *string                   `protobuf:"bytes,4518126,opt,name=grantread,proto3,oneof" json:"grantread,omitempty"`
+	Grantreadacp                   *string                   `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3,oneof" json:"grantreadacp,omitempty"`
+	Grantwriteacp                  *string                   `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3,oneof" json:"grantwriteacp,omitempty"`
+	Ifmatch                        *string                   `protobuf:"bytes,93178704,opt,name=ifmatch,proto3,oneof" json:"ifmatch,omitempty"`
+	Ifnonematch                    *string                   `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3,oneof" json:"ifnonematch,omitempty"`
 	Key                            string                    `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Metadata                       map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Metadatadirective              MetadataDirective         `protobuf:"varint,282181534,opt,name=metadatadirective,proto3,enum=s3.MetadataDirective" json:"metadatadirective,omitempty"`
 	Objectlocklegalholdstatus      ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode                 ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
-	Objectlockretainuntildate      string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
+	Objectlockretainuntildate      *string                   `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3,oneof" json:"objectlockretainuntildate,omitempty"`
 	Requestpayer                   RequestPayer              `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm           string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey                 string                    `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5              string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmsencryptioncontext        string                    `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid                    string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm           *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey                 *string                   `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5              *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmsencryptioncontext        *string                   `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid                    *string                   `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption           ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass                   StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Tagging                        string                    `protobuf:"bytes,33436541,opt,name=tagging,proto3" json:"tagging,omitempty"`
+	Tagging                        *string                   `protobuf:"bytes,33436541,opt,name=tagging,proto3,oneof" json:"tagging,omitempty"`
 	Taggingdirective               TaggingDirective          `protobuf:"varint,498516426,opt,name=taggingdirective,proto3,enum=s3.TaggingDirective" json:"taggingdirective,omitempty"`
-	Websiteredirectlocation        string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
+	Websiteredirectlocation        *string                   `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3,oneof" json:"websiteredirectlocation,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
 }
@@ -6593,8 +6608,8 @@ func (x *CopyObjectRequest) GetBucketkeyenabled() bool {
 }
 
 func (x *CopyObjectRequest) GetCachecontrol() string {
-	if x != nil {
-		return x.Cachecontrol
+	if x != nil && x.Cachecontrol != nil {
+		return *x.Cachecontrol
 	}
 	return ""
 }
@@ -6607,29 +6622,29 @@ func (x *CopyObjectRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *CopyObjectRequest) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetContentencoding() string {
-	if x != nil {
-		return x.Contentencoding
+	if x != nil && x.Contentencoding != nil {
+		return *x.Contentencoding
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetContentlanguage() string {
-	if x != nil {
-		return x.Contentlanguage
+	if x != nil && x.Contentlanguage != nil {
+		return *x.Contentlanguage
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
@@ -6642,113 +6657,113 @@ func (x *CopyObjectRequest) GetCopysource() string {
 }
 
 func (x *CopyObjectRequest) GetCopysourceifmatch() string {
-	if x != nil {
-		return x.Copysourceifmatch
+	if x != nil && x.Copysourceifmatch != nil {
+		return *x.Copysourceifmatch
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetCopysourceifmodifiedsince() string {
-	if x != nil {
-		return x.Copysourceifmodifiedsince
+	if x != nil && x.Copysourceifmodifiedsince != nil {
+		return *x.Copysourceifmodifiedsince
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetCopysourceifnonematch() string {
-	if x != nil {
-		return x.Copysourceifnonematch
+	if x != nil && x.Copysourceifnonematch != nil {
+		return *x.Copysourceifnonematch
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetCopysourceifunmodifiedsince() string {
-	if x != nil {
-		return x.Copysourceifunmodifiedsince
+	if x != nil && x.Copysourceifunmodifiedsince != nil {
+		return *x.Copysourceifunmodifiedsince
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetCopysourcessecustomeralgorithm() string {
-	if x != nil {
-		return x.Copysourcessecustomeralgorithm
+	if x != nil && x.Copysourcessecustomeralgorithm != nil {
+		return *x.Copysourcessecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetCopysourcessecustomerkey() string {
-	if x != nil {
-		return x.Copysourcessecustomerkey
+	if x != nil && x.Copysourcessecustomerkey != nil {
+		return *x.Copysourcessecustomerkey
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetCopysourcessecustomerkeymd5() string {
-	if x != nil {
-		return x.Copysourcessecustomerkeymd5
+	if x != nil && x.Copysourcessecustomerkeymd5 != nil {
+		return *x.Copysourcessecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetExpectedsourcebucketowner() string {
-	if x != nil {
-		return x.Expectedsourcebucketowner
+	if x != nil && x.Expectedsourcebucketowner != nil {
+		return *x.Expectedsourcebucketowner
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetExpires() string {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetGrantfullcontrol() string {
-	if x != nil {
-		return x.Grantfullcontrol
+	if x != nil && x.Grantfullcontrol != nil {
+		return *x.Grantfullcontrol
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetGrantread() string {
-	if x != nil {
-		return x.Grantread
+	if x != nil && x.Grantread != nil {
+		return *x.Grantread
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetGrantreadacp() string {
-	if x != nil {
-		return x.Grantreadacp
+	if x != nil && x.Grantreadacp != nil {
+		return *x.Grantreadacp
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetGrantwriteacp() string {
-	if x != nil {
-		return x.Grantwriteacp
+	if x != nil && x.Grantwriteacp != nil {
+		return *x.Grantwriteacp
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetIfmatch() string {
-	if x != nil {
-		return x.Ifmatch
+	if x != nil && x.Ifmatch != nil {
+		return *x.Ifmatch
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetIfnonematch() string {
-	if x != nil {
-		return x.Ifnonematch
+	if x != nil && x.Ifnonematch != nil {
+		return *x.Ifnonematch
 	}
 	return ""
 }
@@ -6789,8 +6804,8 @@ func (x *CopyObjectRequest) GetObjectlockmode() ObjectLockMode {
 }
 
 func (x *CopyObjectRequest) GetObjectlockretainuntildate() string {
-	if x != nil {
-		return x.Objectlockretainuntildate
+	if x != nil && x.Objectlockretainuntildate != nil {
+		return *x.Objectlockretainuntildate
 	}
 	return ""
 }
@@ -6803,36 +6818,36 @@ func (x *CopyObjectRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *CopyObjectRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *CopyObjectRequest) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -6852,8 +6867,8 @@ func (x *CopyObjectRequest) GetStorageclass() StorageClass {
 }
 
 func (x *CopyObjectRequest) GetTagging() string {
-	if x != nil {
-		return x.Tagging
+	if x != nil && x.Tagging != nil {
+		return *x.Tagging
 	}
 	return ""
 }
@@ -6866,27 +6881,27 @@ func (x *CopyObjectRequest) GetTaggingdirective() TaggingDirective {
 }
 
 func (x *CopyObjectRequest) GetWebsiteredirectlocation() string {
-	if x != nil {
-		return x.Websiteredirectlocation
+	if x != nil && x.Websiteredirectlocation != nil {
+		return *x.Websiteredirectlocation
 	}
 	return ""
 }
 
 type CopyObjectResult struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Checksumcrc32     string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C    string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5       string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1      string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256    string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512    string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Checksumcrc32     *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C    *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5       *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1      *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256    *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512    *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype      ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Checksumxxhash128 *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3   *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64  *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag              *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Lastmodified      *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -6922,50 +6937,50 @@ func (*CopyObjectResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *CopyObjectResult) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -6978,54 +6993,54 @@ func (x *CopyObjectResult) GetChecksumtype() ChecksumType {
 }
 
 func (x *CopyObjectResult) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *CopyObjectResult) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
 
 type CopyPartResult struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Checksumcrc32     string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C    string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5       string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1      string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256    string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512    string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Checksumcrc32     *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C    *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5       *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1      *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256    *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512    *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128 *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3   *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64  *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag              *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Lastmodified      *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -7061,85 +7076,85 @@ func (*CopyPartResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *CopyPartResult) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *CopyPartResult) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -7216,8 +7231,8 @@ type CreateBucketMetadataConfigurationRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm     ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5            string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner   string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5            *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner   *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Metadataconfiguration *MetadataConfiguration `protobuf:"bytes,361784403,opt,name=metadataconfiguration,proto3" json:"metadataconfiguration,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -7268,15 +7283,15 @@ func (x *CreateBucketMetadataConfigurationRequest) GetChecksumalgorithm() Checks
 }
 
 func (x *CreateBucketMetadataConfigurationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *CreateBucketMetadataConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -7292,8 +7307,8 @@ type CreateBucketMetadataTableConfigurationRequest struct {
 	state                      protoimpl.MessageState      `protogen:"open.v1"`
 	Bucket                     string                      `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm          ChecksumAlgorithm           `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                 string                      `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner        string                      `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                 *string                     `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner        *string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Metadatatableconfiguration *MetadataTableConfiguration `protobuf:"bytes,289222191,opt,name=metadatatableconfiguration,proto3" json:"metadatatableconfiguration,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
@@ -7344,15 +7359,15 @@ func (x *CreateBucketMetadataTableConfigurationRequest) GetChecksumalgorithm() C
 }
 
 func (x *CreateBucketMetadataTableConfigurationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *CreateBucketMetadataTableConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -7366,8 +7381,8 @@ func (x *CreateBucketMetadataTableConfigurationRequest) GetMetadatatableconfigur
 
 type CreateBucketOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Bucketarn     string                 `protobuf:"bytes,255683899,opt,name=bucketarn,proto3" json:"bucketarn,omitempty"`
-	Location      string                 `protobuf:"bytes,465604039,opt,name=location,proto3" json:"location,omitempty"`
+	Bucketarn     *string                `protobuf:"bytes,255683899,opt,name=bucketarn,proto3,oneof" json:"bucketarn,omitempty"`
+	Location      *string                `protobuf:"bytes,465604039,opt,name=location,proto3,oneof" json:"location,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7403,15 +7418,15 @@ func (*CreateBucketOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateBucketOutput) GetBucketarn() string {
-	if x != nil {
-		return x.Bucketarn
+	if x != nil && x.Bucketarn != nil {
+		return *x.Bucketarn
 	}
 	return ""
 }
 
 func (x *CreateBucketOutput) GetLocation() string {
-	if x != nil {
-		return x.Location
+	if x != nil && x.Location != nil {
+		return *x.Location
 	}
 	return ""
 }
@@ -7422,11 +7437,11 @@ type CreateBucketRequest struct {
 	Bucket                     string                     `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bucketnamespace            BucketNamespace            `protobuf:"varint,412736747,opt,name=bucketnamespace,proto3,enum=s3.BucketNamespace" json:"bucketnamespace,omitempty"`
 	Createbucketconfiguration  *CreateBucketConfiguration `protobuf:"bytes,27550528,opt,name=createbucketconfiguration,proto3" json:"createbucketconfiguration,omitempty"`
-	Grantfullcontrol           string                     `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
-	Grantread                  string                     `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
-	Grantreadacp               string                     `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3" json:"grantreadacp,omitempty"`
-	Grantwrite                 string                     `protobuf:"bytes,286850821,opt,name=grantwrite,proto3" json:"grantwrite,omitempty"`
-	Grantwriteacp              string                     `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3" json:"grantwriteacp,omitempty"`
+	Grantfullcontrol           *string                    `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3,oneof" json:"grantfullcontrol,omitempty"`
+	Grantread                  *string                    `protobuf:"bytes,4518126,opt,name=grantread,proto3,oneof" json:"grantread,omitempty"`
+	Grantreadacp               *string                    `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3,oneof" json:"grantreadacp,omitempty"`
+	Grantwrite                 *string                    `protobuf:"bytes,286850821,opt,name=grantwrite,proto3,oneof" json:"grantwrite,omitempty"`
+	Grantwriteacp              *string                    `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3,oneof" json:"grantwriteacp,omitempty"`
 	Objectlockenabledforbucket *bool                      `protobuf:"varint,248510328,opt,name=objectlockenabledforbucket,proto3,oneof" json:"objectlockenabledforbucket,omitempty"`
 	Objectownership            ObjectOwnership            `protobuf:"varint,448301184,opt,name=objectownership,proto3,enum=s3.ObjectOwnership" json:"objectownership,omitempty"`
 	unknownFields              protoimpl.UnknownFields
@@ -7492,36 +7507,36 @@ func (x *CreateBucketRequest) GetCreatebucketconfiguration() *CreateBucketConfig
 }
 
 func (x *CreateBucketRequest) GetGrantfullcontrol() string {
-	if x != nil {
-		return x.Grantfullcontrol
+	if x != nil && x.Grantfullcontrol != nil {
+		return *x.Grantfullcontrol
 	}
 	return ""
 }
 
 func (x *CreateBucketRequest) GetGrantread() string {
-	if x != nil {
-		return x.Grantread
+	if x != nil && x.Grantread != nil {
+		return *x.Grantread
 	}
 	return ""
 }
 
 func (x *CreateBucketRequest) GetGrantreadacp() string {
-	if x != nil {
-		return x.Grantreadacp
+	if x != nil && x.Grantreadacp != nil {
+		return *x.Grantreadacp
 	}
 	return ""
 }
 
 func (x *CreateBucketRequest) GetGrantwrite() string {
-	if x != nil {
-		return x.Grantwrite
+	if x != nil && x.Grantwrite != nil {
+		return *x.Grantwrite
 	}
 	return ""
 }
 
 func (x *CreateBucketRequest) GetGrantwriteacp() string {
-	if x != nil {
-		return x.Grantwriteacp
+	if x != nil && x.Grantwriteacp != nil {
+		return *x.Grantwriteacp
 	}
 	return ""
 }
@@ -7542,20 +7557,20 @@ func (x *CreateBucketRequest) GetObjectownership() ObjectOwnership {
 
 type CreateMultipartUploadOutput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Abortdate               string                 `protobuf:"bytes,232475318,opt,name=abortdate,proto3" json:"abortdate,omitempty"`
-	Abortruleid             string                 `protobuf:"bytes,232462739,opt,name=abortruleid,proto3" json:"abortruleid,omitempty"`
-	Bucket                  string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Abortdate               *string                `protobuf:"bytes,232475318,opt,name=abortdate,proto3,oneof" json:"abortdate,omitempty"`
+	Abortruleid             *string                `protobuf:"bytes,232462739,opt,name=abortruleid,proto3,oneof" json:"abortruleid,omitempty"`
+	Bucket                  *string                `protobuf:"bytes,55457112,opt,name=bucket,proto3,oneof" json:"bucket,omitempty"`
 	Bucketkeyenabled        *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
 	Checksumalgorithm       ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Checksumtype            ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Key                     string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
+	Key                     *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
 	Requestcharged          RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Ssecustomeralgorithm    string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5       string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmsencryptioncontext string                 `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid             string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm    *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5       *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmsencryptioncontext *string                `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid             *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption    ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
-	Uploadid                string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
+	Uploadid                *string                `protobuf:"bytes,449040722,opt,name=uploadid,proto3,oneof" json:"uploadid,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -7591,22 +7606,22 @@ func (*CreateMultipartUploadOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateMultipartUploadOutput) GetAbortdate() string {
-	if x != nil {
-		return x.Abortdate
+	if x != nil && x.Abortdate != nil {
+		return *x.Abortdate
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadOutput) GetAbortruleid() string {
-	if x != nil {
-		return x.Abortruleid
+	if x != nil && x.Abortruleid != nil {
+		return *x.Abortruleid
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadOutput) GetBucket() string {
-	if x != nil {
-		return x.Bucket
+	if x != nil && x.Bucket != nil {
+		return *x.Bucket
 	}
 	return ""
 }
@@ -7633,8 +7648,8 @@ func (x *CreateMultipartUploadOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *CreateMultipartUploadOutput) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
@@ -7647,29 +7662,29 @@ func (x *CreateMultipartUploadOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *CreateMultipartUploadOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadOutput) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -7682,8 +7697,8 @@ func (x *CreateMultipartUploadOutput) GetServersideencryption() ServerSideEncryp
 }
 
 func (x *CreateMultipartUploadOutput) GetUploadid() string {
-	if x != nil {
-		return x.Uploadid
+	if x != nil && x.Uploadid != nil {
+		return *x.Uploadid
 	}
 	return ""
 }
@@ -7693,34 +7708,34 @@ type CreateMultipartUploadRequest struct {
 	Acl                       ObjectCannedACL           `protobuf:"varint,394696836,opt,name=acl,proto3,enum=s3.ObjectCannedACL" json:"acl,omitempty"`
 	Bucket                    string                    `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bucketkeyenabled          *bool                     `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Cachecontrol              string                    `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3" json:"cachecontrol,omitempty"`
+	Cachecontrol              *string                   `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3,oneof" json:"cachecontrol,omitempty"`
 	Checksumalgorithm         ChecksumAlgorithm         `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Checksumtype              ChecksumType              `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
-	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
-	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
-	Expectedbucketowner       string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
-	Grantfullcontrol          string                    `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
-	Grantread                 string                    `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
-	Grantreadacp              string                    `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3" json:"grantreadacp,omitempty"`
-	Grantwriteacp             string                    `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3" json:"grantwriteacp,omitempty"`
+	Contentdisposition        *string                   `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contentencoding           *string                   `protobuf:"bytes,317106228,opt,name=contentencoding,proto3,oneof" json:"contentencoding,omitempty"`
+	Contentlanguage           *string                   `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3,oneof" json:"contentlanguage,omitempty"`
+	Contenttype               *string                   `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
+	Expectedbucketowner       *string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Expires                   *string                   `protobuf:"bytes,128582948,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
+	Grantfullcontrol          *string                   `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3,oneof" json:"grantfullcontrol,omitempty"`
+	Grantread                 *string                   `protobuf:"bytes,4518126,opt,name=grantread,proto3,oneof" json:"grantread,omitempty"`
+	Grantreadacp              *string                   `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3,oneof" json:"grantreadacp,omitempty"`
+	Grantwriteacp             *string                   `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3,oneof" json:"grantwriteacp,omitempty"`
 	Key                       string                    `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
-	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
+	Objectlockretainuntildate *string                   `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3,oneof" json:"objectlockretainuntildate,omitempty"`
 	Requestpayer              RequestPayer              `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm      string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey            string                    `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5         string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmsencryptioncontext   string                    `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm      *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey            *string                   `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5         *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmsencryptioncontext   *string                   `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid               *string                   `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Tagging                   string                    `protobuf:"bytes,33436541,opt,name=tagging,proto3" json:"tagging,omitempty"`
-	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
+	Tagging                   *string                   `protobuf:"bytes,33436541,opt,name=tagging,proto3,oneof" json:"tagging,omitempty"`
+	Websiteredirectlocation   *string                   `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3,oneof" json:"websiteredirectlocation,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -7777,8 +7792,8 @@ func (x *CreateMultipartUploadRequest) GetBucketkeyenabled() bool {
 }
 
 func (x *CreateMultipartUploadRequest) GetCachecontrol() string {
-	if x != nil {
-		return x.Cachecontrol
+	if x != nil && x.Cachecontrol != nil {
+		return *x.Cachecontrol
 	}
 	return ""
 }
@@ -7798,71 +7813,71 @@ func (x *CreateMultipartUploadRequest) GetChecksumtype() ChecksumType {
 }
 
 func (x *CreateMultipartUploadRequest) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetContentencoding() string {
-	if x != nil {
-		return x.Contentencoding
+	if x != nil && x.Contentencoding != nil {
+		return *x.Contentencoding
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetContentlanguage() string {
-	if x != nil {
-		return x.Contentlanguage
+	if x != nil && x.Contentlanguage != nil {
+		return *x.Contentlanguage
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetExpires() string {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetGrantfullcontrol() string {
-	if x != nil {
-		return x.Grantfullcontrol
+	if x != nil && x.Grantfullcontrol != nil {
+		return *x.Grantfullcontrol
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetGrantread() string {
-	if x != nil {
-		return x.Grantread
+	if x != nil && x.Grantread != nil {
+		return *x.Grantread
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetGrantreadacp() string {
-	if x != nil {
-		return x.Grantreadacp
+	if x != nil && x.Grantreadacp != nil {
+		return *x.Grantreadacp
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetGrantwriteacp() string {
-	if x != nil {
-		return x.Grantwriteacp
+	if x != nil && x.Grantwriteacp != nil {
+		return *x.Grantwriteacp
 	}
 	return ""
 }
@@ -7896,8 +7911,8 @@ func (x *CreateMultipartUploadRequest) GetObjectlockmode() ObjectLockMode {
 }
 
 func (x *CreateMultipartUploadRequest) GetObjectlockretainuntildate() string {
-	if x != nil {
-		return x.Objectlockretainuntildate
+	if x != nil && x.Objectlockretainuntildate != nil {
+		return *x.Objectlockretainuntildate
 	}
 	return ""
 }
@@ -7910,36 +7925,36 @@ func (x *CreateMultipartUploadRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *CreateMultipartUploadRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -7959,15 +7974,15 @@ func (x *CreateMultipartUploadRequest) GetStorageclass() StorageClass {
 }
 
 func (x *CreateMultipartUploadRequest) GetTagging() string {
-	if x != nil {
-		return x.Tagging
+	if x != nil && x.Tagging != nil {
+		return *x.Tagging
 	}
 	return ""
 }
 
 func (x *CreateMultipartUploadRequest) GetWebsiteredirectlocation() string {
-	if x != nil {
-		return x.Websiteredirectlocation
+	if x != nil && x.Websiteredirectlocation != nil {
+		return *x.Websiteredirectlocation
 	}
 	return ""
 }
@@ -7976,8 +7991,8 @@ type CreateSessionOutput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Bucketkeyenabled        *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
 	Credentials             *SessionCredentials    `protobuf:"bytes,381914482,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Ssekmsencryptioncontext string                 `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid             string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssekmsencryptioncontext *string                `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid             *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption    ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -8028,15 +8043,15 @@ func (x *CreateSessionOutput) GetCredentials() *SessionCredentials {
 }
 
 func (x *CreateSessionOutput) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *CreateSessionOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -8052,8 +8067,8 @@ type CreateSessionRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                  string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bucketkeyenabled        *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Ssekmsencryptioncontext string                 `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid             string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssekmsencryptioncontext *string                `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid             *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption    ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Sessionmode             SessionMode            `protobuf:"varint,43104977,opt,name=sessionmode,proto3,enum=s3.SessionMode" json:"sessionmode,omitempty"`
 	unknownFields           protoimpl.UnknownFields
@@ -8105,15 +8120,15 @@ func (x *CreateSessionRequest) GetBucketkeyenabled() bool {
 }
 
 func (x *CreateSessionRequest) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *CreateSessionRequest) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -8247,7 +8262,7 @@ func (x *Delete) GetQuiet() bool {
 type DeleteBucketAnalyticsConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -8291,8 +8306,8 @@ func (x *DeleteBucketAnalyticsConfigurationRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketAnalyticsConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8307,7 +8322,7 @@ func (x *DeleteBucketAnalyticsConfigurationRequest) GetId() string {
 type DeleteBucketCorsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8350,8 +8365,8 @@ func (x *DeleteBucketCorsRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketCorsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8359,7 +8374,7 @@ func (x *DeleteBucketCorsRequest) GetExpectedbucketowner() string {
 type DeleteBucketEncryptionRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8402,8 +8417,8 @@ func (x *DeleteBucketEncryptionRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketEncryptionRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8411,7 +8426,7 @@ func (x *DeleteBucketEncryptionRequest) GetExpectedbucketowner() string {
 type DeleteBucketIntelligentTieringConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -8455,8 +8470,8 @@ func (x *DeleteBucketIntelligentTieringConfigurationRequest) GetBucket() string 
 }
 
 func (x *DeleteBucketIntelligentTieringConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8471,7 +8486,7 @@ func (x *DeleteBucketIntelligentTieringConfigurationRequest) GetId() string {
 type DeleteBucketInventoryConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -8515,8 +8530,8 @@ func (x *DeleteBucketInventoryConfigurationRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketInventoryConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8531,7 +8546,7 @@ func (x *DeleteBucketInventoryConfigurationRequest) GetId() string {
 type DeleteBucketLifecycleRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8574,8 +8589,8 @@ func (x *DeleteBucketLifecycleRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketLifecycleRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8583,7 +8598,7 @@ func (x *DeleteBucketLifecycleRequest) GetExpectedbucketowner() string {
 type DeleteBucketMetadataConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8626,8 +8641,8 @@ func (x *DeleteBucketMetadataConfigurationRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketMetadataConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8635,7 +8650,7 @@ func (x *DeleteBucketMetadataConfigurationRequest) GetExpectedbucketowner() stri
 type DeleteBucketMetadataTableConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8678,8 +8693,8 @@ func (x *DeleteBucketMetadataTableConfigurationRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketMetadataTableConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8687,7 +8702,7 @@ func (x *DeleteBucketMetadataTableConfigurationRequest) GetExpectedbucketowner()
 type DeleteBucketMetricsConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -8731,8 +8746,8 @@ func (x *DeleteBucketMetricsConfigurationRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketMetricsConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8747,7 +8762,7 @@ func (x *DeleteBucketMetricsConfigurationRequest) GetId() string {
 type DeleteBucketOwnershipControlsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8790,8 +8805,8 @@ func (x *DeleteBucketOwnershipControlsRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketOwnershipControlsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8799,7 +8814,7 @@ func (x *DeleteBucketOwnershipControlsRequest) GetExpectedbucketowner() string {
 type DeleteBucketPolicyRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8842,8 +8857,8 @@ func (x *DeleteBucketPolicyRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketPolicyRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8851,7 +8866,7 @@ func (x *DeleteBucketPolicyRequest) GetExpectedbucketowner() string {
 type DeleteBucketReplicationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8894,8 +8909,8 @@ func (x *DeleteBucketReplicationRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketReplicationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8903,7 +8918,7 @@ func (x *DeleteBucketReplicationRequest) GetExpectedbucketowner() string {
 type DeleteBucketRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8946,8 +8961,8 @@ func (x *DeleteBucketRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -8955,7 +8970,7 @@ func (x *DeleteBucketRequest) GetExpectedbucketowner() string {
 type DeleteBucketTaggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -8998,8 +9013,8 @@ func (x *DeleteBucketTaggingRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketTaggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -9007,7 +9022,7 @@ func (x *DeleteBucketTaggingRequest) GetExpectedbucketowner() string {
 type DeleteBucketWebsiteRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9050,8 +9065,8 @@ func (x *DeleteBucketWebsiteRequest) GetBucket() string {
 }
 
 func (x *DeleteBucketWebsiteRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -9059,10 +9074,10 @@ func (x *DeleteBucketWebsiteRequest) GetExpectedbucketowner() string {
 type DeleteMarkerEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Islatest      *bool                  `protobuf:"varint,80355831,opt,name=islatest,proto3,oneof" json:"islatest,omitempty"`
-	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Lastmodified  string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Key           *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Lastmodified  *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Owner         *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9105,15 +9120,15 @@ func (x *DeleteMarkerEntry) GetIslatest() bool {
 }
 
 func (x *DeleteMarkerEntry) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *DeleteMarkerEntry) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -9126,8 +9141,8 @@ func (x *DeleteMarkerEntry) GetOwner() *Owner {
 }
 
 func (x *DeleteMarkerEntry) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -9178,7 +9193,7 @@ func (x *DeleteMarkerReplication) GetStatus() DeleteMarkerReplicationStatus {
 
 type DeleteObjectAnnotationOutput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Objectversionid string                 `protobuf:"bytes,406054044,opt,name=objectversionid,proto3" json:"objectversionid,omitempty"`
+	Objectversionid *string                `protobuf:"bytes,406054044,opt,name=objectversionid,proto3,oneof" json:"objectversionid,omitempty"`
 	Requestcharged  RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -9215,8 +9230,8 @@ func (*DeleteObjectAnnotationOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteObjectAnnotationOutput) GetObjectversionid() string {
-	if x != nil {
-		return x.Objectversionid
+	if x != nil && x.Objectversionid != nil {
+		return *x.Objectversionid
 	}
 	return ""
 }
@@ -9232,11 +9247,11 @@ type DeleteObjectAnnotationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Annotationname      string                 `protobuf:"bytes,356848972,opt,name=annotationname,proto3" json:"annotationname,omitempty"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Objectifmatch       string                 `protobuf:"bytes,408877983,opt,name=objectifmatch,proto3" json:"objectifmatch,omitempty"`
+	Objectifmatch       *string                `protobuf:"bytes,408877983,opt,name=objectifmatch,proto3,oneof" json:"objectifmatch,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9286,8 +9301,8 @@ func (x *DeleteObjectAnnotationRequest) GetBucket() string {
 }
 
 func (x *DeleteObjectAnnotationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -9300,8 +9315,8 @@ func (x *DeleteObjectAnnotationRequest) GetKey() string {
 }
 
 func (x *DeleteObjectAnnotationRequest) GetObjectifmatch() string {
-	if x != nil {
-		return x.Objectifmatch
+	if x != nil && x.Objectifmatch != nil {
+		return *x.Objectifmatch
 	}
 	return ""
 }
@@ -9314,8 +9329,8 @@ func (x *DeleteObjectAnnotationRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *DeleteObjectAnnotationRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -9324,7 +9339,7 @@ type DeleteObjectOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Deletemarker   *bool                  `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
 	Requestcharged RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Versionid      string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid      *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -9374,8 +9389,8 @@ func (x *DeleteObjectOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *DeleteObjectOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -9384,14 +9399,14 @@ type DeleteObjectRequest struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                    string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bypassgovernanceretention *bool                  `protobuf:"varint,129938942,opt,name=bypassgovernanceretention,proto3,oneof" json:"bypassgovernanceretention,omitempty"`
-	Expectedbucketowner       string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Ifmatch                   string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ifmatchlastmodifiedtime   string                 `protobuf:"bytes,94688686,opt,name=ifmatchlastmodifiedtime,proto3" json:"ifmatchlastmodifiedtime,omitempty"`
+	Expectedbucketowner       *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Ifmatch                   *string                `protobuf:"bytes,93178704,opt,name=ifmatch,proto3,oneof" json:"ifmatch,omitempty"`
+	Ifmatchlastmodifiedtime   *string                `protobuf:"bytes,94688686,opt,name=ifmatchlastmodifiedtime,proto3,oneof" json:"ifmatchlastmodifiedtime,omitempty"`
 	Ifmatchsize               *int64                 `protobuf:"varint,398307783,opt,name=ifmatchsize,proto3,oneof" json:"ifmatchsize,omitempty"`
 	Key                       string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Mfa                       string                 `protobuf:"bytes,325407842,opt,name=mfa,proto3" json:"mfa,omitempty"`
+	Mfa                       *string                `protobuf:"bytes,325407842,opt,name=mfa,proto3,oneof" json:"mfa,omitempty"`
 	Requestpayer              RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid                 string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid                 *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -9441,22 +9456,22 @@ func (x *DeleteObjectRequest) GetBypassgovernanceretention() bool {
 }
 
 func (x *DeleteObjectRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *DeleteObjectRequest) GetIfmatch() string {
-	if x != nil {
-		return x.Ifmatch
+	if x != nil && x.Ifmatch != nil {
+		return *x.Ifmatch
 	}
 	return ""
 }
 
 func (x *DeleteObjectRequest) GetIfmatchlastmodifiedtime() string {
-	if x != nil {
-		return x.Ifmatchlastmodifiedtime
+	if x != nil && x.Ifmatchlastmodifiedtime != nil {
+		return *x.Ifmatchlastmodifiedtime
 	}
 	return ""
 }
@@ -9476,8 +9491,8 @@ func (x *DeleteObjectRequest) GetKey() string {
 }
 
 func (x *DeleteObjectRequest) GetMfa() string {
-	if x != nil {
-		return x.Mfa
+	if x != nil && x.Mfa != nil {
+		return *x.Mfa
 	}
 	return ""
 }
@@ -9490,15 +9505,15 @@ func (x *DeleteObjectRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *DeleteObjectRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type DeleteObjectTaggingOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9534,8 +9549,8 @@ func (*DeleteObjectTaggingOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteObjectTaggingOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -9543,9 +9558,9 @@ func (x *DeleteObjectTaggingOutput) GetVersionid() string {
 type DeleteObjectTaggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9588,8 +9603,8 @@ func (x *DeleteObjectTaggingRequest) GetBucket() string {
 }
 
 func (x *DeleteObjectTaggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -9602,8 +9617,8 @@ func (x *DeleteObjectTaggingRequest) GetKey() string {
 }
 
 func (x *DeleteObjectTaggingRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -9674,8 +9689,8 @@ type DeleteObjectsRequest struct {
 	Bypassgovernanceretention *bool                  `protobuf:"varint,129938942,opt,name=bypassgovernanceretention,proto3,oneof" json:"bypassgovernanceretention,omitempty"`
 	Checksumalgorithm         ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Delete                    *Delete                `protobuf:"bytes,395831915,opt,name=delete,proto3" json:"delete,omitempty"`
-	Expectedbucketowner       string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Mfa                       string                 `protobuf:"bytes,325407842,opt,name=mfa,proto3" json:"mfa,omitempty"`
+	Expectedbucketowner       *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Mfa                       *string                `protobuf:"bytes,325407842,opt,name=mfa,proto3,oneof" json:"mfa,omitempty"`
 	Requestpayer              RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -9740,15 +9755,15 @@ func (x *DeleteObjectsRequest) GetDelete() *Delete {
 }
 
 func (x *DeleteObjectsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *DeleteObjectsRequest) GetMfa() string {
-	if x != nil {
-		return x.Mfa
+	if x != nil && x.Mfa != nil {
+		return *x.Mfa
 	}
 	return ""
 }
@@ -9763,7 +9778,7 @@ func (x *DeleteObjectsRequest) GetRequestpayer() RequestPayer {
 type DeletePublicAccessBlockRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9806,8 +9821,8 @@ func (x *DeletePublicAccessBlockRequest) GetBucket() string {
 }
 
 func (x *DeletePublicAccessBlockRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -9815,9 +9830,9 @@ func (x *DeletePublicAccessBlockRequest) GetExpectedbucketowner() string {
 type DeletedObject struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Deletemarker          *bool                  `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
-	Deletemarkerversionid string                 `protobuf:"bytes,492617282,opt,name=deletemarkerversionid,proto3" json:"deletemarkerversionid,omitempty"`
-	Key                   string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Versionid             string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Deletemarkerversionid *string                `protobuf:"bytes,492617282,opt,name=deletemarkerversionid,proto3,oneof" json:"deletemarkerversionid,omitempty"`
+	Key                   *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Versionid             *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -9860,22 +9875,22 @@ func (x *DeletedObject) GetDeletemarker() bool {
 }
 
 func (x *DeletedObject) GetDeletemarkerversionid() string {
-	if x != nil {
-		return x.Deletemarkerversionid
+	if x != nil && x.Deletemarkerversionid != nil {
+		return *x.Deletemarkerversionid
 	}
 	return ""
 }
 
 func (x *DeletedObject) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *DeletedObject) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -9883,7 +9898,7 @@ func (x *DeletedObject) GetVersionid() string {
 type Destination struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
 	Accesscontroltranslation *AccessControlTranslation `protobuf:"bytes,450579688,opt,name=accesscontroltranslation,proto3" json:"accesscontroltranslation,omitempty"`
-	Account                  string                    `protobuf:"bytes,435725053,opt,name=account,proto3" json:"account,omitempty"`
+	Account                  *string                   `protobuf:"bytes,435725053,opt,name=account,proto3,oneof" json:"account,omitempty"`
 	Bucket                   string                    `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Encryptionconfiguration  *EncryptionConfiguration  `protobuf:"bytes,225764215,opt,name=encryptionconfiguration,proto3" json:"encryptionconfiguration,omitempty"`
 	Metrics                  *Metrics                  `protobuf:"bytes,436365847,opt,name=metrics,proto3" json:"metrics,omitempty"`
@@ -9931,8 +9946,8 @@ func (x *Destination) GetAccesscontroltranslation() *AccessControlTranslation {
 }
 
 func (x *Destination) GetAccount() string {
-	if x != nil {
-		return x.Account
+	if x != nil && x.Account != nil {
+		return *x.Account
 	}
 	return ""
 }
@@ -9974,9 +9989,9 @@ func (x *Destination) GetStorageclass() StorageClass {
 
 type DestinationResult struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Tablebucketarn  string                 `protobuf:"bytes,457996261,opt,name=tablebucketarn,proto3" json:"tablebucketarn,omitempty"`
+	Tablebucketarn  *string                `protobuf:"bytes,457996261,opt,name=tablebucketarn,proto3,oneof" json:"tablebucketarn,omitempty"`
 	Tablebuckettype S3TablesBucketType     `protobuf:"varint,37403814,opt,name=tablebuckettype,proto3,enum=s3.S3TablesBucketType" json:"tablebuckettype,omitempty"`
-	Tablenamespace  string                 `protobuf:"bytes,272949507,opt,name=tablenamespace,proto3" json:"tablenamespace,omitempty"`
+	Tablenamespace  *string                `protobuf:"bytes,272949507,opt,name=tablenamespace,proto3,oneof" json:"tablenamespace,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -10012,8 +10027,8 @@ func (*DestinationResult) Descriptor() ([]byte, []int) {
 }
 
 func (x *DestinationResult) GetTablebucketarn() string {
-	if x != nil {
-		return x.Tablebucketarn
+	if x != nil && x.Tablebucketarn != nil {
+		return *x.Tablebucketarn
 	}
 	return ""
 }
@@ -10026,8 +10041,8 @@ func (x *DestinationResult) GetTablebuckettype() S3TablesBucketType {
 }
 
 func (x *DestinationResult) GetTablenamespace() string {
-	if x != nil {
-		return x.Tablenamespace
+	if x != nil && x.Tablenamespace != nil {
+		return *x.Tablenamespace
 	}
 	return ""
 }
@@ -10035,8 +10050,8 @@ func (x *DestinationResult) GetTablenamespace() string {
 type Encryption struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Encryptiontype ServerSideEncryption   `protobuf:"varint,264007605,opt,name=encryptiontype,proto3,enum=s3.ServerSideEncryption" json:"encryptiontype,omitempty"`
-	Kmscontext     string                 `protobuf:"bytes,161224782,opt,name=kmscontext,proto3" json:"kmscontext,omitempty"`
-	Kmskeyid       string                 `protobuf:"bytes,13237581,opt,name=kmskeyid,proto3" json:"kmskeyid,omitempty"`
+	Kmscontext     *string                `protobuf:"bytes,161224782,opt,name=kmscontext,proto3,oneof" json:"kmscontext,omitempty"`
+	Kmskeyid       *string                `protobuf:"bytes,13237581,opt,name=kmskeyid,proto3,oneof" json:"kmskeyid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -10079,22 +10094,22 @@ func (x *Encryption) GetEncryptiontype() ServerSideEncryption {
 }
 
 func (x *Encryption) GetKmscontext() string {
-	if x != nil {
-		return x.Kmscontext
+	if x != nil && x.Kmscontext != nil {
+		return *x.Kmscontext
 	}
 	return ""
 }
 
 func (x *Encryption) GetKmskeyid() string {
-	if x != nil {
-		return x.Kmskeyid
+	if x != nil && x.Kmskeyid != nil {
+		return *x.Kmskeyid
 	}
 	return ""
 }
 
 type EncryptionConfiguration struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Replicakmskeyid string                 `protobuf:"bytes,77830171,opt,name=replicakmskeyid,proto3" json:"replicakmskeyid,omitempty"`
+	Replicakmskeyid *string                `protobuf:"bytes,77830171,opt,name=replicakmskeyid,proto3,oneof" json:"replicakmskeyid,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -10130,8 +10145,8 @@ func (*EncryptionConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *EncryptionConfiguration) GetReplicakmskeyid() string {
-	if x != nil {
-		return x.Replicakmskeyid
+	if x != nil && x.Replicakmskeyid != nil {
+		return *x.Replicakmskeyid
 	}
 	return ""
 }
@@ -10210,10 +10225,10 @@ func (*EndEvent) Descriptor() ([]byte, []int) {
 
 type Error struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Code          string                 `protobuf:"bytes,425572629,opt,name=code,proto3" json:"code,omitempty"`
-	Key           string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Code          *string                `protobuf:"bytes,425572629,opt,name=code,proto3,oneof" json:"code,omitempty"`
+	Key           *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10249,37 +10264,37 @@ func (*Error) Descriptor() ([]byte, []int) {
 }
 
 func (x *Error) GetCode() string {
-	if x != nil {
-		return x.Code
+	if x != nil && x.Code != nil {
+		return *x.Code
 	}
 	return ""
 }
 
 func (x *Error) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *Error) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *Error) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type ErrorDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Errorcode     string                 `protobuf:"bytes,34663193,opt,name=errorcode,proto3" json:"errorcode,omitempty"`
-	Errormessage  string                 `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
+	Errorcode     *string                `protobuf:"bytes,34663193,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
+	Errormessage  *string                `protobuf:"bytes,518702377,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10315,15 +10330,15 @@ func (*ErrorDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *ErrorDetails) GetErrorcode() string {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return ""
 }
 
 func (x *ErrorDetails) GetErrormessage() string {
-	if x != nil {
-		return x.Errormessage
+	if x != nil && x.Errormessage != nil {
+		return *x.Errormessage
 	}
 	return ""
 }
@@ -10455,7 +10470,7 @@ func (x *ExistingObjectReplication) GetStatus() ExistingObjectReplicationStatus 
 type FilterRule struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          FilterRuleName         `protobuf:"varint,266367751,opt,name=name,proto3,enum=s3.FilterRuleName" json:"name,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10498,8 +10513,8 @@ func (x *FilterRule) GetName() FilterRuleName {
 }
 
 func (x *FilterRule) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -10551,7 +10566,7 @@ func (x *GetBucketAbacOutput) GetAbacstatus() *AbacStatus {
 type GetBucketAbacRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -10594,8 +10609,8 @@ func (x *GetBucketAbacRequest) GetBucket() string {
 }
 
 func (x *GetBucketAbacRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -10655,7 +10670,7 @@ func (x *GetBucketAccelerateConfigurationOutput) GetStatus() BucketAccelerateSta
 type GetBucketAccelerateConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -10699,8 +10714,8 @@ func (x *GetBucketAccelerateConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketAccelerateConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -10767,7 +10782,7 @@ func (x *GetBucketAclOutput) GetOwner() *Owner {
 type GetBucketAclRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -10810,8 +10825,8 @@ func (x *GetBucketAclRequest) GetBucket() string {
 }
 
 func (x *GetBucketAclRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -10863,7 +10878,7 @@ func (x *GetBucketAnalyticsConfigurationOutput) GetAnalyticsconfiguration() *Ana
 type GetBucketAnalyticsConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -10907,8 +10922,8 @@ func (x *GetBucketAnalyticsConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketAnalyticsConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -10967,7 +10982,7 @@ func (x *GetBucketCorsOutput) GetCorsrules() []*CORSRule {
 type GetBucketCorsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11010,8 +11025,8 @@ func (x *GetBucketCorsRequest) GetBucket() string {
 }
 
 func (x *GetBucketCorsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11063,7 +11078,7 @@ func (x *GetBucketEncryptionOutput) GetServersideencryptionconfiguration() *Serv
 type GetBucketEncryptionRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11106,8 +11121,8 @@ func (x *GetBucketEncryptionRequest) GetBucket() string {
 }
 
 func (x *GetBucketEncryptionRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11159,7 +11174,7 @@ func (x *GetBucketIntelligentTieringConfigurationOutput) GetIntelligenttieringco
 type GetBucketIntelligentTieringConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -11203,8 +11218,8 @@ func (x *GetBucketIntelligentTieringConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketIntelligentTieringConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11263,7 +11278,7 @@ func (x *GetBucketInventoryConfigurationOutput) GetInventoryconfiguration() *Inv
 type GetBucketInventoryConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -11307,8 +11322,8 @@ func (x *GetBucketInventoryConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketInventoryConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11375,7 +11390,7 @@ func (x *GetBucketLifecycleConfigurationOutput) GetTransitiondefaultminimumobjec
 type GetBucketLifecycleConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11418,8 +11433,8 @@ func (x *GetBucketLifecycleConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketLifecycleConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11471,7 +11486,7 @@ func (x *GetBucketLocationOutput) GetLocationconstraint() BucketLocationConstrai
 type GetBucketLocationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11514,8 +11529,8 @@ func (x *GetBucketLocationRequest) GetBucket() string {
 }
 
 func (x *GetBucketLocationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11567,7 +11582,7 @@ func (x *GetBucketLoggingOutput) GetLoggingenabled() *LoggingEnabled {
 type GetBucketLoggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11610,8 +11625,8 @@ func (x *GetBucketLoggingRequest) GetBucket() string {
 }
 
 func (x *GetBucketLoggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11663,7 +11678,7 @@ func (x *GetBucketMetadataConfigurationOutput) GetGetbucketmetadataconfiguration
 type GetBucketMetadataConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11706,8 +11721,8 @@ func (x *GetBucketMetadataConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketMetadataConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11803,7 +11818,7 @@ func (x *GetBucketMetadataTableConfigurationOutput) GetGetbucketmetadatatablecon
 type GetBucketMetadataTableConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -11846,8 +11861,8 @@ func (x *GetBucketMetadataTableConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketMetadataTableConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -11959,7 +11974,7 @@ func (x *GetBucketMetricsConfigurationOutput) GetMetricsconfiguration() *Metrics
 type GetBucketMetricsConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                  string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -12003,8 +12018,8 @@ func (x *GetBucketMetricsConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketMetricsConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12019,7 +12034,7 @@ func (x *GetBucketMetricsConfigurationRequest) GetId() string {
 type GetBucketNotificationConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12062,8 +12077,8 @@ func (x *GetBucketNotificationConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetBucketNotificationConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12115,7 +12130,7 @@ func (x *GetBucketOwnershipControlsOutput) GetOwnershipcontrols() *OwnershipCont
 type GetBucketOwnershipControlsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12158,15 +12173,15 @@ func (x *GetBucketOwnershipControlsRequest) GetBucket() string {
 }
 
 func (x *GetBucketOwnershipControlsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 type GetBucketPolicyOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Policy        string                 `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy        *string                `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12202,8 +12217,8 @@ func (*GetBucketPolicyOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetBucketPolicyOutput) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
@@ -12211,7 +12226,7 @@ func (x *GetBucketPolicyOutput) GetPolicy() string {
 type GetBucketPolicyRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12254,8 +12269,8 @@ func (x *GetBucketPolicyRequest) GetBucket() string {
 }
 
 func (x *GetBucketPolicyRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12307,7 +12322,7 @@ func (x *GetBucketPolicyStatusOutput) GetPolicystatus() *PolicyStatus {
 type GetBucketPolicyStatusRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12350,8 +12365,8 @@ func (x *GetBucketPolicyStatusRequest) GetBucket() string {
 }
 
 func (x *GetBucketPolicyStatusRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12403,7 +12418,7 @@ func (x *GetBucketReplicationOutput) GetReplicationconfiguration() *ReplicationC
 type GetBucketReplicationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12446,8 +12461,8 @@ func (x *GetBucketReplicationRequest) GetBucket() string {
 }
 
 func (x *GetBucketReplicationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12499,7 +12514,7 @@ func (x *GetBucketRequestPaymentOutput) GetPayer() Payer {
 type GetBucketRequestPaymentRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12542,8 +12557,8 @@ func (x *GetBucketRequestPaymentRequest) GetBucket() string {
 }
 
 func (x *GetBucketRequestPaymentRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12595,7 +12610,7 @@ func (x *GetBucketTaggingOutput) GetTagset() []*Tag {
 type GetBucketTaggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12638,8 +12653,8 @@ func (x *GetBucketTaggingRequest) GetBucket() string {
 }
 
 func (x *GetBucketTaggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12699,7 +12714,7 @@ func (x *GetBucketVersioningOutput) GetStatus() BucketVersioningStatus {
 type GetBucketVersioningRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12742,8 +12757,8 @@ func (x *GetBucketVersioningRequest) GetBucket() string {
 }
 
 func (x *GetBucketVersioningRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12819,7 +12834,7 @@ func (x *GetBucketWebsiteOutput) GetRoutingrules() []*RoutingRule {
 type GetBucketWebsiteRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12862,8 +12877,8 @@ func (x *GetBucketWebsiteRequest) GetBucket() string {
 }
 
 func (x *GetBucketWebsiteRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12931,10 +12946,10 @@ func (x *GetObjectAclOutput) GetRequestcharged() RequestCharged {
 type GetObjectAclRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -12977,8 +12992,8 @@ func (x *GetObjectAclRequest) GetBucket() string {
 }
 
 func (x *GetObjectAclRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -12998,30 +13013,30 @@ func (x *GetObjectAclRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectAclRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type GetObjectAnnotationOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Annotationpayload    []byte                 `protobuf:"bytes,83511959,opt,name=annotationpayload,proto3" json:"annotationpayload,omitempty"`
-	Checksumcrc32        string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C       string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme    string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5          string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1         string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256       string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512       string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Annotationpayload    []byte                 `protobuf:"bytes,83511959,opt,name=annotationpayload,proto3,oneof" json:"annotationpayload,omitempty"`
+	Checksumcrc32        *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C       *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme    *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5          *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1         *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256       *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512       *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype         ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
+	Checksumxxhash128    *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3      *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64     *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
 	Contentlength        *int64                 `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
-	Etag                 string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Lastmodified         string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
-	Objectversionid      string                 `protobuf:"bytes,406054044,opt,name=objectversionid,proto3" json:"objectversionid,omitempty"`
+	Etag                 *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Lastmodified         *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
+	Objectversionid      *string                `protobuf:"bytes,406054044,opt,name=objectversionid,proto3,oneof" json:"objectversionid,omitempty"`
 	Replicationstatus    ReplicationStatus      `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged       RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Serversideencryption ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
@@ -13067,50 +13082,50 @@ func (x *GetObjectAnnotationOutput) GetAnnotationpayload() []byte {
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -13123,22 +13138,22 @@ func (x *GetObjectAnnotationOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
@@ -13151,22 +13166,22 @@ func (x *GetObjectAnnotationOutput) GetContentlength() int64 {
 }
 
 func (x *GetObjectAnnotationOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
 
 func (x *GetObjectAnnotationOutput) GetObjectversionid() string {
-	if x != nil {
-		return x.Objectversionid
+	if x != nil && x.Objectversionid != nil {
+		return *x.Objectversionid
 	}
 	return ""
 }
@@ -13197,10 +13212,10 @@ type GetObjectAnnotationRequest struct {
 	Annotationname      string                 `protobuf:"bytes,356848972,opt,name=annotationname,proto3" json:"annotationname,omitempty"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksummode        ChecksumMode           `protobuf:"varint,350288954,opt,name=checksummode,proto3,enum=s3.ChecksumMode" json:"checksummode,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -13257,8 +13272,8 @@ func (x *GetObjectAnnotationRequest) GetChecksummode() ChecksumMode {
 }
 
 func (x *GetObjectAnnotationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -13278,8 +13293,8 @@ func (x *GetObjectAnnotationRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectAnnotationRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -13288,13 +13303,13 @@ type GetObjectAttributesOutput struct {
 	state          protoimpl.MessageState    `protogen:"open.v1"`
 	Checksum       *Checksum                 `protobuf:"bytes,434578355,opt,name=checksum,proto3" json:"checksum,omitempty"`
 	Deletemarker   *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
-	Etag           string                    `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Lastmodified   string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Etag           *string                   `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Lastmodified   *string                   `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Objectparts    *GetObjectAttributesParts `protobuf:"bytes,402544889,opt,name=objectparts,proto3" json:"objectparts,omitempty"`
 	Objectsize     *int64                    `protobuf:"varint,130133988,opt,name=objectsize,proto3,oneof" json:"objectsize,omitempty"`
 	Requestcharged RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Storageclass   StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Versionid      string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid      *string                   `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -13344,15 +13359,15 @@ func (x *GetObjectAttributesOutput) GetDeletemarker() bool {
 }
 
 func (x *GetObjectAttributesOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *GetObjectAttributesOutput) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -13386,8 +13401,8 @@ func (x *GetObjectAttributesOutput) GetStorageclass() StorageClass {
 }
 
 func (x *GetObjectAttributesOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -13396,8 +13411,8 @@ type GetObjectAttributesParts struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Istruncated          *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
-	Nextpartnumbermarker string                 `protobuf:"bytes,28931219,opt,name=nextpartnumbermarker,proto3" json:"nextpartnumbermarker,omitempty"`
-	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
+	Nextpartnumbermarker *string                `protobuf:"bytes,28931219,opt,name=nextpartnumbermarker,proto3,oneof" json:"nextpartnumbermarker,omitempty"`
+	Partnumbermarker     *string                `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3,oneof" json:"partnumbermarker,omitempty"`
 	Parts                []*ObjectPart          `protobuf:"bytes,213028806,rep,name=parts,proto3" json:"parts,omitempty"`
 	Totalpartscount      *int32                 `protobuf:"varint,56278317,opt,name=totalpartscount,proto3,oneof" json:"totalpartscount,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -13449,15 +13464,15 @@ func (x *GetObjectAttributesParts) GetMaxparts() int32 {
 }
 
 func (x *GetObjectAttributesParts) GetNextpartnumbermarker() string {
-	if x != nil {
-		return x.Nextpartnumbermarker
+	if x != nil && x.Nextpartnumbermarker != nil {
+		return *x.Nextpartnumbermarker
 	}
 	return ""
 }
 
 func (x *GetObjectAttributesParts) GetPartnumbermarker() string {
-	if x != nil {
-		return x.Partnumbermarker
+	if x != nil && x.Partnumbermarker != nil {
+		return *x.Partnumbermarker
 	}
 	return ""
 }
@@ -13479,16 +13494,16 @@ func (x *GetObjectAttributesParts) GetTotalpartscount() int32 {
 type GetObjectAttributesRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
 	Objectattributes     []ObjectAttributes     `protobuf:"varint,370999888,rep,packed,name=objectattributes,proto3,enum=s3.ObjectAttributes" json:"objectattributes,omitempty"`
-	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
+	Partnumbermarker     *string                `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3,oneof" json:"partnumbermarker,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey       string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5    string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Versionid            string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Ssecustomeralgorithm *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey       *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5    *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Versionid            *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -13531,8 +13546,8 @@ func (x *GetObjectAttributesRequest) GetBucket() string {
 }
 
 func (x *GetObjectAttributesRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -13559,8 +13574,8 @@ func (x *GetObjectAttributesRequest) GetObjectattributes() []ObjectAttributes {
 }
 
 func (x *GetObjectAttributesRequest) GetPartnumbermarker() string {
-	if x != nil {
-		return x.Partnumbermarker
+	if x != nil && x.Partnumbermarker != nil {
+		return *x.Partnumbermarker
 	}
 	return ""
 }
@@ -13573,29 +13588,29 @@ func (x *GetObjectAttributesRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectAttributesRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *GetObjectAttributesRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *GetObjectAttributesRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *GetObjectAttributesRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -13647,10 +13662,10 @@ func (x *GetObjectLegalHoldOutput) GetLegalhold() *ObjectLockLegalHold {
 type GetObjectLegalHoldRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -13693,8 +13708,8 @@ func (x *GetObjectLegalHoldRequest) GetBucket() string {
 }
 
 func (x *GetObjectLegalHoldRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -13714,8 +13729,8 @@ func (x *GetObjectLegalHoldRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectLegalHoldRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -13767,7 +13782,7 @@ func (x *GetObjectLockConfigurationOutput) GetObjectlockconfiguration() *ObjectL
 type GetObjectLockConfigurationRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -13810,57 +13825,57 @@ func (x *GetObjectLockConfigurationRequest) GetBucket() string {
 }
 
 func (x *GetObjectLockConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 type GetObjectOutput struct {
 	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Acceptranges              string                    `protobuf:"bytes,464620960,opt,name=acceptranges,proto3" json:"acceptranges,omitempty"`
-	Body                      []byte                    `protobuf:"bytes,42602646,opt,name=body,proto3" json:"body,omitempty"`
+	Acceptranges              *string                   `protobuf:"bytes,464620960,opt,name=acceptranges,proto3,oneof" json:"acceptranges,omitempty"`
+	Body                      []byte                    `protobuf:"bytes,42602646,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Bucketkeyenabled          *bool                     `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Cachecontrol              string                    `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3" json:"cachecontrol,omitempty"`
-	Checksumcrc32             string                    `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C            string                    `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme         string                    `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5               string                    `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1              string                    `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256            string                    `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512            string                    `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Cachecontrol              *string                   `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3,oneof" json:"cachecontrol,omitempty"`
+	Checksumcrc32             *string                   `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C            *string                   `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme         *string                   `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5               *string                   `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1              *string                   `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256            *string                   `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512            *string                   `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype              ChecksumType              `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128         string                    `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3           string                    `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64          string                    `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
-	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
+	Checksumxxhash128         *string                   `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3           *string                   `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64          *string                   `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Contentdisposition        *string                   `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contentencoding           *string                   `protobuf:"bytes,317106228,opt,name=contentencoding,proto3,oneof" json:"contentencoding,omitempty"`
+	Contentlanguage           *string                   `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3,oneof" json:"contentlanguage,omitempty"`
 	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
-	Contentrange              string                    `protobuf:"bytes,11089360,opt,name=contentrange,proto3" json:"contentrange,omitempty"`
-	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
+	Contentrange              *string                   `protobuf:"bytes,11089360,opt,name=contentrange,proto3,oneof" json:"contentrange,omitempty"`
+	Contenttype               *string                   `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
 	Deletemarker              *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
-	Etag                      string                    `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Expiration                string                    `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
-	Lastmodified              string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Etag                      *string                   `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Expiration                *string                   `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
+	Expires                   *string                   `protobuf:"bytes,128582948,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
+	Lastmodified              *string                   `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Missingmeta               *int32                    `protobuf:"varint,79140523,opt,name=missingmeta,proto3,oneof" json:"missingmeta,omitempty"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
-	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
+	Objectlockretainuntildate *string                   `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3,oneof" json:"objectlockretainuntildate,omitempty"`
 	Partscount                *int32                    `protobuf:"varint,154996373,opt,name=partscount,proto3,oneof" json:"partscount,omitempty"`
 	Replicationstatus         ReplicationStatus         `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged            RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Restore                   string                    `protobuf:"bytes,267943794,opt,name=restore,proto3" json:"restore,omitempty"`
-	Ssecustomeralgorithm      string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5         string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Restore                   *string                   `protobuf:"bytes,267943794,opt,name=restore,proto3,oneof" json:"restore,omitempty"`
+	Ssecustomeralgorithm      *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5         *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmskeyid               *string                   `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
 	Tagcount                  *int32                    `protobuf:"varint,339592595,opt,name=tagcount,proto3,oneof" json:"tagcount,omitempty"`
-	Versionid                 string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
-	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
+	Versionid                 *string                   `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
+	Websiteredirectlocation   *string                   `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3,oneof" json:"websiteredirectlocation,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -13896,8 +13911,8 @@ func (*GetObjectOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetObjectOutput) GetAcceptranges() string {
-	if x != nil {
-		return x.Acceptranges
+	if x != nil && x.Acceptranges != nil {
+		return *x.Acceptranges
 	}
 	return ""
 }
@@ -13917,57 +13932,57 @@ func (x *GetObjectOutput) GetBucketkeyenabled() bool {
 }
 
 func (x *GetObjectOutput) GetCachecontrol() string {
-	if x != nil {
-		return x.Cachecontrol
+	if x != nil && x.Cachecontrol != nil {
+		return *x.Cachecontrol
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -13980,43 +13995,43 @@ func (x *GetObjectOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *GetObjectOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetContentencoding() string {
-	if x != nil {
-		return x.Contentencoding
+	if x != nil && x.Contentencoding != nil {
+		return *x.Contentencoding
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetContentlanguage() string {
-	if x != nil {
-		return x.Contentlanguage
+	if x != nil && x.Contentlanguage != nil {
+		return *x.Contentlanguage
 	}
 	return ""
 }
@@ -14029,15 +14044,15 @@ func (x *GetObjectOutput) GetContentlength() int64 {
 }
 
 func (x *GetObjectOutput) GetContentrange() string {
-	if x != nil {
-		return x.Contentrange
+	if x != nil && x.Contentrange != nil {
+		return *x.Contentrange
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
@@ -14050,29 +14065,29 @@ func (x *GetObjectOutput) GetDeletemarker() bool {
 }
 
 func (x *GetObjectOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetExpires() string {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -14106,8 +14121,8 @@ func (x *GetObjectOutput) GetObjectlockmode() ObjectLockMode {
 }
 
 func (x *GetObjectOutput) GetObjectlockretainuntildate() string {
-	if x != nil {
-		return x.Objectlockretainuntildate
+	if x != nil && x.Objectlockretainuntildate != nil {
+		return *x.Objectlockretainuntildate
 	}
 	return ""
 }
@@ -14134,29 +14149,29 @@ func (x *GetObjectOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *GetObjectOutput) GetRestore() string {
-	if x != nil {
-		return x.Restore
+	if x != nil && x.Restore != nil {
+		return *x.Restore
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -14183,15 +14198,15 @@ func (x *GetObjectOutput) GetTagcount() int32 {
 }
 
 func (x *GetObjectOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 func (x *GetObjectOutput) GetWebsiteredirectlocation() string {
-	if x != nil {
-		return x.Websiteredirectlocation
+	if x != nil && x.Websiteredirectlocation != nil {
+		return *x.Websiteredirectlocation
 	}
 	return ""
 }
@@ -14200,25 +14215,25 @@ type GetObjectRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                     string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksummode               ChecksumMode           `protobuf:"varint,350288954,opt,name=checksummode,proto3,enum=s3.ChecksumMode" json:"checksummode,omitempty"`
-	Expectedbucketowner        string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Ifmatch                    string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ifmodifiedsince            string                 `protobuf:"bytes,376471190,opt,name=ifmodifiedsince,proto3" json:"ifmodifiedsince,omitempty"`
-	Ifnonematch                string                 `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
-	Ifunmodifiedsince          string                 `protobuf:"bytes,311345013,opt,name=ifunmodifiedsince,proto3" json:"ifunmodifiedsince,omitempty"`
+	Expectedbucketowner        *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Ifmatch                    *string                `protobuf:"bytes,93178704,opt,name=ifmatch,proto3,oneof" json:"ifmatch,omitempty"`
+	Ifmodifiedsince            *string                `protobuf:"bytes,376471190,opt,name=ifmodifiedsince,proto3,oneof" json:"ifmodifiedsince,omitempty"`
+	Ifnonematch                *string                `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3,oneof" json:"ifnonematch,omitempty"`
+	Ifunmodifiedsince          *string                `protobuf:"bytes,311345013,opt,name=ifunmodifiedsince,proto3,oneof" json:"ifunmodifiedsince,omitempty"`
 	Key                        string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Partnumber                 *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
-	Range                      string                 `protobuf:"bytes,51505011,opt,name=range,proto3" json:"range,omitempty"`
+	Range                      *string                `protobuf:"bytes,51505011,opt,name=range,proto3,oneof" json:"range,omitempty"`
 	Requestpayer               RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Responsecachecontrol       string                 `protobuf:"bytes,150103426,opt,name=responsecachecontrol,proto3" json:"responsecachecontrol,omitempty"`
-	Responsecontentdisposition string                 `protobuf:"bytes,394384183,opt,name=responsecontentdisposition,proto3" json:"responsecontentdisposition,omitempty"`
-	Responsecontentencoding    string                 `protobuf:"bytes,67832847,opt,name=responsecontentencoding,proto3" json:"responsecontentencoding,omitempty"`
-	Responsecontentlanguage    string                 `protobuf:"bytes,398143842,opt,name=responsecontentlanguage,proto3" json:"responsecontentlanguage,omitempty"`
-	Responsecontenttype        string                 `protobuf:"bytes,388099976,opt,name=responsecontenttype,proto3" json:"responsecontenttype,omitempty"`
-	Responseexpires            string                 `protobuf:"bytes,236546855,opt,name=responseexpires,proto3" json:"responseexpires,omitempty"`
-	Ssecustomeralgorithm       string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey             string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5          string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Versionid                  string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Responsecachecontrol       *string                `protobuf:"bytes,150103426,opt,name=responsecachecontrol,proto3,oneof" json:"responsecachecontrol,omitempty"`
+	Responsecontentdisposition *string                `protobuf:"bytes,394384183,opt,name=responsecontentdisposition,proto3,oneof" json:"responsecontentdisposition,omitempty"`
+	Responsecontentencoding    *string                `protobuf:"bytes,67832847,opt,name=responsecontentencoding,proto3,oneof" json:"responsecontentencoding,omitempty"`
+	Responsecontentlanguage    *string                `protobuf:"bytes,398143842,opt,name=responsecontentlanguage,proto3,oneof" json:"responsecontentlanguage,omitempty"`
+	Responsecontenttype        *string                `protobuf:"bytes,388099976,opt,name=responsecontenttype,proto3,oneof" json:"responsecontenttype,omitempty"`
+	Responseexpires            *string                `protobuf:"bytes,236546855,opt,name=responseexpires,proto3,oneof" json:"responseexpires,omitempty"`
+	Ssecustomeralgorithm       *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey             *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5          *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Versionid                  *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -14268,36 +14283,36 @@ func (x *GetObjectRequest) GetChecksummode() ChecksumMode {
 }
 
 func (x *GetObjectRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetIfmatch() string {
-	if x != nil {
-		return x.Ifmatch
+	if x != nil && x.Ifmatch != nil {
+		return *x.Ifmatch
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetIfmodifiedsince() string {
-	if x != nil {
-		return x.Ifmodifiedsince
+	if x != nil && x.Ifmodifiedsince != nil {
+		return *x.Ifmodifiedsince
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetIfnonematch() string {
-	if x != nil {
-		return x.Ifnonematch
+	if x != nil && x.Ifnonematch != nil {
+		return *x.Ifnonematch
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetIfunmodifiedsince() string {
-	if x != nil {
-		return x.Ifunmodifiedsince
+	if x != nil && x.Ifunmodifiedsince != nil {
+		return *x.Ifunmodifiedsince
 	}
 	return ""
 }
@@ -14317,8 +14332,8 @@ func (x *GetObjectRequest) GetPartnumber() int32 {
 }
 
 func (x *GetObjectRequest) GetRange() string {
-	if x != nil {
-		return x.Range
+	if x != nil && x.Range != nil {
+		return *x.Range
 	}
 	return ""
 }
@@ -14331,71 +14346,71 @@ func (x *GetObjectRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectRequest) GetResponsecachecontrol() string {
-	if x != nil {
-		return x.Responsecachecontrol
+	if x != nil && x.Responsecachecontrol != nil {
+		return *x.Responsecachecontrol
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetResponsecontentdisposition() string {
-	if x != nil {
-		return x.Responsecontentdisposition
+	if x != nil && x.Responsecontentdisposition != nil {
+		return *x.Responsecontentdisposition
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetResponsecontentencoding() string {
-	if x != nil {
-		return x.Responsecontentencoding
+	if x != nil && x.Responsecontentencoding != nil {
+		return *x.Responsecontentencoding
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetResponsecontentlanguage() string {
-	if x != nil {
-		return x.Responsecontentlanguage
+	if x != nil && x.Responsecontentlanguage != nil {
+		return *x.Responsecontentlanguage
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetResponsecontenttype() string {
-	if x != nil {
-		return x.Responsecontenttype
+	if x != nil && x.Responsecontenttype != nil {
+		return *x.Responsecontenttype
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetResponseexpires() string {
-	if x != nil {
-		return x.Responseexpires
+	if x != nil && x.Responseexpires != nil {
+		return *x.Responseexpires
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *GetObjectRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -14447,10 +14462,10 @@ func (x *GetObjectRetentionOutput) GetRetention() *ObjectLockRetention {
 type GetObjectRetentionRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -14493,8 +14508,8 @@ func (x *GetObjectRetentionRequest) GetBucket() string {
 }
 
 func (x *GetObjectRetentionRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -14514,8 +14529,8 @@ func (x *GetObjectRetentionRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectRetentionRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -14523,7 +14538,7 @@ func (x *GetObjectRetentionRequest) GetVersionid() string {
 type GetObjectTaggingOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Tagset        []*Tag                 `protobuf:"bytes,454361330,rep,name=tagset,proto3" json:"tagset,omitempty"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14566,8 +14581,8 @@ func (x *GetObjectTaggingOutput) GetTagset() []*Tag {
 }
 
 func (x *GetObjectTaggingOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -14575,10 +14590,10 @@ func (x *GetObjectTaggingOutput) GetVersionid() string {
 type GetObjectTaggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -14621,8 +14636,8 @@ func (x *GetObjectTaggingRequest) GetBucket() string {
 }
 
 func (x *GetObjectTaggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -14642,15 +14657,15 @@ func (x *GetObjectTaggingRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *GetObjectTaggingRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type GetObjectTorrentOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Body           []byte                 `protobuf:"bytes,42602646,opt,name=body,proto3" json:"body,omitempty"`
+	Body           []byte                 `protobuf:"bytes,42602646,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Requestcharged RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -14703,7 +14718,7 @@ func (x *GetObjectTorrentOutput) GetRequestcharged() RequestCharged {
 type GetObjectTorrentRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -14748,8 +14763,8 @@ func (x *GetObjectTorrentRequest) GetBucket() string {
 }
 
 func (x *GetObjectTorrentRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -14815,7 +14830,7 @@ func (x *GetPublicAccessBlockOutput) GetPublicaccessblockconfiguration() *Public
 type GetPublicAccessBlockRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -14858,8 +14873,8 @@ func (x *GetPublicAccessBlockRequest) GetBucket() string {
 }
 
 func (x *GetPublicAccessBlockRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -14962,11 +14977,11 @@ func (x *Grant) GetPermission() Permission {
 
 type Grantee struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Displayname   string                 `protobuf:"bytes,418161847,opt,name=displayname,proto3" json:"displayname,omitempty"`
-	Emailaddress  string                 `protobuf:"bytes,488814806,opt,name=emailaddress,proto3" json:"emailaddress,omitempty"`
-	Id            string                 `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
+	Displayname   *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
+	Emailaddress  *string                `protobuf:"bytes,488814806,opt,name=emailaddress,proto3,oneof" json:"emailaddress,omitempty"`
+	Id            *string                `protobuf:"bytes,384363361,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Type          Type                   `protobuf:"varint,290836590,opt,name=type,proto3,enum=s3.Type" json:"type,omitempty"`
-	Uri           string                 `protobuf:"bytes,443116318,opt,name=uri,proto3" json:"uri,omitempty"`
+	Uri           *string                `protobuf:"bytes,443116318,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15002,22 +15017,22 @@ func (*Grantee) Descriptor() ([]byte, []int) {
 }
 
 func (x *Grantee) GetDisplayname() string {
-	if x != nil {
-		return x.Displayname
+	if x != nil && x.Displayname != nil {
+		return *x.Displayname
 	}
 	return ""
 }
 
 func (x *Grantee) GetEmailaddress() string {
-	if x != nil {
-		return x.Emailaddress
+	if x != nil && x.Emailaddress != nil {
+		return *x.Emailaddress
 	}
 	return ""
 }
 
 func (x *Grantee) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -15030,8 +15045,8 @@ func (x *Grantee) GetType() Type {
 }
 
 func (x *Grantee) GetUri() string {
-	if x != nil {
-		return x.Uri
+	if x != nil && x.Uri != nil {
+		return *x.Uri
 	}
 	return ""
 }
@@ -15039,10 +15054,10 @@ func (x *Grantee) GetUri() string {
 type HeadBucketOutput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Accesspointalias   *bool                  `protobuf:"varint,360968558,opt,name=accesspointalias,proto3,oneof" json:"accesspointalias,omitempty"`
-	Bucketarn          string                 `protobuf:"bytes,255683899,opt,name=bucketarn,proto3" json:"bucketarn,omitempty"`
-	Bucketlocationname string                 `protobuf:"bytes,126439780,opt,name=bucketlocationname,proto3" json:"bucketlocationname,omitempty"`
+	Bucketarn          *string                `protobuf:"bytes,255683899,opt,name=bucketarn,proto3,oneof" json:"bucketarn,omitempty"`
+	Bucketlocationname *string                `protobuf:"bytes,126439780,opt,name=bucketlocationname,proto3,oneof" json:"bucketlocationname,omitempty"`
 	Bucketlocationtype LocationType           `protobuf:"varint,306578505,opt,name=bucketlocationtype,proto3,enum=s3.LocationType" json:"bucketlocationtype,omitempty"`
-	Bucketregion       string                 `protobuf:"bytes,309298816,opt,name=bucketregion,proto3" json:"bucketregion,omitempty"`
+	Bucketregion       *string                `protobuf:"bytes,309298816,opt,name=bucketregion,proto3,oneof" json:"bucketregion,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -15085,15 +15100,15 @@ func (x *HeadBucketOutput) GetAccesspointalias() bool {
 }
 
 func (x *HeadBucketOutput) GetBucketarn() string {
-	if x != nil {
-		return x.Bucketarn
+	if x != nil && x.Bucketarn != nil {
+		return *x.Bucketarn
 	}
 	return ""
 }
 
 func (x *HeadBucketOutput) GetBucketlocationname() string {
-	if x != nil {
-		return x.Bucketlocationname
+	if x != nil && x.Bucketlocationname != nil {
+		return *x.Bucketlocationname
 	}
 	return ""
 }
@@ -15106,8 +15121,8 @@ func (x *HeadBucketOutput) GetBucketlocationtype() LocationType {
 }
 
 func (x *HeadBucketOutput) GetBucketregion() string {
-	if x != nil {
-		return x.Bucketregion
+	if x != nil && x.Bucketregion != nil {
+		return *x.Bucketregion
 	}
 	return ""
 }
@@ -15115,7 +15130,7 @@ func (x *HeadBucketOutput) GetBucketregion() string {
 type HeadBucketRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -15158,57 +15173,57 @@ func (x *HeadBucketRequest) GetBucket() string {
 }
 
 func (x *HeadBucketRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 type HeadObjectOutput struct {
 	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Acceptranges              string                    `protobuf:"bytes,464620960,opt,name=acceptranges,proto3" json:"acceptranges,omitempty"`
+	Acceptranges              *string                   `protobuf:"bytes,464620960,opt,name=acceptranges,proto3,oneof" json:"acceptranges,omitempty"`
 	Archivestatus             ArchiveStatus             `protobuf:"varint,533231984,opt,name=archivestatus,proto3,enum=s3.ArchiveStatus" json:"archivestatus,omitempty"`
 	Bucketkeyenabled          *bool                     `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Cachecontrol              string                    `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3" json:"cachecontrol,omitempty"`
-	Checksumcrc32             string                    `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C            string                    `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme         string                    `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5               string                    `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1              string                    `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256            string                    `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512            string                    `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Cachecontrol              *string                   `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3,oneof" json:"cachecontrol,omitempty"`
+	Checksumcrc32             *string                   `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C            *string                   `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme         *string                   `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5               *string                   `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1              *string                   `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256            *string                   `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512            *string                   `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype              ChecksumType              `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128         string                    `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3           string                    `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64          string                    `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
-	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
+	Checksumxxhash128         *string                   `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3           *string                   `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64          *string                   `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Contentdisposition        *string                   `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contentencoding           *string                   `protobuf:"bytes,317106228,opt,name=contentencoding,proto3,oneof" json:"contentencoding,omitempty"`
+	Contentlanguage           *string                   `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3,oneof" json:"contentlanguage,omitempty"`
 	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
-	Contentrange              string                    `protobuf:"bytes,11089360,opt,name=contentrange,proto3" json:"contentrange,omitempty"`
-	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
+	Contentrange              *string                   `protobuf:"bytes,11089360,opt,name=contentrange,proto3,oneof" json:"contentrange,omitempty"`
+	Contenttype               *string                   `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
 	Deletemarker              *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
-	Etag                      string                    `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Expiration                string                    `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
-	Lastmodified              string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Etag                      *string                   `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Expiration                *string                   `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
+	Expires                   *string                   `protobuf:"bytes,128582948,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
+	Lastmodified              *string                   `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Missingmeta               *int32                    `protobuf:"varint,79140523,opt,name=missingmeta,proto3,oneof" json:"missingmeta,omitempty"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
-	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
+	Objectlockretainuntildate *string                   `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3,oneof" json:"objectlockretainuntildate,omitempty"`
 	Partscount                *int32                    `protobuf:"varint,154996373,opt,name=partscount,proto3,oneof" json:"partscount,omitempty"`
 	Replicationstatus         ReplicationStatus         `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged            RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Restore                   string                    `protobuf:"bytes,267943794,opt,name=restore,proto3" json:"restore,omitempty"`
-	Ssecustomeralgorithm      string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5         string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Restore                   *string                   `protobuf:"bytes,267943794,opt,name=restore,proto3,oneof" json:"restore,omitempty"`
+	Ssecustomeralgorithm      *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5         *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmskeyid               *string                   `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
 	Tagcount                  *int32                    `protobuf:"varint,339592595,opt,name=tagcount,proto3,oneof" json:"tagcount,omitempty"`
-	Versionid                 string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
-	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
+	Versionid                 *string                   `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
+	Websiteredirectlocation   *string                   `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3,oneof" json:"websiteredirectlocation,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -15244,8 +15259,8 @@ func (*HeadObjectOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *HeadObjectOutput) GetAcceptranges() string {
-	if x != nil {
-		return x.Acceptranges
+	if x != nil && x.Acceptranges != nil {
+		return *x.Acceptranges
 	}
 	return ""
 }
@@ -15265,57 +15280,57 @@ func (x *HeadObjectOutput) GetBucketkeyenabled() bool {
 }
 
 func (x *HeadObjectOutput) GetCachecontrol() string {
-	if x != nil {
-		return x.Cachecontrol
+	if x != nil && x.Cachecontrol != nil {
+		return *x.Cachecontrol
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -15328,43 +15343,43 @@ func (x *HeadObjectOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *HeadObjectOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetContentencoding() string {
-	if x != nil {
-		return x.Contentencoding
+	if x != nil && x.Contentencoding != nil {
+		return *x.Contentencoding
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetContentlanguage() string {
-	if x != nil {
-		return x.Contentlanguage
+	if x != nil && x.Contentlanguage != nil {
+		return *x.Contentlanguage
 	}
 	return ""
 }
@@ -15377,15 +15392,15 @@ func (x *HeadObjectOutput) GetContentlength() int64 {
 }
 
 func (x *HeadObjectOutput) GetContentrange() string {
-	if x != nil {
-		return x.Contentrange
+	if x != nil && x.Contentrange != nil {
+		return *x.Contentrange
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
@@ -15398,29 +15413,29 @@ func (x *HeadObjectOutput) GetDeletemarker() bool {
 }
 
 func (x *HeadObjectOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetExpires() string {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -15454,8 +15469,8 @@ func (x *HeadObjectOutput) GetObjectlockmode() ObjectLockMode {
 }
 
 func (x *HeadObjectOutput) GetObjectlockretainuntildate() string {
-	if x != nil {
-		return x.Objectlockretainuntildate
+	if x != nil && x.Objectlockretainuntildate != nil {
+		return *x.Objectlockretainuntildate
 	}
 	return ""
 }
@@ -15482,29 +15497,29 @@ func (x *HeadObjectOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *HeadObjectOutput) GetRestore() string {
-	if x != nil {
-		return x.Restore
+	if x != nil && x.Restore != nil {
+		return *x.Restore
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -15531,15 +15546,15 @@ func (x *HeadObjectOutput) GetTagcount() int32 {
 }
 
 func (x *HeadObjectOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 func (x *HeadObjectOutput) GetWebsiteredirectlocation() string {
-	if x != nil {
-		return x.Websiteredirectlocation
+	if x != nil && x.Websiteredirectlocation != nil {
+		return *x.Websiteredirectlocation
 	}
 	return ""
 }
@@ -15548,25 +15563,25 @@ type HeadObjectRequest struct {
 	state                      protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                     string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksummode               ChecksumMode           `protobuf:"varint,350288954,opt,name=checksummode,proto3,enum=s3.ChecksumMode" json:"checksummode,omitempty"`
-	Expectedbucketowner        string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Ifmatch                    string                 `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ifmodifiedsince            string                 `protobuf:"bytes,376471190,opt,name=ifmodifiedsince,proto3" json:"ifmodifiedsince,omitempty"`
-	Ifnonematch                string                 `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
-	Ifunmodifiedsince          string                 `protobuf:"bytes,311345013,opt,name=ifunmodifiedsince,proto3" json:"ifunmodifiedsince,omitempty"`
+	Expectedbucketowner        *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Ifmatch                    *string                `protobuf:"bytes,93178704,opt,name=ifmatch,proto3,oneof" json:"ifmatch,omitempty"`
+	Ifmodifiedsince            *string                `protobuf:"bytes,376471190,opt,name=ifmodifiedsince,proto3,oneof" json:"ifmodifiedsince,omitempty"`
+	Ifnonematch                *string                `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3,oneof" json:"ifnonematch,omitempty"`
+	Ifunmodifiedsince          *string                `protobuf:"bytes,311345013,opt,name=ifunmodifiedsince,proto3,oneof" json:"ifunmodifiedsince,omitempty"`
 	Key                        string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Partnumber                 *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
-	Range                      string                 `protobuf:"bytes,51505011,opt,name=range,proto3" json:"range,omitempty"`
+	Range                      *string                `protobuf:"bytes,51505011,opt,name=range,proto3,oneof" json:"range,omitempty"`
 	Requestpayer               RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Responsecachecontrol       string                 `protobuf:"bytes,150103426,opt,name=responsecachecontrol,proto3" json:"responsecachecontrol,omitempty"`
-	Responsecontentdisposition string                 `protobuf:"bytes,394384183,opt,name=responsecontentdisposition,proto3" json:"responsecontentdisposition,omitempty"`
-	Responsecontentencoding    string                 `protobuf:"bytes,67832847,opt,name=responsecontentencoding,proto3" json:"responsecontentencoding,omitempty"`
-	Responsecontentlanguage    string                 `protobuf:"bytes,398143842,opt,name=responsecontentlanguage,proto3" json:"responsecontentlanguage,omitempty"`
-	Responsecontenttype        string                 `protobuf:"bytes,388099976,opt,name=responsecontenttype,proto3" json:"responsecontenttype,omitempty"`
-	Responseexpires            string                 `protobuf:"bytes,236546855,opt,name=responseexpires,proto3" json:"responseexpires,omitempty"`
-	Ssecustomeralgorithm       string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey             string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5          string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Versionid                  string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Responsecachecontrol       *string                `protobuf:"bytes,150103426,opt,name=responsecachecontrol,proto3,oneof" json:"responsecachecontrol,omitempty"`
+	Responsecontentdisposition *string                `protobuf:"bytes,394384183,opt,name=responsecontentdisposition,proto3,oneof" json:"responsecontentdisposition,omitempty"`
+	Responsecontentencoding    *string                `protobuf:"bytes,67832847,opt,name=responsecontentencoding,proto3,oneof" json:"responsecontentencoding,omitempty"`
+	Responsecontentlanguage    *string                `protobuf:"bytes,398143842,opt,name=responsecontentlanguage,proto3,oneof" json:"responsecontentlanguage,omitempty"`
+	Responsecontenttype        *string                `protobuf:"bytes,388099976,opt,name=responsecontenttype,proto3,oneof" json:"responsecontenttype,omitempty"`
+	Responseexpires            *string                `protobuf:"bytes,236546855,opt,name=responseexpires,proto3,oneof" json:"responseexpires,omitempty"`
+	Ssecustomeralgorithm       *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey             *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5          *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Versionid                  *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -15616,36 +15631,36 @@ func (x *HeadObjectRequest) GetChecksummode() ChecksumMode {
 }
 
 func (x *HeadObjectRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetIfmatch() string {
-	if x != nil {
-		return x.Ifmatch
+	if x != nil && x.Ifmatch != nil {
+		return *x.Ifmatch
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetIfmodifiedsince() string {
-	if x != nil {
-		return x.Ifmodifiedsince
+	if x != nil && x.Ifmodifiedsince != nil {
+		return *x.Ifmodifiedsince
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetIfnonematch() string {
-	if x != nil {
-		return x.Ifnonematch
+	if x != nil && x.Ifnonematch != nil {
+		return *x.Ifnonematch
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetIfunmodifiedsince() string {
-	if x != nil {
-		return x.Ifunmodifiedsince
+	if x != nil && x.Ifunmodifiedsince != nil {
+		return *x.Ifunmodifiedsince
 	}
 	return ""
 }
@@ -15665,8 +15680,8 @@ func (x *HeadObjectRequest) GetPartnumber() int32 {
 }
 
 func (x *HeadObjectRequest) GetRange() string {
-	if x != nil {
-		return x.Range
+	if x != nil && x.Range != nil {
+		return *x.Range
 	}
 	return ""
 }
@@ -15679,71 +15694,71 @@ func (x *HeadObjectRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *HeadObjectRequest) GetResponsecachecontrol() string {
-	if x != nil {
-		return x.Responsecachecontrol
+	if x != nil && x.Responsecachecontrol != nil {
+		return *x.Responsecachecontrol
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetResponsecontentdisposition() string {
-	if x != nil {
-		return x.Responsecontentdisposition
+	if x != nil && x.Responsecontentdisposition != nil {
+		return *x.Responsecontentdisposition
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetResponsecontentencoding() string {
-	if x != nil {
-		return x.Responsecontentencoding
+	if x != nil && x.Responsecontentencoding != nil {
+		return *x.Responsecontentencoding
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetResponsecontentlanguage() string {
-	if x != nil {
-		return x.Responsecontentlanguage
+	if x != nil && x.Responsecontentlanguage != nil {
+		return *x.Responsecontentlanguage
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetResponsecontenttype() string {
-	if x != nil {
-		return x.Responsecontenttype
+	if x != nil && x.Responsecontenttype != nil {
+		return *x.Responsecontenttype
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetResponseexpires() string {
-	if x != nil {
-		return x.Responseexpires
+	if x != nil && x.Responseexpires != nil {
+		return *x.Responseexpires
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *HeadObjectRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -15830,8 +15845,8 @@ func (x *IndexDocument) GetSuffix() string {
 
 type Initiator struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Displayname   string                 `protobuf:"bytes,418161847,opt,name=displayname,proto3" json:"displayname,omitempty"`
-	Id            string                 `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
+	Displayname   *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
+	Id            *string                `protobuf:"bytes,384363361,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -15867,15 +15882,15 @@ func (*Initiator) Descriptor() ([]byte, []int) {
 }
 
 func (x *Initiator) GetDisplayname() string {
-	if x != nil {
-		return x.Displayname
+	if x != nil && x.Displayname != nil {
+		return *x.Displayname
 	}
 	return ""
 }
 
 func (x *Initiator) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -15950,7 +15965,7 @@ func (x *InputSerialization) GetParquet() *ParquetInput {
 
 type IntelligentTieringAndOperator struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prefix        string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -15987,8 +16002,8 @@ func (*IntelligentTieringAndOperator) Descriptor() ([]byte, []int) {
 }
 
 func (x *IntelligentTieringAndOperator) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -16071,7 +16086,7 @@ func (x *IntelligentTieringConfiguration) GetTierings() []*Tiering {
 type IntelligentTieringFilter struct {
 	state         protoimpl.MessageState         `protogen:"open.v1"`
 	And           *IntelligentTieringAndOperator `protobuf:"bytes,297135431,opt,name=and,proto3" json:"and,omitempty"`
-	Prefix        string                         `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                        `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tag           *Tag                           `protobuf:"bytes,411259956,opt,name=tag,proto3" json:"tag,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -16115,8 +16130,8 @@ func (x *IntelligentTieringFilter) GetAnd() *IntelligentTieringAndOperator {
 }
 
 func (x *IntelligentTieringFilter) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -16558,11 +16573,11 @@ func (x *InventoryFilter) GetPrefix() string {
 
 type InventoryS3BucketDestination struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accountid     string                 `protobuf:"bytes,65954002,opt,name=accountid,proto3" json:"accountid,omitempty"`
+	Accountid     *string                `protobuf:"bytes,65954002,opt,name=accountid,proto3,oneof" json:"accountid,omitempty"`
 	Bucket        string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Encryption    *InventoryEncryption   `protobuf:"bytes,137702205,opt,name=encryption,proto3" json:"encryption,omitempty"`
 	Format        InventoryFormat        `protobuf:"varint,531693427,opt,name=format,proto3,enum=s3.InventoryFormat" json:"format,omitempty"`
-	Prefix        string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -16598,8 +16613,8 @@ func (*InventoryS3BucketDestination) Descriptor() ([]byte, []int) {
 }
 
 func (x *InventoryS3BucketDestination) GetAccountid() string {
-	if x != nil {
-		return x.Accountid
+	if x != nil && x.Accountid != nil {
+		return *x.Accountid
 	}
 	return ""
 }
@@ -16626,8 +16641,8 @@ func (x *InventoryS3BucketDestination) GetFormat() InventoryFormat {
 }
 
 func (x *InventoryS3BucketDestination) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -16732,9 +16747,9 @@ type InventoryTableConfigurationResult struct {
 	state              protoimpl.MessageState      `protogen:"open.v1"`
 	Configurationstate InventoryConfigurationState `protobuf:"varint,458329211,opt,name=configurationstate,proto3,enum=s3.InventoryConfigurationState" json:"configurationstate,omitempty"`
 	Error              *ErrorDetails               `protobuf:"bytes,328047858,opt,name=error,proto3" json:"error,omitempty"`
-	Tablearn           string                      `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
-	Tablename          string                      `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
-	Tablestatus        string                      `protobuf:"bytes,207908810,opt,name=tablestatus,proto3" json:"tablestatus,omitempty"`
+	Tablearn           *string                     `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
+	Tablename          *string                     `protobuf:"bytes,272020061,opt,name=tablename,proto3,oneof" json:"tablename,omitempty"`
+	Tablestatus        *string                     `protobuf:"bytes,207908810,opt,name=tablestatus,proto3,oneof" json:"tablestatus,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -16784,22 +16799,22 @@ func (x *InventoryTableConfigurationResult) GetError() *ErrorDetails {
 }
 
 func (x *InventoryTableConfigurationResult) GetTablearn() string {
-	if x != nil {
-		return x.Tablearn
+	if x != nil && x.Tablearn != nil {
+		return *x.Tablearn
 	}
 	return ""
 }
 
 func (x *InventoryTableConfigurationResult) GetTablename() string {
-	if x != nil {
-		return x.Tablename
+	if x != nil && x.Tablename != nil {
+		return *x.Tablename
 	}
 	return ""
 }
 
 func (x *InventoryTableConfigurationResult) GetTablestatus() string {
-	if x != nil {
-		return x.Tablestatus
+	if x != nil && x.Tablestatus != nil {
+		return *x.Tablestatus
 	}
 	return ""
 }
@@ -16902,7 +16917,7 @@ func (x *JSONInput) GetType() JSONType {
 
 type JSONOutput struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Recorddelimiter string                 `protobuf:"bytes,299337270,opt,name=recorddelimiter,proto3" json:"recorddelimiter,omitempty"`
+	Recorddelimiter *string                `protobuf:"bytes,299337270,opt,name=recorddelimiter,proto3,oneof" json:"recorddelimiter,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -16938,8 +16953,8 @@ func (*JSONOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *JSONOutput) GetRecorddelimiter() string {
-	if x != nil {
-		return x.Recorddelimiter
+	if x != nil && x.Recorddelimiter != nil {
+		return *x.Recorddelimiter
 	}
 	return ""
 }
@@ -17000,7 +17015,7 @@ type JournalTableConfigurationResult struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Error            *ErrorDetails          `protobuf:"bytes,328047858,opt,name=error,proto3" json:"error,omitempty"`
 	Recordexpiration *RecordExpiration      `protobuf:"bytes,327741658,opt,name=recordexpiration,proto3" json:"recordexpiration,omitempty"`
-	Tablearn         string                 `protobuf:"bytes,431669347,opt,name=tablearn,proto3" json:"tablearn,omitempty"`
+	Tablearn         *string                `protobuf:"bytes,431669347,opt,name=tablearn,proto3,oneof" json:"tablearn,omitempty"`
 	Tablename        string                 `protobuf:"bytes,272020061,opt,name=tablename,proto3" json:"tablename,omitempty"`
 	Tablestatus      string                 `protobuf:"bytes,207908810,opt,name=tablestatus,proto3" json:"tablestatus,omitempty"`
 	unknownFields    protoimpl.UnknownFields
@@ -17052,8 +17067,8 @@ func (x *JournalTableConfigurationResult) GetRecordexpiration() *RecordExpiratio
 }
 
 func (x *JournalTableConfigurationResult) GetTablearn() string {
-	if x != nil {
-		return x.Tablearn
+	if x != nil && x.Tablearn != nil {
+		return *x.Tablearn
 	}
 	return ""
 }
@@ -17120,7 +17135,7 @@ type LambdaFunctionConfiguration struct {
 	state             protoimpl.MessageState           `protogen:"open.v1"`
 	Events            []Event                          `protobuf:"varint,3416229,rep,packed,name=events,proto3,enum=s3.Event" json:"events,omitempty"`
 	Filter            *NotificationConfigurationFilter `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
-	Id                string                           `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
+	Id                *string                          `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Lambdafunctionarn string                           `protobuf:"bytes,533137274,opt,name=lambdafunctionarn,proto3" json:"lambdafunctionarn,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -17171,8 +17186,8 @@ func (x *LambdaFunctionConfiguration) GetFilter() *NotificationConfigurationFilt
 }
 
 func (x *LambdaFunctionConfiguration) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -17186,7 +17201,7 @@ func (x *LambdaFunctionConfiguration) GetLambdafunctionarn() string {
 
 type LifecycleExpiration struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Date                      string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
+	Date                      *string                `protobuf:"bytes,458388346,opt,name=date,proto3,oneof" json:"date,omitempty"`
 	Days                      *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Expiredobjectdeletemarker *bool                  `protobuf:"varint,232733109,opt,name=expiredobjectdeletemarker,proto3,oneof" json:"expiredobjectdeletemarker,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -17224,8 +17239,8 @@ func (*LifecycleExpiration) Descriptor() ([]byte, []int) {
 }
 
 func (x *LifecycleExpiration) GetDate() string {
-	if x != nil {
-		return x.Date
+	if x != nil && x.Date != nil {
+		return *x.Date
 	}
 	return ""
 }
@@ -17249,10 +17264,10 @@ type LifecycleRule struct {
 	Abortincompletemultipartupload *AbortIncompleteMultipartUpload `protobuf:"bytes,145054547,opt,name=abortincompletemultipartupload,proto3" json:"abortincompletemultipartupload,omitempty"`
 	Expiration                     *LifecycleExpiration            `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
 	Filter                         *LifecycleRuleFilter            `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
-	Id                             string                          `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
+	Id                             *string                         `protobuf:"bytes,384363361,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Noncurrentversionexpiration    *NoncurrentVersionExpiration    `protobuf:"bytes,73713275,opt,name=noncurrentversionexpiration,proto3" json:"noncurrentversionexpiration,omitempty"`
 	Noncurrentversiontransitions   []*NoncurrentVersionTransition  `protobuf:"bytes,254236814,rep,name=noncurrentversiontransitions,proto3" json:"noncurrentversiontransitions,omitempty"`
-	Prefix                         string                          `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix                         *string                         `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Status                         ExpirationStatus                `protobuf:"varint,6222352,opt,name=status,proto3,enum=s3.ExpirationStatus" json:"status,omitempty"`
 	Transitions                    []*Transition                   `protobuf:"bytes,435714020,rep,name=transitions,proto3" json:"transitions,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
@@ -17311,8 +17326,8 @@ func (x *LifecycleRule) GetFilter() *LifecycleRuleFilter {
 }
 
 func (x *LifecycleRule) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -17332,8 +17347,8 @@ func (x *LifecycleRule) GetNoncurrentversiontransitions() []*NoncurrentVersionTr
 }
 
 func (x *LifecycleRule) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -17356,7 +17371,7 @@ type LifecycleRuleAndOperator struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Objectsizegreaterthan *int64                 `protobuf:"varint,283649577,opt,name=objectsizegreaterthan,proto3,oneof" json:"objectsizegreaterthan,omitempty"`
 	Objectsizelessthan    *int64                 `protobuf:"varint,436793998,opt,name=objectsizelessthan,proto3,oneof" json:"objectsizelessthan,omitempty"`
-	Prefix                string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix                *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tags                  []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -17407,8 +17422,8 @@ func (x *LifecycleRuleAndOperator) GetObjectsizelessthan() int64 {
 }
 
 func (x *LifecycleRuleAndOperator) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -17425,7 +17440,7 @@ type LifecycleRuleFilter struct {
 	And                   *LifecycleRuleAndOperator `protobuf:"bytes,297135431,opt,name=and,proto3" json:"and,omitempty"`
 	Objectsizegreaterthan *int64                    `protobuf:"varint,283649577,opt,name=objectsizegreaterthan,proto3,oneof" json:"objectsizegreaterthan,omitempty"`
 	Objectsizelessthan    *int64                    `protobuf:"varint,436793998,opt,name=objectsizelessthan,proto3,oneof" json:"objectsizelessthan,omitempty"`
-	Prefix                string                    `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix                *string                   `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tag                   *Tag                      `protobuf:"bytes,411259956,opt,name=tag,proto3" json:"tag,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -17483,8 +17498,8 @@ func (x *LifecycleRuleFilter) GetObjectsizelessthan() int64 {
 }
 
 func (x *LifecycleRuleFilter) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -17499,9 +17514,9 @@ func (x *LifecycleRuleFilter) GetTag() *Tag {
 type ListBucketAnalyticsConfigurationsOutput struct {
 	state                      protoimpl.MessageState    `protogen:"open.v1"`
 	Analyticsconfigurationlist []*AnalyticsConfiguration `protobuf:"bytes,223424476,rep,name=analyticsconfigurationlist,proto3" json:"analyticsconfigurationlist,omitempty"`
-	Continuationtoken          string                    `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken          *string                   `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Istruncated                *bool                     `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Nextcontinuationtoken      string                    `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
+	Nextcontinuationtoken      *string                   `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3,oneof" json:"nextcontinuationtoken,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -17544,8 +17559,8 @@ func (x *ListBucketAnalyticsConfigurationsOutput) GetAnalyticsconfigurationlist(
 }
 
 func (x *ListBucketAnalyticsConfigurationsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -17558,8 +17573,8 @@ func (x *ListBucketAnalyticsConfigurationsOutput) GetIstruncated() bool {
 }
 
 func (x *ListBucketAnalyticsConfigurationsOutput) GetNextcontinuationtoken() string {
-	if x != nil {
-		return x.Nextcontinuationtoken
+	if x != nil && x.Nextcontinuationtoken != nil {
+		return *x.Nextcontinuationtoken
 	}
 	return ""
 }
@@ -17567,8 +17582,8 @@ func (x *ListBucketAnalyticsConfigurationsOutput) GetNextcontinuationtoken() str
 type ListBucketAnalyticsConfigurationsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken   string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Continuationtoken   *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -17611,25 +17626,25 @@ func (x *ListBucketAnalyticsConfigurationsRequest) GetBucket() string {
 }
 
 func (x *ListBucketAnalyticsConfigurationsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListBucketAnalyticsConfigurationsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 type ListBucketIntelligentTieringConfigurationsOutput struct {
 	state                               protoimpl.MessageState             `protogen:"open.v1"`
-	Continuationtoken                   string                             `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken                   *string                            `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Intelligenttieringconfigurationlist []*IntelligentTieringConfiguration `protobuf:"bytes,406526373,rep,name=intelligenttieringconfigurationlist,proto3" json:"intelligenttieringconfigurationlist,omitempty"`
 	Istruncated                         *bool                              `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Nextcontinuationtoken               string                             `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
+	Nextcontinuationtoken               *string                            `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3,oneof" json:"nextcontinuationtoken,omitempty"`
 	unknownFields                       protoimpl.UnknownFields
 	sizeCache                           protoimpl.SizeCache
 }
@@ -17665,8 +17680,8 @@ func (*ListBucketIntelligentTieringConfigurationsOutput) Descriptor() ([]byte, [
 }
 
 func (x *ListBucketIntelligentTieringConfigurationsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -17686,8 +17701,8 @@ func (x *ListBucketIntelligentTieringConfigurationsOutput) GetIstruncated() bool
 }
 
 func (x *ListBucketIntelligentTieringConfigurationsOutput) GetNextcontinuationtoken() string {
-	if x != nil {
-		return x.Nextcontinuationtoken
+	if x != nil && x.Nextcontinuationtoken != nil {
+		return *x.Nextcontinuationtoken
 	}
 	return ""
 }
@@ -17695,8 +17710,8 @@ func (x *ListBucketIntelligentTieringConfigurationsOutput) GetNextcontinuationto
 type ListBucketIntelligentTieringConfigurationsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken   string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Continuationtoken   *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -17739,25 +17754,25 @@ func (x *ListBucketIntelligentTieringConfigurationsRequest) GetBucket() string {
 }
 
 func (x *ListBucketIntelligentTieringConfigurationsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListBucketIntelligentTieringConfigurationsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 type ListBucketInventoryConfigurationsOutput struct {
 	state                      protoimpl.MessageState    `protogen:"open.v1"`
-	Continuationtoken          string                    `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken          *string                   `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Inventoryconfigurationlist []*InventoryConfiguration `protobuf:"bytes,389500552,rep,name=inventoryconfigurationlist,proto3" json:"inventoryconfigurationlist,omitempty"`
 	Istruncated                *bool                     `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Nextcontinuationtoken      string                    `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
+	Nextcontinuationtoken      *string                   `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3,oneof" json:"nextcontinuationtoken,omitempty"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -17793,8 +17808,8 @@ func (*ListBucketInventoryConfigurationsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListBucketInventoryConfigurationsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -17814,8 +17829,8 @@ func (x *ListBucketInventoryConfigurationsOutput) GetIstruncated() bool {
 }
 
 func (x *ListBucketInventoryConfigurationsOutput) GetNextcontinuationtoken() string {
-	if x != nil {
-		return x.Nextcontinuationtoken
+	if x != nil && x.Nextcontinuationtoken != nil {
+		return *x.Nextcontinuationtoken
 	}
 	return ""
 }
@@ -17823,8 +17838,8 @@ func (x *ListBucketInventoryConfigurationsOutput) GetNextcontinuationtoken() str
 type ListBucketInventoryConfigurationsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken   string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Continuationtoken   *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -17867,25 +17882,25 @@ func (x *ListBucketInventoryConfigurationsRequest) GetBucket() string {
 }
 
 func (x *ListBucketInventoryConfigurationsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListBucketInventoryConfigurationsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 type ListBucketMetricsConfigurationsOutput struct {
 	state                    protoimpl.MessageState  `protogen:"open.v1"`
-	Continuationtoken        string                  `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken        *string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Istruncated              *bool                   `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Metricsconfigurationlist []*MetricsConfiguration `protobuf:"bytes,374737701,rep,name=metricsconfigurationlist,proto3" json:"metricsconfigurationlist,omitempty"`
-	Nextcontinuationtoken    string                  `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
+	Nextcontinuationtoken    *string                 `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3,oneof" json:"nextcontinuationtoken,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -17921,8 +17936,8 @@ func (*ListBucketMetricsConfigurationsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListBucketMetricsConfigurationsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -17942,8 +17957,8 @@ func (x *ListBucketMetricsConfigurationsOutput) GetMetricsconfigurationlist() []
 }
 
 func (x *ListBucketMetricsConfigurationsOutput) GetNextcontinuationtoken() string {
-	if x != nil {
-		return x.Nextcontinuationtoken
+	if x != nil && x.Nextcontinuationtoken != nil {
+		return *x.Nextcontinuationtoken
 	}
 	return ""
 }
@@ -17951,8 +17966,8 @@ func (x *ListBucketMetricsConfigurationsOutput) GetNextcontinuationtoken() strin
 type ListBucketMetricsConfigurationsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken   string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Continuationtoken   *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -17995,15 +18010,15 @@ func (x *ListBucketMetricsConfigurationsRequest) GetBucket() string {
 }
 
 func (x *ListBucketMetricsConfigurationsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListBucketMetricsConfigurationsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -18011,9 +18026,9 @@ func (x *ListBucketMetricsConfigurationsRequest) GetExpectedbucketowner() string
 type ListBucketsOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Buckets           []*Bucket              `protobuf:"bytes,404596653,rep,name=buckets,proto3" json:"buckets,omitempty"`
-	Continuationtoken string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Owner             *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
-	Prefix            string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix            *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -18056,8 +18071,8 @@ func (x *ListBucketsOutput) GetBuckets() []*Bucket {
 }
 
 func (x *ListBucketsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -18070,18 +18085,18 @@ func (x *ListBucketsOutput) GetOwner() *Owner {
 }
 
 func (x *ListBucketsOutput) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
 
 type ListBucketsRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Bucketregion      string                 `protobuf:"bytes,309298816,opt,name=bucketregion,proto3" json:"bucketregion,omitempty"`
-	Continuationtoken string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Bucketregion      *string                `protobuf:"bytes,309298816,opt,name=bucketregion,proto3,oneof" json:"bucketregion,omitempty"`
+	Continuationtoken *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Maxbuckets        *int32                 `protobuf:"varint,264636545,opt,name=maxbuckets,proto3,oneof" json:"maxbuckets,omitempty"`
-	Prefix            string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix            *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -18117,15 +18132,15 @@ func (*ListBucketsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListBucketsRequest) GetBucketregion() string {
-	if x != nil {
-		return x.Bucketregion
+	if x != nil && x.Bucketregion != nil {
+		return *x.Bucketregion
 	}
 	return ""
 }
 
 func (x *ListBucketsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -18138,8 +18153,8 @@ func (x *ListBucketsRequest) GetMaxbuckets() int32 {
 }
 
 func (x *ListBucketsRequest) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -18147,7 +18162,7 @@ func (x *ListBucketsRequest) GetPrefix() string {
 type ListDirectoryBucketsOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Buckets           []*Bucket              `protobuf:"bytes,404596653,rep,name=buckets,proto3" json:"buckets,omitempty"`
-	Continuationtoken string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -18190,15 +18205,15 @@ func (x *ListDirectoryBucketsOutput) GetBuckets() []*Bucket {
 }
 
 func (x *ListDirectoryBucketsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 type ListDirectoryBucketsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Continuationtoken   string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
+	Continuationtoken   *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
 	Maxdirectorybuckets *int32                 `protobuf:"varint,424013420,opt,name=maxdirectorybuckets,proto3,oneof" json:"maxdirectorybuckets,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -18235,8 +18250,8 @@ func (*ListDirectoryBucketsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListDirectoryBucketsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
@@ -18250,18 +18265,18 @@ func (x *ListDirectoryBucketsRequest) GetMaxdirectorybuckets() int32 {
 
 type ListMultipartUploadsOutput struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Bucket             string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Bucket             *string                `protobuf:"bytes,55457112,opt,name=bucket,proto3,oneof" json:"bucket,omitempty"`
 	Commonprefixes     []*CommonPrefix        `protobuf:"bytes,83168757,rep,name=commonprefixes,proto3" json:"commonprefixes,omitempty"`
-	Delimiter          string                 `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Delimiter          *string                `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype       EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated        *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Keymarker          string                 `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
+	Keymarker          *string                `protobuf:"bytes,485505207,opt,name=keymarker,proto3,oneof" json:"keymarker,omitempty"`
 	Maxuploads         *int32                 `protobuf:"varint,111552074,opt,name=maxuploads,proto3,oneof" json:"maxuploads,omitempty"`
-	Nextkeymarker      string                 `protobuf:"bytes,433290006,opt,name=nextkeymarker,proto3" json:"nextkeymarker,omitempty"`
-	Nextuploadidmarker string                 `protobuf:"bytes,528782759,opt,name=nextuploadidmarker,proto3" json:"nextuploadidmarker,omitempty"`
-	Prefix             string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Nextkeymarker      *string                `protobuf:"bytes,433290006,opt,name=nextkeymarker,proto3,oneof" json:"nextkeymarker,omitempty"`
+	Nextuploadidmarker *string                `protobuf:"bytes,528782759,opt,name=nextuploadidmarker,proto3,oneof" json:"nextuploadidmarker,omitempty"`
+	Prefix             *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestcharged     RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Uploadidmarker     string                 `protobuf:"bytes,31676084,opt,name=uploadidmarker,proto3" json:"uploadidmarker,omitempty"`
+	Uploadidmarker     *string                `protobuf:"bytes,31676084,opt,name=uploadidmarker,proto3,oneof" json:"uploadidmarker,omitempty"`
 	Uploads            []*MultipartUpload     `protobuf:"bytes,75826334,rep,name=uploads,proto3" json:"uploads,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -18298,8 +18313,8 @@ func (*ListMultipartUploadsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMultipartUploadsOutput) GetBucket() string {
-	if x != nil {
-		return x.Bucket
+	if x != nil && x.Bucket != nil {
+		return *x.Bucket
 	}
 	return ""
 }
@@ -18312,8 +18327,8 @@ func (x *ListMultipartUploadsOutput) GetCommonprefixes() []*CommonPrefix {
 }
 
 func (x *ListMultipartUploadsOutput) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -18333,8 +18348,8 @@ func (x *ListMultipartUploadsOutput) GetIstruncated() bool {
 }
 
 func (x *ListMultipartUploadsOutput) GetKeymarker() string {
-	if x != nil {
-		return x.Keymarker
+	if x != nil && x.Keymarker != nil {
+		return *x.Keymarker
 	}
 	return ""
 }
@@ -18347,22 +18362,22 @@ func (x *ListMultipartUploadsOutput) GetMaxuploads() int32 {
 }
 
 func (x *ListMultipartUploadsOutput) GetNextkeymarker() string {
-	if x != nil {
-		return x.Nextkeymarker
+	if x != nil && x.Nextkeymarker != nil {
+		return *x.Nextkeymarker
 	}
 	return ""
 }
 
 func (x *ListMultipartUploadsOutput) GetNextuploadidmarker() string {
-	if x != nil {
-		return x.Nextuploadidmarker
+	if x != nil && x.Nextuploadidmarker != nil {
+		return *x.Nextuploadidmarker
 	}
 	return ""
 }
 
 func (x *ListMultipartUploadsOutput) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -18375,8 +18390,8 @@ func (x *ListMultipartUploadsOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *ListMultipartUploadsOutput) GetUploadidmarker() string {
-	if x != nil {
-		return x.Uploadidmarker
+	if x != nil && x.Uploadidmarker != nil {
+		return *x.Uploadidmarker
 	}
 	return ""
 }
@@ -18391,14 +18406,14 @@ func (x *ListMultipartUploadsOutput) GetUploads() []*MultipartUpload {
 type ListMultipartUploadsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Delimiter           string                 `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Delimiter           *string                `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype        EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Keymarker           string                 `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Keymarker           *string                `protobuf:"bytes,485505207,opt,name=keymarker,proto3,oneof" json:"keymarker,omitempty"`
 	Maxuploads          *int32                 `protobuf:"varint,111552074,opt,name=maxuploads,proto3,oneof" json:"maxuploads,omitempty"`
-	Prefix              string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix              *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Uploadidmarker      string                 `protobuf:"bytes,31676084,opt,name=uploadidmarker,proto3" json:"uploadidmarker,omitempty"`
+	Uploadidmarker      *string                `protobuf:"bytes,31676084,opt,name=uploadidmarker,proto3,oneof" json:"uploadidmarker,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -18441,8 +18456,8 @@ func (x *ListMultipartUploadsRequest) GetBucket() string {
 }
 
 func (x *ListMultipartUploadsRequest) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -18455,15 +18470,15 @@ func (x *ListMultipartUploadsRequest) GetEncodingtype() EncodingType {
 }
 
 func (x *ListMultipartUploadsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *ListMultipartUploadsRequest) GetKeymarker() string {
-	if x != nil {
-		return x.Keymarker
+	if x != nil && x.Keymarker != nil {
+		return *x.Keymarker
 	}
 	return ""
 }
@@ -18476,8 +18491,8 @@ func (x *ListMultipartUploadsRequest) GetMaxuploads() int32 {
 }
 
 func (x *ListMultipartUploadsRequest) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -18490,8 +18505,8 @@ func (x *ListMultipartUploadsRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *ListMultipartUploadsRequest) GetUploadidmarker() string {
-	if x != nil {
-		return x.Uploadidmarker
+	if x != nil && x.Uploadidmarker != nil {
+		return *x.Uploadidmarker
 	}
 	return ""
 }
@@ -18499,14 +18514,14 @@ func (x *ListMultipartUploadsRequest) GetUploadidmarker() string {
 type ListObjectAnnotationsOutput struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Annotationcount       *int32                 `protobuf:"varint,170196776,opt,name=annotationcount,proto3,oneof" json:"annotationcount,omitempty"`
-	Annotationprefix      string                 `protobuf:"bytes,32054469,opt,name=annotationprefix,proto3" json:"annotationprefix,omitempty"`
+	Annotationprefix      *string                `protobuf:"bytes,32054469,opt,name=annotationprefix,proto3,oneof" json:"annotationprefix,omitempty"`
 	Annotations           []*AnnotationEntry     `protobuf:"bytes,110947618,rep,name=annotations,proto3" json:"annotations,omitempty"`
-	Bucket                string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken     string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Key                   string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
+	Bucket                *string                `protobuf:"bytes,55457112,opt,name=bucket,proto3,oneof" json:"bucket,omitempty"`
+	Continuationtoken     *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Key                   *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
 	Maxannotationresults  *int32                 `protobuf:"varint,526250427,opt,name=maxannotationresults,proto3,oneof" json:"maxannotationresults,omitempty"`
-	Nextcontinuationtoken string                 `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
-	Objectversionid       string                 `protobuf:"bytes,406054044,opt,name=objectversionid,proto3" json:"objectversionid,omitempty"`
+	Nextcontinuationtoken *string                `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3,oneof" json:"nextcontinuationtoken,omitempty"`
+	Objectversionid       *string                `protobuf:"bytes,406054044,opt,name=objectversionid,proto3,oneof" json:"objectversionid,omitempty"`
 	Requestcharged        RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -18550,8 +18565,8 @@ func (x *ListObjectAnnotationsOutput) GetAnnotationcount() int32 {
 }
 
 func (x *ListObjectAnnotationsOutput) GetAnnotationprefix() string {
-	if x != nil {
-		return x.Annotationprefix
+	if x != nil && x.Annotationprefix != nil {
+		return *x.Annotationprefix
 	}
 	return ""
 }
@@ -18564,22 +18579,22 @@ func (x *ListObjectAnnotationsOutput) GetAnnotations() []*AnnotationEntry {
 }
 
 func (x *ListObjectAnnotationsOutput) GetBucket() string {
-	if x != nil {
-		return x.Bucket
+	if x != nil && x.Bucket != nil {
+		return *x.Bucket
 	}
 	return ""
 }
 
 func (x *ListObjectAnnotationsOutput) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListObjectAnnotationsOutput) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
@@ -18592,15 +18607,15 @@ func (x *ListObjectAnnotationsOutput) GetMaxannotationresults() int32 {
 }
 
 func (x *ListObjectAnnotationsOutput) GetNextcontinuationtoken() string {
-	if x != nil {
-		return x.Nextcontinuationtoken
+	if x != nil && x.Nextcontinuationtoken != nil {
+		return *x.Nextcontinuationtoken
 	}
 	return ""
 }
 
 func (x *ListObjectAnnotationsOutput) GetObjectversionid() string {
-	if x != nil {
-		return x.Objectversionid
+	if x != nil && x.Objectversionid != nil {
+		return *x.Objectversionid
 	}
 	return ""
 }
@@ -18614,14 +18629,14 @@ func (x *ListObjectAnnotationsOutput) GetRequestcharged() RequestCharged {
 
 type ListObjectAnnotationsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Annotationprefix     string                 `protobuf:"bytes,32054469,opt,name=annotationprefix,proto3" json:"annotationprefix,omitempty"`
+	Annotationprefix     *string                `protobuf:"bytes,32054469,opt,name=annotationprefix,proto3,oneof" json:"annotationprefix,omitempty"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken    string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Continuationtoken    *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Maxannotationresults *int32                 `protobuf:"varint,526250427,opt,name=maxannotationresults,proto3,oneof" json:"maxannotationresults,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid            string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid            *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -18657,8 +18672,8 @@ func (*ListObjectAnnotationsRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListObjectAnnotationsRequest) GetAnnotationprefix() string {
-	if x != nil {
-		return x.Annotationprefix
+	if x != nil && x.Annotationprefix != nil {
+		return *x.Annotationprefix
 	}
 	return ""
 }
@@ -18671,15 +18686,15 @@ func (x *ListObjectAnnotationsRequest) GetBucket() string {
 }
 
 func (x *ListObjectAnnotationsRequest) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListObjectAnnotationsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -18706,8 +18721,8 @@ func (x *ListObjectAnnotationsRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *ListObjectAnnotationsRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -18716,17 +18731,17 @@ type ListObjectVersionsOutput struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Commonprefixes      []*CommonPrefix        `protobuf:"bytes,83168757,rep,name=commonprefixes,proto3" json:"commonprefixes,omitempty"`
 	Deletemarkers       []*DeleteMarkerEntry   `protobuf:"bytes,376648970,rep,name=deletemarkers,proto3" json:"deletemarkers,omitempty"`
-	Delimiter           string                 `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Delimiter           *string                `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype        EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated         *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Keymarker           string                 `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
+	Keymarker           *string                `protobuf:"bytes,485505207,opt,name=keymarker,proto3,oneof" json:"keymarker,omitempty"`
 	Maxkeys             *int32                 `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
-	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextkeymarker       string                 `protobuf:"bytes,433290006,opt,name=nextkeymarker,proto3" json:"nextkeymarker,omitempty"`
-	Nextversionidmarker string                 `protobuf:"bytes,449586812,opt,name=nextversionidmarker,proto3" json:"nextversionidmarker,omitempty"`
-	Prefix              string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Name                *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Nextkeymarker       *string                `protobuf:"bytes,433290006,opt,name=nextkeymarker,proto3,oneof" json:"nextkeymarker,omitempty"`
+	Nextversionidmarker *string                `protobuf:"bytes,449586812,opt,name=nextversionidmarker,proto3,oneof" json:"nextversionidmarker,omitempty"`
+	Prefix              *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestcharged      RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Versionidmarker     string                 `protobuf:"bytes,335417777,opt,name=versionidmarker,proto3" json:"versionidmarker,omitempty"`
+	Versionidmarker     *string                `protobuf:"bytes,335417777,opt,name=versionidmarker,proto3,oneof" json:"versionidmarker,omitempty"`
 	Versions            []*ObjectVersion       `protobuf:"bytes,252099085,rep,name=versions,proto3" json:"versions,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -18777,8 +18792,8 @@ func (x *ListObjectVersionsOutput) GetDeletemarkers() []*DeleteMarkerEntry {
 }
 
 func (x *ListObjectVersionsOutput) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -18798,8 +18813,8 @@ func (x *ListObjectVersionsOutput) GetIstruncated() bool {
 }
 
 func (x *ListObjectVersionsOutput) GetKeymarker() string {
-	if x != nil {
-		return x.Keymarker
+	if x != nil && x.Keymarker != nil {
+		return *x.Keymarker
 	}
 	return ""
 }
@@ -18812,29 +18827,29 @@ func (x *ListObjectVersionsOutput) GetMaxkeys() int32 {
 }
 
 func (x *ListObjectVersionsOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ListObjectVersionsOutput) GetNextkeymarker() string {
-	if x != nil {
-		return x.Nextkeymarker
+	if x != nil && x.Nextkeymarker != nil {
+		return *x.Nextkeymarker
 	}
 	return ""
 }
 
 func (x *ListObjectVersionsOutput) GetNextversionidmarker() string {
-	if x != nil {
-		return x.Nextversionidmarker
+	if x != nil && x.Nextversionidmarker != nil {
+		return *x.Nextversionidmarker
 	}
 	return ""
 }
 
 func (x *ListObjectVersionsOutput) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -18847,8 +18862,8 @@ func (x *ListObjectVersionsOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *ListObjectVersionsOutput) GetVersionidmarker() string {
-	if x != nil {
-		return x.Versionidmarker
+	if x != nil && x.Versionidmarker != nil {
+		return *x.Versionidmarker
 	}
 	return ""
 }
@@ -18863,15 +18878,15 @@ func (x *ListObjectVersionsOutput) GetVersions() []*ObjectVersion {
 type ListObjectVersionsRequest struct {
 	state                    protoimpl.MessageState     `protogen:"open.v1"`
 	Bucket                   string                     `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Delimiter                string                     `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Delimiter                *string                    `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype             EncodingType               `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
-	Expectedbucketowner      string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Keymarker                string                     `protobuf:"bytes,485505207,opt,name=keymarker,proto3" json:"keymarker,omitempty"`
+	Expectedbucketowner      *string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Keymarker                *string                    `protobuf:"bytes,485505207,opt,name=keymarker,proto3,oneof" json:"keymarker,omitempty"`
 	Maxkeys                  *int32                     `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Optionalobjectattributes []OptionalObjectAttributes `protobuf:"varint,147719620,rep,packed,name=optionalobjectattributes,proto3,enum=s3.OptionalObjectAttributes" json:"optionalobjectattributes,omitempty"`
-	Prefix                   string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix                   *string                    `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestpayer             RequestPayer               `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionidmarker          string                     `protobuf:"bytes,335417777,opt,name=versionidmarker,proto3" json:"versionidmarker,omitempty"`
+	Versionidmarker          *string                    `protobuf:"bytes,335417777,opt,name=versionidmarker,proto3,oneof" json:"versionidmarker,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -18914,8 +18929,8 @@ func (x *ListObjectVersionsRequest) GetBucket() string {
 }
 
 func (x *ListObjectVersionsRequest) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -18928,15 +18943,15 @@ func (x *ListObjectVersionsRequest) GetEncodingtype() EncodingType {
 }
 
 func (x *ListObjectVersionsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *ListObjectVersionsRequest) GetKeymarker() string {
-	if x != nil {
-		return x.Keymarker
+	if x != nil && x.Keymarker != nil {
+		return *x.Keymarker
 	}
 	return ""
 }
@@ -18956,8 +18971,8 @@ func (x *ListObjectVersionsRequest) GetOptionalobjectattributes() []OptionalObje
 }
 
 func (x *ListObjectVersionsRequest) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -18970,8 +18985,8 @@ func (x *ListObjectVersionsRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *ListObjectVersionsRequest) GetVersionidmarker() string {
-	if x != nil {
-		return x.Versionidmarker
+	if x != nil && x.Versionidmarker != nil {
+		return *x.Versionidmarker
 	}
 	return ""
 }
@@ -18980,14 +18995,14 @@ type ListObjectsOutput struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Commonprefixes []*CommonPrefix        `protobuf:"bytes,83168757,rep,name=commonprefixes,proto3" json:"commonprefixes,omitempty"`
 	Contents       []*Object              `protobuf:"bytes,119498692,rep,name=contents,proto3" json:"contents,omitempty"`
-	Delimiter      string                 `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Delimiter      *string                `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype   EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated    *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Marker         string                 `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Marker         *string                `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxkeys        *int32                 `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
-	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextmarker     string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
-	Prefix         string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Name           *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Nextmarker     *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
+	Prefix         *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestcharged RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -19038,8 +19053,8 @@ func (x *ListObjectsOutput) GetContents() []*Object {
 }
 
 func (x *ListObjectsOutput) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -19059,8 +19074,8 @@ func (x *ListObjectsOutput) GetIstruncated() bool {
 }
 
 func (x *ListObjectsOutput) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -19073,22 +19088,22 @@ func (x *ListObjectsOutput) GetMaxkeys() int32 {
 }
 
 func (x *ListObjectsOutput) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ListObjectsOutput) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 func (x *ListObjectsOutput) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -19103,13 +19118,13 @@ func (x *ListObjectsOutput) GetRequestcharged() RequestCharged {
 type ListObjectsRequest struct {
 	state                    protoimpl.MessageState     `protogen:"open.v1"`
 	Bucket                   string                     `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Delimiter                string                     `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Delimiter                *string                    `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype             EncodingType               `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
-	Expectedbucketowner      string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Marker                   string                     `protobuf:"bytes,89353912,opt,name=marker,proto3" json:"marker,omitempty"`
+	Expectedbucketowner      *string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Marker                   *string                    `protobuf:"bytes,89353912,opt,name=marker,proto3,oneof" json:"marker,omitempty"`
 	Maxkeys                  *int32                     `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Optionalobjectattributes []OptionalObjectAttributes `protobuf:"varint,147719620,rep,packed,name=optionalobjectattributes,proto3,enum=s3.OptionalObjectAttributes" json:"optionalobjectattributes,omitempty"`
-	Prefix                   string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix                   *string                    `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestpayer             RequestPayer               `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
@@ -19153,8 +19168,8 @@ func (x *ListObjectsRequest) GetBucket() string {
 }
 
 func (x *ListObjectsRequest) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -19167,15 +19182,15 @@ func (x *ListObjectsRequest) GetEncodingtype() EncodingType {
 }
 
 func (x *ListObjectsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *ListObjectsRequest) GetMarker() string {
-	if x != nil {
-		return x.Marker
+	if x != nil && x.Marker != nil {
+		return *x.Marker
 	}
 	return ""
 }
@@ -19195,8 +19210,8 @@ func (x *ListObjectsRequest) GetOptionalobjectattributes() []OptionalObjectAttri
 }
 
 func (x *ListObjectsRequest) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -19212,17 +19227,17 @@ type ListObjectsV2Output struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Commonprefixes        []*CommonPrefix        `protobuf:"bytes,83168757,rep,name=commonprefixes,proto3" json:"commonprefixes,omitempty"`
 	Contents              []*Object              `protobuf:"bytes,119498692,rep,name=contents,proto3" json:"contents,omitempty"`
-	Continuationtoken     string                 `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Delimiter             string                 `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Continuationtoken     *string                `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Delimiter             *string                `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype          EncodingType           `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
 	Istruncated           *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
 	Keycount              *int32                 `protobuf:"varint,253426132,opt,name=keycount,proto3,oneof" json:"keycount,omitempty"`
 	Maxkeys               *int32                 `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
-	Name                  string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextcontinuationtoken string                 `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3" json:"nextcontinuationtoken,omitempty"`
-	Prefix                string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Name                  *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Nextcontinuationtoken *string                `protobuf:"bytes,260840781,opt,name=nextcontinuationtoken,proto3,oneof" json:"nextcontinuationtoken,omitempty"`
+	Prefix                *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestcharged        RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Startafter            string                 `protobuf:"bytes,339670328,opt,name=startafter,proto3" json:"startafter,omitempty"`
+	Startafter            *string                `protobuf:"bytes,339670328,opt,name=startafter,proto3,oneof" json:"startafter,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -19272,15 +19287,15 @@ func (x *ListObjectsV2Output) GetContents() []*Object {
 }
 
 func (x *ListObjectsV2Output) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListObjectsV2Output) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -19314,22 +19329,22 @@ func (x *ListObjectsV2Output) GetMaxkeys() int32 {
 }
 
 func (x *ListObjectsV2Output) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ListObjectsV2Output) GetNextcontinuationtoken() string {
-	if x != nil {
-		return x.Nextcontinuationtoken
+	if x != nil && x.Nextcontinuationtoken != nil {
+		return *x.Nextcontinuationtoken
 	}
 	return ""
 }
 
 func (x *ListObjectsV2Output) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -19342,8 +19357,8 @@ func (x *ListObjectsV2Output) GetRequestcharged() RequestCharged {
 }
 
 func (x *ListObjectsV2Output) GetStartafter() string {
-	if x != nil {
-		return x.Startafter
+	if x != nil && x.Startafter != nil {
+		return *x.Startafter
 	}
 	return ""
 }
@@ -19351,16 +19366,16 @@ func (x *ListObjectsV2Output) GetStartafter() string {
 type ListObjectsV2Request struct {
 	state                    protoimpl.MessageState     `protogen:"open.v1"`
 	Bucket                   string                     `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Continuationtoken        string                     `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3" json:"continuationtoken,omitempty"`
-	Delimiter                string                     `protobuf:"bytes,302132379,opt,name=delimiter,proto3" json:"delimiter,omitempty"`
+	Continuationtoken        *string                    `protobuf:"bytes,286270824,opt,name=continuationtoken,proto3,oneof" json:"continuationtoken,omitempty"`
+	Delimiter                *string                    `protobuf:"bytes,302132379,opt,name=delimiter,proto3,oneof" json:"delimiter,omitempty"`
 	Encodingtype             EncodingType               `protobuf:"varint,532628025,opt,name=encodingtype,proto3,enum=s3.EncodingType" json:"encodingtype,omitempty"`
-	Expectedbucketowner      string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner      *string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Fetchowner               *bool                      `protobuf:"varint,402910551,opt,name=fetchowner,proto3,oneof" json:"fetchowner,omitempty"`
 	Maxkeys                  *int32                     `protobuf:"varint,247655034,opt,name=maxkeys,proto3,oneof" json:"maxkeys,omitempty"`
 	Optionalobjectattributes []OptionalObjectAttributes `protobuf:"varint,147719620,rep,packed,name=optionalobjectattributes,proto3,enum=s3.OptionalObjectAttributes" json:"optionalobjectattributes,omitempty"`
-	Prefix                   string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix                   *string                    `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Requestpayer             RequestPayer               `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Startafter               string                     `protobuf:"bytes,339670328,opt,name=startafter,proto3" json:"startafter,omitempty"`
+	Startafter               *string                    `protobuf:"bytes,339670328,opt,name=startafter,proto3,oneof" json:"startafter,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -19403,15 +19418,15 @@ func (x *ListObjectsV2Request) GetBucket() string {
 }
 
 func (x *ListObjectsV2Request) GetContinuationtoken() string {
-	if x != nil {
-		return x.Continuationtoken
+	if x != nil && x.Continuationtoken != nil {
+		return *x.Continuationtoken
 	}
 	return ""
 }
 
 func (x *ListObjectsV2Request) GetDelimiter() string {
-	if x != nil {
-		return x.Delimiter
+	if x != nil && x.Delimiter != nil {
+		return *x.Delimiter
 	}
 	return ""
 }
@@ -19424,8 +19439,8 @@ func (x *ListObjectsV2Request) GetEncodingtype() EncodingType {
 }
 
 func (x *ListObjectsV2Request) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -19452,8 +19467,8 @@ func (x *ListObjectsV2Request) GetOptionalobjectattributes() []OptionalObjectAtt
 }
 
 func (x *ListObjectsV2Request) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -19466,30 +19481,30 @@ func (x *ListObjectsV2Request) GetRequestpayer() RequestPayer {
 }
 
 func (x *ListObjectsV2Request) GetStartafter() string {
-	if x != nil {
-		return x.Startafter
+	if x != nil && x.Startafter != nil {
+		return *x.Startafter
 	}
 	return ""
 }
 
 type ListPartsOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Abortdate            string                 `protobuf:"bytes,232475318,opt,name=abortdate,proto3" json:"abortdate,omitempty"`
-	Abortruleid          string                 `protobuf:"bytes,232462739,opt,name=abortruleid,proto3" json:"abortruleid,omitempty"`
-	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
+	Abortdate            *string                `protobuf:"bytes,232475318,opt,name=abortdate,proto3,oneof" json:"abortdate,omitempty"`
+	Abortruleid          *string                `protobuf:"bytes,232462739,opt,name=abortruleid,proto3,oneof" json:"abortruleid,omitempty"`
+	Bucket               *string                `protobuf:"bytes,55457112,opt,name=bucket,proto3,oneof" json:"bucket,omitempty"`
 	Checksumalgorithm    ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Checksumtype         ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
 	Initiator            *Initiator             `protobuf:"bytes,414951451,opt,name=initiator,proto3" json:"initiator,omitempty"`
 	Istruncated          *bool                  `protobuf:"varint,242094042,opt,name=istruncated,proto3,oneof" json:"istruncated,omitempty"`
-	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
+	Key                  *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
 	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
-	Nextpartnumbermarker string                 `protobuf:"bytes,28931219,opt,name=nextpartnumbermarker,proto3" json:"nextpartnumbermarker,omitempty"`
+	Nextpartnumbermarker *string                `protobuf:"bytes,28931219,opt,name=nextpartnumbermarker,proto3,oneof" json:"nextpartnumbermarker,omitempty"`
 	Owner                *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
-	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
+	Partnumbermarker     *string                `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3,oneof" json:"partnumbermarker,omitempty"`
 	Parts                []*Part                `protobuf:"bytes,213028806,rep,name=parts,proto3" json:"parts,omitempty"`
 	Requestcharged       RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Storageclass         StorageClass           `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Uploadid             string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
+	Uploadid             *string                `protobuf:"bytes,449040722,opt,name=uploadid,proto3,oneof" json:"uploadid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -19525,22 +19540,22 @@ func (*ListPartsOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListPartsOutput) GetAbortdate() string {
-	if x != nil {
-		return x.Abortdate
+	if x != nil && x.Abortdate != nil {
+		return *x.Abortdate
 	}
 	return ""
 }
 
 func (x *ListPartsOutput) GetAbortruleid() string {
-	if x != nil {
-		return x.Abortruleid
+	if x != nil && x.Abortruleid != nil {
+		return *x.Abortruleid
 	}
 	return ""
 }
 
 func (x *ListPartsOutput) GetBucket() string {
-	if x != nil {
-		return x.Bucket
+	if x != nil && x.Bucket != nil {
+		return *x.Bucket
 	}
 	return ""
 }
@@ -19574,8 +19589,8 @@ func (x *ListPartsOutput) GetIstruncated() bool {
 }
 
 func (x *ListPartsOutput) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
@@ -19588,8 +19603,8 @@ func (x *ListPartsOutput) GetMaxparts() int32 {
 }
 
 func (x *ListPartsOutput) GetNextpartnumbermarker() string {
-	if x != nil {
-		return x.Nextpartnumbermarker
+	if x != nil && x.Nextpartnumbermarker != nil {
+		return *x.Nextpartnumbermarker
 	}
 	return ""
 }
@@ -19602,8 +19617,8 @@ func (x *ListPartsOutput) GetOwner() *Owner {
 }
 
 func (x *ListPartsOutput) GetPartnumbermarker() string {
-	if x != nil {
-		return x.Partnumbermarker
+	if x != nil && x.Partnumbermarker != nil {
+		return *x.Partnumbermarker
 	}
 	return ""
 }
@@ -19630,8 +19645,8 @@ func (x *ListPartsOutput) GetStorageclass() StorageClass {
 }
 
 func (x *ListPartsOutput) GetUploadid() string {
-	if x != nil {
-		return x.Uploadid
+	if x != nil && x.Uploadid != nil {
+		return *x.Uploadid
 	}
 	return ""
 }
@@ -19639,14 +19654,14 @@ func (x *ListPartsOutput) GetUploadid() string {
 type ListPartsRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Maxparts             *int32                 `protobuf:"varint,398005914,opt,name=maxparts,proto3,oneof" json:"maxparts,omitempty"`
-	Partnumbermarker     string                 `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3" json:"partnumbermarker,omitempty"`
+	Partnumbermarker     *string                `protobuf:"bytes,376535672,opt,name=partnumbermarker,proto3,oneof" json:"partnumbermarker,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey       string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5    string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
+	Ssecustomeralgorithm *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey       *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5    *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
 	Uploadid             string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -19690,8 +19705,8 @@ func (x *ListPartsRequest) GetBucket() string {
 }
 
 func (x *ListPartsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -19711,8 +19726,8 @@ func (x *ListPartsRequest) GetMaxparts() int32 {
 }
 
 func (x *ListPartsRequest) GetPartnumbermarker() string {
-	if x != nil {
-		return x.Partnumbermarker
+	if x != nil && x.Partnumbermarker != nil {
+		return *x.Partnumbermarker
 	}
 	return ""
 }
@@ -19725,22 +19740,22 @@ func (x *ListPartsRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *ListPartsRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *ListPartsRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *ListPartsRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
@@ -19754,7 +19769,7 @@ func (x *ListPartsRequest) GetUploadid() string {
 
 type LocationInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Type          LocationType           `protobuf:"varint,290836590,opt,name=type,proto3,enum=s3.LocationType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -19791,8 +19806,8 @@ func (*LocationInfo) Descriptor() ([]byte, []int) {
 }
 
 func (x *LocationInfo) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -20002,8 +20017,8 @@ func (x *MetadataConfigurationResult) GetJournaltableconfigurationresult() *Jour
 
 type MetadataEntry struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -20039,15 +20054,15 @@ func (*MetadataEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *MetadataEntry) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *MetadataEntry) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -20142,7 +20157,7 @@ func (x *MetadataTableConfigurationResult) GetS3Tablesdestinationresult() *S3Tab
 
 type MetadataTableEncryptionConfiguration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Kmskeyarn     string                 `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3" json:"kmskeyarn,omitempty"`
+	Kmskeyarn     *string                `protobuf:"bytes,110041649,opt,name=kmskeyarn,proto3,oneof" json:"kmskeyarn,omitempty"`
 	Ssealgorithm  TableSseAlgorithm      `protobuf:"varint,290263248,opt,name=ssealgorithm,proto3,enum=s3.TableSseAlgorithm" json:"ssealgorithm,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -20179,8 +20194,8 @@ func (*MetadataTableEncryptionConfiguration) Descriptor() ([]byte, []int) {
 }
 
 func (x *MetadataTableEncryptionConfiguration) GetKmskeyarn() string {
-	if x != nil {
-		return x.Kmskeyarn
+	if x != nil && x.Kmskeyarn != nil {
+		return *x.Kmskeyarn
 	}
 	return ""
 }
@@ -20246,8 +20261,8 @@ func (x *Metrics) GetStatus() MetricsStatus {
 
 type MetricsAndOperator struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Accesspointarn string                 `protobuf:"bytes,211889319,opt,name=accesspointarn,proto3" json:"accesspointarn,omitempty"`
-	Prefix         string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Accesspointarn *string                `protobuf:"bytes,211889319,opt,name=accesspointarn,proto3,oneof" json:"accesspointarn,omitempty"`
+	Prefix         *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tags           []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -20284,15 +20299,15 @@ func (*MetricsAndOperator) Descriptor() ([]byte, []int) {
 }
 
 func (x *MetricsAndOperator) GetAccesspointarn() string {
-	if x != nil {
-		return x.Accesspointarn
+	if x != nil && x.Accesspointarn != nil {
+		return *x.Accesspointarn
 	}
 	return ""
 }
 
 func (x *MetricsAndOperator) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -20358,9 +20373,9 @@ func (x *MetricsConfiguration) GetId() string {
 
 type MetricsFilter struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Accesspointarn string                 `protobuf:"bytes,211889319,opt,name=accesspointarn,proto3" json:"accesspointarn,omitempty"`
+	Accesspointarn *string                `protobuf:"bytes,211889319,opt,name=accesspointarn,proto3,oneof" json:"accesspointarn,omitempty"`
 	And            *MetricsAndOperator    `protobuf:"bytes,297135431,opt,name=and,proto3" json:"and,omitempty"`
-	Prefix         string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix         *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tag            *Tag                   `protobuf:"bytes,411259956,opt,name=tag,proto3" json:"tag,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -20397,8 +20412,8 @@ func (*MetricsFilter) Descriptor() ([]byte, []int) {
 }
 
 func (x *MetricsFilter) GetAccesspointarn() string {
-	if x != nil {
-		return x.Accesspointarn
+	if x != nil && x.Accesspointarn != nil {
+		return *x.Accesspointarn
 	}
 	return ""
 }
@@ -20411,8 +20426,8 @@ func (x *MetricsFilter) GetAnd() *MetricsAndOperator {
 }
 
 func (x *MetricsFilter) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -20428,12 +20443,12 @@ type MultipartUpload struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Checksumalgorithm ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Checksumtype      ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Initiated         string                 `protobuf:"bytes,114631595,opt,name=initiated,proto3" json:"initiated,omitempty"`
+	Initiated         *string                `protobuf:"bytes,114631595,opt,name=initiated,proto3,oneof" json:"initiated,omitempty"`
 	Initiator         *Initiator             `protobuf:"bytes,414951451,opt,name=initiator,proto3" json:"initiator,omitempty"`
-	Key               string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
+	Key               *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
 	Owner             *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
 	Storageclass      StorageClass           `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Uploadid          string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
+	Uploadid          *string                `protobuf:"bytes,449040722,opt,name=uploadid,proto3,oneof" json:"uploadid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -20483,8 +20498,8 @@ func (x *MultipartUpload) GetChecksumtype() ChecksumType {
 }
 
 func (x *MultipartUpload) GetInitiated() string {
-	if x != nil {
-		return x.Initiated
+	if x != nil && x.Initiated != nil {
+		return *x.Initiated
 	}
 	return ""
 }
@@ -20497,8 +20512,8 @@ func (x *MultipartUpload) GetInitiator() *Initiator {
 }
 
 func (x *MultipartUpload) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
@@ -20518,8 +20533,8 @@ func (x *MultipartUpload) GetStorageclass() StorageClass {
 }
 
 func (x *MultipartUpload) GetUploadid() string {
-	if x != nil {
-		return x.Uploadid
+	if x != nil && x.Uploadid != nil {
+		return *x.Uploadid
 	}
 	return ""
 }
@@ -20932,9 +20947,9 @@ type Object struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Checksumalgorithm []ChecksumAlgorithm    `protobuf:"varint,257294512,rep,packed,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Checksumtype      ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Key               string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Etag              *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Key               *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Lastmodified      *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Owner             *Owner                 `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
 	Restorestatus     *RestoreStatus         `protobuf:"bytes,456059636,opt,name=restorestatus,proto3" json:"restorestatus,omitempty"`
 	Size              *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
@@ -20988,22 +21003,22 @@ func (x *Object) GetChecksumtype() ChecksumType {
 }
 
 func (x *Object) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *Object) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *Object) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -21118,11 +21133,11 @@ func (x *ObjectEncryption) GetSsekms() *SSEKMSEncryption {
 
 type ObjectIdentifier struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Etag             string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
+	Etag             *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
 	Key              string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Lastmodifiedtime string                 `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3" json:"lastmodifiedtime,omitempty"`
+	Lastmodifiedtime *string                `protobuf:"bytes,236912992,opt,name=lastmodifiedtime,proto3,oneof" json:"lastmodifiedtime,omitempty"`
 	Size             *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
-	Versionid        string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid        *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -21158,8 +21173,8 @@ func (*ObjectIdentifier) Descriptor() ([]byte, []int) {
 }
 
 func (x *ObjectIdentifier) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
@@ -21172,8 +21187,8 @@ func (x *ObjectIdentifier) GetKey() string {
 }
 
 func (x *ObjectIdentifier) GetLastmodifiedtime() string {
-	if x != nil {
-		return x.Lastmodifiedtime
+	if x != nil && x.Lastmodifiedtime != nil {
+		return *x.Lastmodifiedtime
 	}
 	return ""
 }
@@ -21186,8 +21201,8 @@ func (x *ObjectIdentifier) GetSize() int64 {
 }
 
 func (x *ObjectIdentifier) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -21291,7 +21306,7 @@ func (x *ObjectLockLegalHold) GetStatus() ObjectLockLegalHoldStatus {
 type ObjectLockRetention struct {
 	state           protoimpl.MessageState  `protogen:"open.v1"`
 	Mode            ObjectLockRetentionMode `protobuf:"varint,323909427,opt,name=mode,proto3,enum=s3.ObjectLockRetentionMode" json:"mode,omitempty"`
-	Retainuntildate string                  `protobuf:"bytes,252881225,opt,name=retainuntildate,proto3" json:"retainuntildate,omitempty"`
+	Retainuntildate *string                 `protobuf:"bytes,252881225,opt,name=retainuntildate,proto3,oneof" json:"retainuntildate,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -21334,8 +21349,8 @@ func (x *ObjectLockRetention) GetMode() ObjectLockRetentionMode {
 }
 
 func (x *ObjectLockRetention) GetRetainuntildate() string {
-	if x != nil {
-		return x.Retainuntildate
+	if x != nil && x.Retainuntildate != nil {
+		return *x.Retainuntildate
 	}
 	return ""
 }
@@ -21422,16 +21437,16 @@ func (*ObjectNotInActiveTierError) Descriptor() ([]byte, []int) {
 
 type ObjectPart struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Checksumcrc32     string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C    string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5       string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1      string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256    string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512    string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
+	Checksumcrc32     *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C    *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5       *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1      *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256    *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512    *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128 *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3   *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64  *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
 	Partnumber        *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
 	Size              *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -21469,71 +21484,71 @@ func (*ObjectPart) Descriptor() ([]byte, []int) {
 }
 
 func (x *ObjectPart) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *ObjectPart) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
@@ -21556,15 +21571,15 @@ type ObjectVersion struct {
 	state             protoimpl.MessageState    `protogen:"open.v1"`
 	Checksumalgorithm []ChecksumAlgorithm       `protobuf:"varint,257294512,rep,packed,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Checksumtype      ChecksumType              `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Etag              string                    `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
+	Etag              *string                   `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
 	Islatest          *bool                     `protobuf:"varint,80355831,opt,name=islatest,proto3,oneof" json:"islatest,omitempty"`
-	Key               string                    `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Lastmodified      string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Key               *string                   `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Lastmodified      *string                   `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Owner             *Owner                    `protobuf:"bytes,455261813,opt,name=owner,proto3" json:"owner,omitempty"`
 	Restorestatus     *RestoreStatus            `protobuf:"bytes,456059636,opt,name=restorestatus,proto3" json:"restorestatus,omitempty"`
 	Size              *int64                    `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	Storageclass      ObjectVersionStorageClass `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.ObjectVersionStorageClass" json:"storageclass,omitempty"`
-	Versionid         string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid         *string                   `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -21614,8 +21629,8 @@ func (x *ObjectVersion) GetChecksumtype() ChecksumType {
 }
 
 func (x *ObjectVersion) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
@@ -21628,15 +21643,15 @@ func (x *ObjectVersion) GetIslatest() bool {
 }
 
 func (x *ObjectVersion) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *ObjectVersion) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -21670,8 +21685,8 @@ func (x *ObjectVersion) GetStorageclass() ObjectVersionStorageClass {
 }
 
 func (x *ObjectVersion) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -21774,8 +21789,8 @@ func (x *OutputSerialization) GetJson() *JSONOutput {
 
 type Owner struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Displayname   string                 `protobuf:"bytes,418161847,opt,name=displayname,proto3" json:"displayname,omitempty"`
-	Id            string                 `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
+	Displayname   *string                `protobuf:"bytes,418161847,opt,name=displayname,proto3,oneof" json:"displayname,omitempty"`
+	Id            *string                `protobuf:"bytes,384363361,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -21811,15 +21826,15 @@ func (*Owner) Descriptor() ([]byte, []int) {
 }
 
 func (x *Owner) GetDisplayname() string {
-	if x != nil {
-		return x.Displayname
+	if x != nil && x.Displayname != nil {
+		return *x.Displayname
 	}
 	return ""
 }
 
 func (x *Owner) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -21950,18 +21965,18 @@ func (*ParquetInput) Descriptor() ([]byte, []int) {
 
 type Part struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Checksumcrc32     string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C    string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5       string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1      string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256    string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512    string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128 string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3   string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64  string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag              string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Lastmodified      string                 `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Checksumcrc32     *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C    *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5       *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1      *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256    *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512    *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128 *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3   *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64  *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag              *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Lastmodified      *string                `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Partnumber        *int32                 `protobuf:"varint,372082310,opt,name=partnumber,proto3,oneof" json:"partnumber,omitempty"`
 	Size              *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -21999,85 +22014,85 @@ func (*Part) Descriptor() ([]byte, []int) {
 }
 
 func (x *Part) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *Part) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *Part) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *Part) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *Part) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -22361,8 +22376,8 @@ type PutBucketAbacRequest struct {
 	Abacstatus          *AbacStatus            `protobuf:"bytes,436325625,opt,name=abacstatus,proto3" json:"abacstatus,omitempty"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -22419,15 +22434,15 @@ func (x *PutBucketAbacRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketAbacRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketAbacRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -22437,7 +22452,7 @@ type PutBucketAccelerateConfigurationRequest struct {
 	Accelerateconfiguration *AccelerateConfiguration `protobuf:"bytes,376003075,opt,name=accelerateconfiguration,proto3" json:"accelerateconfiguration,omitempty"`
 	Bucket                  string                   `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm       ChecksumAlgorithm        `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Expectedbucketowner     string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner     *string                  `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -22494,8 +22509,8 @@ func (x *PutBucketAccelerateConfigurationRequest) GetChecksumalgorithm() Checksu
 }
 
 func (x *PutBucketAccelerateConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -22506,13 +22521,13 @@ type PutBucketAclRequest struct {
 	Accesscontrolpolicy *AccessControlPolicy   `protobuf:"bytes,302514423,opt,name=accesscontrolpolicy,proto3" json:"accesscontrolpolicy,omitempty"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Grantfullcontrol    string                 `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
-	Grantread           string                 `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
-	Grantreadacp        string                 `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3" json:"grantreadacp,omitempty"`
-	Grantwrite          string                 `protobuf:"bytes,286850821,opt,name=grantwrite,proto3" json:"grantwrite,omitempty"`
-	Grantwriteacp       string                 `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3" json:"grantwriteacp,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Grantfullcontrol    *string                `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3,oneof" json:"grantfullcontrol,omitempty"`
+	Grantread           *string                `protobuf:"bytes,4518126,opt,name=grantread,proto3,oneof" json:"grantread,omitempty"`
+	Grantreadacp        *string                `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3,oneof" json:"grantreadacp,omitempty"`
+	Grantwrite          *string                `protobuf:"bytes,286850821,opt,name=grantwrite,proto3,oneof" json:"grantwrite,omitempty"`
+	Grantwriteacp       *string                `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3,oneof" json:"grantwriteacp,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -22576,50 +22591,50 @@ func (x *PutBucketAclRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketAclRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketAclRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *PutBucketAclRequest) GetGrantfullcontrol() string {
-	if x != nil {
-		return x.Grantfullcontrol
+	if x != nil && x.Grantfullcontrol != nil {
+		return *x.Grantfullcontrol
 	}
 	return ""
 }
 
 func (x *PutBucketAclRequest) GetGrantread() string {
-	if x != nil {
-		return x.Grantread
+	if x != nil && x.Grantread != nil {
+		return *x.Grantread
 	}
 	return ""
 }
 
 func (x *PutBucketAclRequest) GetGrantreadacp() string {
-	if x != nil {
-		return x.Grantreadacp
+	if x != nil && x.Grantreadacp != nil {
+		return *x.Grantreadacp
 	}
 	return ""
 }
 
 func (x *PutBucketAclRequest) GetGrantwrite() string {
-	if x != nil {
-		return x.Grantwrite
+	if x != nil && x.Grantwrite != nil {
+		return *x.Grantwrite
 	}
 	return ""
 }
 
 func (x *PutBucketAclRequest) GetGrantwriteacp() string {
-	if x != nil {
-		return x.Grantwriteacp
+	if x != nil && x.Grantwriteacp != nil {
+		return *x.Grantwriteacp
 	}
 	return ""
 }
@@ -22628,7 +22643,7 @@ type PutBucketAnalyticsConfigurationRequest struct {
 	state                  protoimpl.MessageState  `protogen:"open.v1"`
 	Analyticsconfiguration *AnalyticsConfiguration `protobuf:"bytes,229750388,opt,name=analyticsconfiguration,proto3" json:"analyticsconfiguration,omitempty"`
 	Bucket                 string                  `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner    string                  `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner    *string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                     string                  `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -22679,8 +22694,8 @@ func (x *PutBucketAnalyticsConfigurationRequest) GetBucket() string {
 }
 
 func (x *PutBucketAnalyticsConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -22697,8 +22712,8 @@ type PutBucketCorsRequest struct {
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Corsconfiguration   *CORSConfiguration     `protobuf:"bytes,359712351,opt,name=corsconfiguration,proto3" json:"corsconfiguration,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -22755,15 +22770,15 @@ func (x *PutBucketCorsRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketCorsRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketCorsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -22772,8 +22787,8 @@ type PutBucketEncryptionRequest struct {
 	state                             protoimpl.MessageState             `protogen:"open.v1"`
 	Bucket                            string                             `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm                 ChecksumAlgorithm                  `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                        string                             `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner               string                             `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                        *string                            `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner               *string                            `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Serversideencryptionconfiguration *ServerSideEncryptionConfiguration `protobuf:"bytes,314603363,opt,name=serversideencryptionconfiguration,proto3" json:"serversideencryptionconfiguration,omitempty"`
 	unknownFields                     protoimpl.UnknownFields
 	sizeCache                         protoimpl.SizeCache
@@ -22824,15 +22839,15 @@ func (x *PutBucketEncryptionRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketEncryptionRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketEncryptionRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -22847,7 +22862,7 @@ func (x *PutBucketEncryptionRequest) GetServersideencryptionconfiguration() *Ser
 type PutBucketIntelligentTieringConfigurationRequest struct {
 	state                           protoimpl.MessageState           `protogen:"open.v1"`
 	Bucket                          string                           `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner             string                           `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner             *string                          `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                              string                           `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Intelligenttieringconfiguration *IntelligentTieringConfiguration `protobuf:"bytes,381057245,opt,name=intelligenttieringconfiguration,proto3" json:"intelligenttieringconfiguration,omitempty"`
 	unknownFields                   protoimpl.UnknownFields
@@ -22892,8 +22907,8 @@ func (x *PutBucketIntelligentTieringConfigurationRequest) GetBucket() string {
 }
 
 func (x *PutBucketIntelligentTieringConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -22915,7 +22930,7 @@ func (x *PutBucketIntelligentTieringConfigurationRequest) GetIntelligenttieringc
 type PutBucketInventoryConfigurationRequest struct {
 	state                  protoimpl.MessageState  `protogen:"open.v1"`
 	Bucket                 string                  `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner    string                  `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner    *string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                     string                  `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Inventoryconfiguration *InventoryConfiguration `protobuf:"bytes,401695392,opt,name=inventoryconfiguration,proto3" json:"inventoryconfiguration,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -22960,8 +22975,8 @@ func (x *PutBucketInventoryConfigurationRequest) GetBucket() string {
 }
 
 func (x *PutBucketInventoryConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23028,7 +23043,7 @@ type PutBucketLifecycleConfigurationRequest struct {
 	state                              protoimpl.MessageState             `protogen:"open.v1"`
 	Bucket                             string                             `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm                  ChecksumAlgorithm                  `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Expectedbucketowner                string                             `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner                *string                            `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Lifecycleconfiguration             *BucketLifecycleConfiguration      `protobuf:"bytes,8468208,opt,name=lifecycleconfiguration,proto3" json:"lifecycleconfiguration,omitempty"`
 	Transitiondefaultminimumobjectsize TransitionDefaultMinimumObjectSize `protobuf:"varint,81614768,opt,name=transitiondefaultminimumobjectsize,proto3,enum=s3.TransitionDefaultMinimumObjectSize" json:"transitiondefaultminimumobjectsize,omitempty"`
 	unknownFields                      protoimpl.UnknownFields
@@ -23080,8 +23095,8 @@ func (x *PutBucketLifecycleConfigurationRequest) GetChecksumalgorithm() Checksum
 }
 
 func (x *PutBucketLifecycleConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23105,8 +23120,8 @@ type PutBucketLoggingRequest struct {
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bucketloggingstatus *BucketLoggingStatus   `protobuf:"bytes,289553275,opt,name=bucketloggingstatus,proto3" json:"bucketloggingstatus,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -23163,15 +23178,15 @@ func (x *PutBucketLoggingRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketLoggingRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketLoggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23179,7 +23194,7 @@ func (x *PutBucketLoggingRequest) GetExpectedbucketowner() string {
 type PutBucketMetricsConfigurationRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Id                   string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Metricsconfiguration *MetricsConfiguration  `protobuf:"bytes,14504541,opt,name=metricsconfiguration,proto3" json:"metricsconfiguration,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -23224,8 +23239,8 @@ func (x *PutBucketMetricsConfigurationRequest) GetBucket() string {
 }
 
 func (x *PutBucketMetricsConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23247,7 +23262,7 @@ func (x *PutBucketMetricsConfigurationRequest) GetMetricsconfiguration() *Metric
 type PutBucketNotificationConfigurationRequest struct {
 	state                     protoimpl.MessageState     `protogen:"open.v1"`
 	Bucket                    string                     `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner       string                     `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner       *string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Notificationconfiguration *NotificationConfiguration `protobuf:"bytes,290208045,opt,name=notificationconfiguration,proto3" json:"notificationconfiguration,omitempty"`
 	Skipdestinationvalidation *bool                      `protobuf:"varint,114697590,opt,name=skipdestinationvalidation,proto3,oneof" json:"skipdestinationvalidation,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -23292,8 +23307,8 @@ func (x *PutBucketNotificationConfigurationRequest) GetBucket() string {
 }
 
 func (x *PutBucketNotificationConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23316,8 +23331,8 @@ type PutBucketOwnershipControlsRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Ownershipcontrols   *OwnershipControls     `protobuf:"bytes,6169057,opt,name=ownershipcontrols,proto3" json:"ownershipcontrols,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -23368,15 +23383,15 @@ func (x *PutBucketOwnershipControlsRequest) GetChecksumalgorithm() ChecksumAlgor
 }
 
 func (x *PutBucketOwnershipControlsRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketOwnershipControlsRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23393,8 +23408,8 @@ type PutBucketPolicyRequest struct {
 	Bucket                        string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm             ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
 	Confirmremoveselfbucketaccess *bool                  `protobuf:"varint,227046446,opt,name=confirmremoveselfbucketaccess,proto3,oneof" json:"confirmremoveselfbucketaccess,omitempty"`
-	Contentmd5                    string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner           string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                    *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner           *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Policy                        string                 `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -23452,15 +23467,15 @@ func (x *PutBucketPolicyRequest) GetConfirmremoveselfbucketaccess() bool {
 }
 
 func (x *PutBucketPolicyRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketPolicyRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23476,10 +23491,10 @@ type PutBucketReplicationRequest struct {
 	state                    protoimpl.MessageState    `protogen:"open.v1"`
 	Bucket                   string                    `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm        ChecksumAlgorithm         `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5               string                    `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner      string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5               *string                   `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner      *string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Replicationconfiguration *ReplicationConfiguration `protobuf:"bytes,115861462,opt,name=replicationconfiguration,proto3" json:"replicationconfiguration,omitempty"`
-	Token                    string                    `protobuf:"bytes,439704531,opt,name=token,proto3" json:"token,omitempty"`
+	Token                    *string                   `protobuf:"bytes,439704531,opt,name=token,proto3,oneof" json:"token,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -23529,15 +23544,15 @@ func (x *PutBucketReplicationRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketReplicationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketReplicationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23550,8 +23565,8 @@ func (x *PutBucketReplicationRequest) GetReplicationconfiguration() *Replication
 }
 
 func (x *PutBucketReplicationRequest) GetToken() string {
-	if x != nil {
-		return x.Token
+	if x != nil && x.Token != nil {
+		return *x.Token
 	}
 	return ""
 }
@@ -23560,8 +23575,8 @@ type PutBucketRequestPaymentRequest struct {
 	state                       protoimpl.MessageState       `protogen:"open.v1"`
 	Bucket                      string                       `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm           ChecksumAlgorithm            `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                  string                       `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner         string                       `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                  *string                      `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner         *string                      `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Requestpaymentconfiguration *RequestPaymentConfiguration `protobuf:"bytes,456139707,opt,name=requestpaymentconfiguration,proto3" json:"requestpaymentconfiguration,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -23612,15 +23627,15 @@ func (x *PutBucketRequestPaymentRequest) GetChecksumalgorithm() ChecksumAlgorith
 }
 
 func (x *PutBucketRequestPaymentRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketRequestPaymentRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23636,8 +23651,8 @@ type PutBucketTaggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Tagging             *Tagging               `protobuf:"bytes,33436541,opt,name=tagging,proto3" json:"tagging,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -23688,15 +23703,15 @@ func (x *PutBucketTaggingRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketTaggingRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketTaggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23712,9 +23727,9 @@ type PutBucketVersioningRequest struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
 	Bucket                  string                   `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm       ChecksumAlgorithm        `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5              string                   `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner     string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Mfa                     string                   `protobuf:"bytes,325407842,opt,name=mfa,proto3" json:"mfa,omitempty"`
+	Contentmd5              *string                  `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner     *string                  `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Mfa                     *string                  `protobuf:"bytes,325407842,opt,name=mfa,proto3,oneof" json:"mfa,omitempty"`
 	Versioningconfiguration *VersioningConfiguration `protobuf:"bytes,124078014,opt,name=versioningconfiguration,proto3" json:"versioningconfiguration,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -23765,22 +23780,22 @@ func (x *PutBucketVersioningRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketVersioningRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketVersioningRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *PutBucketVersioningRequest) GetMfa() string {
-	if x != nil {
-		return x.Mfa
+	if x != nil && x.Mfa != nil {
+		return *x.Mfa
 	}
 	return ""
 }
@@ -23796,8 +23811,8 @@ type PutBucketWebsiteRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm    ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5           string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5           *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Websiteconfiguration *WebsiteConfiguration  `protobuf:"bytes,505552313,opt,name=websiteconfiguration,proto3" json:"websiteconfiguration,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -23848,15 +23863,15 @@ func (x *PutBucketWebsiteRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutBucketWebsiteRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutBucketWebsiteRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -23918,16 +23933,16 @@ type PutObjectAclRequest struct {
 	Accesscontrolpolicy *AccessControlPolicy   `protobuf:"bytes,302514423,opt,name=accesscontrolpolicy,proto3" json:"accesscontrolpolicy,omitempty"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Grantfullcontrol    string                 `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
-	Grantread           string                 `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
-	Grantreadacp        string                 `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3" json:"grantreadacp,omitempty"`
-	Grantwrite          string                 `protobuf:"bytes,286850821,opt,name=grantwrite,proto3" json:"grantwrite,omitempty"`
-	Grantwriteacp       string                 `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3" json:"grantwriteacp,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Grantfullcontrol    *string                `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3,oneof" json:"grantfullcontrol,omitempty"`
+	Grantread           *string                `protobuf:"bytes,4518126,opt,name=grantread,proto3,oneof" json:"grantread,omitempty"`
+	Grantreadacp        *string                `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3,oneof" json:"grantreadacp,omitempty"`
+	Grantwrite          *string                `protobuf:"bytes,286850821,opt,name=grantwrite,proto3,oneof" json:"grantwrite,omitempty"`
+	Grantwriteacp       *string                `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3,oneof" json:"grantwriteacp,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -23991,50 +24006,50 @@ func (x *PutObjectAclRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutObjectAclRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectAclRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *PutObjectAclRequest) GetGrantfullcontrol() string {
-	if x != nil {
-		return x.Grantfullcontrol
+	if x != nil && x.Grantfullcontrol != nil {
+		return *x.Grantfullcontrol
 	}
 	return ""
 }
 
 func (x *PutObjectAclRequest) GetGrantread() string {
-	if x != nil {
-		return x.Grantread
+	if x != nil && x.Grantread != nil {
+		return *x.Grantread
 	}
 	return ""
 }
 
 func (x *PutObjectAclRequest) GetGrantreadacp() string {
-	if x != nil {
-		return x.Grantreadacp
+	if x != nil && x.Grantreadacp != nil {
+		return *x.Grantreadacp
 	}
 	return ""
 }
 
 func (x *PutObjectAclRequest) GetGrantwrite() string {
-	if x != nil {
-		return x.Grantwrite
+	if x != nil && x.Grantwrite != nil {
+		return *x.Grantwrite
 	}
 	return ""
 }
 
 func (x *PutObjectAclRequest) GetGrantwriteacp() string {
-	if x != nil {
-		return x.Grantwriteacp
+	if x != nil && x.Grantwriteacp != nil {
+		return *x.Grantwriteacp
 	}
 	return ""
 }
@@ -24054,29 +24069,29 @@ func (x *PutObjectAclRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *PutObjectAclRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type PutObjectAnnotationOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Annotationname       string                 `protobuf:"bytes,356848972,opt,name=annotationname,proto3" json:"annotationname,omitempty"`
-	Checksumcrc32        string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C       string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme    string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5          string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1         string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256       string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512       string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Annotationname       *string                `protobuf:"bytes,356848972,opt,name=annotationname,proto3,oneof" json:"annotationname,omitempty"`
+	Checksumcrc32        *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C       *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme    *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5          *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1         *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256       *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512       *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype         ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag                 string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Objectversionid      string                 `protobuf:"bytes,406054044,opt,name=objectversionid,proto3" json:"objectversionid,omitempty"`
+	Checksumxxhash128    *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3      *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64     *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag                 *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Key                  *string                `protobuf:"bytes,219859213,opt,name=key,proto3,oneof" json:"key,omitempty"`
+	Objectversionid      *string                `protobuf:"bytes,406054044,opt,name=objectversionid,proto3,oneof" json:"objectversionid,omitempty"`
 	Requestcharged       RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Serversideencryption ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	unknownFields        protoimpl.UnknownFields
@@ -24114,57 +24129,57 @@ func (*PutObjectAnnotationOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutObjectAnnotationOutput) GetAnnotationname() string {
-	if x != nil {
-		return x.Annotationname
+	if x != nil && x.Annotationname != nil {
+		return *x.Annotationname
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -24177,43 +24192,43 @@ func (x *PutObjectAnnotationOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetKey() string {
-	if x != nil {
-		return x.Key
+	if x != nil && x.Key != nil {
+		return *x.Key
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationOutput) GetObjectversionid() string {
-	if x != nil {
-		return x.Objectversionid
+	if x != nil && x.Objectversionid != nil {
+		return *x.Objectversionid
 	}
 	return ""
 }
@@ -24238,22 +24253,22 @@ type PutObjectAnnotationRequest struct {
 	Annotationpayload   []byte                 `protobuf:"bytes,83511959,opt,name=annotationpayload,proto3" json:"annotationpayload,omitempty"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Checksumcrc32       string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C      string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme   string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5         string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1        string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256      string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512      string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128   string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3     string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64    string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Checksumcrc32       *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C      *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme   *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5         *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1        *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256      *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512      *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128   *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3     *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64    *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
-	Objectifmatch       string                 `protobuf:"bytes,408877983,opt,name=objectifmatch,proto3" json:"objectifmatch,omitempty"`
+	Objectifmatch       *string                `protobuf:"bytes,408877983,opt,name=objectifmatch,proto3,oneof" json:"objectifmatch,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -24317,85 +24332,85 @@ func (x *PutObjectAnnotationRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectAnnotationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -24408,8 +24423,8 @@ func (x *PutObjectAnnotationRequest) GetKey() string {
 }
 
 func (x *PutObjectAnnotationRequest) GetObjectifmatch() string {
-	if x != nil {
-		return x.Objectifmatch
+	if x != nil && x.Objectifmatch != nil {
+		return *x.Objectifmatch
 	}
 	return ""
 }
@@ -24422,8 +24437,8 @@ func (x *PutObjectAnnotationRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *PutObjectAnnotationRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -24476,12 +24491,12 @@ type PutObjectLegalHoldRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Legalhold           *ObjectLockLegalHold   `protobuf:"bytes,141145940,opt,name=legalhold,proto3" json:"legalhold,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -24531,15 +24546,15 @@ func (x *PutObjectLegalHoldRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutObjectLegalHoldRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectLegalHoldRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -24566,8 +24581,8 @@ func (x *PutObjectLegalHoldRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *PutObjectLegalHoldRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -24620,11 +24635,11 @@ type PutObjectLockConfigurationRequest struct {
 	state                   protoimpl.MessageState   `protogen:"open.v1"`
 	Bucket                  string                   `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm       ChecksumAlgorithm        `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5              string                   `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner     string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5              *string                  `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner     *string                  `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Objectlockconfiguration *ObjectLockConfiguration `protobuf:"bytes,108348298,opt,name=objectlockconfiguration,proto3" json:"objectlockconfiguration,omitempty"`
 	Requestpayer            RequestPayer             `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Token                   string                   `protobuf:"bytes,439704531,opt,name=token,proto3" json:"token,omitempty"`
+	Token                   *string                  `protobuf:"bytes,439704531,opt,name=token,proto3,oneof" json:"token,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -24674,15 +24689,15 @@ func (x *PutObjectLockConfigurationRequest) GetChecksumalgorithm() ChecksumAlgor
 }
 
 func (x *PutObjectLockConfigurationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectLockConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -24702,8 +24717,8 @@ func (x *PutObjectLockConfigurationRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *PutObjectLockConfigurationRequest) GetToken() string {
-	if x != nil {
-		return x.Token
+	if x != nil && x.Token != nil {
+		return *x.Token
 	}
 	return ""
 }
@@ -24711,27 +24726,27 @@ func (x *PutObjectLockConfigurationRequest) GetToken() string {
 type PutObjectOutput struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
 	Bucketkeyenabled        *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Checksumcrc32           string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C          string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme       string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5             string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1            string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256          string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512          string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
+	Checksumcrc32           *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C          *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme       *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5             *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1            *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256          *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512          *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
 	Checksumtype            ChecksumType           `protobuf:"varint,97935171,opt,name=checksumtype,proto3,enum=s3.ChecksumType" json:"checksumtype,omitempty"`
-	Checksumxxhash128       string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3         string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64        string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag                    string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Expiration              string                 `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
+	Checksumxxhash128       *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3         *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64        *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag                    *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Expiration              *string                `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
 	Requestcharged          RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Ssecustomeralgorithm    string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5       string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmsencryptioncontext string                 `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid             string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm    *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5       *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmsencryptioncontext *string                `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid             *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption    ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Size                    *int64                 `protobuf:"varint,105352829,opt,name=size,proto3,oneof" json:"size,omitempty"`
-	Versionid               string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid               *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -24774,50 +24789,50 @@ func (x *PutObjectOutput) GetBucketkeyenabled() bool {
 }
 
 func (x *PutObjectOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
@@ -24830,36 +24845,36 @@ func (x *PutObjectOutput) GetChecksumtype() ChecksumType {
 }
 
 func (x *PutObjectOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
@@ -24872,29 +24887,29 @@ func (x *PutObjectOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *PutObjectOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *PutObjectOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -24914,8 +24929,8 @@ func (x *PutObjectOutput) GetSize() int64 {
 }
 
 func (x *PutObjectOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -24923,50 +24938,50 @@ func (x *PutObjectOutput) GetVersionid() string {
 type PutObjectRequest struct {
 	state                     protoimpl.MessageState    `protogen:"open.v1"`
 	Acl                       ObjectCannedACL           `protobuf:"varint,394696836,opt,name=acl,proto3,enum=s3.ObjectCannedACL" json:"acl,omitempty"`
-	Body                      []byte                    `protobuf:"bytes,42602646,opt,name=body,proto3" json:"body,omitempty"`
+	Body                      []byte                    `protobuf:"bytes,42602646,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Bucket                    string                    `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bucketkeyenabled          *bool                     `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Cachecontrol              string                    `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3" json:"cachecontrol,omitempty"`
+	Cachecontrol              *string                   `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3,oneof" json:"cachecontrol,omitempty"`
 	Checksumalgorithm         ChecksumAlgorithm         `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Checksumcrc32             string                    `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C            string                    `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme         string                    `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5               string                    `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1              string                    `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256            string                    `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512            string                    `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128         string                    `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3           string                    `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64          string                    `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
-	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
+	Checksumcrc32             *string                   `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C            *string                   `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme         *string                   `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5               *string                   `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1              *string                   `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256            *string                   `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512            *string                   `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128         *string                   `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3           *string                   `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64          *string                   `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Contentdisposition        *string                   `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contentencoding           *string                   `protobuf:"bytes,317106228,opt,name=contentencoding,proto3,oneof" json:"contentencoding,omitempty"`
+	Contentlanguage           *string                   `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3,oneof" json:"contentlanguage,omitempty"`
 	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
-	Contentmd5                string                    `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
-	Expectedbucketowner       string                    `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
-	Grantfullcontrol          string                    `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3" json:"grantfullcontrol,omitempty"`
-	Grantread                 string                    `protobuf:"bytes,4518126,opt,name=grantread,proto3" json:"grantread,omitempty"`
-	Grantreadacp              string                    `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3" json:"grantreadacp,omitempty"`
-	Grantwriteacp             string                    `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3" json:"grantwriteacp,omitempty"`
-	Ifmatch                   string                    `protobuf:"bytes,93178704,opt,name=ifmatch,proto3" json:"ifmatch,omitempty"`
-	Ifnonematch               string                    `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3" json:"ifnonematch,omitempty"`
+	Contentmd5                *string                   `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Contenttype               *string                   `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
+	Expectedbucketowner       *string                   `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Expires                   *string                   `protobuf:"bytes,128582948,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
+	Grantfullcontrol          *string                   `protobuf:"bytes,102486874,opt,name=grantfullcontrol,proto3,oneof" json:"grantfullcontrol,omitempty"`
+	Grantread                 *string                   `protobuf:"bytes,4518126,opt,name=grantread,proto3,oneof" json:"grantread,omitempty"`
+	Grantreadacp              *string                   `protobuf:"bytes,208410960,opt,name=grantreadacp,proto3,oneof" json:"grantreadacp,omitempty"`
+	Grantwriteacp             *string                   `protobuf:"bytes,157594957,opt,name=grantwriteacp,proto3,oneof" json:"grantwriteacp,omitempty"`
+	Ifmatch                   *string                   `protobuf:"bytes,93178704,opt,name=ifmatch,proto3,oneof" json:"ifmatch,omitempty"`
+	Ifnonematch               *string                   `protobuf:"bytes,231211830,opt,name=ifnonematch,proto3,oneof" json:"ifnonematch,omitempty"`
 	Key                       string                    `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
-	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
+	Objectlockretainuntildate *string                   `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3,oneof" json:"objectlockretainuntildate,omitempty"`
 	Requestpayer              RequestPayer              `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm      string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey            string                    `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5         string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmsencryptioncontext   string                    `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3" json:"ssekmsencryptioncontext,omitempty"`
-	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm      *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey            *string                   `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5         *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmsencryptioncontext   *string                   `protobuf:"bytes,149030970,opt,name=ssekmsencryptioncontext,proto3,oneof" json:"ssekmsencryptioncontext,omitempty"`
+	Ssekmskeyid               *string                   `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
-	Tagging                   string                    `protobuf:"bytes,33436541,opt,name=tagging,proto3" json:"tagging,omitempty"`
-	Websiteredirectlocation   string                    `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3" json:"websiteredirectlocation,omitempty"`
+	Tagging                   *string                   `protobuf:"bytes,33436541,opt,name=tagging,proto3,oneof" json:"tagging,omitempty"`
+	Websiteredirectlocation   *string                   `protobuf:"bytes,71844662,opt,name=websiteredirectlocation,proto3,oneof" json:"websiteredirectlocation,omitempty"`
 	Writeoffsetbytes          *int64                    `protobuf:"varint,496666419,opt,name=writeoffsetbytes,proto3,oneof" json:"writeoffsetbytes,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -25031,8 +25046,8 @@ func (x *PutObjectRequest) GetBucketkeyenabled() bool {
 }
 
 func (x *PutObjectRequest) GetCachecontrol() string {
-	if x != nil {
-		return x.Cachecontrol
+	if x != nil && x.Cachecontrol != nil {
+		return *x.Cachecontrol
 	}
 	return ""
 }
@@ -25045,92 +25060,92 @@ func (x *PutObjectRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutObjectRequest) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetContentencoding() string {
-	if x != nil {
-		return x.Contentencoding
+	if x != nil && x.Contentencoding != nil {
+		return *x.Contentencoding
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetContentlanguage() string {
-	if x != nil {
-		return x.Contentlanguage
+	if x != nil && x.Contentlanguage != nil {
+		return *x.Contentlanguage
 	}
 	return ""
 }
@@ -25143,71 +25158,71 @@ func (x *PutObjectRequest) GetContentlength() int64 {
 }
 
 func (x *PutObjectRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetExpires() string {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetGrantfullcontrol() string {
-	if x != nil {
-		return x.Grantfullcontrol
+	if x != nil && x.Grantfullcontrol != nil {
+		return *x.Grantfullcontrol
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetGrantread() string {
-	if x != nil {
-		return x.Grantread
+	if x != nil && x.Grantread != nil {
+		return *x.Grantread
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetGrantreadacp() string {
-	if x != nil {
-		return x.Grantreadacp
+	if x != nil && x.Grantreadacp != nil {
+		return *x.Grantreadacp
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetGrantwriteacp() string {
-	if x != nil {
-		return x.Grantwriteacp
+	if x != nil && x.Grantwriteacp != nil {
+		return *x.Grantwriteacp
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetIfmatch() string {
-	if x != nil {
-		return x.Ifmatch
+	if x != nil && x.Ifmatch != nil {
+		return *x.Ifmatch
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetIfnonematch() string {
-	if x != nil {
-		return x.Ifnonematch
+	if x != nil && x.Ifnonematch != nil {
+		return *x.Ifnonematch
 	}
 	return ""
 }
@@ -25241,8 +25256,8 @@ func (x *PutObjectRequest) GetObjectlockmode() ObjectLockMode {
 }
 
 func (x *PutObjectRequest) GetObjectlockretainuntildate() string {
-	if x != nil {
-		return x.Objectlockretainuntildate
+	if x != nil && x.Objectlockretainuntildate != nil {
+		return *x.Objectlockretainuntildate
 	}
 	return ""
 }
@@ -25255,36 +25270,36 @@ func (x *PutObjectRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *PutObjectRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetSsekmsencryptioncontext() string {
-	if x != nil {
-		return x.Ssekmsencryptioncontext
+	if x != nil && x.Ssekmsencryptioncontext != nil {
+		return *x.Ssekmsencryptioncontext
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -25304,15 +25319,15 @@ func (x *PutObjectRequest) GetStorageclass() StorageClass {
 }
 
 func (x *PutObjectRequest) GetTagging() string {
-	if x != nil {
-		return x.Tagging
+	if x != nil && x.Tagging != nil {
+		return *x.Tagging
 	}
 	return ""
 }
 
 func (x *PutObjectRequest) GetWebsiteredirectlocation() string {
-	if x != nil {
-		return x.Websiteredirectlocation
+	if x != nil && x.Websiteredirectlocation != nil {
+		return *x.Websiteredirectlocation
 	}
 	return ""
 }
@@ -25373,12 +25388,12 @@ type PutObjectRetentionRequest struct {
 	Bucket                    string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Bypassgovernanceretention *bool                  `protobuf:"varint,129938942,opt,name=bypassgovernanceretention,proto3,oneof" json:"bypassgovernanceretention,omitempty"`
 	Checksumalgorithm         ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner       string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner       *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                       string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer              RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Retention                 *ObjectLockRetention   `protobuf:"bytes,299600946,opt,name=retention,proto3" json:"retention,omitempty"`
-	Versionid                 string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid                 *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -25435,15 +25450,15 @@ func (x *PutObjectRetentionRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutObjectRetentionRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectRetentionRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -25470,15 +25485,15 @@ func (x *PutObjectRetentionRequest) GetRetention() *ObjectLockRetention {
 }
 
 func (x *PutObjectRetentionRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
 
 type PutObjectTaggingOutput struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Versionid     string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid     *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25514,8 +25529,8 @@ func (*PutObjectTaggingOutput) Descriptor() ([]byte, []int) {
 }
 
 func (x *PutObjectTaggingOutput) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -25524,12 +25539,12 @@ type PutObjectTaggingRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Tagging             *Tagging               `protobuf:"bytes,33436541,opt,name=tagging,proto3" json:"tagging,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -25579,15 +25594,15 @@ func (x *PutObjectTaggingRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutObjectTaggingRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutObjectTaggingRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -25614,8 +25629,8 @@ func (x *PutObjectTaggingRequest) GetTagging() *Tagging {
 }
 
 func (x *PutObjectTaggingRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -25624,8 +25639,8 @@ type PutPublicAccessBlockRequest struct {
 	state                          protoimpl.MessageState          `protogen:"open.v1"`
 	Bucket                         string                          `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm              ChecksumAlgorithm               `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                     string                          `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner            string                          `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                     *string                         `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner            *string                         `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Publicaccessblockconfiguration *PublicAccessBlockConfiguration `protobuf:"bytes,136498568,opt,name=publicaccessblockconfiguration,proto3" json:"publicaccessblockconfiguration,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
@@ -25676,15 +25691,15 @@ func (x *PutPublicAccessBlockRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *PutPublicAccessBlockRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *PutPublicAccessBlockRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -25700,7 +25715,7 @@ type QueueConfiguration struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Events        []Event                          `protobuf:"varint,3416229,rep,packed,name=events,proto3,enum=s3.Event" json:"events,omitempty"`
 	Filter        *NotificationConfigurationFilter `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
-	Id            string                           `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
+	Id            *string                          `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Queuearn      string                           `protobuf:"bytes,400520576,opt,name=queuearn,proto3" json:"queuearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -25751,8 +25766,8 @@ func (x *QueueConfiguration) GetFilter() *NotificationConfigurationFilter {
 }
 
 func (x *QueueConfiguration) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -25818,7 +25833,7 @@ func (x *RecordExpiration) GetExpiration() ExpirationState {
 
 type RecordsEvent struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Payload       []byte                 `protobuf:"bytes,6526790,opt,name=payload,proto3" json:"payload,omitempty"`
+	Payload       []byte                 `protobuf:"bytes,6526790,opt,name=payload,proto3,oneof" json:"payload,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -25862,11 +25877,11 @@ func (x *RecordsEvent) GetPayload() []byte {
 
 type Redirect struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Hostname             string                 `protobuf:"bytes,119731117,opt,name=hostname,proto3" json:"hostname,omitempty"`
-	Httpredirectcode     string                 `protobuf:"bytes,348964153,opt,name=httpredirectcode,proto3" json:"httpredirectcode,omitempty"`
+	Hostname             *string                `protobuf:"bytes,119731117,opt,name=hostname,proto3,oneof" json:"hostname,omitempty"`
+	Httpredirectcode     *string                `protobuf:"bytes,348964153,opt,name=httpredirectcode,proto3,oneof" json:"httpredirectcode,omitempty"`
 	Protocol             Protocol               `protobuf:"varint,173534166,opt,name=protocol,proto3,enum=s3.Protocol" json:"protocol,omitempty"`
-	Replacekeyprefixwith string                 `protobuf:"bytes,532110043,opt,name=replacekeyprefixwith,proto3" json:"replacekeyprefixwith,omitempty"`
-	Replacekeywith       string                 `protobuf:"bytes,406460263,opt,name=replacekeywith,proto3" json:"replacekeywith,omitempty"`
+	Replacekeyprefixwith *string                `protobuf:"bytes,532110043,opt,name=replacekeyprefixwith,proto3,oneof" json:"replacekeyprefixwith,omitempty"`
+	Replacekeywith       *string                `protobuf:"bytes,406460263,opt,name=replacekeywith,proto3,oneof" json:"replacekeywith,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -25902,15 +25917,15 @@ func (*Redirect) Descriptor() ([]byte, []int) {
 }
 
 func (x *Redirect) GetHostname() string {
-	if x != nil {
-		return x.Hostname
+	if x != nil && x.Hostname != nil {
+		return *x.Hostname
 	}
 	return ""
 }
 
 func (x *Redirect) GetHttpredirectcode() string {
-	if x != nil {
-		return x.Httpredirectcode
+	if x != nil && x.Httpredirectcode != nil {
+		return *x.Httpredirectcode
 	}
 	return ""
 }
@@ -25923,15 +25938,15 @@ func (x *Redirect) GetProtocol() Protocol {
 }
 
 func (x *Redirect) GetReplacekeyprefixwith() string {
-	if x != nil {
-		return x.Replacekeyprefixwith
+	if x != nil && x.Replacekeyprefixwith != nil {
+		return *x.Replacekeyprefixwith
 	}
 	return ""
 }
 
 func (x *Redirect) GetReplacekeywith() string {
-	if x != nil {
-		return x.Replacekeywith
+	if x != nil && x.Replacekeywith != nil {
+		return *x.Replacekeywith
 	}
 	return ""
 }
@@ -26027,17 +26042,17 @@ func (*RenameObjectOutput) Descriptor() ([]byte, []int) {
 type RenameObjectRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                       string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Clienttoken                  string                 `protobuf:"bytes,137297356,opt,name=clienttoken,proto3" json:"clienttoken,omitempty"`
-	Destinationifmatch           string                 `protobuf:"bytes,494878870,opt,name=destinationifmatch,proto3" json:"destinationifmatch,omitempty"`
-	Destinationifmodifiedsince   string                 `protobuf:"bytes,253871164,opt,name=destinationifmodifiedsince,proto3" json:"destinationifmodifiedsince,omitempty"`
-	Destinationifnonematch       string                 `protobuf:"bytes,176301672,opt,name=destinationifnonematch,proto3" json:"destinationifnonematch,omitempty"`
-	Destinationifunmodifiedsince string                 `protobuf:"bytes,58294063,opt,name=destinationifunmodifiedsince,proto3" json:"destinationifunmodifiedsince,omitempty"`
+	Clienttoken                  *string                `protobuf:"bytes,137297356,opt,name=clienttoken,proto3,oneof" json:"clienttoken,omitempty"`
+	Destinationifmatch           *string                `protobuf:"bytes,494878870,opt,name=destinationifmatch,proto3,oneof" json:"destinationifmatch,omitempty"`
+	Destinationifmodifiedsince   *string                `protobuf:"bytes,253871164,opt,name=destinationifmodifiedsince,proto3,oneof" json:"destinationifmodifiedsince,omitempty"`
+	Destinationifnonematch       *string                `protobuf:"bytes,176301672,opt,name=destinationifnonematch,proto3,oneof" json:"destinationifnonematch,omitempty"`
+	Destinationifunmodifiedsince *string                `protobuf:"bytes,58294063,opt,name=destinationifunmodifiedsince,proto3,oneof" json:"destinationifunmodifiedsince,omitempty"`
 	Key                          string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Renamesource                 string                 `protobuf:"bytes,72928743,opt,name=renamesource,proto3" json:"renamesource,omitempty"`
-	Sourceifmatch                string                 `protobuf:"bytes,528463881,opt,name=sourceifmatch,proto3" json:"sourceifmatch,omitempty"`
-	Sourceifmodifiedsince        string                 `protobuf:"bytes,533054399,opt,name=sourceifmodifiedsince,proto3" json:"sourceifmodifiedsince,omitempty"`
-	Sourceifnonematch            string                 `protobuf:"bytes,56549307,opt,name=sourceifnonematch,proto3" json:"sourceifnonematch,omitempty"`
-	Sourceifunmodifiedsince      string                 `protobuf:"bytes,449515432,opt,name=sourceifunmodifiedsince,proto3" json:"sourceifunmodifiedsince,omitempty"`
+	Sourceifmatch                *string                `protobuf:"bytes,528463881,opt,name=sourceifmatch,proto3,oneof" json:"sourceifmatch,omitempty"`
+	Sourceifmodifiedsince        *string                `protobuf:"bytes,533054399,opt,name=sourceifmodifiedsince,proto3,oneof" json:"sourceifmodifiedsince,omitempty"`
+	Sourceifnonematch            *string                `protobuf:"bytes,56549307,opt,name=sourceifnonematch,proto3,oneof" json:"sourceifnonematch,omitempty"`
+	Sourceifunmodifiedsince      *string                `protobuf:"bytes,449515432,opt,name=sourceifunmodifiedsince,proto3,oneof" json:"sourceifunmodifiedsince,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -26080,36 +26095,36 @@ func (x *RenameObjectRequest) GetBucket() string {
 }
 
 func (x *RenameObjectRequest) GetClienttoken() string {
-	if x != nil {
-		return x.Clienttoken
+	if x != nil && x.Clienttoken != nil {
+		return *x.Clienttoken
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetDestinationifmatch() string {
-	if x != nil {
-		return x.Destinationifmatch
+	if x != nil && x.Destinationifmatch != nil {
+		return *x.Destinationifmatch
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetDestinationifmodifiedsince() string {
-	if x != nil {
-		return x.Destinationifmodifiedsince
+	if x != nil && x.Destinationifmodifiedsince != nil {
+		return *x.Destinationifmodifiedsince
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetDestinationifnonematch() string {
-	if x != nil {
-		return x.Destinationifnonematch
+	if x != nil && x.Destinationifnonematch != nil {
+		return *x.Destinationifnonematch
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetDestinationifunmodifiedsince() string {
-	if x != nil {
-		return x.Destinationifunmodifiedsince
+	if x != nil && x.Destinationifunmodifiedsince != nil {
+		return *x.Destinationifunmodifiedsince
 	}
 	return ""
 }
@@ -26129,29 +26144,29 @@ func (x *RenameObjectRequest) GetRenamesource() string {
 }
 
 func (x *RenameObjectRequest) GetSourceifmatch() string {
-	if x != nil {
-		return x.Sourceifmatch
+	if x != nil && x.Sourceifmatch != nil {
+		return *x.Sourceifmatch
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetSourceifmodifiedsince() string {
-	if x != nil {
-		return x.Sourceifmodifiedsince
+	if x != nil && x.Sourceifmodifiedsince != nil {
+		return *x.Sourceifmodifiedsince
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetSourceifnonematch() string {
-	if x != nil {
-		return x.Sourceifnonematch
+	if x != nil && x.Sourceifnonematch != nil {
+		return *x.Sourceifnonematch
 	}
 	return ""
 }
 
 func (x *RenameObjectRequest) GetSourceifunmodifiedsince() string {
-	if x != nil {
-		return x.Sourceifunmodifiedsince
+	if x != nil && x.Sourceifunmodifiedsince != nil {
+		return *x.Sourceifunmodifiedsince
 	}
 	return ""
 }
@@ -26258,8 +26273,8 @@ type ReplicationRule struct {
 	Destination               *Destination               `protobuf:"bytes,457443680,opt,name=destination,proto3" json:"destination,omitempty"`
 	Existingobjectreplication *ExistingObjectReplication `protobuf:"bytes,500093148,opt,name=existingobjectreplication,proto3" json:"existingobjectreplication,omitempty"`
 	Filter                    *ReplicationRuleFilter     `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
-	Id                        string                     `protobuf:"bytes,384363361,opt,name=id,proto3" json:"id,omitempty"`
-	Prefix                    string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Id                        *string                    `protobuf:"bytes,384363361,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Prefix                    *string                    `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Priority                  *int32                     `protobuf:"varint,109944618,opt,name=priority,proto3,oneof" json:"priority,omitempty"`
 	Sourceselectioncriteria   *SourceSelectionCriteria   `protobuf:"bytes,201951000,opt,name=sourceselectioncriteria,proto3" json:"sourceselectioncriteria,omitempty"`
 	Status                    ReplicationRuleStatus      `protobuf:"varint,6222352,opt,name=status,proto3,enum=s3.ReplicationRuleStatus" json:"status,omitempty"`
@@ -26326,15 +26341,15 @@ func (x *ReplicationRule) GetFilter() *ReplicationRuleFilter {
 }
 
 func (x *ReplicationRule) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *ReplicationRule) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -26362,7 +26377,7 @@ func (x *ReplicationRule) GetStatus() ReplicationRuleStatus {
 
 type ReplicationRuleAndOperator struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Prefix        string                 `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tags          []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -26399,8 +26414,8 @@ func (*ReplicationRuleAndOperator) Descriptor() ([]byte, []int) {
 }
 
 func (x *ReplicationRuleAndOperator) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -26415,7 +26430,7 @@ func (x *ReplicationRuleAndOperator) GetTags() []*Tag {
 type ReplicationRuleFilter struct {
 	state         protoimpl.MessageState      `protogen:"open.v1"`
 	And           *ReplicationRuleAndOperator `protobuf:"bytes,297135431,opt,name=and,proto3" json:"and,omitempty"`
-	Prefix        string                      `protobuf:"bytes,273996266,opt,name=prefix,proto3" json:"prefix,omitempty"`
+	Prefix        *string                     `protobuf:"bytes,273996266,opt,name=prefix,proto3,oneof" json:"prefix,omitempty"`
 	Tag           *Tag                        `protobuf:"bytes,411259956,opt,name=tag,proto3" json:"tag,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -26459,8 +26474,8 @@ func (x *ReplicationRuleFilter) GetAnd() *ReplicationRuleAndOperator {
 }
 
 func (x *ReplicationRuleFilter) GetPrefix() string {
-	if x != nil {
-		return x.Prefix
+	if x != nil && x.Prefix != nil {
+		return *x.Prefix
 	}
 	return ""
 }
@@ -26659,7 +26674,7 @@ func (x *RequestProgress) GetEnabled() bool {
 type RestoreObjectOutput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Requestcharged    RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Restoreoutputpath string                 `protobuf:"bytes,4884176,opt,name=restoreoutputpath,proto3" json:"restoreoutputpath,omitempty"`
+	Restoreoutputpath *string                `protobuf:"bytes,4884176,opt,name=restoreoutputpath,proto3,oneof" json:"restoreoutputpath,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -26702,8 +26717,8 @@ func (x *RestoreObjectOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *RestoreObjectOutput) GetRestoreoutputpath() string {
-	if x != nil {
-		return x.Restoreoutputpath
+	if x != nil && x.Restoreoutputpath != nil {
+		return *x.Restoreoutputpath
 	}
 	return ""
 }
@@ -26712,11 +26727,11 @@ type RestoreObjectRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
 	Restorerequest      *RestoreRequest        `protobuf:"bytes,66503431,opt,name=restorerequest,proto3" json:"restorerequest,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -26766,8 +26781,8 @@ func (x *RestoreObjectRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *RestoreObjectRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -26794,8 +26809,8 @@ func (x *RestoreObjectRequest) GetRestorerequest() *RestoreRequest {
 }
 
 func (x *RestoreObjectRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -26803,7 +26818,7 @@ func (x *RestoreObjectRequest) GetVersionid() string {
 type RestoreRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Days                 *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
-	Description          string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Glacierjobparameters *GlacierJobParameters  `protobuf:"bytes,456012858,opt,name=glacierjobparameters,proto3" json:"glacierjobparameters,omitempty"`
 	Outputlocation       *OutputLocation        `protobuf:"bytes,67991028,opt,name=outputlocation,proto3" json:"outputlocation,omitempty"`
 	Selectparameters     *SelectParameters      `protobuf:"bytes,337564850,opt,name=selectparameters,proto3" json:"selectparameters,omitempty"`
@@ -26851,8 +26866,8 @@ func (x *RestoreRequest) GetDays() int32 {
 }
 
 func (x *RestoreRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -26895,7 +26910,7 @@ func (x *RestoreRequest) GetType() RestoreRequestType {
 type RestoreStatus struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Isrestoreinprogress *bool                  `protobuf:"varint,494957054,opt,name=isrestoreinprogress,proto3,oneof" json:"isrestoreinprogress,omitempty"`
-	Restoreexpirydate   string                 `protobuf:"bytes,276676935,opt,name=restoreexpirydate,proto3" json:"restoreexpirydate,omitempty"`
+	Restoreexpirydate   *string                `protobuf:"bytes,276676935,opt,name=restoreexpirydate,proto3,oneof" json:"restoreexpirydate,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -26938,8 +26953,8 @@ func (x *RestoreStatus) GetIsrestoreinprogress() bool {
 }
 
 func (x *RestoreStatus) GetRestoreexpirydate() string {
-	if x != nil {
-		return x.Restoreexpirydate
+	if x != nil && x.Restoreexpirydate != nil {
+		return *x.Restoreexpirydate
 	}
 	return ""
 }
@@ -27567,16 +27582,16 @@ func (x *SelectObjectContentOutput) GetPayload() *SelectObjectContentEventStream
 type SelectObjectContentRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Expression           string                 `protobuf:"bytes,193051916,opt,name=expression,proto3" json:"expression,omitempty"`
 	Expressiontype       ExpressionType         `protobuf:"varint,438626996,opt,name=expressiontype,proto3,enum=s3.ExpressionType" json:"expressiontype,omitempty"`
 	Inputserialization   *InputSerialization    `protobuf:"bytes,181173046,opt,name=inputserialization,proto3" json:"inputserialization,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Outputserialization  *OutputSerialization   `protobuf:"bytes,376385057,opt,name=outputserialization,proto3" json:"outputserialization,omitempty"`
 	Requestprogress      *RequestProgress       `protobuf:"bytes,409526766,opt,name=requestprogress,proto3" json:"requestprogress,omitempty"`
-	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey       string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5    string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
+	Ssecustomeralgorithm *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey       *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5    *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
 	Scanrange            *ScanRange             `protobuf:"bytes,132827166,opt,name=scanrange,proto3" json:"scanrange,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -27620,8 +27635,8 @@ func (x *SelectObjectContentRequest) GetBucket() string {
 }
 
 func (x *SelectObjectContentRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -27669,22 +27684,22 @@ func (x *SelectObjectContentRequest) GetRequestprogress() *RequestProgress {
 }
 
 func (x *SelectObjectContentRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *SelectObjectContentRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *SelectObjectContentRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
@@ -27766,7 +27781,7 @@ func (x *SelectParameters) GetOutputserialization() *OutputSerialization {
 
 type ServerSideEncryptionByDefault struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Kmsmasterkeyid string                 `protobuf:"bytes,521472339,opt,name=kmsmasterkeyid,proto3" json:"kmsmasterkeyid,omitempty"`
+	Kmsmasterkeyid *string                `protobuf:"bytes,521472339,opt,name=kmsmasterkeyid,proto3,oneof" json:"kmsmasterkeyid,omitempty"`
 	Ssealgorithm   ServerSideEncryption   `protobuf:"varint,308868112,opt,name=ssealgorithm,proto3,enum=s3.ServerSideEncryption" json:"ssealgorithm,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -27803,8 +27818,8 @@ func (*ServerSideEncryptionByDefault) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServerSideEncryptionByDefault) GetKmsmasterkeyid() string {
-	if x != nil {
-		return x.Kmsmasterkeyid
+	if x != nil && x.Kmsmasterkeyid != nil {
+		return *x.Kmsmasterkeyid
 	}
 	return ""
 }
@@ -28612,7 +28627,7 @@ type TopicConfiguration struct {
 	state         protoimpl.MessageState           `protogen:"open.v1"`
 	Events        []Event                          `protobuf:"varint,3416229,rep,packed,name=events,proto3,enum=s3.Event" json:"events,omitempty"`
 	Filter        *NotificationConfigurationFilter `protobuf:"bytes,346669208,opt,name=filter,proto3" json:"filter,omitempty"`
-	Id            string                           `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
+	Id            *string                          `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Topicarn      string                           `protobuf:"bytes,30652956,opt,name=topicarn,proto3" json:"topicarn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -28663,8 +28678,8 @@ func (x *TopicConfiguration) GetFilter() *NotificationConfigurationFilter {
 }
 
 func (x *TopicConfiguration) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -28678,7 +28693,7 @@ func (x *TopicConfiguration) GetTopicarn() string {
 
 type Transition struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Date          string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
+	Date          *string                `protobuf:"bytes,458388346,opt,name=date,proto3,oneof" json:"date,omitempty"`
 	Days          *int32                 `protobuf:"varint,494075051,opt,name=days,proto3,oneof" json:"days,omitempty"`
 	Storageclass  TransitionStorageClass `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.TransitionStorageClass" json:"storageclass,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -28716,8 +28731,8 @@ func (*Transition) Descriptor() ([]byte, []int) {
 }
 
 func (x *Transition) GetDate() string {
-	if x != nil {
-		return x.Date
+	if x != nil && x.Date != nil {
+		return *x.Date
 	}
 	return ""
 }
@@ -28777,8 +28792,8 @@ type UpdateBucketMetadataAnnotationTableConfigurationRequest struct {
 	Annotationtableconfiguration *AnnotationTableConfigurationUpdates `protobuf:"bytes,332072359,opt,name=annotationtableconfiguration,proto3" json:"annotationtableconfiguration,omitempty"`
 	Bucket                       string                               `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm            ChecksumAlgorithm                    `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                   string                               `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner          string                               `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                   *string                              `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner          *string                              `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	unknownFields                protoimpl.UnknownFields
 	sizeCache                    protoimpl.SizeCache
 }
@@ -28835,15 +28850,15 @@ func (x *UpdateBucketMetadataAnnotationTableConfigurationRequest) GetChecksumalg
 }
 
 func (x *UpdateBucketMetadataAnnotationTableConfigurationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *UpdateBucketMetadataAnnotationTableConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -28852,8 +28867,8 @@ type UpdateBucketMetadataInventoryTableConfigurationRequest struct {
 	state                       protoimpl.MessageState              `protogen:"open.v1"`
 	Bucket                      string                              `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm           ChecksumAlgorithm                   `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                  string                              `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner         string                              `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                  *string                             `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner         *string                             `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Inventorytableconfiguration *InventoryTableConfigurationUpdates `protobuf:"bytes,82018446,opt,name=inventorytableconfiguration,proto3" json:"inventorytableconfiguration,omitempty"`
 	unknownFields               protoimpl.UnknownFields
 	sizeCache                   protoimpl.SizeCache
@@ -28904,15 +28919,15 @@ func (x *UpdateBucketMetadataInventoryTableConfigurationRequest) GetChecksumalgo
 }
 
 func (x *UpdateBucketMetadataInventoryTableConfigurationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *UpdateBucketMetadataInventoryTableConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -28928,8 +28943,8 @@ type UpdateBucketMetadataJournalTableConfigurationRequest struct {
 	state                     protoimpl.MessageState            `protogen:"open.v1"`
 	Bucket                    string                            `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm         ChecksumAlgorithm                 `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5                string                            `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner       string                            `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5                *string                           `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner       *string                           `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Journaltableconfiguration *JournalTableConfigurationUpdates `protobuf:"bytes,70721911,opt,name=journaltableconfiguration,proto3" json:"journaltableconfiguration,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -28980,15 +28995,15 @@ func (x *UpdateBucketMetadataJournalTableConfigurationRequest) GetChecksumalgori
 }
 
 func (x *UpdateBucketMetadataJournalTableConfigurationRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *UpdateBucketMetadataJournalTableConfigurationRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -29004,12 +29019,12 @@ type UpdateObjectEncryptionRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Bucket              string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm   ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Contentmd5          string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5          *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                 string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Objectencryption    *ObjectEncryption      `protobuf:"bytes,64620504,opt,name=objectencryption,proto3" json:"objectencryption,omitempty"`
 	Requestpayer        RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Versionid           string                 `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid           *string                `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -29059,15 +29074,15 @@ func (x *UpdateObjectEncryptionRequest) GetChecksumalgorithm() ChecksumAlgorithm
 }
 
 func (x *UpdateObjectEncryptionRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *UpdateObjectEncryptionRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -29094,8 +29109,8 @@ func (x *UpdateObjectEncryptionRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *UpdateObjectEncryptionRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -29148,11 +29163,11 @@ type UploadPartCopyOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucketkeyenabled     *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
 	Copypartresult       *CopyPartResult        `protobuf:"bytes,405767057,opt,name=copypartresult,proto3" json:"copypartresult,omitempty"`
-	Copysourceversionid  string                 `protobuf:"bytes,257134375,opt,name=copysourceversionid,proto3" json:"copysourceversionid,omitempty"`
+	Copysourceversionid  *string                `protobuf:"bytes,257134375,opt,name=copysourceversionid,proto3,oneof" json:"copysourceversionid,omitempty"`
 	Requestcharged       RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5    string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmskeyid          string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5    *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmskeyid          *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -29203,8 +29218,8 @@ func (x *UploadPartCopyOutput) GetCopypartresult() *CopyPartResult {
 }
 
 func (x *UploadPartCopyOutput) GetCopysourceversionid() string {
-	if x != nil {
-		return x.Copysourceversionid
+	if x != nil && x.Copysourceversionid != nil {
+		return *x.Copysourceversionid
 	}
 	return ""
 }
@@ -29217,22 +29232,22 @@ func (x *UploadPartCopyOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *UploadPartCopyOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *UploadPartCopyOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *UploadPartCopyOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -29248,22 +29263,22 @@ type UploadPartCopyRequest struct {
 	state                          protoimpl.MessageState `protogen:"open.v1"`
 	Bucket                         string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Copysource                     string                 `protobuf:"bytes,152315650,opt,name=copysource,proto3" json:"copysource,omitempty"`
-	Copysourceifmatch              string                 `protobuf:"bytes,512868332,opt,name=copysourceifmatch,proto3" json:"copysourceifmatch,omitempty"`
-	Copysourceifmodifiedsince      string                 `protobuf:"bytes,301576082,opt,name=copysourceifmodifiedsince,proto3" json:"copysourceifmodifiedsince,omitempty"`
-	Copysourceifnonematch          string                 `protobuf:"bytes,237403010,opt,name=copysourceifnonematch,proto3" json:"copysourceifnonematch,omitempty"`
-	Copysourceifunmodifiedsince    string                 `protobuf:"bytes,130556417,opt,name=copysourceifunmodifiedsince,proto3" json:"copysourceifunmodifiedsince,omitempty"`
-	Copysourcerange                string                 `protobuf:"bytes,51610607,opt,name=copysourcerange,proto3" json:"copysourcerange,omitempty"`
-	Copysourcessecustomeralgorithm string                 `protobuf:"bytes,465017156,opt,name=copysourcessecustomeralgorithm,proto3" json:"copysourcessecustomeralgorithm,omitempty"`
-	Copysourcessecustomerkey       string                 `protobuf:"bytes,289313102,opt,name=copysourcessecustomerkey,proto3" json:"copysourcessecustomerkey,omitempty"`
-	Copysourcessecustomerkeymd5    string                 `protobuf:"bytes,408962492,opt,name=copysourcessecustomerkeymd5,proto3" json:"copysourcessecustomerkeymd5,omitempty"`
-	Expectedbucketowner            string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
-	Expectedsourcebucketowner      string                 `protobuf:"bytes,283238582,opt,name=expectedsourcebucketowner,proto3" json:"expectedsourcebucketowner,omitempty"`
+	Copysourceifmatch              *string                `protobuf:"bytes,512868332,opt,name=copysourceifmatch,proto3,oneof" json:"copysourceifmatch,omitempty"`
+	Copysourceifmodifiedsince      *string                `protobuf:"bytes,301576082,opt,name=copysourceifmodifiedsince,proto3,oneof" json:"copysourceifmodifiedsince,omitempty"`
+	Copysourceifnonematch          *string                `protobuf:"bytes,237403010,opt,name=copysourceifnonematch,proto3,oneof" json:"copysourceifnonematch,omitempty"`
+	Copysourceifunmodifiedsince    *string                `protobuf:"bytes,130556417,opt,name=copysourceifunmodifiedsince,proto3,oneof" json:"copysourceifunmodifiedsince,omitempty"`
+	Copysourcerange                *string                `protobuf:"bytes,51610607,opt,name=copysourcerange,proto3,oneof" json:"copysourcerange,omitempty"`
+	Copysourcessecustomeralgorithm *string                `protobuf:"bytes,465017156,opt,name=copysourcessecustomeralgorithm,proto3,oneof" json:"copysourcessecustomeralgorithm,omitempty"`
+	Copysourcessecustomerkey       *string                `protobuf:"bytes,289313102,opt,name=copysourcessecustomerkey,proto3,oneof" json:"copysourcessecustomerkey,omitempty"`
+	Copysourcessecustomerkeymd5    *string                `protobuf:"bytes,408962492,opt,name=copysourcessecustomerkeymd5,proto3,oneof" json:"copysourcessecustomerkeymd5,omitempty"`
+	Expectedbucketowner            *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
+	Expectedsourcebucketowner      *string                `protobuf:"bytes,283238582,opt,name=expectedsourcebucketowner,proto3,oneof" json:"expectedsourcebucketowner,omitempty"`
 	Key                            string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Partnumber                     int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
 	Requestpayer                   RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm           string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey                 string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5              string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
+	Ssecustomeralgorithm           *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey                 *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5              *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
 	Uploadid                       string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
@@ -29314,71 +29329,71 @@ func (x *UploadPartCopyRequest) GetCopysource() string {
 }
 
 func (x *UploadPartCopyRequest) GetCopysourceifmatch() string {
-	if x != nil {
-		return x.Copysourceifmatch
+	if x != nil && x.Copysourceifmatch != nil {
+		return *x.Copysourceifmatch
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourceifmodifiedsince() string {
-	if x != nil {
-		return x.Copysourceifmodifiedsince
+	if x != nil && x.Copysourceifmodifiedsince != nil {
+		return *x.Copysourceifmodifiedsince
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourceifnonematch() string {
-	if x != nil {
-		return x.Copysourceifnonematch
+	if x != nil && x.Copysourceifnonematch != nil {
+		return *x.Copysourceifnonematch
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourceifunmodifiedsince() string {
-	if x != nil {
-		return x.Copysourceifunmodifiedsince
+	if x != nil && x.Copysourceifunmodifiedsince != nil {
+		return *x.Copysourceifunmodifiedsince
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourcerange() string {
-	if x != nil {
-		return x.Copysourcerange
+	if x != nil && x.Copysourcerange != nil {
+		return *x.Copysourcerange
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourcessecustomeralgorithm() string {
-	if x != nil {
-		return x.Copysourcessecustomeralgorithm
+	if x != nil && x.Copysourcessecustomeralgorithm != nil {
+		return *x.Copysourcessecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourcessecustomerkey() string {
-	if x != nil {
-		return x.Copysourcessecustomerkey
+	if x != nil && x.Copysourcessecustomerkey != nil {
+		return *x.Copysourcessecustomerkey
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetCopysourcessecustomerkeymd5() string {
-	if x != nil {
-		return x.Copysourcessecustomerkeymd5
+	if x != nil && x.Copysourcessecustomerkeymd5 != nil {
+		return *x.Copysourcessecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetExpectedsourcebucketowner() string {
-	if x != nil {
-		return x.Expectedsourcebucketowner
+	if x != nil && x.Expectedsourcebucketowner != nil {
+		return *x.Expectedsourcebucketowner
 	}
 	return ""
 }
@@ -29405,22 +29420,22 @@ func (x *UploadPartCopyRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *UploadPartCopyRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *UploadPartCopyRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
@@ -29435,21 +29450,21 @@ func (x *UploadPartCopyRequest) GetUploadid() string {
 type UploadPartOutput struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Bucketkeyenabled     *bool                  `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Checksumcrc32        string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C       string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme    string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5          string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1         string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256       string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512       string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Etag                 string                 `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
+	Checksumcrc32        *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C       *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme    *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5          *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1         *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256       *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512       *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128    *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3      *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64     *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Etag                 *string                `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
 	Requestcharged       RequestCharged         `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
-	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5    string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmskeyid          string                 `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Ssecustomeralgorithm *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5    *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmskeyid          *string                `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption ServerSideEncryption   `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -29493,78 +29508,78 @@ func (x *UploadPartOutput) GetBucketkeyenabled() bool {
 }
 
 func (x *UploadPartOutput) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
@@ -29577,22 +29592,22 @@ func (x *UploadPartOutput) GetRequestcharged() RequestCharged {
 }
 
 func (x *UploadPartOutput) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *UploadPartOutput) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -29606,28 +29621,28 @@ func (x *UploadPartOutput) GetServersideencryption() ServerSideEncryption {
 
 type UploadPartRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Body                 []byte                 `protobuf:"bytes,42602646,opt,name=body,proto3" json:"body,omitempty"`
+	Body                 []byte                 `protobuf:"bytes,42602646,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Bucket               string                 `protobuf:"bytes,55457112,opt,name=bucket,proto3" json:"bucket,omitempty"`
 	Checksumalgorithm    ChecksumAlgorithm      `protobuf:"varint,257294512,opt,name=checksumalgorithm,proto3,enum=s3.ChecksumAlgorithm" json:"checksumalgorithm,omitempty"`
-	Checksumcrc32        string                 `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C       string                 `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme    string                 `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5          string                 `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1         string                 `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256       string                 `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512       string                 `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128    string                 `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3      string                 `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64     string                 `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
+	Checksumcrc32        *string                `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C       *string                `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme    *string                `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5          *string                `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1         *string                `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256       *string                `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512       *string                `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128    *string                `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3      *string                `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64     *string                `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
 	Contentlength        *int64                 `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
-	Contentmd5           string                 `protobuf:"bytes,507163915,opt,name=contentmd5,proto3" json:"contentmd5,omitempty"`
-	Expectedbucketowner  string                 `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3" json:"expectedbucketowner,omitempty"`
+	Contentmd5           *string                `protobuf:"bytes,507163915,opt,name=contentmd5,proto3,oneof" json:"contentmd5,omitempty"`
+	Expectedbucketowner  *string                `protobuf:"bytes,132066983,opt,name=expectedbucketowner,proto3,oneof" json:"expectedbucketowner,omitempty"`
 	Key                  string                 `protobuf:"bytes,219859213,opt,name=key,proto3" json:"key,omitempty"`
 	Partnumber           int32                  `protobuf:"varint,372082310,opt,name=partnumber,proto3" json:"partnumber,omitempty"`
 	Requestpayer         RequestPayer           `protobuf:"varint,515404580,opt,name=requestpayer,proto3,enum=s3.RequestPayer" json:"requestpayer,omitempty"`
-	Ssecustomeralgorithm string                 `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkey       string                 `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3" json:"ssecustomerkey,omitempty"`
-	Ssecustomerkeymd5    string                 `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
+	Ssecustomeralgorithm *string                `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkey       *string                `protobuf:"bytes,125648666,opt,name=ssecustomerkey,proto3,oneof" json:"ssecustomerkey,omitempty"`
+	Ssecustomerkeymd5    *string                `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
 	Uploadid             string                 `protobuf:"bytes,449040722,opt,name=uploadid,proto3" json:"uploadid,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -29685,71 +29700,71 @@ func (x *UploadPartRequest) GetChecksumalgorithm() ChecksumAlgorithm {
 }
 
 func (x *UploadPartRequest) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
@@ -29762,15 +29777,15 @@ func (x *UploadPartRequest) GetContentlength() int64 {
 }
 
 func (x *UploadPartRequest) GetContentmd5() string {
-	if x != nil {
-		return x.Contentmd5
+	if x != nil && x.Contentmd5 != nil {
+		return *x.Contentmd5
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetExpectedbucketowner() string {
-	if x != nil {
-		return x.Expectedbucketowner
+	if x != nil && x.Expectedbucketowner != nil {
+		return *x.Expectedbucketowner
 	}
 	return ""
 }
@@ -29797,22 +29812,22 @@ func (x *UploadPartRequest) GetRequestpayer() RequestPayer {
 }
 
 func (x *UploadPartRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetSsecustomerkey() string {
-	if x != nil {
-		return x.Ssecustomerkey
+	if x != nil && x.Ssecustomerkey != nil {
+		return *x.Ssecustomerkey
 	}
 	return ""
 }
 
 func (x *UploadPartRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
@@ -29946,52 +29961,52 @@ func (x *WebsiteConfiguration) GetRoutingrules() []*RoutingRule {
 
 type WriteGetObjectResponseRequest struct {
 	state                     protoimpl.MessageState    `protogen:"open.v1"`
-	Acceptranges              string                    `protobuf:"bytes,464620960,opt,name=acceptranges,proto3" json:"acceptranges,omitempty"`
-	Body                      []byte                    `protobuf:"bytes,42602646,opt,name=body,proto3" json:"body,omitempty"`
+	Acceptranges              *string                   `protobuf:"bytes,464620960,opt,name=acceptranges,proto3,oneof" json:"acceptranges,omitempty"`
+	Body                      []byte                    `protobuf:"bytes,42602646,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Bucketkeyenabled          *bool                     `protobuf:"varint,434311532,opt,name=bucketkeyenabled,proto3,oneof" json:"bucketkeyenabled,omitempty"`
-	Cachecontrol              string                    `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3" json:"cachecontrol,omitempty"`
-	Checksumcrc32             string                    `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3" json:"checksumcrc32,omitempty"`
-	Checksumcrc32C            string                    `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3" json:"checksumcrc32c,omitempty"`
-	Checksumcrc64Nvme         string                    `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3" json:"checksumcrc64nvme,omitempty"`
-	Checksummd5               string                    `protobuf:"bytes,139765019,opt,name=checksummd5,proto3" json:"checksummd5,omitempty"`
-	Checksumsha1              string                    `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3" json:"checksumsha1,omitempty"`
-	Checksumsha256            string                    `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3" json:"checksumsha256,omitempty"`
-	Checksumsha512            string                    `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3" json:"checksumsha512,omitempty"`
-	Checksumxxhash128         string                    `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3" json:"checksumxxhash128,omitempty"`
-	Checksumxxhash3           string                    `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3" json:"checksumxxhash3,omitempty"`
-	Checksumxxhash64          string                    `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3" json:"checksumxxhash64,omitempty"`
-	Contentdisposition        string                    `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contentencoding           string                    `protobuf:"bytes,317106228,opt,name=contentencoding,proto3" json:"contentencoding,omitempty"`
-	Contentlanguage           string                    `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3" json:"contentlanguage,omitempty"`
+	Cachecontrol              *string                   `protobuf:"bytes,288966655,opt,name=cachecontrol,proto3,oneof" json:"cachecontrol,omitempty"`
+	Checksumcrc32             *string                   `protobuf:"bytes,108220866,opt,name=checksumcrc32,proto3,oneof" json:"checksumcrc32,omitempty"`
+	Checksumcrc32C            *string                   `protobuf:"bytes,159993767,opt,name=checksumcrc32c,proto3,oneof" json:"checksumcrc32c,omitempty"`
+	Checksumcrc64Nvme         *string                   `protobuf:"bytes,117628493,opt,name=checksumcrc64nvme,proto3,oneof" json:"checksumcrc64nvme,omitempty"`
+	Checksummd5               *string                   `protobuf:"bytes,139765019,opt,name=checksummd5,proto3,oneof" json:"checksummd5,omitempty"`
+	Checksumsha1              *string                   `protobuf:"bytes,290993732,opt,name=checksumsha1,proto3,oneof" json:"checksumsha1,omitempty"`
+	Checksumsha256            *string                   `protobuf:"bytes,144129214,opt,name=checksumsha256,proto3,oneof" json:"checksumsha256,omitempty"`
+	Checksumsha512            *string                   `protobuf:"bytes,161451001,opt,name=checksumsha512,proto3,oneof" json:"checksumsha512,omitempty"`
+	Checksumxxhash128         *string                   `protobuf:"bytes,494296584,opt,name=checksumxxhash128,proto3,oneof" json:"checksumxxhash128,omitempty"`
+	Checksumxxhash3           *string                   `protobuf:"bytes,111649296,opt,name=checksumxxhash3,proto3,oneof" json:"checksumxxhash3,omitempty"`
+	Checksumxxhash64          *string                   `protobuf:"bytes,517436493,opt,name=checksumxxhash64,proto3,oneof" json:"checksumxxhash64,omitempty"`
+	Contentdisposition        *string                   `protobuf:"bytes,120040130,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contentencoding           *string                   `protobuf:"bytes,317106228,opt,name=contentencoding,proto3,oneof" json:"contentencoding,omitempty"`
+	Contentlanguage           *string                   `protobuf:"bytes,108485649,opt,name=contentlanguage,proto3,oneof" json:"contentlanguage,omitempty"`
 	Contentlength             *int64                    `protobuf:"varint,227596631,opt,name=contentlength,proto3,oneof" json:"contentlength,omitempty"`
-	Contentrange              string                    `protobuf:"bytes,11089360,opt,name=contentrange,proto3" json:"contentrange,omitempty"`
-	Contenttype               string                    `protobuf:"bytes,333064851,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
+	Contentrange              *string                   `protobuf:"bytes,11089360,opt,name=contentrange,proto3,oneof" json:"contentrange,omitempty"`
+	Contenttype               *string                   `protobuf:"bytes,333064851,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
 	Deletemarker              *bool                     `protobuf:"varint,5472257,opt,name=deletemarker,proto3,oneof" json:"deletemarker,omitempty"`
-	Etag                      string                    `protobuf:"bytes,313323393,opt,name=etag,proto3" json:"etag,omitempty"`
-	Errorcode                 string                    `protobuf:"bytes,34663193,opt,name=errorcode,proto3" json:"errorcode,omitempty"`
-	Errormessage              string                    `protobuf:"bytes,518702377,opt,name=errormessage,proto3" json:"errormessage,omitempty"`
-	Expiration                string                    `protobuf:"bytes,245879945,opt,name=expiration,proto3" json:"expiration,omitempty"`
-	Expires                   string                    `protobuf:"bytes,128582948,opt,name=expires,proto3" json:"expires,omitempty"`
-	Lastmodified              string                    `protobuf:"bytes,434048551,opt,name=lastmodified,proto3" json:"lastmodified,omitempty"`
+	Etag                      *string                   `protobuf:"bytes,313323393,opt,name=etag,proto3,oneof" json:"etag,omitempty"`
+	Errorcode                 *string                   `protobuf:"bytes,34663193,opt,name=errorcode,proto3,oneof" json:"errorcode,omitempty"`
+	Errormessage              *string                   `protobuf:"bytes,518702377,opt,name=errormessage,proto3,oneof" json:"errormessage,omitempty"`
+	Expiration                *string                   `protobuf:"bytes,245879945,opt,name=expiration,proto3,oneof" json:"expiration,omitempty"`
+	Expires                   *string                   `protobuf:"bytes,128582948,opt,name=expires,proto3,oneof" json:"expires,omitempty"`
+	Lastmodified              *string                   `protobuf:"bytes,434048551,opt,name=lastmodified,proto3,oneof" json:"lastmodified,omitempty"`
 	Metadata                  map[string]string         `protobuf:"bytes,470020449,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Missingmeta               *int32                    `protobuf:"varint,79140523,opt,name=missingmeta,proto3,oneof" json:"missingmeta,omitempty"`
 	Objectlocklegalholdstatus ObjectLockLegalHoldStatus `protobuf:"varint,536561974,opt,name=objectlocklegalholdstatus,proto3,enum=s3.ObjectLockLegalHoldStatus" json:"objectlocklegalholdstatus,omitempty"`
 	Objectlockmode            ObjectLockMode            `protobuf:"varint,189255203,opt,name=objectlockmode,proto3,enum=s3.ObjectLockMode" json:"objectlockmode,omitempty"`
-	Objectlockretainuntildate string                    `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3" json:"objectlockretainuntildate,omitempty"`
+	Objectlockretainuntildate *string                   `protobuf:"bytes,264584249,opt,name=objectlockretainuntildate,proto3,oneof" json:"objectlockretainuntildate,omitempty"`
 	Partscount                *int32                    `protobuf:"varint,154996373,opt,name=partscount,proto3,oneof" json:"partscount,omitempty"`
 	Replicationstatus         ReplicationStatus         `protobuf:"varint,529093900,opt,name=replicationstatus,proto3,enum=s3.ReplicationStatus" json:"replicationstatus,omitempty"`
 	Requestcharged            RequestCharged            `protobuf:"varint,388687891,opt,name=requestcharged,proto3,enum=s3.RequestCharged" json:"requestcharged,omitempty"`
 	Requestroute              string                    `protobuf:"bytes,41111156,opt,name=requestroute,proto3" json:"requestroute,omitempty"`
 	Requesttoken              string                    `protobuf:"bytes,262268424,opt,name=requesttoken,proto3" json:"requesttoken,omitempty"`
-	Restore                   string                    `protobuf:"bytes,267943794,opt,name=restore,proto3" json:"restore,omitempty"`
-	Ssecustomeralgorithm      string                    `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3" json:"ssecustomeralgorithm,omitempty"`
-	Ssecustomerkeymd5         string                    `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3" json:"ssecustomerkeymd5,omitempty"`
-	Ssekmskeyid               string                    `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3" json:"ssekmskeyid,omitempty"`
+	Restore                   *string                   `protobuf:"bytes,267943794,opt,name=restore,proto3,oneof" json:"restore,omitempty"`
+	Ssecustomeralgorithm      *string                   `protobuf:"bytes,90203344,opt,name=ssecustomeralgorithm,proto3,oneof" json:"ssecustomeralgorithm,omitempty"`
+	Ssecustomerkeymd5         *string                   `protobuf:"bytes,387304,opt,name=ssecustomerkeymd5,proto3,oneof" json:"ssecustomerkeymd5,omitempty"`
+	Ssekmskeyid               *string                   `protobuf:"bytes,445973592,opt,name=ssekmskeyid,proto3,oneof" json:"ssekmskeyid,omitempty"`
 	Serversideencryption      ServerSideEncryption      `protobuf:"varint,8898353,opt,name=serversideencryption,proto3,enum=s3.ServerSideEncryption" json:"serversideencryption,omitempty"`
 	Statuscode                *int32                    `protobuf:"varint,303830783,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	Storageclass              StorageClass              `protobuf:"varint,393282631,opt,name=storageclass,proto3,enum=s3.StorageClass" json:"storageclass,omitempty"`
 	Tagcount                  *int32                    `protobuf:"varint,339592595,opt,name=tagcount,proto3,oneof" json:"tagcount,omitempty"`
-	Versionid                 string                    `protobuf:"bytes,338063515,opt,name=versionid,proto3" json:"versionid,omitempty"`
+	Versionid                 *string                   `protobuf:"bytes,338063515,opt,name=versionid,proto3,oneof" json:"versionid,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -30027,8 +30042,8 @@ func (*WriteGetObjectResponseRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *WriteGetObjectResponseRequest) GetAcceptranges() string {
-	if x != nil {
-		return x.Acceptranges
+	if x != nil && x.Acceptranges != nil {
+		return *x.Acceptranges
 	}
 	return ""
 }
@@ -30048,99 +30063,99 @@ func (x *WriteGetObjectResponseRequest) GetBucketkeyenabled() bool {
 }
 
 func (x *WriteGetObjectResponseRequest) GetCachecontrol() string {
-	if x != nil {
-		return x.Cachecontrol
+	if x != nil && x.Cachecontrol != nil {
+		return *x.Cachecontrol
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumcrc32() string {
-	if x != nil {
-		return x.Checksumcrc32
+	if x != nil && x.Checksumcrc32 != nil {
+		return *x.Checksumcrc32
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumcrc32C() string {
-	if x != nil {
-		return x.Checksumcrc32C
+	if x != nil && x.Checksumcrc32C != nil {
+		return *x.Checksumcrc32C
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumcrc64Nvme() string {
-	if x != nil {
-		return x.Checksumcrc64Nvme
+	if x != nil && x.Checksumcrc64Nvme != nil {
+		return *x.Checksumcrc64Nvme
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksummd5() string {
-	if x != nil {
-		return x.Checksummd5
+	if x != nil && x.Checksummd5 != nil {
+		return *x.Checksummd5
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumsha1() string {
-	if x != nil {
-		return x.Checksumsha1
+	if x != nil && x.Checksumsha1 != nil {
+		return *x.Checksumsha1
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumsha256() string {
-	if x != nil {
-		return x.Checksumsha256
+	if x != nil && x.Checksumsha256 != nil {
+		return *x.Checksumsha256
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumsha512() string {
-	if x != nil {
-		return x.Checksumsha512
+	if x != nil && x.Checksumsha512 != nil {
+		return *x.Checksumsha512
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumxxhash128() string {
-	if x != nil {
-		return x.Checksumxxhash128
+	if x != nil && x.Checksumxxhash128 != nil {
+		return *x.Checksumxxhash128
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumxxhash3() string {
-	if x != nil {
-		return x.Checksumxxhash3
+	if x != nil && x.Checksumxxhash3 != nil {
+		return *x.Checksumxxhash3
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetChecksumxxhash64() string {
-	if x != nil {
-		return x.Checksumxxhash64
+	if x != nil && x.Checksumxxhash64 != nil {
+		return *x.Checksumxxhash64
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetContentencoding() string {
-	if x != nil {
-		return x.Contentencoding
+	if x != nil && x.Contentencoding != nil {
+		return *x.Contentencoding
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetContentlanguage() string {
-	if x != nil {
-		return x.Contentlanguage
+	if x != nil && x.Contentlanguage != nil {
+		return *x.Contentlanguage
 	}
 	return ""
 }
@@ -30153,15 +30168,15 @@ func (x *WriteGetObjectResponseRequest) GetContentlength() int64 {
 }
 
 func (x *WriteGetObjectResponseRequest) GetContentrange() string {
-	if x != nil {
-		return x.Contentrange
+	if x != nil && x.Contentrange != nil {
+		return *x.Contentrange
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
@@ -30174,43 +30189,43 @@ func (x *WriteGetObjectResponseRequest) GetDeletemarker() bool {
 }
 
 func (x *WriteGetObjectResponseRequest) GetEtag() string {
-	if x != nil {
-		return x.Etag
+	if x != nil && x.Etag != nil {
+		return *x.Etag
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetErrorcode() string {
-	if x != nil {
-		return x.Errorcode
+	if x != nil && x.Errorcode != nil {
+		return *x.Errorcode
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetErrormessage() string {
-	if x != nil {
-		return x.Errormessage
+	if x != nil && x.Errormessage != nil {
+		return *x.Errormessage
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetExpiration() string {
-	if x != nil {
-		return x.Expiration
+	if x != nil && x.Expiration != nil {
+		return *x.Expiration
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetExpires() string {
-	if x != nil {
-		return x.Expires
+	if x != nil && x.Expires != nil {
+		return *x.Expires
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetLastmodified() string {
-	if x != nil {
-		return x.Lastmodified
+	if x != nil && x.Lastmodified != nil {
+		return *x.Lastmodified
 	}
 	return ""
 }
@@ -30244,8 +30259,8 @@ func (x *WriteGetObjectResponseRequest) GetObjectlockmode() ObjectLockMode {
 }
 
 func (x *WriteGetObjectResponseRequest) GetObjectlockretainuntildate() string {
-	if x != nil {
-		return x.Objectlockretainuntildate
+	if x != nil && x.Objectlockretainuntildate != nil {
+		return *x.Objectlockretainuntildate
 	}
 	return ""
 }
@@ -30286,29 +30301,29 @@ func (x *WriteGetObjectResponseRequest) GetRequesttoken() string {
 }
 
 func (x *WriteGetObjectResponseRequest) GetRestore() string {
-	if x != nil {
-		return x.Restore
+	if x != nil && x.Restore != nil {
+		return *x.Restore
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetSsecustomeralgorithm() string {
-	if x != nil {
-		return x.Ssecustomeralgorithm
+	if x != nil && x.Ssecustomeralgorithm != nil {
+		return *x.Ssecustomeralgorithm
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetSsecustomerkeymd5() string {
-	if x != nil {
-		return x.Ssecustomerkeymd5
+	if x != nil && x.Ssecustomerkeymd5 != nil {
+		return *x.Ssecustomerkeymd5
 	}
 	return ""
 }
 
 func (x *WriteGetObjectResponseRequest) GetSsekmskeyid() string {
-	if x != nil {
-		return x.Ssekmskeyid
+	if x != nil && x.Ssekmskeyid != nil {
+		return *x.Ssekmskeyid
 	}
 	return ""
 }
@@ -30342,8 +30357,8 @@ func (x *WriteGetObjectResponseRequest) GetTagcount() int32 {
 }
 
 func (x *WriteGetObjectResponseRequest) GetVersionid() string {
-	if x != nil {
-		return x.Versionid
+	if x != nil && x.Versionid != nil {
+		return *x.Versionid
 	}
 	return ""
 }
@@ -30360,14 +30375,16 @@ const file_s3_proto_rawDesc = "" +
 	"\x13daysafterinitiation\x18\x8b\xfd\x89\xf9\x01 \x01(\x05H\x00R\x13daysafterinitiation\x88\x01\x01B\x16\n" +
 	"\x14_daysafterinitiation\"\\\n" +
 	"\x1aAbortMultipartUploadOutput\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x94\x02\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xcf\x02\n" +
 	"\x1bAbortMultipartUploadRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x126\n" +
-	"\x14ifmatchinitiatedtime\x18\xaeڀ\xd4\x01 \x01(\tR\x14ifmatchinitiatedtime\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12;\n" +
+	"\x14ifmatchinitiatedtime\x18\xaeڀ\xd4\x01 \x01(\tH\x01R\x14ifmatchinitiatedtime\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadid\"P\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x16\n" +
+	"\x14_expectedbucketownerB\x17\n" +
+	"\x15_ifmatchinitiatedtime\"P\n" +
 	"\x17AccelerateConfiguration\x125\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketAccelerateStatusR\x06status\"`\n" +
 	"\x13AccessControlPolicy\x12$\n" +
@@ -30375,56 +30392,73 @@ const file_s3_proto_rawDesc = "" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\"G\n" +
 	"\x18AccessControlTranslation\x12+\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\x0e2\x11.s3.OwnerOverrideR\x05owner\"\x0e\n" +
-	"\fAccessDenied\"S\n" +
-	"\x14AnalyticsAndOperator\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\xae\x01\n" +
+	"\fAccessDenied\"c\n" +
+	"\x14AnalyticsAndOperator\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01\x12\x1f\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tagsB\t\n" +
+	"\a_prefix\"\xae\x01\n" +
 	"\x16AnalyticsConfiguration\x12/\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x13.s3.AnalyticsFilterR\x06filter\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12O\n" +
 	"\x14storageclassanalysis\x18\x85\xc8\xcas \x01(\v2\x18.s3.StorageClassAnalysisR\x14storageclassanalysis\"s\n" +
 	"\x1aAnalyticsExportDestination\x12U\n" +
-	"\x13s3bucketdestination\x18\x84̀- \x01(\v2 .s3.AnalyticsS3BucketDestinationR\x13s3bucketdestination\"|\n" +
+	"\x13s3bucketdestination\x18\x84̀- \x01(\v2 .s3.AnalyticsS3BucketDestinationR\x13s3bucketdestination\"\x8c\x01\n" +
 	"\x0fAnalyticsFilter\x12.\n" +
-	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x18.s3.AnalyticsAndOperatorR\x03and\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
-	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tag\"\xbf\x01\n" +
+	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x18.s3.AnalyticsAndOperatorR\x03and\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01\x12\x1d\n" +
+	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tagB\t\n" +
+	"\a_prefix\"\xe8\x01\n" +
 	"\x1cAnalyticsS3BucketDestination\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12+\n" +
-	"\x0fbucketaccountid\x18\x80\x87\xa2p \x01(\tR\x0fbucketaccountid\x12;\n" +
-	"\x06format\x18\xf3\xfe\xc3\xfd\x01 \x01(\x0e2\x1f.s3.AnalyticsS3ExportFileFormatR\x06format\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\xa5\x02\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
+	"\x0fbucketaccountid\x18\x80\x87\xa2p \x01(\tH\x00R\x0fbucketaccountid\x88\x01\x01\x12;\n" +
+	"\x06format\x18\xf3\xfe\xc3\xfd\x01 \x01(\x0e2\x1f.s3.AnalyticsS3ExportFileFormatR\x06format\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01B\x12\n" +
+	"\x10_bucketaccountidB\t\n" +
+	"\a_prefix\"\xb3\x02\n" +
 	"\x0fAnnotationEntry\x12*\n" +
 	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tR\x0eannotationname\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x03(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x03(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12&\n" +
 	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12\x15\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\"\x19\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04sizeB\a\n" +
+	"\x05_etag\"\x19\n" +
 	"\x17AnnotationLimitExceeded\"\x17\n" +
-	"\x15AnnotationNameTooLong\"\xf3\x01\n" +
+	"\x15AnnotationNameTooLong\"\x81\x02\n" +
 	"\x1cAnnotationTableConfiguration\x12T\n" +
 	"\x12configurationstate\x18\xfb\x98\xc6\xda\x01 \x01(\x0e2 .s3.AnnotationConfigurationStateR\x12configurationstate\x12e\n" +
-	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\x12\x16\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\"\xa5\x02\n" +
+	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\x12\x1b\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tH\x00R\x04role\x88\x01\x01B\a\n" +
+	"\x05_role\"\xed\x02\n" +
 	"\"AnnotationTableConfigurationResult\x12T\n" +
 	"\x12configurationstate\x18\xfb\x98\xc6\xda\x01 \x01(\x0e2 .s3.AnnotationConfigurationStateR\x12configurationstate\x12*\n" +
-	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x10.s3.ErrorDetailsR\x05error\x12\x16\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12#\n" +
-	"\vtablestatus\x18\xcaߑc \x01(\tR\vtablestatus\"\xfa\x01\n" +
+	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x10.s3.ErrorDetailsR\x05error\x12\x1b\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tH\x00R\x04role\x88\x01\x01\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x01R\btablearn\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x02R\ttablename\x88\x01\x01\x12(\n" +
+	"\vtablestatus\x18\xcaߑc \x01(\tH\x03R\vtablestatus\x88\x01\x01B\a\n" +
+	"\x05_roleB\v\n" +
+	"\t_tablearnB\f\n" +
+	"\n" +
+	"_tablenameB\x0e\n" +
+	"\f_tablestatus\"\x88\x02\n" +
 	"#AnnotationTableConfigurationUpdates\x12T\n" +
 	"\x12configurationstate\x18\xfb\x98\xc6\xda\x01 \x01(\x0e2 .s3.AnnotationConfigurationStateR\x12configurationstate\x12e\n" +
-	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\x12\x16\n" +
-	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\"W\n" +
+	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\x12\x1b\n" +
+	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tH\x00R\x04role\x88\x01\x01B\a\n" +
+	"\x05_role\"W\n" +
 	"\x16BlockedEncryptionTypes\x12=\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x03(\x0e2\x12.s3.EncryptionTypeR\x0eencryptiontype\"\x90\x01\n" +
-	"\x06Bucket\x12\x1f\n" +
-	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tR\tbucketarn\x12&\n" +
-	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tR\fbucketregion\x12&\n" +
-	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tR\fcreationdate\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x15\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x03(\x0e2\x12.s3.EncryptionTypeR\x0eencryptiontype\"\xdd\x01\n" +
+	"\x06Bucket\x12$\n" +
+	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tH\x00R\tbucketarn\x88\x01\x01\x12+\n" +
+	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tH\x01R\fbucketregion\x88\x01\x01\x12+\n" +
+	"\fcreationdate\x18\xe1ط\x89\x01 \x01(\tH\x02R\fcreationdate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01B\f\n" +
+	"\n" +
+	"_bucketarnB\x0f\n" +
+	"\r_bucketregionB\x0f\n" +
+	"\r_creationdateB\a\n" +
+	"\x05_name\"\x15\n" +
 	"\x13BucketAlreadyExists\"\x19\n" +
 	"\x17BucketAlreadyOwnedByYou\"t\n" +
 	"\n" +
@@ -30436,315 +30470,506 @@ const file_s3_proto_rawDesc = "" +
 	"\x13BucketLoggingStatus\x12=\n" +
 	"\x0eloggingenabled\x18\xdc\xfc\xff8 \x01(\v2\x12.s3.LoggingEnabledR\x0eloggingenabled\"C\n" +
 	"\x11CORSConfiguration\x12.\n" +
-	"\tcorsrules\x18\x9c\xee\xf9\x85\x01 \x03(\v2\f.s3.CORSRuleR\tcorsrules\"\x8a\x02\n" +
+	"\tcorsrules\x18\x9c\xee\xf9\x85\x01 \x03(\v2\f.s3.CORSRuleR\tcorsrules\"\x96\x02\n" +
 	"\bCORSRule\x12)\n" +
 	"\x0eallowedheaders\x18\xf4\xfa\x8c\x1e \x03(\tR\x0eallowedheaders\x12)\n" +
 	"\x0eallowedmethods\x18\xf4\xaf\xf1\x1a \x03(\tR\x0eallowedmethods\x12)\n" +
 	"\x0eallowedorigins\x18\xbbͤ\t \x03(\tR\x0eallowedorigins\x12(\n" +
-	"\rexposeheaders\x18\x8a\xb9\xba\x8a\x01 \x03(\tR\rexposeheaders\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12-\n" +
-	"\rmaxageseconds\x18\xf6ʝ\x96\x01 \x01(\x05H\x00R\rmaxageseconds\x88\x01\x01B\x10\n" +
-	"\x0e_maxageseconds\"\x8d\x03\n" +
+	"\rexposeheaders\x18\x8a\xb9\xba\x8a\x01 \x03(\tR\rexposeheaders\x12\x17\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12-\n" +
+	"\rmaxageseconds\x18\xf6ʝ\x96\x01 \x01(\x05H\x01R\rmaxageseconds\x88\x01\x01B\x05\n" +
+	"\x03_idB\x10\n" +
+	"\x0e_maxageseconds\"\x86\x04\n" +
 	"\bCSVInput\x12G\n" +
-	"\x1aallowquotedrecorddelimiter\x18\x99\xbc\xa0\x80\x01 \x01(\bH\x00R\x1aallowquotedrecorddelimiter\x88\x01\x01\x12\x1e\n" +
-	"\bcomments\x18\xf8\xd5\xe0\x92\x01 \x01(\tR\bcomments\x12)\n" +
-	"\x0efielddelimiter\x18ݍ\xb3* \x01(\tR\x0efielddelimiter\x12=\n" +
-	"\x0efileheaderinfo\x18\xeb\xe6\xe3\x14 \x01(\x0e2\x12.s3.FileHeaderInfoR\x0efileheaderinfo\x12)\n" +
-	"\x0equotecharacter\x18߇\xcd\v \x01(\tR\x0equotecharacter\x126\n" +
-	"\x14quoteescapecharacter\x18\x98\xa7δ\x01 \x01(\tR\x14quoteescapecharacter\x12,\n" +
-	"\x0frecorddelimiter\x18\xb6\x8cގ\x01 \x01(\tR\x0frecorddelimiterB\x1d\n" +
-	"\x1b_allowquotedrecorddelimiter\"\xfd\x01\n" +
-	"\tCSVOutput\x12)\n" +
-	"\x0efielddelimiter\x18ݍ\xb3* \x01(\tR\x0efielddelimiter\x12)\n" +
-	"\x0equotecharacter\x18߇\xcd\v \x01(\tR\x0equotecharacter\x126\n" +
-	"\x14quoteescapecharacter\x18\x98\xa7δ\x01 \x01(\tR\x14quoteescapecharacter\x124\n" +
-	"\vquotefields\x18\x8f\xf6\x9fA \x01(\x0e2\x0f.s3.QuoteFieldsR\vquotefields\x12,\n" +
-	"\x0frecorddelimiter\x18\xb6\x8cގ\x01 \x01(\tR\x0frecorddelimiter\"\xfa\x03\n" +
-	"\bChecksum\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\"*\n" +
-	"\fCommonPrefix\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\xbd\a\n" +
-	"\x1dCompleteMultipartUploadOutput\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12!\n" +
+	"\x1aallowquotedrecorddelimiter\x18\x99\xbc\xa0\x80\x01 \x01(\bH\x00R\x1aallowquotedrecorddelimiter\x88\x01\x01\x12#\n" +
+	"\bcomments\x18\xf8\xd5\xe0\x92\x01 \x01(\tH\x01R\bcomments\x88\x01\x01\x12.\n" +
+	"\x0efielddelimiter\x18ݍ\xb3* \x01(\tH\x02R\x0efielddelimiter\x88\x01\x01\x12=\n" +
+	"\x0efileheaderinfo\x18\xeb\xe6\xe3\x14 \x01(\x0e2\x12.s3.FileHeaderInfoR\x0efileheaderinfo\x12.\n" +
+	"\x0equotecharacter\x18߇\xcd\v \x01(\tH\x03R\x0equotecharacter\x88\x01\x01\x12;\n" +
+	"\x14quoteescapecharacter\x18\x98\xa7δ\x01 \x01(\tH\x04R\x14quoteescapecharacter\x88\x01\x01\x121\n" +
+	"\x0frecorddelimiter\x18\xb6\x8cގ\x01 \x01(\tH\x05R\x0frecorddelimiter\x88\x01\x01B\x1d\n" +
+	"\x1b_allowquotedrecorddelimiterB\v\n" +
+	"\t_commentsB\x11\n" +
+	"\x0f_fielddelimiterB\x11\n" +
+	"\x0f_quotecharacterB\x17\n" +
+	"\x15_quoteescapecharacterB\x12\n" +
+	"\x10_recorddelimiter\"\xe4\x02\n" +
+	"\tCSVOutput\x12.\n" +
+	"\x0efielddelimiter\x18ݍ\xb3* \x01(\tH\x00R\x0efielddelimiter\x88\x01\x01\x12.\n" +
+	"\x0equotecharacter\x18߇\xcd\v \x01(\tH\x01R\x0equotecharacter\x88\x01\x01\x12;\n" +
+	"\x14quoteescapecharacter\x18\x98\xa7δ\x01 \x01(\tH\x02R\x14quoteescapecharacter\x88\x01\x01\x124\n" +
+	"\vquotefields\x18\x8f\xf6\x9fA \x01(\x0e2\x0f.s3.QuoteFieldsR\vquotefields\x121\n" +
+	"\x0frecorddelimiter\x18\xb6\x8cގ\x01 \x01(\tH\x03R\x0frecorddelimiter\x88\x01\x01B\x11\n" +
+	"\x0f_fielddelimiterB\x11\n" +
+	"\x0f_quotecharacterB\x17\n" +
+	"\x15_quoteescapecharacterB\x12\n" +
+	"\x10_recorddelimiter\"\xed\x05\n" +
+	"\bChecksum\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64\":\n" +
+	"\fCommonPrefix\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01B\t\n" +
+	"\a_prefix\"\xa9\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1e\n" +
-	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x13\n" +
-	"\x11_bucketkeyenabled\"\xb6\b\n" +
+	"\x1dCompleteMultipartUploadOutput\x12\x1e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tH\x00R\x06bucket\x88\x01\x01\x123\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x01R\x10bucketkeyenabled\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x02R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x03R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x04R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x05R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x06R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\aR\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\bR\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\tR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\n" +
+	"R\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\vR\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\fR\x04etag\x88\x01\x01\x12&\n" +
+	"\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\rR\n" +
+	"expiration\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x0eR\x03key\x88\x01\x01\x12#\n" +
+	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tH\x0fR\blocation\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x10R\vssekmskeyid\x88\x01\x01\x12O\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x11R\tversionid\x88\x01\x01B\t\n" +
+	"\a_bucketB\x13\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\r\n" +
+	"\v_expirationB\x06\n" +
+	"\x04_keyB\v\n" +
+	"\t_locationB\x0e\n" +
+	"\f_ssekmskeyidB\f\n" +
+	"\n" +
+	"_versionid\"\xbd\v\n" +
 	"\x1eCompleteMultipartUploadRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12#\n" +
-	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\n" +
+	"R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tH\vR\aifmatch\x88\x01\x01\x12(\n" +
+	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tH\fR\vifnonematch\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12-\n" +
-	"\rmpuobjectsize\x18\xee͎\xf9\x01 \x01(\x03H\x00R\rmpuobjectsize\x88\x01\x01\x12P\n" +
+	"\rmpuobjectsize\x18\xee͎\xf9\x01 \x01(\x03H\rR\rmpuobjectsize\x88\x01\x01\x12P\n" +
 	"\x0fmultipartupload\x18\x87\x9b\xeb\xac\x01 \x01(\v2\x1c.s3.CompletedMultipartUploadB\x04\x88\xb5\x18\x01R\x0fmultipartupload\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x0eR\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x0fR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x10R\x11ssecustomerkeymd5\x88\x01\x01\x12\x1e\n" +
 	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x10\n" +
-	"\x0e_mpuobjectsize\"F\n" +
-	"\x18CompletedMultipartUpload\x12*\n" +
-	"\x05parts\x18Ɵ\xcae \x03(\v2\x11.s3.CompletedPartR\x05parts\"\x96\x04\n" +
-	"\rCompletedPart\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12'\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x16\n" +
+	"\x14_expectedbucketownerB\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
-	"partnumber\x88\x01\x01B\r\n" +
-	"\v_partnumber\"~\n" +
-	"\tCondition\x12C\n" +
-	"\x1bhttperrorcodereturnedequals\x18\x93\xa3\xb2R \x01(\tR\x1bhttperrorcodereturnedequals\x12,\n" +
-	"\x0fkeyprefixequals\x18ʿ՟\x01 \x01(\tR\x0fkeyprefixequals\"\x13\n" +
-	"\x11ContinuationEvent\"\xfc\x04\n" +
+	"\b_ifmatchB\x0e\n" +
+	"\f_ifnonematchB\x10\n" +
+	"\x0e_mpuobjectsizeB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5\"F\n" +
+	"\x18CompletedMultipartUpload\x12*\n" +
+	"\x05parts\x18Ɵ\xcae \x03(\v2\x11.s3.CompletedPartR\x05parts\"\x97\x06\n" +
+	"\rCompletedPart\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\n" +
+	"R\x04etag\x88\x01\x01\x12'\n" +
+	"\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\vR\n" +
+	"partnumber\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\r\n" +
+	"\v_partnumber\"\xbc\x01\n" +
+	"\tCondition\x12H\n" +
+	"\x1bhttperrorcodereturnedequals\x18\x93\xa3\xb2R \x01(\tH\x00R\x1bhttperrorcodereturnedequals\x88\x01\x01\x121\n" +
+	"\x0fkeyprefixequals\x18ʿ՟\x01 \x01(\tH\x01R\x0fkeyprefixequals\x88\x01\x01B\x1e\n" +
+	"\x1c_httperrorcodereturnedequalsB\x12\n" +
+	"\x10_keyprefixequals\"\x13\n" +
+	"\x11ContinuationEvent\"\xaf\x06\n" +
 	"\x10CopyObjectOutput\x123\n" +
 	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12I\n" +
-	"\x10copyobjectresult\x18\xbb\x8d\xb8( \x01(\v2\x14.s3.CopyObjectResultB\x04\x88\xb5\x18\x01R\x10copyobjectresult\x123\n" +
-	"\x13copysourceversionid\x18\xa7\x9e\xcez \x01(\tR\x13copysourceversionid\x12!\n" +
+	"\x10copyobjectresult\x18\xbb\x8d\xb8( \x01(\v2\x14.s3.CopyObjectResultB\x04\x88\xb5\x18\x01R\x10copyobjectresult\x128\n" +
+	"\x13copysourceversionid\x18\xa7\x9e\xcez \x01(\tH\x01R\x13copysourceversionid\x88\x01\x01\x12&\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x13\n" +
-	"\x11_bucketkeyenabled\"\x8e\x13\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\x02R\n" +
+	"expiration\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x03R\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x04R\x11ssecustomerkeymd5\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x05R\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x06R\vssekmskeyid\x88\x01\x01\x12O\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\aR\tversionid\x88\x01\x01B\x13\n" +
+	"\x11_bucketkeyenabledB\x16\n" +
+	"\x14_copysourceversionidB\r\n" +
+	"\v_expirationB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyidB\f\n" +
+	"\n" +
+	"_versionid\"\xa5\x19\n" +
 	"\x11CopyObjectRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.ObjectCannedACLR\x03acl\x12M\n" +
 	"\x13annotationdirective\x18\xd6\xf9\xac\x82\x01 \x01(\x0e2\x17.s3.AnnotationDirectiveR\x13annotationdirective\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12&\n" +
-	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tR\fcachecontrol\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x121\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
-	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12$\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12!\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12+\n" +
+	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tH\x01R\fcachecontrol\x88\x01\x01\x12F\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x126\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\tH\x02R\x12contentdisposition\x88\x01\x01\x121\n" +
+	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tH\x03R\x0fcontentencoding\x88\x01\x01\x120\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tH\x04R\x0fcontentlanguage\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x05R\vcontenttype\x88\x01\x01\x12!\n" +
 	"\n" +
 	"copysource\x18\x82\xce\xd0H \x01(\tR\n" +
-	"copysource\x120\n" +
-	"\x11copysourceifmatch\x18\xec\xff\xc6\xf4\x01 \x01(\tR\x11copysourceifmatch\x12@\n" +
-	"\x19copysourceifmodifiedsince\x18\x92\xdf\xe6\x8f\x01 \x01(\tR\x19copysourceifmodifiedsince\x127\n" +
-	"\x15copysourceifnonematch\x18\x82\xf7\x99q \x01(\tR\x15copysourceifnonematch\x12C\n" +
-	"\x1bcopysourceifunmodifiedsince\x18\x81Ġ> \x01(\tR\x1bcopysourceifunmodifiedsince\x12J\n" +
-	"\x1ecopysourcessecustomeralgorithm\x18Ĳ\xde\xdd\x01 \x01(\tR\x1ecopysourcessecustomeralgorithm\x12>\n" +
-	"\x18copysourcessecustomerkey\x18\u03a2\xfa\x89\x01 \x01(\tR\x18copysourcessecustomerkey\x12D\n" +
-	"\x1bcopysourcessecustomerkeymd5\x18\xbc\x8b\x81\xc3\x01 \x01(\tR\x1bcopysourcessecustomerkeymd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12@\n" +
-	"\x19expectedsourcebucketowner\x18\xb6\xc1\x87\x87\x01 \x01(\tR\x19expectedsourcebucketowner\x12\x1b\n" +
-	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12-\n" +
-	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
-	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
-	"\fgrantreadacp\x18в\xb0c \x01(\tR\fgrantreadacp\x12'\n" +
-	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tR\rgrantwriteacp\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12#\n" +
-	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x12\x13\n" +
+	"copysource\x125\n" +
+	"\x11copysourceifmatch\x18\xec\xff\xc6\xf4\x01 \x01(\tH\x06R\x11copysourceifmatch\x88\x01\x01\x12E\n" +
+	"\x19copysourceifmodifiedsince\x18\x92\xdf\xe6\x8f\x01 \x01(\tH\aR\x19copysourceifmodifiedsince\x88\x01\x01\x12<\n" +
+	"\x15copysourceifnonematch\x18\x82\xf7\x99q \x01(\tH\bR\x15copysourceifnonematch\x88\x01\x01\x12H\n" +
+	"\x1bcopysourceifunmodifiedsince\x18\x81Ġ> \x01(\tH\tR\x1bcopysourceifunmodifiedsince\x88\x01\x01\x12O\n" +
+	"\x1ecopysourcessecustomeralgorithm\x18Ĳ\xde\xdd\x01 \x01(\tH\n" +
+	"R\x1ecopysourcessecustomeralgorithm\x88\x01\x01\x12C\n" +
+	"\x18copysourcessecustomerkey\x18\u03a2\xfa\x89\x01 \x01(\tH\vR\x18copysourcessecustomerkey\x88\x01\x01\x12I\n" +
+	"\x1bcopysourcessecustomerkeymd5\x18\xbc\x8b\x81\xc3\x01 \x01(\tH\fR\x1bcopysourcessecustomerkeymd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\rR\x13expectedbucketowner\x88\x01\x01\x12E\n" +
+	"\x19expectedsourcebucketowner\x18\xb6\xc1\x87\x87\x01 \x01(\tH\x0eR\x19expectedsourcebucketowner\x88\x01\x01\x12 \n" +
+	"\aexpires\x18\xa4\x8a\xa8= \x01(\tH\x0fR\aexpires\x88\x01\x01\x122\n" +
+	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tH\x10R\x10grantfullcontrol\x88\x01\x01\x12$\n" +
+	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tH\x11R\tgrantread\x88\x01\x01\x12*\n" +
+	"\fgrantreadacp\x18в\xb0c \x01(\tH\x12R\fgrantreadacp\x88\x01\x01\x12,\n" +
+	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tH\x13R\rgrantwriteacp\x88\x01\x01\x12 \n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tH\x14R\aifmatch\x88\x01\x01\x12(\n" +
+	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tH\x15R\vifnonematch\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12C\n" +
 	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2#.s3.CopyObjectRequest.MetadataEntryR\bmetadata\x12G\n" +
 	"\x11metadatadirective\x18\x9e\xffƆ\x01 \x01(\x0e2\x15.s3.MetadataDirectiveR\x11metadatadirective\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
-	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12D\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tH\x16R\x19objectlockretainuntildate\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x17R\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x18R\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x19R\x11ssecustomerkeymd5\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x1aR\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x1bR\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1b\n" +
-	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tR\atagging\x12D\n" +
-	"\x10taggingdirective\x18ʃ\xdb\xed\x01 \x01(\x0e2\x14.s3.TaggingDirectiveR\x10taggingdirective\x12;\n" +
-	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x1a;\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12 \n" +
+	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tH\x1cR\atagging\x88\x01\x01\x12D\n" +
+	"\x10taggingdirective\x18ʃ\xdb\xed\x01 \x01(\x0e2\x14.s3.TaggingDirectiveR\x10taggingdirective\x12@\n" +
+	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tH\x1dR\x17websiteredirectlocation\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabled\"\xc2\x04\n" +
-	"\x10CopyObjectResult\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\"\x87\x04\n" +
-	"\x0eCopyPartResult\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\"\xea\x01\n" +
+	"\x11_bucketkeyenabledB\x0f\n" +
+	"\r_cachecontrolB\x15\n" +
+	"\x13_contentdispositionB\x12\n" +
+	"\x10_contentencodingB\x12\n" +
+	"\x10_contentlanguageB\x0e\n" +
+	"\f_contenttypeB\x14\n" +
+	"\x12_copysourceifmatchB\x1c\n" +
+	"\x1a_copysourceifmodifiedsinceB\x18\n" +
+	"\x16_copysourceifnonematchB\x1e\n" +
+	"\x1c_copysourceifunmodifiedsinceB!\n" +
+	"\x1f_copysourcessecustomeralgorithmB\x1b\n" +
+	"\x19_copysourcessecustomerkeyB\x1e\n" +
+	"\x1c_copysourcessecustomerkeymd5B\x16\n" +
+	"\x14_expectedbucketownerB\x1c\n" +
+	"\x1a_expectedsourcebucketownerB\n" +
+	"\n" +
+	"\b_expiresB\x13\n" +
+	"\x11_grantfullcontrolB\f\n" +
+	"\n" +
+	"_grantreadB\x0f\n" +
+	"\r_grantreadacpB\x10\n" +
+	"\x0e_grantwriteacpB\n" +
+	"\n" +
+	"\b_ifmatchB\x0e\n" +
+	"\f_ifnonematchB\x1c\n" +
+	"\x1a_objectlockretainuntildateB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyidB\n" +
+	"\n" +
+	"\b_taggingB\x1a\n" +
+	"\x18_websiteredirectlocation\"\xd9\x06\n" +
+	"\x10CopyObjectResult\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\n" +
+	"R\x04etag\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\vR\flastmodified\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\x0f\n" +
+	"\r_lastmodified\"\x9e\x06\n" +
+	"\x0eCopyPartResult\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\n" +
+	"R\x04etag\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\vR\flastmodified\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\x0f\n" +
+	"\r_lastmodified\"\xea\x01\n" +
 	"\x19CreateBucketConfiguration\x12)\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\v2\x0e.s3.BucketInfoR\x06bucket\x120\n" +
 	"\blocation\x18Ǜ\x82\xde\x01 \x01(\v2\x10.s3.LocationInfoR\blocation\x12O\n" +
 	"\x12locationconstraint\x18\xdeƀu \x01(\x0e2\x1c.s3.BucketLocationConstraintR\x12locationconstraint\x12\x1f\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\xc1\x02\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\xf2\x02\n" +
 	"(CreateBucketMetadataConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12Y\n" +
-	"\x15metadataconfiguration\x18\xd3\xc8\xc1\xac\x01 \x01(\v2\x19.s3.MetadataConfigurationB\x04\x88\xb5\x18\x01R\x15metadataconfiguration\"\xd5\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12Y\n" +
+	"\x15metadataconfiguration\x18\xd3\xc8\xc1\xac\x01 \x01(\v2\x19.s3.MetadataConfigurationB\x04\x88\xb5\x18\x01R\x15metadataconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x86\x03\n" +
 	"-CreateBucketMetadataTableConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12h\n" +
-	"\x1ametadatatableconfiguration\x18\xaf\xdc\xf4\x89\x01 \x01(\v2\x1e.s3.MetadataTableConfigurationB\x04\x88\xb5\x18\x01R\x1ametadatatableconfiguration\"U\n" +
-	"\x12CreateBucketOutput\x12\x1f\n" +
-	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tR\tbucketarn\x12\x1e\n" +
-	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tR\blocation\"\xf2\x04\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12h\n" +
+	"\x1ametadatatableconfiguration\x18\xaf\xdc\xf4\x89\x01 \x01(\v2\x1e.s3.MetadataTableConfigurationB\x04\x88\xb5\x18\x01R\x1ametadatatableconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"z\n" +
+	"\x12CreateBucketOutput\x12$\n" +
+	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tH\x00R\tbucketarn\x88\x01\x01\x12#\n" +
+	"\blocation\x18Ǜ\x82\xde\x01 \x01(\tH\x01R\blocation\x88\x01\x01B\f\n" +
+	"\n" +
+	"_bucketarnB\v\n" +
+	"\t_location\"\xe0\x05\n" +
 	"\x13CreateBucketRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.BucketCannedACLR\x03acl\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12A\n" +
 	"\x0fbucketnamespace\x18\xeb\xb9\xe7\xc4\x01 \x01(\x0e2\x13.s3.BucketNamespaceR\x0fbucketnamespace\x12d\n" +
-	"\x19createbucketconfiguration\x18\xc0Ƒ\r \x01(\v2\x1d.s3.CreateBucketConfigurationB\x04\x88\xb5\x18\x01R\x19createbucketconfiguration\x12-\n" +
-	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
-	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
-	"\fgrantreadacp\x18в\xb0c \x01(\tR\fgrantreadacp\x12\"\n" +
+	"\x19createbucketconfiguration\x18\xc0Ƒ\r \x01(\v2\x1d.s3.CreateBucketConfigurationB\x04\x88\xb5\x18\x01R\x19createbucketconfiguration\x122\n" +
+	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tH\x00R\x10grantfullcontrol\x88\x01\x01\x12$\n" +
+	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tH\x01R\tgrantread\x88\x01\x01\x12*\n" +
+	"\fgrantreadacp\x18в\xb0c \x01(\tH\x02R\fgrantreadacp\x88\x01\x01\x12'\n" +
 	"\n" +
-	"grantwrite\x18\x85\xfe\xe3\x88\x01 \x01(\tR\n" +
-	"grantwrite\x12'\n" +
-	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tR\rgrantwriteacp\x12F\n" +
-	"\x1aobjectlockenabledforbucket\x18\xf8\xee\xbfv \x01(\bH\x00R\x1aobjectlockenabledforbucket\x88\x01\x01\x12A\n" +
-	"\x0fobjectownership\x18\x80\x91\xe2\xd5\x01 \x01(\x0e2\x13.s3.ObjectOwnershipR\x0fobjectownershipB\x1d\n" +
-	"\x1b_objectlockenabledforbucket\"\xd9\x05\n" +
-	"\x1bCreateMultipartUploadOutput\x12\x1f\n" +
-	"\tabortdate\x18\xb6\x95\xedn \x01(\tR\tabortdate\x12#\n" +
-	"\vabortruleid\x18\x93\xb3\xecn \x01(\tR\vabortruleid\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12F\n" +
+	"grantwrite\x18\x85\xfe\xe3\x88\x01 \x01(\tH\x03R\n" +
+	"grantwrite\x88\x01\x01\x12,\n" +
+	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tH\x04R\rgrantwriteacp\x88\x01\x01\x12F\n" +
+	"\x1aobjectlockenabledforbucket\x18\xf8\xee\xbfv \x01(\bH\x05R\x1aobjectlockenabledforbucket\x88\x01\x01\x12A\n" +
+	"\x0fobjectownership\x18\x80\x91\xe2\xd5\x01 \x01(\x0e2\x13.s3.ObjectOwnershipR\x0fobjectownershipB\x13\n" +
+	"\x11_grantfullcontrolB\f\n" +
+	"\n" +
+	"_grantreadB\x0f\n" +
+	"\r_grantreadacpB\r\n" +
+	"\v_grantwriteB\x10\n" +
+	"\x0e_grantwriteacpB\x1d\n" +
+	"\x1b_objectlockenabledforbucket\"\x9f\a\n" +
+	"\x1bCreateMultipartUploadOutput\x12$\n" +
+	"\tabortdate\x18\xb6\x95\xedn \x01(\tH\x00R\tabortdate\x88\x01\x01\x12(\n" +
+	"\vabortruleid\x18\x93\xb3\xecn \x01(\tH\x01R\vabortruleid\x88\x01\x01\x12\x1e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tH\x02R\x06bucket\x88\x01\x01\x123\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x03R\x10bucketkeyenabled\x88\x01\x01\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x13\n" +
-	"\x11_bucketkeyenabled\"\x94\r\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x04R\x03key\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x05R\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x06R\x11ssecustomerkeymd5\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\aR\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\bR\vssekmskeyid\x88\x01\x01\x12O\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12#\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tH\tR\buploadid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_abortdateB\x0e\n" +
+	"\f_abortruleidB\t\n" +
+	"\a_bucketB\x13\n" +
+	"\x11_bucketkeyenabledB\x06\n" +
+	"\x04_keyB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyidB\v\n" +
+	"\t_uploadid\"\xf1\x10\n" +
 	"\x1cCreateMultipartUploadRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.ObjectCannedACLR\x03acl\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12&\n" +
-	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tR\fcachecontrol\x12F\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12+\n" +
+	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tH\x01R\fcachecontrol\x88\x01\x01\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x121\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
-	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12$\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
-	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12-\n" +
-	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
-	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
-	"\fgrantreadacp\x18в\xb0c \x01(\tR\fgrantreadacp\x12'\n" +
-	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tR\rgrantwriteacp\x12\x13\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x126\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\tH\x02R\x12contentdisposition\x88\x01\x01\x121\n" +
+	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tH\x03R\x0fcontentencoding\x88\x01\x01\x120\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tH\x04R\x0fcontentlanguage\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x05R\vcontenttype\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x06R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
+	"\aexpires\x18\xa4\x8a\xa8= \x01(\tH\aR\aexpires\x88\x01\x01\x122\n" +
+	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tH\bR\x10grantfullcontrol\x88\x01\x01\x12$\n" +
+	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tH\tR\tgrantread\x88\x01\x01\x12*\n" +
+	"\fgrantreadacp\x18в\xb0c \x01(\tH\n" +
+	"R\fgrantreadacp\x88\x01\x01\x12,\n" +
+	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tH\vR\rgrantwriteacp\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12N\n" +
 	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2..s3.CreateMultipartUploadRequest.MetadataEntryR\bmetadata\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
-	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12D\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tH\fR\x19objectlockretainuntildate\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\rR\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x0eR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x0fR\x11ssecustomerkeymd5\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x10R\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x11R\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1b\n" +
-	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tR\atagging\x12;\n" +
-	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x1a;\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12 \n" +
+	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tH\x12R\atagging\x88\x01\x01\x12@\n" +
+	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tH\x13R\x17websiteredirectlocation\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabled\"\xd1\x02\n" +
+	"\x11_bucketkeyenabledB\x0f\n" +
+	"\r_cachecontrolB\x15\n" +
+	"\x13_contentdispositionB\x12\n" +
+	"\x10_contentencodingB\x12\n" +
+	"\x10_contentlanguageB\x0e\n" +
+	"\f_contenttypeB\x16\n" +
+	"\x14_expectedbucketownerB\n" +
+	"\n" +
+	"\b_expiresB\x13\n" +
+	"\x11_grantfullcontrolB\f\n" +
+	"\n" +
+	"_grantreadB\x0f\n" +
+	"\r_grantreadacpB\x10\n" +
+	"\x0e_grantwriteacpB\x1c\n" +
+	"\x1a_objectlockretainuntildateB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyidB\n" +
+	"\n" +
+	"\b_taggingB\x1a\n" +
+	"\x18_websiteredirectlocation\"\x87\x03\n" +
 	"\x13CreateSessionOutput\x123\n" +
 	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12<\n" +
-	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x16.s3.SessionCredentialsR\vcredentials\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\vcredentials\x18\U0009a3b6\x01 \x01(\v2\x16.s3.SessionCredentialsR\vcredentials\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x01R\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x02R\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x13\n" +
-	"\x11_bucketkeyenabled\"\xe5\x02\n" +
+	"\x11_bucketkeyenabledB\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyid\"\x9b\x03\n" +
 	"\x14CreateSessionRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x01R\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x02R\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x124\n" +
 	"\vsessionmode\x18\xd1\xf5\xc6\x14 \x01(\x0e2\x0f.s3.SessionModeR\vsessionmodeB\x13\n" +
-	"\x11_bucketkeyenabled\"\x96\x01\n" +
+	"\x11_bucketkeyenabledB\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyid\"\x96\x01\n" +
 	"\x10DefaultRetention\x12\x1b\n" +
 	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x123\n" +
 	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1b.s3.ObjectLockRetentionModeR\x04mode\x12\x1d\n" +
@@ -30754,627 +30979,879 @@ const file_s3_proto_rawDesc = "" +
 	"\x06Delete\x121\n" +
 	"\aobjects\x18\x8c\xec\xa1A \x03(\v2\x14.s3.ObjectIdentifierR\aobjects\x12\x1c\n" +
 	"\x05quiet\x18\xb8\xc7\xc2\x7f \x01(\bH\x00R\x05quiet\x88\x01\x01B\b\n" +
-	"\x06_quiet\"\x8f\x01\n" +
+	"\x06_quiet\"\xac\x01\n" +
 	")DeleteBucketAnalyticsConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"i\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\x86\x01\n" +
 	"\x17DeleteBucketCorsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"o\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x8c\x01\n" +
 	"\x1dDeleteBucketEncryptionRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x98\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xb5\x01\n" +
 	"2DeleteBucketIntelligentTieringConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\x8f\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\xac\x01\n" +
 	")DeleteBucketInventoryConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"n\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\x8b\x01\n" +
 	"\x1cDeleteBucketLifecycleRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"z\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x97\x01\n" +
 	"(DeleteBucketMetadataConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x7f\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x9c\x01\n" +
 	"-DeleteBucketMetadataTableConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x8d\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xaa\x01\n" +
 	"'DeleteBucketMetricsConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"v\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\x93\x01\n" +
 	"$DeleteBucketOwnershipControlsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"k\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x88\x01\n" +
 	"\x19DeleteBucketPolicyRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"p\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x8d\x01\n" +
 	"\x1eDeleteBucketReplicationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x82\x01\n" +
 	"\x13DeleteBucketRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"l\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x89\x01\n" +
 	"\x1aDeleteBucketTaggingRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"l\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x89\x01\n" +
 	"\x1aDeleteBucketWebsiteRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xc8\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xfe\x01\n" +
 	"\x11DeleteMarkerEntry\x12\"\n" +
-	"\bislatest\x18\xf7è& \x01(\bH\x00R\bislatest\x88\x01\x01\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12#\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\v\n" +
-	"\t_islatest\"W\n" +
+	"\bislatest\x18\xf7è& \x01(\bH\x00R\bislatest\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x01R\x03key\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x02R\flastmodified\x88\x01\x01\x12#\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x03R\tversionid\x88\x01\x01B\v\n" +
+	"\t_islatestB\x06\n" +
+	"\x04_keyB\x0f\n" +
+	"\r_lastmodifiedB\f\n" +
+	"\n" +
+	"_versionid\"W\n" +
 	"\x17DeleteMarkerReplication\x12<\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.s3.DeleteMarkerReplicationStatusR\x06status\"\x8c\x01\n" +
-	"\x1cDeleteObjectAnnotationOutput\x12,\n" +
-	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tR\x0fobjectversionid\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xb6\x02\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2!.s3.DeleteMarkerReplicationStatusR\x06status\"\xa5\x01\n" +
+	"\x1cDeleteObjectAnnotationOutput\x121\n" +
+	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tH\x00R\x0fobjectversionid\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\x12\n" +
+	"\x10_objectversionid\"\xfd\x02\n" +
 	"\x1dDeleteObjectAnnotationRequest\x12*\n" +
 	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tR\x0eannotationname\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12(\n" +
-	"\robjectifmatch\x18\x9f\xf7\xfb\xc2\x01 \x01(\tR\robjectifmatch\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xb3\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12-\n" +
+	"\robjectifmatch\x18\x9f\xf7\xfb\xc2\x01 \x01(\tH\x01R\robjectifmatch\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\x10\n" +
+	"\x0e_objectifmatchB\f\n" +
+	"\n" +
+	"_versionid\"\xc6\x01\n" +
 	"\x12DeleteObjectOutput\x12*\n" +
 	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x0f\n" +
-	"\r_deletemarker\"\xe5\x03\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x0f\n" +
+	"\r_deletemarkerB\f\n" +
+	"\n" +
+	"_versionid\"\xd4\x04\n" +
 	"\x13DeleteObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12D\n" +
-	"\x19bypassgovernanceretention\x18\xfe\xeb\xfa= \x01(\bH\x00R\x19bypassgovernanceretention\x88\x01\x01\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12;\n" +
-	"\x17ifmatchlastmodifiedtime\x18\xae\xab\x93- \x01(\tR\x17ifmatchlastmodifiedtime\x12)\n" +
-	"\vifmatchsize\x18\xc7\xe3\xf6\xbd\x01 \x01(\x03H\x01R\vifmatchsize\x88\x01\x01\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x14\n" +
-	"\x03mfa\x18⨕\x9b\x01 \x01(\tR\x03mfa\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x1c\n" +
-	"\x1a_bypassgovernanceretentionB\x0e\n" +
-	"\f_ifmatchsize\"=\n" +
-	"\x19DeleteObjectTaggingOutput\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xa3\x01\n" +
+	"\x19bypassgovernanceretention\x18\xfe\xeb\xfa= \x01(\bH\x00R\x19bypassgovernanceretention\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tH\x02R\aifmatch\x88\x01\x01\x12@\n" +
+	"\x17ifmatchlastmodifiedtime\x18\xae\xab\x93- \x01(\tH\x03R\x17ifmatchlastmodifiedtime\x88\x01\x01\x12)\n" +
+	"\vifmatchsize\x18\xc7\xe3\xf6\xbd\x01 \x01(\x03H\x04R\vifmatchsize\x88\x01\x01\x12\x13\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x19\n" +
+	"\x03mfa\x18⨕\x9b\x01 \x01(\tH\x05R\x03mfa\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x06R\tversionid\x88\x01\x01B\x1c\n" +
+	"\x1a_bypassgovernanceretentionB\x16\n" +
+	"\x14_expectedbucketownerB\n" +
+	"\n" +
+	"\b_ifmatchB\x1a\n" +
+	"\x18_ifmatchlastmodifiedtimeB\x0e\n" +
+	"\f_ifmatchsizeB\x06\n" +
+	"\x04_mfaB\f\n" +
+	"\n" +
+	"_versionid\"P\n" +
+	"\x19DeleteObjectTaggingOutput\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x00R\tversionid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_versionid\"\xd3\x01\n" +
 	"\x1aDeleteObjectTaggingRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xac\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\xac\x01\n" +
 	"\x13DeleteObjectsOutput\x12/\n" +
 	"\adeleted\x18\x8b蕑\x01 \x03(\v2\x11.s3.DeletedObjectR\adeleted\x12$\n" +
 	"\x06errors\x18\xa7\xc1\xb5O \x03(\v2\t.s3.ErrorR\x06errors\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x90\x03\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xba\x03\n" +
 	"\x14DeleteObjectsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12D\n" +
 	"\x19bypassgovernanceretention\x18\xfe\xeb\xfa= \x01(\bH\x00R\x19bypassgovernanceretention\x88\x01\x01\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12,\n" +
 	"\x06delete\x18\xeb\xd4\u07fc\x01 \x01(\v2\n" +
-	".s3.DeleteB\x04\x88\xb5\x18\x01R\x06delete\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x14\n" +
-	"\x03mfa\x18⨕\x9b\x01 \x01(\tR\x03mfa\x128\n" +
+	".s3.DeleteB\x04\x88\xb5\x18\x01R\x06delete\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12\x19\n" +
+	"\x03mfa\x18⨕\x9b\x01 \x01(\tH\x02R\x03mfa\x88\x01\x01\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayerB\x1c\n" +
-	"\x1a_bypassgovernanceretention\"p\n" +
+	"\x1a_bypassgovernanceretentionB\x16\n" +
+	"\x14_expectedbucketownerB\x06\n" +
+	"\x04_mfa\"\x8d\x01\n" +
 	"\x1eDeletePublicAccessBlockRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xbd\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xfc\x01\n" +
 	"\rDeletedObject\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x128\n" +
-	"\x15deletemarkerversionid\x18\xc2\xfc\xf2\xea\x01 \x01(\tR\x15deletemarkerversionid\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x0f\n" +
-	"\r_deletemarker\"\xa5\x03\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x12=\n" +
+	"\x15deletemarkerversionid\x18\xc2\xfc\xf2\xea\x01 \x01(\tH\x01R\x15deletemarkerversionid\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x02R\x03key\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x03R\tversionid\x88\x01\x01B\x0f\n" +
+	"\r_deletemarkerB\x18\n" +
+	"\x16_deletemarkerversionidB\x06\n" +
+	"\x04_keyB\f\n" +
+	"\n" +
+	"_versionid\"\xb6\x03\n" +
 	"\vDestination\x12\\\n" +
-	"\x18accesscontroltranslation\x18\xe8\x99\xed\xd6\x01 \x01(\v2\x1c.s3.AccessControlTranslationR\x18accesscontroltranslation\x12\x1c\n" +
-	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tR\aaccount\x12\x19\n" +
+	"\x18accesscontroltranslation\x18\xe8\x99\xed\xd6\x01 \x01(\v2\x1c.s3.AccessControlTranslationR\x18accesscontroltranslation\x12!\n" +
+	"\aaccount\x18\xfd\xc5\xe2\xcf\x01 \x01(\tH\x00R\aaccount\x88\x01\x01\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12X\n" +
 	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2\x1b.s3.EncryptionConfigurationR\x17encryptionconfiguration\x12)\n" +
 	"\ametrics\x18\x97ԉ\xd0\x01 \x01(\v2\v.s3.MetricsR\ametrics\x12@\n" +
 	"\x0freplicationtime\x18\xc1\x85\xff. \x01(\v2\x13.s3.ReplicationTimeR\x0freplicationtime\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\"\xb0\x01\n" +
-	"\x11DestinationResult\x12*\n" +
-	"\x0etablebucketarn\x18\xe5\xef\xb1\xda\x01 \x01(\tR\x0etablebucketarn\x12C\n" +
-	"\x0ftablebuckettype\x18\xa6\xf9\xea\x11 \x01(\x0e2\x16.s3.S3TablesBucketTypeR\x0ftablebuckettype\x12*\n" +
-	"\x0etablenamespace\x18\x83\u0093\x82\x01 \x01(\tR\x0etablenamespace\"\x93\x01\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclassB\n" +
+	"\n" +
+	"\b_account\"\xe0\x01\n" +
+	"\x11DestinationResult\x12/\n" +
+	"\x0etablebucketarn\x18\xe5\xef\xb1\xda\x01 \x01(\tH\x00R\x0etablebucketarn\x88\x01\x01\x12C\n" +
+	"\x0ftablebuckettype\x18\xa6\xf9\xea\x11 \x01(\x0e2\x16.s3.S3TablesBucketTypeR\x0ftablebuckettype\x12/\n" +
+	"\x0etablenamespace\x18\x83\u0093\x82\x01 \x01(\tH\x01R\x0etablenamespace\x88\x01\x01B\x11\n" +
+	"\x0f_tablebucketarnB\x11\n" +
+	"\x0f_tablenamespace\"\xb9\x01\n" +
 	"\n" +
 	"Encryption\x12C\n" +
-	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x18.s3.ServerSideEncryptionR\x0eencryptiontype\x12!\n" +
+	"\x0eencryptiontype\x18\xb5\xdf\xf1} \x01(\x0e2\x18.s3.ServerSideEncryptionR\x0eencryptiontype\x12&\n" +
 	"\n" +
-	"kmscontext\x18ΰ\xf0L \x01(\tR\n" +
-	"kmscontext\x12\x1d\n" +
-	"\bkmskeyid\x18\xcd\xfa\xa7\x06 \x01(\tR\bkmskeyid\"F\n" +
-	"\x17EncryptionConfiguration\x12+\n" +
-	"\x0freplicakmskeyid\x18\x9b\xb0\x8e% \x01(\tR\x0freplicakmskeyid\"\x18\n" +
+	"kmscontext\x18ΰ\xf0L \x01(\tH\x00R\n" +
+	"kmscontext\x88\x01\x01\x12\"\n" +
+	"\bkmskeyid\x18\xcd\xfa\xa7\x06 \x01(\tH\x01R\bkmskeyid\x88\x01\x01B\r\n" +
+	"\v_kmscontextB\v\n" +
+	"\t_kmskeyid\"_\n" +
+	"\x17EncryptionConfiguration\x120\n" +
+	"\x0freplicakmskeyid\x18\x9b\xb0\x8e% \x01(\tH\x00R\x0freplicakmskeyid\x88\x01\x01B\x12\n" +
+	"\x10_replicakmskeyid\"\x18\n" +
 	"\x16EncryptionTypeMismatch\"\n" +
 	"\n" +
-	"\bEndEvent\"s\n" +
-	"\x05Error\x12\x16\n" +
-	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tR\x04code\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"W\n" +
-	"\fErrorDetails\x12\x1f\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\"$\n" +
+	"\bEndEvent\"\xb2\x01\n" +
+	"\x05Error\x12\x1b\n" +
+	"\x04code\x18\x95\xf2\xf6\xca\x01 \x01(\tH\x00R\x04code\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x01R\x03key\x88\x01\x01\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x02R\amessage\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x03R\tversionid\x88\x01\x01B\a\n" +
+	"\x05_codeB\x06\n" +
+	"\x04_keyB\n" +
+	"\n" +
+	"\b_messageB\f\n" +
+	"\n" +
+	"_versionid\"\x80\x01\n" +
+	"\fErrorDetails\x12$\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tH\x00R\terrorcode\x88\x01\x01\x12+\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x01R\ferrormessage\x88\x01\x01B\f\n" +
+	"\n" +
+	"_errorcodeB\x0f\n" +
+	"\r_errormessage\"$\n" +
 	"\rErrorDocument\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\"\x1a\n" +
 	"\x18EventBridgeConfiguration\"[\n" +
 	"\x19ExistingObjectReplication\x12>\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2#.s3.ExistingObjectReplicationStatusR\x06status\"Q\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2#.s3.ExistingObjectReplicationStatusR\x06status\"`\n" +
 	"\n" +
 	"FilterRule\x12)\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x12.s3.FilterRuleNameR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"O\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\x0e2\x12.s3.FilterRuleNameR\x04name\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"O\n" +
 	"\x13GetBucketAbacOutput\x128\n" +
 	"\n" +
 	"abacstatus\x18\xf9\x99\x87\xd0\x01 \x01(\v2\x0e.s3.AbacStatusB\x04\x88\xb5\x18\x01R\n" +
-	"abacstatus\"f\n" +
+	"abacstatus\"\x83\x01\n" +
 	"\x14GetBucketAbacRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x9f\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x9f\x01\n" +
 	"&GetBucketAccelerateConfigurationOutput\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x125\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketAccelerateStatusR\x06status\"\xb3\x01\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketAccelerateStatusR\x06status\"\xd0\x01\n" +
 	"'GetBucketAccelerateConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\"_\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayerB\x16\n" +
+	"\x14_expectedbucketowner\"_\n" +
 	"\x12GetBucketAclOutput\x12$\n" +
 	"\x06grants\x18\xdb\u0099l \x03(\v2\t.s3.GrantR\x06grants\x12#\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\"e\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\"\x82\x01\n" +
 	"\x13GetBucketAclRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x84\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x84\x01\n" +
 	"%GetBucketAnalyticsConfigurationOutput\x12[\n" +
-	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v2\x1a.s3.AnalyticsConfigurationB\x04\x88\xb5\x18\x01R\x16analyticsconfiguration\"\x8c\x01\n" +
+	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v2\x1a.s3.AnalyticsConfigurationB\x04\x88\xb5\x18\x01R\x16analyticsconfiguration\"\xa9\x01\n" +
 	"&GetBucketAnalyticsConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"E\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"E\n" +
 	"\x13GetBucketCorsOutput\x12.\n" +
-	"\tcorsrules\x18\x9c\xee\xf9\x85\x01 \x03(\v2\f.s3.CORSRuleR\tcorsrules\"f\n" +
+	"\tcorsrules\x18\x9c\xee\xf9\x85\x01 \x03(\v2\f.s3.CORSRuleR\tcorsrules\"\x83\x01\n" +
 	"\x14GetBucketCorsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x9a\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x9a\x01\n" +
 	"\x19GetBucketEncryptionOutput\x12}\n" +
-	"!serversideencryptionconfiguration\x18\xe3\ue056\x01 \x01(\v2%.s3.ServerSideEncryptionConfigurationB\x04\x88\xb5\x18\x01R!serversideencryptionconfiguration\"l\n" +
+	"!serversideencryptionconfiguration\x18\xe3\ue056\x01 \x01(\v2%.s3.ServerSideEncryptionConfigurationB\x04\x88\xb5\x18\x01R!serversideencryptionconfiguration\"\x89\x01\n" +
 	"\x1aGetBucketEncryptionRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xa9\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xa9\x01\n" +
 	".GetBucketIntelligentTieringConfigurationOutput\x12w\n" +
-	"\x1fintelligenttieringconfiguration\x18\xdd\xf1ٵ\x01 \x01(\v2#.s3.IntelligentTieringConfigurationB\x04\x88\xb5\x18\x01R\x1fintelligenttieringconfiguration\"\x95\x01\n" +
+	"\x1fintelligenttieringconfiguration\x18\xdd\xf1ٵ\x01 \x01(\v2#.s3.IntelligentTieringConfigurationB\x04\x88\xb5\x18\x01R\x1fintelligenttieringconfiguration\"\xb2\x01\n" +
 	"/GetBucketIntelligentTieringConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\x85\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\x85\x01\n" +
 	"%GetBucketInventoryConfigurationOutput\x12\\\n" +
-	"\x16inventoryconfiguration\x18\xa0\xc5ſ\x01 \x01(\v2\x1a.s3.InventoryConfigurationB\x04\x88\xb5\x18\x01R\x16inventoryconfiguration\"\x8c\x01\n" +
+	"\x16inventoryconfiguration\x18\xa0\xc5ſ\x01 \x01(\v2\x1a.s3.InventoryConfigurationB\x04\x88\xb5\x18\x01R\x16inventoryconfiguration\"\xa9\x01\n" +
 	"&GetBucketInventoryConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\xce\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\xce\x01\n" +
 	"%GetBucketLifecycleConfigurationOutput\x12*\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\x11.s3.LifecycleRuleR\x05rules\x12y\n" +
-	"\"transitiondefaultminimumobjectsize\x18\xb0\xaf\xf5& \x01(\x0e2&.s3.TransitionDefaultMinimumObjectSizeR\"transitiondefaultminimumobjectsize\"x\n" +
+	"\"transitiondefaultminimumobjectsize\x18\xb0\xaf\xf5& \x01(\x0e2&.s3.TransitionDefaultMinimumObjectSizeR\"transitiondefaultminimumobjectsize\"\x95\x01\n" +
 	"&GetBucketLifecycleConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"j\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"j\n" +
 	"\x17GetBucketLocationOutput\x12O\n" +
-	"\x12locationconstraint\x18\xdeƀu \x01(\x0e2\x1c.s3.BucketLocationConstraintR\x12locationconstraint\"j\n" +
+	"\x12locationconstraint\x18\xdeƀu \x01(\x0e2\x1c.s3.BucketLocationConstraintR\x12locationconstraint\"\x87\x01\n" +
 	"\x18GetBucketLocationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"W\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"W\n" +
 	"\x16GetBucketLoggingOutput\x12=\n" +
-	"\x0eloggingenabled\x18\xdc\xfc\xff8 \x01(\v2\x12.s3.LoggingEnabledR\x0eloggingenabled\"i\n" +
+	"\x0eloggingenabled\x18\xdc\xfc\xff8 \x01(\v2\x12.s3.LoggingEnabledR\x0eloggingenabled\"\x86\x01\n" +
 	"\x17GetBucketLoggingRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xaf\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xaf\x01\n" +
 	"$GetBucketMetadataConfigurationOutput\x12\x86\x01\n" +
-	"$getbucketmetadataconfigurationresult\x18\x9c\xcb\xc6\xfa\x01 \x01(\v2(.s3.GetBucketMetadataConfigurationResultB\x04\x88\xb5\x18\x01R$getbucketmetadataconfigurationresult\"w\n" +
+	"$getbucketmetadataconfigurationresult\x18\x9c\xcb\xc6\xfa\x01 \x01(\v2(.s3.GetBucketMetadataConfigurationResultB\x04\x88\xb5\x18\x01R$getbucketmetadataconfigurationresult\"\x94\x01\n" +
 	"%GetBucketMetadataConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x8c\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x8c\x01\n" +
 	"$GetBucketMetadataConfigurationResult\x12d\n" +
 	"\x1bmetadataconfigurationresult\x18\xac\xae\xb7H \x01(\v2\x1f.s3.MetadataConfigurationResultR\x1bmetadataconfigurationresult\"\xc3\x01\n" +
 	")GetBucketMetadataTableConfigurationOutput\x12\x95\x01\n" +
-	")getbucketmetadatatableconfigurationresult\x18\x98뮝\x01 \x01(\v2-.s3.GetBucketMetadataTableConfigurationResultB\x04\x88\xb5\x18\x01R)getbucketmetadatatableconfigurationresult\"|\n" +
+	")getbucketmetadatatableconfigurationresult\x18\x98뮝\x01 \x01(\v2-.s3.GetBucketMetadataTableConfigurationResultB\x04\x88\xb5\x18\x01R)getbucketmetadatatableconfigurationresult\"\x99\x01\n" +
 	"*GetBucketMetadataTableConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xe7\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xe7\x01\n" +
 	")GetBucketMetadataTableConfigurationResult\x12*\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x10.s3.ErrorDetailsR\x05error\x12s\n" +
 	" metadatatableconfigurationresult\x18贎V \x01(\v2$.s3.MetadataTableConfigurationResultR metadatatableconfigurationresult\x12\x19\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\tR\x06status\"|\n" +
 	"#GetBucketMetricsConfigurationOutput\x12U\n" +
-	"\x14metricsconfiguration\x18ݤ\xf5\x06 \x01(\v2\x18.s3.MetricsConfigurationB\x04\x88\xb5\x18\x01R\x14metricsconfiguration\"\x8a\x01\n" +
+	"\x14metricsconfiguration\x18ݤ\xf5\x06 \x01(\v2\x18.s3.MetricsConfigurationB\x04\x88\xb5\x18\x01R\x14metricsconfiguration\"\xa7\x01\n" +
 	"$GetBucketMetricsConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"{\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\x98\x01\n" +
 	")GetBucketNotificationConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"p\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"p\n" +
 	" GetBucketOwnershipControlsOutput\x12L\n" +
-	"\x11ownershipcontrols\x18\xe1\xc3\xf8\x02 \x01(\v2\x15.s3.OwnershipControlsB\x04\x88\xb5\x18\x01R\x11ownershipcontrols\"s\n" +
+	"\x11ownershipcontrols\x18\xe1\xc3\xf8\x02 \x01(\v2\x15.s3.OwnershipControlsB\x04\x88\xb5\x18\x01R\x11ownershipcontrols\"\x90\x01\n" +
 	"!GetBucketOwnershipControlsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"9\n" +
-	"\x15GetBucketPolicyOutput\x12 \n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tB\x04\x88\xb5\x18\x01R\x06policy\"h\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"I\n" +
+	"\x15GetBucketPolicyOutput\x12%\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tB\x04\x88\xb5\x18\x01H\x00R\x06policy\x88\x01\x01B\t\n" +
+	"\a_policy\"\x85\x01\n" +
 	"\x16GetBucketPolicyRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\\\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\\\n" +
 	"\x1bGetBucketPolicyStatusOutput\x12=\n" +
-	"\fpolicystatus\x18\xaa\x9a\x8bz \x01(\v2\x10.s3.PolicyStatusB\x04\x88\xb5\x18\x01R\fpolicystatus\"n\n" +
+	"\fpolicystatus\x18\xaa\x9a\x8bz \x01(\v2\x10.s3.PolicyStatusB\x04\x88\xb5\x18\x01R\fpolicystatus\"\x8b\x01\n" +
 	"\x1cGetBucketPolicyStatusRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x7f\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x7f\n" +
 	"\x1aGetBucketReplicationOutput\x12a\n" +
-	"\x18replicationconfiguration\x18\xd6ϟ7 \x01(\v2\x1c.s3.ReplicationConfigurationB\x04\x88\xb5\x18\x01R\x18replicationconfiguration\"m\n" +
+	"\x18replicationconfiguration\x18\xd6ϟ7 \x01(\v2\x1c.s3.ReplicationConfigurationB\x04\x88\xb5\x18\x01R\x18replicationconfiguration\"\x8a\x01\n" +
 	"\x1bGetBucketReplicationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"C\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"C\n" +
 	"\x1dGetBucketRequestPaymentOutput\x12\"\n" +
-	"\x05payer\x18㉢S \x01(\x0e2\t.s3.PayerR\x05payer\"p\n" +
+	"\x05payer\x18㉢S \x01(\x0e2\t.s3.PayerR\x05payer\"\x8d\x01\n" +
 	"\x1eGetBucketRequestPaymentRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"=\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"=\n" +
 	"\x16GetBucketTaggingOutput\x12#\n" +
-	"\x06tagset\x18\xf2\x81\xd4\xd8\x01 \x03(\v2\a.s3.TagR\x06tagset\"i\n" +
+	"\x06tagset\x18\xf2\x81\xd4\xd8\x01 \x03(\v2\a.s3.TagR\x06tagset\"\x86\x01\n" +
 	"\x17GetBucketTaggingRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x89\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x89\x01\n" +
 	"\x19GetBucketVersioningOutput\x125\n" +
 	"\tmfadelete\x18\x97\xdd\xed\xa8\x01 \x01(\x0e2\x13.s3.MFADeleteStatusR\tmfadelete\x125\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketVersioningStatusR\x06status\"l\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketVersioningStatusR\x06status\"\x89\x01\n" +
 	"\x1aGetBucketVersioningRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x9e\x02\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x9e\x02\n" +
 	"\x16GetBucketWebsiteOutput\x12;\n" +
 	"\rerrordocument\x18\xe9\xba\xfc\x9c\x01 \x01(\v2\x11.s3.ErrorDocumentR\rerrordocument\x12:\n" +
 	"\rindexdocument\x18\xef\xfa\x8b\v \x01(\v2\x11.s3.IndexDocumentR\rindexdocument\x12S\n" +
 	"\x15redirectallrequeststo\x18\xe4ꜗ\x01 \x01(\v2\x19.s3.RedirectAllRequestsToR\x15redirectallrequeststo\x126\n" +
-	"\froutingrules\x18\xd5\xd1\xe7' \x03(\v2\x0f.s3.RoutingRuleR\froutingrules\"i\n" +
+	"\froutingrules\x18\xd5\xd1\xe7' \x03(\v2\x0f.s3.RoutingRuleR\froutingrules\"\x86\x01\n" +
 	"\x17GetBucketWebsiteRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x9f\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\x9f\x01\n" +
 	"\x12GetObjectAclOutput\x12$\n" +
 	"\x06grants\x18\xdb\u0099l \x03(\v2\t.s3.GrantR\x06grants\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xd6\x01\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x86\x02\n" +
 	"\x13GetObjectAclRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xca\a\n" +
-	"\x19GetObjectAnnotationOutput\x125\n" +
-	"\x11annotationpayload\x18\x97\x95\xe9' \x01(\fB\x04\x88\xb5\x18\x01R\x11annotationpayload\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12,\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x00R\rcontentlength\x88\x01\x01\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12,\n" +
-	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tR\x0fobjectversionid\x12G\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\x95\n" +
+	"\n" +
+	"\x19GetObjectAnnotationOutput\x12:\n" +
+	"\x11annotationpayload\x18\x97\x95\xe9' \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x11annotationpayload\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x01R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x02R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x03R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x04R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x05R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x06R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\aR\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\bR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\tR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\n" +
+	"R\x10checksumxxhash64\x88\x01\x01\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\vR\rcontentlength\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\fR\x04etag\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\rR\flastmodified\x88\x01\x01\x121\n" +
+	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tH\x0eR\x0fobjectversionid\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x10\n" +
-	"\x0e_contentlength\"\xc3\x02\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x14\n" +
+	"\x12_annotationpayloadB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x10\n" +
+	"\x0e_contentlengthB\a\n" +
+	"\x05_etagB\x0f\n" +
+	"\r_lastmodifiedB\x12\n" +
+	"\x10_objectversionid\"\xf3\x02\n" +
 	"\x1aGetObjectAnnotationRequest\x12*\n" +
 	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tR\x0eannotationname\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
-	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xdd\x03\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\x94\x04\n" +
 	"\x19GetObjectAttributesOutput\x12,\n" +
 	"\bchecksum\x18\xb3ǜ\xcf\x01 \x01(\v2\f.s3.ChecksumR\bchecksum\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12B\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x00R\fdeletemarker\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x01R\x04etag\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x02R\flastmodified\x88\x01\x01\x12B\n" +
 	"\vobjectparts\x18\xf9\xb1\xf9\xbf\x01 \x01(\v2\x1c.s3.GetObjectAttributesPartsR\vobjectparts\x12&\n" +
 	"\n" +
-	"objectsize\x18\xe4߆> \x01(\x03H\x01R\n" +
+	"objectsize\x18\xe4߆> \x01(\x03H\x03R\n" +
 	"objectsize\x88\x01\x01\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x0f\n" +
-	"\r_deletemarkerB\r\n" +
-	"\v_objectsize\"\xdc\x02\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x04R\tversionid\x88\x01\x01B\x0f\n" +
+	"\r_deletemarkerB\a\n" +
+	"\x05_etagB\x0f\n" +
+	"\r_lastmodifiedB\r\n" +
+	"\v_objectsizeB\f\n" +
+	"\n" +
+	"_versionid\"\x94\x03\n" +
 	"\x18GetObjectAttributesParts\x12(\n" +
 	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12#\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x125\n" +
-	"\x14nextpartnumbermarker\x18\x93\xe9\xe5\r \x01(\tR\x14nextpartnumbermarker\x12.\n" +
-	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x12'\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x12:\n" +
+	"\x14nextpartnumbermarker\x18\x93\xe9\xe5\r \x01(\tH\x02R\x14nextpartnumbermarker\x88\x01\x01\x123\n" +
+	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tH\x03R\x10partnumbermarker\x88\x01\x01\x12'\n" +
 	"\x05parts\x18Ɵ\xcae \x03(\v2\x0e.s3.ObjectPartR\x05parts\x120\n" +
-	"\x0ftotalpartscount\x18\xad\xfa\xea\x1a \x01(\x05H\x02R\x0ftotalpartscount\x88\x01\x01B\x0e\n" +
+	"\x0ftotalpartscount\x18\xad\xfa\xea\x1a \x01(\x05H\x04R\x0ftotalpartscount\x88\x01\x01B\x0e\n" +
 	"\f_istruncatedB\v\n" +
-	"\t_maxpartsB\x12\n" +
-	"\x10_totalpartscount\"\x97\x04\n" +
+	"\t_maxpartsB\x17\n" +
+	"\x15_nextpartnumbermarkerB\x13\n" +
+	"\x11_partnumbermarkerB\x12\n" +
+	"\x10_totalpartscount\"\xb2\x05\n" +
 	"\x1aGetObjectAttributesRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x00R\bmaxparts\x88\x01\x01\x12D\n" +
-	"\x10objectattributes\x18Є\xf4\xb0\x01 \x03(\x0e2\x14.s3.ObjectAttributesR\x10objectattributes\x12.\n" +
-	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\v\n" +
-	"\t_maxparts\"Z\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x12D\n" +
+	"\x10objectattributes\x18Є\xf4\xb0\x01 \x03(\x0e2\x14.s3.ObjectAttributesR\x10objectattributes\x123\n" +
+	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tH\x02R\x10partnumbermarker\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x03R\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x04R\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x05R\x11ssecustomerkeymd5\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x06R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\v\n" +
+	"\t_maxpartsB\x13\n" +
+	"\x11_partnumbermarkerB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5B\f\n" +
+	"\n" +
+	"_versionid\"Z\n" +
 	"\x18GetObjectLegalHoldOutput\x12>\n" +
-	"\tlegalhold\x18\xd4\xee\xa6C \x01(\v2\x17.s3.ObjectLockLegalHoldB\x04\x88\xb5\x18\x01R\tlegalhold\"\xdc\x01\n" +
+	"\tlegalhold\x18\xd4\xee\xa6C \x01(\v2\x17.s3.ObjectLockLegalHoldB\x04\x88\xb5\x18\x01R\tlegalhold\"\x8c\x02\n" +
 	"\x19GetObjectLegalHoldRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\x82\x01\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\x82\x01\n" +
 	" GetObjectLockConfigurationOutput\x12^\n" +
-	"\x17objectlockconfiguration\x18\x8a\x87\xd53 \x01(\v2\x1b.s3.ObjectLockConfigurationB\x04\x88\xb5\x18\x01R\x17objectlockconfiguration\"s\n" +
+	"\x17objectlockconfiguration\x18\x8a\x87\xd53 \x01(\v2\x1b.s3.ObjectLockConfigurationB\x04\x88\xb5\x18\x01R\x17objectlockconfiguration\"\x90\x01\n" +
 	"!GetObjectLockConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xb1\x11\n" +
-	"\x0fGetObjectOutput\x12&\n" +
-	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tR\facceptranges\x12\x1b\n" +
-	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12&\n" +
-	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tR\fcachecontrol\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
-	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12%\n" +
-	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tR\fcontentrange\x12$\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x02R\fdeletemarker\x88\x01\x01\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12!\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xd6\x16\n" +
+	"\x0fGetObjectOutput\x12+\n" +
+	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tH\x00R\facceptranges\x88\x01\x01\x12 \n" +
+	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01H\x01R\x04body\x88\x01\x01\x123\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x02R\x10bucketkeyenabled\x88\x01\x01\x12+\n" +
+	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tH\x03R\fcachecontrol\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x04R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x05R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x06R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\aR\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\bR\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\tR\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\n" +
+	"R\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\vR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\fR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\rR\x10checksumxxhash64\x88\x01\x01\x126\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\tH\x0eR\x12contentdisposition\x88\x01\x01\x121\n" +
+	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tH\x0fR\x0fcontentencoding\x88\x01\x01\x120\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tH\x10R\x0fcontentlanguage\x88\x01\x01\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x11R\rcontentlength\x88\x01\x01\x12*\n" +
+	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tH\x12R\fcontentrange\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x13R\vcontenttype\x88\x01\x01\x12*\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x14R\fdeletemarker\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x15R\x04etag\x88\x01\x01\x12&\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12\x1b\n" +
-	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12A\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\x16R\n" +
+	"expiration\x88\x01\x01\x12 \n" +
+	"\aexpires\x18\xa4\x8a\xa8= \x01(\tH\x17R\aexpires\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x18R\flastmodified\x88\x01\x01\x12A\n" +
 	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2!.s3.GetObjectOutput.MetadataEntryR\bmetadata\x12(\n" +
-	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x03R\vmissingmeta\x88\x01\x01\x12_\n" +
+	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x19R\vmissingmeta\x88\x01\x01\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
-	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12&\n" +
+	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12D\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tH\x1aR\x19objectlockretainuntildate\x88\x01\x01\x12&\n" +
 	"\n" +
-	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x04R\n" +
+	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x1bR\n" +
 	"partscount\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12\x1b\n" +
-	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tR\arestore\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12 \n" +
+	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tH\x1cR\arestore\x88\x01\x01\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x1dR\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x1eR\x11ssecustomerkeymd5\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x1fR\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
-	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x05R\btagcount\x88\x01\x01\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12;\n" +
-	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x1a;\n" +
+	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H R\btagcount\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH!R\tversionid\x88\x01\x01\x12@\n" +
+	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tH\"R\x17websiteredirectlocation\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x10\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_acceptrangesB\a\n" +
+	"\x05_bodyB\x13\n" +
+	"\x11_bucketkeyenabledB\x0f\n" +
+	"\r_cachecontrolB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x15\n" +
+	"\x13_contentdispositionB\x12\n" +
+	"\x10_contentencodingB\x12\n" +
+	"\x10_contentlanguageB\x10\n" +
 	"\x0e_contentlengthB\x0f\n" +
-	"\r_deletemarkerB\x0e\n" +
-	"\f_missingmetaB\r\n" +
-	"\v_partscountB\v\n" +
-	"\t_tagcount\"\xeb\a\n" +
+	"\r_contentrangeB\x0e\n" +
+	"\f_contenttypeB\x0f\n" +
+	"\r_deletemarkerB\a\n" +
+	"\x05_etagB\r\n" +
+	"\v_expirationB\n" +
+	"\n" +
+	"\b_expiresB\x0f\n" +
+	"\r_lastmodifiedB\x0e\n" +
+	"\f_missingmetaB\x1c\n" +
+	"\x1a_objectlockretainuntildateB\r\n" +
+	"\v_partscountB\n" +
+	"\n" +
+	"\b_restoreB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x0e\n" +
+	"\f_ssekmskeyidB\v\n" +
+	"\t_tagcountB\f\n" +
+	"\n" +
+	"_versionidB\x1a\n" +
+	"\x18_websiteredirectlocation\"\x8f\v\n" +
 	"\x10GetObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
-	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12,\n" +
-	"\x0fifmodifiedsince\x18\x96\xfd\xc1\xb3\x01 \x01(\tR\x0fifmodifiedsince\x12#\n" +
-	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x120\n" +
-	"\x11ifunmodifiedsince\x18\xf5\xfe\xba\x94\x01 \x01(\tR\x11ifunmodifiedsince\x12\x13\n" +
+	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tH\x01R\aifmatch\x88\x01\x01\x121\n" +
+	"\x0fifmodifiedsince\x18\x96\xfd\xc1\xb3\x01 \x01(\tH\x02R\x0fifmodifiedsince\x88\x01\x01\x12(\n" +
+	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tH\x03R\vifnonematch\x88\x01\x01\x125\n" +
+	"\x11ifunmodifiedsince\x18\xf5\xfe\xba\x94\x01 \x01(\tH\x04R\x11ifunmodifiedsince\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
-	"partnumber\x88\x01\x01\x12\x17\n" +
-	"\x05range\x18\xf3\xce\xc7\x18 \x01(\tR\x05range\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14responsecachecontrol\x18\x82\xcb\xc9G \x01(\tR\x14responsecachecontrol\x12B\n" +
-	"\x1aresponsecontentdisposition\x18\xb7\xa6\x87\xbc\x01 \x01(\tR\x1aresponsecontentdisposition\x12;\n" +
-	"\x17responsecontentencoding\x18\x8f\x98\xac  \x01(\tR\x17responsecontentencoding\x12<\n" +
-	"\x17responsecontentlanguage\x18\xe2\xe2\xec\xbd\x01 \x01(\tR\x17responsecontentlanguage\x124\n" +
-	"\x13responsecontenttype\x18\x88߇\xb9\x01 \x01(\tR\x13responsecontenttype\x12+\n" +
-	"\x0fresponseexpires\x18\xa7\xd6\xe5p \x01(\tR\x0fresponseexpires\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\r\n" +
-	"\v_partnumber\"[\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x05R\n" +
+	"partnumber\x88\x01\x01\x12\x1c\n" +
+	"\x05range\x18\xf3\xce\xc7\x18 \x01(\tH\x06R\x05range\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14responsecachecontrol\x18\x82\xcb\xc9G \x01(\tH\aR\x14responsecachecontrol\x88\x01\x01\x12G\n" +
+	"\x1aresponsecontentdisposition\x18\xb7\xa6\x87\xbc\x01 \x01(\tH\bR\x1aresponsecontentdisposition\x88\x01\x01\x12@\n" +
+	"\x17responsecontentencoding\x18\x8f\x98\xac  \x01(\tH\tR\x17responsecontentencoding\x88\x01\x01\x12A\n" +
+	"\x17responsecontentlanguage\x18\xe2\xe2\xec\xbd\x01 \x01(\tH\n" +
+	"R\x17responsecontentlanguage\x88\x01\x01\x129\n" +
+	"\x13responsecontenttype\x18\x88߇\xb9\x01 \x01(\tH\vR\x13responsecontenttype\x88\x01\x01\x120\n" +
+	"\x0fresponseexpires\x18\xa7\xd6\xe5p \x01(\tH\fR\x0fresponseexpires\x88\x01\x01\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\rR\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x0eR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x0fR\x11ssecustomerkeymd5\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x10R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\n" +
+	"\n" +
+	"\b_ifmatchB\x12\n" +
+	"\x10_ifmodifiedsinceB\x0e\n" +
+	"\f_ifnonematchB\x14\n" +
+	"\x12_ifunmodifiedsinceB\r\n" +
+	"\v_partnumberB\b\n" +
+	"\x06_rangeB\x17\n" +
+	"\x15_responsecachecontrolB\x1d\n" +
+	"\x1b_responsecontentdispositionB\x1a\n" +
+	"\x18_responsecontentencodingB\x1a\n" +
+	"\x18_responsecontentlanguageB\x16\n" +
+	"\x14_responsecontenttypeB\x12\n" +
+	"\x10_responseexpiresB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5B\f\n" +
+	"\n" +
+	"_versionid\"[\n" +
 	"\x18GetObjectRetentionOutput\x12?\n" +
-	"\tretention\x18\xb2\x98\xee\x8e\x01 \x01(\v2\x17.s3.ObjectLockRetentionB\x04\x88\xb5\x18\x01R\tretention\"\xdc\x01\n" +
+	"\tretention\x18\xb2\x98\xee\x8e\x01 \x01(\v2\x17.s3.ObjectLockRetentionB\x04\x88\xb5\x18\x01R\tretention\"\x8c\x02\n" +
 	"\x19GetObjectRetentionRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"_\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"r\n" +
 	"\x16GetObjectTaggingOutput\x12#\n" +
-	"\x06tagset\x18\xf2\x81\xd4\xd8\x01 \x03(\v2\a.s3.TagR\x06tagset\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xda\x01\n" +
+	"\x06tagset\x18\xf2\x81\xd4\xd8\x01 \x03(\v2\a.s3.TagR\x06tagset\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x00R\tversionid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_versionid\"\x8a\x02\n" +
 	"\x17GetObjectTaggingRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"u\n" +
-	"\x16GetObjectTorrentOutput\x12\x1b\n" +
-	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xb8\x01\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\x83\x01\n" +
+	"\x16GetObjectTorrentOutput\x12 \n" +
+	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x04body\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\a\n" +
+	"\x05_body\"\xd5\x01\n" +
 	"\x17GetObjectTorrentRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\"\x91\x01\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayerB\x16\n" +
+	"\x14_expectedbucketowner\"\x91\x01\n" +
 	"\x1aGetPublicAccessBlockOutput\x12s\n" +
-	"\x1epublicaccessblockconfiguration\x18\x88\x9b\x8bA \x01(\v2\".s3.PublicAccessBlockConfigurationB\x04\x88\xb5\x18\x01R\x1epublicaccessblockconfiguration\"m\n" +
+	"\x1epublicaccessblockconfiguration\x18\x88\x9b\x8bA \x01(\v2\".s3.PublicAccessBlockConfigurationB\x04\x88\xb5\x18\x01R\x1epublicaccessblockconfiguration\"\x8a\x01\n" +
 	"\x1bGetPublicAccessBlockRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"8\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"8\n" +
 	"\x14GlacierJobParameters\x12 \n" +
 	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\b.s3.TierR\x04tier\"e\n" +
 	"\x05Grant\x12(\n" +
 	"\agrantee\x18\xe8\xeb\xd3* \x01(\v2\v.s3.GranteeR\agrantee\x122\n" +
 	"\n" +
 	"permission\x18\xa3\x94\x91\xde\x01 \x01(\x0e2\x0e.s3.PermissionR\n" +
-	"permission\"\xa3\x01\n" +
-	"\aGrantee\x12$\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tR\vdisplayname\x12&\n" +
-	"\femailaddress\x18\xd6\xf1\x8a\xe9\x01 \x01(\tR\femailaddress\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12 \n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\b.s3.TypeR\x04type\x12\x14\n" +
-	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tR\x03uri\"\x9e\x02\n" +
+	"permission\"\xe7\x01\n" +
+	"\aGrantee\x12)\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12+\n" +
+	"\femailaddress\x18\xd6\xf1\x8a\xe9\x01 \x01(\tH\x01R\femailaddress\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12 \n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\b.s3.TypeR\x04type\x12\x19\n" +
+	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tH\x03R\x03uri\x88\x01\x01B\x0e\n" +
+	"\f_displaynameB\x0f\n" +
+	"\r_emailaddressB\x05\n" +
+	"\x03_idB\x06\n" +
+	"\x04_uri\"\xe3\x02\n" +
 	"\x10HeadBucketOutput\x123\n" +
-	"\x10accesspointalias\x18\xee⏬\x01 \x01(\bH\x00R\x10accesspointalias\x88\x01\x01\x12\x1f\n" +
-	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tR\tbucketarn\x121\n" +
-	"\x12bucketlocationname\x18䢥< \x01(\tR\x12bucketlocationname\x12D\n" +
-	"\x12bucketlocationtype\x18Ɉ\x98\x92\x01 \x01(\x0e2\x10.s3.LocationTypeR\x12bucketlocationtype\x12&\n" +
-	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tR\fbucketregionB\x13\n" +
-	"\x11_accesspointalias\"c\n" +
+	"\x10accesspointalias\x18\xee⏬\x01 \x01(\bH\x00R\x10accesspointalias\x88\x01\x01\x12$\n" +
+	"\tbucketarn\x18\xbb\xda\xf5y \x01(\tH\x01R\tbucketarn\x88\x01\x01\x126\n" +
+	"\x12bucketlocationname\x18䢥< \x01(\tH\x02R\x12bucketlocationname\x88\x01\x01\x12D\n" +
+	"\x12bucketlocationtype\x18Ɉ\x98\x92\x01 \x01(\x0e2\x10.s3.LocationTypeR\x12bucketlocationtype\x12+\n" +
+	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tH\x03R\fbucketregion\x88\x01\x01B\x13\n" +
+	"\x11_accesspointaliasB\f\n" +
+	"\n" +
+	"_bucketarnB\x15\n" +
+	"\x13_bucketlocationnameB\x0f\n" +
+	"\r_bucketregion\"\x80\x01\n" +
 	"\x11HeadBucketRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xd3\x11\n" +
-	"\x10HeadObjectOutput\x12&\n" +
-	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tR\facceptranges\x12;\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xea\x16\n" +
+	"\x10HeadObjectOutput\x12+\n" +
+	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tH\x00R\facceptranges\x88\x01\x01\x12;\n" +
 	"\rarchivestatus\x18\xf0\xf2\xa1\xfe\x01 \x01(\x0e2\x11.s3.ArchiveStatusR\rarchivestatus\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12&\n" +
-	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tR\fcachecontrol\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
-	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12%\n" +
-	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tR\fcontentrange\x12$\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x02R\fdeletemarker\x88\x01\x01\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12!\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x01R\x10bucketkeyenabled\x88\x01\x01\x12+\n" +
+	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tH\x02R\fcachecontrol\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x03R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x04R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x05R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x06R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\aR\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\bR\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\tR\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\n" +
+	"R\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\vR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\fR\x10checksumxxhash64\x88\x01\x01\x126\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\tH\rR\x12contentdisposition\x88\x01\x01\x121\n" +
+	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tH\x0eR\x0fcontentencoding\x88\x01\x01\x120\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tH\x0fR\x0fcontentlanguage\x88\x01\x01\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x10R\rcontentlength\x88\x01\x01\x12*\n" +
+	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tH\x11R\fcontentrange\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x12R\vcontenttype\x88\x01\x01\x12*\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x13R\fdeletemarker\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x14R\x04etag\x88\x01\x01\x12&\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12\x1b\n" +
-	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12B\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\x15R\n" +
+	"expiration\x88\x01\x01\x12 \n" +
+	"\aexpires\x18\xa4\x8a\xa8= \x01(\tH\x16R\aexpires\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x17R\flastmodified\x88\x01\x01\x12B\n" +
 	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2\".s3.HeadObjectOutput.MetadataEntryR\bmetadata\x12(\n" +
-	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x03R\vmissingmeta\x88\x01\x01\x12_\n" +
+	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x18R\vmissingmeta\x88\x01\x01\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
-	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12&\n" +
+	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12D\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tH\x19R\x19objectlockretainuntildate\x88\x01\x01\x12&\n" +
 	"\n" +
-	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x04R\n" +
+	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x1aR\n" +
 	"partscount\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12\x1b\n" +
-	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tR\arestore\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12 \n" +
+	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tH\x1bR\arestore\x88\x01\x01\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x1cR\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x1dR\x11ssecustomerkeymd5\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x1eR\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
-	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x05R\btagcount\x88\x01\x01\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x12;\n" +
-	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x1a;\n" +
+	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x1fR\btagcount\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH R\tversionid\x88\x01\x01\x12@\n" +
+	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tH!R\x17websiteredirectlocation\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x10\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_acceptrangesB\x13\n" +
+	"\x11_bucketkeyenabledB\x0f\n" +
+	"\r_cachecontrolB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x15\n" +
+	"\x13_contentdispositionB\x12\n" +
+	"\x10_contentencodingB\x12\n" +
+	"\x10_contentlanguageB\x10\n" +
 	"\x0e_contentlengthB\x0f\n" +
-	"\r_deletemarkerB\x0e\n" +
-	"\f_missingmetaB\r\n" +
-	"\v_partscountB\v\n" +
-	"\t_tagcount\"\xec\a\n" +
+	"\r_contentrangeB\x0e\n" +
+	"\f_contenttypeB\x0f\n" +
+	"\r_deletemarkerB\a\n" +
+	"\x05_etagB\r\n" +
+	"\v_expirationB\n" +
+	"\n" +
+	"\b_expiresB\x0f\n" +
+	"\r_lastmodifiedB\x0e\n" +
+	"\f_missingmetaB\x1c\n" +
+	"\x1a_objectlockretainuntildateB\r\n" +
+	"\v_partscountB\n" +
+	"\n" +
+	"\b_restoreB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x0e\n" +
+	"\f_ssekmskeyidB\v\n" +
+	"\t_tagcountB\f\n" +
+	"\n" +
+	"_versionidB\x1a\n" +
+	"\x18_websiteredirectlocation\"\x90\v\n" +
 	"\x11HeadObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
-	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12,\n" +
-	"\x0fifmodifiedsince\x18\x96\xfd\xc1\xb3\x01 \x01(\tR\x0fifmodifiedsince\x12#\n" +
-	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x120\n" +
-	"\x11ifunmodifiedsince\x18\xf5\xfe\xba\x94\x01 \x01(\tR\x11ifunmodifiedsince\x12\x13\n" +
+	"\fchecksummode\x18\xba\xf8\x83\xa7\x01 \x01(\x0e2\x10.s3.ChecksumModeR\fchecksummode\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tH\x01R\aifmatch\x88\x01\x01\x121\n" +
+	"\x0fifmodifiedsince\x18\x96\xfd\xc1\xb3\x01 \x01(\tH\x02R\x0fifmodifiedsince\x88\x01\x01\x12(\n" +
+	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tH\x03R\vifnonematch\x88\x01\x01\x125\n" +
+	"\x11ifunmodifiedsince\x18\xf5\xfe\xba\x94\x01 \x01(\tH\x04R\x11ifunmodifiedsince\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
-	"partnumber\x88\x01\x01\x12\x17\n" +
-	"\x05range\x18\xf3\xce\xc7\x18 \x01(\tR\x05range\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14responsecachecontrol\x18\x82\xcb\xc9G \x01(\tR\x14responsecachecontrol\x12B\n" +
-	"\x1aresponsecontentdisposition\x18\xb7\xa6\x87\xbc\x01 \x01(\tR\x1aresponsecontentdisposition\x12;\n" +
-	"\x17responsecontentencoding\x18\x8f\x98\xac  \x01(\tR\x17responsecontentencoding\x12<\n" +
-	"\x17responsecontentlanguage\x18\xe2\xe2\xec\xbd\x01 \x01(\tR\x17responsecontentlanguage\x124\n" +
-	"\x13responsecontenttype\x18\x88߇\xb9\x01 \x01(\tR\x13responsecontenttype\x12+\n" +
-	"\x0fresponseexpires\x18\xa7\xd6\xe5p \x01(\tR\x0fresponseexpires\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\r\n" +
-	"\v_partnumber\"\x1e\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x05R\n" +
+	"partnumber\x88\x01\x01\x12\x1c\n" +
+	"\x05range\x18\xf3\xce\xc7\x18 \x01(\tH\x06R\x05range\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14responsecachecontrol\x18\x82\xcb\xc9G \x01(\tH\aR\x14responsecachecontrol\x88\x01\x01\x12G\n" +
+	"\x1aresponsecontentdisposition\x18\xb7\xa6\x87\xbc\x01 \x01(\tH\bR\x1aresponsecontentdisposition\x88\x01\x01\x12@\n" +
+	"\x17responsecontentencoding\x18\x8f\x98\xac  \x01(\tH\tR\x17responsecontentencoding\x88\x01\x01\x12A\n" +
+	"\x17responsecontentlanguage\x18\xe2\xe2\xec\xbd\x01 \x01(\tH\n" +
+	"R\x17responsecontentlanguage\x88\x01\x01\x129\n" +
+	"\x13responsecontenttype\x18\x88߇\xb9\x01 \x01(\tH\vR\x13responsecontenttype\x88\x01\x01\x120\n" +
+	"\x0fresponseexpires\x18\xa7\xd6\xe5p \x01(\tH\fR\x0fresponseexpires\x88\x01\x01\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\rR\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x0eR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x0fR\x11ssecustomerkeymd5\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x10R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\n" +
+	"\n" +
+	"\b_ifmatchB\x12\n" +
+	"\x10_ifmodifiedsinceB\x0e\n" +
+	"\f_ifnonematchB\x14\n" +
+	"\x12_ifunmodifiedsinceB\r\n" +
+	"\v_partnumberB\b\n" +
+	"\x06_rangeB\x17\n" +
+	"\x15_responsecachecontrolB\x1d\n" +
+	"\x1b_responsecontentdispositionB\x1a\n" +
+	"\x18_responsecontentencodingB\x1a\n" +
+	"\x18_responsecontentlanguageB\x16\n" +
+	"\x14_responsecontenttypeB\x12\n" +
+	"\x10_responseexpiresB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5B\f\n" +
+	"\n" +
+	"_versionid\"\x1e\n" +
 	"\x1cIdempotencyParameterMismatch\"+\n" +
 	"\rIndexDocument\x12\x1a\n" +
-	"\x06suffix\x18\xed\xf4\xf6\x88\x01 \x01(\tR\x06suffix\"E\n" +
-	"\tInitiator\x12$\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tR\vdisplayname\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\"\xd2\x01\n" +
+	"\x06suffix\x18\xed\xf4\xf6\x88\x01 \x01(\tR\x06suffix\"f\n" +
+	"\tInitiator\x12)\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01B\x0e\n" +
+	"\f_displaynameB\x05\n" +
+	"\x03_id\"\xd2\x01\n" +
 	"\x12InputSerialization\x12\"\n" +
 	"\x03csv\x18\xc0Ć\xd9\x01 \x01(\v2\f.s3.CSVInputR\x03csv\x12A\n" +
 	"\x0fcompressiontype\x18\xde\xf5\xea\x9f\x01 \x01(\x0e2\x13.s3.CompressionTypeR\x0fcompressiontype\x12%\n" +
 	"\x04json\x18\xc4\xff\xf5\xfd\x01 \x01(\v2\r.s3.JSONInputR\x04json\x12.\n" +
-	"\aparquet\x18쪛\x93\x01 \x01(\v2\x10.s3.ParquetInputR\aparquet\"\\\n" +
-	"\x1dIntelligentTieringAndOperator\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\xd4\x01\n" +
+	"\aparquet\x18쪛\x93\x01 \x01(\v2\x10.s3.ParquetInputR\aparquet\"l\n" +
+	"\x1dIntelligentTieringAndOperator\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01\x12\x1f\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tagsB\t\n" +
+	"\a_prefix\"\xd4\x01\n" +
 	"\x1fIntelligentTieringConfiguration\x128\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x1c.s3.IntelligentTieringFilterR\x06filter\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x127\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1c.s3.IntelligentTieringStatusR\x06status\x12*\n" +
-	"\btierings\x18͋\x94, \x03(\v2\v.s3.TieringR\btierings\"\x8e\x01\n" +
+	"\btierings\x18͋\x94, \x03(\v2\v.s3.TieringR\btierings\"\x9e\x01\n" +
 	"\x18IntelligentTieringFilter\x127\n" +
-	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2!.s3.IntelligentTieringAndOperatorR\x03and\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
-	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tag\"\x17\n" +
+	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2!.s3.IntelligentTieringAndOperatorR\x03and\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01\x12\x1d\n" +
+	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tagB\t\n" +
+	"\a_prefix\"\x17\n" +
 	"\x15InvalidAnnotationName\"\x93\x01\n" +
 	"\x12InvalidObjectState\x12C\n" +
 	"\n" +
@@ -31401,334 +31878,453 @@ const file_s3_proto_rawDesc = "" +
 	".s3.SSEKMSR\x06ssekms\x12\"\n" +
 	"\x05sses3\x18\xe1\xf3\x82\x02 \x01(\v2\t.s3.SSES3R\x05sses3\"-\n" +
 	"\x0fInventoryFilter\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\xe3\x01\n" +
-	"\x1cInventoryS3BucketDestination\x12\x1f\n" +
-	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tR\taccountid\x12\x19\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\x86\x02\n" +
+	"\x1cInventoryS3BucketDestination\x12$\n" +
+	"\taccountid\x18\xd2\xc1\xb9\x1f \x01(\tH\x00R\taccountid\x88\x01\x01\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12:\n" +
 	"\n" +
 	"encryption\x18\xbd\xd6\xd4A \x01(\v2\x17.s3.InventoryEncryptionR\n" +
 	"encryption\x12/\n" +
-	"\x06format\x18\xf3\xfe\xc3\xfd\x01 \x01(\x0e2\x13.s3.InventoryFormatR\x06format\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"L\n" +
+	"\x06format\x18\xf3\xfe\xc3\xfd\x01 \x01(\x0e2\x13.s3.InventoryFormatR\x06format\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01B\f\n" +
+	"\n" +
+	"_accountidB\t\n" +
+	"\a_prefix\"L\n" +
 	"\x11InventorySchedule\x127\n" +
 	"\tfrequency\x18\xa2\x8d\xc8l \x01(\x0e2\x16.s3.InventoryFrequencyR\tfrequency\"\xd9\x01\n" +
 	"\x1bInventoryTableConfiguration\x12S\n" +
 	"\x12configurationstate\x18\xfb\x98\xc6\xda\x01 \x01(\x0e2\x1f.s3.InventoryConfigurationStateR\x12configurationstate\x12e\n" +
-	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\"\x8b\x02\n" +
+	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\"\xc5\x02\n" +
 	"!InventoryTableConfigurationResult\x12S\n" +
 	"\x12configurationstate\x18\xfb\x98\xc6\xda\x01 \x01(\x0e2\x1f.s3.InventoryConfigurationStateR\x12configurationstate\x12*\n" +
-	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x10.s3.ErrorDetailsR\x05error\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12 \n" +
-	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12#\n" +
-	"\vtablestatus\x18\xcaߑc \x01(\tR\vtablestatus\"\xe0\x01\n" +
+	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x10.s3.ErrorDetailsR\x05error\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x00R\btablearn\x88\x01\x01\x12%\n" +
+	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tH\x01R\ttablename\x88\x01\x01\x12(\n" +
+	"\vtablestatus\x18\xcaߑc \x01(\tH\x02R\vtablestatus\x88\x01\x01B\v\n" +
+	"\t_tablearnB\f\n" +
+	"\n" +
+	"_tablenameB\x0e\n" +
+	"\f_tablestatus\"\xe0\x01\n" +
 	"\"InventoryTableConfigurationUpdates\x12S\n" +
 	"\x12configurationstate\x18\xfb\x98\xc6\xda\x01 \x01(\x0e2\x1f.s3.InventoryConfigurationStateR\x12configurationstate\x12e\n" +
 	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\"1\n" +
 	"\tJSONInput\x12$\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\f.s3.JSONTypeR\x04type\":\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\f.s3.JSONTypeR\x04type\"S\n" +
 	"\n" +
-	"JSONOutput\x12,\n" +
-	"\x0frecorddelimiter\x18\xb6\x8cގ\x01 \x01(\tR\x0frecorddelimiter\"\xc8\x01\n" +
+	"JSONOutput\x121\n" +
+	"\x0frecorddelimiter\x18\xb6\x8cގ\x01 \x01(\tH\x00R\x0frecorddelimiter\x88\x01\x01B\x12\n" +
+	"\x10_recorddelimiter\"\xc8\x01\n" +
 	"\x19JournalTableConfiguration\x12e\n" +
 	"\x17encryptionconfiguration\x18\xf7\xc6\xd3k \x01(\v2(.s3.MetadataTableEncryptionConfigurationR\x17encryptionconfiguration\x12D\n" +
-	"\x10recordexpiration\x18\xdaᣜ\x01 \x01(\v2\x14.s3.RecordExpirationR\x10recordexpiration\"\xfa\x01\n" +
+	"\x10recordexpiration\x18\xdaᣜ\x01 \x01(\v2\x14.s3.RecordExpirationR\x10recordexpiration\"\x8c\x02\n" +
 	"\x1fJournalTableConfigurationResult\x12*\n" +
 	"\x05error\x18\U000b9d9c\x01 \x01(\v2\x10.s3.ErrorDetailsR\x05error\x12D\n" +
-	"\x10recordexpiration\x18\xdaᣜ\x01 \x01(\v2\x14.s3.RecordExpirationR\x10recordexpiration\x12\x1e\n" +
-	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tR\btablearn\x12 \n" +
+	"\x10recordexpiration\x18\xdaᣜ\x01 \x01(\v2\x14.s3.RecordExpirationR\x10recordexpiration\x12#\n" +
+	"\btablearn\x18\xe3\x80\xeb\xcd\x01 \x01(\tH\x00R\btablearn\x88\x01\x01\x12 \n" +
 	"\ttablename\x18\xdd\xe4ځ\x01 \x01(\tR\ttablename\x12#\n" +
-	"\vtablestatus\x18\xcaߑc \x01(\tR\vtablestatus\"h\n" +
+	"\vtablestatus\x18\xcaߑc \x01(\tR\vtablestatusB\v\n" +
+	"\t_tablearn\"h\n" +
 	" JournalTableConfigurationUpdates\x12D\n" +
-	"\x10recordexpiration\x18\xdaᣜ\x01 \x01(\v2\x14.s3.RecordExpirationR\x10recordexpiration\"\xca\x01\n" +
+	"\x10recordexpiration\x18\xdaᣜ\x01 \x01(\v2\x14.s3.RecordExpirationR\x10recordexpiration\"\xd6\x01\n" +
 	"\x1bLambdaFunctionConfiguration\x12$\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\x0e2\t.s3.EventR\x06events\x12?\n" +
-	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x120\n" +
-	"\x11lambdafunctionarn\x18\xfa\x8e\x9c\xfe\x01 \x01(\tR\x11lambdafunctionarn\"\xb7\x01\n" +
-	"\x13LifecycleExpiration\x12\x16\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x1b\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12D\n" +
-	"\x19expiredobjectdeletemarker\x18\xb5\xf3\xfcn \x01(\bH\x01R\x19expiredobjectdeletemarker\x88\x01\x01B\a\n" +
+	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x120\n" +
+	"\x11lambdafunctionarn\x18\xfa\x8e\x9c\xfe\x01 \x01(\tR\x11lambdafunctionarnB\x05\n" +
+	"\x03_id\"\xc5\x01\n" +
+	"\x13LifecycleExpiration\x12\x1b\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x00R\x04date\x88\x01\x01\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x01R\x04days\x88\x01\x01\x12D\n" +
+	"\x19expiredobjectdeletemarker\x18\xb5\xf3\xfcn \x01(\bH\x02R\x19expiredobjectdeletemarker\x88\x01\x01B\a\n" +
+	"\x05_dateB\a\n" +
 	"\x05_daysB\x1c\n" +
-	"\x1a_expiredobjectdeletemarker\"\xd4\x04\n" +
+	"\x1a_expiredobjectdeletemarker\"\xf0\x04\n" +
 	"\rLifecycleRule\x12m\n" +
 	"\x1eabortincompletemultipartupload\x18Ӷ\x95E \x01(\v2\".s3.AbortIncompleteMultipartUploadR\x1eabortincompletemultipartupload\x12:\n" +
 	"\n" +
 	"expiration\x18\x89\xa9\x9fu \x01(\v2\x17.s3.LifecycleExpirationR\n" +
 	"expiration\x123\n" +
-	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x17.s3.LifecycleRuleFilterR\x06filter\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12d\n" +
+	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x17.s3.LifecycleRuleFilterR\x06filter\x12\x17\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12d\n" +
 	"\x1bnoncurrentversionexpiration\x18\xfb\x8c\x93# \x01(\v2\x1f.s3.NoncurrentVersionExpirationR\x1bnoncurrentversionexpiration\x12f\n" +
-	"\x1cnoncurrentversiontransitions\x18\x8e\xb1\x9dy \x03(\v2\x1f.s3.NoncurrentVersionTransitionR\x1cnoncurrentversiontransitions\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12/\n" +
+	"\x1cnoncurrentversiontransitions\x18\x8e\xb1\x9dy \x03(\v2\x1f.s3.NoncurrentVersionTransitionR\x1cnoncurrentversiontransitions\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01\x12/\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x14.s3.ExpirationStatusR\x06status\x124\n" +
-	"\vtransitions\x18\xe4\xef\xe1\xcf\x01 \x03(\v2\x0e.s3.TransitionR\vtransitions\"\x80\x02\n" +
+	"\vtransitions\x18\xe4\xef\xe1\xcf\x01 \x03(\v2\x0e.s3.TransitionR\vtransitionsB\x05\n" +
+	"\x03_idB\t\n" +
+	"\a_prefix\"\x90\x02\n" +
 	"\x18LifecycleRuleAndOperator\x12=\n" +
 	"\x15objectsizegreaterthan\x18\xa9̠\x87\x01 \x01(\x03H\x00R\x15objectsizegreaterthan\x88\x01\x01\x127\n" +
-	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03H\x01R\x12objectsizelessthan\x88\x01\x01\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
+	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03H\x01R\x12objectsizelessthan\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x02R\x06prefix\x88\x01\x01\x12\x1f\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tagsB\x18\n" +
 	"\x16_objectsizegreaterthanB\x15\n" +
-	"\x13_objectsizelessthan\"\xad\x02\n" +
+	"\x13_objectsizelessthanB\t\n" +
+	"\a_prefix\"\xbd\x02\n" +
 	"\x13LifecycleRuleFilter\x122\n" +
 	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x1c.s3.LifecycleRuleAndOperatorR\x03and\x12=\n" +
 	"\x15objectsizegreaterthan\x18\xa9̠\x87\x01 \x01(\x03H\x00R\x15objectsizegreaterthan\x88\x01\x01\x127\n" +
-	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03H\x01R\x12objectsizelessthan\x88\x01\x01\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
+	"\x12objectsizelessthan\x18\x8e\xe5\xa3\xd0\x01 \x01(\x03H\x01R\x12objectsizelessthan\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x02R\x06prefix\x88\x01\x01\x12\x1d\n" +
 	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tagB\x18\n" +
 	"\x16_objectsizegreaterthanB\x15\n" +
-	"\x13_objectsizelessthan\"\xad\x02\n" +
+	"\x13_objectsizelessthanB\t\n" +
+	"\a_prefix\"\xe7\x02\n" +
 	"'ListBucketAnalyticsConfigurationsOutput\x12]\n" +
-	"\x1aanalyticsconfigurationlist\x18\xdc\xdf\xc4j \x03(\v2\x1a.s3.AnalyticsConfigurationR\x1aanalyticsconfigurationlist\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x127\n" +
-	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtokenB\x0e\n" +
-	"\f_istruncated\"\xac\x01\n" +
+	"\x1aanalyticsconfigurationlist\x18\xdc\xdf\xc4j \x03(\v2\x1a.s3.AnalyticsConfigurationR\x1aanalyticsconfigurationlist\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12(\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12<\n" +
+	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tH\x02R\x15nextcontinuationtoken\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x0e\n" +
+	"\f_istruncatedB\x18\n" +
+	"\x16_nextcontinuationtoken\"\xe4\x01\n" +
 	"(ListBucketAnalyticsConfigurationsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xd2\x02\n" +
-	"0ListBucketIntelligentTieringConfigurationsOutput\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12y\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x16\n" +
+	"\x14_expectedbucketowner\"\x8c\x03\n" +
+	"0ListBucketIntelligentTieringConfigurationsOutput\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12y\n" +
 	"#intelligenttieringconfigurationlist\x18\xa5\xb3\xec\xc1\x01 \x03(\v2#.s3.IntelligentTieringConfigurationR#intelligenttieringconfigurationlist\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x127\n" +
-	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtokenB\x0e\n" +
-	"\f_istruncated\"\xb5\x01\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12<\n" +
+	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tH\x02R\x15nextcontinuationtoken\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x0e\n" +
+	"\f_istruncatedB\x18\n" +
+	"\x16_nextcontinuationtoken\"\xed\x01\n" +
 	"1ListBucketIntelligentTieringConfigurationsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xae\x02\n" +
-	"'ListBucketInventoryConfigurationsOutput\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12^\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x16\n" +
+	"\x14_expectedbucketowner\"\xe8\x02\n" +
+	"'ListBucketInventoryConfigurationsOutput\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12^\n" +
 	"\x1ainventoryconfigurationlist\x18\x88\x9dݹ\x01 \x03(\v2\x1a.s3.InventoryConfigurationR\x1ainventoryconfigurationlist\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x127\n" +
-	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtokenB\x0e\n" +
-	"\f_istruncated\"\xac\x01\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12<\n" +
+	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tH\x02R\x15nextcontinuationtoken\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x0e\n" +
+	"\f_istruncatedB\x18\n" +
+	"\x16_nextcontinuationtoken\"\xe4\x01\n" +
 	"(ListBucketInventoryConfigurationsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xa6\x02\n" +
-	"%ListBucketMetricsConfigurationsOutput\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12X\n" +
-	"\x18metricsconfigurationlist\x18\xa5\x96ز\x01 \x03(\v2\x18.s3.MetricsConfigurationR\x18metricsconfigurationlist\x127\n" +
-	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtokenB\x0e\n" +
-	"\f_istruncated\"\xaa\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x16\n" +
+	"\x14_expectedbucketowner\"\xe0\x02\n" +
+	"%ListBucketMetricsConfigurationsOutput\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12(\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12X\n" +
+	"\x18metricsconfigurationlist\x18\xa5\x96ز\x01 \x03(\v2\x18.s3.MetricsConfigurationR\x18metricsconfigurationlist\x12<\n" +
+	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tH\x02R\x15nextcontinuationtoken\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x0e\n" +
+	"\f_istruncatedB\x18\n" +
+	"\x16_nextcontinuationtoken\"\xe2\x01\n" +
 	"&ListBucketMetricsConfigurationsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xb0\x01\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x16\n" +
+	"\x14_expectedbucketowner\"\xdb\x01\n" +
 	"\x11ListBucketsOutput\x12(\n" +
 	"\abuckets\x18\xad\xcf\xf6\xc0\x01 \x03(\v2\n" +
-	".s3.BucketR\abuckets\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12#\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\"\xc1\x01\n" +
-	"\x12ListBucketsRequest\x12&\n" +
-	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tR\fbucketregion\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12&\n" +
+	".s3.BucketR\abuckets\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12#\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\t\n" +
+	"\a_prefix\"\x82\x02\n" +
+	"\x12ListBucketsRequest\x12+\n" +
+	"\fbucketregion\x18\x80\x8d\xbe\x93\x01 \x01(\tH\x00R\fbucketregion\x88\x01\x01\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x01R\x11continuationtoken\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxbuckets\x18\x81\x91\x98~ \x01(\x05H\x00R\n" +
-	"maxbuckets\x88\x01\x01\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefixB\r\n" +
-	"\v_maxbuckets\"x\n" +
+	"maxbuckets\x18\x81\x91\x98~ \x01(\x05H\x02R\n" +
+	"maxbuckets\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x03R\x06prefix\x88\x01\x01B\x0f\n" +
+	"\r_bucketregionB\x14\n" +
+	"\x12_continuationtokenB\r\n" +
+	"\v_maxbucketsB\t\n" +
+	"\a_prefix\"\x93\x01\n" +
 	"\x1aListDirectoryBucketsOutput\x12(\n" +
 	"\abuckets\x18\xad\xcf\xf6\xc0\x01 \x03(\v2\n" +
-	".s3.BucketR\abuckets\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\"\xa2\x01\n" +
-	"\x1bListDirectoryBucketsRequest\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x129\n" +
-	"\x13maxdirectorybuckets\x18\xecܗ\xca\x01 \x01(\x05H\x00R\x13maxdirectorybuckets\x88\x01\x01B\x16\n" +
-	"\x14_maxdirectorybuckets\"\xfa\x04\n" +
-	"\x1aListMultipartUploadsOutput\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12;\n" +
-	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
+	".s3.BucketR\abuckets\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01B\x14\n" +
+	"\x12_continuationtoken\"\xbd\x01\n" +
+	"\x1bListDirectoryBucketsRequest\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x129\n" +
+	"\x13maxdirectorybuckets\x18\xecܗ\xca\x01 \x01(\x05H\x01R\x13maxdirectorybuckets\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\x16\n" +
+	"\x14_maxdirectorybuckets\"\x8b\x06\n" +
+	"\x1aListMultipartUploadsOutput\x12\x1e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tH\x00R\x06bucket\x88\x01\x01\x12;\n" +
+	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x01R\tdelimiter\x88\x01\x01\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12&\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x02R\vistruncated\x88\x01\x01\x12%\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tH\x03R\tkeymarker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxuploads\x18\xca̘5 \x01(\x05H\x01R\n" +
-	"maxuploads\x88\x01\x01\x12(\n" +
-	"\rnextkeymarker\x18\x96\xf6\xcd\xce\x01 \x01(\tR\rnextkeymarker\x122\n" +
-	"\x12nextuploadidmarker\x18\xa7\xab\x92\xfc\x01 \x01(\tR\x12nextuploadidmarker\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12)\n" +
-	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tR\x0euploadidmarker\x120\n" +
-	"\auploads\x18\x9e\x89\x94$ \x03(\v2\x13.s3.MultipartUploadR\auploadsB\x0e\n" +
-	"\f_istruncatedB\r\n" +
-	"\v_maxuploads\"\xa3\x03\n" +
+	"maxuploads\x18\xca̘5 \x01(\x05H\x04R\n" +
+	"maxuploads\x88\x01\x01\x12-\n" +
+	"\rnextkeymarker\x18\x96\xf6\xcd\xce\x01 \x01(\tH\x05R\rnextkeymarker\x88\x01\x01\x127\n" +
+	"\x12nextuploadidmarker\x18\xa7\xab\x92\xfc\x01 \x01(\tH\x06R\x12nextuploadidmarker\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\aR\x06prefix\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12.\n" +
+	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tH\bR\x0euploadidmarker\x88\x01\x01\x120\n" +
+	"\auploads\x18\x9e\x89\x94$ \x03(\v2\x13.s3.MultipartUploadR\auploadsB\t\n" +
+	"\a_bucketB\f\n" +
+	"\n" +
+	"_delimiterB\x0e\n" +
+	"\f_istruncatedB\f\n" +
+	"\n" +
+	"_keymarkerB\r\n" +
+	"\v_maxuploadsB\x10\n" +
+	"\x0e_nextkeymarkerB\x15\n" +
+	"\x13_nextuploadidmarkerB\t\n" +
+	"\a_prefixB\x11\n" +
+	"\x0f_uploadidmarker\"\x8e\x04\n" +
 	"\x1bListMultipartUploadsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
-	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12&\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x00R\tdelimiter\x88\x01\x01\x128\n" +
+	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12%\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tH\x02R\tkeymarker\x88\x01\x01\x12&\n" +
 	"\n" +
-	"maxuploads\x18\xca̘5 \x01(\x05H\x00R\n" +
-	"maxuploads\x88\x01\x01\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12)\n" +
-	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tR\x0euploadidmarkerB\r\n" +
-	"\v_maxuploads\"\xab\x04\n" +
+	"maxuploads\x18\xca̘5 \x01(\x05H\x03R\n" +
+	"maxuploads\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x04R\x06prefix\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12.\n" +
+	"\x0euploadidmarker\x18\xb4\xad\x8d\x0f \x01(\tH\x05R\x0euploadidmarker\x88\x01\x01B\f\n" +
+	"\n" +
+	"_delimiterB\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_keymarkerB\r\n" +
+	"\v_maxuploadsB\t\n" +
+	"\a_prefixB\x11\n" +
+	"\x0f_uploadidmarker\"\xb5\x05\n" +
 	"\x1bListObjectAnnotationsOutput\x120\n" +
-	"\x0fannotationcount\x18\xa8\xfe\x93Q \x01(\x05H\x00R\x0fannotationcount\x88\x01\x01\x12-\n" +
-	"\x10annotationprefix\x18Ź\xa4\x0f \x01(\tR\x10annotationprefix\x128\n" +
-	"\vannotations\x18\xa2\xda\xf34 \x03(\v2\x13.s3.AnnotationEntryR\vannotations\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12;\n" +
-	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05H\x01R\x14maxannotationresults\x88\x01\x01\x127\n" +
-	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtoken\x12,\n" +
-	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tR\x0fobjectversionid\x12>\n" +
+	"\x0fannotationcount\x18\xa8\xfe\x93Q \x01(\x05H\x00R\x0fannotationcount\x88\x01\x01\x122\n" +
+	"\x10annotationprefix\x18Ź\xa4\x0f \x01(\tH\x01R\x10annotationprefix\x88\x01\x01\x128\n" +
+	"\vannotations\x18\xa2\xda\xf34 \x03(\v2\x13.s3.AnnotationEntryR\vannotations\x12\x1e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tH\x02R\x06bucket\x88\x01\x01\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x03R\x11continuationtoken\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x04R\x03key\x88\x01\x01\x12;\n" +
+	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05H\x05R\x14maxannotationresults\x88\x01\x01\x12<\n" +
+	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tH\x06R\x15nextcontinuationtoken\x88\x01\x01\x121\n" +
+	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tH\aR\x0fobjectversionid\x88\x01\x01\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\x12\n" +
-	"\x10_annotationcountB\x17\n" +
-	"\x15_maxannotationresults\"\x96\x03\n" +
-	"\x1cListObjectAnnotationsRequest\x12-\n" +
-	"\x10annotationprefix\x18Ź\xa4\x0f \x01(\tR\x10annotationprefix\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x10_annotationcountB\x13\n" +
+	"\x11_annotationprefixB\t\n" +
+	"\a_bucketB\x14\n" +
+	"\x12_continuationtokenB\x06\n" +
+	"\x04_keyB\x17\n" +
+	"\x15_maxannotationresultsB\x18\n" +
+	"\x16_nextcontinuationtokenB\x12\n" +
+	"\x10_objectversionid\"\xfb\x03\n" +
+	"\x1cListObjectAnnotationsRequest\x122\n" +
+	"\x10annotationprefix\x18Ź\xa4\x0f \x01(\tH\x00R\x10annotationprefix\x88\x01\x01\x12\x19\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x01R\x11continuationtoken\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x02R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12;\n" +
-	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05H\x00R\x14maxannotationresults\x88\x01\x01\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x17\n" +
-	"\x15_maxannotationresults\"\xb1\x05\n" +
+	"\x14maxannotationresults\x18\xbb\xe3\xf7\xfa\x01 \x01(\x05H\x03R\x14maxannotationresults\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x04R\tversionid\x88\x01\x01B\x13\n" +
+	"\x11_annotationprefixB\x14\n" +
+	"\x12_continuationtokenB\x16\n" +
+	"\x14_expectedbucketownerB\x17\n" +
+	"\x15_maxannotationresultsB\f\n" +
+	"\n" +
+	"_versionid\"\xc2\x06\n" +
 	"\x18ListObjectVersionsOutput\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12?\n" +
-	"\rdeletemarkers\x18\x8a\xea̳\x01 \x03(\v2\x15.s3.DeleteMarkerEntryR\rdeletemarkers\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
+	"\rdeletemarkers\x18\x8a\xea̳\x01 \x03(\v2\x15.s3.DeleteMarkerEntryR\rdeletemarkers\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x00R\tdelimiter\x88\x01\x01\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12 \n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05H\x01R\amaxkeys\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
-	"\rnextkeymarker\x18\x96\xf6\xcd\xce\x01 \x01(\tR\rnextkeymarker\x124\n" +
-	"\x13nextversionidmarker\x18\xfc̰\xd6\x01 \x01(\tR\x13nextversionidmarker\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12,\n" +
-	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tR\x0fversionidmarker\x120\n" +
-	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x11.s3.ObjectVersionR\bversionsB\x0e\n" +
-	"\f_istruncatedB\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12%\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tH\x02R\tkeymarker\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x03R\amaxkeys\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12-\n" +
+	"\rnextkeymarker\x18\x96\xf6\xcd\xce\x01 \x01(\tH\x05R\rnextkeymarker\x88\x01\x01\x129\n" +
+	"\x13nextversionidmarker\x18\xfc̰\xd6\x01 \x01(\tH\x06R\x13nextversionidmarker\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\aR\x06prefix\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x121\n" +
+	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tH\bR\x0fversionidmarker\x88\x01\x01\x120\n" +
+	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x11.s3.ObjectVersionR\bversionsB\f\n" +
 	"\n" +
-	"\b_maxkeys\"\xf8\x03\n" +
+	"_delimiterB\x0e\n" +
+	"\f_istruncatedB\f\n" +
+	"\n" +
+	"_keymarkerB\n" +
+	"\n" +
+	"\b_maxkeysB\a\n" +
+	"\x05_nameB\x10\n" +
+	"\x0e_nextkeymarkerB\x16\n" +
+	"\x14_nextversionidmarkerB\t\n" +
+	"\a_prefixB\x12\n" +
+	"\x10_versionidmarker\"\xe4\x04\n" +
 	"\x19ListObjectVersionsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
-	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12 \n" +
-	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tR\tkeymarker\x12 \n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05H\x00R\amaxkeys\x88\x01\x01\x12[\n" +
-	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12,\n" +
-	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tR\x0fversionidmarkerB\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x00R\tdelimiter\x88\x01\x01\x128\n" +
+	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12%\n" +
+	"\tkeymarker\x18\xb7\xf1\xc0\xe7\x01 \x01(\tH\x02R\tkeymarker\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x03R\amaxkeys\x88\x01\x01\x12[\n" +
+	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x04R\x06prefix\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x121\n" +
+	"\x0fversionidmarker\x18\xb1\xa3\xf8\x9f\x01 \x01(\tH\x05R\x0fversionidmarker\x88\x01\x01B\f\n" +
 	"\n" +
-	"\b_maxkeys\"\xf1\x03\n" +
+	"_delimiterB\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_keymarkerB\n" +
+	"\n" +
+	"\b_maxkeysB\t\n" +
+	"\a_prefixB\x12\n" +
+	"\x10_versionidmarker\"\xc6\x04\n" +
 	"\x11ListObjectsOutput\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12)\n" +
 	"\bcontents\x18\xc4\xcf\xfd8 \x03(\v2\n" +
-	".s3.ObjectR\bcontents\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
+	".s3.ObjectR\bcontents\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x00R\tdelimiter\x88\x01\x01\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05H\x01R\amaxkeys\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\"\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x01R\vistruncated\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x03R\amaxkeys\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\x0e\n" +
-	"\f_istruncatedB\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x05R\n" +
+	"nextmarker\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x06R\x06prefix\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestchargedB\f\n" +
 	"\n" +
-	"\b_maxkeys\"\xbc\x03\n" +
+	"_delimiterB\x0e\n" +
+	"\f_istruncatedB\t\n" +
+	"\a_markerB\n" +
+	"\n" +
+	"\b_maxkeysB\a\n" +
+	"\x05_nameB\r\n" +
+	"\v_nextmarkerB\t\n" +
+	"\a_prefix\"\x8c\x04\n" +
 	"\x12ListObjectsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
-	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x19\n" +
-	"\x06marker\x18\xb8\xdd\xcd* \x01(\tR\x06marker\x12 \n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05H\x00R\amaxkeys\x88\x01\x01\x12[\n" +
-	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayerB\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x00R\tdelimiter\x88\x01\x01\x128\n" +
+	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12\x1e\n" +
+	"\x06marker\x18\xb8\xdd\xcd* \x01(\tH\x02R\x06marker\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x03R\amaxkeys\x88\x01\x01\x12[\n" +
+	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x04R\x06prefix\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayerB\f\n" +
 	"\n" +
-	"\b_maxkeys\"\xf4\x04\n" +
+	"_delimiterB\x16\n" +
+	"\x14_expectedbucketownerB\t\n" +
+	"\a_markerB\n" +
+	"\n" +
+	"\b_maxkeysB\t\n" +
+	"\a_prefix\"\xf3\x05\n" +
 	"\x13ListObjectsV2Output\x12;\n" +
 	"\x0ecommonprefixes\x18\xf5\x9b\xd4' \x03(\v2\x10.s3.CommonPrefixR\x0ecommonprefixes\x12)\n" +
 	"\bcontents\x18\xc4\xcf\xfd8 \x03(\v2\n" +
-	".s3.ObjectR\bcontents\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
+	".s3.ObjectR\bcontents\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x01R\tdelimiter\x88\x01\x01\x128\n" +
 	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\"\n" +
-	"\bkeycount\x18\xd4\xf3\xebx \x01(\x05H\x01R\bkeycount\x88\x01\x01\x12 \n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05H\x02R\amaxkeys\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x127\n" +
-	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tR\x15nextcontinuationtoken\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12\"\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x02R\vistruncated\x88\x01\x01\x12\"\n" +
+	"\bkeycount\x18\xd4\xf3\xebx \x01(\x05H\x03R\bkeycount\x88\x01\x01\x12 \n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x04R\amaxkeys\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01\x12<\n" +
+	"\x15nextcontinuationtoken\x18ͺ\xb0| \x01(\tH\x06R\x15nextcontinuationtoken\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\aR\x06prefix\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12'\n" +
 	"\n" +
-	"startafter\x18\xb8\xea\xfb\xa1\x01 \x01(\tR\n" +
-	"startafterB\x0e\n" +
+	"startafter\x18\xb8\xea\xfb\xa1\x01 \x01(\tH\bR\n" +
+	"startafter\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\f\n" +
+	"\n" +
+	"_delimiterB\x0e\n" +
 	"\f_istruncatedB\v\n" +
 	"\t_keycountB\n" +
 	"\n" +
-	"\b_maxkeys\"\xb1\x04\n" +
+	"\b_maxkeysB\a\n" +
+	"\x05_nameB\x18\n" +
+	"\x16_nextcontinuationtokenB\t\n" +
+	"\a_prefixB\r\n" +
+	"\v_startafter\"\xa0\x05\n" +
 	"\x14ListObjectsV2Request\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x120\n" +
-	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tR\x11continuationtoken\x12 \n" +
-	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tR\tdelimiter\x128\n" +
-	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12'\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x125\n" +
+	"\x11continuationtoken\x18\xe8\xca\xc0\x88\x01 \x01(\tH\x00R\x11continuationtoken\x88\x01\x01\x12%\n" +
+	"\tdelimiter\x18\x9bو\x90\x01 \x01(\tH\x01R\tdelimiter\x88\x01\x01\x128\n" +
+	"\fencodingtype\x18\xb9\x84\xfd\xfd\x01 \x01(\x0e2\x10.s3.EncodingTypeR\fencodingtype\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x02R\x13expectedbucketowner\x88\x01\x01\x12'\n" +
 	"\n" +
-	"fetchowner\x18\xd7ڏ\xc0\x01 \x01(\bH\x00R\n" +
+	"fetchowner\x18\xd7ڏ\xc0\x01 \x01(\bH\x03R\n" +
 	"fetchowner\x88\x01\x01\x12 \n" +
-	"\amaxkeys\x18\xfaԋv \x01(\x05H\x01R\amaxkeys\x88\x01\x01\x12[\n" +
-	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12\"\n" +
+	"\amaxkeys\x18\xfaԋv \x01(\x05H\x04R\amaxkeys\x88\x01\x01\x12[\n" +
+	"\x18optionalobjectattributes\x18ċ\xb8F \x03(\x0e2\x1c.s3.OptionalObjectAttributesR\x18optionalobjectattributes\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x05R\x06prefix\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12'\n" +
 	"\n" +
-	"startafter\x18\xb8\xea\xfb\xa1\x01 \x01(\tR\n" +
-	"startafterB\r\n" +
+	"startafter\x18\xb8\xea\xfb\xa1\x01 \x01(\tH\x06R\n" +
+	"startafter\x88\x01\x01B\x14\n" +
+	"\x12_continuationtokenB\f\n" +
+	"\n" +
+	"_delimiterB\x16\n" +
+	"\x14_expectedbucketownerB\r\n" +
 	"\v_fetchownerB\n" +
 	"\n" +
-	"\b_maxkeys\"\xee\x05\n" +
-	"\x0fListPartsOutput\x12\x1f\n" +
-	"\tabortdate\x18\xb6\x95\xedn \x01(\tR\tabortdate\x12#\n" +
-	"\vabortruleid\x18\x93\xb3\xecn \x01(\tR\vabortruleid\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
+	"\b_maxkeysB\t\n" +
+	"\a_prefixB\r\n" +
+	"\v_startafter\"\xfd\x06\n" +
+	"\x0fListPartsOutput\x12$\n" +
+	"\tabortdate\x18\xb6\x95\xedn \x01(\tH\x00R\tabortdate\x88\x01\x01\x12(\n" +
+	"\vabortruleid\x18\x93\xb3\xecn \x01(\tH\x01R\vabortruleid\x88\x01\x01\x12\x1e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tH\x02R\x06bucket\x88\x01\x01\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
 	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12/\n" +
 	"\tinitiator\x18\x9b\xd0\xee\xc5\x01 \x01(\v2\r.s3.InitiatorR\tinitiator\x12(\n" +
-	"\vistruncated\x18ڟ\xb8s \x01(\bH\x00R\vistruncated\x88\x01\x01\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x125\n" +
-	"\x14nextpartnumbermarker\x18\x93\xe9\xe5\r \x01(\tR\x14nextpartnumbermarker\x12#\n" +
-	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12.\n" +
-	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x12!\n" +
+	"\vistruncated\x18ڟ\xb8s \x01(\bH\x03R\vistruncated\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x04R\x03key\x88\x01\x01\x12#\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x05R\bmaxparts\x88\x01\x01\x12:\n" +
+	"\x14nextpartnumbermarker\x18\x93\xe9\xe5\r \x01(\tH\x06R\x14nextpartnumbermarker\x88\x01\x01\x12#\n" +
+	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x123\n" +
+	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tH\aR\x10partnumbermarker\x88\x01\x01\x12!\n" +
 	"\x05parts\x18Ɵ\xcae \x03(\v2\b.s3.PartR\x05parts\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x0e\n" +
-	"\f_istruncatedB\v\n" +
-	"\t_maxparts\"\xc5\x03\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tH\bR\buploadid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_abortdateB\x0e\n" +
+	"\f_abortruleidB\t\n" +
+	"\a_bucketB\x0e\n" +
+	"\f_istruncatedB\x06\n" +
+	"\x04_keyB\v\n" +
+	"\t_maxpartsB\x17\n" +
+	"\x15_nextpartnumbermarkerB\x13\n" +
+	"\x11_partnumbermarkerB\v\n" +
+	"\t_uploadid\"\xcd\x04\n" +
 	"\x10ListPartsRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
-	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x00R\bmaxparts\x88\x01\x01\x12.\n" +
-	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tR\x10partnumbermarker\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\v\n" +
-	"\t_maxparts\"O\n" +
-	"\fLocationInfo\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12(\n" +
-	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.s3.LocationTypeR\x04type\"\xec\x01\n" +
+	"\bmaxparts\x18\x9a\xad\xe4\xbd\x01 \x01(\x05H\x01R\bmaxparts\x88\x01\x01\x123\n" +
+	"\x10partnumbermarker\x18\xf8\xf4ų\x01 \x01(\tH\x02R\x10partnumbermarker\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x03R\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x04R\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x05R\x11ssecustomerkeymd5\x88\x01\x01\x12\x1e\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x16\n" +
+	"\x14_expectedbucketownerB\v\n" +
+	"\t_maxpartsB\x13\n" +
+	"\x11_partnumbermarkerB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5\"]\n" +
+	"\fLocationInfo\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12(\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x10.s3.LocationTypeR\x04typeB\a\n" +
+	"\x05_name\"\xec\x01\n" +
 	"\x0eLoggingEnabled\x12&\n" +
 	"\ftargetbucket\x18\xb7\xcf\xe8\xb7\x01 \x01(\tR\ftargetbucket\x126\n" +
 	"\ftargetgrants\x18\xe8\xe4\xfdd \x03(\v2\x0f.s3.TargetGrantR\ftargetgrants\x12S\n" +
@@ -31742,41 +32338,53 @@ const file_s3_proto_rawDesc = "" +
 	"\"annotationtableconfigurationresult\x18м\xc6\x1d \x01(\v2&.s3.AnnotationTableConfigurationResultR\"annotationtableconfigurationresult\x12G\n" +
 	"\x11destinationresult\x18\x87\xe9\xfe\xac\x01 \x01(\v2\x15.s3.DestinationResultR\x11destinationresult\x12w\n" +
 	"!inventorytableconfigurationresult\x18\x9d̫\x89\x01 \x01(\v2%.s3.InventoryTableConfigurationResultR!inventorytableconfigurationresult\x12q\n" +
-	"\x1fjournaltableconfigurationresult\x18\xe0\xb2Թ\x01 \x01(\v2#.s3.JournalTableConfigurationResultR\x1fjournaltableconfigurationresult\"@\n" +
-	"\rMetadataEntry\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"k\n" +
+	"\x1fjournaltableconfigurationresult\x18\xe0\xb2Թ\x01 \x01(\v2#.s3.JournalTableConfigurationResultR\x1fjournaltableconfigurationresult\"]\n" +
+	"\rMetadataEntry\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_value\"k\n" +
 	"\x1aMetadataTableConfiguration\x12M\n" +
 	"\x13s3tablesdestination\x18\xc7ʀ\xbe\x01 \x01(\v2\x17.s3.S3TablesDestinationR\x13s3tablesdestination\"\x83\x01\n" +
 	" MetadataTableConfigurationResult\x12_\n" +
-	"\x19s3tablesdestinationresult\x18\xb0\xa8\xf3\x93\x01 \x01(\v2\x1d.s3.S3TablesDestinationResultR\x19s3tablesdestinationresult\"\x86\x01\n" +
-	"$MetadataTableEncryptionConfiguration\x12\x1f\n" +
-	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tR\tkmskeyarn\x12=\n" +
-	"\fssealgorithm\x18С\xb4\x8a\x01 \x01(\x0e2\x15.s3.TableSseAlgorithmR\fssealgorithm\"|\n" +
+	"\x19s3tablesdestinationresult\x18\xb0\xa8\xf3\x93\x01 \x01(\v2\x1d.s3.S3TablesDestinationResultR\x19s3tablesdestinationresult\"\x99\x01\n" +
+	"$MetadataTableEncryptionConfiguration\x12$\n" +
+	"\tkmskeyarn\x18\xb1\xb4\xbc4 \x01(\tH\x00R\tkmskeyarn\x88\x01\x01\x12=\n" +
+	"\fssealgorithm\x18С\xb4\x8a\x01 \x01(\x0e2\x15.s3.TableSseAlgorithmR\fssealgorithmB\f\n" +
+	"\n" +
+	"_kmskeyarn\"|\n" +
 	"\aMetrics\x12C\n" +
 	"\x0eeventthreshold\x18\x9b٣U \x01(\v2\x18.s3.ReplicationTimeValueR\x0eeventthreshold\x12,\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.s3.MetricsStatusR\x06status\"|\n" +
-	"\x12MetricsAndOperator\x12)\n" +
-	"\x0eaccesspointarn\x18\xa7لe \x01(\tR\x0eaccesspointarn\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"Y\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x11.s3.MetricsStatusR\x06status\"\xa4\x01\n" +
+	"\x12MetricsAndOperator\x12.\n" +
+	"\x0eaccesspointarn\x18\xa7لe \x01(\tH\x00R\x0eaccesspointarn\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01\x12\x1f\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tagsB\x11\n" +
+	"\x0f_accesspointarnB\t\n" +
+	"\a_prefix\"Y\n" +
 	"\x14MetricsConfiguration\x12-\n" +
 	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x11.s3.MetricsFilterR\x06filter\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\xa3\x01\n" +
-	"\rMetricsFilter\x12)\n" +
-	"\x0eaccesspointarn\x18\xa7لe \x01(\tR\x0eaccesspointarn\x12,\n" +
-	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x16.s3.MetricsAndOperatorR\x03and\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
-	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tag\"\xf8\x02\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\xcb\x01\n" +
+	"\rMetricsFilter\x12.\n" +
+	"\x0eaccesspointarn\x18\xa7لe \x01(\tH\x00R\x0eaccesspointarn\x88\x01\x01\x12,\n" +
+	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x16.s3.MetricsAndOperatorR\x03and\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01\x12\x1d\n" +
+	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tagB\x11\n" +
+	"\x0f_accesspointarnB\t\n" +
+	"\a_prefix\"\xaa\x03\n" +
 	"\x0fMultipartUpload\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x1f\n" +
-	"\tinitiated\x18\xab\xc7\xd46 \x01(\tR\tinitiated\x12/\n" +
-	"\tinitiator\x18\x9b\xd0\xee\xc5\x01 \x01(\v2\r.s3.InitiatorR\tinitiator\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12#\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12$\n" +
+	"\tinitiated\x18\xab\xc7\xd46 \x01(\tH\x00R\tinitiated\x88\x01\x01\x12/\n" +
+	"\tinitiator\x18\x9b\xd0\xee\xc5\x01 \x01(\v2\r.s3.InitiatorR\tinitiator\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x01R\x03key\x88\x01\x01\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadid\"\x12\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tH\x02R\buploadid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_initiatedB\x06\n" +
+	"\x04_keyB\v\n" +
+	"\t_uploadid\"\x12\n" +
 	"\x10NoSuchAnnotation\"\x0e\n" +
 	"\fNoSuchBucket\"\v\n" +
 	"\tNoSuchKey\"\x0e\n" +
@@ -31800,101 +32408,140 @@ const file_s3_proto_rawDesc = "" +
 	"\x13queueconfigurations\x18\xccǽ\xe8\x01 \x03(\v2\x16.s3.QueueConfigurationR\x13queueconfigurations\x12L\n" +
 	"\x13topicconfigurations\x18蚵\x83\x01 \x03(\v2\x16.s3.TopicConfigurationR\x13topicconfigurations\"G\n" +
 	"\x1fNotificationConfigurationFilter\x12$\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\v2\x0f.s3.S3KeyFilterR\x03key\"\xa5\x03\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\v2\x0f.s3.S3KeyFilterR\x03key\"\xd6\x03\n" +
 	"\x06Object\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x03(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12#\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x01R\x03key\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x02R\flastmodified\x88\x01\x01\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12;\n" +
 	"\rrestorestatus\x18\xf4ջ\xd9\x01 \x01(\v2\x11.s3.RestoreStatusR\rrestorestatus\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x00R\x04size\x88\x01\x01\x12>\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x03R\x04size\x88\x01\x01\x12>\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x16.s3.ObjectStorageClassR\fstorageclassB\a\n" +
+	"\x05_etagB\x06\n" +
+	"\x04_keyB\x0f\n" +
+	"\r_lastmodifiedB\a\n" +
 	"\x05_size\" \n" +
 	"\x1eObjectAlreadyInActiveTierError\"C\n" +
 	"\x10ObjectEncryption\x12/\n" +
-	"\x06ssekms\x18\xe4\xe2\xeam \x01(\v2\x14.s3.SSEKMSEncryptionR\x06ssekms\"\xb5\x01\n" +
-	"\x10ObjectIdentifier\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12-\n" +
-	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tR\x10lastmodifiedtime\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x00R\x04size\x88\x01\x01\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\a\n" +
-	"\x05_size\"\x8e\x01\n" +
+	"\x06ssekms\x18\xe4\xe2\xeam \x01(\v2\x14.s3.SSEKMSEncryptionR\x06ssekms\"\xf0\x01\n" +
+	"\x10ObjectIdentifier\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12\x13\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x122\n" +
+	"\x10lastmodifiedtime\x18\xe0\x82\xfcp \x01(\tH\x01R\x10lastmodifiedtime\x88\x01\x01\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x02R\x04size\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x03R\tversionid\x88\x01\x01B\a\n" +
+	"\x05_etagB\x13\n" +
+	"\x11_lastmodifiedtimeB\a\n" +
+	"\x05_sizeB\f\n" +
+	"\n" +
+	"_versionid\"\x8e\x01\n" +
 	"\x17ObjectLockConfiguration\x12G\n" +
 	"\x11objectlockenabled\x18\x8fױ\xec\x01 \x01(\x0e2\x15.s3.ObjectLockEnabledR\x11objectlockenabled\x12*\n" +
 	"\x04rule\x18\xf4\x99\xea\xe2\x01 \x01(\v2\x12.s3.ObjectLockRuleR\x04rule\"O\n" +
 	"\x13ObjectLockLegalHold\x128\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x06status\"w\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x06status\"\x90\x01\n" +
 	"\x13ObjectLockRetention\x123\n" +
-	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1b.s3.ObjectLockRetentionModeR\x04mode\x12+\n" +
-	"\x0fretainuntildate\x18\xc9\xd2\xcax \x01(\tR\x0fretainuntildate\"U\n" +
+	"\x04mode\x18\xb3\uee5a\x01 \x01(\x0e2\x1b.s3.ObjectLockRetentionModeR\x04mode\x120\n" +
+	"\x0fretainuntildate\x18\xc9\xd2\xcax \x01(\tH\x00R\x0fretainuntildate\x88\x01\x01B\x12\n" +
+	"\x10_retainuntildate\"U\n" +
 	"\x0eObjectLockRule\x12C\n" +
 	"\x10defaultretention\x18\xb5\x90\xd8N \x01(\v2\x14.s3.DefaultRetentionR\x10defaultretention\"\x1c\n" +
-	"\x1aObjectNotInActiveTierError\"\xa0\x04\n" +
+	"\x1aObjectNotInActiveTierError\"\x93\x06\n" +
 	"\n" +
-	"ObjectPart\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12'\n" +
+	"ObjectPart\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\n" +
+	"R\n" +
 	"partnumber\x88\x01\x01\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01B\r\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\vR\x04size\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\r\n" +
 	"\v_partnumberB\a\n" +
-	"\x05_size\"\x86\x04\n" +
+	"\x05_size\"\xca\x04\n" +
 	"\rObjectVersion\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x03(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\"\n" +
-	"\bislatest\x18\xf7è& \x01(\bH\x00R\bislatest\x88\x01\x01\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12#\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x00R\x04etag\x88\x01\x01\x12\"\n" +
+	"\bislatest\x18\xf7è& \x01(\bH\x01R\bislatest\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\x02R\x03key\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x03R\flastmodified\x88\x01\x01\x12#\n" +
 	"\x05owner\x18\xf5\xfc\x8a\xd9\x01 \x01(\v2\t.s3.OwnerR\x05owner\x12;\n" +
 	"\rrestorestatus\x18\xf4ջ\xd9\x01 \x01(\v2\x11.s3.RestoreStatusR\rrestorestatus\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01\x12E\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1d.s3.ObjectVersionStorageClassR\fstorageclass\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\v\n" +
-	"\t_islatestB\a\n" +
-	"\x05_size\"3\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x04R\x04size\x88\x01\x01\x12E\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1d.s3.ObjectVersionStorageClassR\fstorageclass\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x05R\tversionid\x88\x01\x01B\a\n" +
+	"\x05_etagB\v\n" +
+	"\t_islatestB\x06\n" +
+	"\x04_keyB\x0f\n" +
+	"\r_lastmodifiedB\a\n" +
+	"\x05_sizeB\f\n" +
+	"\n" +
+	"_versionid\"3\n" +
 	"\x0eOutputLocation\x12!\n" +
 	"\x02s3\x18ć\x880 \x01(\v2\x0e.s3.S3LocationR\x02s3\"b\n" +
 	"\x13OutputSerialization\x12#\n" +
 	"\x03csv\x18\xc0Ć\xd9\x01 \x01(\v2\r.s3.CSVOutputR\x03csv\x12&\n" +
-	"\x04json\x18\xc4\xff\xf5\xfd\x01 \x01(\v2\x0e.s3.JSONOutputR\x04json\"A\n" +
-	"\x05Owner\x12$\n" +
-	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tR\vdisplayname\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\"G\n" +
+	"\x04json\x18\xc4\xff\xf5\xfd\x01 \x01(\v2\x0e.s3.JSONOutputR\x04json\"b\n" +
+	"\x05Owner\x12)\n" +
+	"\vdisplayname\x18\xb7ɲ\xc7\x01 \x01(\tH\x00R\vdisplayname\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01B\x0e\n" +
+	"\f_displaynameB\x05\n" +
+	"\x03_id\"G\n" +
 	"\x11OwnershipControls\x122\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\x19.s3.OwnershipControlsRuleR\x05rules\"Z\n" +
 	"\x15OwnershipControlsRule\x12A\n" +
 	"\x0fobjectownership\x18\x80\x91\xe2\xd5\x01 \x01(\x0e2\x13.s3.ObjectOwnershipR\x0fobjectownership\"\x0e\n" +
-	"\fParquetInput\"\xda\x04\n" +
-	"\x04Part\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12'\n" +
+	"\fParquetInput\"\xf1\x06\n" +
+	"\x04Part\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\n" +
+	"R\x04etag\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\vR\flastmodified\x88\x01\x01\x12'\n" +
 	"\n" +
-	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\x00R\n" +
+	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05H\fR\n" +
 	"partnumber\x88\x01\x01\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01B\r\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\rR\x04size\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\x0f\n" +
+	"\r_lastmodifiedB\r\n" +
 	"\v_partnumberB\a\n" +
 	"\x05_size\"a\n" +
 	"\x11PartitionedPrefix\x12L\n" +
@@ -31919,420 +32566,596 @@ const file_s3_proto_rawDesc = "" +
 	"\x10_blockpublicaclsB\x14\n" +
 	"\x12_blockpublicpolicyB\x13\n" +
 	"\x11_ignorepublicaclsB\x18\n" +
-	"\x16_restrictpublicbuckets\"\x8c\x02\n" +
+	"\x16_restrictpublicbuckets\"\xbd\x02\n" +
 	"\x14PutBucketAbacRequest\x128\n" +
 	"\n" +
 	"abacstatus\x18\xf9\x99\x87\xd0\x01 \x01(\v2\x0e.s3.AbacStatusB\x04\x88\xb5\x18\x01R\n" +
 	"abacstatus\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xa2\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\xbf\x02\n" +
 	"'PutBucketAccelerateConfigurationRequest\x12_\n" +
 	"\x17accelerateconfiguration\x18\x83\xb4\xa5\xb3\x01 \x01(\v2\x1b.s3.AccelerateConfigurationB\x04\x88\xb5\x18\x01R\x17accelerateconfiguration\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\x95\x04\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketowner\"\xb4\x05\n" +
 	"\x13PutBucketAclRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.BucketCannedACLR\x03acl\x12S\n" +
 	"\x13accesscontrolpolicy\x18\xf7\x81\xa0\x90\x01 \x01(\v2\x17.s3.AccessControlPolicyB\x04\x88\xb5\x18\x01R\x13accesscontrolpolicy\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12-\n" +
-	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
-	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
-	"\fgrantreadacp\x18в\xb0c \x01(\tR\fgrantreadacp\x12\"\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x122\n" +
+	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tH\x02R\x10grantfullcontrol\x88\x01\x01\x12$\n" +
+	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tH\x03R\tgrantread\x88\x01\x01\x12*\n" +
+	"\fgrantreadacp\x18в\xb0c \x01(\tH\x04R\fgrantreadacp\x88\x01\x01\x12'\n" +
 	"\n" +
-	"grantwrite\x18\x85\xfe\xe3\x88\x01 \x01(\tR\n" +
-	"grantwrite\x12'\n" +
-	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tR\rgrantwriteacp\"\xe9\x01\n" +
+	"grantwrite\x18\x85\xfe\xe3\x88\x01 \x01(\tH\x05R\n" +
+	"grantwrite\x88\x01\x01\x12,\n" +
+	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tH\x06R\rgrantwriteacp\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\x13\n" +
+	"\x11_grantfullcontrolB\f\n" +
+	"\n" +
+	"_grantreadB\x0f\n" +
+	"\r_grantreadacpB\r\n" +
+	"\v_grantwriteB\x10\n" +
+	"\x0e_grantwriteacp\"\x86\x02\n" +
 	"&PutBucketAnalyticsConfigurationRequest\x12[\n" +
 	"\x16analyticsconfiguration\x18\xf4\xec\xc6m \x01(\v2\x1a.s3.AnalyticsConfigurationB\x04\x88\xb5\x18\x01R\x16analyticsconfiguration\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\"\xa1\x02\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02idB\x16\n" +
+	"\x14_expectedbucketowner\"\xd2\x02\n" +
 	"\x14PutBucketCorsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12M\n" +
 	"\x11corsconfiguration\x18ߌë\x01 \x01(\v2\x15.s3.CORSConfigurationB\x04\x88\xb5\x18\x01R\x11corsconfiguration\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xd7\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x88\x03\n" +
 	"\x1aPutBucketEncryptionRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12}\n" +
-	"!serversideencryptionconfiguration\x18\xe3\ue056\x01 \x01(\v2%.s3.ServerSideEncryptionConfigurationB\x04\x88\xb5\x18\x01R!serversideencryptionconfiguration\"\x8e\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12}\n" +
+	"!serversideencryptionconfiguration\x18\xe3\ue056\x01 \x01(\v2%.s3.ServerSideEncryptionConfigurationB\x04\x88\xb5\x18\x01R!serversideencryptionconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\xab\x02\n" +
 	"/PutBucketIntelligentTieringConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12w\n" +
-	"\x1fintelligenttieringconfiguration\x18\xdd\xf1ٵ\x01 \x01(\v2#.s3.IntelligentTieringConfigurationB\x04\x88\xb5\x18\x01R\x1fintelligenttieringconfiguration\"\xea\x01\n" +
+	"\x1fintelligenttieringconfiguration\x18\xdd\xf1ٵ\x01 \x01(\v2#.s3.IntelligentTieringConfigurationB\x04\x88\xb5\x18\x01R\x1fintelligenttieringconfigurationB\x16\n" +
+	"\x14_expectedbucketowner\"\x87\x02\n" +
 	"&PutBucketInventoryConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\\\n" +
-	"\x16inventoryconfiguration\x18\xa0\xc5ſ\x01 \x01(\v2\x1a.s3.InventoryConfigurationB\x04\x88\xb5\x18\x01R\x16inventoryconfiguration\"\xa2\x01\n" +
+	"\x16inventoryconfiguration\x18\xa0\xc5ſ\x01 \x01(\v2\x1a.s3.InventoryConfigurationB\x04\x88\xb5\x18\x01R\x16inventoryconfigurationB\x16\n" +
+	"\x14_expectedbucketowner\"\xa2\x01\n" +
 	"%PutBucketLifecycleConfigurationOutput\x12y\n" +
-	"\"transitiondefaultminimumobjectsize\x18\xb0\xaf\xf5& \x01(\x0e2&.s3.TransitionDefaultMinimumObjectSizeR\"transitiondefaultminimumobjectsize\"\x9e\x03\n" +
+	"\"transitiondefaultminimumobjectsize\x18\xb0\xaf\xf5& \x01(\x0e2&.s3.TransitionDefaultMinimumObjectSizeR\"transitiondefaultminimumobjectsize\"\xbb\x03\n" +
 	"&PutBucketLifecycleConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12a\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12a\n" +
 	"\x16lifecycleconfiguration\x18\xf0\xed\x84\x04 \x01(\v2 .s3.BucketLifecycleConfigurationB\x04\x88\xb5\x18\x01R\x16lifecycleconfiguration\x12y\n" +
-	"\"transitiondefaultminimumobjectsize\x18\xb0\xaf\xf5& \x01(\x0e2&.s3.TransitionDefaultMinimumObjectSizeR\"transitiondefaultminimumobjectsize\"\xaa\x02\n" +
+	"\"transitiondefaultminimumobjectsize\x18\xb0\xaf\xf5& \x01(\x0e2&.s3.TransitionDefaultMinimumObjectSizeR\"transitiondefaultminimumobjectsizeB\x16\n" +
+	"\x14_expectedbucketowner\"\xdb\x02\n" +
 	"\x17PutBucketLoggingRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12S\n" +
 	"\x13bucketloggingstatus\x18\xfb\xf6\x88\x8a\x01 \x01(\v2\x17.s3.BucketLoggingStatusB\x04\x88\xb5\x18\x01R\x13bucketloggingstatus\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xe1\x01\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\xfe\x01\n" +
 	"$PutBucketMetricsConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x12\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12U\n" +
-	"\x14metricsconfiguration\x18ݤ\xf5\x06 \x01(\v2\x18.s3.MetricsConfigurationB\x04\x88\xb5\x18\x01R\x14metricsconfiguration\"\xc6\x02\n" +
+	"\x14metricsconfiguration\x18ݤ\xf5\x06 \x01(\v2\x18.s3.MetricsConfigurationB\x04\x88\xb5\x18\x01R\x14metricsconfigurationB\x16\n" +
+	"\x14_expectedbucketowner\"\xe3\x02\n" +
 	")PutBucketNotificationConfigurationRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12e\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12e\n" +
 	"\x19notificationconfiguration\x18\xad\xf2\xb0\x8a\x01 \x01(\v2\x1d.s3.NotificationConfigurationB\x04\x88\xb5\x18\x01R\x19notificationconfiguration\x12D\n" +
-	"\x19skipdestinationvalidation\x18\xf6\xca\xd86 \x01(\bH\x00R\x19skipdestinationvalidation\x88\x01\x01B\x1c\n" +
-	"\x1a_skipdestinationvalidation\"\xad\x02\n" +
+	"\x19skipdestinationvalidation\x18\xf6\xca\xd86 \x01(\bH\x01R\x19skipdestinationvalidation\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\x1c\n" +
+	"\x1a_skipdestinationvalidation\"\xde\x02\n" +
 	"!PutBucketOwnershipControlsRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12L\n" +
-	"\x11ownershipcontrols\x18\xe1\xc3\xf8\x02 \x01(\v2\x15.s3.OwnershipControlsB\x04\x88\xb5\x18\x01R\x11ownershipcontrols\"\xe6\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12L\n" +
+	"\x11ownershipcontrols\x18\xe1\xc3\xf8\x02 \x01(\v2\x15.s3.OwnershipControlsB\x04\x88\xb5\x18\x01R\x11ownershipcontrolsB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x97\x03\n" +
 	"\x16PutBucketPolicyRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12L\n" +
-	"\x1dconfirmremoveselfbucketaccess\x18\xae\xe8\xa1l \x01(\bH\x00R\x1dconfirmremoveselfbucketaccess\x88\x01\x01\x12\"\n" +
+	"\x1dconfirmremoveselfbucketaccess\x18\xae\xe8\xa1l \x01(\bH\x00R\x1dconfirmremoveselfbucketaccess\x88\x01\x01\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12 \n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x01R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x02R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tB\x04\x88\xb5\x18\x01R\x06policyB \n" +
-	"\x1e_confirmremoveselfbucketaccess\"\xd6\x02\n" +
+	"\x1e_confirmremoveselfbucketaccessB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x96\x03\n" +
 	"\x1bPutBucketReplicationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12a\n" +
-	"\x18replicationconfiguration\x18\xd6ϟ7 \x01(\v2\x1c.s3.ReplicationConfigurationB\x04\x88\xb5\x18\x01R\x18replicationconfiguration\x12\x18\n" +
-	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\"\xc9\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12a\n" +
+	"\x18replicationconfiguration\x18\xd6ϟ7 \x01(\v2\x1c.s3.ReplicationConfigurationB\x04\x88\xb5\x18\x01R\x18replicationconfiguration\x12\x1d\n" +
+	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tH\x02R\x05token\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\b\n" +
+	"\x06_token\"\xfa\x02\n" +
 	"\x1ePutBucketRequestPaymentRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12k\n" +
-	"\x1brequestpaymentconfiguration\x18\xbb\xc7\xc0\xd9\x01 \x01(\v2\x1f.s3.RequestPaymentConfigurationB\x04\x88\xb5\x18\x01R\x1brequestpaymentconfiguration\"\x85\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12k\n" +
+	"\x1brequestpaymentconfiguration\x18\xbb\xc7\xc0\xd9\x01 \x01(\v2\x1f.s3.RequestPaymentConfigurationB\x04\x88\xb5\x18\x01R\x1brequestpaymentconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\xb6\x02\n" +
 	"\x17PutBucketTaggingRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12.\n" +
-	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\v2\v.s3.TaggingB\x04\x88\xb5\x18\x01R\atagging\"\xce\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12.\n" +
+	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\v2\v.s3.TaggingB\x04\x88\xb5\x18\x01R\ataggingB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x8c\x03\n" +
 	"\x1aPutBucketVersioningRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x14\n" +
-	"\x03mfa\x18⨕\x9b\x01 \x01(\tR\x03mfa\x12^\n" +
-	"\x17versioningconfiguration\x18\xbe\x8f\x95; \x01(\v2\x1b.s3.VersioningConfigurationB\x04\x88\xb5\x18\x01R\x17versioningconfiguration\"\xad\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12\x19\n" +
+	"\x03mfa\x18⨕\x9b\x01 \x01(\tH\x02R\x03mfa\x88\x01\x01\x12^\n" +
+	"\x17versioningconfiguration\x18\xbe\x8f\x95; \x01(\v2\x1b.s3.VersioningConfigurationB\x04\x88\xb5\x18\x01R\x17versioningconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\x06\n" +
+	"\x04_mfa\"\xde\x02\n" +
 	"\x17PutBucketWebsiteRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12V\n" +
-	"\x14websiteconfiguration\x18\xb9\xbb\x88\xf1\x01 \x01(\v2\x18.s3.WebsiteConfigurationB\x04\x88\xb5\x18\x01R\x14websiteconfiguration\"T\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12V\n" +
+	"\x14websiteconfiguration\x18\xb9\xbb\x88\xf1\x01 \x01(\v2\x18.s3.WebsiteConfigurationB\x04\x88\xb5\x18\x01R\x14websiteconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"T\n" +
 	"\x12PutObjectAclOutput\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x86\x05\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xb8\x06\n" +
 	"\x13PutObjectAclRequest\x12)\n" +
 	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.ObjectCannedACLR\x03acl\x12S\n" +
 	"\x13accesscontrolpolicy\x18\xf7\x81\xa0\x90\x01 \x01(\v2\x17.s3.AccessControlPolicyB\x04\x88\xb5\x18\x01R\x13accesscontrolpolicy\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12-\n" +
-	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
-	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
-	"\fgrantreadacp\x18в\xb0c \x01(\tR\fgrantreadacp\x12\"\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x122\n" +
+	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tH\x02R\x10grantfullcontrol\x88\x01\x01\x12$\n" +
+	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tH\x03R\tgrantread\x88\x01\x01\x12*\n" +
+	"\fgrantreadacp\x18в\xb0c \x01(\tH\x04R\fgrantreadacp\x88\x01\x01\x12'\n" +
 	"\n" +
-	"grantwrite\x18\x85\xfe\xe3\x88\x01 \x01(\tR\n" +
-	"grantwrite\x12'\n" +
-	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tR\rgrantwriteacp\x12\x13\n" +
+	"grantwrite\x18\x85\xfe\xe3\x88\x01 \x01(\tH\x05R\n" +
+	"grantwrite\x88\x01\x01\x12,\n" +
+	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tH\x06R\rgrantwriteacp\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xa3\x06\n" +
-	"\x19PutObjectAnnotationOutput\x12*\n" +
-	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tR\x0eannotationname\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12,\n" +
-	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tR\x0fobjectversionid\x12>\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\aR\tversionid\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\x13\n" +
+	"\x11_grantfullcontrolB\f\n" +
+	"\n" +
+	"_grantreadB\x0f\n" +
+	"\r_grantreadacpB\r\n" +
+	"\v_grantwriteB\x10\n" +
+	"\x0e_grantwriteacpB\f\n" +
+	"\n" +
+	"_versionid\"\xe2\b\n" +
+	"\x19PutObjectAnnotationOutput\x12/\n" +
+	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tH\x00R\x0eannotationname\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x01R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x02R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x03R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x04R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x05R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x06R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\aR\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\bR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\tR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\n" +
+	"R\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\vR\x04etag\x88\x01\x01\x12\x18\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tH\fR\x03key\x88\x01\x01\x121\n" +
+	"\x0fobjectversionid\x18\x9c\xc9\xcf\xc1\x01 \x01(\tH\rR\x0fobjectversionid\x88\x01\x01\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\"\x8d\a\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x11\n" +
+	"\x0f_annotationnameB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\x06\n" +
+	"\x04_keyB\x12\n" +
+	"\x10_objectversionid\"\xdb\t\n" +
 	"\x1aPutObjectAnnotationRequest\x12*\n" +
 	"\x0eannotationname\x18̪\x94\xaa\x01 \x01(\tR\x0eannotationname\x125\n" +
 	"\x11annotationpayload\x18\x97\x95\xe9' \x01(\fB\x04\x88\xb5\x18\x01R\x11annotationpayload\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x00R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x01R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x02R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x03R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x04R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x05R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\x06R\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\aR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\bR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\tR\x10checksumxxhash64\x88\x01\x01\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
-	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12(\n" +
-	"\robjectifmatch\x18\x9f\xf7\xfb\xc2\x01 \x01(\tR\robjectifmatch\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"Z\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\n" +
+	"R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\vR\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
+	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12-\n" +
+	"\robjectifmatch\x18\x9f\xf7\xfb\xc2\x01 \x01(\tH\fR\robjectifmatch\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\rR\tversionid\x88\x01\x01B\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\x10\n" +
+	"\x0e_objectifmatchB\f\n" +
+	"\n" +
+	"_versionid\"Z\n" +
 	"\x18PutObjectLegalHoldOutput\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x88\x03\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xcc\x03\n" +
 	"\x19PutObjectLegalHoldRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12>\n" +
 	"\tlegalhold\x18\xd4\xee\xa6C \x01(\v2\x17.s3.ObjectLockLegalHoldB\x04\x88\xb5\x18\x01R\tlegalhold\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"b\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"b\n" +
 	" PutObjectLockConfigurationOutput\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\x93\x03\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xd3\x03\n" +
 	"!PutObjectLockConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
-	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12^\n" +
-	"\x17objectlockconfiguration\x18\x8a\x87\xd53 \x01(\v2\x1b.s3.ObjectLockConfigurationB\x04\x88\xb5\x18\x01R\x17objectlockconfiguration\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12\x18\n" +
-	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tR\x05token\"\xa8\b\n" +
-	"\x0fPutObjectOutput\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x127\n" +
-	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12!\n" +
-	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
-	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12\x1a\n" +
-	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x01R\x04size\x88\x01\x01\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x13\n" +
-	"\x11_bucketkeyenabledB\a\n" +
-	"\x05_size\"\x87\x12\n" +
-	"\x10PutObjectRequest\x12)\n" +
-	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.ObjectCannedACLR\x03acl\x12\x1b\n" +
-	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12&\n" +
-	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tR\fcachecontrol\x12F\n" +
 	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
-	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x12$\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x1b\n" +
-	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12-\n" +
-	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tR\x10grantfullcontrol\x12\x1f\n" +
-	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tR\tgrantread\x12%\n" +
-	"\fgrantreadacp\x18в\xb0c \x01(\tR\fgrantreadacp\x12'\n" +
-	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tR\rgrantwriteacp\x12\x1b\n" +
-	"\aifmatch\x18Ж\xb7, \x01(\tR\aifmatch\x12#\n" +
-	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tR\vifnonematch\x12\x13\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12^\n" +
+	"\x17objectlockconfiguration\x18\x8a\x87\xd53 \x01(\v2\x1b.s3.ObjectLockConfigurationB\x04\x88\xb5\x18\x01R\x17objectlockconfiguration\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12\x1d\n" +
+	"\x05token\x18ӷ\xd5\xd1\x01 \x01(\tH\x02R\x05token\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\b\n" +
+	"\x06_token\"\xbf\v\n" +
+	"\x0fPutObjectOutput\x123\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x01R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x02R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x03R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x04R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x05R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x06R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\aR\x0echecksumsha512\x88\x01\x01\x127\n" +
+	"\fchecksumtype\x18þ\xd9. \x01(\x0e2\x10.s3.ChecksumTypeR\fchecksumtype\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\bR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\tR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\n" +
+	"R\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\vR\x04etag\x88\x01\x01\x12&\n" +
+	"\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\fR\n" +
+	"expiration\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\rR\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x0eR\x11ssecustomerkeymd5\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x0fR\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x10R\vssekmskeyid\x88\x01\x01\x12O\n" +
+	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12\x1a\n" +
+	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03H\x11R\x04size\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x12R\tversionid\x88\x01\x01B\x13\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\r\n" +
+	"\v_expirationB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyidB\a\n" +
+	"\x05_sizeB\f\n" +
+	"\n" +
+	"_versionid\"\x9f\x18\n" +
+	"\x10PutObjectRequest\x12)\n" +
+	"\x03acl\x18\x84\xb1\x9a\xbc\x01 \x01(\x0e2\x13.s3.ObjectCannedACLR\x03acl\x12 \n" +
+	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x04body\x88\x01\x01\x12\x19\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x01R\x10bucketkeyenabled\x88\x01\x01\x12+\n" +
+	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tH\x02R\fcachecontrol\x88\x01\x01\x12F\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x03R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x04R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x05R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x06R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\aR\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\bR\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\tR\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\n" +
+	"R\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\vR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\fR\x10checksumxxhash64\x88\x01\x01\x126\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\tH\rR\x12contentdisposition\x88\x01\x01\x121\n" +
+	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tH\x0eR\x0fcontentencoding\x88\x01\x01\x120\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tH\x0fR\x0fcontentlanguage\x88\x01\x01\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x10R\rcontentlength\x88\x01\x01\x12'\n" +
+	"\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x11R\n" +
+	"contentmd5\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x12R\vcontenttype\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x13R\x13expectedbucketowner\x88\x01\x01\x12 \n" +
+	"\aexpires\x18\xa4\x8a\xa8= \x01(\tH\x14R\aexpires\x88\x01\x01\x122\n" +
+	"\x10grantfullcontrol\x18ڦ\xef0 \x01(\tH\x15R\x10grantfullcontrol\x88\x01\x01\x12$\n" +
+	"\tgrantread\x18\xee\xe1\x93\x02 \x01(\tH\x16R\tgrantread\x88\x01\x01\x12*\n" +
+	"\fgrantreadacp\x18в\xb0c \x01(\tH\x17R\fgrantreadacp\x88\x01\x01\x12,\n" +
+	"\rgrantwriteacp\x18\xcd\xea\x92K \x01(\tH\x18R\rgrantwriteacp\x88\x01\x01\x12 \n" +
+	"\aifmatch\x18Ж\xb7, \x01(\tH\x19R\aifmatch\x88\x01\x01\x12(\n" +
+	"\vifnonematch\x18\xb6\x86\xa0n \x01(\tH\x1aR\vifnonematch\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12B\n" +
 	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2\".s3.PutObjectRequest.MetadataEntryR\bmetadata\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
-	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12;\n" +
-	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tR\x17ssekmsencryptioncontext\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12D\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tH\x1bR\x19objectlockretainuntildate\x88\x01\x01\x128\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x1cR\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x1dR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x1eR\x11ssecustomerkeymd5\x88\x01\x01\x12@\n" +
+	"\x17ssekmsencryptioncontext\x18\xba\x90\x88G \x01(\tH\x1fR\x17ssekmsencryptioncontext\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH R\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x128\n" +
-	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12\x1b\n" +
-	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tR\atagging\x12;\n" +
-	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tR\x17websiteredirectlocation\x123\n" +
-	"\x10writeoffsetbytes\x18\xb3\x8e\xea\xec\x01 \x01(\x03H\x02R\x10writeoffsetbytes\x88\x01\x01\x1a;\n" +
+	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12 \n" +
+	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\tH!R\atagging\x88\x01\x01\x12@\n" +
+	"\x17websiteredirectlocation\x18\xb6\x86\xa1\" \x01(\tH\"R\x17websiteredirectlocation\x88\x01\x01\x123\n" +
+	"\x10writeoffsetbytes\x18\xb3\x8e\xea\xec\x01 \x01(\x03H#R\x10writeoffsetbytes\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x10\n" +
-	"\x0e_contentlengthB\x13\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\a\n" +
+	"\x05_bodyB\x13\n" +
+	"\x11_bucketkeyenabledB\x0f\n" +
+	"\r_cachecontrolB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x15\n" +
+	"\x13_contentdispositionB\x12\n" +
+	"\x10_contentencodingB\x12\n" +
+	"\x10_contentlanguageB\x10\n" +
+	"\x0e_contentlengthB\r\n" +
+	"\v_contentmd5B\x0e\n" +
+	"\f_contenttypeB\x16\n" +
+	"\x14_expectedbucketownerB\n" +
+	"\n" +
+	"\b_expiresB\x13\n" +
+	"\x11_grantfullcontrolB\f\n" +
+	"\n" +
+	"_grantreadB\x0f\n" +
+	"\r_grantreadacpB\x10\n" +
+	"\x0e_grantwriteacpB\n" +
+	"\n" +
+	"\b_ifmatchB\x0e\n" +
+	"\f_ifnonematchB\x1c\n" +
+	"\x1a_objectlockretainuntildateB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x1a\n" +
+	"\x18_ssekmsencryptioncontextB\x0e\n" +
+	"\f_ssekmskeyidB\n" +
+	"\n" +
+	"\b_taggingB\x1a\n" +
+	"\x18_websiteredirectlocationB\x13\n" +
 	"\x11_writeoffsetbytes\"Z\n" +
 	"\x18PutObjectRetentionOutput\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xed\x03\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xb1\x04\n" +
 	"\x19PutObjectRetentionRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12D\n" +
 	"\x19bypassgovernanceretention\x18\xfe\xeb\xfa= \x01(\bH\x00R\x19bypassgovernanceretention\x88\x01\x01\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x01R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x02R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12?\n" +
-	"\tretention\x18\xb2\x98\xee\x8e\x01 \x01(\v2\x17.s3.ObjectLockRetentionB\x04\x88\xb5\x18\x01R\tretention\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionidB\x1c\n" +
-	"\x1a_bypassgovernanceretention\":\n" +
-	"\x16PutObjectTaggingOutput\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xf6\x02\n" +
+	"\tretention\x18\xb2\x98\xee\x8e\x01 \x01(\v2\x17.s3.ObjectLockRetentionB\x04\x88\xb5\x18\x01R\tretention\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x03R\tversionid\x88\x01\x01B\x1c\n" +
+	"\x1a_bypassgovernanceretentionB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"M\n" +
+	"\x16PutObjectTaggingOutput\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x00R\tversionid\x88\x01\x01B\f\n" +
+	"\n" +
+	"_versionid\"\xba\x03\n" +
 	"\x17PutObjectTaggingRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12.\n" +
-	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\v2\v.s3.TaggingB\x04\x88\xb5\x18\x01R\atagging\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\xce\x02\n" +
+	"\atagging\x18\xfd\xe6\xf8\x0f \x01(\v2\v.s3.TaggingB\x04\x88\xb5\x18\x01R\atagging\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\xff\x02\n" +
 	"\x1bPutPublicAccessBlockRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12s\n" +
-	"\x1epublicaccessblockconfiguration\x18\x88\x9b\x8bA \x01(\v2\".s3.PublicAccessBlockConfigurationB\x04\x88\xb5\x18\x01R\x1epublicaccessblockconfiguration\"\xaf\x01\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12s\n" +
+	"\x1epublicaccessblockconfiguration\x18\x88\x9b\x8bA \x01(\v2\".s3.PublicAccessBlockConfigurationB\x04\x88\xb5\x18\x01R\x1epublicaccessblockconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\xbb\x01\n" +
 	"\x12QueueConfiguration\x12$\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\x0e2\t.s3.EventR\x06events\x12?\n" +
-	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1e\n" +
-	"\bqueuearn\x18\x80\xeb\xfd\xbe\x01 \x01(\tR\bqueuearn\"p\n" +
+	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1e\n" +
+	"\bqueuearn\x18\x80\xeb\xfd\xbe\x01 \x01(\tR\bqueuearnB\x05\n" +
+	"\x03_id\"p\n" +
 	"\x10RecordExpiration\x12\x1b\n" +
 	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x126\n" +
 	"\n" +
 	"expiration\x18\x89\xa9\x9fu \x01(\x0e2\x13.s3.ExpirationStateR\n" +
 	"expirationB\a\n" +
-	"\x05_days\"+\n" +
-	"\fRecordsEvent\x12\x1b\n" +
-	"\apayload\x18Ʈ\x8e\x03 \x01(\fR\apayload\"\xea\x01\n" +
-	"\bRedirect\x12\x1d\n" +
-	"\bhostname\x18\xad\xe7\x8b9 \x01(\tR\bhostname\x12.\n" +
-	"\x10httpredirectcode\x18\xb9\x8a\xb3\xa6\x01 \x01(\tR\x10httpredirectcode\x12+\n" +
-	"\bprotocol\x18\xd6\xd7\xdfR \x01(\x0e2\f.s3.ProtocolR\bprotocol\x126\n" +
-	"\x14replacekeyprefixwith\x18۵\xdd\xfd\x01 \x01(\tR\x14replacekeyprefixwith\x12*\n" +
-	"\x0ereplacekeywith\x18\xe7\xae\xe8\xc1\x01 \x01(\tR\x0ereplacekeywith\"c\n" +
+	"\x05_days\"<\n" +
+	"\fRecordsEvent\x12 \n" +
+	"\apayload\x18Ʈ\x8e\x03 \x01(\fH\x00R\apayload\x88\x01\x01B\n" +
+	"\n" +
+	"\b_payload\"\xcc\x02\n" +
+	"\bRedirect\x12\"\n" +
+	"\bhostname\x18\xad\xe7\x8b9 \x01(\tH\x00R\bhostname\x88\x01\x01\x123\n" +
+	"\x10httpredirectcode\x18\xb9\x8a\xb3\xa6\x01 \x01(\tH\x01R\x10httpredirectcode\x88\x01\x01\x12+\n" +
+	"\bprotocol\x18\xd6\xd7\xdfR \x01(\x0e2\f.s3.ProtocolR\bprotocol\x12;\n" +
+	"\x14replacekeyprefixwith\x18۵\xdd\xfd\x01 \x01(\tH\x02R\x14replacekeyprefixwith\x88\x01\x01\x12/\n" +
+	"\x0ereplacekeywith\x18\xe7\xae\xe8\xc1\x01 \x01(\tH\x03R\x0ereplacekeywith\x88\x01\x01B\v\n" +
+	"\t_hostnameB\x13\n" +
+	"\x11_httpredirectcodeB\x17\n" +
+	"\x15_replacekeyprefixwithB\x11\n" +
+	"\x0f_replacekeywith\"c\n" +
 	"\x15RedirectAllRequestsTo\x12\x1d\n" +
 	"\bhostname\x18\xad\xe7\x8b9 \x01(\tR\bhostname\x12+\n" +
 	"\bprotocol\x18\xd6\xd7\xdfR \x01(\x0e2\f.s3.ProtocolR\bprotocol\"\x14\n" +
-	"\x12RenameObjectOutput\"\xdd\x04\n" +
+	"\x12RenameObjectOutput\"\xea\x06\n" +
 	"\x13RenameObjectRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12#\n" +
-	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tR\vclienttoken\x122\n" +
-	"\x12destinationifmatch\x18\x96\x81\xfd\xeb\x01 \x01(\tR\x12destinationifmatch\x12A\n" +
-	"\x1adestinationifmodifiedsince\x18\xbc\x88\x87y \x01(\tR\x1adestinationifmodifiedsince\x129\n" +
-	"\x16destinationifnonematch\x18\xe8̈T \x01(\tR\x16destinationifnonematch\x12E\n" +
-	"\x1cdestinationifunmodifiedsince\x18\xaf\xfe\xe5\x1b \x01(\tR\x1cdestinationifunmodifiedsince\x12\x13\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12(\n" +
+	"\vclienttoken\x18\xcc\xfb\xbbA \x01(\tH\x00R\vclienttoken\x88\x01\x01\x127\n" +
+	"\x12destinationifmatch\x18\x96\x81\xfd\xeb\x01 \x01(\tH\x01R\x12destinationifmatch\x88\x01\x01\x12F\n" +
+	"\x1adestinationifmodifiedsince\x18\xbc\x88\x87y \x01(\tH\x02R\x1adestinationifmodifiedsince\x88\x01\x01\x12>\n" +
+	"\x16destinationifnonematch\x18\xe8̈T \x01(\tH\x03R\x16destinationifnonematch\x88\x01\x01\x12J\n" +
+	"\x1cdestinationifunmodifiedsince\x18\xaf\xfe\xe5\x1b \x01(\tH\x04R\x1cdestinationifunmodifiedsince\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12%\n" +
-	"\frenamesource\x18\xe7\x9b\xe3\" \x01(\tR\frenamesource\x12(\n" +
-	"\rsourceifmatch\x18\x89\xf0\xfe\xfb\x01 \x01(\tR\rsourceifmatch\x128\n" +
-	"\x15sourceifmodifiedsince\x18\xbf\x87\x97\xfe\x01 \x01(\tR\x15sourceifmodifiedsince\x12/\n" +
-	"\x11sourceifnonematch\x18\xbb\xbf\xfb\x1a \x01(\tR\x11sourceifnonematch\x12<\n" +
-	"\x17sourceifunmodifiedsince\x18\xa8\x9f\xac\xd6\x01 \x01(\tR\x17sourceifunmodifiedsince\"Q\n" +
+	"\frenamesource\x18\xe7\x9b\xe3\" \x01(\tR\frenamesource\x12-\n" +
+	"\rsourceifmatch\x18\x89\xf0\xfe\xfb\x01 \x01(\tH\x05R\rsourceifmatch\x88\x01\x01\x12=\n" +
+	"\x15sourceifmodifiedsince\x18\xbf\x87\x97\xfe\x01 \x01(\tH\x06R\x15sourceifmodifiedsince\x88\x01\x01\x124\n" +
+	"\x11sourceifnonematch\x18\xbb\xbf\xfb\x1a \x01(\tH\aR\x11sourceifnonematch\x88\x01\x01\x12A\n" +
+	"\x17sourceifunmodifiedsince\x18\xa8\x9f\xac\xd6\x01 \x01(\tH\bR\x17sourceifunmodifiedsince\x88\x01\x01B\x0e\n" +
+	"\f_clienttokenB\x15\n" +
+	"\x13_destinationifmatchB\x1d\n" +
+	"\x1b_destinationifmodifiedsinceB\x19\n" +
+	"\x17_destinationifnonematchB\x1f\n" +
+	"\x1d_destinationifunmodifiedsinceB\x10\n" +
+	"\x0e_sourceifmatchB\x18\n" +
+	"\x16_sourceifmodifiedsinceB\x14\n" +
+	"\x12_sourceifnonematchB\x1a\n" +
+	"\x18_sourceifunmodifiedsince\"Q\n" +
 	"\x14ReplicaModifications\x129\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1e.s3.ReplicaModificationsStatusR\x06status\"`\n" +
 	"\x18ReplicationConfiguration\x12\x16\n" +
 	"\x04role\x18\xba\xfc\xad\x81\x01 \x01(\tR\x04role\x12,\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x13.s3.ReplicationRuleR\x05rules\"\xab\x04\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x13.s3.ReplicationRuleR\x05rules\"\xc7\x04\n" +
 	"\x0fReplicationRule\x12X\n" +
 	"\x17deletemarkerreplication\x18\xdf\xce\xd8\b \x01(\v2\x1b.s3.DeleteMarkerReplicationR\x17deletemarkerreplication\x125\n" +
 	"\vdestination\x18\xe0\x92\x90\xda\x01 \x01(\v2\x0f.s3.DestinationR\vdestination\x12_\n" +
 	"\x19existingobjectreplication\x18ܡ\xbb\xee\x01 \x01(\v2\x1d.s3.ExistingObjectReplicationR\x19existingobjectreplication\x125\n" +
-	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x19.s3.ReplicationRuleFilterR\x06filter\x12\x12\n" +
-	"\x02id\x18\xe1֣\xb7\x01 \x01(\tR\x02id\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\"\n" +
-	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x00R\bpriority\x88\x01\x01\x12X\n" +
+	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2\x19.s3.ReplicationRuleFilterR\x06filter\x12\x17\n" +
+	"\x02id\x18\xe1֣\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x01R\x06prefix\x88\x01\x01\x12\"\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05H\x02R\bpriority\x88\x01\x01\x12X\n" +
 	"\x17sourceselectioncriteria\x18\x98\x8e\xa6` \x01(\v2\x1b.s3.SourceSelectionCriteriaR\x17sourceselectioncriteria\x124\n" +
-	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.s3.ReplicationRuleStatusR\x06statusB\v\n" +
-	"\t_priority\"Y\n" +
-	"\x1aReplicationRuleAndOperator\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1f\n" +
-	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tags\"\x88\x01\n" +
+	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.s3.ReplicationRuleStatusR\x06statusB\x05\n" +
+	"\x03_idB\t\n" +
+	"\a_prefixB\v\n" +
+	"\t_priority\"i\n" +
+	"\x1aReplicationRuleAndOperator\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01\x12\x1f\n" +
+	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\a.s3.TagR\x04tagsB\t\n" +
+	"\a_prefix\"\x98\x01\n" +
 	"\x15ReplicationRuleFilter\x124\n" +
-	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x1e.s3.ReplicationRuleAndOperatorR\x03and\x12\x1a\n" +
-	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tR\x06prefix\x12\x1d\n" +
-	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tag\"y\n" +
+	"\x03and\x18\xc7\xda\u05cd\x01 \x01(\v2\x1e.s3.ReplicationRuleAndOperatorR\x03and\x12\x1f\n" +
+	"\x06prefix\x18\xea\xb3ӂ\x01 \x01(\tH\x00R\x06prefix\x88\x01\x01\x12\x1d\n" +
+	"\x03tag\x18\xb4\xa8\x8d\xc4\x01 \x01(\v2\a.s3.TagR\x03tagB\t\n" +
+	"\a_prefix\"y\n" +
 	"\x0fReplicationTime\x124\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x19.s3.ReplicationTimeStatusR\x06status\x120\n" +
 	"\x04time\x18\x85ȓ\xff\x01 \x01(\v2\x18.s3.ReplicationTimeValueR\x04time\"E\n" +
@@ -32345,31 +33168,37 @@ const file_s3_proto_rawDesc = "" +
 	"\x0fRequestProgress\x12!\n" +
 	"\aenabled\x18\xbfț\xe4\x01 \x01(\bH\x00R\aenabled\x88\x01\x01B\n" +
 	"\n" +
-	"\b_enabled\"\x86\x01\n" +
+	"\b_enabled\"\xa1\x01\n" +
 	"\x13RestoreObjectOutput\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12/\n" +
-	"\x11restoreoutputpath\x18Ѝ\xaa\x02 \x01(\tR\x11restoreoutputpath\"\xe4\x02\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x124\n" +
+	"\x11restoreoutputpath\x18Ѝ\xaa\x02 \x01(\tH\x00R\x11restoreoutputpath\x88\x01\x01B\x14\n" +
+	"\x12_restoreoutputpath\"\x94\x03\n" +
 	"\x14RestoreObjectRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x128\n" +
 	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12C\n" +
-	"\x0erestorerequest\x18\x87\x86\xdb\x1f \x01(\v2\x12.s3.RestoreRequestB\x04\x88\xb5\x18\x01R\x0erestorerequest\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"\x84\x03\n" +
+	"\x0erestorerequest\x18\x87\x86\xdb\x1f \x01(\v2\x12.s3.RestoreRequestB\x04\x88\xb5\x18\x01R\x0erestorerequest\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x01R\tversionid\x88\x01\x01B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"\x99\x03\n" +
 	"\x0eRestoreRequest\x12\x1b\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12P\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12P\n" +
 	"\x14glacierjobparameters\x18\xba\xe8\xb8\xd9\x01 \x01(\v2\x18.s3.GlacierJobParametersR\x14glacierjobparameters\x12=\n" +
 	"\x0eoutputlocation\x18\xf4\xeb\xb5  \x01(\v2\x12.s3.OutputLocationR\x0eoutputlocation\x12D\n" +
 	"\x10selectparameters\x18\xb2\xa9\xfb\xa0\x01 \x01(\v2\x14.s3.SelectParametersR\x10selectparameters\x12 \n" +
 	"\x04tier\x18\xaa\xd4\xe1\xf7\x01 \x01(\x0e2\b.s3.TierR\x04tier\x12.\n" +
 	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2\x16.s3.RestoreRequestTypeR\x04typeB\a\n" +
-	"\x05_days\"\x94\x01\n" +
+	"\x05_daysB\x0e\n" +
+	"\f_description\"\xaf\x01\n" +
 	"\rRestoreStatus\x129\n" +
-	"\x13isrestoreinprogress\x18\xfe\xe3\x81\xec\x01 \x01(\bH\x00R\x13isrestoreinprogress\x88\x01\x01\x120\n" +
-	"\x11restoreexpirydate\x18ǂ\xf7\x83\x01 \x01(\tR\x11restoreexpirydateB\x16\n" +
-	"\x14_isrestoreinprogress\"k\n" +
+	"\x13isrestoreinprogress\x18\xfe\xe3\x81\xec\x01 \x01(\bH\x00R\x13isrestoreinprogress\x88\x01\x01\x125\n" +
+	"\x11restoreexpirydate\x18ǂ\xf7\x83\x01 \x01(\tH\x01R\x11restoreexpirydate\x88\x01\x01B\x16\n" +
+	"\x14_isrestoreinprogressB\x14\n" +
+	"\x12_restoreexpirydate\"k\n" +
 	"\vRoutingRule\x12.\n" +
 	"\tcondition\x18\xdf\xc0\x8ce \x01(\v2\r.s3.ConditionR\tcondition\x12,\n" +
 	"\bredirect\x18ҡ\x98\xfe\x01 \x01(\v2\f.s3.RedirectR\bredirect\"C\n" +
@@ -32416,10 +33245,10 @@ const file_s3_proto_rawDesc = "" +
 	"\arecords\x18\xce\xf2\xfb\xc9\x01 \x01(\v2\x10.s3.RecordsEventR\arecords\x12'\n" +
 	"\x05stats\x18\x8d\x9d\xb2\x7f \x01(\v2\x0e.s3.StatsEventR\x05stats\"b\n" +
 	"\x19SelectObjectContentOutput\x12E\n" +
-	"\apayload\x18Ʈ\x8e\x03 \x01(\v2\".s3.SelectObjectContentEventStreamB\x04\x88\xb5\x18\x01R\apayload\"\x83\x05\n" +
+	"\apayload\x18Ʈ\x8e\x03 \x01(\v2\".s3.SelectObjectContentEventStreamB\x04\x88\xb5\x18\x01R\apayload\"\xf1\x05\n" +
 	"\x1aSelectObjectContentRequest\x12\x19\n" +
-	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12!\n" +
+	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x00R\x13expectedbucketowner\x88\x01\x01\x12!\n" +
 	"\n" +
 	"expression\x18\x8c\xfa\x86\\ \x01(\tR\n" +
 	"expression\x12>\n" +
@@ -32427,21 +33256,26 @@ const file_s3_proto_rawDesc = "" +
 	"\x12inputserialization\x18\xb6\xf6\xb1V \x01(\v2\x16.s3.InputSerializationR\x12inputserialization\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12M\n" +
 	"\x13outputserialization\x18\xa1ܼ\xb3\x01 \x01(\v2\x17.s3.OutputSerializationR\x13outputserialization\x12A\n" +
-	"\x0frequestprogress\x18\xeeã\xc3\x01 \x01(\v2\x13.s3.RequestProgressR\x0frequestprogress\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12.\n" +
-	"\tscanrange\x18\x9e\x90\xab? \x01(\v2\r.s3.ScanRangeR\tscanrange\"\x8f\x02\n" +
+	"\x0frequestprogress\x18\xeeã\xc3\x01 \x01(\v2\x13.s3.RequestProgressR\x0frequestprogress\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x01R\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x02R\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x03R\x11ssecustomerkeymd5\x88\x01\x01\x12.\n" +
+	"\tscanrange\x18\x9e\x90\xab? \x01(\v2\r.s3.ScanRangeR\tscanrangeB\x16\n" +
+	"\x14_expectedbucketownerB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5\"\x8f\x02\n" +
 	"\x10SelectParameters\x12!\n" +
 	"\n" +
 	"expression\x18\x8c\xfa\x86\\ \x01(\tR\n" +
 	"expression\x12>\n" +
 	"\x0eexpressiontype\x18\xb4Փ\xd1\x01 \x01(\x0e2\x12.s3.ExpressionTypeR\x0eexpressiontype\x12I\n" +
 	"\x12inputserialization\x18\xb6\xf6\xb1V \x01(\v2\x16.s3.InputSerializationR\x12inputserialization\x12M\n" +
-	"\x13outputserialization\x18\xa1ܼ\xb3\x01 \x01(\v2\x17.s3.OutputSerializationR\x13outputserialization\"\x8d\x01\n" +
-	"\x1dServerSideEncryptionByDefault\x12*\n" +
-	"\x0ekmsmasterkeyid\x18Ӓ\xd4\xf8\x01 \x01(\tR\x0ekmsmasterkeyid\x12@\n" +
-	"\fssealgorithm\x18\x90裓\x01 \x01(\x0e2\x18.s3.ServerSideEncryptionR\fssealgorithm\"Z\n" +
+	"\x13outputserialization\x18\xa1ܼ\xb3\x01 \x01(\v2\x17.s3.OutputSerializationR\x13outputserialization\"\xa5\x01\n" +
+	"\x1dServerSideEncryptionByDefault\x12/\n" +
+	"\x0ekmsmasterkeyid\x18Ӓ\xd4\xf8\x01 \x01(\tH\x00R\x0ekmsmasterkeyid\x88\x01\x01\x12@\n" +
+	"\fssealgorithm\x18\x90裓\x01 \x01(\x0e2\x18.s3.ServerSideEncryptionR\fssealgorithmB\x11\n" +
+	"\x0f_kmsmasterkeyid\"Z\n" +
 	"!ServerSideEncryptionConfiguration\x125\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\x1c.s3.ServerSideEncryptionRuleR\x05rules\"\xb3\x02\n" +
 	"\x18ServerSideEncryptionRule\x12u\n" +
@@ -32497,138 +33331,201 @@ const file_s3_proto_rawDesc = "" +
 	"accesstier\x18\x9c\xab\xbb} \x01(\x0e2 .s3.IntelligentTieringAccessTierR\n" +
 	"accesstier\x12\x16\n" +
 	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05R\x04days\"\x0e\n" +
-	"\fTooManyParts\"\xae\x01\n" +
+	"\fTooManyParts\"\xba\x01\n" +
 	"\x12TopicConfiguration\x12$\n" +
 	"\x06events\x18\xa5\xc1\xd0\x01 \x03(\x0e2\t.s3.EventR\x06events\x12?\n" +
-	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1d\n" +
-	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarn\"\x8e\x01\n" +
+	"\x06filter\x18\x98\x81\xa7\xa5\x01 \x01(\v2#.s3.NotificationConfigurationFilterR\x06filter\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1d\n" +
+	"\btopicarn\x18\x9c\xf4\xce\x0e \x01(\tR\btopicarnB\x05\n" +
+	"\x03_id\"\x9c\x01\n" +
 	"\n" +
-	"Transition\x12\x16\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12\x1b\n" +
-	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x00R\x04days\x88\x01\x01\x12B\n" +
+	"Transition\x12\x1b\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x00R\x04date\x88\x01\x01\x12\x1b\n" +
+	"\x04days\x18\xab\xf9\xcb\xeb\x01 \x01(\x05H\x01R\x04days\x88\x01\x01\x12B\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x1a.s3.TransitionStorageClassR\fstorageclassB\a\n" +
+	"\x05_dateB\a\n" +
 	"\x05_days\"\x16\n" +
-	"\x14UnsupportedMediaType\"\xec\x02\n" +
+	"\x14UnsupportedMediaType\"\x9d\x03\n" +
 	"7UpdateBucketMetadataAnnotationTableConfigurationRequest\x12u\n" +
 	"\x1cannotationtableconfiguration\x18\xa7\x8b\xac\x9e\x01 \x01(\v2'.s3.AnnotationTableConfigurationUpdatesB\x04\x88\xb5\x18\x01R\x1cannotationtableconfiguration\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\"\xe7\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x98\x03\n" +
 	"6UpdateBucketMetadataInventoryTableConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12q\n" +
-	"\x1binventorytableconfiguration\x18\x8e\x81\x8e' \x01(\v2&.s3.InventoryTableConfigurationUpdatesB\x04\x88\xb5\x18\x01R\x1binventorytableconfiguration\"\xdf\x02\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12q\n" +
+	"\x1binventorytableconfiguration\x18\x8e\x81\x8e' \x01(\v2&.s3.InventoryTableConfigurationUpdatesB\x04\x88\xb5\x18\x01R\x1binventorytableconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\x90\x03\n" +
 	"4UpdateBucketMetadataJournalTableConfigurationRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12k\n" +
-	"\x19journaltableconfiguration\x18\xf7\xc2\xdc! \x01(\v2$.s3.JournalTableConfigurationUpdatesB\x04\x88\xb5\x18\x01R\x19journaltableconfiguration\"\x97\x03\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12k\n" +
+	"\x19journaltableconfiguration\x18\xf7\xc2\xdc! \x01(\v2$.s3.JournalTableConfigurationUpdatesB\x04\x88\xb5\x18\x01R\x19journaltableconfigurationB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketowner\"\xdb\x03\n" +
 	"\x1dUpdateObjectEncryptionRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\x00R\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\x01R\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12I\n" +
 	"\x10objectencryption\x18؏\xe8\x1e \x01(\v2\x14.s3.ObjectEncryptionB\x04\x88\xb5\x18\x01R\x10objectencryption\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\"`\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH\x02R\tversionid\x88\x01\x01B\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\f\n" +
+	"\n" +
+	"_versionid\"`\n" +
 	"\x1eUpdateObjectEncryptionResponse\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xf9\x03\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\"\xe4\x04\n" +
 	"\x14UploadPartCopyOutput\x123\n" +
 	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12D\n" +
-	"\x0ecopypartresult\x18\x91\x87\xbe\xc1\x01 \x01(\v2\x12.s3.CopyPartResultB\x04\x88\xb5\x18\x01R\x0ecopypartresult\x123\n" +
-	"\x13copysourceversionid\x18\xa7\x9e\xcez \x01(\tR\x13copysourceversionid\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x0ecopypartresult\x18\x91\x87\xbe\xc1\x01 \x01(\v2\x12.s3.CopyPartResultB\x04\x88\xb5\x18\x01R\x0ecopypartresult\x128\n" +
+	"\x13copysourceversionid\x18\xa7\x9e\xcez \x01(\tH\x01R\x13copysourceversionid\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x02R\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x03R\x11ssecustomerkeymd5\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x04R\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x13\n" +
-	"\x11_bucketkeyenabled\"\xe2\a\n" +
+	"\x11_bucketkeyenabledB\x16\n" +
+	"\x14_copysourceversionidB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x0e\n" +
+	"\f_ssekmskeyid\"\xfd\n" +
+	"\n" +
 	"\x15UploadPartCopyRequest\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12!\n" +
 	"\n" +
 	"copysource\x18\x82\xce\xd0H \x01(\tR\n" +
-	"copysource\x120\n" +
-	"\x11copysourceifmatch\x18\xec\xff\xc6\xf4\x01 \x01(\tR\x11copysourceifmatch\x12@\n" +
-	"\x19copysourceifmodifiedsince\x18\x92\xdf\xe6\x8f\x01 \x01(\tR\x19copysourceifmodifiedsince\x127\n" +
-	"\x15copysourceifnonematch\x18\x82\xf7\x99q \x01(\tR\x15copysourceifnonematch\x12C\n" +
-	"\x1bcopysourceifunmodifiedsince\x18\x81Ġ> \x01(\tR\x1bcopysourceifunmodifiedsince\x12+\n" +
-	"\x0fcopysourcerange\x18\xef\x87\xce\x18 \x01(\tR\x0fcopysourcerange\x12J\n" +
-	"\x1ecopysourcessecustomeralgorithm\x18Ĳ\xde\xdd\x01 \x01(\tR\x1ecopysourcessecustomeralgorithm\x12>\n" +
-	"\x18copysourcessecustomerkey\x18\u03a2\xfa\x89\x01 \x01(\tR\x18copysourcessecustomerkey\x12D\n" +
-	"\x1bcopysourcessecustomerkeymd5\x18\xbc\x8b\x81\xc3\x01 \x01(\tR\x1bcopysourcessecustomerkeymd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12@\n" +
-	"\x19expectedsourcebucketowner\x18\xb6\xc1\x87\x87\x01 \x01(\tR\x19expectedsourcebucketowner\x12\x13\n" +
+	"copysource\x125\n" +
+	"\x11copysourceifmatch\x18\xec\xff\xc6\xf4\x01 \x01(\tH\x00R\x11copysourceifmatch\x88\x01\x01\x12E\n" +
+	"\x19copysourceifmodifiedsince\x18\x92\xdf\xe6\x8f\x01 \x01(\tH\x01R\x19copysourceifmodifiedsince\x88\x01\x01\x12<\n" +
+	"\x15copysourceifnonematch\x18\x82\xf7\x99q \x01(\tH\x02R\x15copysourceifnonematch\x88\x01\x01\x12H\n" +
+	"\x1bcopysourceifunmodifiedsince\x18\x81Ġ> \x01(\tH\x03R\x1bcopysourceifunmodifiedsince\x88\x01\x01\x120\n" +
+	"\x0fcopysourcerange\x18\xef\x87\xce\x18 \x01(\tH\x04R\x0fcopysourcerange\x88\x01\x01\x12O\n" +
+	"\x1ecopysourcessecustomeralgorithm\x18Ĳ\xde\xdd\x01 \x01(\tH\x05R\x1ecopysourcessecustomeralgorithm\x88\x01\x01\x12C\n" +
+	"\x18copysourcessecustomerkey\x18\u03a2\xfa\x89\x01 \x01(\tH\x06R\x18copysourcessecustomerkey\x88\x01\x01\x12I\n" +
+	"\x1bcopysourcessecustomerkeymd5\x18\xbc\x8b\x81\xc3\x01 \x01(\tH\aR\x1bcopysourcessecustomerkeymd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\bR\x13expectedbucketowner\x88\x01\x01\x12E\n" +
+	"\x19expectedsourcebucketowner\x18\xb6\xc1\x87\x87\x01 \x01(\tH\tR\x19expectedsourcebucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\"\n" +
 	"\n" +
 	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
 	"partnumber\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadid\"\xc9\x06\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\n" +
+	"R\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\vR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\fR\x11ssecustomerkeymd5\x88\x01\x01\x12\x1e\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x14\n" +
+	"\x12_copysourceifmatchB\x1c\n" +
+	"\x1a_copysourceifmodifiedsinceB\x18\n" +
+	"\x16_copysourceifnonematchB\x1e\n" +
+	"\x1c_copysourceifunmodifiedsinceB\x12\n" +
+	"\x10_copysourcerangeB!\n" +
+	"\x1f_copysourcessecustomeralgorithmB\x1b\n" +
+	"\x19_copysourcessecustomerkeyB\x1e\n" +
+	"\x1c_copysourcessecustomerkeymd5B\x16\n" +
+	"\x14_expectedbucketownerB\x1c\n" +
+	"\x1a_expectedsourcebucketownerB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5\"\x98\t\n" +
 	"\x10UploadPartOutput\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12>\n" +
-	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x01R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x02R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x03R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x04R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x05R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x06R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\aR\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\bR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\tR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\n" +
+	"R\x10checksumxxhash64\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\vR\x04etag\x88\x01\x01\x12>\n" +
+	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\fR\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\rR\x11ssecustomerkeymd5\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH\x0eR\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryptionB\x13\n" +
-	"\x11_bucketkeyenabled\"\x88\b\n" +
-	"\x11UploadPartRequest\x12\x1b\n" +
-	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12\x19\n" +
+	"\x11_bucketkeyenabledB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\a\n" +
+	"\x05_etagB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x0e\n" +
+	"\f_ssekmskeyid\"\x8b\v\n" +
+	"\x11UploadPartRequest\x12 \n" +
+	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x04body\x88\x01\x01\x12\x19\n" +
 	"\x06bucket\x18\xd8\xea\xb8\x1a \x01(\tR\x06bucket\x12F\n" +
-	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x12,\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x00R\rcontentlength\x88\x01\x01\x12\"\n" +
+	"\x11checksumalgorithm\x18\xb0\x81\xd8z \x01(\x0e2\x15.s3.ChecksumAlgorithmR\x11checksumalgorithm\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x01R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x02R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x03R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\x04R\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\x05R\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\x06R\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\aR\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\bR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\tR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\n" +
+	"R\x10checksumxxhash64\x88\x01\x01\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\vR\rcontentlength\x88\x01\x01\x12'\n" +
 	"\n" +
-	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tR\n" +
-	"contentmd5\x123\n" +
-	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tR\x13expectedbucketowner\x12\x13\n" +
+	"contentmd5\x18\x8b\xea\xea\xf1\x01 \x01(\tH\fR\n" +
+	"contentmd5\x88\x01\x01\x128\n" +
+	"\x13expectedbucketowner\x18\xa7\xdd\xfc> \x01(\tH\rR\x13expectedbucketowner\x88\x01\x01\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\"\n" +
 	"\n" +
 	"partnumber\x18\x86\x8d\xb6\xb1\x01 \x01(\x05R\n" +
 	"partnumber\x128\n" +
-	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12)\n" +
-	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tR\x0essecustomerkey\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12\x1e\n" +
-	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\x10\n" +
-	"\x0e_contentlength\"\x81\x01\n" +
+	"\frequestpayer\x18\xa4\xe6\xe1\xf5\x01 \x01(\x0e2\x10.s3.RequestPayerR\frequestpayer\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x0eR\x14ssecustomeralgorithm\x88\x01\x01\x12.\n" +
+	"\x0essecustomerkey\x18\x9a\xfe\xf4; \x01(\tH\x0fR\x0essecustomerkey\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH\x10R\x11ssecustomerkeymd5\x88\x01\x01\x12\x1e\n" +
+	"\buploadid\x18Ң\x8f\xd6\x01 \x01(\tR\buploadidB\a\n" +
+	"\x05_bodyB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x10\n" +
+	"\x0e_contentlengthB\r\n" +
+	"\v_contentmd5B\x16\n" +
+	"\x14_expectedbucketownerB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x11\n" +
+	"\x0f_ssecustomerkeyB\x14\n" +
+	"\x12_ssecustomerkeymd5\"\x81\x01\n" +
 	"\x17VersioningConfiguration\x12/\n" +
 	"\tmfadelete\x18\x97\xdd\xed\xa8\x01 \x01(\x0e2\r.s3.MFADeleteR\tmfadelete\x125\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x1a.s3.BucketVersioningStatusR\x06status\"\x9c\x02\n" +
@@ -32636,70 +33533,105 @@ const file_s3_proto_rawDesc = "" +
 	"\rerrordocument\x18\xe9\xba\xfc\x9c\x01 \x01(\v2\x11.s3.ErrorDocumentR\rerrordocument\x12:\n" +
 	"\rindexdocument\x18\xef\xfa\x8b\v \x01(\v2\x11.s3.IndexDocumentR\rindexdocument\x12S\n" +
 	"\x15redirectallrequeststo\x18\xe4ꜗ\x01 \x01(\v2\x19.s3.RedirectAllRequestsToR\x15redirectallrequeststo\x126\n" +
-	"\froutingrules\x18\xd5\xd1\xe7' \x03(\v2\x0f.s3.RoutingRuleR\froutingrules\"\xa6\x12\n" +
-	"\x1dWriteGetObjectResponseRequest\x12&\n" +
-	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tR\facceptranges\x12\x1b\n" +
-	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x123\n" +
-	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x00R\x10bucketkeyenabled\x88\x01\x01\x12&\n" +
-	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tR\fcachecontrol\x12'\n" +
-	"\rchecksumcrc32\x18£\xcd3 \x01(\tR\rchecksumcrc32\x12)\n" +
-	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tR\x0echecksumcrc32c\x12/\n" +
-	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tR\x11checksumcrc64nvme\x12#\n" +
-	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tR\vchecksummd5\x12&\n" +
-	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tR\fchecksumsha1\x12)\n" +
-	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tR\x0echecksumsha256\x12)\n" +
-	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tR\x0echecksumsha512\x120\n" +
-	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tR\x11checksumxxhash128\x12+\n" +
-	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tR\x0fchecksumxxhash3\x12.\n" +
-	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tR\x10checksumxxhash64\x121\n" +
-	"\x12contentdisposition\x18\xc2՞9 \x01(\tR\x12contentdisposition\x12,\n" +
-	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tR\x0fcontentencoding\x12+\n" +
-	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tR\x0fcontentlanguage\x12,\n" +
-	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x01R\rcontentlength\x88\x01\x01\x12%\n" +
-	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tR\fcontentrange\x12$\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tR\vcontenttype\x12*\n" +
-	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x02R\fdeletemarker\x88\x01\x01\x12\x16\n" +
-	"\x04etag\x18\x81߳\x95\x01 \x01(\tR\x04etag\x12\x1f\n" +
-	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tR\terrorcode\x12&\n" +
-	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tR\ferrormessage\x12!\n" +
+	"\froutingrules\x18\xd5\xd1\xe7' \x03(\v2\x0f.s3.RoutingRuleR\froutingrules\"\xd3\x17\n" +
+	"\x1dWriteGetObjectResponseRequest\x12+\n" +
+	"\facceptranges\x18\xa0\x9b\xc6\xdd\x01 \x01(\tH\x00R\facceptranges\x88\x01\x01\x12 \n" +
+	"\x04body\x18\x96\xa1\xa8\x14 \x01(\fB\x04\x88\xb5\x18\x01H\x01R\x04body\x88\x01\x01\x123\n" +
+	"\x10bucketkeyenabled\x18좌\xcf\x01 \x01(\bH\x02R\x10bucketkeyenabled\x88\x01\x01\x12+\n" +
+	"\fcachecontrol\x18\xff\x8f\xe5\x89\x01 \x01(\tH\x03R\fcachecontrol\x88\x01\x01\x12,\n" +
+	"\rchecksumcrc32\x18£\xcd3 \x01(\tH\x04R\rchecksumcrc32\x88\x01\x01\x12.\n" +
+	"\x0echecksumcrc32c\x18\xa7\x9f\xa5L \x01(\tH\x05R\x0echecksumcrc32c\x88\x01\x01\x124\n" +
+	"\x11checksumcrc64nvme\x18ͼ\x8b8 \x01(\tH\x06R\x11checksumcrc64nvme\x88\x01\x01\x12(\n" +
+	"\vchecksummd5\x18\x9b\xca\xd2B \x01(\tH\aR\vchecksummd5\x88\x01\x01\x12+\n" +
+	"\fchecksumsha1\x18\xc4\xec\xe0\x8a\x01 \x01(\tH\bR\fchecksumsha1\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha256\x18\xbe\xf9\xdcD \x01(\tH\tR\x0echecksumsha256\x88\x01\x01\x12.\n" +
+	"\x0echecksumsha512\x18\xf9\x97\xfeL \x01(\tH\n" +
+	"R\x0echecksumsha512\x88\x01\x01\x125\n" +
+	"\x11checksumxxhash128\x18\x88\xbc\xd9\xeb\x01 \x01(\tH\vR\x11checksumxxhash128\x88\x01\x01\x120\n" +
+	"\x0fchecksumxxhash3\x18\x90Ğ5 \x01(\tH\fR\x0fchecksumxxhash3\x88\x01\x01\x123\n" +
+	"\x10checksumxxhash64\x18\xcd\xe8\xdd\xf6\x01 \x01(\tH\rR\x10checksumxxhash64\x88\x01\x01\x126\n" +
+	"\x12contentdisposition\x18\xc2՞9 \x01(\tH\x0eR\x12contentdisposition\x88\x01\x01\x121\n" +
+	"\x0fcontentencoding\x18\xb4К\x97\x01 \x01(\tH\x0fR\x0fcontentencoding\x88\x01\x01\x120\n" +
+	"\x0fcontentlanguage\x18\x91\xb8\xdd3 \x01(\tH\x10R\x0fcontentlanguage\x88\x01\x01\x12,\n" +
+	"\rcontentlength\x18ײ\xc3l \x01(\x03H\x11R\rcontentlength\x88\x01\x01\x12*\n" +
+	"\fcontentrange\x18\xd0\xeb\xa4\x05 \x01(\tH\x12R\fcontentrange\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\tH\x13R\vcontenttype\x88\x01\x01\x12*\n" +
+	"\fdeletemarker\x18\x81\x80\xce\x02 \x01(\bH\x14R\fdeletemarker\x88\x01\x01\x12\x1b\n" +
+	"\x04etag\x18\x81߳\x95\x01 \x01(\tH\x15R\x04etag\x88\x01\x01\x12$\n" +
+	"\terrorcode\x18\x99\xd6\xc3\x10 \x01(\tH\x16R\terrorcode\x88\x01\x01\x12+\n" +
+	"\ferrormessage\x18\xa9\x8a\xab\xf7\x01 \x01(\tH\x17R\ferrormessage\x88\x01\x01\x12&\n" +
 	"\n" +
-	"expiration\x18\x89\xa9\x9fu \x01(\tR\n" +
-	"expiration\x12\x1b\n" +
-	"\aexpires\x18\xa4\x8a\xa8= \x01(\tR\aexpires\x12&\n" +
-	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tR\flastmodified\x12O\n" +
+	"expiration\x18\x89\xa9\x9fu \x01(\tH\x18R\n" +
+	"expiration\x88\x01\x01\x12 \n" +
+	"\aexpires\x18\xa4\x8a\xa8= \x01(\tH\x19R\aexpires\x88\x01\x01\x12+\n" +
+	"\flastmodified\x18\xa7\x9c\xfc\xce\x01 \x01(\tH\x1aR\flastmodified\x88\x01\x01\x12O\n" +
 	"\bmetadata\x18\xe1\xe2\x8f\xe0\x01 \x03(\v2/.s3.WriteGetObjectResponseRequest.MetadataEntryR\bmetadata\x12(\n" +
-	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x03R\vmissingmeta\x88\x01\x01\x12_\n" +
+	"\vmissingmeta\x18\xab\xad\xde% \x01(\x05H\x1bR\vmissingmeta\x88\x01\x01\x12_\n" +
 	"\x19objectlocklegalholdstatus\x18\xb6\x92\xed\xff\x01 \x01(\x0e2\x1d.s3.ObjectLockLegalHoldStatusR\x19objectlocklegalholdstatus\x12=\n" +
-	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12?\n" +
-	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tR\x19objectlockretainuntildate\x12&\n" +
+	"\x0eobjectlockmode\x18\xa3\x9c\x9fZ \x01(\x0e2\x12.s3.ObjectLockModeR\x0eobjectlockmode\x12D\n" +
+	"\x19objectlockretainuntildate\x18\xb9\xf8\x94~ \x01(\tH\x1cR\x19objectlockretainuntildate\x88\x01\x01\x12&\n" +
 	"\n" +
-	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x04R\n" +
+	"partscount\x18\x95\x9d\xf4I \x01(\x05H\x1dR\n" +
 	"partscount\x88\x01\x01\x12G\n" +
 	"\x11replicationstatus\x18\x8c\xaa\xa5\xfc\x01 \x01(\x0e2\x15.s3.ReplicationStatusR\x11replicationstatus\x12>\n" +
 	"\x0erequestcharged\x18\x93Ы\xb9\x01 \x01(\x0e2\x12.s3.RequestChargedR\x0erequestcharged\x12%\n" +
 	"\frequestroute\x18\xf4\x9c\xcd\x13 \x01(\tR\frequestroute\x12%\n" +
-	"\frequesttoken\x18\x88̇} \x01(\tR\frequesttoken\x12\x1b\n" +
-	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tR\arestore\x125\n" +
-	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tR\x14ssecustomeralgorithm\x12.\n" +
-	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tR\x11ssecustomerkeymd5\x12$\n" +
-	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tR\vssekmskeyid\x12O\n" +
+	"\frequesttoken\x18\x88̇} \x01(\tR\frequesttoken\x12 \n" +
+	"\arestore\x18\xf2\xfe\xe1\x7f \x01(\tH\x1eR\arestore\x88\x01\x01\x12:\n" +
+	"\x14ssecustomeralgorithm\x18\xd0Ɂ+ \x01(\tH\x1fR\x14ssecustomeralgorithm\x88\x01\x01\x123\n" +
+	"\x11ssecustomerkeymd5\x18\xe8\xd1\x17 \x01(\tH R\x11ssecustomerkeymd5\x88\x01\x01\x12)\n" +
+	"\vssekmskeyid\x18؈\xd4\xd4\x01 \x01(\tH!R\vssekmskeyid\x88\x01\x01\x12O\n" +
 	"\x14serversideencryption\x18\xb1\x8e\x9f\x04 \x01(\x0e2\x18.s3.ServerSideEncryptionR\x14serversideencryption\x12'\n" +
 	"\n" +
-	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05H\x05R\n" +
+	"statuscode\x18\xff\xad\xf0\x90\x01 \x01(\x05H\"R\n" +
 	"statuscode\x88\x01\x01\x128\n" +
 	"\fstorageclass\x18ǈĻ\x01 \x01(\x0e2\x10.s3.StorageClassR\fstorageclass\x12#\n" +
-	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H\x06R\btagcount\x88\x01\x01\x12 \n" +
-	"\tversionid\x18\x9bᙡ\x01 \x01(\tR\tversionid\x1a;\n" +
+	"\btagcount\x18\x93\x8b\xf7\xa1\x01 \x01(\x05H#R\btagcount\x88\x01\x01\x12%\n" +
+	"\tversionid\x18\x9bᙡ\x01 \x01(\tH$R\tversionid\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
-	"\x11_bucketkeyenabledB\x10\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_acceptrangesB\a\n" +
+	"\x05_bodyB\x13\n" +
+	"\x11_bucketkeyenabledB\x0f\n" +
+	"\r_cachecontrolB\x10\n" +
+	"\x0e_checksumcrc32B\x11\n" +
+	"\x0f_checksumcrc32cB\x14\n" +
+	"\x12_checksumcrc64nvmeB\x0e\n" +
+	"\f_checksummd5B\x0f\n" +
+	"\r_checksumsha1B\x11\n" +
+	"\x0f_checksumsha256B\x11\n" +
+	"\x0f_checksumsha512B\x14\n" +
+	"\x12_checksumxxhash128B\x12\n" +
+	"\x10_checksumxxhash3B\x13\n" +
+	"\x11_checksumxxhash64B\x15\n" +
+	"\x13_contentdispositionB\x12\n" +
+	"\x10_contentencodingB\x12\n" +
+	"\x10_contentlanguageB\x10\n" +
 	"\x0e_contentlengthB\x0f\n" +
-	"\r_deletemarkerB\x0e\n" +
-	"\f_missingmetaB\r\n" +
-	"\v_partscountB\r\n" +
+	"\r_contentrangeB\x0e\n" +
+	"\f_contenttypeB\x0f\n" +
+	"\r_deletemarkerB\a\n" +
+	"\x05_etagB\f\n" +
+	"\n" +
+	"_errorcodeB\x0f\n" +
+	"\r_errormessageB\r\n" +
+	"\v_expirationB\n" +
+	"\n" +
+	"\b_expiresB\x0f\n" +
+	"\r_lastmodifiedB\x0e\n" +
+	"\f_missingmetaB\x1c\n" +
+	"\x1a_objectlockretainuntildateB\r\n" +
+	"\v_partscountB\n" +
+	"\n" +
+	"\b_restoreB\x17\n" +
+	"\x15_ssecustomeralgorithmB\x14\n" +
+	"\x12_ssecustomerkeymd5B\x0e\n" +
+	"\f_ssekmskeyidB\r\n" +
 	"\v_statuscodeB\v\n" +
-	"\t_tagcount*F\n" +
+	"\t_tagcountB\f\n" +
+	"\n" +
+	"_versionid*F\n" +
 	"\x1bAnalyticsS3ExportFileFormat\x12'\n" +
 	"#ANALYTICS_S3_EXPORT_FILE_FORMAT_CSV\x10\x00*w\n" +
 	"\x1cAnnotationConfigurationState\x12+\n" +
@@ -32939,22 +33871,24 @@ const file_s3_proto_rawDesc = "" +
 	"\x0fObjectOwnership\x12)\n" +
 	"%OBJECT_OWNERSHIP_BUCKETOWNERPREFERRED\x10\x00\x12!\n" +
 	"\x1dOBJECT_OWNERSHIP_OBJECTWRITER\x10\x01\x12(\n" +
-	"$OBJECT_OWNERSHIP_BUCKETOWNERENFORCED\x10\x02*\x81\x04\n" +
+	"$OBJECT_OWNERSHIP_BUCKETOWNERENFORCED\x10\x02*\xde\x04\n" +
 	"\x12ObjectStorageClass\x12!\n" +
 	"\x1dOBJECT_STORAGE_CLASS_OUTPOSTS\x10\x00\x12(\n" +
-	"$OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE\x10\x01\x12+\n" +
-	"'OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY\x10\x02\x12%\n" +
-	"!OBJECT_STORAGE_CLASS_DEEP_ARCHIVE\x10\x03\x12\x1d\n" +
-	"\x19OBJECT_STORAGE_CLASS_SNOW\x10\x04\x12#\n" +
-	"\x1fOBJECT_STORAGE_CLASS_ONEZONE_IA\x10\x05\x12$\n" +
-	" OBJECT_STORAGE_CLASS_STANDARD_IA\x10\x06\x12 \n" +
-	"\x1cOBJECT_STORAGE_CLASS_GLACIER\x10\a\x12!\n" +
-	"\x1dOBJECT_STORAGE_CLASS_STANDARD\x10\b\x12\"\n" +
-	"\x1eOBJECT_STORAGE_CLASS_FSX_ONTAP\x10\t\x12#\n" +
-	"\x1fOBJECT_STORAGE_CLASS_GLACIER_IR\x10\n" +
-	"\x12$\n" +
-	" OBJECT_STORAGE_CLASS_FSX_OPENZFS\x10\v\x12,\n" +
-	"(OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING\x10\f*F\n" +
+	"$OBJECT_STORAGE_CLASS_EXPRESS_ONEZONE\x10\x01\x121\n" +
+	"-OBJECT_STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM\x10\x02\x12+\n" +
+	"'OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY\x10\x03\x12%\n" +
+	"!OBJECT_STORAGE_CLASS_DEEP_ARCHIVE\x10\x04\x12\x1d\n" +
+	"\x19OBJECT_STORAGE_CLASS_SNOW\x10\x05\x12#\n" +
+	"\x1fOBJECT_STORAGE_CLASS_ONEZONE_IA\x10\x06\x12$\n" +
+	" OBJECT_STORAGE_CLASS_STANDARD_IA\x10\a\x12(\n" +
+	"$OBJECT_STORAGE_CLASS_AWS_BACKUP_WARM\x10\b\x12 \n" +
+	"\x1cOBJECT_STORAGE_CLASS_GLACIER\x10\t\x12!\n" +
+	"\x1dOBJECT_STORAGE_CLASS_STANDARD\x10\n" +
+	"\x12\"\n" +
+	"\x1eOBJECT_STORAGE_CLASS_FSX_ONTAP\x10\v\x12#\n" +
+	"\x1fOBJECT_STORAGE_CLASS_GLACIER_IR\x10\f\x12$\n" +
+	" OBJECT_STORAGE_CLASS_FSX_OPENZFS\x10\r\x12,\n" +
+	"(OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING\x10\x0e*F\n" +
 	"\x19ObjectVersionStorageClass\x12)\n" +
 	"%OBJECT_VERSION_STORAGE_CLASS_STANDARD\x10\x00*I\n" +
 	"\x18OptionalObjectAttributes\x12-\n" +
@@ -33003,33 +33937,36 @@ const file_s3_proto_rawDesc = "" +
 	"\x1bRESTORE_REQUEST_TYPE_SELECT\x10\x00*W\n" +
 	"\x12S3TablesBucketType\x12\"\n" +
 	"\x1eS3_TABLES_BUCKET_TYPE_CUSTOMER\x10\x00\x12\x1d\n" +
-	"\x19S3_TABLES_BUCKET_TYPE_AWS\x10\x01*\xaa\x01\n" +
+	"\x19S3_TABLES_BUCKET_TYPE_AWS\x10\x01*\xd1\x01\n" +
 	"\x14ServerSideEncryption\x12\"\n" +
 	"\x1eSERVER_SIDE_ENCRYPTION_AWS_KMS\x10\x00\x12'\n" +
 	"#SERVER_SIDE_ENCRYPTION_AWS_KMS_DSSE\x10\x01\x12!\n" +
-	"\x1dSERVER_SIDE_ENCRYPTION_AES256\x10\x02\x12\"\n" +
-	"\x1eSERVER_SIDE_ENCRYPTION_AWS_FSX\x10\x03*D\n" +
+	"\x1dSERVER_SIDE_ENCRYPTION_AES256\x10\x02\x12%\n" +
+	"!SERVER_SIDE_ENCRYPTION_AWS_BACKUP\x10\x03\x12\"\n" +
+	"\x1eSERVER_SIDE_ENCRYPTION_AWS_FSX\x10\x04*D\n" +
 	"\vSessionMode\x12\x19\n" +
 	"\x15SESSION_MODE_READONLY\x10\x00\x12\x1a\n" +
 	"\x16SESSION_MODE_READWRITE\x10\x01*{\n" +
 	"\x1cSseKmsEncryptedObjectsStatus\x12-\n" +
 	")SSE_KMS_ENCRYPTED_OBJECTS_STATUS_DISABLED\x10\x00\x12,\n" +
-	"(SSE_KMS_ENCRYPTED_OBJECTS_STATUS_ENABLED\x10\x01*\xa0\x03\n" +
+	"(SSE_KMS_ENCRYPTED_OBJECTS_STATUS_ENABLED\x10\x01*\xef\x03\n" +
 	"\fStorageClass\x12\x1a\n" +
 	"\x16STORAGE_CLASS_OUTPOSTS\x10\x00\x12!\n" +
-	"\x1dSTORAGE_CLASS_EXPRESS_ONEZONE\x10\x01\x12$\n" +
-	" STORAGE_CLASS_REDUCED_REDUNDANCY\x10\x02\x12\x1e\n" +
-	"\x1aSTORAGE_CLASS_DEEP_ARCHIVE\x10\x03\x12\x16\n" +
-	"\x12STORAGE_CLASS_SNOW\x10\x04\x12\x1c\n" +
-	"\x18STORAGE_CLASS_ONEZONE_IA\x10\x05\x12\x1d\n" +
-	"\x19STORAGE_CLASS_STANDARD_IA\x10\x06\x12\x19\n" +
-	"\x15STORAGE_CLASS_GLACIER\x10\a\x12\x1a\n" +
-	"\x16STORAGE_CLASS_STANDARD\x10\b\x12\x1b\n" +
-	"\x17STORAGE_CLASS_FSX_ONTAP\x10\t\x12\x1c\n" +
-	"\x18STORAGE_CLASS_GLACIER_IR\x10\n" +
-	"\x12\x1d\n" +
-	"\x19STORAGE_CLASS_FSX_OPENZFS\x10\v\x12%\n" +
-	"!STORAGE_CLASS_INTELLIGENT_TIERING\x10\f*R\n" +
+	"\x1dSTORAGE_CLASS_EXPRESS_ONEZONE\x10\x01\x12*\n" +
+	"&STORAGE_CLASS_AWS_BACKUP_LOW_COST_WARM\x10\x02\x12$\n" +
+	" STORAGE_CLASS_REDUCED_REDUNDANCY\x10\x03\x12\x1e\n" +
+	"\x1aSTORAGE_CLASS_DEEP_ARCHIVE\x10\x04\x12\x16\n" +
+	"\x12STORAGE_CLASS_SNOW\x10\x05\x12\x1c\n" +
+	"\x18STORAGE_CLASS_ONEZONE_IA\x10\x06\x12\x1d\n" +
+	"\x19STORAGE_CLASS_STANDARD_IA\x10\a\x12!\n" +
+	"\x1dSTORAGE_CLASS_AWS_BACKUP_WARM\x10\b\x12\x19\n" +
+	"\x15STORAGE_CLASS_GLACIER\x10\t\x12\x1a\n" +
+	"\x16STORAGE_CLASS_STANDARD\x10\n" +
+	"\x12\x1b\n" +
+	"\x17STORAGE_CLASS_FSX_ONTAP\x10\v\x12\x1c\n" +
+	"\x18STORAGE_CLASS_GLACIER_IR\x10\f\x12\x1d\n" +
+	"\x19STORAGE_CLASS_FSX_OPENZFS\x10\r\x12%\n" +
+	"!STORAGE_CLASS_INTELLIGENT_TIERING\x10\x0e*R\n" +
 	"!StorageClassAnalysisSchemaVersion\x12-\n" +
 	")STORAGE_CLASS_ANALYSIS_SCHEMA_VERSION_V_1\x10\x00*T\n" +
 	"\x11TableSseAlgorithm\x12\x1f\n" +
@@ -34389,13 +35326,31 @@ func file_s3_proto_init() {
 		return
 	}
 	file_s3_proto_msgTypes[1].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[3].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[8].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[11].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[12].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[13].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[16].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[17].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[18].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[20].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[27].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[28].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[29].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[30].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[31].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[32].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[33].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[35].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[36].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[38].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[39].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[40].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[41].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[43].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[44].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[45].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[46].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[47].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[48].OneofWrappers = []any{}
@@ -34403,29 +35358,107 @@ func file_s3_proto_init() {
 	file_s3_proto_msgTypes[50].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[51].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[52].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[53].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[54].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[55].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[56].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[57].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[58].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[59].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[60].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[61].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[62].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[63].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[64].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[65].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[66].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[67].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[68].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[70].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[71].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[72].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[73].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[74].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[75].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[77].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[78].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[79].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[80].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[81].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[82].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[83].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[86].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[87].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[91].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[93].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[95].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[97].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[99].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[101].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[103].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[105].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[107].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[109].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[111].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[113].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[115].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[118].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[121].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[122].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[124].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[125].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[126].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[128].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[130].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[132].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[134].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[136].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[138].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[140].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[141].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[142].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[143].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[144].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[145].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[147].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[149].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[150].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[151].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[153].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[154].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[155].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[156].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[157].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[159].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[162].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[163].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[164].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[165].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[166].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[169].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[171].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[173].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[179].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[183].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[186].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[189].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[191].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[193].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[194].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[195].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[196].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[197].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[198].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[199].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[200].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[201].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[202].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[203].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[204].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[205].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[206].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[207].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[208].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[209].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[210].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[211].OneofWrappers = []any{}
@@ -34439,33 +35472,82 @@ func file_s3_proto_init() {
 	file_s3_proto_msgTypes[219].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[220].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[221].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[222].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[226].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[229].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[231].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[233].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[234].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[239].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[240].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[244].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[247].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[250].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[253].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[254].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[257].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[261].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[263].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[264].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[266].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[267].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[268].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[269].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[270].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[271].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[272].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[273].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[274].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[276].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[277].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[278].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[279].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[280].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[281].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[282].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[283].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[284].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[285].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[286].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[288].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[289].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[290].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[292].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[294].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[295].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[296].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[298].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[299].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[300].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[301].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[302].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[303].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[304].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[305].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[308].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[311].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[312].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[313].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[315].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[317].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[318].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[319].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[320].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[321].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[328].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[330].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[333].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[335].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[337].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[342].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[352].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[353].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[355].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[356].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[357].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[358].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[360].OneofWrappers = []any{}
+	file_s3_proto_msgTypes[361].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[362].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[363].OneofWrappers = []any{}
 	file_s3_proto_msgTypes[366].OneofWrappers = []any{}

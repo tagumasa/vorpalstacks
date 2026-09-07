@@ -6,6 +6,7 @@ package neptunedata
 
 import (
 	"fmt"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,10 +37,10 @@ func (h *AdminHandler) queryStatusPb(header http.Header, queryId string) (*pb.Ge
 	elapsedStr := strconv.FormatInt(stats["elapsed"].(int64), 10)
 
 	return &pb.GetOpenCypherQueryStatusOutput{
-		Queryid:     result["queryId"].(string),
-		Querystring: result["queryString"].(string),
+		Queryid:     proto.String(result["queryId"].(string)),
+		Querystring: proto.String(result["queryString"].(string)),
 		Queryevalstats: &pb.QueryEvalStats{
-			Elapsed: elapsedStr,
+			Elapsed: proto.String(elapsedStr),
 		},
 	}, nil
 }
@@ -62,8 +63,8 @@ func (h *AdminHandler) queryListPb(header http.Header, queryType string) ([]*pb.
 	for _, e := range entries {
 		entry, _ := e.(map[string]interface{})
 		pbQueries = append(pbQueries, &pb.GremlinQueryStatus{
-			Queryid:     entry["queryId"].(string),
-			Querystring: entry["queryString"].(string),
+			Queryid:     proto.String(entry["queryId"].(string)),
+			Querystring: proto.String(entry["queryString"].(string)),
 		})
 	}
 	accepted := int(result["acceptedQueryCount"].(int32)) + int(result["runningQueryCount"].(int32))
@@ -126,9 +127,9 @@ func (h *AdminHandler) propertygraphStatisticsPb(header http.Header) (*pb.GetPro
 		return &pb.GetPropertygraphStatisticsOutput{
 			Status: "200 OK",
 			Payload: &pb.Statistics{
-				Active:      "false",
-				Autocompute: fmt.Sprintf("%t", autoCompute),
-				Note:        "Statistics auto-compute is disabled. Call ManagePropertygraphStatistics with mode 'refresh' or 'enableAutoCompute' to generate statistics.",
+				Active:      proto.String("false"),
+				Autocompute: proto.String(fmt.Sprintf("%t", autoCompute)),
+				Note:        proto.String("Statistics auto-compute is disabled. Call ManagePropertygraphStatistics with mode 'refresh' or 'enableAutoCompute' to generate statistics."),
 			},
 		}, nil
 	}
@@ -140,15 +141,15 @@ func (h *AdminHandler) propertygraphStatisticsPb(header http.Header) (*pb.GetPro
 	predCount := int64(len(relCounts))
 
 	stats := &pb.Statistics{
-		Active:       "true",
-		Autocompute:  fmt.Sprintf("%t", autoCompute),
-		Date:         time.Now().UTC().Format(timeutils.ISO8601UTCFormat),
-		Note:         "Automatically computed",
-		Statisticsid: "auto-statistics",
+		Active:       proto.String("true"),
+		Autocompute:  proto.String(fmt.Sprintf("%t", autoCompute)),
+		Date:         proto.String(time.Now().UTC().Format(timeutils.ISO8601UTCFormat)),
+		Note:         proto.String("Automatically computed"),
+		Statisticsid: proto.String("auto-statistics"),
 		Signatureinfo: &pb.StatisticsSummary{
-			Signaturecount: strconv.FormatInt(sigCount, 10),
-			Instancecount:  strconv.FormatInt(nodeCount, 10),
-			Predicatecount: strconv.FormatInt(predCount, 10),
+			Signaturecount: proto.String(strconv.FormatInt(sigCount, 10)),
+			Instancecount:  proto.String(strconv.FormatInt(nodeCount, 10)),
+			Predicatecount: proto.String(strconv.FormatInt(predCount, 10)),
 		},
 	}
 
@@ -176,13 +177,13 @@ func (h *AdminHandler) propertygraphSummaryPb(header http.Header) (*pb.GetProper
 
 	summaryMap := &pb.PropertygraphSummaryValueMap{
 		Graphsummary: &pb.PropertygraphSummary{
-			Numnodes: strconv.FormatInt(nodeCount, 10),
-			Numedges: strconv.FormatInt(edgeCount, 10),
+			Numnodes: proto.String(strconv.FormatInt(nodeCount, 10)),
+			Numedges: proto.String(strconv.FormatInt(edgeCount, 10)),
 		},
 	}
 
 	return &pb.GetPropertygraphSummaryOutput{
-		Statuscode: "200 OK",
+		Statuscode: proto.String("200 OK"),
 		Payload:    summaryMap,
 	}, nil
 }

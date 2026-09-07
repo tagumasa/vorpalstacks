@@ -2565,6 +2565,18 @@ value:
   {
     $$ = &NullVal{}
   }
+| lsqb rsqb
+  {
+    $$ = ValTuple{}
+  }
+| lsqb expression_list rsqb
+  {
+    $$ = ValTuple($2)
+  }
+| object_literal
+  {
+    $$ = $1
+  }
 
 num_val:
   sql_id
@@ -3187,6 +3199,23 @@ openb:
 
 closeb:
   ')'
+  {
+    decNesting(yylex)
+  }
+
+// lsqb/rsqb bracket list literals and mirror the parenthesis nesting
+// guard so a pathological statement cannot recurse the tree unbounded.
+lsqb:
+  '['
+  {
+    if incNesting(yylex) {
+      yylex.Error("max nesting level reached")
+      return 1
+    }
+  }
+
+rsqb:
+  ']'
   {
     decNesting(yylex)
   }

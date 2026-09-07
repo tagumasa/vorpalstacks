@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -905,6 +906,41 @@ func (r *TestRunner) dynamoDBQueryScanConformanceTests(ctx context.Context, clie
 		if rcc.WriteCapacityUnits != nil {
 			return fmt.Errorf("replay must not report write capacity units, got %+v", rcc)
 		}
+
+		// The replay's read units size to the item: an item over 4 KB reads
+		// as two doubled units (4 RCU), while the initial write charge
+		// follows the 1 KB write granularity (7119 bytes → 7 units → 14 WCU).
+		sized := &dynamodb.TransactWriteItemsInput{
+			ClientRequestToken:     aws.String(fmt.Sprintf("idem-cap8-%d", time.Now().UnixNano())),
+			ReturnConsumedCapacity: types.ReturnConsumedCapacityTotal,
+			TransactItems: []types.TransactWriteItem{
+				{Put: &types.Put{
+					TableName: aws.String(tableName),
+					Item: map[string]types.AttributeValue{
+						"id":   &types.AttributeValueMemberS{Value: "idem-cap8-key"},
+						"body": &types.AttributeValueMemberS{Value: strings.Repeat("y", 7100)},
+					},
+				}},
+			},
+		}
+		firstSized, err := client.TransactWriteItems(ctx, sized)
+		if err != nil {
+			return fmt.Errorf("sized first attempt: %v", err)
+		}
+		if cc := firstSized.ConsumedCapacity[0]; cc.WriteCapacityUnits == nil || *cc.WriteCapacityUnits != 14.0 {
+			return fmt.Errorf("sized initial write units = %+v, want 14.0", cc)
+		}
+		replaySized, err := client.TransactWriteItems(ctx, sized)
+		if err != nil {
+			return fmt.Errorf("sized replay attempt: %v", err)
+		}
+		rcc = replaySized.ConsumedCapacity[0]
+		if rcc.ReadCapacityUnits == nil || *rcc.ReadCapacityUnits != 4.0 {
+			return fmt.Errorf("sized replay read units = %+v, want 4.0 (4 KB granularity, doubled)", rcc)
+		}
+		if rcc.WriteCapacityUnits != nil {
+			return fmt.Errorf("sized replay must not report write capacity units, got %+v", rcc)
+		}
 		return nil
 	}))
 
@@ -959,6 +995,316 @@ func (r *TestRunner) dynamoDBQueryScanConformanceTests(ctx context.Context, clie
 		cnt, ok := resp.Item["raceCnt"].(*types.AttributeValueMemberN)
 		if !ok || cnt.Value != "1" {
 			return fmt.Errorf("the transaction must take effect exactly once, raceCnt was %v", resp.Item["raceCnt"])
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_NumericHashKey_MatchesItems", func() error {
+		// A Number-typed partition key is a legal primary key; the Query
+		// partition lookup must match stored items of that key type.
+		nTable := fmt.Sprintf("QsNumHash-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, nTable, withDynamoKeySchema(
+			[]types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeN},
+			},
+			[]types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+		))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		for _, pk := range []string{"10", "20", "300"} {
+			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(nTable),
+				Item: map[string]types.AttributeValue{
+					"id":  &types.AttributeValueMemberN{Value: pk},
+					"val": &types.AttributeValueMemberS{Value: "v" + pk},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %s: %v", pk, err)
+			}
+		}
+
+		resp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(nTable),
+			KeyConditionExpression: aws.String("id = :v"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":v": &types.AttributeValueMemberN{Value: "20"},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Count != 1 || len(resp.Items) != 1 {
+			return fmt.Errorf("numeric hash query must match exactly one item, got count %d", resp.Count)
+		}
+		val, ok := resp.Items[0]["val"].(*types.AttributeValueMemberS)
+		if !ok || val.Value != "v20" {
+			return fmt.Errorf("numeric hash query returned the wrong item: %v", resp.Items[0])
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_NumericHashKey_Pagination", func() error {
+		// Pagination over numeric keys must traverse the whole partition:
+		// each page's LastEvaluatedKey continues at the following numeric
+		// sort value.
+		npTable := fmt.Sprintf("QsNumHashPage-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, npTable, withDynamoKeySchema(
+			[]types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeN},
+				{AttributeName: aws.String("sk"), AttributeType: types.ScalarAttributeTypeN},
+			},
+			[]types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+				{AttributeName: aws.String("sk"), KeyType: types.KeyTypeRange},
+			},
+		))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		for i := 1; i <= 5; i++ {
+			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(npTable),
+				Item: map[string]types.AttributeValue{
+					"id": &types.AttributeValueMemberN{Value: "1"},
+					"sk": &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", i)},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %d: %v", i, err)
+			}
+		}
+
+		var got []string
+		var lastKey map[string]types.AttributeValue
+		for pages := 0; pages < 6; pages++ {
+			input := &dynamodb.QueryInput{
+				TableName:              aws.String(npTable),
+				KeyConditionExpression: aws.String("id = :v"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":v": &types.AttributeValueMemberN{Value: "1"},
+				},
+				Limit: aws.Int32(2),
+			}
+			if lastKey != nil {
+				input.ExclusiveStartKey = lastKey
+			}
+			page, err := client.Query(ctx, input)
+			if err != nil {
+				return err
+			}
+			for _, it := range page.Items {
+				sk, ok := it["sk"].(*types.AttributeValueMemberN)
+				if !ok {
+					return fmt.Errorf("item missing numeric sk: %v", it)
+				}
+				got = append(got, sk.Value)
+			}
+			if page.LastEvaluatedKey == nil {
+				if len(got) != 5 {
+					return fmt.Errorf("pagination collected %d of 5 items: %v", len(got), got)
+				}
+				for i, v := range got {
+					if v != fmt.Sprintf("%d", i+1) {
+						return fmt.Errorf("numeric pagination order broken: %v", got)
+					}
+				}
+				return nil
+			}
+			lastKey = page.LastEvaluatedKey
+		}
+		return fmt.Errorf("pagination did not terminate, collected %v", got)
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_BinaryHashKey_MatchesItems", func() error {
+		// Binary partition keys may contain any byte, including NUL; the
+		// distinct items must stay distinct (a NUL-colliding storage key
+		// would overwrite) and Query must address each one.
+		bTable := fmt.Sprintf("QsBinHash-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, bTable, withDynamoKeySchema(
+			[]types.AttributeDefinition{
+				{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeB},
+			},
+			[]types.KeySchemaElement{
+				{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+			},
+		))
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		keys := [][]byte{[]byte("k\x00a"), []byte("k\x00b"), []byte("kz")}
+		for i, k := range keys {
+			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(bTable),
+				Item: map[string]types.AttributeValue{
+					"id":  &types.AttributeValueMemberB{Value: k},
+					"val": &types.AttributeValueMemberS{Value: fmt.Sprintf("b%d", i)},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %d: %v", i, err)
+			}
+		}
+
+		for i, k := range keys {
+			resp, err := client.Query(ctx, &dynamodb.QueryInput{
+				TableName:              aws.String(bTable),
+				KeyConditionExpression: aws.String("id = :v"),
+				ExpressionAttributeValues: map[string]types.AttributeValue{
+					":v": &types.AttributeValueMemberB{Value: k},
+				},
+			})
+			if err != nil {
+				return err
+			}
+			if resp.Count != 1 {
+				return fmt.Errorf("binary hash query %d must match exactly one item, got count %d", i, resp.Count)
+			}
+			val, ok := resp.Items[0]["val"].(*types.AttributeValueMemberS)
+			if !ok || val.Value != fmt.Sprintf("b%d", i) {
+				return fmt.Errorf("binary hash query %d returned the wrong item: %v", i, resp.Items[0])
+			}
+		}
+
+		scan, err := client.Scan(ctx, &dynamodb.ScanInput{TableName: aws.String(bTable)})
+		if err != nil {
+			return err
+		}
+		if scan.Count != 3 {
+			return fmt.Errorf("three distinct NUL-bearing binary keys must remain three items, scan count %d", scan.Count)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_GSI_NumericHashKey_Matches", func() error {
+		// A GSI whose hash key is numeric must resolve Query on the index.
+		gnTable := fmt.Sprintf("QsGsiNumHash-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, gnTable,
+			withDynamoKeySchema(
+				[]types.AttributeDefinition{
+					{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeS},
+					{AttributeName: aws.String("gsik"), AttributeType: types.ScalarAttributeTypeN},
+				},
+				[]types.KeySchemaElement{
+					{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+				},
+			),
+			withDynamoGSI(types.GlobalSecondaryIndex{
+				IndexName: aws.String("gsi-num-idx"),
+				KeySchema: []types.KeySchemaElement{
+					{AttributeName: aws.String("gsik"), KeyType: types.KeyTypeHash},
+				},
+				Projection: &types.Projection{ProjectionType: types.ProjectionTypeAll},
+			}),
+		)
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		for i, gsik := range []string{"100", "200", "300"} {
+			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(gnTable),
+				Item: map[string]types.AttributeValue{
+					"id":   &types.AttributeValueMemberS{Value: fmt.Sprintf("p%d", i)},
+					"gsik": &types.AttributeValueMemberN{Value: gsik},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %s: %v", gsik, err)
+			}
+		}
+
+		resp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(gnTable),
+			IndexName:              aws.String("gsi-num-idx"),
+			KeyConditionExpression: aws.String("gsik = :n"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":n": &types.AttributeValueMemberN{Value: "200"},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Count != 1 {
+			return fmt.Errorf("numeric GSI hash query must match exactly one item, got count %d", resp.Count)
+		}
+		id, ok := resp.Items[0]["id"].(*types.AttributeValueMemberS)
+		if !ok || id.Value != "p1" {
+			return fmt.Errorf("numeric GSI hash query returned the wrong item: %v", resp.Items[0])
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "Query_LSI_BinaryHashKey_SortCondition", func() error {
+		// An LSI shares the base hash key: a binary base hash must drive
+		// index queries, and a numeric LSI range condition must filter.
+		lbTable := fmt.Sprintf("QsLsiBinHash-%d", time.Now().UnixNano())
+		cleanupTable, err := createDynamoTestTable(ctx, client, lbTable,
+			withDynamoKeySchema(
+				[]types.AttributeDefinition{
+					{AttributeName: aws.String("id"), AttributeType: types.ScalarAttributeTypeB},
+					{AttributeName: aws.String("bsk"), AttributeType: types.ScalarAttributeTypeS},
+					{AttributeName: aws.String("lsik"), AttributeType: types.ScalarAttributeTypeN},
+				},
+				[]types.KeySchemaElement{
+					{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+					{AttributeName: aws.String("bsk"), KeyType: types.KeyTypeRange},
+				},
+			),
+			withDynamoLSI(types.LocalSecondaryIndex{
+				IndexName: aws.String("lsi-bin-idx"),
+				KeySchema: []types.KeySchemaElement{
+					{AttributeName: aws.String("id"), KeyType: types.KeyTypeHash},
+					{AttributeName: aws.String("lsik"), KeyType: types.KeyTypeRange},
+				},
+				Projection: &types.Projection{ProjectionType: types.ProjectionTypeAll},
+			}),
+		)
+		if err != nil {
+			return err
+		}
+		defer cleanupTable()
+
+		binKey := []byte("bin\x00x")
+		for i := 1; i <= 3; i++ {
+			_, err = client.PutItem(ctx, &dynamodb.PutItemInput{
+				TableName: aws.String(lbTable),
+				Item: map[string]types.AttributeValue{
+					"id":   &types.AttributeValueMemberB{Value: binKey},
+					"bsk":  &types.AttributeValueMemberS{Value: fmt.Sprintf("s%d", i)},
+					"lsik": &types.AttributeValueMemberN{Value: fmt.Sprintf("%d", i*10)},
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("put item %d: %v", i, err)
+			}
+		}
+
+		resp, err := client.Query(ctx, &dynamodb.QueryInput{
+			TableName:              aws.String(lbTable),
+			IndexName:              aws.String("lsi-bin-idx"),
+			KeyConditionExpression: aws.String("id = :b AND lsik BETWEEN :lo AND :hi"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":b":  &types.AttributeValueMemberB{Value: binKey},
+				":lo": &types.AttributeValueMemberN{Value: "10"},
+				":hi": &types.AttributeValueMemberN{Value: "20"},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Count != 2 {
+			return fmt.Errorf("binary-hash LSI range query must match two items (lsik 10 and 20), got count %d", resp.Count)
 		}
 		return nil
 	}))
@@ -1111,6 +1457,55 @@ func (r *TestRunner) dynamoDBGlobalTableReplicationTests(ctx context.Context, cl
 		}
 		valAttr, ok := resp.Item["val"].(*types.AttributeValueMemberS)
 		if !ok || valAttr.Value != "from-transact" {
+			return fmt.Errorf("replica item attribute mismatch: %v", resp.Item)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "ExecuteTransaction_ReplicatesToGlobalTableReplica", func() error {
+		_, err := client.ExecuteTransaction(ctx, &dynamodb.ExecuteTransactionInput{
+			TransactStatements: []types.ParameterizedStatement{
+				{Statement: aws.String("INSERT INTO \"" + tableName + "\" VALUE {'id': 'executexact-key', 'val': 'from-executetx'}")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if waitErr := waitForReplica("executexact-key", true); waitErr != nil {
+			return waitErr
+		}
+		resp, getErr := replicaClient.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(tableName),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "executexact-key"}},
+		})
+		if getErr != nil {
+			return getErr
+		}
+		valAttr, ok := resp.Item["val"].(*types.AttributeValueMemberS)
+		if !ok || valAttr.Value != "from-executetx" {
+			return fmt.Errorf("replica item attribute mismatch: %v", resp.Item)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("dynamodb", "ExecuteStatement_ReplicatesToGlobalTableReplica", func() error {
+		if _, err := client.ExecuteStatement(ctx, &dynamodb.ExecuteStatementInput{
+			Statement: aws.String("INSERT INTO \"" + tableName + "\" VALUE {'id': 'partiql-key', 'val': 'from-partiql'}"),
+		}); err != nil {
+			return err
+		}
+		if waitErr := waitForReplica("partiql-key", true); waitErr != nil {
+			return waitErr
+		}
+		resp, getErr := replicaClient.GetItem(ctx, &dynamodb.GetItemInput{
+			TableName: aws.String(tableName),
+			Key:       map[string]types.AttributeValue{"id": &types.AttributeValueMemberS{Value: "partiql-key"}},
+		})
+		if getErr != nil {
+			return getErr
+		}
+		valAttr, ok := resp.Item["val"].(*types.AttributeValueMemberS)
+		if !ok || valAttr.Value != "from-partiql" {
 			return fmt.Errorf("replica item attribute mismatch: %v", resp.Item)
 		}
 		return nil

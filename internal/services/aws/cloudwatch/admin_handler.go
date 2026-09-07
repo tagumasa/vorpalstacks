@@ -43,8 +43,8 @@ func (h *AdminHandler) ListMetrics(ctx context.Context, req *connect.Request[pb.
 	}
 
 	result, err := h.service.listMetricsCore(stores, &ListMetricsInput{
-		Namespace:  req.Msg.Namespace,
-		MetricName: req.Msg.Metricname,
+		Namespace:  req.Msg.GetNamespace(),
+		MetricName: req.Msg.GetMetricname(),
 		Dimensions: dimensionFiltersToStore(req.Msg.Dimensions),
 	})
 	if err != nil {
@@ -64,7 +64,7 @@ func (h *AdminHandler) DescribeAlarms(ctx context.Context, req *connect.Request[
 	}
 
 	alarms, _, err := h.service.describeAlarmsCore(stores, &DescribeAlarmsInput{
-		AlarmNamePrefix: req.Msg.Alarmnameprefix,
+		AlarmNamePrefix: req.Msg.GetAlarmnameprefix(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -90,16 +90,16 @@ func (h *AdminHandler) PutMetricAlarm(ctx context.Context, req *connect.Request[
 
 	input := &PutMetricAlarmInput{
 		AlarmName:               req.Msg.Alarmname,
-		Namespace:               req.Msg.Namespace,
-		MetricName:              req.Msg.Metricname,
+		Namespace:               req.Msg.GetNamespace(),
+		MetricName:              req.Msg.GetMetricname(),
 		Dimensions:              dimensionsToStore(req.Msg.Dimensions),
 		ComparisonOperator:      fromPbComparisonOperator(req.Msg.Comparisonoperator),
-		Threshold:               req.Msg.Threshold,
+		Threshold:               req.Msg.GetThreshold(),
 		EvaluationPeriods:       req.Msg.GetEvaluationperiods(),
 		Period:                  req.Msg.GetPeriod(),
 		Statistic:               fromPbStatistic(req.Msg.Statistic),
-		TreatMissingData:        req.Msg.Treatmissingdata,
-		AlarmDescription:        req.Msg.Alarmdescription,
+		TreatMissingData:        req.Msg.GetTreatmissingdata(),
+		AlarmDescription:        req.Msg.GetAlarmdescription(),
 		ActionsEnabled:          true,
 		AlarmActions:            req.Msg.Alarmactions,
 		OKActions:               req.Msg.Okactions,

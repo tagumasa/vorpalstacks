@@ -38,21 +38,14 @@ func (s *IndexStore) Region() string {
 // BuildGSIKey constructs the Pebble key for a GSI index entry.
 // Returns "" when the item lacks the GSI hash or range key attributes.
 func (s *IndexStore) BuildGSIKey(table *Table, gsi *GlobalSecondaryIndex, item *Item) string {
-	var hashKeyName, rangeKeyName string
-	for _, ks := range gsi.KeySchema {
-		if ks.KeyType == KeyTypeHash {
-			hashKeyName = ks.AttributeName
-		} else if ks.KeyType == KeyTypeRange {
-			rangeKeyName = ks.AttributeName
-		}
-	}
+	hashKeyName, rangeKeyName := schemaKeyNames(gsi.KeySchema)
 
 	hashValue := s.getAttributeValueForIndex(item, hashKeyName)
 	if hashValue == "" {
 		return ""
 	}
 
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
+	primaryKey := EncodeItemKey(table.Name, item.Key, table)
 	if primaryKey == "" {
 		return ""
 	}
@@ -62,30 +55,18 @@ func (s *IndexStore) BuildGSIKey(table *Table, gsi *GlobalSecondaryIndex, item *
 		if rangeValue == "" {
 			return ""
 		}
-		return table.Name + keySep + gsi.IndexName + keySep + hashValue + keySep + rangeValue + keySep + primaryKey
+		return table.Name + KeySep + gsi.IndexName + KeySep + hashValue + KeySep + rangeValue + KeySep + primaryKey
 	}
-	return table.Name + keySep + gsi.IndexName + keySep + hashValue + keySep + primaryKey
+	return table.Name + KeySep + gsi.IndexName + KeySep + hashValue + KeySep + primaryKey
 }
 
 // BuildLSIKey constructs the Pebble key for an LSI index entry.
 // Returns "" when the item lacks the required key attributes.
 func (s *IndexStore) BuildLSIKey(table *Table, lsi *LocalSecondaryIndex, item *Item) string {
-	var rangeKeyName string
-	for _, ks := range lsi.KeySchema {
-		if ks.KeyType == KeyTypeRange {
-			rangeKeyName = ks.AttributeName
-		}
-	}
+	_, rangeKeyName := schemaKeyNames(lsi.KeySchema)
+	tableHashKeyName, _ := schemaKeyNames(table.KeySchema)
 
-	var tableHashKeyName string
-	for _, ks := range table.KeySchema {
-		if ks.KeyType == KeyTypeHash {
-			tableHashKeyName = ks.AttributeName
-			break
-		}
-	}
-
-	hashValue := attributeValueToString(item.Key[tableHashKeyName])
+	hashValue := EncodeKeyValue(item.Key[tableHashKeyName])
 	if hashValue == "" {
 		return ""
 	}
@@ -95,20 +76,20 @@ func (s *IndexStore) BuildLSIKey(table *Table, lsi *LocalSecondaryIndex, item *I
 		return ""
 	}
 
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
+	primaryKey := EncodeItemKey(table.Name, item.Key, table)
 	if primaryKey == "" {
 		return ""
 	}
 
-	return table.Name + keySep + lsi.IndexName + keySep + hashValue + keySep + rangeValue + keySep + primaryKey
+	return table.Name + KeySep + lsi.IndexName + KeySep + hashValue + KeySep + rangeValue + KeySep + primaryKey
 }
 
 func (s *IndexStore) getAttributeValueForIndex(item *Item, attrName string) string {
 	if item.Key != nil && item.Key[attrName] != nil {
-		return attributeValueToString(item.Key[attrName])
+		return EncodeKeyValue(item.Key[attrName])
 	}
 	if item.Attributes != nil && item.Attributes[attrName] != nil {
-		return attributeValueToString(item.Attributes[attrName])
+		return EncodeKeyValue(item.Attributes[attrName])
 	}
 	return ""
 }
@@ -154,9 +135,33 @@ func (s *IndexStore) putGSIEntry(txn storage.Transaction, table *Table, gsi *Glo
 	if indexKey == "" {
 		return nil
 	}
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
+	primaryKey := EncodeItemKey(table.Name, item.Key, table)
 	bucket := txn.Bucket(gsiIndexBucketName(s.region))
 	return bucket.Put([]byte(indexKey), []byte(primaryKey))
+}
+
+// PutIndexEntriesForIndex writes only the named GSI's index entry for an
+// item within the given transaction, leaving every other index untouched.
+// A name absent from the table's schema writes nothing: the index may have
+// been deleted between the schema update and this backfill write.
+func (s *IndexStore) PutIndexEntriesForIndex(txn storage.Transaction, table *Table, indexName string, item *Item) error {
+	for _, gsi := range table.GlobalSecondaryIndexes {
+		if gsi.IndexName != indexName {
+			continue
+		}
+		return s.putGSIEntry(txn, table, gsi, item)
+	}
+	return nil
+}
+
+// DeleteIndexEntriesForIndex removes every index entry of the named GSI:
+// deleting an index removes its data with it, so the entries must not
+// outlive the index (a re-created same-name index would otherwise inherit
+// stale entries pointing at items that no longer hold the index key
+// attributes). Keys are deleted in batches to bound the delete set,
+// mirroring DynamoDBTxn.deleteAllByPrefix.
+func (s *IndexStore) DeleteIndexEntriesForIndex(txn storage.Transaction, tableName, indexName string) error {
+	return deletePrefixBatched(txn.Bucket(gsiIndexBucketName(s.region)), tableName+KeySep+indexName+KeySep)
 }
 
 func (s *IndexStore) deleteGSIEntry(txn storage.Transaction, table *Table, gsi *GlobalSecondaryIndex, item *Item) error {
@@ -173,7 +178,7 @@ func (s *IndexStore) putLSIEntry(txn storage.Transaction, table *Table, lsi *Loc
 	if indexKey == "" {
 		return nil
 	}
-	primaryKey := buildItemKeyFromTable(table.Name, item.Key, table)
+	primaryKey := EncodeItemKey(table.Name, item.Key, table)
 	bucket := txn.Bucket(lsiIndexBucketName(s.region))
 	return bucket.Put([]byte(indexKey), []byte(primaryKey))
 }
@@ -201,47 +206,67 @@ func (s *IndexStore) QueryLSI(txn storage.Transaction, tableName, indexName, has
 	return s.queryByIndex(txn, tableName, indexName, hashKeyValue, lsiIndexBucketName(s.region), opts)
 }
 
+// queryByIndex walks one hash range of a secondary index in the direction
+// opts selects. Index keys encode the sort key with the sort-correct value
+// encoder, so storage order is semantic order: a forward walk yields
+// ascending sort keys, a reverse walk descending. The limit therefore
+// bounds both directions, and the filter runs before the limit is counted
+// so a filtered query stops as soon as its page is full.
 func (s *IndexStore) queryByIndex(txn storage.Transaction, tableName, indexName, hashKeyValue, bucketName string, opts IndexQueryOptions) ([]*Item, error) {
-	prefix := tableName + keySep + indexName + keySep + hashKeyValue + keySep
+	prefix := tableName + KeySep + indexName + KeySep + hashKeyValue + KeySep
 	bucket := txn.Bucket(bucketName)
-	iter := bucket.ScanPrefix([]byte(prefix))
-	defer iter.Close()
 
 	var items []*Item
 
-	for iter.Next() {
-		if !opts.Reverse && opts.Limit > 0 && len(items) >= opts.Limit {
-			break
-		}
-
-		primaryKey := string(iter.Value())
+	collect := func(indexKey string, primaryKey []byte) (bool, error) {
 		itemBucket := txn.Bucket(itemBucketName(s.region))
-		data, err := itemBucket.Get([]byte(primaryKey))
+		data, err := itemBucket.Get(primaryKey)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get item from index %s key %s: %w", indexName, primaryKey, err)
+			return false, fmt.Errorf("failed to get item from index %s key %s: %w", indexName, indexKey, err)
 		}
 		if data == nil {
-			continue
+			return false, nil
 		}
 
 		var pbItem pb.Item
 		if err := proto.Unmarshal(data, &pbItem); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal item from index %s key %s: %w", indexName, primaryKey, err)
+			return false, fmt.Errorf("failed to unmarshal item from index %s key %s: %w", indexName, indexKey, err)
 		}
 
-		items = append(items, &Item{
-			TableName:  pbItem.TableName,
-			Key:        protoToAttributeValueMapDirect(pbItem.Key),
-			Attributes: protoToAttributeValueMapDirect(pbItem.Attributes),
-		})
+		item := itemFromProto(&pbItem)
+		if opts.Filter != nil && !opts.Filter(item) {
+			return false, nil
+		}
+		items = append(items, item)
+		if opts.Limit > 0 && len(items) >= opts.Limit {
+			return true, nil
+		}
+		return false, nil
 	}
 
+	var iter storage.Iterator
 	if opts.Reverse {
-		for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
-			items[i], items[j] = items[j], items[i]
+		var before []byte
+		if opts.Marker != "" {
+			before = []byte(opts.Marker)
 		}
-		if opts.Limit > 0 && len(items) > opts.Limit {
-			items = items[:opts.Limit]
+		iter = bucket.ScanPrefixReverse([]byte(prefix), before)
+	} else {
+		iter = bucket.ScanPrefix([]byte(prefix))
+	}
+	defer iter.Close()
+
+	for iter.Next() {
+		indexKey := string(iter.Key())
+		if !opts.Reverse && opts.Marker != "" && indexKey <= opts.Marker {
+			continue
+		}
+		stop, err := collect(indexKey, iter.Value())
+		if err != nil {
+			return nil, err
+		}
+		if stop {
+			break
 		}
 	}
 

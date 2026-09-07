@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/core/storage"
+	pb "vorpalstacks/internal/pb/storage/storage_dynamodb"
 	"vorpalstacks/internal/store/aws/common"
 )
 
@@ -40,14 +42,16 @@ type ContributorWriteEvent struct {
 
 // ContributorKeyStat is one aggregated key of one table.
 type ContributorKeyStat struct {
-	Key   string  `json:"key"`
-	Count int64   `json:"count"`
-	Units float64 `json:"units"`
+	Key   string
+	Count int64
+	Units float64
 }
 
+// contributorAccess is the in-memory form of one minute-bucketed access
+// counter; its persisted form is the ContributorAccess protobuf record.
 type contributorAccess struct {
-	Count int64   `json:"count"`
-	Units float64 `json:"units"`
+	Count int64
+	Units float64
 }
 
 // ContributorStore manages the per-key access counters.
@@ -120,7 +124,16 @@ func encodeContributorValue(v *AttributeValue) string {
 }
 
 func contributorAccessKey(tableName, layout, keyStr string, minute int64) string {
-	return tableName + keySep + layout + keySep + keyStr + keySep + fmt.Sprintf("%020d", minute)
+	return tableName + KeySep + layout + KeySep + keyStr + KeySep + fmt.Sprintf("%020d", minute)
+}
+
+// contributorAccessFromBytes decodes one persisted access counter.
+func contributorAccessFromBytes(data []byte) (contributorAccess, error) {
+	var pbAccess pb.ContributorAccess
+	if err := proto.Unmarshal(data, &pbAccess); err != nil {
+		return contributorAccess{}, fmt.Errorf("unmarshal contributor counter: %w", err)
+	}
+	return contributorAccess{Count: pbAccess.Count, Units: pbAccess.Units}, nil
 }
 
 // RecordAccessTxn credits the given number of access events to one
@@ -137,17 +150,19 @@ func RecordAccessTxn(txn storage.Transaction, region, tableName, layout, keyStr 
 	}
 	bucket := txn.Bucket(contributorBucketName(region))
 	key := []byte(contributorAccessKey(tableName, layout, keyStr, at.Unix()/60))
-	var acc contributorAccess
+	acc := contributorAccess{}
 	if data, err := bucket.Get(key); err != nil {
 		return fmt.Errorf("read contributor counter: %w", err)
 	} else if len(data) > 0 {
-		if err := json.Unmarshal(data, &acc); err != nil {
-			return fmt.Errorf("unmarshal contributor counter: %w", err)
+		decoded, decodeErr := contributorAccessFromBytes(data)
+		if decodeErr != nil {
+			return decodeErr
 		}
+		acc = decoded
 	}
 	acc.Count += events
 	acc.Units += float64(events) * unitsPerEvent
-	data, err := json.Marshal(acc)
+	data, err := proto.Marshal(&pb.ContributorAccess{Count: acc.Count, Units: acc.Units})
 	if err != nil {
 		return fmt.Errorf("marshal contributor counter: %w", err)
 	}
@@ -160,13 +175,13 @@ func (s *ContributorStore) TopKeys(tableName, layout string, start, end time.Tim
 	if limit <= 0 {
 		limit = 10
 	}
-	prefix := tableName + keySep + layout + keySep
+	prefix := tableName + KeySep + layout + KeySep
 	startMinute := start.Unix() / 60
 	endMinute := end.Unix() / 60
 	agg := make(map[string]*ContributorKeyStat)
 
 	err := s.BaseStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		parts := strings.Split(key, keySep)
+		parts := strings.Split(key, KeySep)
 		if len(parts) != 4 {
 			return nil
 		}
@@ -178,7 +193,9 @@ func (s *ContributorStore) TopKeys(tableName, layout string, start, end time.Tim
 			return nil
 		}
 		var acc contributorAccess
-		if err := json.Unmarshal(value, &acc); err != nil {
+		if decoded, err := contributorAccessFromBytes(value); err == nil {
+			acc = decoded
+		} else {
 			return nil
 		}
 		stat, ok := agg[parts[2]]
@@ -214,11 +231,11 @@ func (s *ContributorStore) TopKeys(tableName, layout string, start, end time.Tim
 // out of the retention window. Keys are collected before any delete so the
 // prefix scan never mutates while iterating.
 func (s *ContributorStore) SweepTableOlderThan(tableName string, cutoff time.Time) error {
-	prefix := tableName + keySep
+	prefix := tableName + KeySep
 	cutoffMinute := cutoff.Unix() / 60
 	var doomed []string
 	err := s.BaseStore.ScanPrefix(prefix, func(key string, _ []byte) error {
-		parts := strings.Split(key, keySep)
+		parts := strings.Split(key, KeySep)
 		if len(parts) != 4 {
 			return nil
 		}

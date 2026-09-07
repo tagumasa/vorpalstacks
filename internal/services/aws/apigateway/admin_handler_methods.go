@@ -20,10 +20,10 @@ func (h *AdminHandler) PutMethod(ctx context.Context, req *connect.Request[pb.Pu
 
 	in := &MethodInput{
 		AuthorizationType:  req.Msg.Authorizationtype,
-		AuthorizerId:       req.Msg.Authorizerid,
+		AuthorizerId:       req.Msg.GetAuthorizerid(),
 		ApiKeyRequired:     req.Msg.GetApikeyrequired(),
-		RequestValidatorId: req.Msg.Requestvalidatorid,
-		OperationName:      req.Msg.Operationname,
+		RequestValidatorId: req.Msg.GetRequestvalidatorid(),
+		OperationName:      req.Msg.GetOperationname(),
 		RequestParameters:  req.Msg.Requestparameters,
 		RequestModels:      req.Msg.Requestmodels,
 	}
@@ -72,20 +72,20 @@ func (h *AdminHandler) PutIntegration(ctx context.Context, req *connect.Request[
 
 	in := &IntegrationInput{
 		Type:                  fromPbIntegrationType(req.Msg.Type),
-		IntegrationHttpMethod: req.Msg.Integrationhttpmethod,
-		Uri:                   req.Msg.Uri,
-		Credentials:           req.Msg.Credentials,
-		PassthroughBehavior:   req.Msg.Passthroughbehavior,
+		IntegrationHttpMethod: req.Msg.GetIntegrationhttpmethod(),
+		Uri:                   req.Msg.GetUri(),
+		Credentials:           req.Msg.GetCredentials(),
+		PassthroughBehavior:   req.Msg.GetPassthroughbehavior(),
 		ContentHandling:       fromPbContentHandling(req.Msg.Contenthandling),
-		CacheNamespace:        req.Msg.Cachenamespace,
+		CacheNamespace:        req.Msg.GetCachenamespace(),
 		CacheKeyParameters:    req.Msg.Cachekeyparameters,
 		TimeoutInMillis:       req.Msg.GetTimeoutinmillis(),
 		ConnectionType:        fromPbConnectionType(req.Msg.Connectiontype),
-		ConnectionId:          req.Msg.Connectionid,
+		ConnectionId:          req.Msg.GetConnectionid(),
 		RequestParameters:     req.Msg.Requestparameters,
 		RequestTemplates:      req.Msg.Requesttemplates,
 		ResponseTransferMode:  fromPbResponseTransferMode(req.Msg.GetResponsetransfermode()),
-		IntegrationTarget:     req.Msg.Integrationtarget,
+		IntegrationTarget:     req.Msg.GetIntegrationtarget(),
 	}
 	if req.Msg.Tlsconfig != nil {
 		in.TlsConfig = fromPbTlsConfig(req.Msg.Tlsconfig)

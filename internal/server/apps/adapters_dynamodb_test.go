@@ -33,18 +33,18 @@ func newInvokerTestStore(t *testing.T, enableInsights bool) dynamodbstore.Dynamo
 	t.Cleanup(func() { st.Close() })
 
 	store := dynamodbstore.NewDynamoDBStore(st, "123456789012", "us-east-1")
-	if _, err := store.Tables().Create(
-		"Tbl",
-		[]*dynamodbstore.KeySchemaElement{
+	if _, err := store.Tables().Create(dynamodbstore.CreateTableParams{
+		Name: "Tbl",
+		KeySchema: []*dynamodbstore.KeySchemaElement{
 			{AttributeName: "pk", KeyType: dynamodbstore.KeyTypeHash},
 			{AttributeName: "sk", KeyType: dynamodbstore.KeyTypeRange},
 		},
-		[]*dynamodbstore.AttributeDefinition{
+		AttributeDefinitions: []*dynamodbstore.AttributeDefinition{
 			{AttributeName: "pk", AttributeType: dynamodbstore.ScalarAttributeTypeS},
 			{AttributeName: "sk", AttributeType: dynamodbstore.ScalarAttributeTypeS},
 		},
-		dynamodbstore.BillingModePayPerRequest, nil, nil, nil, nil, nil, false,
-	); err != nil {
+		BillingMode: dynamodbstore.BillingModePayPerRequest,
+	}); err != nil {
 		t.Fatalf("create table: %v", err)
 	}
 	if enableInsights {
@@ -297,5 +297,77 @@ func TestDynamoDBInvokerPutItemJournalsUnderPITR(t *testing.T) {
 	}
 	if records != 2 {
 		t.Fatalf("expected the put and the delete to be journaled, got %d records", records)
+	}
+}
+
+// TestDynamoDBInvokerPaginationDeliversEveryItem pins the marker contract
+// end to end through the invoker adapters: walking pages at a limit below
+// the item count delivers every item exactly once, both for a whole-table
+// scan and for a single-partition query — the AppSync resolvers feed the
+// returned marker straight back as the next exclusiveStartKey.
+func TestDynamoDBInvokerPaginationDeliversEveryItem(t *testing.T) {
+	store := newInvokerTestStore(t, true)
+	adapter := &dynamoDBInvokerAdapter{provider: stubDynamoDBStoreProvider{store: store}}
+	ctx := t.Context()
+
+	put := func(pk, sk string) {
+		t.Helper()
+		if _, err := adapter.PutItem(ctx, "us-east-1", "Tbl",
+			map[string]interface{}{"pk": pk, "sk": sk},
+			map[string]interface{}{"val": "x"}); err != nil {
+			t.Fatalf("put %s/%s: %v", pk, sk, err)
+		}
+	}
+	for _, sk := range []string{"1", "2", "3", "4", "5"} {
+		put("A", sk)
+	}
+	put("B", "1")
+
+	scanSeen := map[string]int{}
+	marker := ""
+	for {
+		items, next, err := adapter.ScanWithPagination(ctx, "us-east-1", "Tbl", 2, marker)
+		if err != nil {
+			t.Fatalf("scan page: %v", err)
+		}
+		for _, it := range items {
+			scanSeen[it["pk"].(string)+"/"+it["sk"].(string)]++
+		}
+		if next == "" || len(items) == 0 {
+			break
+		}
+		marker = next
+	}
+	if len(scanSeen) != 6 {
+		t.Fatalf("scan walk saw %d distinct items, want 6: %v", len(scanSeen), scanSeen)
+	}
+	for key, n := range scanSeen {
+		if n != 1 {
+			t.Fatalf("scan walk delivered %s %d times", key, n)
+		}
+	}
+
+	querySeen := map[string]int{}
+	marker = ""
+	for {
+		items, next, err := adapter.QueryWithPagination(ctx, "us-east-1", "Tbl", "A", 2, marker)
+		if err != nil {
+			t.Fatalf("query page: %v", err)
+		}
+		for _, it := range items {
+			querySeen[it["pk"].(string)+"/"+it["sk"].(string)]++
+		}
+		if next == "" || len(items) == 0 {
+			break
+		}
+		marker = next
+	}
+	if len(querySeen) != 5 {
+		t.Fatalf("query walk saw %d distinct items, want 5: %v", len(querySeen), querySeen)
+	}
+	for key, n := range querySeen {
+		if n != 1 {
+			t.Fatalf("query walk delivered %s %d times", key, n)
+		}
 	}
 }

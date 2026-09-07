@@ -321,7 +321,7 @@ service CloudTrailService {
 
 message AccessDeniedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -331,7 +331,7 @@ message AccessDeniedException {
 
 message AccountHasOngoingImportException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -341,7 +341,7 @@ message AccountHasOngoingImportException {
 
 message AccountNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -351,7 +351,7 @@ message AccountNotFoundException {
 
 message AccountNotRegisteredException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -361,7 +361,7 @@ message AccountNotRegisteredException {
 
 message AccountRegisteredException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -393,7 +393,7 @@ message AdvancedEventSelector {
 
   repeated AdvancedFieldSelector fieldselectors = 445033784;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -445,9 +445,9 @@ enum BillingMode {
 
 message CancelQueryRequest {
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
   string queryid = 110737519;
 
@@ -457,7 +457,7 @@ message CancelQueryRequest {
 
 message CancelQueryResponse {
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
   string queryid = 110737519;
 
@@ -471,7 +471,7 @@ message CancelQueryResponse {
 
 message CannotDelegateManagementAccountException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -481,9 +481,9 @@ message CannotDelegateManagementAccountException {
 
 message Channel {
 
-  string channelarn = 99276476;
+  optional string channelarn = 99276476;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -493,7 +493,7 @@ message Channel {
 
 message ChannelARNInvalidException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -503,7 +503,7 @@ message ChannelARNInvalidException {
 
 message ChannelAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -513,7 +513,7 @@ message ChannelAlreadyExistsException {
 
 message ChannelExistsForEDSException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -523,7 +523,7 @@ message ChannelExistsForEDSException {
 
 message ChannelMaxLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -533,7 +533,7 @@ message ChannelMaxLimitExceededException {
 
 message ChannelNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -543,7 +543,7 @@ message ChannelNotFoundException {
 
 message CloudTrailARNInvalidException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -553,7 +553,7 @@ message CloudTrailARNInvalidException {
 
 message CloudTrailAccessNotEnabledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -563,7 +563,7 @@ message CloudTrailAccessNotEnabledException {
 
 message CloudTrailInvalidClientTokenIdException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -573,7 +573,7 @@ message CloudTrailInvalidClientTokenIdException {
 
 message CloudWatchLogsDeliveryUnavailableException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -583,7 +583,7 @@ message CloudWatchLogsDeliveryUnavailableException {
 
 message ConcurrentModificationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -593,7 +593,7 @@ message ConcurrentModificationException {
 
 message ConflictException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -627,13 +627,13 @@ message CreateChannelRequest {
 
 message CreateChannelResponse {
 
-  string channelarn = 99276476;
+  optional string channelarn = 99276476;
 
   repeated Destination destinations = 404385861;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
   repeated Tag tags = 381526209;
 
@@ -659,9 +659,9 @@ message CreateDashboardRequest {
 
 message CreateDashboardResponse {
 
-  string dashboardarn = 108051951;
+  optional string dashboardarn = 108051951;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   RefreshSchedule refreshschedule = 261773338;
 
@@ -683,7 +683,7 @@ message CreateEventDataStoreRequest {
 
   BillingMode billingmode = 184162880;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool multiregionenabled = 20620620;
 
@@ -709,15 +709,15 @@ message CreateEventDataStoreResponse {
 
   BillingMode billingmode = 184162880;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool multiregionenabled = 20620620;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool organizationenabled = 480171176;
 
@@ -729,7 +729,7 @@ message CreateEventDataStoreResponse {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -739,9 +739,9 @@ message CreateEventDataStoreResponse {
 
 message CreateTrailRequest {
 
-  string cloudwatchlogsloggrouparn = 519613355;
+  optional string cloudwatchlogsloggrouparn = 519613355;
 
-  string cloudwatchlogsrolearn = 55454690;
+  optional string cloudwatchlogsrolearn = 55454690;
 
   optional bool enablelogfilevalidation = 80236930;
 
@@ -751,15 +751,15 @@ message CreateTrailRequest {
 
   optional bool isorganizationtrail = 145256127;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   string name = 266367751;
 
   string s3bucketname = 320495427;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
-  string snstopicname = 415454800;
+  optional string snstopicname = 415454800;
 
   repeated Tag tagslist = 497422889;
 
@@ -771,9 +771,9 @@ message CreateTrailRequest {
 
 message CreateTrailResponse {
 
-  string cloudwatchlogsloggrouparn = 519613355;
+  optional string cloudwatchlogsloggrouparn = 519613355;
 
-  string cloudwatchlogsrolearn = 55454690;
+  optional string cloudwatchlogsrolearn = 55454690;
 
   optional bool includeglobalserviceevents = 212227451;
 
@@ -781,21 +781,21 @@ message CreateTrailResponse {
 
   optional bool isorganizationtrail = 145256127;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool logfilevalidationenabled = 35904346;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string s3bucketname = 320495427;
+  optional string s3bucketname = 320495427;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
-  string snstopicarn = 380025580;
+  optional string snstopicarn = 380025580;
 
-  string snstopicname = 415454800;
+  optional string snstopicname = 415454800;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -805,7 +805,7 @@ message CreateTrailResponse {
 
 message DashboardDetail {
 
-  string dashboardarn = 108051951;
+  optional string dashboardarn = 108051951;
 
   DashboardType type = 290836590;
 
@@ -843,7 +843,7 @@ enum DashboardType {
 
 message DataResource {
 
-  string type = 290836590;
+  optional string type = 290836590;
 
   repeated string values = 223158876;
 
@@ -855,7 +855,7 @@ message DataResource {
 
 message DelegatedAdminAccountLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -979,15 +979,15 @@ message DeregisterOrganizationDelegatedAdminResponse {
 
 message DescribeQueryRequest {
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
-  string queryalias = 512762270;
+  optional string queryalias = 512762270;
 
-  string queryid = 110737519;
+  optional string queryid = 110737519;
 
-  string refreshid = 57407610;
+  optional string refreshid = 57407610;
 
 }
 
@@ -995,23 +995,23 @@ message DescribeQueryRequest {
 
 message DescribeQueryResponse {
 
-  string deliverys3uri = 230884460;
+  optional string deliverys3uri = 230884460;
 
   DeliveryStatus deliverystatus = 483265504;
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
-  string prompt = 263974748;
+  optional string prompt = 263974748;
 
-  string queryid = 110737519;
+  optional string queryid = 110737519;
 
   QueryStatisticsForDescribeQuery querystatistics = 260794841;
 
   QueryStatus querystatus = 367016406;
 
-  string querystring = 435938663;
+  optional string querystring = 435938663;
 
 }
 
@@ -1071,7 +1071,7 @@ message DisableFederationRequest {
 
 message DisableFederationResponse {
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
   FederationStatus federationstatus = 146235383;
 
@@ -1091,9 +1091,9 @@ message EnableFederationRequest {
 
 message EnableFederationResponse {
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
-  string federationrolearn = 504464364;
+  optional string federationrolearn = 504464364;
 
   FederationStatus federationstatus = 146235383;
 
@@ -1105,23 +1105,23 @@ message EnableFederationResponse {
 
 message Event {
 
-  string accesskeyid = 453893024;
+  optional string accesskeyid = 453893024;
 
-  string cloudtrailevent = 344297255;
+  optional string cloudtrailevent = 344297255;
 
-  string eventid = 376916819;
+  optional string eventid = 376916819;
 
-  string eventname = 264746781;
+  optional string eventname = 264746781;
 
-  string eventsource = 37841339;
+  optional string eventsource = 37841339;
 
-  string eventtime = 222361647;
+  optional string eventtime = 222361647;
 
-  string readonly = 129039352;
+  optional string readonly = 129039352;
 
   repeated Resource resources = 358918291;
 
-  string username = 470340826;
+  optional string username = 470340826;
 
 }
 
@@ -1149,13 +1149,13 @@ message EventDataStore {
 
   repeated AdvancedEventSelector advancedeventselectors = 36838194;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
   optional bool multiregionenabled = 20620620;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool organizationenabled = 480171176;
 
@@ -1165,7 +1165,7 @@ message EventDataStore {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -1175,7 +1175,7 @@ message EventDataStore {
 
 message EventDataStoreARNInvalidException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1185,7 +1185,7 @@ message EventDataStoreARNInvalidException {
 
 message EventDataStoreAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1195,7 +1195,7 @@ message EventDataStoreAlreadyExistsException {
 
 message EventDataStoreFederationEnabledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1205,7 +1205,7 @@ message EventDataStoreFederationEnabledException {
 
 message EventDataStoreHasOngoingImportException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1215,7 +1215,7 @@ message EventDataStoreHasOngoingImportException {
 
 message EventDataStoreMaxLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1225,7 +1225,7 @@ message EventDataStoreMaxLimitExceededException {
 
 message EventDataStoreNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1253,7 +1253,7 @@ enum EventDataStoreStatus {
 
 message EventDataStoreTerminationProtectedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1301,11 +1301,11 @@ message GenerateQueryRequest {
 
 message GenerateQueryResponse {
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
-  string queryalias = 512762270;
+  optional string queryalias = 512762270;
 
-  string querystatement = 340852217;
+  optional string querystatement = 340852217;
 
 }
 
@@ -1315,7 +1315,7 @@ message GenerateQueryResponse {
 
 message GenerateResponseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1331,15 +1331,15 @@ message GetChannelRequest {
 
 message GetChannelResponse {
 
-  string channelarn = 99276476;
+  optional string channelarn = 99276476;
 
   repeated Destination destinations = 404385861;
 
   IngestionStatus ingestionstatus = 188310656;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
   SourceConfig sourceconfig = 415255383;
 
@@ -1357,13 +1357,13 @@ message GetDashboardRequest {
 
 message GetDashboardResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string dashboardarn = 108051951;
+  optional string dashboardarn = 108051951;
 
-  string lastrefreshfailurereason = 493889247;
+  optional string lastrefreshfailurereason = 493889247;
 
-  string lastrefreshid = 272889110;
+  optional string lastrefreshid = 272889110;
 
   RefreshSchedule refreshschedule = 261773338;
 
@@ -1373,7 +1373,7 @@ message GetDashboardResponse {
 
   DashboardType type = 290836590;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
   repeated Widget widgets = 501826147;
 
@@ -1383,9 +1383,9 @@ message GetDashboardResponse {
 
 message GetEventConfigurationRequest {
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
-  string trailname = 507774985;
+  optional string trailname = 507774985;
 
 }
 
@@ -1397,11 +1397,11 @@ message GetEventConfigurationResponse {
 
   repeated ContextKeySelector contextkeyselectors = 342040300;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
   MaxEventSize maxeventsize = 517627763;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -1421,19 +1421,19 @@ message GetEventDataStoreResponse {
 
   BillingMode billingmode = 184162880;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
-  string federationrolearn = 504464364;
+  optional string federationrolearn = 504464364;
 
   FederationStatus federationstatus = 146235383;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool multiregionenabled = 20620620;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool organizationenabled = 480171176;
 
@@ -1445,7 +1445,7 @@ message GetEventDataStoreResponse {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -1465,7 +1465,7 @@ message GetEventSelectorsResponse {
 
   repeated EventSelector eventselectors = 344575328;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -1481,13 +1481,13 @@ message GetImportRequest {
 
 message GetImportResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   repeated string destinations = 404385861;
 
-  string endeventtime = 260441984;
+  optional string endeventtime = 260441984;
 
-  string importid = 420153946;
+  optional string importid = 420153946;
 
   ImportSource importsource = 41128754;
 
@@ -1495,9 +1495,9 @@ message GetImportResponse {
 
   ImportStatus importstatus = 129077631;
 
-  string starteventtime = 107272573;
+  optional string starteventtime = 107272573;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -1505,9 +1505,9 @@ message GetImportResponse {
 
 message GetInsightSelectorsRequest {
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
-  string trailname = 507774985;
+  optional string trailname = 507774985;
 
 }
 
@@ -1515,13 +1515,13 @@ message GetInsightSelectorsRequest {
 
 message GetInsightSelectorsResponse {
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
   repeated InsightSelector insightselectors = 49628748;
 
-  string insightsdestination = 396776649;
+  optional string insightsdestination = 396776649;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -1529,13 +1529,13 @@ message GetInsightSelectorsResponse {
 
 message GetQueryResultsRequest {
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
   optional int32 maxqueryresults = 120660448;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string queryid = 110737519;
 
@@ -1545,9 +1545,9 @@ message GetQueryResultsRequest {
 
 message GetQueryResultsResponse {
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated QueryResultRowEntry queryresultrows = 240264704;
 
@@ -1569,11 +1569,11 @@ message GetResourcePolicyRequest {
 
 message GetResourcePolicyResponse {
 
-  string delegatedadminresourcepolicy = 510966132;
+  optional string delegatedadminresourcepolicy = 510966132;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
-  string resourcepolicy = 15747632;
+  optional string resourcepolicy = 15747632;
 
 }
 
@@ -1611,37 +1611,37 @@ message GetTrailStatusResponse {
 
   optional bool islogging = 61005519;
 
-  string latestcloudwatchlogsdeliveryerror = 238605214;
+  optional string latestcloudwatchlogsdeliveryerror = 238605214;
 
-  string latestcloudwatchlogsdeliverytime = 517138001;
+  optional string latestcloudwatchlogsdeliverytime = 517138001;
 
-  string latestdeliveryattemptsucceeded = 432951833;
+  optional string latestdeliveryattemptsucceeded = 432951833;
 
-  string latestdeliveryattempttime = 109095435;
+  optional string latestdeliveryattempttime = 109095435;
 
-  string latestdeliveryerror = 119953649;
+  optional string latestdeliveryerror = 119953649;
 
-  string latestdeliverytime = 320897248;
+  optional string latestdeliverytime = 320897248;
 
-  string latestdigestdeliveryerror = 514209249;
+  optional string latestdigestdeliveryerror = 514209249;
 
-  string latestdigestdeliverytime = 469527024;
+  optional string latestdigestdeliverytime = 469527024;
 
-  string latestnotificationattemptsucceeded = 3764412;
+  optional string latestnotificationattemptsucceeded = 3764412;
 
-  string latestnotificationattempttime = 104168880;
+  optional string latestnotificationattempttime = 104168880;
 
-  string latestnotificationerror = 261077338;
+  optional string latestnotificationerror = 261077338;
 
-  string latestnotificationtime = 2082317;
+  optional string latestnotificationtime = 2082317;
 
-  string startloggingtime = 351696170;
+  optional string startloggingtime = 351696170;
 
-  string stoploggingtime = 469874232;
+  optional string stoploggingtime = 469874232;
 
-  string timeloggingstarted = 18088239;
+  optional string timeloggingstarted = 18088239;
 
-  string timeloggingstopped = 272406495;
+  optional string timeloggingstopped = 272406495;
 
 }
 
@@ -1651,13 +1651,13 @@ message GetTrailStatusResponse {
 
 message ImportFailureListItem {
 
-  string errormessage = 518702377;
+  optional string errormessage = 518702377;
 
-  string errortype = 398848954;
+  optional string errortype = 398848954;
 
-  string lastupdatedtime = 177046166;
+  optional string lastupdatedtime = 177046166;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   ImportFailureStatus status = 6222352;
 
@@ -1681,7 +1681,7 @@ enum ImportFailureStatus {
 
 message ImportNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1735,15 +1735,15 @@ enum ImportStatus {
 
 message ImportsListItem {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   repeated string destinations = 404385861;
 
-  string importid = 420153946;
+  optional string importid = 420153946;
 
   ImportStatus importstatus = 129077631;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -1753,7 +1753,7 @@ message ImportsListItem {
 
 message InactiveEventDataStoreException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1763,7 +1763,7 @@ message InactiveEventDataStoreException {
 
 message InactiveQueryException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1773,15 +1773,15 @@ message InactiveQueryException {
 
 message IngestionStatus {
 
-  string latestingestionattempteventid = 204299739;
+  optional string latestingestionattempteventid = 204299739;
 
-  string latestingestionattempttime = 313195389;
+  optional string latestingestionattempttime = 313195389;
 
-  string latestingestionerrorcode = 415423856;
+  optional string latestingestionerrorcode = 415423856;
 
-  string latestingestionsuccesseventid = 31034217;
+  optional string latestingestionsuccesseventid = 31034217;
 
-  string latestingestionsuccesstime = 184241615;
+  optional string latestingestionsuccesstime = 184241615;
 
 }
 
@@ -1791,7 +1791,7 @@ message IngestionStatus {
 
 message InsightNotEnabledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1833,7 +1833,7 @@ enum InsightsMetricDataType {
 
 message InsufficientDependencyServiceAccessPermissionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1843,7 +1843,7 @@ message InsufficientDependencyServiceAccessPermissionException {
 
 message InsufficientEncryptionPolicyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1853,7 +1853,7 @@ message InsufficientEncryptionPolicyException {
 
 message InsufficientIAMAccessPermissionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1863,7 +1863,7 @@ message InsufficientIAMAccessPermissionException {
 
 message InsufficientS3BucketPolicyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1873,7 +1873,7 @@ message InsufficientS3BucketPolicyException {
 
 message InsufficientSnsTopicPolicyException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1883,7 +1883,7 @@ message InsufficientSnsTopicPolicyException {
 
 message InvalidCloudWatchLogsLogGroupArnException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1893,7 +1893,7 @@ message InvalidCloudWatchLogsLogGroupArnException {
 
 message InvalidCloudWatchLogsRoleArnException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1903,7 +1903,7 @@ message InvalidCloudWatchLogsRoleArnException {
 
 message InvalidDateRangeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1913,7 +1913,7 @@ message InvalidDateRangeException {
 
 message InvalidEventCategoryException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1923,7 +1923,7 @@ message InvalidEventCategoryException {
 
 message InvalidEventDataStoreCategoryException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1933,7 +1933,7 @@ message InvalidEventDataStoreCategoryException {
 
 message InvalidEventDataStoreStatusException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1943,7 +1943,7 @@ message InvalidEventDataStoreStatusException {
 
 message InvalidEventSelectorsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1953,7 +1953,7 @@ message InvalidEventSelectorsException {
 
 message InvalidHomeRegionException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1963,7 +1963,7 @@ message InvalidHomeRegionException {
 
 message InvalidImportSourceException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1973,7 +1973,7 @@ message InvalidImportSourceException {
 
 message InvalidInsightSelectorsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1983,7 +1983,7 @@ message InvalidInsightSelectorsException {
 
 message InvalidKmsKeyIdException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1993,7 +1993,7 @@ message InvalidKmsKeyIdException {
 
 message InvalidLookupAttributesException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2003,7 +2003,7 @@ message InvalidLookupAttributesException {
 
 message InvalidMaxResultsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2013,7 +2013,7 @@ message InvalidMaxResultsException {
 
 message InvalidNextTokenException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2023,7 +2023,7 @@ message InvalidNextTokenException {
 
 message InvalidParameterCombinationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2033,7 +2033,7 @@ message InvalidParameterCombinationException {
 
 message InvalidParameterException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2043,7 +2043,7 @@ message InvalidParameterException {
 
 message InvalidQueryStatementException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2053,7 +2053,7 @@ message InvalidQueryStatementException {
 
 message InvalidQueryStatusException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2063,7 +2063,7 @@ message InvalidQueryStatusException {
 
 message InvalidS3BucketNameException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2073,7 +2073,7 @@ message InvalidS3BucketNameException {
 
 message InvalidS3PrefixException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2083,7 +2083,7 @@ message InvalidS3PrefixException {
 
 message InvalidSnsTopicNameException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2093,7 +2093,7 @@ message InvalidSnsTopicNameException {
 
 message InvalidSourceException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2103,7 +2103,7 @@ message InvalidSourceException {
 
 message InvalidTagParameterException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2113,7 +2113,7 @@ message InvalidTagParameterException {
 
 message InvalidTimeRangeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2123,7 +2123,7 @@ message InvalidTimeRangeException {
 
 message InvalidTokenException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2133,7 +2133,7 @@ message InvalidTokenException {
 
 message InvalidTrailNameException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2143,7 +2143,7 @@ message InvalidTrailNameException {
 
 message KmsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2153,7 +2153,7 @@ message KmsException {
 
 message KmsKeyDisabledException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2163,7 +2163,7 @@ message KmsKeyDisabledException {
 
 message KmsKeyNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2173,7 +2173,7 @@ message ListChannelsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2183,7 +2183,7 @@ message ListChannelsResponse {
 
   repeated Channel channels = 155227286;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2193,9 +2193,9 @@ message ListDashboardsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nameprefix = 361707931;
+  optional string nameprefix = 361707931;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   DashboardType type = 290836590;
 
@@ -2207,7 +2207,7 @@ message ListDashboardsResponse {
 
   repeated DashboardDetail dashboards = 261493913;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2217,7 +2217,7 @@ message ListEventDataStoresRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2227,7 +2227,7 @@ message ListEventDataStoresResponse {
 
   repeated EventDataStore eventdatastores = 152154314;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2239,7 +2239,7 @@ message ListImportFailuresRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2249,7 +2249,7 @@ message ListImportFailuresResponse {
 
   repeated ImportFailureListItem failures = 335467271;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2257,13 +2257,13 @@ message ListImportFailuresResponse {
 
 message ListImportsRequest {
 
-  string destination = 457443680;
+  optional string destination = 457443680;
 
   ImportStatus importstatus = 129077631;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2273,7 +2273,7 @@ message ListImportsResponse {
 
   repeated ImportsListItem imports = 497717894;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2297,15 +2297,15 @@ message ListInsightsDataRequest {
 
   map<string, string> dimensions = 462933457;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
   string insightsource = 438381967;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
 }
 
@@ -2315,7 +2315,7 @@ message ListInsightsDataResponse {
 
   repeated Event events = 3416229;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2333,9 +2333,9 @@ message ListInsightsMetricDataRequest {
 
   InsightsMetricDataType datatype = 67988590;
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
   string eventname = 264746781;
 
@@ -2345,13 +2345,13 @@ message ListInsightsMetricDataRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   optional int32 period = 119833637;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
-  string trailname = 507774985;
+  optional string trailname = 507774985;
 
 }
 
@@ -2359,19 +2359,19 @@ message ListInsightsMetricDataRequest {
 
 message ListInsightsMetricDataResponse {
 
-  string errorcode = 34663193;
+  optional string errorcode = 34663193;
 
-  string eventname = 264746781;
+  optional string eventname = 264746781;
 
-  string eventsource = 37841339;
+  optional string eventsource = 37841339;
 
   InsightType insighttype = 530375860;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string timestamps = 213534737;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
   repeated double values = 223158876;
 
@@ -2383,11 +2383,11 @@ message ListInsightsMetricDataResponse {
 
 message ListPublicKeysRequest {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
 }
 
@@ -2397,7 +2397,7 @@ message ListPublicKeysRequest {
 
 message ListPublicKeysResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PublicKey publickeylist = 129933128;
 
@@ -2407,17 +2407,17 @@ message ListPublicKeysResponse {
 
 message ListQueriesRequest {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
   string eventdatastore = 136801729;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   QueryStatus querystatus = 367016406;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
 }
 
@@ -2425,7 +2425,7 @@ message ListQueriesRequest {
 
 message ListQueriesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Query queries = 305659620;
 
@@ -2437,7 +2437,7 @@ message ListQueriesResponse {
 
 message ListTagsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated string resourceidlist = 272650681;
 
@@ -2449,7 +2449,7 @@ message ListTagsRequest {
 
 message ListTagsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated ResourceTag resourcetaglist = 301974828;
 
@@ -2459,7 +2459,7 @@ message ListTagsResponse {
 
 message ListTrailsRequest {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2467,7 +2467,7 @@ message ListTrailsRequest {
 
 message ListTrailsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated TrailInfo trails = 16939441;
 
@@ -2513,7 +2513,7 @@ enum LookupAttributeKey {
 
 message LookupEventsRequest {
 
-  string endtime = 63911884;
+  optional string endtime = 63911884;
 
   EventCategory eventcategory = 164668724;
 
@@ -2521,9 +2521,9 @@ message LookupEventsRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
-  string starttime = 370760303;
+  optional string starttime = 370760303;
 
 }
 
@@ -2535,7 +2535,7 @@ message LookupEventsResponse {
 
   repeated Event events = 3416229;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -2545,7 +2545,7 @@ message LookupEventsResponse {
 
 message MaxConcurrentQueriesException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2565,7 +2565,7 @@ enum MaxEventSize {
 
 message MaximumNumberOfTrailsExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2575,7 +2575,7 @@ message MaximumNumberOfTrailsExceededException {
 
 message NoManagementAccountSLRExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2585,7 +2585,7 @@ message NoManagementAccountSLRExistsException {
 
 message NotOrganizationManagementAccountException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2595,7 +2595,7 @@ message NotOrganizationManagementAccountException {
 
 message NotOrganizationMasterAccountException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2605,7 +2605,7 @@ message NotOrganizationMasterAccountException {
 
 message OperationNotPermittedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2615,7 +2615,7 @@ message OperationNotPermittedException {
 
 message OrganizationNotInAllFeaturesModeException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2625,7 +2625,7 @@ message OrganizationNotInAllFeaturesModeException {
 
 message OrganizationsNotInUseException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2647,13 +2647,13 @@ message PartitionKey {
 
 message PublicKey {
 
-  string fingerprint = 502547484;
+  optional string fingerprint = 502547484;
 
-  string validityendtime = 192996550;
+  optional string validityendtime = 192996550;
 
-  string validitystarttime = 288335101;
+  optional string validitystarttime = 288335101;
 
-  bytes value = 289929579;
+  optional bytes value = 289929579;
 
 }
 
@@ -2665,11 +2665,11 @@ message PutEventConfigurationRequest {
 
   repeated ContextKeySelector contextkeyselectors = 342040300;
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
   MaxEventSize maxeventsize = 517627763;
 
-  string trailname = 507774985;
+  optional string trailname = 507774985;
 
 }
 
@@ -2681,11 +2681,11 @@ message PutEventConfigurationResponse {
 
   repeated ContextKeySelector contextkeyselectors = 342040300;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
   MaxEventSize maxeventsize = 517627763;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -2709,7 +2709,7 @@ message PutEventSelectorsResponse {
 
   repeated EventSelector eventselectors = 344575328;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -2717,13 +2717,13 @@ message PutEventSelectorsResponse {
 
 message PutInsightSelectorsRequest {
 
-  string eventdatastore = 136801729;
+  optional string eventdatastore = 136801729;
 
   repeated InsightSelector insightselectors = 49628748;
 
-  string insightsdestination = 396776649;
+  optional string insightsdestination = 396776649;
 
-  string trailname = 507774985;
+  optional string trailname = 507774985;
 
 }
 
@@ -2731,13 +2731,13 @@ message PutInsightSelectorsRequest {
 
 message PutInsightSelectorsResponse {
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
   repeated InsightSelector insightselectors = 49628748;
 
-  string insightsdestination = 396776649;
+  optional string insightsdestination = 396776649;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -2755,11 +2755,11 @@ message PutResourcePolicyRequest {
 
 message PutResourcePolicyResponse {
 
-  string delegatedadminresourcepolicy = 510966132;
+  optional string delegatedadminresourcepolicy = 510966132;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
-  string resourcepolicy = 15747632;
+  optional string resourcepolicy = 15747632;
 
 }
 
@@ -2769,9 +2769,9 @@ message PutResourcePolicyResponse {
 
 message Query {
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
-  string queryid = 110737519;
+  optional string queryid = 110737519;
 
   QueryStatus querystatus = 367016406;
 
@@ -2783,7 +2783,7 @@ message Query {
 
 message QueryIdNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2809,7 +2809,7 @@ message QueryStatisticsForDescribeQuery {
 
   optional int64 bytesscanned = 186950329;
 
-  string creationtime = 103458790;
+  optional string creationtime = 103458790;
 
   optional int64 eventsmatched = 19501829;
 
@@ -2859,7 +2859,7 @@ message RefreshSchedule {
 
   RefreshScheduleStatus status = 6222352;
 
-  string timeofday = 77605358;
+  optional string timeofday = 77605358;
 
 }
 
@@ -2953,9 +2953,9 @@ message RequestWidget {
 
 message Resource {
 
-  string resourcename = 269834071;
+  optional string resourcename = 269834071;
 
-  string resourcetype = 301342558;
+  optional string resourcetype = 301342558;
 
 }
 
@@ -2965,7 +2965,7 @@ message Resource {
 
 message ResourceARNNotValidException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2975,7 +2975,7 @@ message ResourceARNNotValidException {
 
 message ResourceNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2985,7 +2985,7 @@ message ResourceNotFoundException {
 
 message ResourcePolicyNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2995,7 +2995,7 @@ message ResourcePolicyNotFoundException {
 
 message ResourcePolicyNotValidException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3005,7 +3005,7 @@ message ResourcePolicyNotValidException {
 
 message ResourceTag {
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
   repeated Tag tagslist = 497422889;
 
@@ -3017,7 +3017,7 @@ message ResourceTag {
 
 message ResourceTypeNotSupportedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3037,15 +3037,15 @@ message RestoreEventDataStoreResponse {
 
   BillingMode billingmode = 184162880;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool multiregionenabled = 20620620;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool organizationenabled = 480171176;
 
@@ -3055,7 +3055,7 @@ message RestoreEventDataStoreResponse {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -3065,7 +3065,7 @@ message RestoreEventDataStoreResponse {
 
 message S3BucketDoesNotExistException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3089,7 +3089,7 @@ message SearchSampleQueriesRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string searchphrase = 243779077;
 
@@ -3099,7 +3099,7 @@ message SearchSampleQueriesRequest {
 
 message SearchSampleQueriesResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated SearchSampleQueriesSearchResult searchresults = 29101186;
 
@@ -3111,13 +3111,13 @@ message SearchSampleQueriesResponse {
 
 message SearchSampleQueriesSearchResult {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  float relevance = 287814281;
+  optional float relevance = 287814281;
 
-  string sql = 18818720;
+  optional string sql = 18818720;
 
 }
 
@@ -3127,7 +3127,7 @@ message SearchSampleQueriesSearchResult {
 
 message ServiceQuotaExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3167,7 +3167,7 @@ message StartDashboardRefreshRequest {
 
 message StartDashboardRefreshResponse {
 
-  string refreshid = 57407610;
+  optional string refreshid = 57407610;
 
 }
 
@@ -3191,13 +3191,13 @@ message StartImportRequest {
 
   repeated string destinations = 404385861;
 
-  string endeventtime = 260441984;
+  optional string endeventtime = 260441984;
 
-  string importid = 420153946;
+  optional string importid = 420153946;
 
   ImportSource importsource = 41128754;
 
-  string starteventtime = 107272573;
+  optional string starteventtime = 107272573;
 
 }
 
@@ -3205,21 +3205,21 @@ message StartImportRequest {
 
 message StartImportResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   repeated string destinations = 404385861;
 
-  string endeventtime = 260441984;
+  optional string endeventtime = 260441984;
 
-  string importid = 420153946;
+  optional string importid = 420153946;
 
   ImportSource importsource = 41128754;
 
   ImportStatus importstatus = 129077631;
 
-  string starteventtime = 107272573;
+  optional string starteventtime = 107272573;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -3245,15 +3245,15 @@ message StartLoggingResponse {
 
 message StartQueryRequest {
 
-  string deliverys3uri = 230884460;
+  optional string deliverys3uri = 230884460;
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
-  string queryalias = 512762270;
+  optional string queryalias = 512762270;
 
   repeated string queryparameters = 76317660;
 
-  string querystatement = 340852217;
+  optional string querystatement = 340852217;
 
 }
 
@@ -3261,9 +3261,9 @@ message StartQueryRequest {
 
 message StartQueryResponse {
 
-  string eventdatastoreowneraccountid = 471609008;
+  optional string eventdatastoreowneraccountid = 471609008;
 
-  string queryid = 110737519;
+  optional string queryid = 110737519;
 
 }
 
@@ -3293,13 +3293,13 @@ message StopImportRequest {
 
 message StopImportResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
   repeated string destinations = 404385861;
 
-  string endeventtime = 260441984;
+  optional string endeventtime = 260441984;
 
-  string importid = 420153946;
+  optional string importid = 420153946;
 
   ImportSource importsource = 41128754;
 
@@ -3307,9 +3307,9 @@ message StopImportResponse {
 
   ImportStatus importstatus = 129077631;
 
-  string starteventtime = 107272573;
+  optional string starteventtime = 107272573;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -3339,7 +3339,7 @@ message Tag {
 
   string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -3349,7 +3349,7 @@ message Tag {
 
 message TagsLimitExceededException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3371,7 +3371,7 @@ enum Template {
 
 message ThrottlingException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3381,15 +3381,15 @@ message ThrottlingException {
 
 message Trail {
 
-  string cloudwatchlogsloggrouparn = 519613355;
+  optional string cloudwatchlogsloggrouparn = 519613355;
 
-  string cloudwatchlogsrolearn = 55454690;
+  optional string cloudwatchlogsrolearn = 55454690;
 
   optional bool hascustomeventselectors = 79311547;
 
   optional bool hasinsightselectors = 146532978;
 
-  string homeregion = 300797531;
+  optional string homeregion = 300797531;
 
   optional bool includeglobalserviceevents = 212227451;
 
@@ -3397,21 +3397,21 @@ message Trail {
 
   optional bool isorganizationtrail = 145256127;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool logfilevalidationenabled = 35904346;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string s3bucketname = 320495427;
+  optional string s3bucketname = 320495427;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
-  string snstopicarn = 380025580;
+  optional string snstopicarn = 380025580;
 
-  string snstopicname = 415454800;
+  optional string snstopicname = 415454800;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -3421,7 +3421,7 @@ message Trail {
 
 message TrailAlreadyExistsException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3431,11 +3431,11 @@ message TrailAlreadyExistsException {
 
 message TrailInfo {
 
-  string homeregion = 300797531;
+  optional string homeregion = 300797531;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -3445,7 +3445,7 @@ message TrailInfo {
 
 message TrailNotFoundException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3455,7 +3455,7 @@ message TrailNotFoundException {
 
 message TrailNotProvidedException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3475,7 +3475,7 @@ enum Type {
 
 message UnsupportedOperationException {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3487,7 +3487,7 @@ message UpdateChannelRequest {
 
   repeated Destination destinations = 404385861;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -3495,13 +3495,13 @@ message UpdateChannelRequest {
 
 message UpdateChannelResponse {
 
-  string channelarn = 99276476;
+  optional string channelarn = 99276476;
 
   repeated Destination destinations = 404385861;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string source = 31630329;
+  optional string source = 31630329;
 
 }
 
@@ -3523,11 +3523,11 @@ message UpdateDashboardRequest {
 
 message UpdateDashboardResponse {
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string dashboardarn = 108051951;
+  optional string dashboardarn = 108051951;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   RefreshSchedule refreshschedule = 261773338;
 
@@ -3535,7 +3535,7 @@ message UpdateDashboardResponse {
 
   DashboardType type = 290836590;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
   repeated Widget widgets = 501826147;
 
@@ -3551,11 +3551,11 @@ message UpdateEventDataStoreRequest {
 
   string eventdatastore = 136801729;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool multiregionenabled = 20620620;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool organizationenabled = 480171176;
 
@@ -3573,19 +3573,19 @@ message UpdateEventDataStoreResponse {
 
   BillingMode billingmode = 184162880;
 
-  string createdtimestamp = 334753274;
+  optional string createdtimestamp = 334753274;
 
-  string eventdatastorearn = 331732456;
+  optional string eventdatastorearn = 331732456;
 
-  string federationrolearn = 504464364;
+  optional string federationrolearn = 504464364;
 
   FederationStatus federationstatus = 146235383;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool multiregionenabled = 20620620;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional bool organizationenabled = 480171176;
 
@@ -3595,7 +3595,7 @@ message UpdateEventDataStoreResponse {
 
   optional bool terminationprotectionenabled = 376863196;
 
-  string updatedtimestamp = 44364161;
+  optional string updatedtimestamp = 44364161;
 
 }
 
@@ -3605,9 +3605,9 @@ message UpdateEventDataStoreResponse {
 
 message UpdateTrailRequest {
 
-  string cloudwatchlogsloggrouparn = 519613355;
+  optional string cloudwatchlogsloggrouparn = 519613355;
 
-  string cloudwatchlogsrolearn = 55454690;
+  optional string cloudwatchlogsrolearn = 55454690;
 
   optional bool enablelogfilevalidation = 80236930;
 
@@ -3617,15 +3617,15 @@ message UpdateTrailRequest {
 
   optional bool isorganizationtrail = 145256127;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   string name = 266367751;
 
-  string s3bucketname = 320495427;
+  optional string s3bucketname = 320495427;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
-  string snstopicname = 415454800;
+  optional string snstopicname = 415454800;
 
 }
 
@@ -3635,9 +3635,9 @@ message UpdateTrailRequest {
 
 message UpdateTrailResponse {
 
-  string cloudwatchlogsloggrouparn = 519613355;
+  optional string cloudwatchlogsloggrouparn = 519613355;
 
-  string cloudwatchlogsrolearn = 55454690;
+  optional string cloudwatchlogsrolearn = 55454690;
 
   optional bool includeglobalserviceevents = 212227451;
 
@@ -3645,21 +3645,21 @@ message UpdateTrailResponse {
 
   optional bool isorganizationtrail = 145256127;
 
-  string kmskeyid = 46523533;
+  optional string kmskeyid = 46523533;
 
   optional bool logfilevalidationenabled = 35904346;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string s3bucketname = 320495427;
+  optional string s3bucketname = 320495427;
 
-  string s3keyprefix = 206015359;
+  optional string s3keyprefix = 206015359;
 
-  string snstopicarn = 380025580;
+  optional string snstopicarn = 380025580;
 
-  string snstopicname = 415454800;
+  optional string snstopicname = 415454800;
 
-  string trailarn = 39585143;
+  optional string trailarn = 39585143;
 
 }
 
@@ -3669,11 +3669,11 @@ message UpdateTrailResponse {
 
 message Widget {
 
-  string queryalias = 512762270;
+  optional string queryalias = 512762270;
 
   repeated string queryparameters = 76317660;
 
-  string querystatement = 340852217;
+  optional string querystatement = 340852217;
 
   map<string, string> viewproperties = 381974398;
 

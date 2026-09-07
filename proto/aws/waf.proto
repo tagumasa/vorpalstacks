@@ -430,7 +430,7 @@ message ByteMatchSet {
 
   repeated ByteMatchTuple bytematchtuples = 3234744;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -530,7 +530,7 @@ message CreateByteMatchSetResponse {
 
   ByteMatchSet bytematchset = 9496489;
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -548,7 +548,7 @@ message CreateGeoMatchSetRequest {
 
 message CreateGeoMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   GeoMatchSet geomatchset = 84933666;
 
@@ -568,7 +568,7 @@ message CreateIPSetRequest {
 
 message CreateIPSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   IPSet ipset = 436412565;
 
@@ -596,7 +596,7 @@ message CreateRateBasedRuleRequest {
 
 message CreateRateBasedRuleResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   RateBasedRule rule = 475696372;
 
@@ -616,7 +616,7 @@ message CreateRegexMatchSetRequest {
 
 message CreateRegexMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   RegexMatchSet regexmatchset = 534067456;
 
@@ -636,7 +636,7 @@ message CreateRegexPatternSetRequest {
 
 message CreateRegexPatternSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   RegexPatternSet regexpatternset = 9374915;
 
@@ -660,7 +660,7 @@ message CreateRuleGroupRequest {
 
 message CreateRuleGroupResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   RuleGroup rulegroup = 267398571;
 
@@ -684,7 +684,7 @@ message CreateRuleRequest {
 
 message CreateRuleResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   Rule rule = 475696372;
 
@@ -704,7 +704,7 @@ message CreateSizeConstraintSetRequest {
 
 message CreateSizeConstraintSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   SizeConstraintSet sizeconstraintset = 166385770;
 
@@ -728,7 +728,7 @@ message CreateSqlInjectionMatchSetRequest {
 
 message CreateSqlInjectionMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   SqlInjectionMatchSet sqlinjectionmatchset = 60356588;
 
@@ -774,7 +774,7 @@ message CreateWebACLRequest {
 
 message CreateWebACLResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   WebACL webacl = 343373504;
 
@@ -798,7 +798,7 @@ message CreateXssMatchSetRequest {
 
 message CreateXssMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
   XssMatchSet xssmatchset = 169555847;
 
@@ -818,7 +818,7 @@ message DeleteByteMatchSetRequest {
 
 message DeleteByteMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -836,7 +836,7 @@ message DeleteGeoMatchSetRequest {
 
 message DeleteGeoMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -854,7 +854,7 @@ message DeleteIPSetRequest {
 
 message DeleteIPSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -900,7 +900,7 @@ message DeleteRateBasedRuleRequest {
 
 message DeleteRateBasedRuleResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -918,7 +918,7 @@ message DeleteRegexMatchSetRequest {
 
 message DeleteRegexMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -936,7 +936,7 @@ message DeleteRegexPatternSetRequest {
 
 message DeleteRegexPatternSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -954,7 +954,7 @@ message DeleteRuleGroupRequest {
 
 message DeleteRuleGroupResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -972,7 +972,7 @@ message DeleteRuleRequest {
 
 message DeleteRuleResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -990,7 +990,7 @@ message DeleteSizeConstraintSetRequest {
 
 message DeleteSizeConstraintSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -1012,7 +1012,7 @@ message DeleteSqlInjectionMatchSetRequest {
 
 message DeleteSqlInjectionMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -1030,7 +1030,7 @@ message DeleteWebACLRequest {
 
 message DeleteWebACLResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -1052,7 +1052,7 @@ message DeleteXssMatchSetRequest {
 
 message DeleteXssMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -1072,7 +1072,7 @@ message ExcludedRule {
 
 message FieldToMatch {
 
-  string data = 525498822;
+  optional string data = 525498822;
 
   MatchFieldType type = 290836590;
 
@@ -1612,7 +1612,7 @@ message GeoMatchSet {
 
   string geomatchsetid = 514346837;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -1666,7 +1666,7 @@ message GetChangeTokenRequest {
 
 message GetChangeTokenResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -1746,7 +1746,7 @@ message GetPermissionPolicyRequest {
 
 message GetPermissionPolicyResponse {
 
-  string policy = 471611296;
+  optional string policy = 471611296;
 
 }
 
@@ -1754,7 +1754,7 @@ message GetPermissionPolicyResponse {
 
 message GetRateBasedRuleManagedKeysRequest {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   string ruleid = 430449567;
 
@@ -1766,7 +1766,7 @@ message GetRateBasedRuleManagedKeysResponse {
 
   repeated string managedkeys = 225455355;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -1954,9 +1954,9 @@ message GetXssMatchSetResponse {
 
 message HTTPHeader {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -1966,17 +1966,17 @@ message HTTPHeader {
 
 message HTTPRequest {
 
-  string clientip = 247557856;
+  optional string clientip = 247557856;
 
-  string country = 83164786;
+  optional string country = 83164786;
 
-  string httpversion = 12814936;
+  optional string httpversion = 12814936;
 
   repeated HTTPHeader headers = 323967370;
 
-  string method = 413321041;
+  optional string method = 413321041;
 
-  string uri = 443116318;
+  optional string uri = 443116318;
 
 }
 
@@ -1990,7 +1990,7 @@ message IPSet {
 
   string ipsetid = 346763066;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -2046,9 +2046,9 @@ message ListActivatedRulesInRuleGroupRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
-  string rulegroupid = 287757320;
+  optional string rulegroupid = 287757320;
 
 }
 
@@ -2058,7 +2058,7 @@ message ListActivatedRulesInRuleGroupResponse {
 
   repeated ActivatedRule activatedrules = 75723620;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2068,7 +2068,7 @@ message ListByteMatchSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2078,7 +2078,7 @@ message ListByteMatchSetsResponse {
 
   repeated ByteMatchSetSummary bytematchsets = 521993666;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2088,7 +2088,7 @@ message ListGeoMatchSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2098,7 +2098,7 @@ message ListGeoMatchSetsResponse {
 
   repeated GeoMatchSetSummary geomatchsets = 170538263;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2108,7 +2108,7 @@ message ListIPSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2118,7 +2118,7 @@ message ListIPSetsResponse {
 
   repeated IPSetSummary ipsets = 434949030;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2128,7 +2128,7 @@ message ListLoggingConfigurationsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2138,7 +2138,7 @@ message ListLoggingConfigurationsResponse {
 
   repeated LoggingConfiguration loggingconfigurations = 387361734;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2148,7 +2148,7 @@ message ListRateBasedRulesRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2156,7 +2156,7 @@ message ListRateBasedRulesRequest {
 
 message ListRateBasedRulesResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RuleSummary rules = 42675585;
 
@@ -2168,7 +2168,7 @@ message ListRegexMatchSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2176,7 +2176,7 @@ message ListRegexMatchSetsRequest {
 
 message ListRegexMatchSetsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RegexMatchSetSummary regexmatchsets = 145228901;
 
@@ -2188,7 +2188,7 @@ message ListRegexPatternSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2196,7 +2196,7 @@ message ListRegexPatternSetsRequest {
 
 message ListRegexPatternSetsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RegexPatternSetSummary regexpatternsets = 305199780;
 
@@ -2208,7 +2208,7 @@ message ListRuleGroupsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2216,7 +2216,7 @@ message ListRuleGroupsRequest {
 
 message ListRuleGroupsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RuleGroupSummary rulegroups = 270019740;
 
@@ -2228,7 +2228,7 @@ message ListRulesRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2236,7 +2236,7 @@ message ListRulesRequest {
 
 message ListRulesResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated RuleSummary rules = 42675585;
 
@@ -2248,7 +2248,7 @@ message ListSizeConstraintSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2256,7 +2256,7 @@ message ListSizeConstraintSetsRequest {
 
 message ListSizeConstraintSetsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated SizeConstraintSetSummary sizeconstraintsets = 380776687;
 
@@ -2270,7 +2270,7 @@ message ListSqlInjectionMatchSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2280,7 +2280,7 @@ message ListSqlInjectionMatchSetsRequest {
 
 message ListSqlInjectionMatchSetsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated SqlInjectionMatchSetSummary sqlinjectionmatchsets = 30262345;
 
@@ -2292,7 +2292,7 @@ message ListSubscribedRuleGroupsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2300,7 +2300,7 @@ message ListSubscribedRuleGroupsRequest {
 
 message ListSubscribedRuleGroupsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated SubscribedRuleGroupSummary rulegroups = 270019740;
 
@@ -2312,7 +2312,7 @@ message ListTagsForResourceRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   string resourcearn = 369516653;
 
@@ -2322,7 +2322,7 @@ message ListTagsForResourceRequest {
 
 message ListTagsForResourceResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   TagInfoForResource taginfoforresource = 8132955;
 
@@ -2334,7 +2334,7 @@ message ListWebACLsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2342,7 +2342,7 @@ message ListWebACLsRequest {
 
 message ListWebACLsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated WebACLSummary webacls = 68158245;
 
@@ -2356,7 +2356,7 @@ message ListXssMatchSetsRequest {
 
   optional int32 limit = 412502741;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -2366,7 +2366,7 @@ message ListXssMatchSetsRequest {
 
 message ListXssMatchSetsResponse {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated XssMatchSetSummary xssmatchsets = 500766384;
 
@@ -2572,9 +2572,9 @@ message RateBasedRule {
 
   repeated Predicate matchpredicates = 480711449;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   RateKey ratekey = 31421727;
 
@@ -2598,9 +2598,9 @@ enum RateKey {
 
 message RegexMatchSet {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string regexmatchsetid = 82287635;
+  optional string regexmatchsetid = 82287635;
 
   repeated RegexMatchTuple regexmatchtuples = 252918587;
 
@@ -2650,7 +2650,7 @@ message RegexMatchTuple {
 
 message RegexPatternSet {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   string regexpatternsetid = 96220912;
 
@@ -2688,9 +2688,9 @@ message RegexPatternSetUpdate {
 
 message Rule {
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated Predicate predicates = 315759288;
 
@@ -2704,9 +2704,9 @@ message Rule {
 
 message RuleGroup {
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   string rulegroupid = 287757320;
 
@@ -2766,13 +2766,13 @@ message RuleUpdate {
 
 message SampledHTTPRequest {
 
-  string action = 175614240;
+  optional string action = 175614240;
 
   HTTPRequest request = 38093139;
 
-  string rulewithinrulegroup = 58580650;
+  optional string rulewithinrulegroup = 58580650;
 
-  string timestamp = 162390468;
+  optional string timestamp = 162390468;
 
   int64 weight = 422581466;
 
@@ -2800,7 +2800,7 @@ message SizeConstraint {
 
 message SizeConstraintSet {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   string sizeconstraintsetid = 277959757;
 
@@ -2838,7 +2838,7 @@ message SizeConstraintSetUpdate {
 
 message SqlInjectionMatchSet {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   string sqlinjectionmatchsetid = 386225735;
 
@@ -2914,7 +2914,7 @@ message Tag {
 
 message TagInfoForResource {
 
-  string resourcearn = 369516653;
+  optional string resourcearn = 369516653;
 
   repeated Tag taglist = 429416860;
 
@@ -2998,7 +2998,7 @@ message UpdateByteMatchSetRequest {
 
 message UpdateByteMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3018,7 +3018,7 @@ message UpdateGeoMatchSetRequest {
 
 message UpdateGeoMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3038,7 +3038,7 @@ message UpdateIPSetRequest {
 
 message UpdateIPSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3060,7 +3060,7 @@ message UpdateRateBasedRuleRequest {
 
 message UpdateRateBasedRuleResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3080,7 +3080,7 @@ message UpdateRegexMatchSetRequest {
 
 message UpdateRegexMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3100,7 +3100,7 @@ message UpdateRegexPatternSetRequest {
 
 message UpdateRegexPatternSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3120,7 +3120,7 @@ message UpdateRuleGroupRequest {
 
 message UpdateRuleGroupResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3140,7 +3140,7 @@ message UpdateRuleRequest {
 
 message UpdateRuleResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3160,7 +3160,7 @@ message UpdateSizeConstraintSetRequest {
 
 message UpdateSizeConstraintSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3184,7 +3184,7 @@ message UpdateSqlInjectionMatchSetRequest {
 
 message UpdateSqlInjectionMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3206,7 +3206,7 @@ message UpdateWebACLRequest {
 
 message UpdateWebACLResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3230,7 +3230,7 @@ message UpdateXssMatchSetRequest {
 
 message UpdateXssMatchSetResponse {
 
-  string changetoken = 73590123;
+  optional string changetoken = 73590123;
 
 }
 
@@ -3240,7 +3240,7 @@ message UpdateXssMatchSetResponse {
 
 message WAFBadRequestException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3250,7 +3250,7 @@ message WAFBadRequestException {
 
 message WAFDisallowedNameException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3260,11 +3260,11 @@ message WAFDisallowedNameException {
 
 message WAFEntityMigrationException {
 
-  string migrationerrorreason = 351537368;
+  optional string migrationerrorreason = 351537368;
 
   MigrationErrorType migrationerrortype = 53702508;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3274,7 +3274,7 @@ message WAFEntityMigrationException {
 
 message WAFInternalErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3292,7 +3292,7 @@ message WAFInvalidAccountException {
 
 message WAFInvalidOperationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3304,7 +3304,7 @@ message WAFInvalidParameterException {
 
   ParameterExceptionField field = 125985384;
 
-  string parameter = 363921681;
+  optional string parameter = 363921681;
 
   ParameterExceptionReason reason = 413359642;
 
@@ -3316,7 +3316,7 @@ message WAFInvalidParameterException {
 
 message WAFInvalidPermissionPolicyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3326,7 +3326,7 @@ message WAFInvalidPermissionPolicyException {
 
 message WAFInvalidRegexPatternException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3336,7 +3336,7 @@ message WAFInvalidRegexPatternException {
 
 message WAFLimitsExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3346,7 +3346,7 @@ message WAFLimitsExceededException {
 
 message WAFNonEmptyEntityException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3356,7 +3356,7 @@ message WAFNonEmptyEntityException {
 
 message WAFNonexistentContainerException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3366,7 +3366,7 @@ message WAFNonexistentContainerException {
 
 message WAFNonexistentItemException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3376,7 +3376,7 @@ message WAFNonexistentItemException {
 
 message WAFReferencedItemException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3386,7 +3386,7 @@ message WAFReferencedItemException {
 
 message WAFServiceLinkedRoleErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3396,7 +3396,7 @@ message WAFServiceLinkedRoleErrorException {
 
 message WAFStaleDataException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3406,7 +3406,7 @@ message WAFStaleDataException {
 
 message WAFSubscriptionNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3416,7 +3416,7 @@ message WAFSubscriptionNotFoundException {
 
 message WAFTagOperationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3426,7 +3426,7 @@ message WAFTagOperationException {
 
 message WAFTagOperationInternalErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -3492,13 +3492,13 @@ message WebACL {
 
   WafAction defaultaction = 322663861;
 
-  string metricname = 106340219;
+  optional string metricname = 106340219;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated ActivatedRule rules = 42675585;
 
-  string webaclarn = 82506659;
+  optional string webaclarn = 82506659;
 
   string webaclid = 161274579;
 
@@ -3534,7 +3534,7 @@ message WebACLUpdate {
 
 message XssMatchSet {
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   string xssmatchsetid = 56643900;
 

@@ -294,7 +294,7 @@ message CancelGremlinQueryInput {
 
 message CancelGremlinQueryOutput {
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -310,7 +310,7 @@ message CancelLoaderJobInput {
 
 message CancelLoaderJobOutput {
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -318,11 +318,11 @@ message CancelLoaderJobOutput {
 
 message CancelMLDataProcessingJobInput {
 
-  string clean = 275644223;
+  optional string clean = 275644223;
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -330,7 +330,7 @@ message CancelMLDataProcessingJobInput {
 
 message CancelMLDataProcessingJobOutput {
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -338,11 +338,11 @@ message CancelMLDataProcessingJobOutput {
 
 message CancelMLModelTrainingJobInput {
 
-  string clean = 275644223;
+  optional string clean = 275644223;
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -350,7 +350,7 @@ message CancelMLModelTrainingJobInput {
 
 message CancelMLModelTrainingJobOutput {
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -358,11 +358,11 @@ message CancelMLModelTrainingJobOutput {
 
 message CancelMLModelTransformJobInput {
 
-  string clean = 275644223;
+  optional string clean = 275644223;
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -370,7 +370,7 @@ message CancelMLModelTransformJobInput {
 
 message CancelMLModelTransformJobOutput {
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -380,7 +380,7 @@ message CancelOpenCypherQueryInput {
 
   string queryid = 336975759;
 
-  string silent = 66205701;
+  optional string silent = 66205701;
 
 }
 
@@ -388,9 +388,9 @@ message CancelOpenCypherQueryInput {
 
 message CancelOpenCypherQueryOutput {
 
-  string payload = 319780774;
+  optional string payload = 319780774;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -454,23 +454,23 @@ message ConstraintViolationException {
 
 message CreateMLEndpointInput {
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string instancecount = 486686778;
+  optional string instancecount = 486686778;
 
-  string instancetype = 165816931;
+  optional string instancetype = 165816931;
 
-  string mlmodeltrainingjobid = 429530992;
+  optional string mlmodeltrainingjobid = 429530992;
 
-  string mlmodeltransformjobid = 444632140;
+  optional string mlmodeltransformjobid = 444632140;
 
-  string modelname = 176835330;
+  optional string modelname = 176835330;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
-  string update = 135238773;
+  optional string update = 135238773;
 
-  string volumeencryptionkmskey = 478185323;
+  optional string volumeencryptionkmskey = 478185323;
 
 }
 
@@ -478,11 +478,11 @@ message CreateMLEndpointInput {
 
 message CreateMLEndpointOutput {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string creationtimeinmillis = 296469681;
+  optional string creationtimeinmillis = 296469681;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -494,9 +494,9 @@ message CustomModelTrainingParameters {
 
   string sources3directorypath = 347172751;
 
-  string trainingentrypointscript = 112497219;
+  optional string trainingentrypointscript = 112497219;
 
-  string transformentrypointscript = 132466719;
+  optional string transformentrypointscript = 132466719;
 
 }
 
@@ -508,7 +508,7 @@ message CustomModelTransformParameters {
 
   string sources3directorypath = 347172751;
 
-  string transformentrypointscript = 132466719;
+  optional string transformentrypointscript = 132466719;
 
 }
 
@@ -516,11 +516,11 @@ message CustomModelTransformParameters {
 
 message DeleteMLEndpointInput {
 
-  string clean = 275644223;
+  optional string clean = 275644223;
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -528,7 +528,7 @@ message DeleteMLEndpointInput {
 
 message DeleteMLEndpointOutput {
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -538,9 +538,9 @@ message DeletePropertygraphStatisticsOutput {
 
   DeleteStatisticsValueMap payload = 319780774;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -550,9 +550,9 @@ message DeleteSparqlStatisticsOutput {
 
   DeleteStatisticsValueMap payload = 319780774;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -562,9 +562,9 @@ message DeleteSparqlStatisticsOutput {
 
 message DeleteStatisticsValueMap {
 
-  string active = 427137328;
+  optional string active = 427137328;
 
-  string statisticsid = 38716584;
+  optional string statisticsid = 38716584;
 
 }
 
@@ -574,7 +574,7 @@ message DeleteStatisticsValueMap {
 
 message EdgeStructure {
 
-  string count = 431087093;
+  optional string count = 431087093;
 
   repeated string edgeproperties = 355699522;
 
@@ -594,7 +594,7 @@ message ExecuteFastResetInput {
 
   Action action = 73674496;
 
-  string token = 343534131;
+  optional string token = 343534131;
 
 }
 
@@ -620,7 +620,7 @@ message ExecuteGremlinExplainQueryInput {
 
 message ExecuteGremlinExplainQueryOutput {
 
-  bytes output = 430526213 [(aws.http_payload) = true];
+  optional bytes output = 430526213 [(aws.http_payload) = true];
 
 }
 
@@ -628,15 +628,15 @@ message ExecuteGremlinExplainQueryOutput {
 
 message ExecuteGremlinProfileQueryInput {
 
-  string chop = 304696890;
+  optional string chop = 304696890;
 
   string gremlinquery = 3360948;
 
-  string indexops = 133985190;
+  optional string indexops = 133985190;
 
-  string results = 206523126;
+  optional string results = 206523126;
 
-  string serializer = 526065802;
+  optional string serializer = 526065802;
 
 }
 
@@ -644,7 +644,7 @@ message ExecuteGremlinProfileQueryInput {
 
 message ExecuteGremlinProfileQueryOutput {
 
-  bytes output = 430526213 [(aws.http_payload) = true];
+  optional bytes output = 430526213 [(aws.http_payload) = true];
 
 }
 
@@ -654,7 +654,7 @@ message ExecuteGremlinQueryInput {
 
   string gremlinquery = 3360948;
 
-  string serializer = 526065802;
+  optional string serializer = 526065802;
 
 }
 
@@ -662,11 +662,11 @@ message ExecuteGremlinQueryInput {
 
 message ExecuteGremlinQueryOutput {
 
-  string meta = 33443673;
+  optional string meta = 33443673;
 
-  string requestid = 376827552;
+  optional string requestid = 376827552;
 
-  string result = 171406885;
+  optional string result = 171406885;
 
   GremlinQueryStatusAttributes status = 441153520;
 
@@ -680,7 +680,7 @@ message ExecuteOpenCypherExplainQueryInput {
 
   string opencypherquery = 215647419;
 
-  string parameters = 145043162;
+  optional string parameters = 145043162;
 
 }
 
@@ -698,7 +698,7 @@ message ExecuteOpenCypherQueryInput {
 
   string opencypherquery = 215647419;
 
-  string parameters = 145043162;
+  optional string parameters = 145043162;
 
 }
 
@@ -744,7 +744,7 @@ message FailureByQueryException {
 
 message FastResetToken {
 
-  string token = 343534131;
+  optional string token = 343534131;
 
 }
 
@@ -770,9 +770,9 @@ enum Format {
 
 message GetEngineStatusOutput {
 
-  string dbengineversion = 310214672;
+  optional string dbengineversion = 310214672;
 
-  string dfequeryengine = 340687513;
+  optional string dfequeryengine = 340687513;
 
   map<string, string> features = 528712651;
 
@@ -782,19 +782,19 @@ message GetEngineStatusOutput {
 
   QueryLanguageVersion opencypher = 408485239;
 
-  string role = 268382746;
+  optional string role = 268382746;
 
-  string rollingbacktrxcount = 256527229;
+  optional string rollingbacktrxcount = 256527229;
 
-  string rollingbacktrxearlieststarttime = 244401018;
+  optional string rollingbacktrxearlieststarttime = 244401018;
 
   map<string, string> settings = 134642441;
 
   QueryLanguageVersion sparql = 423637777;
 
-  string starttime = 178154767;
+  optional string starttime = 178154767;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -812,9 +812,9 @@ message GetGremlinQueryStatusOutput {
 
   QueryEvalStats queryevalstats = 497260753;
 
-  string queryid = 336975759;
+  optional string queryid = 336975759;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
 }
 
@@ -822,9 +822,9 @@ message GetGremlinQueryStatusOutput {
 
 message GetLoaderJobStatusInput {
 
-  string details = 426242982;
+  optional string details = 426242982;
 
-  string errors = 437762695;
+  optional string errors = 437762695;
 
   optional int32 errorsperpage = 97137031;
 
@@ -850,7 +850,7 @@ message GetMLDataProcessingJobInput {
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -858,11 +858,11 @@ message GetMLDataProcessingJobInput {
 
 message GetMLDataProcessingJobOutput {
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   MlResourceDefinition processingjob = 41967690;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -872,7 +872,7 @@ message GetMLEndpointInput {
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -884,9 +884,9 @@ message GetMLEndpointOutput {
 
   MlConfigDefinition endpointconfig = 312791147;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -896,7 +896,7 @@ message GetMLModelTrainingJobInput {
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -906,7 +906,7 @@ message GetMLModelTrainingJobOutput {
 
   MlResourceDefinition hpojob = 164785778;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   repeated MlConfigDefinition mlmodels = 97520431;
 
@@ -914,7 +914,7 @@ message GetMLModelTrainingJobOutput {
 
   MlResourceDefinition processingjob = 41967690;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -924,7 +924,7 @@ message GetMLModelTransformJobInput {
 
   string id = 389573345;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -934,13 +934,13 @@ message GetMLModelTransformJobOutput {
 
   MlResourceDefinition baseprocessingjob = 188425699;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   repeated MlConfigDefinition models = 343003788;
 
   MlResourceDefinition remotemodeltransformjob = 473238320;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -958,9 +958,9 @@ message GetOpenCypherQueryStatusOutput {
 
   QueryEvalStats queryevalstats = 497260753;
 
-  string queryid = 336975759;
+  optional string queryid = 336975759;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
 }
 
@@ -978,15 +978,15 @@ message GetPropertygraphStatisticsOutput {
 
 message GetPropertygraphStreamInput {
 
-  string commitnum = 254685821;
+  optional string commitnum = 254685821;
 
   Encoding encoding = 519819761;
 
   IteratorType iteratortype = 141085528;
 
-  string limit = 316332341;
+  optional string limit = 316332341;
 
-  string opnum = 347515011;
+  optional string opnum = 347515011;
 
 }
 
@@ -1020,7 +1020,7 @@ message GetPropertygraphSummaryOutput {
 
   PropertygraphSummaryValueMap payload = 319780774;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -1038,7 +1038,7 @@ message GetRDFGraphSummaryOutput {
 
   RDFGraphSummaryValueMap payload = 319780774;
 
-  string statuscode = 299352223;
+  optional string statuscode = 299352223;
 
 }
 
@@ -1056,15 +1056,15 @@ message GetSparqlStatisticsOutput {
 
 message GetSparqlStreamInput {
 
-  string commitnum = 254685821;
+  optional string commitnum = 254685821;
 
   Encoding encoding = 519819761;
 
   IteratorType iteratortype = 141085528;
 
-  string limit = 316332341;
+  optional string limit = 316332341;
 
-  string opnum = 347515011;
+  optional string opnum = 347515011;
 
 }
 
@@ -1102,9 +1102,9 @@ message GremlinQueryStatus {
 
   QueryEvalStats queryevalstats = 497260753;
 
-  string queryid = 336975759;
+  optional string queryid = 336975759;
 
-  string querystring = 520568967;
+  optional string querystring = 520568967;
 
 }
 
@@ -1114,11 +1114,11 @@ message GremlinQueryStatus {
 
 message GremlinQueryStatusAttributes {
 
-  string attributes = 33545109;
+  optional string attributes = 33545109;
 
-  string code = 422669557;
+  optional string code = 422669557;
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1210,7 +1210,7 @@ enum IteratorType {
 
 message ListGremlinQueriesInput {
 
-  string includewaiting = 295559763;
+  optional string includewaiting = 295559763;
 
 }
 
@@ -1218,11 +1218,11 @@ message ListGremlinQueriesInput {
 
 message ListGremlinQueriesOutput {
 
-  string acceptedquerycount = 328121052;
+  optional string acceptedquerycount = 328121052;
 
   repeated GremlinQueryStatus queries = 26054724;
 
-  string runningquerycount = 451774504;
+  optional string runningquerycount = 451774504;
 
 }
 
@@ -1230,7 +1230,7 @@ message ListGremlinQueriesOutput {
 
 message ListLoaderJobsInput {
 
-  string includequeuedloads = 224102040;
+  optional string includequeuedloads = 224102040;
 
   optional int32 limit = 316332341;
 
@@ -1252,7 +1252,7 @@ message ListMLDataProcessingJobsInput {
 
   optional int32 maxitems = 486225716;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -1270,7 +1270,7 @@ message ListMLEndpointsInput {
 
   optional int32 maxitems = 486225716;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -1288,7 +1288,7 @@ message ListMLModelTrainingJobsInput {
 
   optional int32 maxitems = 486225716;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -1306,7 +1306,7 @@ message ListMLModelTransformJobsInput {
 
   optional int32 maxitems = 486225716;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
 }
 
@@ -1322,7 +1322,7 @@ message ListMLModelTransformJobsOutput {
 
 message ListOpenCypherQueriesInput {
 
-  string includewaiting = 295559763;
+  optional string includewaiting = 295559763;
 
 }
 
@@ -1330,11 +1330,11 @@ message ListOpenCypherQueriesInput {
 
 message ListOpenCypherQueriesOutput {
 
-  string acceptedquerycount = 328121052;
+  optional string acceptedquerycount = 328121052;
 
   repeated GremlinQueryStatus queries = 26054724;
 
-  string runningquerycount = 451774504;
+  optional string runningquerycount = 451774504;
 
 }
 
@@ -1474,9 +1474,9 @@ message MissingParameterException {
 
 message MlConfigDefinition {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
 }
 
@@ -1486,17 +1486,17 @@ message MlConfigDefinition {
 
 message MlResourceDefinition {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string cloudwatchlogurl = 289985995;
+  optional string cloudwatchlogurl = 289985995;
 
-  string failurereason = 174266494;
+  optional string failurereason = 174266494;
 
-  string name = 221887975;
+  optional string name = 221887975;
 
-  string outputlocation = 366063380;
+  optional string outputlocation = 366063380;
 
-  string status = 441153520;
+  optional string status = 441153520;
 
 }
 
@@ -1518,7 +1518,7 @@ enum Mode {
 
 message NodeStructure {
 
-  string count = 431087093;
+  optional string count = 431087093;
 
   repeated string distinctoutgoingedgelabels = 231680758;
 
@@ -1586,13 +1586,13 @@ message PreconditionsFailedException {
 
 message PropertygraphData {
 
-  string from = 365789302;
+  optional string from = 365789302;
 
   string id = 389573345;
 
   string key = 135645293;
 
-  string to = 38094885;
+  optional string to = 38094885;
 
   string type = 287830350;
 
@@ -1612,7 +1612,7 @@ message PropertygraphRecord {
 
   map<string, string> eventid = 255267571;
 
-  string islastop = 175475367;
+  optional string islastop = 175475367;
 
   string op = 523513003;
 
@@ -1636,21 +1636,21 @@ message PropertygraphSummary {
 
   repeated NodeStructure nodestructures = 29611672;
 
-  string numedgelabels = 363556966;
+  optional string numedgelabels = 363556966;
 
-  string numedgeproperties = 330298668;
+  optional string numedgeproperties = 330298668;
 
-  string numedges = 330523448;
+  optional string numedges = 330523448;
 
-  string numnodelabels = 494223753;
+  optional string numnodelabels = 494223753;
 
-  string numnodeproperties = 504428443;
+  optional string numnodeproperties = 504428443;
 
-  string numnodes = 47949361;
+  optional string numnodes = 47949361;
 
-  string totaledgepropertyvalues = 124421148;
+  optional string totaledgepropertyvalues = 124421148;
 
-  string totalnodepropertyvalues = 14636383;
+  optional string totalnodepropertyvalues = 14636383;
 
 }
 
@@ -1662,9 +1662,9 @@ message PropertygraphSummaryValueMap {
 
   PropertygraphSummary graphsummary = 503671010;
 
-  string laststatisticscomputationtime = 71169761;
+  optional string laststatisticscomputationtime = 71169761;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
 }
 
@@ -1674,13 +1674,13 @@ message PropertygraphSummaryValueMap {
 
 message QueryEvalStats {
 
-  string cancelled = 73267229;
+  optional string cancelled = 73267229;
 
-  string elapsed = 506590108;
+  optional string elapsed = 506590108;
 
-  string subqueries = 514603700;
+  optional string subqueries = 514603700;
 
-  string waited = 136179618;
+  optional string waited = 136179618;
 
 }
 
@@ -1744,13 +1744,13 @@ message RDFGraphSummary {
 
   repeated string classes = 271427240;
 
-  string numclasses = 140728298;
+  optional string numclasses = 140728298;
 
-  string numdistinctpredicates = 163279342;
+  optional string numdistinctpredicates = 163279342;
 
-  string numdistinctsubjects = 145663843;
+  optional string numdistinctsubjects = 145663843;
 
-  string numquads = 514583334;
+  optional string numquads = 514583334;
 
   repeated LongValuedMapListEntry predicates = 171361944;
 
@@ -1766,9 +1766,9 @@ message RDFGraphSummaryValueMap {
 
   RDFGraphSummary graphsummary = 503671010;
 
-  string laststatisticscomputationtime = 71169761;
+  optional string laststatisticscomputationtime = 71169761;
 
-  string version = 108113560;
+  optional string version = 108113560;
 
 }
 
@@ -1792,7 +1792,7 @@ message ReadOnlyViolationException {
 
 message RefreshStatisticsIdMap {
 
-  string statisticsid = 38716584;
+  optional string statisticsid = 38716584;
 
 }
 
@@ -1924,7 +1924,7 @@ message SparqlRecord {
 
   map<string, string> eventid = 255267571;
 
-  string islastop = 175475367;
+  optional string islastop = 175475367;
 
   string op = 523513003;
 
@@ -1936,9 +1936,9 @@ message StartLoaderJobInput {
 
   repeated string dependencies = 87924065;
 
-  string edgeonlyload = 38819031;
+  optional string edgeonlyload = 38819031;
 
-  string failonerror = 437165343;
+  optional string failonerror = 437165343;
 
   Format format = 429753683;
 
@@ -1950,15 +1950,15 @@ message StartLoaderJobInput {
 
   map<string, string> parserconfiguration = 258205897;
 
-  string queuerequest = 126330314;
+  optional string queuerequest = 126330314;
 
   S3BucketRegion s3bucketregion = 163436306;
 
   string source = 466561497;
 
-  string updatesinglecardinalityproperties = 111732278;
+  optional string updatesinglecardinalityproperties = 111732278;
 
-  string userprovidededgeids = 12979099;
+  optional string userprovidededgeids = 12979099;
 
 }
 
@@ -1976,35 +1976,35 @@ message StartLoaderJobOutput {
 
 message StartMLDataProcessingJobInput {
 
-  string configfilename = 97127379;
+  optional string configfilename = 97127379;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
   string inputdatas3location = 292562595;
 
-  string modeltype = 41664059;
+  optional string modeltype = 41664059;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
-  string previousdataprocessingjobid = 333826008;
+  optional string previousdataprocessingjobid = 333826008;
 
   string processeddatas3location = 86470899;
 
-  string processinginstancetype = 258662378;
+  optional string processinginstancetype = 258662378;
 
-  string processinginstancevolumesizeingb = 141136797;
+  optional string processinginstancevolumesizeingb = 141136797;
 
-  string processingtimeoutinseconds = 111414680;
+  optional string processingtimeoutinseconds = 111414680;
 
-  string s3outputencryptionkmskey = 416713092;
+  optional string s3outputencryptionkmskey = 416713092;
 
-  string sagemakeriamrolearn = 158477212;
+  optional string sagemakeriamrolearn = 158477212;
 
   repeated string securitygroupids = 389524965;
 
   repeated string subnets = 135316610;
 
-  string volumeencryptionkmskey = 478185323;
+  optional string volumeencryptionkmskey = 478185323;
 
 }
 
@@ -2012,11 +2012,11 @@ message StartMLDataProcessingJobInput {
 
 message StartMLDataProcessingJobOutput {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string creationtimeinmillis = 296469681;
+  optional string creationtimeinmillis = 296469681;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -2024,27 +2024,27 @@ message StartMLDataProcessingJobOutput {
 
 message StartMLModelTrainingJobInput {
 
-  string baseprocessinginstancetype = 202965553;
+  optional string baseprocessinginstancetype = 202965553;
 
   CustomModelTrainingParameters custommodeltrainingparameters = 113624210;
 
   string dataprocessingjobid = 395025197;
 
-  string enablemanagedspottraining = 73065830;
+  optional string enablemanagedspottraining = 73065830;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string maxhponumberoftrainingjobs = 137333529;
+  optional string maxhponumberoftrainingjobs = 137333529;
 
-  string maxhpoparalleltrainingjobs = 417828992;
+  optional string maxhpoparalleltrainingjobs = 417828992;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
-  string previousmodeltrainingjobid = 90674916;
+  optional string previousmodeltrainingjobid = 90674916;
 
-  string s3outputencryptionkmskey = 416713092;
+  optional string s3outputencryptionkmskey = 416713092;
 
-  string sagemakeriamrolearn = 158477212;
+  optional string sagemakeriamrolearn = 158477212;
 
   repeated string securitygroupids = 389524965;
 
@@ -2052,13 +2052,13 @@ message StartMLModelTrainingJobInput {
 
   string trainmodels3location = 410061388;
 
-  string traininginstancetype = 240653837;
+  optional string traininginstancetype = 240653837;
 
-  string traininginstancevolumesizeingb = 461044986;
+  optional string traininginstancevolumesizeingb = 461044986;
 
-  string trainingtimeoutinseconds = 382081371;
+  optional string trainingtimeoutinseconds = 382081371;
 
-  string volumeencryptionkmskey = 478185323;
+  optional string volumeencryptionkmskey = 478185323;
 
 }
 
@@ -2066,11 +2066,11 @@ message StartMLModelTrainingJobInput {
 
 message StartMLModelTrainingJobOutput {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string creationtimeinmillis = 296469681;
+  optional string creationtimeinmillis = 296469681;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -2078,33 +2078,33 @@ message StartMLModelTrainingJobOutput {
 
 message StartMLModelTransformJobInput {
 
-  string baseprocessinginstancetype = 202965553;
+  optional string baseprocessinginstancetype = 202965553;
 
-  string baseprocessinginstancevolumesizeingb = 520248246;
+  optional string baseprocessinginstancevolumesizeingb = 520248246;
 
   CustomModelTransformParameters custommodeltransformparameters = 224137842;
 
-  string dataprocessingjobid = 395025197;
+  optional string dataprocessingjobid = 395025197;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
-  string mlmodeltrainingjobid = 429530992;
+  optional string mlmodeltrainingjobid = 429530992;
 
   string modeltransformoutputs3location = 469633283;
 
-  string neptuneiamrolearn = 306145623;
+  optional string neptuneiamrolearn = 306145623;
 
-  string s3outputencryptionkmskey = 416713092;
+  optional string s3outputencryptionkmskey = 416713092;
 
-  string sagemakeriamrolearn = 158477212;
+  optional string sagemakeriamrolearn = 158477212;
 
   repeated string securitygroupids = 389524965;
 
   repeated string subnets = 135316610;
 
-  string trainingjobname = 65339694;
+  optional string trainingjobname = 65339694;
 
-  string volumeencryptionkmskey = 478185323;
+  optional string volumeencryptionkmskey = 478185323;
 
 }
 
@@ -2112,11 +2112,11 @@ message StartMLModelTransformJobInput {
 
 message StartMLModelTransformJobOutput {
 
-  string arn = 359604989;
+  optional string arn = 359604989;
 
-  string creationtimeinmillis = 296469681;
+  optional string creationtimeinmillis = 296469681;
 
-  string id = 389573345;
+  optional string id = 389573345;
 
 }
 
@@ -2126,17 +2126,17 @@ message StartMLModelTransformJobOutput {
 
 message Statistics {
 
-  string active = 427137328;
+  optional string active = 427137328;
 
-  string autocompute = 480173932;
+  optional string autocompute = 480173932;
 
-  string date = 343071834;
+  optional string date = 343071834;
 
-  string note = 295308350;
+  optional string note = 295308350;
 
   StatisticsSummary signatureinfo = 222898366;
 
-  string statisticsid = 38716584;
+  optional string statisticsid = 38716584;
 
 }
 
@@ -2172,11 +2172,11 @@ message StatisticsNotAvailableException {
 
 message StatisticsSummary {
 
-  string instancecount = 486686778;
+  optional string instancecount = 486686778;
 
-  string predicatecount = 321007518;
+  optional string predicatecount = 321007518;
 
-  string signaturecount = 340906029;
+  optional string signaturecount = 340906029;
 
 }
 
@@ -2200,7 +2200,7 @@ message StreamRecordsNotFoundException {
 
 message SubjectStructure {
 
-  string count = 431087093;
+  optional string count = 431087093;
 
   repeated string predicates = 171361944;
 

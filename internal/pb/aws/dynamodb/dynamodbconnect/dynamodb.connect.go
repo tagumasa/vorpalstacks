@@ -165,6 +165,9 @@ const (
 	DynamoDBServiceRestoreTableToPointInTimeProcedure = "/dynamodb.DynamoDBService/RestoreTableToPointInTime"
 	// DynamoDBServiceScanProcedure is the fully-qualified name of the DynamoDBService's Scan RPC.
 	DynamoDBServiceScanProcedure = "/dynamodb.DynamoDBService/Scan"
+	// DynamoDBServiceSearchVectorsProcedure is the fully-qualified name of the DynamoDBService's
+	// SearchVectors RPC.
+	DynamoDBServiceSearchVectorsProcedure = "/dynamodb.DynamoDBService/SearchVectors"
 	// DynamoDBServiceTagResourceProcedure is the fully-qualified name of the DynamoDBService's
 	// TagResource RPC.
 	DynamoDBServiceTagResourceProcedure = "/dynamodb.DynamoDBService/TagResource"
@@ -384,6 +387,10 @@ type DynamoDBServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	Scan(context.Context, *connect.Request[dynamodb.ScanInput]) (*connect.Response[dynamodb.ScanOutput], error)
+	// Performs a vector similarity search on a vector index associated with an Amazon DynamoDB table, and returns the most similar items sorted by similarity score based on the distance function configur...
+	// HTTP:
+	// Protocol: awsJson1_0
+	SearchVectors(context.Context, *connect.Request[dynamodb.SearchVectorsInput]) (*connect.Response[dynamodb.SearchVectorsOutput], error)
 	// Associate a set of tags with an Amazon DynamoDB resource. You can then activate these user-defined tags so that they appear on the Billing and Cost Management console for cost allocation tracking. ...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -713,6 +720,12 @@ func NewDynamoDBServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(dynamoDBServiceMethods.ByName("Scan")),
 			connect.WithClientOptions(opts...),
 		),
+		searchVectors: connect.NewClient[dynamodb.SearchVectorsInput, dynamodb.SearchVectorsOutput](
+			httpClient,
+			baseURL+DynamoDBServiceSearchVectorsProcedure,
+			connect.WithSchema(dynamoDBServiceMethods.ByName("SearchVectors")),
+			connect.WithClientOptions(opts...),
+		),
 		tagResource: connect.NewClient[dynamodb.TagResourceInput, common.Empty](
 			httpClient,
 			baseURL+DynamoDBServiceTagResourceProcedure,
@@ -840,6 +853,7 @@ type dynamoDBServiceClient struct {
 	restoreTableFromBackup              *connect.Client[dynamodb.RestoreTableFromBackupInput, dynamodb.RestoreTableFromBackupOutput]
 	restoreTableToPointInTime           *connect.Client[dynamodb.RestoreTableToPointInTimeInput, dynamodb.RestoreTableToPointInTimeOutput]
 	scan                                *connect.Client[dynamodb.ScanInput, dynamodb.ScanOutput]
+	searchVectors                       *connect.Client[dynamodb.SearchVectorsInput, dynamodb.SearchVectorsOutput]
 	tagResource                         *connect.Client[dynamodb.TagResourceInput, common.Empty]
 	transactGetItems                    *connect.Client[dynamodb.TransactGetItemsInput, dynamodb.TransactGetItemsOutput]
 	transactWriteItems                  *connect.Client[dynamodb.TransactWriteItemsInput, dynamodb.TransactWriteItemsOutput]
@@ -1076,6 +1090,11 @@ func (c *dynamoDBServiceClient) RestoreTableToPointInTime(ctx context.Context, r
 // Scan calls dynamodb.DynamoDBService.Scan.
 func (c *dynamoDBServiceClient) Scan(ctx context.Context, req *connect.Request[dynamodb.ScanInput]) (*connect.Response[dynamodb.ScanOutput], error) {
 	return c.scan.CallUnary(ctx, req)
+}
+
+// SearchVectors calls dynamodb.DynamoDBService.SearchVectors.
+func (c *dynamoDBServiceClient) SearchVectors(ctx context.Context, req *connect.Request[dynamodb.SearchVectorsInput]) (*connect.Response[dynamodb.SearchVectorsOutput], error) {
+	return c.searchVectors.CallUnary(ctx, req)
 }
 
 // TagResource calls dynamodb.DynamoDBService.TagResource.
@@ -1322,6 +1341,10 @@ type DynamoDBServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_0
 	Scan(context.Context, *connect.Request[dynamodb.ScanInput]) (*connect.Response[dynamodb.ScanOutput], error)
+	// Performs a vector similarity search on a vector index associated with an Amazon DynamoDB table, and returns the most similar items sorted by similarity score based on the distance function configur...
+	// HTTP:
+	// Protocol: awsJson1_0
+	SearchVectors(context.Context, *connect.Request[dynamodb.SearchVectorsInput]) (*connect.Response[dynamodb.SearchVectorsOutput], error)
 	// Associate a set of tags with an Amazon DynamoDB resource. You can then activate these user-defined tags so that they appear on the Billing and Cost Management console for cost allocation tracking. ...
 	// HTTP:
 	// Protocol: awsJson1_0
@@ -1647,6 +1670,12 @@ func NewDynamoDBServiceHandler(svc DynamoDBServiceHandler, opts ...connect.Handl
 		connect.WithSchema(dynamoDBServiceMethods.ByName("Scan")),
 		connect.WithHandlerOptions(opts...),
 	)
+	dynamoDBServiceSearchVectorsHandler := connect.NewUnaryHandler(
+		DynamoDBServiceSearchVectorsProcedure,
+		svc.SearchVectors,
+		connect.WithSchema(dynamoDBServiceMethods.ByName("SearchVectors")),
+		connect.WithHandlerOptions(opts...),
+	)
 	dynamoDBServiceTagResourceHandler := connect.NewUnaryHandler(
 		DynamoDBServiceTagResourceProcedure,
 		svc.TagResource,
@@ -1815,6 +1844,8 @@ func NewDynamoDBServiceHandler(svc DynamoDBServiceHandler, opts ...connect.Handl
 			dynamoDBServiceRestoreTableToPointInTimeHandler.ServeHTTP(w, r)
 		case DynamoDBServiceScanProcedure:
 			dynamoDBServiceScanHandler.ServeHTTP(w, r)
+		case DynamoDBServiceSearchVectorsProcedure:
+			dynamoDBServiceSearchVectorsHandler.ServeHTTP(w, r)
 		case DynamoDBServiceTagResourceProcedure:
 			dynamoDBServiceTagResourceHandler.ServeHTTP(w, r)
 		case DynamoDBServiceTransactGetItemsProcedure:
@@ -2024,6 +2055,10 @@ func (UnimplementedDynamoDBServiceHandler) RestoreTableToPointInTime(context.Con
 
 func (UnimplementedDynamoDBServiceHandler) Scan(context.Context, *connect.Request[dynamodb.ScanInput]) (*connect.Response[dynamodb.ScanOutput], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dynamodb.DynamoDBService.Scan is not implemented"))
+}
+
+func (UnimplementedDynamoDBServiceHandler) SearchVectors(context.Context, *connect.Request[dynamodb.SearchVectorsInput]) (*connect.Response[dynamodb.SearchVectorsOutput], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("dynamodb.DynamoDBService.SearchVectors is not implemented"))
 }
 
 func (UnimplementedDynamoDBServiceHandler) TagResource(context.Context, *connect.Request[dynamodb.TagResourceInput]) (*connect.Response[common.Empty], error) {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/smithy-go"
 )
@@ -46,6 +47,27 @@ func AssertNoError(err error, context string) error {
 func AssertNotNil(v interface{}, name string) error {
 	if v == nil {
 		return fmt.Errorf("%s is nil", name)
+	}
+	return nil
+}
+
+// expectTransactionCanceled asserts that err is a TransactionCanceledException
+// whose first cancellation reason carries the expected code. Singleton-statement
+// failures inside ExecuteTransaction cancel the whole transaction and report
+// per-statement reasons; unaffected statements carry the literal code "None".
+func expectTransactionCanceled(err error, reasonCode string) error {
+	if err == nil {
+		return fmt.Errorf("expected TransactionCanceledException, got nil")
+	}
+	var tce *types.TransactionCanceledException
+	if !errors.As(err, &tce) {
+		return fmt.Errorf("expected TransactionCanceledException, got %T: %v", err, err)
+	}
+	if len(tce.CancellationReasons) == 0 {
+		return fmt.Errorf("TransactionCanceledException carries no cancellation reasons")
+	}
+	if code := aws.ToString(tce.CancellationReasons[0].Code); code != reasonCode {
+		return fmt.Errorf("cancellation reason code = %q, want %q", code, reasonCode)
 	}
 	return nil
 }

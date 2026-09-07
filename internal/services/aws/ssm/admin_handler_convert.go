@@ -27,20 +27,20 @@ func (h *AdminHandler) getStore(headers http.Header) (*ssmstore.Store, error) {
 // ParameterMetadata message used by the admin console.
 func toPbParameterMetadata(p *ssmstore.Parameter) *pb.ParameterMetadata {
 	meta := &pb.ParameterMetadata{
-		Name:             p.Name,
+		Name:             proto.String(p.Name),
 		Version:          proto.Int64(p.Version),
-		Lastmodifieddate: p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat),
-		Datatype:         p.DataType,
-		Arn:              p.ARN,
+		Lastmodifieddate: proto.String(p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)),
+		Datatype:         proto.String(p.DataType),
+		Arn:              proto.String(p.ARN),
 	}
 	if p.Description != "" {
-		meta.Description = p.Description
+		meta.Description = proto.String(p.Description)
 	}
 	if p.KeyID != "" {
-		meta.Keyid = p.KeyID
+		meta.Keyid = proto.String(p.KeyID)
 	}
 	if p.AllowedPattern != "" {
-		meta.Allowedpattern = p.AllowedPattern
+		meta.Allowedpattern = proto.String(p.AllowedPattern)
 	}
 	switch p.Type {
 	case ssmstore.ParameterTypeString:
@@ -86,20 +86,20 @@ func toStoreFilters(pbFilters []*pb.ParametersFilter) ([]ssmstore.ParameterFilte
 // proto ParameterMetadata message.
 func toPbParameterMetadataFromMeta(p *ssmstore.ParameterMetadata) *pb.ParameterMetadata {
 	meta := &pb.ParameterMetadata{
-		Name:             p.Name,
+		Name:             proto.String(p.Name),
 		Version:          proto.Int64(p.Version),
-		Lastmodifieddate: p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat),
-		Datatype:         p.DataType,
-		Arn:              p.ARN,
+		Lastmodifieddate: proto.String(p.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)),
+		Datatype:         proto.String(p.DataType),
+		Arn:              proto.String(p.ARN),
 	}
 	if p.Description != "" {
-		meta.Description = p.Description
+		meta.Description = proto.String(p.Description)
 	}
 	if p.KeyID != "" {
-		meta.Keyid = p.KeyID
+		meta.Keyid = proto.String(p.KeyID)
 	}
 	if p.AllowedPattern != "" {
-		meta.Allowedpattern = p.AllowedPattern
+		meta.Allowedpattern = proto.String(p.AllowedPattern)
 	}
 	switch p.Type {
 	case ssmstore.ParameterTypeString:

@@ -2,6 +2,7 @@ package sfn
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	"connectrpc.com/connect"
@@ -40,7 +41,7 @@ func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Reque
 
 	result, err := h.service.listStateMachinesCore(ctx, store, ListStateMachinesInput{
 		MaxResults: req.Msg.GetMaxresults(),
-		NextToken:  req.Msg.Nexttoken,
+		NextToken:  req.Msg.GetNexttoken(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -55,7 +56,7 @@ func (h *AdminHandler) ListStateMachines(ctx context.Context, req *connect.Reque
 
 	return connect.NewResponse(&pb.ListStateMachinesOutput{
 		Statemachines: stateMachines,
-		Nexttoken:     result.NextToken,
+		Nexttoken:     proto.String(result.NextToken),
 	}), nil
 }
 
@@ -69,7 +70,7 @@ func (h *AdminHandler) CreateStateMachine(ctx context.Context, req *connect.Requ
 
 	tags := make(map[string]string)
 	for _, t := range req.Msg.Tags {
-		tags[t.Key] = t.Value
+		tags[t.GetKey()] = t.GetValue()
 	}
 
 	result, err := h.service.createStateMachineCore(ctx, store, CreateStateMachineInput{
@@ -156,7 +157,7 @@ func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Req
 
 	pbTags := make([]*pb.Tag, len(tags))
 	for i, t := range tags {
-		pbTags[i] = &pb.Tag{Key: t.Key, Value: t.Value}
+		pbTags[i] = &pb.Tag{Key: proto.String(t.Key), Value: proto.String(t.Value)}
 	}
 
 	return connect.NewResponse(&pb.ListTagsForResourceOutput{

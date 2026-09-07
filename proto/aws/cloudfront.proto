@@ -856,7 +856,7 @@ service CloudFrontService {
 
 message AccessDenied {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -894,7 +894,7 @@ message ActiveTrustedSigners {
 
 message AliasICPRecordal {
 
-  string cname = 420235386;
+  optional string cname = 420235386;
 
   ICPRecordalStatus icprecordalstatus = 230990942;
 
@@ -966,7 +966,7 @@ message AnycastIpListCollection {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -980,7 +980,7 @@ message AnycastIpListSummary {
 
   string arn = 402345373;
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   string id = 384350465;
 
@@ -1014,7 +1014,7 @@ message AssociateDistributionTenantWebACLRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   string webaclarn = 82506659;
 
@@ -1024,11 +1024,11 @@ message AssociateDistributionTenantWebACLRequest {
 
 message AssociateDistributionTenantWebACLResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string webaclarn = 82506659;
+  optional string webaclarn = 82506659;
 
 }
 
@@ -1038,7 +1038,7 @@ message AssociateDistributionWebACLRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   string webaclarn = 82506659;
 
@@ -1048,11 +1048,11 @@ message AssociateDistributionWebACLRequest {
 
 message AssociateDistributionWebACLResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string webaclarn = 82506659;
+  optional string webaclarn = 82506659;
 
 }
 
@@ -1062,7 +1062,7 @@ message AssociateDistributionWebACLResult {
 
 message BatchTooLarge {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1072,7 +1072,7 @@ message BatchTooLarge {
 
 message CNAMEAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1088,7 +1088,7 @@ message CaCertificatesBundleS3Location {
 
   string region = 154040478;
 
-  string version = 500028728;
+  optional string version = 500028728;
 
 }
 
@@ -1110,13 +1110,13 @@ message CacheBehavior {
 
   AllowedMethods allowedmethods = 56383476;
 
-  string cachepolicyid = 431434163;
+  optional string cachepolicyid = 431434163;
 
   optional bool compress = 235468462;
 
   optional int64 defaultttl = 391646391;
 
-  string fieldlevelencryptionid = 450714616;
+  optional string fieldlevelencryptionid = 450714616;
 
   ForwardedValues forwardedvalues = 34815362;
 
@@ -1130,13 +1130,13 @@ message CacheBehavior {
 
   optional int64 minttl = 420784162;
 
-  string originrequestpolicyid = 298538616;
+  optional string originrequestpolicyid = 298538616;
 
   string pathpattern = 266478053;
 
-  string realtimelogconfigarn = 152963408;
+  optional string realtimelogconfigarn = 152963408;
 
-  string responseheaderspolicyid = 244029524;
+  optional string responseheaderspolicyid = 244029524;
 
   optional bool smoothstreaming = 92667114;
 
@@ -1182,7 +1182,7 @@ message CachePolicy {
 
 message CachePolicyAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1192,7 +1192,7 @@ message CachePolicyAlreadyExists {
 
 message CachePolicyConfig {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   optional int64 defaultttl = 391646391;
 
@@ -1260,7 +1260,7 @@ message CachePolicyHeadersConfig {
 
 message CachePolicyInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1274,7 +1274,7 @@ message CachePolicyList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -1356,7 +1356,7 @@ message CachedMethods {
 
 message CannotChangeImmutablePublicKeyFields {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1366,7 +1366,7 @@ message CannotChangeImmutablePublicKeyFields {
 
 message CannotDeleteEntityWhileInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1376,7 +1376,7 @@ message CannotDeleteEntityWhileInUse {
 
 message CannotUpdateEntityWhileInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1432,7 +1432,7 @@ message CloudFrontOriginAccessIdentity {
 
 message CloudFrontOriginAccessIdentityAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1454,7 +1454,7 @@ message CloudFrontOriginAccessIdentityConfig {
 
 message CloudFrontOriginAccessIdentityInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1472,7 +1472,7 @@ message CloudFrontOriginAccessIdentityList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -1498,11 +1498,11 @@ message CloudFrontOriginAccessIdentitySummary {
 
 message ConflictingAlias {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
-  string alias = 48362232;
+  optional string alias = 48362232;
 
-  string distributionid = 142530791;
+  optional string distributionid = 142530791;
 
 }
 
@@ -1516,7 +1516,7 @@ message ConflictingAliasesList {
 
   optional int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   optional int32 quantity = 200749817;
 
@@ -1562,13 +1562,13 @@ message ConnectionFunctionSummary {
 
 message ConnectionFunctionTestResult {
 
-  string computeutilization = 247332359;
+  optional string computeutilization = 247332359;
 
-  string connectionfunctionerrormessage = 360436321;
+  optional string connectionfunctionerrormessage = 360436321;
 
   repeated string connectionfunctionexecutionlogs = 194700351;
 
-  string connectionfunctionoutput = 235201677;
+  optional string connectionfunctionoutput = 235201677;
 
   ConnectionFunctionSummary connectionfunctionsummary = 62528396;
 
@@ -1580,27 +1580,27 @@ message ConnectionFunctionTestResult {
 
 message ConnectionGroup {
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
   optional bool enabled = 478602303;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
   optional bool ipv6enabled = 324073322;
 
   optional bool isdefault = 101743631;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
-  string routingendpoint = 409864193;
+  optional string routingendpoint = 409864193;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   Tags tags = 381526209;
 
@@ -1612,7 +1612,7 @@ message ConnectionGroup {
 
 message ConnectionGroupAssociationFilter {
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
 }
 
@@ -1622,7 +1622,7 @@ message ConnectionGroupAssociationFilter {
 
 message ConnectionGroupSummary {
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
   string arn = 402345373;
 
@@ -1642,7 +1642,7 @@ message ConnectionGroupSummary {
 
   string routingendpoint = 409864193;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -1666,7 +1666,7 @@ message ContentTypeProfile {
 
   Format format = 531693427;
 
-  string profileid = 407138548;
+  optional string profileid = 407138548;
 
 }
 
@@ -1714,7 +1714,7 @@ message ContinuousDeploymentPolicy {
 
 message ContinuousDeploymentPolicyAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1738,7 +1738,7 @@ message ContinuousDeploymentPolicyConfig {
 
 message ContinuousDeploymentPolicyInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -1752,7 +1752,7 @@ message ContinuousDeploymentPolicyList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -1834,7 +1834,7 @@ message CopyDistributionRequest {
 
   optional bool enabled = 478602303;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   string primarydistributionid = 430692915;
 
@@ -1848,9 +1848,9 @@ message CopyDistributionResult {
 
   Distribution distribution = 105183308 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -1876,7 +1876,7 @@ message CreateAnycastIpListResult {
 
   AnycastIpList anycastiplist = 190550768 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -1894,9 +1894,9 @@ message CreateCachePolicyResult {
 
   CachePolicy cachepolicy = 439848032 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -1918,9 +1918,9 @@ message CreateCloudFrontOriginAccessIdentityResult {
 
   CloudFrontOriginAccessIdentity cloudfrontoriginaccessidentity = 109497984 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -1944,9 +1944,9 @@ message CreateConnectionFunctionResult {
 
   ConnectionFunctionSummary connectionfunctionsummary = 62528396 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -1954,7 +1954,7 @@ message CreateConnectionFunctionResult {
 
 message CreateConnectionGroupRequest {
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
   optional bool enabled = 478602303;
 
@@ -1972,7 +1972,7 @@ message CreateConnectionGroupResult {
 
   ConnectionGroup connectiongroup = 517217105 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -1990,9 +1990,9 @@ message CreateContinuousDeploymentPolicyResult {
 
   ContinuousDeploymentPolicy continuousdeploymentpolicy = 36616788 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2014,9 +2014,9 @@ message CreateDistributionResult {
 
   Distribution distribution = 105183308 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2024,7 +2024,7 @@ message CreateDistributionResult {
 
 message CreateDistributionTenantRequest {
 
-  string connectiongroupid = 169532206;
+  optional string connectiongroupid = 169532206;
 
   Customizations customizations = 70755200;
 
@@ -2050,7 +2050,7 @@ message CreateDistributionTenantResult {
 
   DistributionTenant distributiontenant = 510856916 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -2072,9 +2072,9 @@ message CreateDistributionWithTagsResult {
 
   Distribution distribution = 105183308 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2090,11 +2090,11 @@ message CreateFieldLevelEncryptionConfigRequest {
 
 message CreateFieldLevelEncryptionConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryption fieldlevelencryption = 473382747 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2110,11 +2110,11 @@ message CreateFieldLevelEncryptionProfileRequest {
 
 message CreateFieldLevelEncryptionProfileResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryptionProfile fieldlevelencryptionprofile = 344546136 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2136,11 +2136,11 @@ message CreateFunctionRequest {
 
 message CreateFunctionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FunctionSummary functionsummary = 523316264 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2160,7 +2160,7 @@ message CreateInvalidationForDistributionTenantResult {
 
   Invalidation invalidation = 77924830 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2184,7 +2184,7 @@ message CreateInvalidationResult {
 
   Invalidation invalidation = 77924830 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2200,11 +2200,11 @@ message CreateKeyGroupRequest {
 
 message CreateKeyGroupResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyGroup keygroup = 518748096 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2212,7 +2212,7 @@ message CreateKeyGroupResult {
 
 message CreateKeyValueStoreRequest {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   ImportSource importsource = 41128754;
 
@@ -2226,11 +2226,11 @@ message CreateKeyValueStoreRequest {
 
 message CreateKeyValueStoreResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyValueStore keyvaluestore = 151113103 [(aws.http_payload) = true];
 
-  string location = 465604039;
+  optional string location = 465604039;
 
 }
 
@@ -2264,9 +2264,9 @@ message CreateOriginAccessControlRequest {
 
 message CreateOriginAccessControlResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   OriginAccessControl originaccesscontrol = 238302375 [(aws.http_payload) = true];
 
@@ -2284,9 +2284,9 @@ message CreateOriginRequestPolicyRequest {
 
 message CreateOriginRequestPolicyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   OriginRequestPolicy originrequestpolicy = 386733531 [(aws.http_payload) = true];
 
@@ -2304,9 +2304,9 @@ message CreatePublicKeyRequest {
 
 message CreatePublicKeyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   PublicKey publickey = 167335776 [(aws.http_payload) = true];
 
@@ -2346,9 +2346,9 @@ message CreateResponseHeadersPolicyRequest {
 
 message CreateResponseHeadersPolicyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   ResponseHeadersPolicy responseheaderspolicy = 418204719 [(aws.http_payload) = true];
 
@@ -2370,9 +2370,9 @@ message CreateStreamingDistributionRequest {
 
 message CreateStreamingDistributionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   StreamingDistribution streamingdistribution = 294813830 [(aws.http_payload) = true];
 
@@ -2394,9 +2394,9 @@ message CreateStreamingDistributionWithTagsRequest {
 
 message CreateStreamingDistributionWithTagsResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   StreamingDistribution streamingdistribution = 294813830 [(aws.http_payload) = true];
 
@@ -2420,7 +2420,7 @@ message CreateTrustStoreRequest {
 
 message CreateTrustStoreResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   TrustStore truststore = 224815327 [(aws.http_payload) = true];
 
@@ -2440,9 +2440,9 @@ message CreateVpcOriginRequest {
 
 message CreateVpcOriginResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string location = 465604039;
+  optional string location = 465604039;
 
   VpcOrigin vpcorigin = 159181387 [(aws.http_payload) = true];
 
@@ -2458,9 +2458,9 @@ message CustomErrorResponse {
 
   int32 errorcode = 34663193;
 
-  string responsecode = 447553700;
+  optional string responsecode = 447553700;
 
-  string responsepagepath = 523062007;
+  optional string responsepagepath = 523062007;
 
 }
 
@@ -2544,13 +2544,13 @@ message DefaultCacheBehavior {
 
   AllowedMethods allowedmethods = 56383476;
 
-  string cachepolicyid = 431434163;
+  optional string cachepolicyid = 431434163;
 
   optional bool compress = 235468462;
 
   optional int64 defaultttl = 391646391;
 
-  string fieldlevelencryptionid = 450714616;
+  optional string fieldlevelencryptionid = 450714616;
 
   ForwardedValues forwardedvalues = 34815362;
 
@@ -2564,11 +2564,11 @@ message DefaultCacheBehavior {
 
   optional int64 minttl = 420784162;
 
-  string originrequestpolicyid = 298538616;
+  optional string originrequestpolicyid = 298538616;
 
-  string realtimelogconfigarn = 152963408;
+  optional string realtimelogconfigarn = 152963408;
 
-  string responseheaderspolicyid = 244029524;
+  optional string responseheaderspolicyid = 244029524;
 
   optional bool smoothstreaming = 92667114;
 
@@ -2598,7 +2598,7 @@ message DeleteCachePolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2610,7 +2610,7 @@ message DeleteCloudFrontOriginAccessIdentityRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2640,7 +2640,7 @@ message DeleteContinuousDeploymentPolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2652,7 +2652,7 @@ message DeleteDistributionRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2672,7 +2672,7 @@ message DeleteFieldLevelEncryptionConfigRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2682,7 +2682,7 @@ message DeleteFieldLevelEncryptionProfileRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2702,7 +2702,7 @@ message DeleteKeyGroupRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2736,7 +2736,7 @@ message DeleteOriginAccessControlRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2746,7 +2746,7 @@ message DeleteOriginRequestPolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2756,7 +2756,7 @@ message DeletePublicKeyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2764,9 +2764,9 @@ message DeletePublicKeyRequest {
 
 message DeleteRealtimeLogConfigRequest {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -2784,7 +2784,7 @@ message DeleteResponseHeadersPolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2796,7 +2796,7 @@ message DeleteStreamingDistributionRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2824,7 +2824,7 @@ message DeleteVpcOriginRequest {
 
 message DeleteVpcOriginResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   VpcOrigin vpcorigin = 159181387 [(aws.http_payload) = true];
 
@@ -2846,7 +2846,7 @@ message DescribeConnectionFunctionResult {
 
   ConnectionFunctionSummary connectionfunctionsummary = 62528396 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -2864,7 +2864,7 @@ message DescribeFunctionRequest {
 
 message DescribeFunctionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FunctionSummary functionsummary = 523316264 [(aws.http_payload) = true];
 
@@ -2882,7 +2882,7 @@ message DescribeKeyValueStoreRequest {
 
 message DescribeKeyValueStoreResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyValueStore keyvaluestore = 151113103 [(aws.http_payload) = true];
 
@@ -2894,7 +2894,7 @@ message DisassociateDistributionTenantWebACLRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2902,9 +2902,9 @@ message DisassociateDistributionTenantWebACLRequest {
 
 message DisassociateDistributionTenantWebACLResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
 }
 
@@ -2914,7 +2914,7 @@ message DisassociateDistributionWebACLRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -2922,9 +2922,9 @@ message DisassociateDistributionWebACLRequest {
 
 message DisassociateDistributionWebACLResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
 }
 
@@ -2962,7 +2962,7 @@ message Distribution {
 
 message DistributionAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -2974,7 +2974,7 @@ message DistributionConfig {
 
   Aliases aliases = 476693696;
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
   CacheBehaviors cachebehaviors = 70698397;
 
@@ -2988,13 +2988,13 @@ message DistributionConfig {
 
   ConnectionMode connectionmode = 82068023;
 
-  string continuousdeploymentpolicyid = 370023231;
+  optional string continuousdeploymentpolicyid = 370023231;
 
   CustomErrorResponses customerrorresponses = 306704557;
 
   DefaultCacheBehavior defaultcachebehavior = 346164111;
 
-  string defaultrootobject = 58521698;
+  optional string defaultrootobject = 58521698;
 
   optional bool enabled = 478602303;
 
@@ -3020,7 +3020,7 @@ message DistributionConfig {
 
   ViewerMtlsConfig viewermtlsconfig = 76850598;
 
-  string webaclid = 161274579;
+  optional string webaclid = 161274579;
 
 }
 
@@ -3050,7 +3050,7 @@ message DistributionIdList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -3082,7 +3082,7 @@ message DistributionIdOwnerList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -3102,7 +3102,7 @@ message DistributionList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -3114,7 +3114,7 @@ message DistributionList {
 
 message DistributionNotDisabled {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3124,9 +3124,9 @@ message DistributionNotDisabled {
 
 message DistributionResourceId {
 
-  string distributionid = 142530791;
+  optional string distributionid = 142530791;
 
-  string distributiontenantid = 123323327;
+  optional string distributiontenantid = 123323327;
 
 }
 
@@ -3152,7 +3152,7 @@ message DistributionSummary {
 
   Aliases aliases = 476693696;
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
   CacheBehaviors cachebehaviors = 70698397;
 
@@ -3168,7 +3168,7 @@ message DistributionSummary {
 
   string domainname = 194914027;
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   optional bool enabled = 478602303;
 
@@ -3206,29 +3206,29 @@ message DistributionSummary {
 
 message DistributionTenant {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string connectiongroupid = 169532206;
+  optional string connectiongroupid = 169532206;
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
   Customizations customizations = 70755200;
 
-  string distributionid = 142530791;
+  optional string distributionid = 142530791;
 
   repeated DomainResult domains = 149701959;
 
   optional bool enabled = 478602303;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   repeated Parameter parameters = 494900218;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
   Tags tags = 381526209;
 
@@ -3240,9 +3240,9 @@ message DistributionTenant {
 
 message DistributionTenantAssociationFilter {
 
-  string connectiongroupid = 169532206;
+  optional string connectiongroupid = 169532206;
 
-  string distributionid = 142530791;
+  optional string distributionid = 142530791;
 
 }
 
@@ -3254,7 +3254,7 @@ message DistributionTenantSummary {
 
   string arn = 402345373;
 
-  string connectiongroupid = 169532206;
+  optional string connectiongroupid = 169532206;
 
   string createdtime = 121435635;
 
@@ -3274,7 +3274,7 @@ message DistributionTenantSummary {
 
   string name = 266367751;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -3286,7 +3286,7 @@ message DnsConfiguration {
 
   string domain = 505186578;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
   DnsConfigurationStatus status = 6222352;
 
@@ -3396,7 +3396,7 @@ message EndPoint {
 
 message EntityAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3406,7 +3406,7 @@ message EntityAlreadyExists {
 
 message EntityLimitExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3416,7 +3416,7 @@ message EntityLimitExceeded {
 
 message EntityNotFound {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3426,7 +3426,7 @@ message EntityNotFound {
 
 message EntitySizeLimitExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3466,7 +3466,7 @@ message FieldLevelEncryptionConfig {
 
   string callerreference = 151211160;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   ContentTypeProfileConfig contenttypeprofileconfig = 361713406;
 
@@ -3480,7 +3480,7 @@ message FieldLevelEncryptionConfig {
 
 message FieldLevelEncryptionConfigAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3490,7 +3490,7 @@ message FieldLevelEncryptionConfigAlreadyExists {
 
 message FieldLevelEncryptionConfigInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3504,7 +3504,7 @@ message FieldLevelEncryptionList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -3530,7 +3530,7 @@ message FieldLevelEncryptionProfile {
 
 message FieldLevelEncryptionProfileAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3542,7 +3542,7 @@ message FieldLevelEncryptionProfileConfig {
 
   string callerreference = 151211160;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   EncryptionEntities encryptionentities = 400717088;
 
@@ -3556,7 +3556,7 @@ message FieldLevelEncryptionProfileConfig {
 
 message FieldLevelEncryptionProfileInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3570,7 +3570,7 @@ message FieldLevelEncryptionProfileList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -3582,7 +3582,7 @@ message FieldLevelEncryptionProfileList {
 
 message FieldLevelEncryptionProfileSizeExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3592,7 +3592,7 @@ message FieldLevelEncryptionProfileSizeExceeded {
 
 message FieldLevelEncryptionProfileSummary {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   EncryptionEntities encryptionentities = 400717088;
 
@@ -3610,7 +3610,7 @@ message FieldLevelEncryptionProfileSummary {
 
 message FieldLevelEncryptionSummary {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   ContentTypeProfileConfig contenttypeprofileconfig = 361713406;
 
@@ -3674,7 +3674,7 @@ enum FrameOptionsList {
 
 message FunctionAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3722,7 +3722,7 @@ message FunctionConfig {
 
 message FunctionInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3736,7 +3736,7 @@ message FunctionList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -3748,7 +3748,7 @@ message FunctionList {
 
 message FunctionMetadata {
 
-  string createdtime = 121435635;
+  optional string createdtime = 121435635;
 
   string functionarn = 387130481;
 
@@ -3774,7 +3774,7 @@ enum FunctionRuntime {
 
 message FunctionSizeLimitExceeded {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -3800,7 +3800,7 @@ message FunctionSummary {
 
   string name = 266367751;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -3856,7 +3856,7 @@ message GetAnycastIpListResult {
 
   AnycastIpList anycastiplist = 190550768 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3874,7 +3874,7 @@ message GetCachePolicyConfigResult {
 
   CachePolicyConfig cachepolicyconfig = 407094126 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3892,7 +3892,7 @@ message GetCachePolicyResult {
 
   CachePolicy cachepolicy = 439848032 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3914,7 +3914,7 @@ message GetCloudFrontOriginAccessIdentityConfigResult {
 
   CloudFrontOriginAccessIdentityConfig cloudfrontoriginaccessidentityconfig = 111945038 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3936,7 +3936,7 @@ message GetCloudFrontOriginAccessIdentityResult {
 
   CloudFrontOriginAccessIdentity cloudfrontoriginaccessidentity = 109497984 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3954,11 +3954,11 @@ message GetConnectionFunctionRequest {
 
 message GetConnectionFunctionResult {
 
-  bytes connectionfunctioncode = 502949501 [(aws.http_payload) = true];
+  optional bytes connectionfunctioncode = 502949501 [(aws.http_payload) = true];
 
-  string contenttype = 333064851;
+  optional string contenttype = 333064851;
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3976,7 +3976,7 @@ message GetConnectionGroupByRoutingEndpointResult {
 
   ConnectionGroup connectiongroup = 517217105 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -3994,7 +3994,7 @@ message GetConnectionGroupResult {
 
   ConnectionGroup connectiongroup = 517217105 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4012,7 +4012,7 @@ message GetContinuousDeploymentPolicyConfigResult {
 
   ContinuousDeploymentPolicyConfig continuousdeploymentpolicyconfig = 161949042 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4030,7 +4030,7 @@ message GetContinuousDeploymentPolicyResult {
 
   ContinuousDeploymentPolicy continuousdeploymentpolicy = 36616788 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4052,7 +4052,7 @@ message GetDistributionConfigResult {
 
   DistributionConfig distributionconfig = 528940762 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4074,7 +4074,7 @@ message GetDistributionResult {
 
   Distribution distribution = 105183308 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4092,7 +4092,7 @@ message GetDistributionTenantByDomainResult {
 
   DistributionTenant distributiontenant = 510856916 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4110,7 +4110,7 @@ message GetDistributionTenantResult {
 
   DistributionTenant distributiontenant = 510856916 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -4126,7 +4126,7 @@ message GetFieldLevelEncryptionConfigRequest {
 
 message GetFieldLevelEncryptionConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryptionConfig fieldlevelencryptionconfig = 499294709 [(aws.http_payload) = true];
 
@@ -4144,7 +4144,7 @@ message GetFieldLevelEncryptionProfileConfigRequest {
 
 message GetFieldLevelEncryptionProfileConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryptionProfileConfig fieldlevelencryptionprofileconfig = 199371734 [(aws.http_payload) = true];
 
@@ -4162,7 +4162,7 @@ message GetFieldLevelEncryptionProfileRequest {
 
 message GetFieldLevelEncryptionProfileResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryptionProfile fieldlevelencryptionprofile = 344546136 [(aws.http_payload) = true];
 
@@ -4180,7 +4180,7 @@ message GetFieldLevelEncryptionRequest {
 
 message GetFieldLevelEncryptionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryption fieldlevelencryption = 473382747 [(aws.http_payload) = true];
 
@@ -4200,11 +4200,11 @@ message GetFunctionRequest {
 
 message GetFunctionResult {
 
-  string contenttype = 333064851;
+  optional string contenttype = 333064851;
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  bytes functioncode = 405947809 [(aws.http_payload) = true];
+  optional bytes functioncode = 405947809 [(aws.http_payload) = true];
 
 }
 
@@ -4260,7 +4260,7 @@ message GetKeyGroupConfigRequest {
 
 message GetKeyGroupConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyGroupConfig keygroupconfig = 143012494 [(aws.http_payload) = true];
 
@@ -4278,7 +4278,7 @@ message GetKeyGroupRequest {
 
 message GetKeyGroupResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyGroup keygroup = 518748096 [(aws.http_payload) = true];
 
@@ -4328,7 +4328,7 @@ message GetOriginAccessControlConfigRequest {
 
 message GetOriginAccessControlConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   OriginAccessControlConfig originaccesscontrolconfig = 143834977 [(aws.http_payload) = true];
 
@@ -4346,7 +4346,7 @@ message GetOriginAccessControlRequest {
 
 message GetOriginAccessControlResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   OriginAccessControl originaccesscontrol = 238302375 [(aws.http_payload) = true];
 
@@ -4364,7 +4364,7 @@ message GetOriginRequestPolicyConfigRequest {
 
 message GetOriginRequestPolicyConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   OriginRequestPolicyConfig originrequestpolicyconfig = 37078133 [(aws.http_payload) = true];
 
@@ -4382,7 +4382,7 @@ message GetOriginRequestPolicyRequest {
 
 message GetOriginRequestPolicyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   OriginRequestPolicy originrequestpolicy = 386733531 [(aws.http_payload) = true];
 
@@ -4400,7 +4400,7 @@ message GetPublicKeyConfigRequest {
 
 message GetPublicKeyConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   PublicKeyConfig publickeyconfig = 228537966 [(aws.http_payload) = true];
 
@@ -4418,7 +4418,7 @@ message GetPublicKeyRequest {
 
 message GetPublicKeyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   PublicKey publickey = 167335776 [(aws.http_payload) = true];
 
@@ -4428,9 +4428,9 @@ message GetPublicKeyResult {
 
 message GetRealtimeLogConfigRequest {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
 }
 
@@ -4454,9 +4454,9 @@ message GetResourcePolicyRequest {
 
 message GetResourcePolicyResult {
 
-  string policydocument = 238049099;
+  optional string policydocument = 238049099;
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
 }
 
@@ -4472,7 +4472,7 @@ message GetResponseHeadersPolicyConfigRequest {
 
 message GetResponseHeadersPolicyConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   ResponseHeadersPolicyConfig responseheaderspolicyconfig = 159056825 [(aws.http_payload) = true];
 
@@ -4490,7 +4490,7 @@ message GetResponseHeadersPolicyRequest {
 
 message GetResponseHeadersPolicyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   ResponseHeadersPolicy responseheaderspolicy = 418204719 [(aws.http_payload) = true];
 
@@ -4512,7 +4512,7 @@ message GetStreamingDistributionConfigRequest {
 
 message GetStreamingDistributionConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   StreamingDistributionConfig streamingdistributionconfig = 291115944 [(aws.http_payload) = true];
 
@@ -4534,7 +4534,7 @@ message GetStreamingDistributionRequest {
 
 message GetStreamingDistributionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   StreamingDistribution streamingdistribution = 294813830 [(aws.http_payload) = true];
 
@@ -4552,7 +4552,7 @@ message GetTrustStoreRequest {
 
 message GetTrustStoreResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   TrustStore truststore = 224815327 [(aws.http_payload) = true];
 
@@ -4570,7 +4570,7 @@ message GetVpcOriginRequest {
 
 message GetVpcOriginResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   VpcOrigin vpcorigin = 159181387 [(aws.http_payload) = true];
 
@@ -4630,7 +4630,7 @@ enum ICPRecordalStatus {
 
 message IllegalDelete {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4640,7 +4640,7 @@ message IllegalDelete {
 
 message IllegalFieldLevelEncryptionConfigAssociationWithCacheBehavior {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4650,7 +4650,7 @@ message IllegalFieldLevelEncryptionConfigAssociationWithCacheBehavior {
 
 message IllegalOriginAccessConfiguration {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4660,7 +4660,7 @@ message IllegalOriginAccessConfiguration {
 
 message IllegalUpdate {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4690,7 +4690,7 @@ enum ImportSourceType {
 
 message InconsistentQuantities {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4700,7 +4700,7 @@ message InconsistentQuantities {
 
 message InvalidArgument {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4710,7 +4710,7 @@ message InvalidArgument {
 
 message InvalidAssociation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4720,7 +4720,7 @@ message InvalidAssociation {
 
 message InvalidDefaultRootObject {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4730,7 +4730,7 @@ message InvalidDefaultRootObject {
 
 message InvalidDomainNameForOriginAccessControl {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4740,7 +4740,7 @@ message InvalidDomainNameForOriginAccessControl {
 
 message InvalidErrorCode {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4750,7 +4750,7 @@ message InvalidErrorCode {
 
 message InvalidForwardCookies {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4760,7 +4760,7 @@ message InvalidForwardCookies {
 
 message InvalidFunctionAssociation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4770,7 +4770,7 @@ message InvalidFunctionAssociation {
 
 message InvalidGeoRestrictionParameter {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4780,7 +4780,7 @@ message InvalidGeoRestrictionParameter {
 
 message InvalidHeadersForS3Origin {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4790,7 +4790,7 @@ message InvalidHeadersForS3Origin {
 
 message InvalidIfMatchVersion {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4800,7 +4800,7 @@ message InvalidIfMatchVersion {
 
 message InvalidLambdaFunctionAssociation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4810,7 +4810,7 @@ message InvalidLambdaFunctionAssociation {
 
 message InvalidLocationCode {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4820,7 +4820,7 @@ message InvalidLocationCode {
 
 message InvalidMinimumProtocolVersion {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4830,7 +4830,7 @@ message InvalidMinimumProtocolVersion {
 
 message InvalidOrigin {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4840,7 +4840,7 @@ message InvalidOrigin {
 
 message InvalidOriginAccessControl {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4850,7 +4850,7 @@ message InvalidOriginAccessControl {
 
 message InvalidOriginAccessIdentity {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4860,7 +4860,7 @@ message InvalidOriginAccessIdentity {
 
 message InvalidOriginKeepaliveTimeout {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4870,7 +4870,7 @@ message InvalidOriginKeepaliveTimeout {
 
 message InvalidOriginReadTimeout {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4880,7 +4880,7 @@ message InvalidOriginReadTimeout {
 
 message InvalidProtocolSettings {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4890,7 +4890,7 @@ message InvalidProtocolSettings {
 
 message InvalidQueryStringParameters {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4900,7 +4900,7 @@ message InvalidQueryStringParameters {
 
 message InvalidRelativePath {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4910,7 +4910,7 @@ message InvalidRelativePath {
 
 message InvalidRequiredProtocol {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4920,7 +4920,7 @@ message InvalidRequiredProtocol {
 
 message InvalidResponseCode {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4930,7 +4930,7 @@ message InvalidResponseCode {
 
 message InvalidTTLOrder {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4940,7 +4940,7 @@ message InvalidTTLOrder {
 
 message InvalidTagging {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4950,7 +4950,7 @@ message InvalidTagging {
 
 message InvalidViewerCertificate {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -4960,7 +4960,7 @@ message InvalidViewerCertificate {
 
 message InvalidWebACLId {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5006,7 +5006,7 @@ message InvalidationList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -5044,7 +5044,7 @@ enum IpAddressType {
 
 message IpamCidrConfig {
 
-  string anycastip = 343152584;
+  optional string anycastip = 343152584;
 
   string cidr = 390242040;
 
@@ -5114,7 +5114,7 @@ enum ItemSelection {
 
 message KGKeyPairIds {
 
-  string keygroupid = 497763283;
+  optional string keygroupid = 497763283;
 
   KeyPairIds keypairids = 5804971;
 
@@ -5140,7 +5140,7 @@ message KeyGroup {
 
 message KeyGroupAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -5150,7 +5150,7 @@ message KeyGroupAlreadyExists {
 
 message KeyGroupConfig {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   repeated string items = 3553328;
 
@@ -5168,7 +5168,7 @@ message KeyGroupList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -5212,7 +5212,7 @@ message KeyValueStore {
 
   string name = 266367751;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -5248,7 +5248,7 @@ message KeyValueStoreList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -5296,7 +5296,7 @@ message LambdaFunctionAssociations {
 
 message ListAnycastIpListsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5314,7 +5314,7 @@ message ListAnycastIpListsResult {
 
 message ListCachePoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5336,7 +5336,7 @@ message ListCachePoliciesResult {
 
 message ListCloudFrontOriginAccessIdentitiesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5360,7 +5360,7 @@ message ListConflictingAliasesRequest {
 
   string distributionid = 142530791;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5378,7 +5378,7 @@ message ListConflictingAliasesResult {
 
 message ListConnectionFunctionsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5392,7 +5392,7 @@ message ListConnectionFunctionsResult {
 
   repeated ConnectionFunctionSummary connectionfunctions = 424487851;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -5402,7 +5402,7 @@ message ListConnectionGroupsRequest {
 
   ConnectionGroupAssociationFilter associationfilter = 309904703;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5414,7 +5414,7 @@ message ListConnectionGroupsResult {
 
   repeated ConnectionGroupSummary connectiongroups = 182892570;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -5422,7 +5422,7 @@ message ListConnectionGroupsResult {
 
 message ListContinuousDeploymentPoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5440,13 +5440,13 @@ message ListContinuousDeploymentPoliciesResult {
 
 message ListDistributionTenantsByCustomizationRequest {
 
-  string certificatearn = 92693880;
+  optional string certificatearn = 92693880;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string webaclarn = 82506659;
+  optional string webaclarn = 82506659;
 
 }
 
@@ -5456,7 +5456,7 @@ message ListDistributionTenantsByCustomizationResult {
 
   repeated DistributionTenantSummary distributiontenantlist = 354250620;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -5466,7 +5466,7 @@ message ListDistributionTenantsRequest {
 
   DistributionTenantAssociationFilter associationfilter = 309904703;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5478,7 +5478,7 @@ message ListDistributionTenantsResult {
 
   repeated DistributionTenantSummary distributiontenantlist = 354250620;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -5488,7 +5488,7 @@ message ListDistributionsByAnycastIpListIdRequest {
 
   string anycastiplistid = 431887875;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5508,7 +5508,7 @@ message ListDistributionsByCachePolicyIdRequest {
 
   string cachepolicyid = 431434163;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5528,7 +5528,7 @@ message ListDistributionsByConnectionFunctionRequest {
 
   string connectionfunctionidentifier = 241101239;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5548,7 +5548,7 @@ message ListDistributionsByConnectionModeRequest {
 
   ConnectionMode connectionmode = 82068023;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5568,7 +5568,7 @@ message ListDistributionsByKeyGroupRequest {
 
   string keygroupid = 497763283;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5586,7 +5586,7 @@ message ListDistributionsByKeyGroupResult {
 
 message ListDistributionsByOriginRequestPolicyIdRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5606,7 +5606,7 @@ message ListDistributionsByOriginRequestPolicyIdResult {
 
 message ListDistributionsByOwnedResourceRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5626,13 +5626,13 @@ message ListDistributionsByOwnedResourceResult {
 
 message ListDistributionsByRealtimeLogConfigRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string realtimelogconfigarn = 152963408;
+  optional string realtimelogconfigarn = 152963408;
 
-  string realtimelogconfigname = 503770540;
+  optional string realtimelogconfigname = 503770540;
 
 }
 
@@ -5648,7 +5648,7 @@ message ListDistributionsByRealtimeLogConfigResult {
 
 message ListDistributionsByResponseHeadersPolicyIdRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5668,7 +5668,7 @@ message ListDistributionsByResponseHeadersPolicyIdResult {
 
 message ListDistributionsByTrustStoreRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5688,7 +5688,7 @@ message ListDistributionsByTrustStoreResult {
 
 message ListDistributionsByVpcOriginIdRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5710,7 +5710,7 @@ message ListDistributionsByVpcOriginIdResult {
 
 message ListDistributionsByWebACLIdRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5734,7 +5734,7 @@ message ListDistributionsByWebACLIdResult {
 
 message ListDistributionsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5758,7 +5758,7 @@ message ListDomainConflictsRequest {
 
   DistributionResourceId domaincontrolvalidationresource = 405541194;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5770,7 +5770,7 @@ message ListDomainConflictsResult {
 
   repeated DomainConflict domainconflicts = 324386609;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -5778,7 +5778,7 @@ message ListDomainConflictsResult {
 
 message ListFieldLevelEncryptionConfigsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5796,7 +5796,7 @@ message ListFieldLevelEncryptionConfigsResult {
 
 message ListFieldLevelEncryptionProfilesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5814,7 +5814,7 @@ message ListFieldLevelEncryptionProfilesResult {
 
 message ListFunctionsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5836,7 +5836,7 @@ message ListInvalidationsForDistributionTenantRequest {
 
   string id = 384350465;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5858,7 +5858,7 @@ message ListInvalidationsRequest {
 
   string distributionid = 142530791;
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5878,7 +5878,7 @@ message ListInvalidationsResult {
 
 message ListKeyGroupsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5896,11 +5896,11 @@ message ListKeyGroupsResult {
 
 message ListKeyValueStoresRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -5916,7 +5916,7 @@ message ListKeyValueStoresResult {
 
 message ListOriginAccessControlsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5934,7 +5934,7 @@ message ListOriginAccessControlsResult {
 
 message ListOriginRequestPoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5954,7 +5954,7 @@ message ListOriginRequestPoliciesResult {
 
 message ListPublicKeysRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5972,7 +5972,7 @@ message ListPublicKeysResult {
 
 message ListRealtimeLogConfigsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -5990,7 +5990,7 @@ message ListRealtimeLogConfigsResult {
 
 message ListResponseHeadersPoliciesRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -6012,7 +6012,7 @@ message ListResponseHeadersPoliciesResult {
 
 message ListStreamingDistributionsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -6052,7 +6052,7 @@ message ListTagsForResourceResult {
 
 message ListTrustStoresRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -6062,7 +6062,7 @@ message ListTrustStoresRequest {
 
 message ListTrustStoresResult {
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   repeated TrustStoreSummary truststorelist = 73369611;
 
@@ -6072,7 +6072,7 @@ message ListTrustStoresResult {
 
 message ListVpcOriginsRequest {
 
-  string marker = 89353912;
+  optional string marker = 89353912;
 
   optional int32 maxitems = 506899220;
 
@@ -6092,13 +6092,13 @@ message ListVpcOriginsResult {
 
 message LoggingConfig {
 
-  string bucket = 55457112;
+  optional string bucket = 55457112;
 
   optional bool enabled = 478602303;
 
   optional bool includecookies = 385372575;
 
-  string prefix = 273996266;
+  optional string prefix = 273996266;
 
 }
 
@@ -6108,7 +6108,7 @@ message LoggingConfig {
 
 message ManagedCertificateDetails {
 
-  string certificatearn = 92693880;
+  optional string certificatearn = 92693880;
 
   ManagedCertificateStatus certificatestatus = 508638899;
 
@@ -6126,7 +6126,7 @@ message ManagedCertificateRequest {
 
   CertificateTransparencyLoggingPreference certificatetransparencyloggingpreference = 414636075;
 
-  string primarydomainname = 229268599;
+  optional string primarydomainname = 229268599;
 
   ValidationTokenHost validationtokenhost = 521935290;
 
@@ -6202,7 +6202,7 @@ enum MinimumProtocolVersion {
 
 message MissingBody {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6222,7 +6222,7 @@ message MonitoringSubscription {
 
 message MonitoringSubscriptionAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6232,7 +6232,7 @@ message MonitoringSubscriptionAlreadyExists {
 
 message NoSuchCachePolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6242,7 +6242,7 @@ message NoSuchCachePolicy {
 
 message NoSuchCloudFrontOriginAccessIdentity {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6252,7 +6252,7 @@ message NoSuchCloudFrontOriginAccessIdentity {
 
 message NoSuchContinuousDeploymentPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6262,7 +6262,7 @@ message NoSuchContinuousDeploymentPolicy {
 
 message NoSuchDistribution {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6272,7 +6272,7 @@ message NoSuchDistribution {
 
 message NoSuchFieldLevelEncryptionConfig {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6282,7 +6282,7 @@ message NoSuchFieldLevelEncryptionConfig {
 
 message NoSuchFieldLevelEncryptionProfile {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6292,7 +6292,7 @@ message NoSuchFieldLevelEncryptionProfile {
 
 message NoSuchFunctionExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6302,7 +6302,7 @@ message NoSuchFunctionExists {
 
 message NoSuchInvalidation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6312,7 +6312,7 @@ message NoSuchInvalidation {
 
 message NoSuchMonitoringSubscription {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6322,7 +6322,7 @@ message NoSuchMonitoringSubscription {
 
 message NoSuchOrigin {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6332,7 +6332,7 @@ message NoSuchOrigin {
 
 message NoSuchOriginAccessControl {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6342,7 +6342,7 @@ message NoSuchOriginAccessControl {
 
 message NoSuchOriginRequestPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6352,7 +6352,7 @@ message NoSuchOriginRequestPolicy {
 
 message NoSuchPublicKey {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6362,7 +6362,7 @@ message NoSuchPublicKey {
 
 message NoSuchRealtimeLogConfig {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6372,7 +6372,7 @@ message NoSuchRealtimeLogConfig {
 
 message NoSuchResource {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6382,7 +6382,7 @@ message NoSuchResource {
 
 message NoSuchResponseHeadersPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6392,7 +6392,7 @@ message NoSuchResponseHeadersPolicy {
 
 message NoSuchStreamingDistribution {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6414,9 +6414,9 @@ message Origin {
 
   string id = 384350465;
 
-  string originaccesscontrolid = 344049692;
+  optional string originaccesscontrolid = 344049692;
 
-  string originpath = 66064073;
+  optional string originpath = 66064073;
 
   OriginShield originshield = 482702287;
 
@@ -6446,7 +6446,7 @@ message OriginAccessControl {
 
 message OriginAccessControlAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6456,7 +6456,7 @@ message OriginAccessControlAlreadyExists {
 
 message OriginAccessControlConfig {
 
-  string description = 115243530;
+  optional string description = 115243530;
 
   string name = 266367751;
 
@@ -6474,7 +6474,7 @@ message OriginAccessControlConfig {
 
 message OriginAccessControlInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6492,7 +6492,7 @@ message OriginAccessControlList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -6529,6 +6529,8 @@ enum OriginAccessControlSigningBehaviors {
 enum OriginAccessControlSigningProtocols {
 
   ORIGIN_ACCESS_CONTROL_SIGNING_PROTOCOLS_SIGV4 = 0;
+
+  ORIGIN_ACCESS_CONTROL_SIGNING_PROTOCOLS_SIGV4A = 1;
 
 }
 
@@ -6676,7 +6678,7 @@ message OriginRequestPolicy {
 
 message OriginRequestPolicyAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6686,7 +6688,7 @@ message OriginRequestPolicyAlreadyExists {
 
 message OriginRequestPolicyConfig {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   OriginRequestPolicyCookiesConfig cookiesconfig = 243885539;
 
@@ -6758,7 +6760,7 @@ message OriginRequestPolicyHeadersConfig {
 
 message OriginRequestPolicyInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6772,7 +6774,7 @@ message OriginRequestPolicyList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -6834,7 +6836,7 @@ message OriginShield {
 
   optional bool enabled = 478602303;
 
-  string originshieldregion = 448983227;
+  optional string originshieldregion = 448983227;
 
 }
 
@@ -6932,7 +6934,7 @@ message Paths {
 
 message PreconditionFailed {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6970,7 +6972,7 @@ message PublicKey {
 
 message PublicKeyAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -6982,7 +6984,7 @@ message PublicKeyConfig {
 
   string callerreference = 151211160;
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string encodedkey = 13297;
 
@@ -6996,7 +6998,7 @@ message PublicKeyConfig {
 
 message PublicKeyInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7010,7 +7012,7 @@ message PublicKeyList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -7022,7 +7024,7 @@ message PublicKeyList {
 
 message PublicKeySummary {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   string createdtime = 121435635;
 
@@ -7084,7 +7086,7 @@ message PutResourcePolicyRequest {
 
 message PutResourcePolicyResult {
 
-  string resourcearn = 364280877;
+  optional string resourcearn = 364280877;
 
 }
 
@@ -7118,7 +7120,7 @@ message QueryArgProfileConfig {
 
 message QueryArgProfileEmpty {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7182,7 +7184,7 @@ message RealtimeLogConfig {
 
 message RealtimeLogConfigAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7192,7 +7194,7 @@ message RealtimeLogConfigAlreadyExists {
 
 message RealtimeLogConfigInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7202,7 +7204,7 @@ message RealtimeLogConfigInUse {
 
 message RealtimeLogConfigOwnerMismatch {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7220,7 +7222,7 @@ message RealtimeLogConfigs {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
 }
 
@@ -7272,7 +7274,7 @@ enum ReferrerPolicyList {
 
 message ResourceInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7282,7 +7284,7 @@ message ResourceInUse {
 
 message ResourceNotDisabled {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7376,7 +7378,7 @@ message ResponseHeadersPolicyAccessControlExposeHeaders {
 
 message ResponseHeadersPolicyAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7386,7 +7388,7 @@ message ResponseHeadersPolicyAlreadyExists {
 
 message ResponseHeadersPolicyConfig {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
   ResponseHeadersPolicyCorsConfig corsconfig = 238574547;
 
@@ -7490,7 +7492,7 @@ message ResponseHeadersPolicyFrameOptions {
 
 message ResponseHeadersPolicyInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7504,7 +7506,7 @@ message ResponseHeadersPolicyList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -7572,7 +7574,7 @@ message ResponseHeadersPolicyServerTimingHeadersConfig {
 
   optional bool enabled = 478602303;
 
-  double samplingrate = 272929747;
+  optional double samplingrate = 272929747;
 
 }
 
@@ -7626,7 +7628,7 @@ message ResponseHeadersPolicyXSSProtection {
 
   optional bool protection = 411601691;
 
-  string reporturi = 176037092;
+  optional string reporturi = 176037092;
 
 }
 
@@ -7694,7 +7696,7 @@ message SessionStickinessConfig {
 
 message Signer {
 
-  string awsaccountnumber = 397632853;
+  optional string awsaccountnumber = 397632853;
 
   KeyPairIds keypairids = 5804971;
 
@@ -7732,7 +7734,7 @@ message StagingDistributionDnsNames {
 
 message StagingDistributionInUse {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7762,7 +7764,7 @@ message StreamingDistribution {
 
   string id = 384350465;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
   string status = 6222352;
 
@@ -7776,7 +7778,7 @@ message StreamingDistribution {
 
 message StreamingDistributionAlreadyExists {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7830,7 +7832,7 @@ message StreamingDistributionList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -7842,7 +7844,7 @@ message StreamingDistributionList {
 
 message StreamingDistributionNotDisabled {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -7896,9 +7898,9 @@ message StreamingLoggingConfig {
 
 message StringSchemaConfig {
 
-  string comment = 407871487;
+  optional string comment = 407871487;
 
-  string defaultvalue = 218709920;
+  optional string defaultvalue = 218709920;
 
   optional bool required = 300200513;
 
@@ -7912,7 +7914,7 @@ message Tag {
 
   string key = 219859213;
 
-  string value = 289929579;
+  optional string value = 289929579;
 
 }
 
@@ -7986,7 +7988,7 @@ message TestConnectionFunctionResult {
 
 message TestFunctionFailed {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8018,13 +8020,13 @@ message TestFunctionResult {
 
 message TestResult {
 
-  string computeutilization = 247332359;
+  optional string computeutilization = 247332359;
 
-  string functionerrormessage = 424938733;
+  optional string functionerrormessage = 424938733;
 
   repeated string functionexecutionlogs = 344853419;
 
-  string functionoutput = 171161345;
+  optional string functionoutput = 171161345;
 
   FunctionSummary functionsummary = 523316264;
 
@@ -8036,7 +8038,7 @@ message TestResult {
 
 message TooLongCSPInResponseHeadersPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8046,7 +8048,7 @@ message TooLongCSPInResponseHeadersPolicy {
 
 message TooManyCacheBehaviors {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8056,7 +8058,7 @@ message TooManyCacheBehaviors {
 
 message TooManyCachePolicies {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8066,7 +8068,7 @@ message TooManyCachePolicies {
 
 message TooManyCertificates {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8076,7 +8078,7 @@ message TooManyCertificates {
 
 message TooManyCloudFrontOriginAccessIdentities {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8086,7 +8088,7 @@ message TooManyCloudFrontOriginAccessIdentities {
 
 message TooManyContinuousDeploymentPolicies {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8096,7 +8098,7 @@ message TooManyContinuousDeploymentPolicies {
 
 message TooManyCookieNamesInWhiteList {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8106,7 +8108,7 @@ message TooManyCookieNamesInWhiteList {
 
 message TooManyCookiesInCachePolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8116,7 +8118,7 @@ message TooManyCookiesInCachePolicy {
 
 message TooManyCookiesInOriginRequestPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8126,7 +8128,7 @@ message TooManyCookiesInOriginRequestPolicy {
 
 message TooManyCustomHeadersInResponseHeadersPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8136,7 +8138,7 @@ message TooManyCustomHeadersInResponseHeadersPolicy {
 
 message TooManyDistributionCNAMEs {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8146,7 +8148,7 @@ message TooManyDistributionCNAMEs {
 
 message TooManyDistributions {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8156,7 +8158,7 @@ message TooManyDistributions {
 
 message TooManyDistributionsAssociatedToCachePolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8166,7 +8168,7 @@ message TooManyDistributionsAssociatedToCachePolicy {
 
 message TooManyDistributionsAssociatedToFieldLevelEncryptionConfig {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8176,7 +8178,7 @@ message TooManyDistributionsAssociatedToFieldLevelEncryptionConfig {
 
 message TooManyDistributionsAssociatedToKeyGroup {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8186,7 +8188,7 @@ message TooManyDistributionsAssociatedToKeyGroup {
 
 message TooManyDistributionsAssociatedToOriginAccessControl {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8196,7 +8198,7 @@ message TooManyDistributionsAssociatedToOriginAccessControl {
 
 message TooManyDistributionsAssociatedToOriginRequestPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8206,7 +8208,7 @@ message TooManyDistributionsAssociatedToOriginRequestPolicy {
 
 message TooManyDistributionsAssociatedToResponseHeadersPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8216,7 +8218,7 @@ message TooManyDistributionsAssociatedToResponseHeadersPolicy {
 
 message TooManyDistributionsWithFunctionAssociations {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8226,7 +8228,7 @@ message TooManyDistributionsWithFunctionAssociations {
 
 message TooManyDistributionsWithLambdaAssociations {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8236,7 +8238,7 @@ message TooManyDistributionsWithLambdaAssociations {
 
 message TooManyDistributionsWithSingleFunctionARN {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8246,7 +8248,7 @@ message TooManyDistributionsWithSingleFunctionARN {
 
 message TooManyFieldLevelEncryptionConfigs {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8256,7 +8258,7 @@ message TooManyFieldLevelEncryptionConfigs {
 
 message TooManyFieldLevelEncryptionContentTypeProfiles {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8266,7 +8268,7 @@ message TooManyFieldLevelEncryptionContentTypeProfiles {
 
 message TooManyFieldLevelEncryptionEncryptionEntities {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8276,7 +8278,7 @@ message TooManyFieldLevelEncryptionEncryptionEntities {
 
 message TooManyFieldLevelEncryptionFieldPatterns {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8286,7 +8288,7 @@ message TooManyFieldLevelEncryptionFieldPatterns {
 
 message TooManyFieldLevelEncryptionProfiles {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8296,7 +8298,7 @@ message TooManyFieldLevelEncryptionProfiles {
 
 message TooManyFieldLevelEncryptionQueryArgProfiles {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8306,7 +8308,7 @@ message TooManyFieldLevelEncryptionQueryArgProfiles {
 
 message TooManyFunctionAssociations {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8316,7 +8318,7 @@ message TooManyFunctionAssociations {
 
 message TooManyFunctions {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8326,7 +8328,7 @@ message TooManyFunctions {
 
 message TooManyHeadersInCachePolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8336,7 +8338,7 @@ message TooManyHeadersInCachePolicy {
 
 message TooManyHeadersInForwardedValues {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8346,7 +8348,7 @@ message TooManyHeadersInForwardedValues {
 
 message TooManyHeadersInOriginRequestPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8356,7 +8358,7 @@ message TooManyHeadersInOriginRequestPolicy {
 
 message TooManyInvalidationsInProgress {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8366,7 +8368,7 @@ message TooManyInvalidationsInProgress {
 
 message TooManyKeyGroups {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8376,7 +8378,7 @@ message TooManyKeyGroups {
 
 message TooManyKeyGroupsAssociatedToDistribution {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8386,7 +8388,7 @@ message TooManyKeyGroupsAssociatedToDistribution {
 
 message TooManyLambdaFunctionAssociations {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8396,7 +8398,7 @@ message TooManyLambdaFunctionAssociations {
 
 message TooManyOriginAccessControls {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8406,7 +8408,7 @@ message TooManyOriginAccessControls {
 
 message TooManyOriginCustomHeaders {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8416,7 +8418,7 @@ message TooManyOriginCustomHeaders {
 
 message TooManyOriginGroupsPerDistribution {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8426,7 +8428,7 @@ message TooManyOriginGroupsPerDistribution {
 
 message TooManyOriginRequestPolicies {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8436,7 +8438,7 @@ message TooManyOriginRequestPolicies {
 
 message TooManyOrigins {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8446,7 +8448,7 @@ message TooManyOrigins {
 
 message TooManyPublicKeys {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8456,7 +8458,7 @@ message TooManyPublicKeys {
 
 message TooManyPublicKeysInKeyGroup {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8466,7 +8468,7 @@ message TooManyPublicKeysInKeyGroup {
 
 message TooManyQueryStringParameters {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8476,7 +8478,7 @@ message TooManyQueryStringParameters {
 
 message TooManyQueryStringsInCachePolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8486,7 +8488,7 @@ message TooManyQueryStringsInCachePolicy {
 
 message TooManyQueryStringsInOriginRequestPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8496,7 +8498,7 @@ message TooManyQueryStringsInOriginRequestPolicy {
 
 message TooManyRealtimeLogConfigs {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8506,7 +8508,7 @@ message TooManyRealtimeLogConfigs {
 
 message TooManyRemoveHeadersInResponseHeadersPolicy {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8516,7 +8518,7 @@ message TooManyRemoveHeadersInResponseHeadersPolicy {
 
 message TooManyResponseHeadersPolicies {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8526,7 +8528,7 @@ message TooManyResponseHeadersPolicies {
 
 message TooManyStreamingDistributionCNAMEs {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8536,7 +8538,7 @@ message TooManyStreamingDistributionCNAMEs {
 
 message TooManyStreamingDistributions {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8546,7 +8548,7 @@ message TooManyStreamingDistributions {
 
 message TooManyTrustedSigners {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8570,17 +8572,17 @@ message TrafficConfig {
 
 message TrustStore {
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string lastmodifiedtime = 236912992;
+  optional string lastmodifiedtime = 236912992;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int32 numberofcacertificates = 203958970;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
   TrustStoreStatus status = 6222352;
 
@@ -8632,7 +8634,7 @@ message TrustStoreSummary {
 
   int32 numberofcacertificates = 203958970;
 
-  string reason = 20005178;
+  optional string reason = 20005178;
 
   TrustStoreStatus status = 6222352;
 
@@ -8644,7 +8646,7 @@ message TrustStoreSummary {
 
 message TrustedKeyGroupDoesNotExist {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8668,7 +8670,7 @@ message TrustedKeyGroups {
 
 message TrustedSignerDoesNotExist {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8692,7 +8694,7 @@ message TrustedSigners {
 
 message UnsupportedOperation {
 
-  string message = 235854213;
+  optional string message = 235854213;
 
 }
 
@@ -8728,7 +8730,7 @@ message UpdateAnycastIpListResult {
 
   AnycastIpList anycastiplist = 190550768 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8740,7 +8742,7 @@ message UpdateCachePolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -8750,7 +8752,7 @@ message UpdateCachePolicyResult {
 
   CachePolicy cachepolicy = 439848032 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8764,7 +8766,7 @@ message UpdateCloudFrontOriginAccessIdentityRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -8776,7 +8778,7 @@ message UpdateCloudFrontOriginAccessIdentityResult {
 
   CloudFrontOriginAccessIdentity cloudfrontoriginaccessidentity = 109497984 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8800,7 +8802,7 @@ message UpdateConnectionFunctionResult {
 
   ConnectionFunctionSummary connectionfunctionsummary = 62528396 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8808,7 +8810,7 @@ message UpdateConnectionFunctionResult {
 
 message UpdateConnectionGroupRequest {
 
-  string anycastiplistid = 431887875;
+  optional string anycastiplistid = 431887875;
 
   optional bool enabled = 478602303;
 
@@ -8826,7 +8828,7 @@ message UpdateConnectionGroupResult {
 
   ConnectionGroup connectiongroup = 517217105 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8838,7 +8840,7 @@ message UpdateContinuousDeploymentPolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -8848,7 +8850,7 @@ message UpdateContinuousDeploymentPolicyResult {
 
   ContinuousDeploymentPolicy continuousdeploymentpolicy = 36616788 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8862,7 +8864,7 @@ message UpdateDistributionRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -8874,7 +8876,7 @@ message UpdateDistributionResult {
 
   Distribution distribution = 105183308 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8882,11 +8884,11 @@ message UpdateDistributionResult {
 
 message UpdateDistributionTenantRequest {
 
-  string connectiongroupid = 169532206;
+  optional string connectiongroupid = 169532206;
 
   Customizations customizations = 70755200;
 
-  string distributionid = 142530791;
+  optional string distributionid = 142530791;
 
   repeated DomainItem domains = 149701959;
 
@@ -8908,7 +8910,7 @@ message UpdateDistributionTenantResult {
 
   DistributionTenant distributiontenant = 510856916 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8918,9 +8920,9 @@ message UpdateDistributionWithStagingConfigRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
-  string stagingdistributionid = 120990786;
+  optional string stagingdistributionid = 120990786;
 
 }
 
@@ -8930,7 +8932,7 @@ message UpdateDistributionWithStagingConfigResult {
 
   Distribution distribution = 105183308 [(aws.http_payload) = true];
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
 }
 
@@ -8940,7 +8942,7 @@ message UpdateDomainAssociationRequest {
 
   string domain = 505186578;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   DistributionResourceId targetresource = 523474061;
 
@@ -8950,11 +8952,11 @@ message UpdateDomainAssociationRequest {
 
 message UpdateDomainAssociationResult {
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
-  string resourceid = 526146833;
+  optional string resourceid = 526146833;
 
 }
 
@@ -8966,7 +8968,7 @@ message UpdateFieldLevelEncryptionConfigRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -8974,7 +8976,7 @@ message UpdateFieldLevelEncryptionConfigRequest {
 
 message UpdateFieldLevelEncryptionConfigResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryption fieldlevelencryption = 473382747 [(aws.http_payload) = true];
 
@@ -8988,7 +8990,7 @@ message UpdateFieldLevelEncryptionProfileRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
 }
 
@@ -8996,7 +8998,7 @@ message UpdateFieldLevelEncryptionProfileRequest {
 
 message UpdateFieldLevelEncryptionProfileResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FieldLevelEncryptionProfile fieldlevelencryptionprofile = 344546136 [(aws.http_payload) = true];
 
@@ -9020,7 +9022,7 @@ message UpdateFunctionRequest {
 
 message UpdateFunctionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   FunctionSummary functionsummary = 523316264 [(aws.http_payload) = true];
 
@@ -9032,7 +9034,7 @@ message UpdateKeyGroupRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   KeyGroupConfig keygroupconfig = 143012494 [(aws.http_payload) = true];
 
@@ -9042,7 +9044,7 @@ message UpdateKeyGroupRequest {
 
 message UpdateKeyGroupResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyGroup keygroup = 518748096 [(aws.http_payload) = true];
 
@@ -9064,7 +9066,7 @@ message UpdateKeyValueStoreRequest {
 
 message UpdateKeyValueStoreResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   KeyValueStore keyvaluestore = 151113103 [(aws.http_payload) = true];
 
@@ -9076,7 +9078,7 @@ message UpdateOriginAccessControlRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   OriginAccessControlConfig originaccesscontrolconfig = 143834977 [(aws.http_payload) = true];
 
@@ -9086,7 +9088,7 @@ message UpdateOriginAccessControlRequest {
 
 message UpdateOriginAccessControlResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   OriginAccessControl originaccesscontrol = 238302375 [(aws.http_payload) = true];
 
@@ -9098,7 +9100,7 @@ message UpdateOriginRequestPolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   OriginRequestPolicyConfig originrequestpolicyconfig = 37078133 [(aws.http_payload) = true];
 
@@ -9108,7 +9110,7 @@ message UpdateOriginRequestPolicyRequest {
 
 message UpdateOriginRequestPolicyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   OriginRequestPolicy originrequestpolicy = 386733531 [(aws.http_payload) = true];
 
@@ -9120,7 +9122,7 @@ message UpdatePublicKeyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   PublicKeyConfig publickeyconfig = 228537966 [(aws.http_payload) = true];
 
@@ -9130,7 +9132,7 @@ message UpdatePublicKeyRequest {
 
 message UpdatePublicKeyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   PublicKey publickey = 167335776 [(aws.http_payload) = true];
 
@@ -9140,13 +9142,13 @@ message UpdatePublicKeyResult {
 
 message UpdateRealtimeLogConfigRequest {
 
-  string arn = 397135389;
+  optional string arn = 397135389;
 
   repeated EndPoint endpoints = 436023390;
 
   repeated string fields = 319339933;
 
-  string name = 266367751;
+  optional string name = 266367751;
 
   optional int64 samplingrate = 272929747;
 
@@ -9166,7 +9168,7 @@ message UpdateResponseHeadersPolicyRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   ResponseHeadersPolicyConfig responseheaderspolicyconfig = 159056825 [(aws.http_payload) = true];
 
@@ -9176,7 +9178,7 @@ message UpdateResponseHeadersPolicyRequest {
 
 message UpdateResponseHeadersPolicyResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   ResponseHeadersPolicy responseheaderspolicy = 418204719 [(aws.http_payload) = true];
 
@@ -9190,7 +9192,7 @@ message UpdateStreamingDistributionRequest {
 
   string id = 384350465;
 
-  string ifmatch = 93178704;
+  optional string ifmatch = 93178704;
 
   StreamingDistributionConfig streamingdistributionconfig = 291115944 [(aws.http_payload) = true];
 
@@ -9202,7 +9204,7 @@ message UpdateStreamingDistributionRequest {
 
 message UpdateStreamingDistributionResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   StreamingDistribution streamingdistribution = 294813830 [(aws.http_payload) = true];
 
@@ -9226,7 +9228,7 @@ message UpdateTrustStoreRequest {
 
 message UpdateTrustStoreResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   TrustStore truststore = 224815327 [(aws.http_payload) = true];
 
@@ -9248,7 +9250,7 @@ message UpdateVpcOriginRequest {
 
 message UpdateVpcOriginResult {
 
-  string etag = 313323393;
+  optional string etag = 313323393;
 
   VpcOrigin vpcorigin = 159181387 [(aws.http_payload) = true];
 
@@ -9262,9 +9264,9 @@ message ValidationTokenDetail {
 
   string domain = 505186578;
 
-  string redirectfrom = 52853514;
+  optional string redirectfrom = 52853514;
 
-  string redirectto = 472243857;
+  optional string redirectto = 472243857;
 
 }
 
@@ -9282,7 +9284,7 @@ enum ValidationTokenHost {
 
 message VerifyDnsConfigurationRequest {
 
-  string domain = 505186578;
+  optional string domain = 505186578;
 
   string identifier = 41865311;
 
@@ -9302,15 +9304,15 @@ message VerifyDnsConfigurationResult {
 
 message ViewerCertificate {
 
-  string acmcertificatearn = 294529483;
+  optional string acmcertificatearn = 294529483;
 
-  string certificate = 198060817;
+  optional string certificate = 198060817;
 
   CertificateSource certificatesource = 63765974;
 
   optional bool cloudfrontdefaultcertificate = 529306422;
 
-  string iamcertificateid = 92232821;
+  optional string iamcertificateid = 92232821;
 
   MinimumProtocolVersion minimumprotocolversion = 367416622;
 
@@ -9360,7 +9362,7 @@ enum ViewerProtocolPolicy {
 
 message VpcOrigin {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
   string arn = 402345373;
 
@@ -9386,7 +9388,7 @@ message VpcOriginConfig {
 
   optional int32 originreadtimeout = 387717023;
 
-  string owneraccountid = 369721751;
+  optional string owneraccountid = 369721751;
 
   string vpcoriginid = 365404648;
 
@@ -9426,7 +9428,7 @@ message VpcOriginList {
 
   int32 maxitems = 506899220;
 
-  string nextmarker = 531333283;
+  optional string nextmarker = 531333283;
 
   int32 quantity = 200749817;
 
@@ -9438,7 +9440,7 @@ message VpcOriginList {
 
 message VpcOriginSummary {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
   string arn = 402345373;
 
@@ -9464,7 +9466,7 @@ message WebAclCustomization {
 
   CustomizationActionType action = 175614240;
 
-  string arn = 402345373;
+  optional string arn = 402345373;
 
 }
 

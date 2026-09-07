@@ -1422,8 +1422,8 @@ func (VpcLinkStatus) EnumDescriptor() ([]byte, []int) {
 
 type AccessLogSettings struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Destinationarn string                 `protobuf:"bytes,427601315,opt,name=destinationarn,proto3" json:"destinationarn,omitempty"`
-	Format         string                 `protobuf:"bytes,429753683,opt,name=format,proto3" json:"format,omitempty"`
+	Destinationarn *string                `protobuf:"bytes,427601315,opt,name=destinationarn,proto3,oneof" json:"destinationarn,omitempty"`
+	Format         *string                `protobuf:"bytes,429753683,opt,name=format,proto3,oneof" json:"format,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -1459,23 +1459,23 @@ func (*AccessLogSettings) Descriptor() ([]byte, []int) {
 }
 
 func (x *AccessLogSettings) GetDestinationarn() string {
-	if x != nil {
-		return x.Destinationarn
+	if x != nil && x.Destinationarn != nil {
+		return *x.Destinationarn
 	}
 	return ""
 }
 
 func (x *AccessLogSettings) GetFormat() string {
-	if x != nil {
-		return x.Format
+	if x != nil && x.Format != nil {
+		return *x.Format
 	}
 	return ""
 }
 
 type Account struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Apikeyversion     string                 `protobuf:"bytes,148957539,opt,name=apikeyversion,proto3" json:"apikeyversion,omitempty"`
-	Cloudwatchrolearn string                 `protobuf:"bytes,144858329,opt,name=cloudwatchrolearn,proto3" json:"cloudwatchrolearn,omitempty"`
+	Apikeyversion     *string                `protobuf:"bytes,148957539,opt,name=apikeyversion,proto3,oneof" json:"apikeyversion,omitempty"`
+	Cloudwatchrolearn *string                `protobuf:"bytes,144858329,opt,name=cloudwatchrolearn,proto3,oneof" json:"cloudwatchrolearn,omitempty"`
 	Features          []string               `protobuf:"bytes,528712651,rep,name=features,proto3" json:"features,omitempty"`
 	Throttlesettings  *ThrottleSettings      `protobuf:"bytes,165000097,opt,name=throttlesettings,proto3" json:"throttlesettings,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -1513,15 +1513,15 @@ func (*Account) Descriptor() ([]byte, []int) {
 }
 
 func (x *Account) GetApikeyversion() string {
-	if x != nil {
-		return x.Apikeyversion
+	if x != nil && x.Apikeyversion != nil {
+		return *x.Apikeyversion
 	}
 	return ""
 }
 
 func (x *Account) GetCloudwatchrolearn() string {
-	if x != nil {
-		return x.Cloudwatchrolearn
+	if x != nil && x.Cloudwatchrolearn != nil {
+		return *x.Cloudwatchrolearn
 	}
 	return ""
 }
@@ -1542,16 +1542,16 @@ func (x *Account) GetThrottlesettings() *ThrottleSettings {
 
 type ApiKey struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Createddate     string                 `protobuf:"bytes,53061200,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Customerid      string                 `protobuf:"bytes,227830269,opt,name=customerid,proto3" json:"customerid,omitempty"`
-	Description     string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Createddate     *string                `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Customerid      *string                `protobuf:"bytes,227830269,opt,name=customerid,proto3,oneof" json:"customerid,omitempty"`
+	Description     *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Enabled         *bool                  `protobuf:"varint,49525663,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
-	Id              string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Lastupdateddate string                 `protobuf:"bytes,448453361,opt,name=lastupdateddate,proto3" json:"lastupdateddate,omitempty"`
-	Name            string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Id              *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Lastupdateddate *string                `protobuf:"bytes,448453361,opt,name=lastupdateddate,proto3,oneof" json:"lastupdateddate,omitempty"`
+	Name            *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Stagekeys       []string               `protobuf:"bytes,287991830,rep,name=stagekeys,proto3" json:"stagekeys,omitempty"`
 	Tags            map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Value           string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Value           *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -1587,22 +1587,22 @@ func (*ApiKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *ApiKey) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *ApiKey) GetCustomerid() string {
-	if x != nil {
-		return x.Customerid
+	if x != nil && x.Customerid != nil {
+		return *x.Customerid
 	}
 	return ""
 }
 
 func (x *ApiKey) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -1615,22 +1615,22 @@ func (x *ApiKey) GetEnabled() bool {
 }
 
 func (x *ApiKey) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *ApiKey) GetLastupdateddate() string {
-	if x != nil {
-		return x.Lastupdateddate
+	if x != nil && x.Lastupdateddate != nil {
+		return *x.Lastupdateddate
 	}
 	return ""
 }
 
 func (x *ApiKey) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -1650,8 +1650,8 @@ func (x *ApiKey) GetTags() map[string]string {
 }
 
 func (x *ApiKey) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -1711,7 +1711,7 @@ func (x *ApiKeyIds) GetWarnings() []string {
 type ApiKeys struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*ApiKey              `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Warnings      []string               `protobuf:"bytes,185617301,rep,name=warnings,proto3" json:"warnings,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1755,8 +1755,8 @@ func (x *ApiKeys) GetItems() []*ApiKey {
 }
 
 func (x *ApiKeys) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -1770,8 +1770,8 @@ func (x *ApiKeys) GetWarnings() []string {
 
 type ApiStage struct {
 	state         protoimpl.MessageState       `protogen:"open.v1"`
-	Apiid         string                       `protobuf:"bytes,113380971,opt,name=apiid,proto3" json:"apiid,omitempty"`
-	Stage         string                       `protobuf:"bytes,140155438,opt,name=stage,proto3" json:"stage,omitempty"`
+	Apiid         *string                      `protobuf:"bytes,113380971,opt,name=apiid,proto3,oneof" json:"apiid,omitempty"`
+	Stage         *string                      `protobuf:"bytes,140155438,opt,name=stage,proto3,oneof" json:"stage,omitempty"`
 	Throttle      map[string]*ThrottleSettings `protobuf:"bytes,395260638,rep,name=throttle,proto3" json:"throttle,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1808,15 +1808,15 @@ func (*ApiStage) Descriptor() ([]byte, []int) {
 }
 
 func (x *ApiStage) GetApiid() string {
-	if x != nil {
-		return x.Apiid
+	if x != nil && x.Apiid != nil {
+		return *x.Apiid
 	}
 	return ""
 }
 
 func (x *ApiStage) GetStage() string {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return ""
 }
@@ -1830,14 +1830,14 @@ func (x *ApiStage) GetThrottle() map[string]*ThrottleSettings {
 
 type Authorizer struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Authtype                     string                 `protobuf:"bytes,162773848,opt,name=authtype,proto3" json:"authtype,omitempty"`
-	Authorizercredentials        string                 `protobuf:"bytes,233575233,opt,name=authorizercredentials,proto3" json:"authorizercredentials,omitempty"`
+	Authtype                     *string                `protobuf:"bytes,162773848,opt,name=authtype,proto3,oneof" json:"authtype,omitempty"`
+	Authorizercredentials        *string                `protobuf:"bytes,233575233,opt,name=authorizercredentials,proto3,oneof" json:"authorizercredentials,omitempty"`
 	Authorizerresultttlinseconds *int32                 `protobuf:"varint,135440208,opt,name=authorizerresultttlinseconds,proto3,oneof" json:"authorizerresultttlinseconds,omitempty"`
-	Authorizeruri                string                 `protobuf:"bytes,525146137,opt,name=authorizeruri,proto3" json:"authorizeruri,omitempty"`
-	Id                           string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Identitysource               string                 `protobuf:"bytes,285615231,opt,name=identitysource,proto3" json:"identitysource,omitempty"`
-	Identityvalidationexpression string                 `protobuf:"bytes,227211199,opt,name=identityvalidationexpression,proto3" json:"identityvalidationexpression,omitempty"`
-	Name                         string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Authorizeruri                *string                `protobuf:"bytes,525146137,opt,name=authorizeruri,proto3,oneof" json:"authorizeruri,omitempty"`
+	Id                           *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Identitysource               *string                `protobuf:"bytes,285615231,opt,name=identitysource,proto3,oneof" json:"identitysource,omitempty"`
+	Identityvalidationexpression *string                `protobuf:"bytes,227211199,opt,name=identityvalidationexpression,proto3,oneof" json:"identityvalidationexpression,omitempty"`
+	Name                         *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Providerarns                 []string               `protobuf:"bytes,301486689,rep,name=providerarns,proto3" json:"providerarns,omitempty"`
 	Type                         AuthorizerType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.AuthorizerType" json:"type,omitempty"`
 	unknownFields                protoimpl.UnknownFields
@@ -1875,15 +1875,15 @@ func (*Authorizer) Descriptor() ([]byte, []int) {
 }
 
 func (x *Authorizer) GetAuthtype() string {
-	if x != nil {
-		return x.Authtype
+	if x != nil && x.Authtype != nil {
+		return *x.Authtype
 	}
 	return ""
 }
 
 func (x *Authorizer) GetAuthorizercredentials() string {
-	if x != nil {
-		return x.Authorizercredentials
+	if x != nil && x.Authorizercredentials != nil {
+		return *x.Authorizercredentials
 	}
 	return ""
 }
@@ -1896,36 +1896,36 @@ func (x *Authorizer) GetAuthorizerresultttlinseconds() int32 {
 }
 
 func (x *Authorizer) GetAuthorizeruri() string {
-	if x != nil {
-		return x.Authorizeruri
+	if x != nil && x.Authorizeruri != nil {
+		return *x.Authorizeruri
 	}
 	return ""
 }
 
 func (x *Authorizer) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *Authorizer) GetIdentitysource() string {
-	if x != nil {
-		return x.Identitysource
+	if x != nil && x.Identitysource != nil {
+		return *x.Identitysource
 	}
 	return ""
 }
 
 func (x *Authorizer) GetIdentityvalidationexpression() string {
-	if x != nil {
-		return x.Identityvalidationexpression
+	if x != nil && x.Identityvalidationexpression != nil {
+		return *x.Identityvalidationexpression
 	}
 	return ""
 }
 
 func (x *Authorizer) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -1947,7 +1947,7 @@ func (x *Authorizer) GetType() AuthorizerType {
 type Authorizers struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*Authorizer          `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1990,15 +1990,15 @@ func (x *Authorizers) GetItems() []*Authorizer {
 }
 
 func (x *Authorizers) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type BadRequestException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2034,17 +2034,17 @@ func (*BadRequestException) Descriptor() ([]byte, []int) {
 }
 
 func (x *BadRequestException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type BasePathMapping struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Basepath      string                 `protobuf:"bytes,267528880,opt,name=basepath,proto3" json:"basepath,omitempty"`
-	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Stage         string                 `protobuf:"bytes,140155438,opt,name=stage,proto3" json:"stage,omitempty"`
+	Basepath      *string                `protobuf:"bytes,267528880,opt,name=basepath,proto3,oneof" json:"basepath,omitempty"`
+	Restapiid     *string                `protobuf:"bytes,383799833,opt,name=restapiid,proto3,oneof" json:"restapiid,omitempty"`
+	Stage         *string                `protobuf:"bytes,140155438,opt,name=stage,proto3,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2080,22 +2080,22 @@ func (*BasePathMapping) Descriptor() ([]byte, []int) {
 }
 
 func (x *BasePathMapping) GetBasepath() string {
-	if x != nil {
-		return x.Basepath
+	if x != nil && x.Basepath != nil {
+		return *x.Basepath
 	}
 	return ""
 }
 
 func (x *BasePathMapping) GetRestapiid() string {
-	if x != nil {
-		return x.Restapiid
+	if x != nil && x.Restapiid != nil {
+		return *x.Restapiid
 	}
 	return ""
 }
 
 func (x *BasePathMapping) GetStage() string {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return ""
 }
@@ -2103,7 +2103,7 @@ func (x *BasePathMapping) GetStage() string {
 type BasePathMappings struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*BasePathMapping     `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2146,16 +2146,16 @@ func (x *BasePathMappings) GetItems() []*BasePathMapping {
 }
 
 func (x *BasePathMappings) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type CanarySettings struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Deploymentid           string                 `protobuf:"bytes,439369188,opt,name=deploymentid,proto3" json:"deploymentid,omitempty"`
-	Percenttraffic         float64                `protobuf:"fixed64,147177864,opt,name=percenttraffic,proto3" json:"percenttraffic,omitempty"`
+	Deploymentid           *string                `protobuf:"bytes,439369188,opt,name=deploymentid,proto3,oneof" json:"deploymentid,omitempty"`
+	Percenttraffic         *float64               `protobuf:"fixed64,147177864,opt,name=percenttraffic,proto3,oneof" json:"percenttraffic,omitempty"`
 	Stagevariableoverrides map[string]string      `protobuf:"bytes,221124259,rep,name=stagevariableoverrides,proto3" json:"stagevariableoverrides,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Usestagecache          *bool                  `protobuf:"varint,179841697,opt,name=usestagecache,proto3,oneof" json:"usestagecache,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -2193,15 +2193,15 @@ func (*CanarySettings) Descriptor() ([]byte, []int) {
 }
 
 func (x *CanarySettings) GetDeploymentid() string {
-	if x != nil {
-		return x.Deploymentid
+	if x != nil && x.Deploymentid != nil {
+		return *x.Deploymentid
 	}
 	return ""
 }
 
 func (x *CanarySettings) GetPercenttraffic() float64 {
-	if x != nil {
-		return x.Percenttraffic
+	if x != nil && x.Percenttraffic != nil {
+		return *x.Percenttraffic
 	}
 	return 0
 }
@@ -2222,11 +2222,11 @@ func (x *CanarySettings) GetUsestagecache() bool {
 
 type ClientCertificate struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Clientcertificateid   string                 `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3" json:"clientcertificateid,omitempty"`
-	Createddate           string                 `protobuf:"bytes,53061200,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Description           string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Expirationdate        string                 `protobuf:"bytes,391033245,opt,name=expirationdate,proto3" json:"expirationdate,omitempty"`
-	Pemencodedcertificate string                 `protobuf:"bytes,449484817,opt,name=pemencodedcertificate,proto3" json:"pemencodedcertificate,omitempty"`
+	Clientcertificateid   *string                `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3,oneof" json:"clientcertificateid,omitempty"`
+	Createddate           *string                `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Description           *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Expirationdate        *string                `protobuf:"bytes,391033245,opt,name=expirationdate,proto3,oneof" json:"expirationdate,omitempty"`
+	Pemencodedcertificate *string                `protobuf:"bytes,449484817,opt,name=pemencodedcertificate,proto3,oneof" json:"pemencodedcertificate,omitempty"`
 	Tags                  map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -2263,36 +2263,36 @@ func (*ClientCertificate) Descriptor() ([]byte, []int) {
 }
 
 func (x *ClientCertificate) GetClientcertificateid() string {
-	if x != nil {
-		return x.Clientcertificateid
+	if x != nil && x.Clientcertificateid != nil {
+		return *x.Clientcertificateid
 	}
 	return ""
 }
 
 func (x *ClientCertificate) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *ClientCertificate) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *ClientCertificate) GetExpirationdate() string {
-	if x != nil {
-		return x.Expirationdate
+	if x != nil && x.Expirationdate != nil {
+		return *x.Expirationdate
 	}
 	return ""
 }
 
 func (x *ClientCertificate) GetPemencodedcertificate() string {
-	if x != nil {
-		return x.Pemencodedcertificate
+	if x != nil && x.Pemencodedcertificate != nil {
+		return *x.Pemencodedcertificate
 	}
 	return ""
 }
@@ -2307,7 +2307,7 @@ func (x *ClientCertificate) GetTags() map[string]string {
 type ClientCertificates struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*ClientCertificate   `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2350,15 +2350,15 @@ func (x *ClientCertificates) GetItems() []*ClientCertificate {
 }
 
 func (x *ClientCertificates) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type ConflictException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2394,22 +2394,22 @@ func (*ConflictException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ConflictException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type CreateApiKeyRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Customerid         string                 `protobuf:"bytes,227830269,opt,name=customerid,proto3" json:"customerid,omitempty"`
-	Description        string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Customerid         *string                `protobuf:"bytes,227830269,opt,name=customerid,proto3,oneof" json:"customerid,omitempty"`
+	Description        *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Enabled            *bool                  `protobuf:"varint,49525663,opt,name=enabled,proto3,oneof" json:"enabled,omitempty"`
 	Generatedistinctid *bool                  `protobuf:"varint,99833588,opt,name=generatedistinctid,proto3,oneof" json:"generatedistinctid,omitempty"`
-	Name               string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Name               *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Stagekeys          []*StageKey            `protobuf:"bytes,287991830,rep,name=stagekeys,proto3" json:"stagekeys,omitempty"`
 	Tags               map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Value              string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Value              *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2445,15 +2445,15 @@ func (*CreateApiKeyRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateApiKeyRequest) GetCustomerid() string {
-	if x != nil {
-		return x.Customerid
+	if x != nil && x.Customerid != nil {
+		return *x.Customerid
 	}
 	return ""
 }
 
 func (x *CreateApiKeyRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2473,8 +2473,8 @@ func (x *CreateApiKeyRequest) GetGeneratedistinctid() bool {
 }
 
 func (x *CreateApiKeyRequest) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -2494,20 +2494,20 @@ func (x *CreateApiKeyRequest) GetTags() map[string]string {
 }
 
 func (x *CreateApiKeyRequest) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
 
 type CreateAuthorizerRequest struct {
 	state                        protoimpl.MessageState `protogen:"open.v1"`
-	Authtype                     string                 `protobuf:"bytes,162773848,opt,name=authtype,proto3" json:"authtype,omitempty"`
-	Authorizercredentials        string                 `protobuf:"bytes,233575233,opt,name=authorizercredentials,proto3" json:"authorizercredentials,omitempty"`
+	Authtype                     *string                `protobuf:"bytes,162773848,opt,name=authtype,proto3,oneof" json:"authtype,omitempty"`
+	Authorizercredentials        *string                `protobuf:"bytes,233575233,opt,name=authorizercredentials,proto3,oneof" json:"authorizercredentials,omitempty"`
 	Authorizerresultttlinseconds *int32                 `protobuf:"varint,135440208,opt,name=authorizerresultttlinseconds,proto3,oneof" json:"authorizerresultttlinseconds,omitempty"`
-	Authorizeruri                string                 `protobuf:"bytes,525146137,opt,name=authorizeruri,proto3" json:"authorizeruri,omitempty"`
-	Identitysource               string                 `protobuf:"bytes,285615231,opt,name=identitysource,proto3" json:"identitysource,omitempty"`
-	Identityvalidationexpression string                 `protobuf:"bytes,227211199,opt,name=identityvalidationexpression,proto3" json:"identityvalidationexpression,omitempty"`
+	Authorizeruri                *string                `protobuf:"bytes,525146137,opt,name=authorizeruri,proto3,oneof" json:"authorizeruri,omitempty"`
+	Identitysource               *string                `protobuf:"bytes,285615231,opt,name=identitysource,proto3,oneof" json:"identitysource,omitempty"`
+	Identityvalidationexpression *string                `protobuf:"bytes,227211199,opt,name=identityvalidationexpression,proto3,oneof" json:"identityvalidationexpression,omitempty"`
 	Name                         string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Providerarns                 []string               `protobuf:"bytes,301486689,rep,name=providerarns,proto3" json:"providerarns,omitempty"`
 	Restapiid                    string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
@@ -2547,15 +2547,15 @@ func (*CreateAuthorizerRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateAuthorizerRequest) GetAuthtype() string {
-	if x != nil {
-		return x.Authtype
+	if x != nil && x.Authtype != nil {
+		return *x.Authtype
 	}
 	return ""
 }
 
 func (x *CreateAuthorizerRequest) GetAuthorizercredentials() string {
-	if x != nil {
-		return x.Authorizercredentials
+	if x != nil && x.Authorizercredentials != nil {
+		return *x.Authorizercredentials
 	}
 	return ""
 }
@@ -2568,22 +2568,22 @@ func (x *CreateAuthorizerRequest) GetAuthorizerresultttlinseconds() int32 {
 }
 
 func (x *CreateAuthorizerRequest) GetAuthorizeruri() string {
-	if x != nil {
-		return x.Authorizeruri
+	if x != nil && x.Authorizeruri != nil {
+		return *x.Authorizeruri
 	}
 	return ""
 }
 
 func (x *CreateAuthorizerRequest) GetIdentitysource() string {
-	if x != nil {
-		return x.Identitysource
+	if x != nil && x.Identitysource != nil {
+		return *x.Identitysource
 	}
 	return ""
 }
 
 func (x *CreateAuthorizerRequest) GetIdentityvalidationexpression() string {
-	if x != nil {
-		return x.Identityvalidationexpression
+	if x != nil && x.Identityvalidationexpression != nil {
+		return *x.Identityvalidationexpression
 	}
 	return ""
 }
@@ -2618,11 +2618,11 @@ func (x *CreateAuthorizerRequest) GetType() AuthorizerType {
 
 type CreateBasePathMappingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Basepath      string                 `protobuf:"bytes,267528880,opt,name=basepath,proto3" json:"basepath,omitempty"`
+	Basepath      *string                `protobuf:"bytes,267528880,opt,name=basepath,proto3,oneof" json:"basepath,omitempty"`
 	Domainname    string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid  string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid  *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Stage         string                 `protobuf:"bytes,140155438,opt,name=stage,proto3" json:"stage,omitempty"`
+	Stage         *string                `protobuf:"bytes,140155438,opt,name=stage,proto3,oneof" json:"stage,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2658,8 +2658,8 @@ func (*CreateBasePathMappingRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateBasePathMappingRequest) GetBasepath() string {
-	if x != nil {
-		return x.Basepath
+	if x != nil && x.Basepath != nil {
+		return *x.Basepath
 	}
 	return ""
 }
@@ -2672,8 +2672,8 @@ func (x *CreateBasePathMappingRequest) GetDomainname() string {
 }
 
 func (x *CreateBasePathMappingRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -2686,8 +2686,8 @@ func (x *CreateBasePathMappingRequest) GetRestapiid() string {
 }
 
 func (x *CreateBasePathMappingRequest) GetStage() string {
-	if x != nil {
-		return x.Stage
+	if x != nil && x.Stage != nil {
+		return *x.Stage
 	}
 	return ""
 }
@@ -2697,10 +2697,10 @@ type CreateDeploymentRequest struct {
 	Cacheclusterenabled *bool                     `protobuf:"varint,63967991,opt,name=cacheclusterenabled,proto3,oneof" json:"cacheclusterenabled,omitempty"`
 	Cacheclustersize    CacheClusterSize          `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize" json:"cacheclustersize,omitempty"`
 	Canarysettings      *DeploymentCanarySettings `protobuf:"bytes,285544261,opt,name=canarysettings,proto3" json:"canarysettings,omitempty"`
-	Description         string                    `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description         *string                   `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Restapiid           string                    `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Stagedescription    string                    `protobuf:"bytes,496169986,opt,name=stagedescription,proto3" json:"stagedescription,omitempty"`
-	Stagename           string                    `protobuf:"bytes,9563663,opt,name=stagename,proto3" json:"stagename,omitempty"`
+	Stagedescription    *string                   `protobuf:"bytes,496169986,opt,name=stagedescription,proto3,oneof" json:"stagedescription,omitempty"`
+	Stagename           *string                   `protobuf:"bytes,9563663,opt,name=stagename,proto3,oneof" json:"stagename,omitempty"`
 	Tracingenabled      *bool                     `protobuf:"varint,390995731,opt,name=tracingenabled,proto3,oneof" json:"tracingenabled,omitempty"`
 	Variables           map[string]string         `protobuf:"bytes,162226883,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields       protoimpl.UnknownFields
@@ -2759,8 +2759,8 @@ func (x *CreateDeploymentRequest) GetCanarysettings() *DeploymentCanarySettings 
 }
 
 func (x *CreateDeploymentRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2773,15 +2773,15 @@ func (x *CreateDeploymentRequest) GetRestapiid() string {
 }
 
 func (x *CreateDeploymentRequest) GetStagedescription() string {
-	if x != nil {
-		return x.Stagedescription
+	if x != nil && x.Stagedescription != nil {
+		return *x.Stagedescription
 	}
 	return ""
 }
 
 func (x *CreateDeploymentRequest) GetStagename() string {
-	if x != nil {
-		return x.Stagename
+	if x != nil && x.Stagename != nil {
+		return *x.Stagename
 	}
 	return ""
 }
@@ -2862,10 +2862,10 @@ func (x *CreateDocumentationPartRequest) GetRestapiid() string {
 
 type CreateDocumentationVersionRequest struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
-	Description          string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Documentationversion string                 `protobuf:"bytes,167009804,opt,name=documentationversion,proto3" json:"documentationversion,omitempty"`
 	Restapiid            string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Stagename            string                 `protobuf:"bytes,9563663,opt,name=stagename,proto3" json:"stagename,omitempty"`
+	Stagename            *string                `protobuf:"bytes,9563663,opt,name=stagename,proto3,oneof" json:"stagename,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -2901,8 +2901,8 @@ func (*CreateDocumentationVersionRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDocumentationVersionRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -2922,8 +2922,8 @@ func (x *CreateDocumentationVersionRequest) GetRestapiid() string {
 }
 
 func (x *CreateDocumentationVersionRequest) GetStagename() string {
-	if x != nil {
-		return x.Stagename
+	if x != nil && x.Stagename != nil {
+		return *x.Stagename
 	}
 	return ""
 }
@@ -2998,19 +2998,19 @@ func (x *CreateDomainNameAccessAssociationRequest) GetTags() map[string]string {
 
 type CreateDomainNameRequest struct {
 	state                               protoimpl.MessageState        `protogen:"open.v1"`
-	Certificatearn                      string                        `protobuf:"bytes,425831704,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
-	Certificatebody                     string                        `protobuf:"bytes,183933821,opt,name=certificatebody,proto3" json:"certificatebody,omitempty"`
-	Certificatechain                    string                        `protobuf:"bytes,50547450,opt,name=certificatechain,proto3" json:"certificatechain,omitempty"`
-	Certificatename                     string                        `protobuf:"bytes,140276948,opt,name=certificatename,proto3" json:"certificatename,omitempty"`
-	Certificateprivatekey               string                        `protobuf:"bytes,277544067,opt,name=certificateprivatekey,proto3" json:"certificateprivatekey,omitempty"`
+	Certificatearn                      *string                       `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificatebody                     *string                       `protobuf:"bytes,183933821,opt,name=certificatebody,proto3,oneof" json:"certificatebody,omitempty"`
+	Certificatechain                    *string                       `protobuf:"bytes,50547450,opt,name=certificatechain,proto3,oneof" json:"certificatechain,omitempty"`
+	Certificatename                     *string                       `protobuf:"bytes,140276948,opt,name=certificatename,proto3,oneof" json:"certificatename,omitempty"`
+	Certificateprivatekey               *string                       `protobuf:"bytes,277544067,opt,name=certificateprivatekey,proto3,oneof" json:"certificateprivatekey,omitempty"`
 	Domainname                          string                        `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
 	Endpointaccessmode                  EndpointAccessMode            `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration               *EndpointConfiguration        `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
 	Mutualtlsauthentication             *MutualTlsAuthenticationInput `protobuf:"bytes,99462043,opt,name=mutualtlsauthentication,proto3" json:"mutualtlsauthentication,omitempty"`
-	Ownershipverificationcertificatearn string                        `protobuf:"bytes,100550548,opt,name=ownershipverificationcertificatearn,proto3" json:"ownershipverificationcertificatearn,omitempty"`
-	Policy                              string                        `protobuf:"bytes,247528064,opt,name=policy,proto3" json:"policy,omitempty"`
-	Regionalcertificatearn              string                        `protobuf:"bytes,137066579,opt,name=regionalcertificatearn,proto3" json:"regionalcertificatearn,omitempty"`
-	Regionalcertificatename             string                        `protobuf:"bytes,431716941,opt,name=regionalcertificatename,proto3" json:"regionalcertificatename,omitempty"`
+	Ownershipverificationcertificatearn *string                       `protobuf:"bytes,100550548,opt,name=ownershipverificationcertificatearn,proto3,oneof" json:"ownershipverificationcertificatearn,omitempty"`
+	Policy                              *string                       `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
+	Regionalcertificatearn              *string                       `protobuf:"bytes,137066579,opt,name=regionalcertificatearn,proto3,oneof" json:"regionalcertificatearn,omitempty"`
+	Regionalcertificatename             *string                       `protobuf:"bytes,431716941,opt,name=regionalcertificatename,proto3,oneof" json:"regionalcertificatename,omitempty"`
 	Routingmode                         RoutingMode                   `protobuf:"varint,506342119,opt,name=routingmode,proto3,enum=apigateway.RoutingMode" json:"routingmode,omitempty"`
 	Securitypolicy                      SecurityPolicy                `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
 	Tags                                map[string]string             `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -3049,36 +3049,36 @@ func (*CreateDomainNameRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateDomainNameRequest) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetCertificatebody() string {
-	if x != nil {
-		return x.Certificatebody
+	if x != nil && x.Certificatebody != nil {
+		return *x.Certificatebody
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetCertificatechain() string {
-	if x != nil {
-		return x.Certificatechain
+	if x != nil && x.Certificatechain != nil {
+		return *x.Certificatechain
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetCertificatename() string {
-	if x != nil {
-		return x.Certificatename
+	if x != nil && x.Certificatename != nil {
+		return *x.Certificatename
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetCertificateprivatekey() string {
-	if x != nil {
-		return x.Certificateprivatekey
+	if x != nil && x.Certificateprivatekey != nil {
+		return *x.Certificateprivatekey
 	}
 	return ""
 }
@@ -3112,29 +3112,29 @@ func (x *CreateDomainNameRequest) GetMutualtlsauthentication() *MutualTlsAuthent
 }
 
 func (x *CreateDomainNameRequest) GetOwnershipverificationcertificatearn() string {
-	if x != nil {
-		return x.Ownershipverificationcertificatearn
+	if x != nil && x.Ownershipverificationcertificatearn != nil {
+		return *x.Ownershipverificationcertificatearn
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetRegionalcertificatearn() string {
-	if x != nil {
-		return x.Regionalcertificatearn
+	if x != nil && x.Regionalcertificatearn != nil {
+		return *x.Regionalcertificatearn
 	}
 	return ""
 }
 
 func (x *CreateDomainNameRequest) GetRegionalcertificatename() string {
-	if x != nil {
-		return x.Regionalcertificatename
+	if x != nil && x.Regionalcertificatename != nil {
+		return *x.Regionalcertificatename
 	}
 	return ""
 }
@@ -3163,10 +3163,10 @@ func (x *CreateDomainNameRequest) GetTags() map[string]string {
 type CreateModelRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Contenttype   string                 `protobuf:"bytes,281764659,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Schema        string                 `protobuf:"bytes,310182711,opt,name=schema,proto3" json:"schema,omitempty"`
+	Schema        *string                `protobuf:"bytes,310182711,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3209,8 +3209,8 @@ func (x *CreateModelRequest) GetContenttype() string {
 }
 
 func (x *CreateModelRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -3230,15 +3230,15 @@ func (x *CreateModelRequest) GetRestapiid() string {
 }
 
 func (x *CreateModelRequest) GetSchema() string {
-	if x != nil {
-		return x.Schema
+	if x != nil && x.Schema != nil {
+		return *x.Schema
 	}
 	return ""
 }
 
 type CreateRequestValidatorRequest struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Name                      string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Name                      *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Restapiid                 string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	Validaterequestbody       *bool                  `protobuf:"varint,397505841,opt,name=validaterequestbody,proto3,oneof" json:"validaterequestbody,omitempty"`
 	Validaterequestparameters *bool                  `protobuf:"varint,464035801,opt,name=validaterequestparameters,proto3,oneof" json:"validaterequestparameters,omitempty"`
@@ -3277,8 +3277,8 @@ func (*CreateRequestValidatorRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRequestValidatorRequest) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -3368,17 +3368,17 @@ type CreateRestApiRequest struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Apikeysource              ApiKeySourceType       `protobuf:"varint,108531220,opt,name=apikeysource,proto3,enum=apigateway.ApiKeySourceType" json:"apikeysource,omitempty"`
 	Binarymediatypes          []string               `protobuf:"bytes,406416146,rep,name=binarymediatypes,proto3" json:"binarymediatypes,omitempty"`
-	Clonefrom                 string                 `protobuf:"bytes,263376551,opt,name=clonefrom,proto3" json:"clonefrom,omitempty"`
-	Description               string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Clonefrom                 *string                `protobuf:"bytes,263376551,opt,name=clonefrom,proto3,oneof" json:"clonefrom,omitempty"`
+	Description               *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Disableexecuteapiendpoint *bool                  `protobuf:"varint,148140696,opt,name=disableexecuteapiendpoint,proto3,oneof" json:"disableexecuteapiendpoint,omitempty"`
 	Endpointaccessmode        EndpointAccessMode     `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration     *EndpointConfiguration `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
 	Minimumcompressionsize    *int32                 `protobuf:"varint,254902719,opt,name=minimumcompressionsize,proto3,oneof" json:"minimumcompressionsize,omitempty"`
 	Name                      string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Policy                    string                 `protobuf:"bytes,247528064,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy                    *string                `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	Securitypolicy            SecurityPolicy         `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
 	Tags                      map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Version                   string                 `protobuf:"bytes,108113560,opt,name=version,proto3" json:"version,omitempty"`
+	Version                   *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -3428,15 +3428,15 @@ func (x *CreateRestApiRequest) GetBinarymediatypes() []string {
 }
 
 func (x *CreateRestApiRequest) GetClonefrom() string {
-	if x != nil {
-		return x.Clonefrom
+	if x != nil && x.Clonefrom != nil {
+		return *x.Clonefrom
 	}
 	return ""
 }
 
 func (x *CreateRestApiRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -3477,8 +3477,8 @@ func (x *CreateRestApiRequest) GetName() string {
 }
 
 func (x *CreateRestApiRequest) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
@@ -3498,8 +3498,8 @@ func (x *CreateRestApiRequest) GetTags() map[string]string {
 }
 
 func (x *CreateRestApiRequest) GetVersion() string {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return ""
 }
@@ -3510,8 +3510,8 @@ type CreateStageRequest struct {
 	Cacheclustersize     CacheClusterSize       `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize" json:"cacheclustersize,omitempty"`
 	Canarysettings       *CanarySettings        `protobuf:"bytes,285544261,opt,name=canarysettings,proto3" json:"canarysettings,omitempty"`
 	Deploymentid         string                 `protobuf:"bytes,439369188,opt,name=deploymentid,proto3" json:"deploymentid,omitempty"`
-	Description          string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Documentationversion string                 `protobuf:"bytes,167009804,opt,name=documentationversion,proto3" json:"documentationversion,omitempty"`
+	Description          *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Documentationversion *string                `protobuf:"bytes,167009804,opt,name=documentationversion,proto3,oneof" json:"documentationversion,omitempty"`
 	Restapiid            string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	Stagename            string                 `protobuf:"bytes,9563663,opt,name=stagename,proto3" json:"stagename,omitempty"`
 	Tags                 map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -3580,15 +3580,15 @@ func (x *CreateStageRequest) GetDeploymentid() string {
 }
 
 func (x *CreateStageRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *CreateStageRequest) GetDocumentationversion() string {
-	if x != nil {
-		return x.Documentationversion
+	if x != nil && x.Documentationversion != nil {
+		return *x.Documentationversion
 	}
 	return ""
 }
@@ -3691,7 +3691,7 @@ func (x *CreateUsagePlanKeyRequest) GetUsageplanid() string {
 type CreateUsagePlanRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apistages     []*ApiStage            `protobuf:"bytes,64558449,rep,name=apistages,proto3" json:"apistages,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Quota         *QuotaSettings         `protobuf:"bytes,243824012,opt,name=quota,proto3" json:"quota,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -3738,8 +3738,8 @@ func (x *CreateUsagePlanRequest) GetApistages() []*ApiStage {
 }
 
 func (x *CreateUsagePlanRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -3774,7 +3774,7 @@ func (x *CreateUsagePlanRequest) GetThrottle() *ThrottleSettings {
 
 type CreateVpcLinkRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Targetarns    []string               `protobuf:"bytes,46319317,rep,name=targetarns,proto3" json:"targetarns,omitempty"`
@@ -3813,8 +3813,8 @@ func (*CreateVpcLinkRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateVpcLinkRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -3940,7 +3940,7 @@ type DeleteBasePathMappingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Basepath      string                 `protobuf:"bytes,267528880,opt,name=basepath,proto3" json:"basepath,omitempty"`
 	Domainname    string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid  string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid  *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -3990,8 +3990,8 @@ func (x *DeleteBasePathMappingRequest) GetDomainname() string {
 }
 
 func (x *DeleteBasePathMappingRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -4243,7 +4243,7 @@ func (x *DeleteDomainNameAccessAssociationRequest) GetDomainnameaccessassociatio
 type DeleteDomainNameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Domainname    string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid  string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid  *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -4286,8 +4286,8 @@ func (x *DeleteDomainNameRequest) GetDomainname() string {
 }
 
 func (x *DeleteDomainNameRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -4995,9 +4995,9 @@ func (x *DeleteVpcLinkRequest) GetVpclinkid() string {
 type Deployment struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apisummary    map[string]string      `protobuf:"bytes,159675170,rep,name=apisummary,proto3" json:"apisummary,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Createddate   string                 `protobuf:"bytes,53061200,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Createddate   *string                `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5040,29 +5040,29 @@ func (x *Deployment) GetApisummary() map[string]string {
 }
 
 func (x *Deployment) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *Deployment) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *Deployment) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 type DeploymentCanarySettings struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Percenttraffic         float64                `protobuf:"fixed64,147177864,opt,name=percenttraffic,proto3" json:"percenttraffic,omitempty"`
+	Percenttraffic         *float64               `protobuf:"fixed64,147177864,opt,name=percenttraffic,proto3,oneof" json:"percenttraffic,omitempty"`
 	Stagevariableoverrides map[string]string      `protobuf:"bytes,221124259,rep,name=stagevariableoverrides,proto3" json:"stagevariableoverrides,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Usestagecache          *bool                  `protobuf:"varint,179841697,opt,name=usestagecache,proto3,oneof" json:"usestagecache,omitempty"`
 	unknownFields          protoimpl.UnknownFields
@@ -5100,8 +5100,8 @@ func (*DeploymentCanarySettings) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeploymentCanarySettings) GetPercenttraffic() float64 {
-	if x != nil {
-		return x.Percenttraffic
+	if x != nil && x.Percenttraffic != nil {
+		return *x.Percenttraffic
 	}
 	return 0
 }
@@ -5123,7 +5123,7 @@ func (x *DeploymentCanarySettings) GetUsestagecache() bool {
 type Deployments struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*Deployment          `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5166,17 +5166,17 @@ func (x *Deployments) GetItems() []*Deployment {
 }
 
 func (x *Deployments) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type DocumentationPart struct {
 	state         protoimpl.MessageState     `protogen:"open.v1"`
-	Id            string                     `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Id            *string                    `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Location      *DocumentationPartLocation `protobuf:"bytes,200649127,opt,name=location,proto3" json:"location,omitempty"`
-	Properties    string                     `protobuf:"bytes,299789533,opt,name=properties,proto3" json:"properties,omitempty"`
+	Properties    *string                    `protobuf:"bytes,299789533,opt,name=properties,proto3,oneof" json:"properties,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5212,8 +5212,8 @@ func (*DocumentationPart) Descriptor() ([]byte, []int) {
 }
 
 func (x *DocumentationPart) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -5226,8 +5226,8 @@ func (x *DocumentationPart) GetLocation() *DocumentationPartLocation {
 }
 
 func (x *DocumentationPart) GetProperties() string {
-	if x != nil {
-		return x.Properties
+	if x != nil && x.Properties != nil {
+		return *x.Properties
 	}
 	return ""
 }
@@ -5286,10 +5286,10 @@ func (x *DocumentationPartIds) GetWarnings() []string {
 
 type DocumentationPartLocation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Method        string                 `protobuf:"bytes,189134641,opt,name=method,proto3" json:"method,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Path          string                 `protobuf:"bytes,75975991,opt,name=path,proto3" json:"path,omitempty"`
-	Statuscode    string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Method        *string                `protobuf:"bytes,189134641,opt,name=method,proto3,oneof" json:"method,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Path          *string                `protobuf:"bytes,75975991,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	Statuscode    *string                `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	Type          DocumentationPartType  `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.DocumentationPartType" json:"type,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5326,29 +5326,29 @@ func (*DocumentationPartLocation) Descriptor() ([]byte, []int) {
 }
 
 func (x *DocumentationPartLocation) GetMethod() string {
-	if x != nil {
-		return x.Method
+	if x != nil && x.Method != nil {
+		return *x.Method
 	}
 	return ""
 }
 
 func (x *DocumentationPartLocation) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *DocumentationPartLocation) GetPath() string {
-	if x != nil {
-		return x.Path
+	if x != nil && x.Path != nil {
+		return *x.Path
 	}
 	return ""
 }
 
 func (x *DocumentationPartLocation) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -5363,7 +5363,7 @@ func (x *DocumentationPartLocation) GetType() DocumentationPartType {
 type DocumentationParts struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*DocumentationPart   `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5406,17 +5406,17 @@ func (x *DocumentationParts) GetItems() []*DocumentationPart {
 }
 
 func (x *DocumentationParts) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type DocumentationVersion struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Createddate   string                 `protobuf:"bytes,53061200,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Version       string                 `protobuf:"bytes,108113560,opt,name=version,proto3" json:"version,omitempty"`
+	Createddate   *string                `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Version       *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5452,22 +5452,22 @@ func (*DocumentationVersion) Descriptor() ([]byte, []int) {
 }
 
 func (x *DocumentationVersion) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *DocumentationVersion) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *DocumentationVersion) GetVersion() string {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return ""
 }
@@ -5475,7 +5475,7 @@ func (x *DocumentationVersion) GetVersion() string {
 type DocumentationVersions struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Items         []*DocumentationVersion `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                  `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                 `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5518,34 +5518,34 @@ func (x *DocumentationVersions) GetItems() []*DocumentationVersion {
 }
 
 func (x *DocumentationVersions) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type DomainName struct {
 	state                               protoimpl.MessageState   `protogen:"open.v1"`
-	Certificatearn                      string                   `protobuf:"bytes,425831704,opt,name=certificatearn,proto3" json:"certificatearn,omitempty"`
-	Certificatename                     string                   `protobuf:"bytes,140276948,opt,name=certificatename,proto3" json:"certificatename,omitempty"`
-	Certificateuploaddate               string                   `protobuf:"bytes,504466814,opt,name=certificateuploaddate,proto3" json:"certificateuploaddate,omitempty"`
-	Distributiondomainname              string                   `protobuf:"bytes,266229213,opt,name=distributiondomainname,proto3" json:"distributiondomainname,omitempty"`
-	Distributionhostedzoneid            string                   `protobuf:"bytes,185867208,opt,name=distributionhostedzoneid,proto3" json:"distributionhostedzoneid,omitempty"`
-	Domainname                          string                   `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnamearn                       string                   `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3" json:"domainnamearn,omitempty"`
-	Domainnameid                        string                   `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Certificatearn                      *string                  `protobuf:"bytes,425831704,opt,name=certificatearn,proto3,oneof" json:"certificatearn,omitempty"`
+	Certificatename                     *string                  `protobuf:"bytes,140276948,opt,name=certificatename,proto3,oneof" json:"certificatename,omitempty"`
+	Certificateuploaddate               *string                  `protobuf:"bytes,504466814,opt,name=certificateuploaddate,proto3,oneof" json:"certificateuploaddate,omitempty"`
+	Distributiondomainname              *string                  `protobuf:"bytes,266229213,opt,name=distributiondomainname,proto3,oneof" json:"distributiondomainname,omitempty"`
+	Distributionhostedzoneid            *string                  `protobuf:"bytes,185867208,opt,name=distributionhostedzoneid,proto3,oneof" json:"distributionhostedzoneid,omitempty"`
+	Domainname                          *string                  `protobuf:"bytes,390326667,opt,name=domainname,proto3,oneof" json:"domainname,omitempty"`
+	Domainnamearn                       *string                  `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3,oneof" json:"domainnamearn,omitempty"`
+	Domainnameid                        *string                  `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	Domainnamestatus                    DomainNameStatus         `protobuf:"varint,275080629,opt,name=domainnamestatus,proto3,enum=apigateway.DomainNameStatus" json:"domainnamestatus,omitempty"`
-	Domainnamestatusmessage             string                   `protobuf:"bytes,335045044,opt,name=domainnamestatusmessage,proto3" json:"domainnamestatusmessage,omitempty"`
+	Domainnamestatusmessage             *string                  `protobuf:"bytes,335045044,opt,name=domainnamestatusmessage,proto3,oneof" json:"domainnamestatusmessage,omitempty"`
 	Endpointaccessmode                  EndpointAccessMode       `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration               *EndpointConfiguration   `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
-	Managementpolicy                    string                   `protobuf:"bytes,90103737,opt,name=managementpolicy,proto3" json:"managementpolicy,omitempty"`
+	Managementpolicy                    *string                  `protobuf:"bytes,90103737,opt,name=managementpolicy,proto3,oneof" json:"managementpolicy,omitempty"`
 	Mutualtlsauthentication             *MutualTlsAuthentication `protobuf:"bytes,99462043,opt,name=mutualtlsauthentication,proto3" json:"mutualtlsauthentication,omitempty"`
-	Ownershipverificationcertificatearn string                   `protobuf:"bytes,100550548,opt,name=ownershipverificationcertificatearn,proto3" json:"ownershipverificationcertificatearn,omitempty"`
-	Policy                              string                   `protobuf:"bytes,247528064,opt,name=policy,proto3" json:"policy,omitempty"`
-	Regionalcertificatearn              string                   `protobuf:"bytes,137066579,opt,name=regionalcertificatearn,proto3" json:"regionalcertificatearn,omitempty"`
-	Regionalcertificatename             string                   `protobuf:"bytes,431716941,opt,name=regionalcertificatename,proto3" json:"regionalcertificatename,omitempty"`
-	Regionaldomainname                  string                   `protobuf:"bytes,198256560,opt,name=regionaldomainname,proto3" json:"regionaldomainname,omitempty"`
-	Regionalhostedzoneid                string                   `protobuf:"bytes,467276949,opt,name=regionalhostedzoneid,proto3" json:"regionalhostedzoneid,omitempty"`
+	Ownershipverificationcertificatearn *string                  `protobuf:"bytes,100550548,opt,name=ownershipverificationcertificatearn,proto3,oneof" json:"ownershipverificationcertificatearn,omitempty"`
+	Policy                              *string                  `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
+	Regionalcertificatearn              *string                  `protobuf:"bytes,137066579,opt,name=regionalcertificatearn,proto3,oneof" json:"regionalcertificatearn,omitempty"`
+	Regionalcertificatename             *string                  `protobuf:"bytes,431716941,opt,name=regionalcertificatename,proto3,oneof" json:"regionalcertificatename,omitempty"`
+	Regionaldomainname                  *string                  `protobuf:"bytes,198256560,opt,name=regionaldomainname,proto3,oneof" json:"regionaldomainname,omitempty"`
+	Regionalhostedzoneid                *string                  `protobuf:"bytes,467276949,opt,name=regionalhostedzoneid,proto3,oneof" json:"regionalhostedzoneid,omitempty"`
 	Routingmode                         RoutingMode              `protobuf:"varint,506342119,opt,name=routingmode,proto3,enum=apigateway.RoutingMode" json:"routingmode,omitempty"`
 	Securitypolicy                      SecurityPolicy           `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
 	Tags                                map[string]string        `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -5584,57 +5584,57 @@ func (*DomainName) Descriptor() ([]byte, []int) {
 }
 
 func (x *DomainName) GetCertificatearn() string {
-	if x != nil {
-		return x.Certificatearn
+	if x != nil && x.Certificatearn != nil {
+		return *x.Certificatearn
 	}
 	return ""
 }
 
 func (x *DomainName) GetCertificatename() string {
-	if x != nil {
-		return x.Certificatename
+	if x != nil && x.Certificatename != nil {
+		return *x.Certificatename
 	}
 	return ""
 }
 
 func (x *DomainName) GetCertificateuploaddate() string {
-	if x != nil {
-		return x.Certificateuploaddate
+	if x != nil && x.Certificateuploaddate != nil {
+		return *x.Certificateuploaddate
 	}
 	return ""
 }
 
 func (x *DomainName) GetDistributiondomainname() string {
-	if x != nil {
-		return x.Distributiondomainname
+	if x != nil && x.Distributiondomainname != nil {
+		return *x.Distributiondomainname
 	}
 	return ""
 }
 
 func (x *DomainName) GetDistributionhostedzoneid() string {
-	if x != nil {
-		return x.Distributionhostedzoneid
+	if x != nil && x.Distributionhostedzoneid != nil {
+		return *x.Distributionhostedzoneid
 	}
 	return ""
 }
 
 func (x *DomainName) GetDomainname() string {
-	if x != nil {
-		return x.Domainname
+	if x != nil && x.Domainname != nil {
+		return *x.Domainname
 	}
 	return ""
 }
 
 func (x *DomainName) GetDomainnamearn() string {
-	if x != nil {
-		return x.Domainnamearn
+	if x != nil && x.Domainnamearn != nil {
+		return *x.Domainnamearn
 	}
 	return ""
 }
 
 func (x *DomainName) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -5647,8 +5647,8 @@ func (x *DomainName) GetDomainnamestatus() DomainNameStatus {
 }
 
 func (x *DomainName) GetDomainnamestatusmessage() string {
-	if x != nil {
-		return x.Domainnamestatusmessage
+	if x != nil && x.Domainnamestatusmessage != nil {
+		return *x.Domainnamestatusmessage
 	}
 	return ""
 }
@@ -5668,8 +5668,8 @@ func (x *DomainName) GetEndpointconfiguration() *EndpointConfiguration {
 }
 
 func (x *DomainName) GetManagementpolicy() string {
-	if x != nil {
-		return x.Managementpolicy
+	if x != nil && x.Managementpolicy != nil {
+		return *x.Managementpolicy
 	}
 	return ""
 }
@@ -5682,43 +5682,43 @@ func (x *DomainName) GetMutualtlsauthentication() *MutualTlsAuthentication {
 }
 
 func (x *DomainName) GetOwnershipverificationcertificatearn() string {
-	if x != nil {
-		return x.Ownershipverificationcertificatearn
+	if x != nil && x.Ownershipverificationcertificatearn != nil {
+		return *x.Ownershipverificationcertificatearn
 	}
 	return ""
 }
 
 func (x *DomainName) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
 
 func (x *DomainName) GetRegionalcertificatearn() string {
-	if x != nil {
-		return x.Regionalcertificatearn
+	if x != nil && x.Regionalcertificatearn != nil {
+		return *x.Regionalcertificatearn
 	}
 	return ""
 }
 
 func (x *DomainName) GetRegionalcertificatename() string {
-	if x != nil {
-		return x.Regionalcertificatename
+	if x != nil && x.Regionalcertificatename != nil {
+		return *x.Regionalcertificatename
 	}
 	return ""
 }
 
 func (x *DomainName) GetRegionaldomainname() string {
-	if x != nil {
-		return x.Regionaldomainname
+	if x != nil && x.Regionaldomainname != nil {
+		return *x.Regionaldomainname
 	}
 	return ""
 }
 
 func (x *DomainName) GetRegionalhostedzoneid() string {
-	if x != nil {
-		return x.Regionalhostedzoneid
+	if x != nil && x.Regionalhostedzoneid != nil {
+		return *x.Regionalhostedzoneid
 	}
 	return ""
 }
@@ -5746,10 +5746,10 @@ func (x *DomainName) GetTags() map[string]string {
 
 type DomainNameAccessAssociation struct {
 	state                          protoimpl.MessageState      `protogen:"open.v1"`
-	Accessassociationsource        string                      `protobuf:"bytes,328257828,opt,name=accessassociationsource,proto3" json:"accessassociationsource,omitempty"`
+	Accessassociationsource        *string                     `protobuf:"bytes,328257828,opt,name=accessassociationsource,proto3,oneof" json:"accessassociationsource,omitempty"`
 	Accessassociationsourcetype    AccessAssociationSourceType `protobuf:"varint,176397628,opt,name=accessassociationsourcetype,proto3,enum=apigateway.AccessAssociationSourceType" json:"accessassociationsourcetype,omitempty"`
-	Domainnameaccessassociationarn string                      `protobuf:"bytes,281017927,opt,name=domainnameaccessassociationarn,proto3" json:"domainnameaccessassociationarn,omitempty"`
-	Domainnamearn                  string                      `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3" json:"domainnamearn,omitempty"`
+	Domainnameaccessassociationarn *string                     `protobuf:"bytes,281017927,opt,name=domainnameaccessassociationarn,proto3,oneof" json:"domainnameaccessassociationarn,omitempty"`
+	Domainnamearn                  *string                     `protobuf:"bytes,244019094,opt,name=domainnamearn,proto3,oneof" json:"domainnamearn,omitempty"`
 	Tags                           map[string]string           `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields                  protoimpl.UnknownFields
 	sizeCache                      protoimpl.SizeCache
@@ -5786,8 +5786,8 @@ func (*DomainNameAccessAssociation) Descriptor() ([]byte, []int) {
 }
 
 func (x *DomainNameAccessAssociation) GetAccessassociationsource() string {
-	if x != nil {
-		return x.Accessassociationsource
+	if x != nil && x.Accessassociationsource != nil {
+		return *x.Accessassociationsource
 	}
 	return ""
 }
@@ -5800,15 +5800,15 @@ func (x *DomainNameAccessAssociation) GetAccessassociationsourcetype() AccessAss
 }
 
 func (x *DomainNameAccessAssociation) GetDomainnameaccessassociationarn() string {
-	if x != nil {
-		return x.Domainnameaccessassociationarn
+	if x != nil && x.Domainnameaccessassociationarn != nil {
+		return *x.Domainnameaccessassociationarn
 	}
 	return ""
 }
 
 func (x *DomainNameAccessAssociation) GetDomainnamearn() string {
-	if x != nil {
-		return x.Domainnamearn
+	if x != nil && x.Domainnamearn != nil {
+		return *x.Domainnamearn
 	}
 	return ""
 }
@@ -5823,7 +5823,7 @@ func (x *DomainNameAccessAssociation) GetTags() map[string]string {
 type DomainNameAccessAssociations struct {
 	state         protoimpl.MessageState         `protogen:"open.v1"`
 	Items         []*DomainNameAccessAssociation `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                         `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                        `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5866,8 +5866,8 @@ func (x *DomainNameAccessAssociations) GetItems() []*DomainNameAccessAssociation
 }
 
 func (x *DomainNameAccessAssociations) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -5875,7 +5875,7 @@ func (x *DomainNameAccessAssociations) GetPosition() string {
 type DomainNames struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*DomainName          `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5918,8 +5918,8 @@ func (x *DomainNames) GetItems() []*DomainName {
 }
 
 func (x *DomainNames) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -5986,9 +5986,9 @@ func (x *EndpointConfiguration) GetVpcendpointids() []string {
 
 type ExportResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Body               []byte                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
-	Contentdisposition string                 `protobuf:"bytes,375146466,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contenttype        string                 `protobuf:"bytes,281764659,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
+	Body               []byte                 `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Contentdisposition *string                `protobuf:"bytes,375146466,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contenttype        *string                `protobuf:"bytes,281764659,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -6031,15 +6031,15 @@ func (x *ExportResponse) GetBody() []byte {
 }
 
 func (x *ExportResponse) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *ExportResponse) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
@@ -6154,7 +6154,7 @@ type GatewayResponse struct {
 	Responseparameters map[string]string      `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetemplates  map[string]string      `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetype       GatewayResponseType    `protobuf:"varint,377935935,opt,name=responsetype,proto3,enum=apigateway.GatewayResponseType" json:"responsetype,omitempty"`
-	Statuscode         string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode         *string                `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -6218,8 +6218,8 @@ func (x *GatewayResponse) GetResponsetype() GatewayResponseType {
 }
 
 func (x *GatewayResponse) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -6227,7 +6227,7 @@ func (x *GatewayResponse) GetStatuscode() string {
 type GatewayResponses struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*GatewayResponse     `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6270,15 +6270,15 @@ func (x *GatewayResponses) GetItems() []*GatewayResponse {
 }
 
 func (x *GatewayResponses) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type GenerateClientCertificateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6315,8 +6315,8 @@ func (*GenerateClientCertificateRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GenerateClientCertificateRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -6418,11 +6418,11 @@ func (x *GetApiKeyRequest) GetIncludevalue() bool {
 
 type GetApiKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Customerid    string                 `protobuf:"bytes,227830269,opt,name=customerid,proto3" json:"customerid,omitempty"`
+	Customerid    *string                `protobuf:"bytes,227830269,opt,name=customerid,proto3,oneof" json:"customerid,omitempty"`
 	Includevalues *bool                  `protobuf:"varint,490347326,opt,name=includevalues,proto3,oneof" json:"includevalues,omitempty"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Namequery     string                 `protobuf:"bytes,51018795,opt,name=namequery,proto3" json:"namequery,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Namequery     *string                `protobuf:"bytes,51018795,opt,name=namequery,proto3,oneof" json:"namequery,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6458,8 +6458,8 @@ func (*GetApiKeysRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetApiKeysRequest) GetCustomerid() string {
-	if x != nil {
-		return x.Customerid
+	if x != nil && x.Customerid != nil {
+		return *x.Customerid
 	}
 	return ""
 }
@@ -6479,15 +6479,15 @@ func (x *GetApiKeysRequest) GetLimit() int32 {
 }
 
 func (x *GetApiKeysRequest) GetNamequery() string {
-	if x != nil {
-		return x.Namequery
+	if x != nil && x.Namequery != nil {
+		return *x.Namequery
 	}
 	return ""
 }
 
 func (x *GetApiKeysRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -6547,7 +6547,7 @@ func (x *GetAuthorizerRequest) GetRestapiid() string {
 type GetAuthorizersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6591,8 +6591,8 @@ func (x *GetAuthorizersRequest) GetLimit() int32 {
 }
 
 func (x *GetAuthorizersRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -6608,7 +6608,7 @@ type GetBasePathMappingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Basepath      string                 `protobuf:"bytes,267528880,opt,name=basepath,proto3" json:"basepath,omitempty"`
 	Domainname    string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid  string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid  *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6658,8 +6658,8 @@ func (x *GetBasePathMappingRequest) GetDomainname() string {
 }
 
 func (x *GetBasePathMappingRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -6667,9 +6667,9 @@ func (x *GetBasePathMappingRequest) GetDomainnameid() string {
 type GetBasePathMappingsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Domainname    string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid  string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid  *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6712,8 +6712,8 @@ func (x *GetBasePathMappingsRequest) GetDomainname() string {
 }
 
 func (x *GetBasePathMappingsRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -6726,8 +6726,8 @@ func (x *GetBasePathMappingsRequest) GetLimit() int32 {
 }
 
 func (x *GetBasePathMappingsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -6779,7 +6779,7 @@ func (x *GetClientCertificateRequest) GetClientcertificateid() string {
 type GetClientCertificatesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -6822,8 +6822,8 @@ func (x *GetClientCertificatesRequest) GetLimit() int32 {
 }
 
 func (x *GetClientCertificatesRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -6891,7 +6891,7 @@ func (x *GetDeploymentRequest) GetRestapiid() string {
 type GetDeploymentsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -6935,8 +6935,8 @@ func (x *GetDeploymentsRequest) GetLimit() int32 {
 }
 
 func (x *GetDeploymentsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -7004,9 +7004,9 @@ type GetDocumentationPartsRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Limit          *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Locationstatus LocationStatusType     `protobuf:"varint,532215305,opt,name=locationstatus,proto3,enum=apigateway.LocationStatusType" json:"locationstatus,omitempty"`
-	Namequery      string                 `protobuf:"bytes,51018795,opt,name=namequery,proto3" json:"namequery,omitempty"`
-	Path           string                 `protobuf:"bytes,75975991,opt,name=path,proto3" json:"path,omitempty"`
-	Position       string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Namequery      *string                `protobuf:"bytes,51018795,opt,name=namequery,proto3,oneof" json:"namequery,omitempty"`
+	Path           *string                `protobuf:"bytes,75975991,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	Position       *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid      string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	Type           DocumentationPartType  `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.DocumentationPartType" json:"type,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -7058,22 +7058,22 @@ func (x *GetDocumentationPartsRequest) GetLocationstatus() LocationStatusType {
 }
 
 func (x *GetDocumentationPartsRequest) GetNamequery() string {
-	if x != nil {
-		return x.Namequery
+	if x != nil && x.Namequery != nil {
+		return *x.Namequery
 	}
 	return ""
 }
 
 func (x *GetDocumentationPartsRequest) GetPath() string {
-	if x != nil {
-		return x.Path
+	if x != nil && x.Path != nil {
+		return *x.Path
 	}
 	return ""
 }
 
 func (x *GetDocumentationPartsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -7147,7 +7147,7 @@ func (x *GetDocumentationVersionRequest) GetRestapiid() string {
 type GetDocumentationVersionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7191,8 +7191,8 @@ func (x *GetDocumentationVersionsRequest) GetLimit() int32 {
 }
 
 func (x *GetDocumentationVersionsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -7207,7 +7207,7 @@ func (x *GetDocumentationVersionsRequest) GetRestapiid() string {
 type GetDomainNameAccessAssociationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Resourceowner ResourceOwner          `protobuf:"varint,259175301,opt,name=resourceowner,proto3,enum=apigateway.ResourceOwner" json:"resourceowner,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7251,8 +7251,8 @@ func (x *GetDomainNameAccessAssociationsRequest) GetLimit() int32 {
 }
 
 func (x *GetDomainNameAccessAssociationsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -7267,7 +7267,7 @@ func (x *GetDomainNameAccessAssociationsRequest) GetResourceowner() ResourceOwne
 type GetDomainNameRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Domainname    string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid  string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid  *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7310,8 +7310,8 @@ func (x *GetDomainNameRequest) GetDomainname() string {
 }
 
 func (x *GetDomainNameRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -7319,7 +7319,7 @@ func (x *GetDomainNameRequest) GetDomainnameid() string {
 type GetDomainNamesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Resourceowner ResourceOwner          `protobuf:"varint,259175301,opt,name=resourceowner,proto3,enum=apigateway.ResourceOwner" json:"resourceowner,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7363,8 +7363,8 @@ func (x *GetDomainNamesRequest) GetLimit() int32 {
 }
 
 func (x *GetDomainNamesRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -7378,7 +7378,7 @@ func (x *GetDomainNamesRequest) GetResourceowner() ResourceOwner {
 
 type GetExportRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Accepts       string                 `protobuf:"bytes,192079791,opt,name=accepts,proto3" json:"accepts,omitempty"`
+	Accepts       *string                `protobuf:"bytes,192079791,opt,name=accepts,proto3,oneof" json:"accepts,omitempty"`
 	Exporttype    string                 `protobuf:"bytes,243495788,opt,name=exporttype,proto3" json:"exporttype,omitempty"`
 	Parameters    map[string]string      `protobuf:"bytes,145043162,rep,name=parameters,proto3" json:"parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
@@ -7418,8 +7418,8 @@ func (*GetExportRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetExportRequest) GetAccepts() string {
-	if x != nil {
-		return x.Accepts
+	if x != nil && x.Accepts != nil {
+		return *x.Accepts
 	}
 	return ""
 }
@@ -7507,7 +7507,7 @@ func (x *GetGatewayResponseRequest) GetRestapiid() string {
 type GetGatewayResponsesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7551,8 +7551,8 @@ func (x *GetGatewayResponsesRequest) GetLimit() int32 {
 }
 
 func (x *GetGatewayResponsesRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -7935,7 +7935,7 @@ func (x *GetModelTemplateRequest) GetRestapiid() string {
 type GetModelsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -7979,8 +7979,8 @@ func (x *GetModelsRequest) GetLimit() int32 {
 }
 
 func (x *GetModelsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8047,7 +8047,7 @@ func (x *GetRequestValidatorRequest) GetRestapiid() string {
 type GetRequestValidatorsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8091,8 +8091,8 @@ func (x *GetRequestValidatorsRequest) GetLimit() int32 {
 }
 
 func (x *GetRequestValidatorsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8168,7 +8168,7 @@ type GetResourcesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Embed         []string               `protobuf:"bytes,136029775,rep,name=embed,proto3" json:"embed,omitempty"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8219,8 +8219,8 @@ func (x *GetResourcesRequest) GetLimit() int32 {
 }
 
 func (x *GetResourcesRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8279,7 +8279,7 @@ func (x *GetRestApiRequest) GetRestapiid() string {
 type GetRestApisRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8322,8 +8322,8 @@ func (x *GetRestApisRequest) GetLimit() int32 {
 }
 
 func (x *GetRestApisRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8443,7 +8443,7 @@ func (x *GetSdkTypeRequest) GetId() string {
 type GetSdkTypesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8486,8 +8486,8 @@ func (x *GetSdkTypesRequest) GetLimit() int32 {
 }
 
 func (x *GetSdkTypesRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8546,7 +8546,7 @@ func (x *GetStageRequest) GetStagename() string {
 
 type GetStagesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Deploymentid  string                 `protobuf:"bytes,439369188,opt,name=deploymentid,proto3" json:"deploymentid,omitempty"`
+	Deploymentid  *string                `protobuf:"bytes,439369188,opt,name=deploymentid,proto3,oneof" json:"deploymentid,omitempty"`
 	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8583,8 +8583,8 @@ func (*GetStagesRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetStagesRequest) GetDeploymentid() string {
-	if x != nil {
-		return x.Deploymentid
+	if x != nil && x.Deploymentid != nil {
+		return *x.Deploymentid
 	}
 	return ""
 }
@@ -8599,7 +8599,7 @@ func (x *GetStagesRequest) GetRestapiid() string {
 type GetTagsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,67806797,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8643,8 +8643,8 @@ func (x *GetTagsRequest) GetLimit() int32 {
 }
 
 func (x *GetTagsRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8711,8 +8711,8 @@ func (x *GetUsagePlanKeyRequest) GetUsageplanid() string {
 type GetUsagePlanKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Namequery     string                 `protobuf:"bytes,51018795,opt,name=namequery,proto3" json:"namequery,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Namequery     *string                `protobuf:"bytes,51018795,opt,name=namequery,proto3,oneof" json:"namequery,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Usageplanid   string                 `protobuf:"bytes,509179991,opt,name=usageplanid,proto3" json:"usageplanid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -8756,15 +8756,15 @@ func (x *GetUsagePlanKeysRequest) GetLimit() int32 {
 }
 
 func (x *GetUsagePlanKeysRequest) GetNamequery() string {
-	if x != nil {
-		return x.Namequery
+	if x != nil && x.Namequery != nil {
+		return *x.Namequery
 	}
 	return ""
 }
 
 func (x *GetUsagePlanKeysRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8822,9 +8822,9 @@ func (x *GetUsagePlanRequest) GetUsageplanid() string {
 
 type GetUsagePlansRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Keyid         string                 `protobuf:"bytes,479913282,opt,name=keyid,proto3" json:"keyid,omitempty"`
+	Keyid         *string                `protobuf:"bytes,479913282,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8860,8 +8860,8 @@ func (*GetUsagePlansRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetUsagePlansRequest) GetKeyid() string {
-	if x != nil {
-		return x.Keyid
+	if x != nil && x.Keyid != nil {
+		return *x.Keyid
 	}
 	return ""
 }
@@ -8874,8 +8874,8 @@ func (x *GetUsagePlansRequest) GetLimit() int32 {
 }
 
 func (x *GetUsagePlansRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -8883,9 +8883,9 @@ func (x *GetUsagePlansRequest) GetPosition() string {
 type GetUsageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Enddate       string                 `protobuf:"bytes,384831215,opt,name=enddate,proto3" json:"enddate,omitempty"`
-	Keyid         string                 `protobuf:"bytes,479913282,opt,name=keyid,proto3" json:"keyid,omitempty"`
+	Keyid         *string                `protobuf:"bytes,479913282,opt,name=keyid,proto3,oneof" json:"keyid,omitempty"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	Startdate     string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
 	Usageplanid   string                 `protobuf:"bytes,509179991,opt,name=usageplanid,proto3" json:"usageplanid,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -8930,8 +8930,8 @@ func (x *GetUsageRequest) GetEnddate() string {
 }
 
 func (x *GetUsageRequest) GetKeyid() string {
-	if x != nil {
-		return x.Keyid
+	if x != nil && x.Keyid != nil {
+		return *x.Keyid
 	}
 	return ""
 }
@@ -8944,8 +8944,8 @@ func (x *GetUsageRequest) GetLimit() int32 {
 }
 
 func (x *GetUsageRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -9011,7 +9011,7 @@ func (x *GetVpcLinkRequest) GetVpclinkid() string {
 type GetVpcLinksRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,316332341,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9054,8 +9054,8 @@ func (x *GetVpcLinksRequest) GetLimit() int32 {
 }
 
 func (x *GetVpcLinksRequest) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -9251,22 +9251,22 @@ func (x *ImportRestApiRequest) GetParameters() map[string]string {
 type Integration struct {
 	state                protoimpl.MessageState          `protogen:"open.v1"`
 	Cachekeyparameters   []string                        `protobuf:"bytes,481441313,rep,name=cachekeyparameters,proto3" json:"cachekeyparameters,omitempty"`
-	Cachenamespace       string                          `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3" json:"cachenamespace,omitempty"`
-	Connectionid         string                          `protobuf:"bytes,450027965,opt,name=connectionid,proto3" json:"connectionid,omitempty"`
+	Cachenamespace       *string                         `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3,oneof" json:"cachenamespace,omitempty"`
+	Connectionid         *string                         `protobuf:"bytes,450027965,opt,name=connectionid,proto3,oneof" json:"connectionid,omitempty"`
 	Connectiontype       ConnectionType                  `protobuf:"varint,336253170,opt,name=connectiontype,proto3,enum=apigateway.ConnectionType" json:"connectiontype,omitempty"`
 	Contenthandling      ContentHandlingStrategy         `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
-	Credentials          string                          `protobuf:"bytes,150838226,opt,name=credentials,proto3" json:"credentials,omitempty"`
-	Httpmethod           string                          `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
+	Credentials          *string                         `protobuf:"bytes,150838226,opt,name=credentials,proto3,oneof" json:"credentials,omitempty"`
+	Httpmethod           *string                         `protobuf:"bytes,115276273,opt,name=httpmethod,proto3,oneof" json:"httpmethod,omitempty"`
 	Integrationresponses map[string]*IntegrationResponse `protobuf:"bytes,386580464,rep,name=integrationresponses,proto3" json:"integrationresponses,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Integrationtarget    string                          `protobuf:"bytes,17646705,opt,name=integrationtarget,proto3" json:"integrationtarget,omitempty"`
-	Passthroughbehavior  string                          `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3" json:"passthroughbehavior,omitempty"`
+	Integrationtarget    *string                         `protobuf:"bytes,17646705,opt,name=integrationtarget,proto3,oneof" json:"integrationtarget,omitempty"`
+	Passthroughbehavior  *string                         `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3,oneof" json:"passthroughbehavior,omitempty"`
 	Requestparameters    map[string]string               `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Requesttemplates     map[string]string               `protobuf:"bytes,333512166,rep,name=requesttemplates,proto3" json:"requesttemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetransfermode ResponseTransferMode            `protobuf:"varint,458910787,opt,name=responsetransfermode,proto3,enum=apigateway.ResponseTransferMode" json:"responsetransfermode,omitempty"`
 	Timeoutinmillis      *int32                          `protobuf:"varint,378229126,opt,name=timeoutinmillis,proto3,oneof" json:"timeoutinmillis,omitempty"`
 	Tlsconfig            *TlsConfig                      `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
 	Type                 IntegrationType                 `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.IntegrationType" json:"type,omitempty"`
-	Uri                  string                          `protobuf:"bytes,395269118,opt,name=uri,proto3" json:"uri,omitempty"`
+	Uri                  *string                         `protobuf:"bytes,395269118,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -9309,15 +9309,15 @@ func (x *Integration) GetCachekeyparameters() []string {
 }
 
 func (x *Integration) GetCachenamespace() string {
-	if x != nil {
-		return x.Cachenamespace
+	if x != nil && x.Cachenamespace != nil {
+		return *x.Cachenamespace
 	}
 	return ""
 }
 
 func (x *Integration) GetConnectionid() string {
-	if x != nil {
-		return x.Connectionid
+	if x != nil && x.Connectionid != nil {
+		return *x.Connectionid
 	}
 	return ""
 }
@@ -9337,15 +9337,15 @@ func (x *Integration) GetContenthandling() ContentHandlingStrategy {
 }
 
 func (x *Integration) GetCredentials() string {
-	if x != nil {
-		return x.Credentials
+	if x != nil && x.Credentials != nil {
+		return *x.Credentials
 	}
 	return ""
 }
 
 func (x *Integration) GetHttpmethod() string {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ""
 }
@@ -9358,15 +9358,15 @@ func (x *Integration) GetIntegrationresponses() map[string]*IntegrationResponse 
 }
 
 func (x *Integration) GetIntegrationtarget() string {
-	if x != nil {
-		return x.Integrationtarget
+	if x != nil && x.Integrationtarget != nil {
+		return *x.Integrationtarget
 	}
 	return ""
 }
 
 func (x *Integration) GetPassthroughbehavior() string {
-	if x != nil {
-		return x.Passthroughbehavior
+	if x != nil && x.Passthroughbehavior != nil {
+		return *x.Passthroughbehavior
 	}
 	return ""
 }
@@ -9414,8 +9414,8 @@ func (x *Integration) GetType() IntegrationType {
 }
 
 func (x *Integration) GetUri() string {
-	if x != nil {
-		return x.Uri
+	if x != nil && x.Uri != nil {
+		return *x.Uri
 	}
 	return ""
 }
@@ -9425,8 +9425,8 @@ type IntegrationResponse struct {
 	Contenthandling    ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
 	Responseparameters map[string]string       `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetemplates  map[string]string       `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Selectionpattern   string                  `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3" json:"selectionpattern,omitempty"`
-	Statuscode         string                  `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Selectionpattern   *string                 `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3,oneof" json:"selectionpattern,omitempty"`
+	Statuscode         *string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -9483,23 +9483,23 @@ func (x *IntegrationResponse) GetResponsetemplates() map[string]string {
 }
 
 func (x *IntegrationResponse) GetSelectionpattern() string {
-	if x != nil {
-		return x.Selectionpattern
+	if x != nil && x.Selectionpattern != nil {
+		return *x.Selectionpattern
 	}
 	return ""
 }
 
 func (x *IntegrationResponse) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
 
 type LimitExceededException struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Message           string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Retryafterseconds string                 `protobuf:"bytes,436039555,opt,name=retryafterseconds,proto3" json:"retryafterseconds,omitempty"`
+	Message           *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Retryafterseconds *string                `protobuf:"bytes,436039555,opt,name=retryafterseconds,proto3,oneof" json:"retryafterseconds,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -9535,15 +9535,15 @@ func (*LimitExceededException) Descriptor() ([]byte, []int) {
 }
 
 func (x *LimitExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *LimitExceededException) GetRetryafterseconds() string {
-	if x != nil {
-		return x.Retryafterseconds
+	if x != nil && x.Retryafterseconds != nil {
+		return *x.Retryafterseconds
 	}
 	return ""
 }
@@ -9552,15 +9552,15 @@ type Method struct {
 	state               protoimpl.MessageState     `protogen:"open.v1"`
 	Apikeyrequired      *bool                      `protobuf:"varint,435360152,opt,name=apikeyrequired,proto3,oneof" json:"apikeyrequired,omitempty"`
 	Authorizationscopes []string                   `protobuf:"bytes,423149932,rep,name=authorizationscopes,proto3" json:"authorizationscopes,omitempty"`
-	Authorizationtype   string                     `protobuf:"bytes,387986911,opt,name=authorizationtype,proto3" json:"authorizationtype,omitempty"`
-	Authorizerid        string                     `protobuf:"bytes,111773148,opt,name=authorizerid,proto3" json:"authorizerid,omitempty"`
-	Httpmethod          string                     `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
+	Authorizationtype   *string                    `protobuf:"bytes,387986911,opt,name=authorizationtype,proto3,oneof" json:"authorizationtype,omitempty"`
+	Authorizerid        *string                    `protobuf:"bytes,111773148,opt,name=authorizerid,proto3,oneof" json:"authorizerid,omitempty"`
+	Httpmethod          *string                    `protobuf:"bytes,115276273,opt,name=httpmethod,proto3,oneof" json:"httpmethod,omitempty"`
 	Methodintegration   *Integration               `protobuf:"bytes,518245059,opt,name=methodintegration,proto3" json:"methodintegration,omitempty"`
 	Methodresponses     map[string]*MethodResponse `protobuf:"bytes,231818421,rep,name=methodresponses,proto3" json:"methodresponses,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Operationname       string                     `protobuf:"bytes,178909574,opt,name=operationname,proto3" json:"operationname,omitempty"`
+	Operationname       *string                    `protobuf:"bytes,178909574,opt,name=operationname,proto3,oneof" json:"operationname,omitempty"`
 	Requestmodels       map[string]string          `protobuf:"bytes,397252853,rep,name=requestmodels,proto3" json:"requestmodels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Requestparameters   map[string]bool            `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	Requestvalidatorid  string                     `protobuf:"bytes,517546134,opt,name=requestvalidatorid,proto3" json:"requestvalidatorid,omitempty"`
+	Requestvalidatorid  *string                    `protobuf:"bytes,517546134,opt,name=requestvalidatorid,proto3,oneof" json:"requestvalidatorid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -9610,22 +9610,22 @@ func (x *Method) GetAuthorizationscopes() []string {
 }
 
 func (x *Method) GetAuthorizationtype() string {
-	if x != nil {
-		return x.Authorizationtype
+	if x != nil && x.Authorizationtype != nil {
+		return *x.Authorizationtype
 	}
 	return ""
 }
 
 func (x *Method) GetAuthorizerid() string {
-	if x != nil {
-		return x.Authorizerid
+	if x != nil && x.Authorizerid != nil {
+		return *x.Authorizerid
 	}
 	return ""
 }
 
 func (x *Method) GetHttpmethod() string {
-	if x != nil {
-		return x.Httpmethod
+	if x != nil && x.Httpmethod != nil {
+		return *x.Httpmethod
 	}
 	return ""
 }
@@ -9645,8 +9645,8 @@ func (x *Method) GetMethodresponses() map[string]*MethodResponse {
 }
 
 func (x *Method) GetOperationname() string {
-	if x != nil {
-		return x.Operationname
+	if x != nil && x.Operationname != nil {
+		return *x.Operationname
 	}
 	return ""
 }
@@ -9666,8 +9666,8 @@ func (x *Method) GetRequestparameters() map[string]bool {
 }
 
 func (x *Method) GetRequestvalidatorid() string {
-	if x != nil {
-		return x.Requestvalidatorid
+	if x != nil && x.Requestvalidatorid != nil {
+		return *x.Requestvalidatorid
 	}
 	return ""
 }
@@ -9676,7 +9676,7 @@ type MethodResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Responsemodels     map[string]string      `protobuf:"bytes,356574313,rep,name=responsemodels,proto3" json:"responsemodels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responseparameters map[string]bool        `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	Statuscode         string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode         *string                `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -9726,8 +9726,8 @@ func (x *MethodResponse) GetResponseparameters() map[string]bool {
 }
 
 func (x *MethodResponse) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -9738,11 +9738,11 @@ type MethodSetting struct {
 	Cachettlinseconds                      *int32                                 `protobuf:"varint,79996982,opt,name=cachettlinseconds,proto3,oneof" json:"cachettlinseconds,omitempty"`
 	Cachingenabled                         *bool                                  `protobuf:"varint,489524028,opt,name=cachingenabled,proto3,oneof" json:"cachingenabled,omitempty"`
 	Datatraceenabled                       *bool                                  `protobuf:"varint,363519852,opt,name=datatraceenabled,proto3,oneof" json:"datatraceenabled,omitempty"`
-	Logginglevel                           string                                 `protobuf:"bytes,59396637,opt,name=logginglevel,proto3" json:"logginglevel,omitempty"`
+	Logginglevel                           *string                                `protobuf:"bytes,59396637,opt,name=logginglevel,proto3,oneof" json:"logginglevel,omitempty"`
 	Metricsenabled                         *bool                                  `protobuf:"varint,142460292,opt,name=metricsenabled,proto3,oneof" json:"metricsenabled,omitempty"`
 	Requireauthorizationforcachecontrol    *bool                                  `protobuf:"varint,529394912,opt,name=requireauthorizationforcachecontrol,proto3,oneof" json:"requireauthorizationforcachecontrol,omitempty"`
 	Throttlingburstlimit                   *int32                                 `protobuf:"varint,402901688,opt,name=throttlingburstlimit,proto3,oneof" json:"throttlingburstlimit,omitempty"`
-	Throttlingratelimit                    float64                                `protobuf:"fixed64,371718088,opt,name=throttlingratelimit,proto3" json:"throttlingratelimit,omitempty"`
+	Throttlingratelimit                    *float64                               `protobuf:"fixed64,371718088,opt,name=throttlingratelimit,proto3,oneof" json:"throttlingratelimit,omitempty"`
 	Unauthorizedcachecontrolheaderstrategy UnauthorizedCacheControlHeaderStrategy `protobuf:"varint,476741277,opt,name=unauthorizedcachecontrolheaderstrategy,proto3,enum=apigateway.UnauthorizedCacheControlHeaderStrategy" json:"unauthorizedcachecontrolheaderstrategy,omitempty"`
 	unknownFields                          protoimpl.UnknownFields
 	sizeCache                              protoimpl.SizeCache
@@ -9807,8 +9807,8 @@ func (x *MethodSetting) GetDatatraceenabled() bool {
 }
 
 func (x *MethodSetting) GetLogginglevel() string {
-	if x != nil {
-		return x.Logginglevel
+	if x != nil && x.Logginglevel != nil {
+		return *x.Logginglevel
 	}
 	return ""
 }
@@ -9835,8 +9835,8 @@ func (x *MethodSetting) GetThrottlingburstlimit() int32 {
 }
 
 func (x *MethodSetting) GetThrottlingratelimit() float64 {
-	if x != nil {
-		return x.Throttlingratelimit
+	if x != nil && x.Throttlingratelimit != nil {
+		return *x.Throttlingratelimit
 	}
 	return 0
 }
@@ -9851,7 +9851,7 @@ func (x *MethodSetting) GetUnauthorizedcachecontrolheaderstrategy() Unauthorized
 type MethodSnapshot struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
 	Apikeyrequired    *bool                  `protobuf:"varint,435360152,opt,name=apikeyrequired,proto3,oneof" json:"apikeyrequired,omitempty"`
-	Authorizationtype string                 `protobuf:"bytes,387986911,opt,name=authorizationtype,proto3" json:"authorizationtype,omitempty"`
+	Authorizationtype *string                `protobuf:"bytes,387986911,opt,name=authorizationtype,proto3,oneof" json:"authorizationtype,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -9894,19 +9894,19 @@ func (x *MethodSnapshot) GetApikeyrequired() bool {
 }
 
 func (x *MethodSnapshot) GetAuthorizationtype() string {
-	if x != nil {
-		return x.Authorizationtype
+	if x != nil && x.Authorizationtype != nil {
+		return *x.Authorizationtype
 	}
 	return ""
 }
 
 type Model struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Contenttype   string                 `protobuf:"bytes,281764659,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Schema        string                 `protobuf:"bytes,310182711,opt,name=schema,proto3" json:"schema,omitempty"`
+	Contenttype   *string                `protobuf:"bytes,281764659,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Schema        *string                `protobuf:"bytes,310182711,opt,name=schema,proto3,oneof" json:"schema,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9942,36 +9942,36 @@ func (*Model) Descriptor() ([]byte, []int) {
 }
 
 func (x *Model) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
 
 func (x *Model) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *Model) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *Model) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *Model) GetSchema() string {
-	if x != nil {
-		return x.Schema
+	if x != nil && x.Schema != nil {
+		return *x.Schema
 	}
 	return ""
 }
@@ -9979,7 +9979,7 @@ func (x *Model) GetSchema() string {
 type Models struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*Model               `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10022,16 +10022,16 @@ func (x *Models) GetItems() []*Model {
 }
 
 func (x *Models) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type MutualTlsAuthentication struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Truststoreuri      string                 `protobuf:"bytes,120246545,opt,name=truststoreuri,proto3" json:"truststoreuri,omitempty"`
-	Truststoreversion  string                 `protobuf:"bytes,119080291,opt,name=truststoreversion,proto3" json:"truststoreversion,omitempty"`
+	Truststoreuri      *string                `protobuf:"bytes,120246545,opt,name=truststoreuri,proto3,oneof" json:"truststoreuri,omitempty"`
+	Truststoreversion  *string                `protobuf:"bytes,119080291,opt,name=truststoreversion,proto3,oneof" json:"truststoreversion,omitempty"`
 	Truststorewarnings []string               `protobuf:"bytes,420536820,rep,name=truststorewarnings,proto3" json:"truststorewarnings,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -10068,15 +10068,15 @@ func (*MutualTlsAuthentication) Descriptor() ([]byte, []int) {
 }
 
 func (x *MutualTlsAuthentication) GetTruststoreuri() string {
-	if x != nil {
-		return x.Truststoreuri
+	if x != nil && x.Truststoreuri != nil {
+		return *x.Truststoreuri
 	}
 	return ""
 }
 
 func (x *MutualTlsAuthentication) GetTruststoreversion() string {
-	if x != nil {
-		return x.Truststoreversion
+	if x != nil && x.Truststoreversion != nil {
+		return *x.Truststoreversion
 	}
 	return ""
 }
@@ -10090,8 +10090,8 @@ func (x *MutualTlsAuthentication) GetTruststorewarnings() []string {
 
 type MutualTlsAuthenticationInput struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Truststoreuri     string                 `protobuf:"bytes,120246545,opt,name=truststoreuri,proto3" json:"truststoreuri,omitempty"`
-	Truststoreversion string                 `protobuf:"bytes,119080291,opt,name=truststoreversion,proto3" json:"truststoreversion,omitempty"`
+	Truststoreuri     *string                `protobuf:"bytes,120246545,opt,name=truststoreuri,proto3,oneof" json:"truststoreuri,omitempty"`
+	Truststoreversion *string                `protobuf:"bytes,119080291,opt,name=truststoreversion,proto3,oneof" json:"truststoreversion,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -10127,22 +10127,22 @@ func (*MutualTlsAuthenticationInput) Descriptor() ([]byte, []int) {
 }
 
 func (x *MutualTlsAuthenticationInput) GetTruststoreuri() string {
-	if x != nil {
-		return x.Truststoreuri
+	if x != nil && x.Truststoreuri != nil {
+		return *x.Truststoreuri
 	}
 	return ""
 }
 
 func (x *MutualTlsAuthenticationInput) GetTruststoreversion() string {
-	if x != nil {
-		return x.Truststoreversion
+	if x != nil && x.Truststoreversion != nil {
+		return *x.Truststoreversion
 	}
 	return ""
 }
 
 type NotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10178,18 +10178,18 @@ func (*NotFoundException) Descriptor() ([]byte, []int) {
 }
 
 func (x *NotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type PatchOperation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	From          string                 `protobuf:"bytes,365789302,opt,name=from,proto3" json:"from,omitempty"`
+	From          *string                `protobuf:"bytes,365789302,opt,name=from,proto3,oneof" json:"from,omitempty"`
 	Op            Op                     `protobuf:"varint,523513003,opt,name=op,proto3,enum=apigateway.Op" json:"op,omitempty"`
-	Path          string                 `protobuf:"bytes,75975991,opt,name=path,proto3" json:"path,omitempty"`
-	Value         string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Path          *string                `protobuf:"bytes,75975991,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	Value         *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10225,8 +10225,8 @@ func (*PatchOperation) Descriptor() ([]byte, []int) {
 }
 
 func (x *PatchOperation) GetFrom() string {
-	if x != nil {
-		return x.From
+	if x != nil && x.From != nil {
+		return *x.From
 	}
 	return ""
 }
@@ -10239,15 +10239,15 @@ func (x *PatchOperation) GetOp() Op {
 }
 
 func (x *PatchOperation) GetPath() string {
-	if x != nil {
-		return x.Path
+	if x != nil && x.Path != nil {
+		return *x.Path
 	}
 	return ""
 }
 
 func (x *PatchOperation) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -10258,7 +10258,7 @@ type PutGatewayResponseRequest struct {
 	Responsetemplates  map[string]string      `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetype       GatewayResponseType    `protobuf:"varint,377935935,opt,name=responsetype,proto3,enum=apigateway.GatewayResponseType" json:"responsetype,omitempty"`
 	Restapiid          string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Statuscode         string                 `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
+	Statuscode         *string                `protobuf:"bytes,299352223,opt,name=statuscode,proto3,oneof" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -10322,8 +10322,8 @@ func (x *PutGatewayResponseRequest) GetRestapiid() string {
 }
 
 func (x *PutGatewayResponseRequest) GetStatuscode() string {
-	if x != nil {
-		return x.Statuscode
+	if x != nil && x.Statuscode != nil {
+		return *x.Statuscode
 	}
 	return ""
 }
@@ -10331,15 +10331,15 @@ func (x *PutGatewayResponseRequest) GetStatuscode() string {
 type PutIntegrationRequest struct {
 	state                 protoimpl.MessageState  `protogen:"open.v1"`
 	Cachekeyparameters    []string                `protobuf:"bytes,481441313,rep,name=cachekeyparameters,proto3" json:"cachekeyparameters,omitempty"`
-	Cachenamespace        string                  `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3" json:"cachenamespace,omitempty"`
-	Connectionid          string                  `protobuf:"bytes,450027965,opt,name=connectionid,proto3" json:"connectionid,omitempty"`
+	Cachenamespace        *string                 `protobuf:"bytes,85102753,opt,name=cachenamespace,proto3,oneof" json:"cachenamespace,omitempty"`
+	Connectionid          *string                 `protobuf:"bytes,450027965,opt,name=connectionid,proto3,oneof" json:"connectionid,omitempty"`
 	Connectiontype        ConnectionType          `protobuf:"varint,336253170,opt,name=connectiontype,proto3,enum=apigateway.ConnectionType" json:"connectiontype,omitempty"`
 	Contenthandling       ContentHandlingStrategy `protobuf:"varint,533182832,opt,name=contenthandling,proto3,enum=apigateway.ContentHandlingStrategy" json:"contenthandling,omitempty"`
-	Credentials           string                  `protobuf:"bytes,150838226,opt,name=credentials,proto3" json:"credentials,omitempty"`
+	Credentials           *string                 `protobuf:"bytes,150838226,opt,name=credentials,proto3,oneof" json:"credentials,omitempty"`
 	Httpmethod            string                  `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
-	Integrationhttpmethod string                  `protobuf:"bytes,355314073,opt,name=integrationhttpmethod,proto3" json:"integrationhttpmethod,omitempty"`
-	Integrationtarget     string                  `protobuf:"bytes,17646705,opt,name=integrationtarget,proto3" json:"integrationtarget,omitempty"`
-	Passthroughbehavior   string                  `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3" json:"passthroughbehavior,omitempty"`
+	Integrationhttpmethod *string                 `protobuf:"bytes,355314073,opt,name=integrationhttpmethod,proto3,oneof" json:"integrationhttpmethod,omitempty"`
+	Integrationtarget     *string                 `protobuf:"bytes,17646705,opt,name=integrationtarget,proto3,oneof" json:"integrationtarget,omitempty"`
+	Passthroughbehavior   *string                 `protobuf:"bytes,310796908,opt,name=passthroughbehavior,proto3,oneof" json:"passthroughbehavior,omitempty"`
 	Requestparameters     map[string]string       `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Requesttemplates      map[string]string       `protobuf:"bytes,333512166,rep,name=requesttemplates,proto3" json:"requesttemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Resourceid            string                  `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
@@ -10348,7 +10348,7 @@ type PutIntegrationRequest struct {
 	Timeoutinmillis       *int32                  `protobuf:"varint,378229126,opt,name=timeoutinmillis,proto3,oneof" json:"timeoutinmillis,omitempty"`
 	Tlsconfig             *TlsConfig              `protobuf:"bytes,108946693,opt,name=tlsconfig,proto3" json:"tlsconfig,omitempty"`
 	Type                  IntegrationType         `protobuf:"varint,287830350,opt,name=type,proto3,enum=apigateway.IntegrationType" json:"type,omitempty"`
-	Uri                   string                  `protobuf:"bytes,395269118,opt,name=uri,proto3" json:"uri,omitempty"`
+	Uri                   *string                 `protobuf:"bytes,395269118,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -10391,15 +10391,15 @@ func (x *PutIntegrationRequest) GetCachekeyparameters() []string {
 }
 
 func (x *PutIntegrationRequest) GetCachenamespace() string {
-	if x != nil {
-		return x.Cachenamespace
+	if x != nil && x.Cachenamespace != nil {
+		return *x.Cachenamespace
 	}
 	return ""
 }
 
 func (x *PutIntegrationRequest) GetConnectionid() string {
-	if x != nil {
-		return x.Connectionid
+	if x != nil && x.Connectionid != nil {
+		return *x.Connectionid
 	}
 	return ""
 }
@@ -10419,8 +10419,8 @@ func (x *PutIntegrationRequest) GetContenthandling() ContentHandlingStrategy {
 }
 
 func (x *PutIntegrationRequest) GetCredentials() string {
-	if x != nil {
-		return x.Credentials
+	if x != nil && x.Credentials != nil {
+		return *x.Credentials
 	}
 	return ""
 }
@@ -10433,22 +10433,22 @@ func (x *PutIntegrationRequest) GetHttpmethod() string {
 }
 
 func (x *PutIntegrationRequest) GetIntegrationhttpmethod() string {
-	if x != nil {
-		return x.Integrationhttpmethod
+	if x != nil && x.Integrationhttpmethod != nil {
+		return *x.Integrationhttpmethod
 	}
 	return ""
 }
 
 func (x *PutIntegrationRequest) GetIntegrationtarget() string {
-	if x != nil {
-		return x.Integrationtarget
+	if x != nil && x.Integrationtarget != nil {
+		return *x.Integrationtarget
 	}
 	return ""
 }
 
 func (x *PutIntegrationRequest) GetPassthroughbehavior() string {
-	if x != nil {
-		return x.Passthroughbehavior
+	if x != nil && x.Passthroughbehavior != nil {
+		return *x.Passthroughbehavior
 	}
 	return ""
 }
@@ -10510,8 +10510,8 @@ func (x *PutIntegrationRequest) GetType() IntegrationType {
 }
 
 func (x *PutIntegrationRequest) GetUri() string {
-	if x != nil {
-		return x.Uri
+	if x != nil && x.Uri != nil {
+		return *x.Uri
 	}
 	return ""
 }
@@ -10524,7 +10524,7 @@ type PutIntegrationResponseRequest struct {
 	Responseparameters map[string]string       `protobuf:"bytes,64271839,rep,name=responseparameters,proto3" json:"responseparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Responsetemplates  map[string]string       `protobuf:"bytes,107376570,rep,name=responsetemplates,proto3" json:"responsetemplates,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Restapiid          string                  `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Selectionpattern   string                  `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3" json:"selectionpattern,omitempty"`
+	Selectionpattern   *string                 `protobuf:"bytes,470634042,opt,name=selectionpattern,proto3,oneof" json:"selectionpattern,omitempty"`
 	Statuscode         string                  `protobuf:"bytes,299352223,opt,name=statuscode,proto3" json:"statuscode,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -10603,8 +10603,8 @@ func (x *PutIntegrationResponseRequest) GetRestapiid() string {
 }
 
 func (x *PutIntegrationResponseRequest) GetSelectionpattern() string {
-	if x != nil {
-		return x.Selectionpattern
+	if x != nil && x.Selectionpattern != nil {
+		return *x.Selectionpattern
 	}
 	return ""
 }
@@ -10621,12 +10621,12 @@ type PutMethodRequest struct {
 	Apikeyrequired      *bool                  `protobuf:"varint,435360152,opt,name=apikeyrequired,proto3,oneof" json:"apikeyrequired,omitempty"`
 	Authorizationscopes []string               `protobuf:"bytes,423149932,rep,name=authorizationscopes,proto3" json:"authorizationscopes,omitempty"`
 	Authorizationtype   string                 `protobuf:"bytes,387986911,opt,name=authorizationtype,proto3" json:"authorizationtype,omitempty"`
-	Authorizerid        string                 `protobuf:"bytes,111773148,opt,name=authorizerid,proto3" json:"authorizerid,omitempty"`
+	Authorizerid        *string                `protobuf:"bytes,111773148,opt,name=authorizerid,proto3,oneof" json:"authorizerid,omitempty"`
 	Httpmethod          string                 `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
-	Operationname       string                 `protobuf:"bytes,178909574,opt,name=operationname,proto3" json:"operationname,omitempty"`
+	Operationname       *string                `protobuf:"bytes,178909574,opt,name=operationname,proto3,oneof" json:"operationname,omitempty"`
 	Requestmodels       map[string]string      `protobuf:"bytes,397252853,rep,name=requestmodels,proto3" json:"requestmodels,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Requestparameters   map[string]bool        `protobuf:"bytes,523499939,rep,name=requestparameters,proto3" json:"requestparameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
-	Requestvalidatorid  string                 `protobuf:"bytes,517546134,opt,name=requestvalidatorid,proto3" json:"requestvalidatorid,omitempty"`
+	Requestvalidatorid  *string                `protobuf:"bytes,517546134,opt,name=requestvalidatorid,proto3,oneof" json:"requestvalidatorid,omitempty"`
 	Resourceid          string                 `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
 	Restapiid           string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	unknownFields       protoimpl.UnknownFields
@@ -10685,8 +10685,8 @@ func (x *PutMethodRequest) GetAuthorizationtype() string {
 }
 
 func (x *PutMethodRequest) GetAuthorizerid() string {
-	if x != nil {
-		return x.Authorizerid
+	if x != nil && x.Authorizerid != nil {
+		return *x.Authorizerid
 	}
 	return ""
 }
@@ -10699,8 +10699,8 @@ func (x *PutMethodRequest) GetHttpmethod() string {
 }
 
 func (x *PutMethodRequest) GetOperationname() string {
-	if x != nil {
-		return x.Operationname
+	if x != nil && x.Operationname != nil {
+		return *x.Operationname
 	}
 	return ""
 }
@@ -10720,8 +10720,8 @@ func (x *PutMethodRequest) GetRequestparameters() map[string]bool {
 }
 
 func (x *PutMethodRequest) GetRequestvalidatorid() string {
-	if x != nil {
-		return x.Requestvalidatorid
+	if x != nil && x.Requestvalidatorid != nil {
+		return *x.Requestvalidatorid
 	}
 	return ""
 }
@@ -11014,8 +11014,8 @@ func (x *RejectDomainNameAccessAssociationRequest) GetDomainnamearn() string {
 
 type RequestValidator struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Id                        string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Name                      string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Id                        *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name                      *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Validaterequestbody       *bool                  `protobuf:"varint,397505841,opt,name=validaterequestbody,proto3,oneof" json:"validaterequestbody,omitempty"`
 	Validaterequestparameters *bool                  `protobuf:"varint,464035801,opt,name=validaterequestparameters,proto3,oneof" json:"validaterequestparameters,omitempty"`
 	unknownFields             protoimpl.UnknownFields
@@ -11053,15 +11053,15 @@ func (*RequestValidator) Descriptor() ([]byte, []int) {
 }
 
 func (x *RequestValidator) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *RequestValidator) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -11083,7 +11083,7 @@ func (x *RequestValidator) GetValidaterequestparameters() bool {
 type RequestValidators struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*RequestValidator    `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11126,18 +11126,18 @@ func (x *RequestValidators) GetItems() []*RequestValidator {
 }
 
 func (x *RequestValidators) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type Resource struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Id              string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Parentid        string                 `protobuf:"bytes,106050857,opt,name=parentid,proto3" json:"parentid,omitempty"`
-	Path            string                 `protobuf:"bytes,75975991,opt,name=path,proto3" json:"path,omitempty"`
-	Pathpart        string                 `protobuf:"bytes,487915984,opt,name=pathpart,proto3" json:"pathpart,omitempty"`
+	Id              *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Parentid        *string                `protobuf:"bytes,106050857,opt,name=parentid,proto3,oneof" json:"parentid,omitempty"`
+	Path            *string                `protobuf:"bytes,75975991,opt,name=path,proto3,oneof" json:"path,omitempty"`
+	Pathpart        *string                `protobuf:"bytes,487915984,opt,name=pathpart,proto3,oneof" json:"pathpart,omitempty"`
 	Resourcemethods map[string]*Method     `protobuf:"bytes,307700458,rep,name=resourcemethods,proto3" json:"resourcemethods,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -11174,29 +11174,29 @@ func (*Resource) Descriptor() ([]byte, []int) {
 }
 
 func (x *Resource) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *Resource) GetParentid() string {
-	if x != nil {
-		return x.Parentid
+	if x != nil && x.Parentid != nil {
+		return *x.Parentid
 	}
 	return ""
 }
 
 func (x *Resource) GetPath() string {
-	if x != nil {
-		return x.Path
+	if x != nil && x.Path != nil {
+		return *x.Path
 	}
 	return ""
 }
 
 func (x *Resource) GetPathpart() string {
-	if x != nil {
-		return x.Pathpart
+	if x != nil && x.Pathpart != nil {
+		return *x.Pathpart
 	}
 	return ""
 }
@@ -11211,7 +11211,7 @@ func (x *Resource) GetResourcemethods() map[string]*Method {
 type Resources struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*Resource            `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11254,8 +11254,8 @@ func (x *Resources) GetItems() []*Resource {
 }
 
 func (x *Resources) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -11264,21 +11264,21 @@ type RestApi struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Apikeysource              ApiKeySourceType       `protobuf:"varint,108531220,opt,name=apikeysource,proto3,enum=apigateway.ApiKeySourceType" json:"apikeysource,omitempty"`
 	Apistatus                 ApiStatus              `protobuf:"varint,200568018,opt,name=apistatus,proto3,enum=apigateway.ApiStatus" json:"apistatus,omitempty"`
-	Apistatusmessage          string                 `protobuf:"bytes,353995209,opt,name=apistatusmessage,proto3" json:"apistatusmessage,omitempty"`
+	Apistatusmessage          *string                `protobuf:"bytes,353995209,opt,name=apistatusmessage,proto3,oneof" json:"apistatusmessage,omitempty"`
 	Binarymediatypes          []string               `protobuf:"bytes,406416146,rep,name=binarymediatypes,proto3" json:"binarymediatypes,omitempty"`
-	Createddate               string                 `protobuf:"bytes,53061200,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Description               string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
+	Createddate               *string                `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Description               *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Disableexecuteapiendpoint *bool                  `protobuf:"varint,148140696,opt,name=disableexecuteapiendpoint,proto3,oneof" json:"disableexecuteapiendpoint,omitempty"`
 	Endpointaccessmode        EndpointAccessMode     `protobuf:"varint,356705630,opt,name=endpointaccessmode,proto3,enum=apigateway.EndpointAccessMode" json:"endpointaccessmode,omitempty"`
 	Endpointconfiguration     *EndpointConfiguration `protobuf:"bytes,487543735,opt,name=endpointconfiguration,proto3" json:"endpointconfiguration,omitempty"`
-	Id                        string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Id                        *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	Minimumcompressionsize    *int32                 `protobuf:"varint,254902719,opt,name=minimumcompressionsize,proto3,oneof" json:"minimumcompressionsize,omitempty"`
-	Name                      string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Policy                    string                 `protobuf:"bytes,247528064,opt,name=policy,proto3" json:"policy,omitempty"`
-	Rootresourceid            string                 `protobuf:"bytes,360157585,opt,name=rootresourceid,proto3" json:"rootresourceid,omitempty"`
+	Name                      *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Policy                    *string                `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
+	Rootresourceid            *string                `protobuf:"bytes,360157585,opt,name=rootresourceid,proto3,oneof" json:"rootresourceid,omitempty"`
 	Securitypolicy            SecurityPolicy         `protobuf:"varint,491792990,opt,name=securitypolicy,proto3,enum=apigateway.SecurityPolicy" json:"securitypolicy,omitempty"`
 	Tags                      map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Version                   string                 `protobuf:"bytes,108113560,opt,name=version,proto3" json:"version,omitempty"`
+	Version                   *string                `protobuf:"bytes,108113560,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	Warnings                  []string               `protobuf:"bytes,185617301,rep,name=warnings,proto3" json:"warnings,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -11329,8 +11329,8 @@ func (x *RestApi) GetApistatus() ApiStatus {
 }
 
 func (x *RestApi) GetApistatusmessage() string {
-	if x != nil {
-		return x.Apistatusmessage
+	if x != nil && x.Apistatusmessage != nil {
+		return *x.Apistatusmessage
 	}
 	return ""
 }
@@ -11343,15 +11343,15 @@ func (x *RestApi) GetBinarymediatypes() []string {
 }
 
 func (x *RestApi) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *RestApi) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -11378,8 +11378,8 @@ func (x *RestApi) GetEndpointconfiguration() *EndpointConfiguration {
 }
 
 func (x *RestApi) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -11392,22 +11392,22 @@ func (x *RestApi) GetMinimumcompressionsize() int32 {
 }
 
 func (x *RestApi) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *RestApi) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
 
 func (x *RestApi) GetRootresourceid() string {
-	if x != nil {
-		return x.Rootresourceid
+	if x != nil && x.Rootresourceid != nil {
+		return *x.Rootresourceid
 	}
 	return ""
 }
@@ -11427,8 +11427,8 @@ func (x *RestApi) GetTags() map[string]string {
 }
 
 func (x *RestApi) GetVersion() string {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return ""
 }
@@ -11443,7 +11443,7 @@ func (x *RestApi) GetWarnings() []string {
 type RestApis struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*RestApi             `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11486,18 +11486,18 @@ func (x *RestApis) GetItems() []*RestApi {
 }
 
 func (x *RestApis) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type SdkConfigurationProperty struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Defaultvalue  string                 `protobuf:"bytes,403858624,opt,name=defaultvalue,proto3" json:"defaultvalue,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Friendlyname  string                 `protobuf:"bytes,39239102,opt,name=friendlyname,proto3" json:"friendlyname,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Defaultvalue  *string                `protobuf:"bytes,403858624,opt,name=defaultvalue,proto3,oneof" json:"defaultvalue,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Friendlyname  *string                `protobuf:"bytes,39239102,opt,name=friendlyname,proto3,oneof" json:"friendlyname,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Required      *bool                  `protobuf:"varint,76318241,opt,name=required,proto3,oneof" json:"required,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11534,29 +11534,29 @@ func (*SdkConfigurationProperty) Descriptor() ([]byte, []int) {
 }
 
 func (x *SdkConfigurationProperty) GetDefaultvalue() string {
-	if x != nil {
-		return x.Defaultvalue
+	if x != nil && x.Defaultvalue != nil {
+		return *x.Defaultvalue
 	}
 	return ""
 }
 
 func (x *SdkConfigurationProperty) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *SdkConfigurationProperty) GetFriendlyname() string {
-	if x != nil {
-		return x.Friendlyname
+	if x != nil && x.Friendlyname != nil {
+		return *x.Friendlyname
 	}
 	return ""
 }
 
 func (x *SdkConfigurationProperty) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -11570,9 +11570,9 @@ func (x *SdkConfigurationProperty) GetRequired() bool {
 
 type SdkResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Body               []byte                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
-	Contentdisposition string                 `protobuf:"bytes,375146466,opt,name=contentdisposition,proto3" json:"contentdisposition,omitempty"`
-	Contenttype        string                 `protobuf:"bytes,281764659,opt,name=contenttype,proto3" json:"contenttype,omitempty"`
+	Body               []byte                 `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Contentdisposition *string                `protobuf:"bytes,375146466,opt,name=contentdisposition,proto3,oneof" json:"contentdisposition,omitempty"`
+	Contenttype        *string                `protobuf:"bytes,281764659,opt,name=contenttype,proto3,oneof" json:"contenttype,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -11615,15 +11615,15 @@ func (x *SdkResponse) GetBody() []byte {
 }
 
 func (x *SdkResponse) GetContentdisposition() string {
-	if x != nil {
-		return x.Contentdisposition
+	if x != nil && x.Contentdisposition != nil {
+		return *x.Contentdisposition
 	}
 	return ""
 }
 
 func (x *SdkResponse) GetContenttype() string {
-	if x != nil {
-		return x.Contenttype
+	if x != nil && x.Contenttype != nil {
+		return *x.Contenttype
 	}
 	return ""
 }
@@ -11631,9 +11631,9 @@ func (x *SdkResponse) GetContenttype() string {
 type SdkType struct {
 	state                   protoimpl.MessageState      `protogen:"open.v1"`
 	Configurationproperties []*SdkConfigurationProperty `protobuf:"bytes,113650241,rep,name=configurationproperties,proto3" json:"configurationproperties,omitempty"`
-	Description             string                      `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Friendlyname            string                      `protobuf:"bytes,39239102,opt,name=friendlyname,proto3" json:"friendlyname,omitempty"`
-	Id                      string                      `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
+	Description             *string                     `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Friendlyname            *string                     `protobuf:"bytes,39239102,opt,name=friendlyname,proto3,oneof" json:"friendlyname,omitempty"`
+	Id                      *string                     `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -11676,22 +11676,22 @@ func (x *SdkType) GetConfigurationproperties() []*SdkConfigurationProperty {
 }
 
 func (x *SdkType) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *SdkType) GetFriendlyname() string {
-	if x != nil {
-		return x.Friendlyname
+	if x != nil && x.Friendlyname != nil {
+		return *x.Friendlyname
 	}
 	return ""
 }
 
 func (x *SdkType) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
@@ -11742,8 +11742,8 @@ func (x *SdkTypes) GetItems() []*SdkType {
 
 type ServiceUnavailableException struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Message           string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Retryafterseconds string                 `protobuf:"bytes,436039555,opt,name=retryafterseconds,proto3" json:"retryafterseconds,omitempty"`
+	Message           *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Retryafterseconds *string                `protobuf:"bytes,436039555,opt,name=retryafterseconds,proto3,oneof" json:"retryafterseconds,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -11779,15 +11779,15 @@ func (*ServiceUnavailableException) Descriptor() ([]byte, []int) {
 }
 
 func (x *ServiceUnavailableException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *ServiceUnavailableException) GetRetryafterseconds() string {
-	if x != nil {
-		return x.Retryafterseconds
+	if x != nil && x.Retryafterseconds != nil {
+		return *x.Retryafterseconds
 	}
 	return ""
 }
@@ -11799,18 +11799,18 @@ type Stage struct {
 	Cacheclustersize     CacheClusterSize          `protobuf:"varint,232189861,opt,name=cacheclustersize,proto3,enum=apigateway.CacheClusterSize" json:"cacheclustersize,omitempty"`
 	Cacheclusterstatus   CacheClusterStatus        `protobuf:"varint,385293784,opt,name=cacheclusterstatus,proto3,enum=apigateway.CacheClusterStatus" json:"cacheclusterstatus,omitempty"`
 	Canarysettings       *CanarySettings           `protobuf:"bytes,285544261,opt,name=canarysettings,proto3" json:"canarysettings,omitempty"`
-	Clientcertificateid  string                    `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3" json:"clientcertificateid,omitempty"`
-	Createddate          string                    `protobuf:"bytes,53061200,opt,name=createddate,proto3" json:"createddate,omitempty"`
-	Deploymentid         string                    `protobuf:"bytes,439369188,opt,name=deploymentid,proto3" json:"deploymentid,omitempty"`
-	Description          string                    `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Documentationversion string                    `protobuf:"bytes,167009804,opt,name=documentationversion,proto3" json:"documentationversion,omitempty"`
-	Lastupdateddate      string                    `protobuf:"bytes,448453361,opt,name=lastupdateddate,proto3" json:"lastupdateddate,omitempty"`
+	Clientcertificateid  *string                   `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3,oneof" json:"clientcertificateid,omitempty"`
+	Createddate          *string                   `protobuf:"bytes,53061200,opt,name=createddate,proto3,oneof" json:"createddate,omitempty"`
+	Deploymentid         *string                   `protobuf:"bytes,439369188,opt,name=deploymentid,proto3,oneof" json:"deploymentid,omitempty"`
+	Description          *string                   `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Documentationversion *string                   `protobuf:"bytes,167009804,opt,name=documentationversion,proto3,oneof" json:"documentationversion,omitempty"`
+	Lastupdateddate      *string                   `protobuf:"bytes,448453361,opt,name=lastupdateddate,proto3,oneof" json:"lastupdateddate,omitempty"`
 	Methodsettings       map[string]*MethodSetting `protobuf:"bytes,30387838,rep,name=methodsettings,proto3" json:"methodsettings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Stagename            string                    `protobuf:"bytes,9563663,opt,name=stagename,proto3" json:"stagename,omitempty"`
+	Stagename            *string                   `protobuf:"bytes,9563663,opt,name=stagename,proto3,oneof" json:"stagename,omitempty"`
 	Tags                 map[string]string         `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Tracingenabled       *bool                     `protobuf:"varint,390995731,opt,name=tracingenabled,proto3,oneof" json:"tracingenabled,omitempty"`
 	Variables            map[string]string         `protobuf:"bytes,162226883,rep,name=variables,proto3" json:"variables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Webaclarn            string                    `protobuf:"bytes,243701763,opt,name=webaclarn,proto3" json:"webaclarn,omitempty"`
+	Webaclarn            *string                   `protobuf:"bytes,243701763,opt,name=webaclarn,proto3,oneof" json:"webaclarn,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -11881,43 +11881,43 @@ func (x *Stage) GetCanarysettings() *CanarySettings {
 }
 
 func (x *Stage) GetClientcertificateid() string {
-	if x != nil {
-		return x.Clientcertificateid
+	if x != nil && x.Clientcertificateid != nil {
+		return *x.Clientcertificateid
 	}
 	return ""
 }
 
 func (x *Stage) GetCreateddate() string {
-	if x != nil {
-		return x.Createddate
+	if x != nil && x.Createddate != nil {
+		return *x.Createddate
 	}
 	return ""
 }
 
 func (x *Stage) GetDeploymentid() string {
-	if x != nil {
-		return x.Deploymentid
+	if x != nil && x.Deploymentid != nil {
+		return *x.Deploymentid
 	}
 	return ""
 }
 
 func (x *Stage) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *Stage) GetDocumentationversion() string {
-	if x != nil {
-		return x.Documentationversion
+	if x != nil && x.Documentationversion != nil {
+		return *x.Documentationversion
 	}
 	return ""
 }
 
 func (x *Stage) GetLastupdateddate() string {
-	if x != nil {
-		return x.Lastupdateddate
+	if x != nil && x.Lastupdateddate != nil {
+		return *x.Lastupdateddate
 	}
 	return ""
 }
@@ -11930,8 +11930,8 @@ func (x *Stage) GetMethodsettings() map[string]*MethodSetting {
 }
 
 func (x *Stage) GetStagename() string {
-	if x != nil {
-		return x.Stagename
+	if x != nil && x.Stagename != nil {
+		return *x.Stagename
 	}
 	return ""
 }
@@ -11958,16 +11958,16 @@ func (x *Stage) GetVariables() map[string]string {
 }
 
 func (x *Stage) GetWebaclarn() string {
-	if x != nil {
-		return x.Webaclarn
+	if x != nil && x.Webaclarn != nil {
+		return *x.Webaclarn
 	}
 	return ""
 }
 
 type StageKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Restapiid     string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
-	Stagename     string                 `protobuf:"bytes,9563663,opt,name=stagename,proto3" json:"stagename,omitempty"`
+	Restapiid     *string                `protobuf:"bytes,383799833,opt,name=restapiid,proto3,oneof" json:"restapiid,omitempty"`
+	Stagename     *string                `protobuf:"bytes,9563663,opt,name=stagename,proto3,oneof" json:"stagename,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12003,15 +12003,15 @@ func (*StageKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *StageKey) GetRestapiid() string {
-	if x != nil {
-		return x.Restapiid
+	if x != nil && x.Restapiid != nil {
+		return *x.Restapiid
 	}
 	return ""
 }
 
 func (x *StageKey) GetStagename() string {
-	if x != nil {
-		return x.Stagename
+	if x != nil && x.Stagename != nil {
+		return *x.Stagename
 	}
 	return ""
 }
@@ -12158,7 +12158,7 @@ func (x *Tags) GetTags() map[string]string {
 
 type Template struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12194,8 +12194,8 @@ func (*Template) Descriptor() ([]byte, []int) {
 }
 
 func (x *Template) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -12204,10 +12204,10 @@ type TestInvokeAuthorizerRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Additionalcontext   map[string]string      `protobuf:"bytes,471949152,rep,name=additionalcontext,proto3" json:"additionalcontext,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Authorizerid        string                 `protobuf:"bytes,111773148,opt,name=authorizerid,proto3" json:"authorizerid,omitempty"`
-	Body                string                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
+	Body                *string                `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Headers             map[string]string      `protobuf:"bytes,375773674,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Multivalueheaders   map[string]string      `protobuf:"bytes,142421420,rep,name=multivalueheaders,proto3" json:"multivalueheaders,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Pathwithquerystring string                 `protobuf:"bytes,159950736,opt,name=pathwithquerystring,proto3" json:"pathwithquerystring,omitempty"`
+	Pathwithquerystring *string                `protobuf:"bytes,159950736,opt,name=pathwithquerystring,proto3,oneof" json:"pathwithquerystring,omitempty"`
 	Restapiid           string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	Stagevariables      map[string]string      `protobuf:"bytes,208524923,rep,name=stagevariables,proto3" json:"stagevariables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields       protoimpl.UnknownFields
@@ -12259,8 +12259,8 @@ func (x *TestInvokeAuthorizerRequest) GetAuthorizerid() string {
 }
 
 func (x *TestInvokeAuthorizerRequest) GetBody() string {
-	if x != nil {
-		return x.Body
+	if x != nil && x.Body != nil {
+		return *x.Body
 	}
 	return ""
 }
@@ -12280,8 +12280,8 @@ func (x *TestInvokeAuthorizerRequest) GetMultivalueheaders() map[string]string {
 }
 
 func (x *TestInvokeAuthorizerRequest) GetPathwithquerystring() string {
-	if x != nil {
-		return x.Pathwithquerystring
+	if x != nil && x.Pathwithquerystring != nil {
+		return *x.Pathwithquerystring
 	}
 	return ""
 }
@@ -12306,9 +12306,9 @@ type TestInvokeAuthorizerResponse struct {
 	Claims        map[string]string      `protobuf:"bytes,479124501,rep,name=claims,proto3" json:"claims,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Clientstatus  *int32                 `protobuf:"varint,35642913,opt,name=clientstatus,proto3,oneof" json:"clientstatus,omitempty"`
 	Latency       *int64                 `protobuf:"varint,318473050,opt,name=latency,proto3,oneof" json:"latency,omitempty"`
-	Log           string                 `protobuf:"bytes,525422930,opt,name=log,proto3" json:"log,omitempty"`
-	Policy        string                 `protobuf:"bytes,247528064,opt,name=policy,proto3" json:"policy,omitempty"`
-	Principalid   string                 `protobuf:"bytes,350710285,opt,name=principalid,proto3" json:"principalid,omitempty"`
+	Log           *string                `protobuf:"bytes,525422930,opt,name=log,proto3,oneof" json:"log,omitempty"`
+	Policy        *string                `protobuf:"bytes,247528064,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
+	Principalid   *string                `protobuf:"bytes,350710285,opt,name=principalid,proto3,oneof" json:"principalid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12372,34 +12372,34 @@ func (x *TestInvokeAuthorizerResponse) GetLatency() int64 {
 }
 
 func (x *TestInvokeAuthorizerResponse) GetLog() string {
-	if x != nil {
-		return x.Log
+	if x != nil && x.Log != nil {
+		return *x.Log
 	}
 	return ""
 }
 
 func (x *TestInvokeAuthorizerResponse) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
 
 func (x *TestInvokeAuthorizerResponse) GetPrincipalid() string {
-	if x != nil {
-		return x.Principalid
+	if x != nil && x.Principalid != nil {
+		return *x.Principalid
 	}
 	return ""
 }
 
 type TestInvokeMethodRequest struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Body                string                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
-	Clientcertificateid string                 `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3" json:"clientcertificateid,omitempty"`
+	Body                *string                `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
+	Clientcertificateid *string                `protobuf:"bytes,276222909,opt,name=clientcertificateid,proto3,oneof" json:"clientcertificateid,omitempty"`
 	Headers             map[string]string      `protobuf:"bytes,375773674,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Httpmethod          string                 `protobuf:"bytes,115276273,opt,name=httpmethod,proto3" json:"httpmethod,omitempty"`
 	Multivalueheaders   map[string]string      `protobuf:"bytes,142421420,rep,name=multivalueheaders,proto3" json:"multivalueheaders,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Pathwithquerystring string                 `protobuf:"bytes,159950736,opt,name=pathwithquerystring,proto3" json:"pathwithquerystring,omitempty"`
+	Pathwithquerystring *string                `protobuf:"bytes,159950736,opt,name=pathwithquerystring,proto3,oneof" json:"pathwithquerystring,omitempty"`
 	Resourceid          string                 `protobuf:"bytes,318922417,opt,name=resourceid,proto3" json:"resourceid,omitempty"`
 	Restapiid           string                 `protobuf:"bytes,383799833,opt,name=restapiid,proto3" json:"restapiid,omitempty"`
 	Stagevariables      map[string]string      `protobuf:"bytes,208524923,rep,name=stagevariables,proto3" json:"stagevariables,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
@@ -12438,15 +12438,15 @@ func (*TestInvokeMethodRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *TestInvokeMethodRequest) GetBody() string {
-	if x != nil {
-		return x.Body
+	if x != nil && x.Body != nil {
+		return *x.Body
 	}
 	return ""
 }
 
 func (x *TestInvokeMethodRequest) GetClientcertificateid() string {
-	if x != nil {
-		return x.Clientcertificateid
+	if x != nil && x.Clientcertificateid != nil {
+		return *x.Clientcertificateid
 	}
 	return ""
 }
@@ -12473,8 +12473,8 @@ func (x *TestInvokeMethodRequest) GetMultivalueheaders() map[string]string {
 }
 
 func (x *TestInvokeMethodRequest) GetPathwithquerystring() string {
-	if x != nil {
-		return x.Pathwithquerystring
+	if x != nil && x.Pathwithquerystring != nil {
+		return *x.Pathwithquerystring
 	}
 	return ""
 }
@@ -12502,10 +12502,10 @@ func (x *TestInvokeMethodRequest) GetStagevariables() map[string]string {
 
 type TestInvokeMethodResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Body              string                 `protobuf:"bytes,464157046,opt,name=body,proto3" json:"body,omitempty"`
+	Body              *string                `protobuf:"bytes,464157046,opt,name=body,proto3,oneof" json:"body,omitempty"`
 	Headers           map[string]string      `protobuf:"bytes,375773674,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Latency           *int64                 `protobuf:"varint,318473050,opt,name=latency,proto3,oneof" json:"latency,omitempty"`
-	Log               string                 `protobuf:"bytes,525422930,opt,name=log,proto3" json:"log,omitempty"`
+	Log               *string                `protobuf:"bytes,525422930,opt,name=log,proto3,oneof" json:"log,omitempty"`
 	Multivalueheaders map[string]string      `protobuf:"bytes,142421420,rep,name=multivalueheaders,proto3" json:"multivalueheaders,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Status            *int32                 `protobuf:"varint,441153520,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -12543,8 +12543,8 @@ func (*TestInvokeMethodResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *TestInvokeMethodResponse) GetBody() string {
-	if x != nil {
-		return x.Body
+	if x != nil && x.Body != nil {
+		return *x.Body
 	}
 	return ""
 }
@@ -12564,8 +12564,8 @@ func (x *TestInvokeMethodResponse) GetLatency() int64 {
 }
 
 func (x *TestInvokeMethodResponse) GetLog() string {
-	if x != nil {
-		return x.Log
+	if x != nil && x.Log != nil {
+		return *x.Log
 	}
 	return ""
 }
@@ -12587,7 +12587,7 @@ func (x *TestInvokeMethodResponse) GetStatus() int32 {
 type ThrottleSettings struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Burstlimit    *int32                 `protobuf:"varint,37855041,opt,name=burstlimit,proto3,oneof" json:"burstlimit,omitempty"`
-	Ratelimit     float64                `protobuf:"fixed64,505789539,opt,name=ratelimit,proto3" json:"ratelimit,omitempty"`
+	Ratelimit     *float64               `protobuf:"fixed64,505789539,opt,name=ratelimit,proto3,oneof" json:"ratelimit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12630,8 +12630,8 @@ func (x *ThrottleSettings) GetBurstlimit() int32 {
 }
 
 func (x *ThrottleSettings) GetRatelimit() float64 {
-	if x != nil {
-		return x.Ratelimit
+	if x != nil && x.Ratelimit != nil {
+		return *x.Ratelimit
 	}
 	return 0
 }
@@ -12682,8 +12682,8 @@ func (x *TlsConfig) GetInsecureskipverification() bool {
 
 type TooManyRequestsException struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Message           string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
-	Retryafterseconds string                 `protobuf:"bytes,436039555,opt,name=retryafterseconds,proto3" json:"retryafterseconds,omitempty"`
+	Message           *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Retryafterseconds *string                `protobuf:"bytes,436039555,opt,name=retryafterseconds,proto3,oneof" json:"retryafterseconds,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -12719,22 +12719,22 @@ func (*TooManyRequestsException) Descriptor() ([]byte, []int) {
 }
 
 func (x *TooManyRequestsException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *TooManyRequestsException) GetRetryafterseconds() string {
-	if x != nil {
-		return x.Retryafterseconds
+	if x != nil && x.Retryafterseconds != nil {
+		return *x.Retryafterseconds
 	}
 	return ""
 }
 
 type UnauthorizedException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -12770,8 +12770,8 @@ func (*UnauthorizedException) Descriptor() ([]byte, []int) {
 }
 
 func (x *UnauthorizedException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -12988,7 +12988,7 @@ type UpdateBasePathMappingRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Basepath        string                 `protobuf:"bytes,267528880,opt,name=basepath,proto3" json:"basepath,omitempty"`
 	Domainname      string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid    string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid    *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	Patchoperations []*PatchOperation      `protobuf:"bytes,201637420,rep,name=patchoperations,proto3" json:"patchoperations,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -13039,8 +13039,8 @@ func (x *UpdateBasePathMappingRequest) GetDomainname() string {
 }
 
 func (x *UpdateBasePathMappingRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -13287,7 +13287,7 @@ func (x *UpdateDocumentationVersionRequest) GetRestapiid() string {
 type UpdateDomainNameRequest struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Domainname      string                 `protobuf:"bytes,390326667,opt,name=domainname,proto3" json:"domainname,omitempty"`
-	Domainnameid    string                 `protobuf:"bytes,298270248,opt,name=domainnameid,proto3" json:"domainnameid,omitempty"`
+	Domainnameid    *string                `protobuf:"bytes,298270248,opt,name=domainnameid,proto3,oneof" json:"domainnameid,omitempty"`
 	Patchoperations []*PatchOperation      `protobuf:"bytes,201637420,rep,name=patchoperations,proto3" json:"patchoperations,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -13331,8 +13331,8 @@ func (x *UpdateDomainNameRequest) GetDomainname() string {
 }
 
 func (x *UpdateDomainNameRequest) GetDomainnameid() string {
-	if x != nil {
-		return x.Domainnameid
+	if x != nil && x.Domainnameid != nil {
+		return *x.Domainnameid
 	}
 	return ""
 }
@@ -14150,11 +14150,11 @@ func (x *UpdateVpcLinkRequest) GetVpclinkid() string {
 
 type Usage struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Enddate       string                 `protobuf:"bytes,384831215,opt,name=enddate,proto3" json:"enddate,omitempty"`
+	Enddate       *string                `protobuf:"bytes,384831215,opt,name=enddate,proto3,oneof" json:"enddate,omitempty"`
 	Items         map[string]string      `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
-	Startdate     string                 `protobuf:"bytes,364840732,opt,name=startdate,proto3" json:"startdate,omitempty"`
-	Usageplanid   string                 `protobuf:"bytes,509179991,opt,name=usageplanid,proto3" json:"usageplanid,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
+	Startdate     *string                `protobuf:"bytes,364840732,opt,name=startdate,proto3,oneof" json:"startdate,omitempty"`
+	Usageplanid   *string                `protobuf:"bytes,509179991,opt,name=usageplanid,proto3,oneof" json:"usageplanid,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14190,8 +14190,8 @@ func (*Usage) Descriptor() ([]byte, []int) {
 }
 
 func (x *Usage) GetEnddate() string {
-	if x != nil {
-		return x.Enddate
+	if x != nil && x.Enddate != nil {
+		return *x.Enddate
 	}
 	return ""
 }
@@ -14204,22 +14204,22 @@ func (x *Usage) GetItems() map[string]string {
 }
 
 func (x *Usage) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 func (x *Usage) GetStartdate() string {
-	if x != nil {
-		return x.Startdate
+	if x != nil && x.Startdate != nil {
+		return *x.Startdate
 	}
 	return ""
 }
 
 func (x *Usage) GetUsageplanid() string {
-	if x != nil {
-		return x.Usageplanid
+	if x != nil && x.Usageplanid != nil {
+		return *x.Usageplanid
 	}
 	return ""
 }
@@ -14227,10 +14227,10 @@ func (x *Usage) GetUsageplanid() string {
 type UsagePlan struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Apistages     []*ApiStage            `protobuf:"bytes,64558449,rep,name=apistages,proto3" json:"apistages,omitempty"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Productcode   string                 `protobuf:"bytes,533381226,opt,name=productcode,proto3" json:"productcode,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Productcode   *string                `protobuf:"bytes,533381226,opt,name=productcode,proto3,oneof" json:"productcode,omitempty"`
 	Quota         *QuotaSettings         `protobuf:"bytes,243824012,opt,name=quota,proto3" json:"quota,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Throttle      *ThrottleSettings      `protobuf:"bytes,395260638,opt,name=throttle,proto3" json:"throttle,omitempty"`
@@ -14276,29 +14276,29 @@ func (x *UsagePlan) GetApistages() []*ApiStage {
 }
 
 func (x *UsagePlan) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *UsagePlan) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *UsagePlan) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *UsagePlan) GetProductcode() string {
-	if x != nil {
-		return x.Productcode
+	if x != nil && x.Productcode != nil {
+		return *x.Productcode
 	}
 	return ""
 }
@@ -14326,10 +14326,10 @@ func (x *UsagePlan) GetThrottle() *ThrottleSettings {
 
 type UsagePlanKey struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
-	Type          string                 `protobuf:"bytes,287830350,opt,name=type,proto3" json:"type,omitempty"`
-	Value         string                 `protobuf:"bytes,39769035,opt,name=value,proto3" json:"value,omitempty"`
+	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Type          *string                `protobuf:"bytes,287830350,opt,name=type,proto3,oneof" json:"type,omitempty"`
+	Value         *string                `protobuf:"bytes,39769035,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14365,29 +14365,29 @@ func (*UsagePlanKey) Descriptor() ([]byte, []int) {
 }
 
 func (x *UsagePlanKey) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *UsagePlanKey) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *UsagePlanKey) GetType() string {
-	if x != nil {
-		return x.Type
+	if x != nil && x.Type != nil {
+		return *x.Type
 	}
 	return ""
 }
 
 func (x *UsagePlanKey) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
@@ -14395,7 +14395,7 @@ func (x *UsagePlanKey) GetValue() string {
 type UsagePlanKeys struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*UsagePlanKey        `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14438,8 +14438,8 @@ func (x *UsagePlanKeys) GetItems() []*UsagePlanKey {
 }
 
 func (x *UsagePlanKeys) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -14447,7 +14447,7 @@ func (x *UsagePlanKeys) GetPosition() string {
 type UsagePlans struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*UsagePlan           `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14490,19 +14490,19 @@ func (x *UsagePlans) GetItems() []*UsagePlan {
 }
 
 func (x *UsagePlans) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
 
 type VpcLink struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Description   string                 `protobuf:"bytes,342834026,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,389573345,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,221887975,opt,name=name,proto3" json:"name,omitempty"`
+	Description   *string                `protobuf:"bytes,342834026,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,389573345,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,221887975,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Status        VpcLinkStatus          `protobuf:"varint,441153520,opt,name=status,proto3,enum=apigateway.VpcLinkStatus" json:"status,omitempty"`
-	Statusmessage string                 `protobuf:"bytes,474462255,opt,name=statusmessage,proto3" json:"statusmessage,omitempty"`
+	Statusmessage *string                `protobuf:"bytes,474462255,opt,name=statusmessage,proto3,oneof" json:"statusmessage,omitempty"`
 	Tags          map[string]string      `protobuf:"bytes,337046433,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Targetarns    []string               `protobuf:"bytes,46319317,rep,name=targetarns,proto3" json:"targetarns,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -14540,22 +14540,22 @@ func (*VpcLink) Descriptor() ([]byte, []int) {
 }
 
 func (x *VpcLink) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *VpcLink) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *VpcLink) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -14568,8 +14568,8 @@ func (x *VpcLink) GetStatus() VpcLinkStatus {
 }
 
 func (x *VpcLink) GetStatusmessage() string {
-	if x != nil {
-		return x.Statusmessage
+	if x != nil && x.Statusmessage != nil {
+		return *x.Statusmessage
 	}
 	return ""
 }
@@ -14591,7 +14591,7 @@ func (x *VpcLink) GetTargetarns() []string {
 type VpcLinks struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Items         []*VpcLink             `protobuf:"bytes,444150672,rep,name=items,proto3" json:"items,omitempty"`
-	Position      string                 `protobuf:"bytes,323964427,opt,name=position,proto3" json:"position,omitempty"`
+	Position      *string                `protobuf:"bytes,323964427,opt,name=position,proto3,oneof" json:"position,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -14634,8 +14634,8 @@ func (x *VpcLinks) GetItems() []*VpcLink {
 }
 
 func (x *VpcLinks) GetPosition() string {
-	if x != nil {
-		return x.Position
+	if x != nil && x.Position != nil {
+		return *x.Position
 	}
 	return ""
 }
@@ -14645,159 +14645,217 @@ var File_apigateway_proto protoreflect.FileDescriptor
 const file_apigateway_proto_rawDesc = "" +
 	"\n" +
 	"\x10apigateway.proto\x12\n" +
-	"apigateway\x1a\fcommon.proto\x1a\taws.proto\"[\n" +
-	"\x11AccessLogSettings\x12*\n" +
-	"\x0edestinationarn\x18\xa3\xdb\xf2\xcb\x01 \x01(\tR\x0edestinationarn\x12\x1a\n" +
-	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\tR\x06format\"\xd0\x01\n" +
-	"\aAccount\x12'\n" +
-	"\rapikeyversion\x18\xe3҃G \x01(\tR\rapikeyversion\x12/\n" +
-	"\x11cloudwatchrolearn\x18ٹ\x89E \x01(\tR\x11cloudwatchrolearn\x12\x1e\n" +
+	"apigateway\x1a\fcommon.proto\x1a\taws.proto\"\x83\x01\n" +
+	"\x11AccessLogSettings\x12/\n" +
+	"\x0edestinationarn\x18\xa3\xdb\xf2\xcb\x01 \x01(\tH\x00R\x0edestinationarn\x88\x01\x01\x12\x1f\n" +
+	"\x06format\x18ӊ\xf6\xcc\x01 \x01(\tH\x01R\x06format\x88\x01\x01B\x11\n" +
+	"\x0f_destinationarnB\t\n" +
+	"\a_format\"\x82\x02\n" +
+	"\aAccount\x12,\n" +
+	"\rapikeyversion\x18\xe3҃G \x01(\tH\x00R\rapikeyversion\x88\x01\x01\x124\n" +
+	"\x11cloudwatchrolearn\x18ٹ\x89E \x01(\tH\x01R\x11cloudwatchrolearn\x88\x01\x01\x12\x1e\n" +
 	"\bfeatures\x18ˇ\x8e\xfc\x01 \x03(\tR\bfeatures\x12K\n" +
-	"\x10throttlesettings\x18\xa1\xe7\xd6N \x01(\v2\x1c.apigateway.ThrottleSettingsR\x10throttlesettings\"\xa7\x03\n" +
-	"\x06ApiKey\x12#\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tR\vcreateddate\x12!\n" +
+	"\x10throttlesettings\x18\xa1\xe7\xd6N \x01(\v2\x1c.apigateway.ThrottleSettingsR\x10throttlesettingsB\x10\n" +
+	"\x0e_apikeyversionB\x14\n" +
+	"\x12_cloudwatchrolearn\"\xa7\x04\n" +
+	"\x06ApiKey\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12&\n" +
 	"\n" +
-	"customerid\x18\xfd\xd3\xd1l \x01(\tR\n" +
-	"customerid\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12 \n" +
-	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x00R\aenabled\x88\x01\x01\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12,\n" +
-	"\x0flastupdateddate\x18\xf1\xb5\xeb\xd5\x01 \x01(\tR\x0flastupdateddate\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12 \n" +
+	"customerid\x18\xfd\xd3\xd1l \x01(\tH\x01R\n" +
+	"customerid\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12 \n" +
+	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x03R\aenabled\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x04R\x02id\x88\x01\x01\x121\n" +
+	"\x0flastupdateddate\x18\xf1\xb5\xeb\xd5\x01 \x01(\tH\x05R\x0flastupdateddate\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x06R\x04name\x88\x01\x01\x12 \n" +
 	"\tstagekeys\x18\x96Щ\x89\x01 \x03(\tR\tstagekeys\x124\n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1c.apigateway.ApiKey.TagsEntryR\x04tags\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\x1a7\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1c.apigateway.ApiKey.TagsEntryR\x04tags\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\aR\x05value\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_createddateB\r\n" +
+	"\v_customeridB\x0e\n" +
+	"\f_descriptionB\n" +
 	"\n" +
-	"\b_enabled\"?\n" +
+	"\b_enabledB\x05\n" +
+	"\x03_idB\x12\n" +
+	"\x10_lastupdateddateB\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_value\"?\n" +
 	"\tApiKeyIds\x12\x13\n" +
 	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\x12\x1d\n" +
-	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\"v\n" +
+	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\"\x88\x01\n" +
 	"\aApiKeys\x12,\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x12.apigateway.ApiKeyR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12\x1d\n" +
-	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\"\xdb\x01\n" +
-	"\bApiStage\x12\x17\n" +
-	"\x05apiid\x18뜈6 \x01(\tR\x05apiid\x12\x17\n" +
-	"\x05stage\x18\xae\xb4\xeaB \x01(\tR\x05stage\x12B\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x12.apigateway.ApiKeyR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01\x12\x1d\n" +
+	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarningsB\v\n" +
+	"\t_position\"\xf9\x01\n" +
+	"\bApiStage\x12\x1c\n" +
+	"\x05apiid\x18뜈6 \x01(\tH\x00R\x05apiid\x88\x01\x01\x12\x1c\n" +
+	"\x05stage\x18\xae\xb4\xeaB \x01(\tH\x01R\x05stage\x88\x01\x01\x12B\n" +
 	"\bthrottle\x18\xde弼\x01 \x03(\v2\".apigateway.ApiStage.ThrottleEntryR\bthrottle\x1aY\n" +
 	"\rThrottleEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
-	"\x05value\x18\x02 \x01(\v2\x1c.apigateway.ThrottleSettingsR\x05value:\x028\x01\"\xf5\x03\n" +
+	"\x05value\x18\x02 \x01(\v2\x1c.apigateway.ThrottleSettingsR\x05value:\x028\x01B\b\n" +
+	"\x06_apiidB\b\n" +
+	"\x06_stage\"\x95\x05\n" +
 	"\n" +
-	"Authorizer\x12\x1d\n" +
-	"\bauthtype\x18\xd8\xf6\xceM \x01(\tR\bauthtype\x127\n" +
-	"\x15authorizercredentials\x18\xc1\xa6\xb0o \x01(\tR\x15authorizercredentials\x12J\n" +
-	"\x1cauthorizerresultttlinseconds\x18\xd0\xce\xca@ \x01(\x05H\x00R\x1cauthorizerresultttlinseconds\x88\x01\x01\x12(\n" +
-	"\rauthorizeruri\x18\x99\xb0\xb4\xfa\x01 \x01(\tR\rauthorizeruri\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12*\n" +
-	"\x0eidentitysource\x18\xffȘ\x88\x01 \x01(\tR\x0eidentitysource\x12E\n" +
-	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tR\x1cidentityvalidationexpression\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12&\n" +
+	"Authorizer\x12\"\n" +
+	"\bauthtype\x18\xd8\xf6\xceM \x01(\tH\x00R\bauthtype\x88\x01\x01\x12<\n" +
+	"\x15authorizercredentials\x18\xc1\xa6\xb0o \x01(\tH\x01R\x15authorizercredentials\x88\x01\x01\x12J\n" +
+	"\x1cauthorizerresultttlinseconds\x18\xd0\xce\xca@ \x01(\x05H\x02R\x1cauthorizerresultttlinseconds\x88\x01\x01\x12-\n" +
+	"\rauthorizeruri\x18\x99\xb0\xb4\xfa\x01 \x01(\tH\x03R\rauthorizeruri\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x04R\x02id\x88\x01\x01\x12/\n" +
+	"\x0eidentitysource\x18\xffȘ\x88\x01 \x01(\tH\x05R\x0eidentitysource\x88\x01\x01\x12J\n" +
+	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tH\x06R\x1cidentityvalidationexpression\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\aR\x04name\x88\x01\x01\x12&\n" +
 	"\fproviderarns\x18\xe1\xa4\xe1\x8f\x01 \x03(\tR\fproviderarns\x122\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1a.apigateway.AuthorizerTypeR\x04typeB\x1f\n" +
-	"\x1d_authorizerresultttlinseconds\"_\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1a.apigateway.AuthorizerTypeR\x04typeB\v\n" +
+	"\t_authtypeB\x18\n" +
+	"\x16_authorizercredentialsB\x1f\n" +
+	"\x1d_authorizerresultttlinsecondsB\x10\n" +
+	"\x0e_authorizeruriB\x05\n" +
+	"\x03_idB\x11\n" +
+	"\x0f_identitysourceB\x1f\n" +
+	"\x1d_identityvalidationexpressionB\a\n" +
+	"\x05_name\"q\n" +
 	"\vAuthorizers\x120\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.AuthorizerR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"2\n" +
-	"\x13BadRequestException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"k\n" +
-	"\x0fBasePathMapping\x12\x1d\n" +
-	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tR\bbasepath\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x17\n" +
-	"\x05stage\x18\xae\xb4\xeaB \x01(\tR\x05stage\"i\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.AuthorizerR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"C\n" +
+	"\x13BadRequestException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x9f\x01\n" +
+	"\x0fBasePathMapping\x12\"\n" +
+	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tH\x00R\bbasepath\x88\x01\x01\x12%\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tH\x01R\trestapiid\x88\x01\x01\x12\x1c\n" +
+	"\x05stage\x18\xae\xb4\xeaB \x01(\tH\x02R\x05stage\x88\x01\x01B\v\n" +
+	"\t_basepathB\f\n" +
+	"\n" +
+	"_restapiidB\b\n" +
+	"\x06_stage\"{\n" +
 	"\x10BasePathMappings\x125\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1b.apigateway.BasePathMappingR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xe1\x02\n" +
-	"\x0eCanarySettings\x12&\n" +
-	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12)\n" +
-	"\x0epercenttraffic\x18\x88\x83\x97F \x01(\x01R\x0epercenttraffic\x12q\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1b.apigateway.BasePathMappingR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\x8f\x03\n" +
+	"\x0eCanarySettings\x12+\n" +
+	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tH\x00R\fdeploymentid\x88\x01\x01\x12.\n" +
+	"\x0epercenttraffic\x18\x88\x83\x97F \x01(\x01H\x01R\x0epercenttraffic\x88\x01\x01\x12q\n" +
 	"\x16stagevariableoverrides\x18\xa3\xad\xb8i \x03(\v26.apigateway.CanarySettings.StagevariableoverridesEntryR\x16stagevariableoverrides\x12,\n" +
-	"\rusestagecache\x18\xa1\xd5\xe0U \x01(\bH\x00R\rusestagecache\x88\x01\x01\x1aI\n" +
+	"\rusestagecache\x18\xa1\xd5\xe0U \x01(\bH\x02R\rusestagecache\x88\x01\x01\x1aI\n" +
 	"\x1bStagevariableoverridesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
-	"\x0e_usestagecache\"\xf4\x02\n" +
-	"\x11ClientCertificate\x124\n" +
-	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\x12#\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tR\vcreateddate\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12*\n" +
-	"\x0eexpirationdate\x18\x9d㺺\x01 \x01(\tR\x0eexpirationdate\x128\n" +
-	"\x15pemencodedcertificate\x18\x91\xb0\xaa\xd6\x01 \x01(\tR\x15pemencodedcertificate\x12?\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
+	"\r_deploymentidB\x11\n" +
+	"\x0f_percenttrafficB\x10\n" +
+	"\x0e_usestagecache\"\xf2\x03\n" +
+	"\x11ClientCertificate\x129\n" +
+	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tH\x00R\x13clientcertificateid\x88\x01\x01\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12/\n" +
+	"\x0eexpirationdate\x18\x9d㺺\x01 \x01(\tH\x03R\x0eexpirationdate\x88\x01\x01\x12=\n" +
+	"\x15pemencodedcertificate\x18\x91\xb0\xaa\xd6\x01 \x01(\tH\x04R\x15pemencodedcertificate\x88\x01\x01\x12?\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2'.apigateway.ClientCertificate.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"m\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
+	"\x14_clientcertificateidB\x0e\n" +
+	"\f_createddateB\x0e\n" +
+	"\f_descriptionB\x11\n" +
+	"\x0f_expirationdateB\x18\n" +
+	"\x16_pemencodedcertificate\"\x7f\n" +
 	"\x12ClientCertificates\x127\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1d.apigateway.ClientCertificateR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"0\n" +
-	"\x11ConflictException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"\xbf\x03\n" +
-	"\x13CreateApiKeyRequest\x12!\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1d.apigateway.ClientCertificateR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"A\n" +
+	"\x11ConflictException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"customerid\x18\xfd\xd3\xd1l \x01(\tR\n" +
-	"customerid\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12 \n" +
-	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x00R\aenabled\x88\x01\x01\x126\n" +
-	"\x12generatedistinctid\x18\xf4\xad\xcd/ \x01(\bH\x01R\x12generatedistinctid\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x126\n" +
+	"\b_message\"\x85\x04\n" +
+	"\x13CreateApiKeyRequest\x12&\n" +
+	"\n" +
+	"customerid\x18\xfd\xd3\xd1l \x01(\tH\x00R\n" +
+	"customerid\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12 \n" +
+	"\aenabled\x18\x9f\xe7\xce\x17 \x01(\bH\x02R\aenabled\x88\x01\x01\x126\n" +
+	"\x12generatedistinctid\x18\xf4\xad\xcd/ \x01(\bH\x03R\x12generatedistinctid\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x04R\x04name\x88\x01\x01\x126\n" +
 	"\tstagekeys\x18\x96Щ\x89\x01 \x03(\v2\x14.apigateway.StageKeyR\tstagekeys\x12A\n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2).apigateway.CreateApiKeyRequest.TagsEntryR\x04tags\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\x1a7\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2).apigateway.CreateApiKeyRequest.TagsEntryR\x04tags\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\x05R\x05value\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_customeridB\x0e\n" +
+	"\f_descriptionB\n" +
 	"\n" +
 	"\b_enabledB\x15\n" +
-	"\x13_generatedistinctid\"\x90\x04\n" +
-	"\x17CreateAuthorizerRequest\x12\x1d\n" +
-	"\bauthtype\x18\xd8\xf6\xceM \x01(\tR\bauthtype\x127\n" +
-	"\x15authorizercredentials\x18\xc1\xa6\xb0o \x01(\tR\x15authorizercredentials\x12J\n" +
-	"\x1cauthorizerresultttlinseconds\x18\xd0\xce\xca@ \x01(\x05H\x00R\x1cauthorizerresultttlinseconds\x88\x01\x01\x12(\n" +
-	"\rauthorizeruri\x18\x99\xb0\xb4\xfa\x01 \x01(\tR\rauthorizeruri\x12*\n" +
-	"\x0eidentitysource\x18\xffȘ\x88\x01 \x01(\tR\x0eidentitysource\x12E\n" +
-	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tR\x1cidentityvalidationexpression\x12\x15\n" +
+	"\x13_generatedistinctidB\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_value\"\x96\x05\n" +
+	"\x17CreateAuthorizerRequest\x12\"\n" +
+	"\bauthtype\x18\xd8\xf6\xceM \x01(\tH\x00R\bauthtype\x88\x01\x01\x12<\n" +
+	"\x15authorizercredentials\x18\xc1\xa6\xb0o \x01(\tH\x01R\x15authorizercredentials\x88\x01\x01\x12J\n" +
+	"\x1cauthorizerresultttlinseconds\x18\xd0\xce\xca@ \x01(\x05H\x02R\x1cauthorizerresultttlinseconds\x88\x01\x01\x12-\n" +
+	"\rauthorizeruri\x18\x99\xb0\xb4\xfa\x01 \x01(\tH\x03R\rauthorizeruri\x88\x01\x01\x12/\n" +
+	"\x0eidentitysource\x18\xffȘ\x88\x01 \x01(\tH\x04R\x0eidentitysource\x88\x01\x01\x12J\n" +
+	"\x1cidentityvalidationexpression\x18\xbf\xef\xabl \x01(\tH\x05R\x1cidentityvalidationexpression\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12&\n" +
 	"\fproviderarns\x18\xe1\xa4\xe1\x8f\x01 \x03(\tR\fproviderarns\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x122\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1a.apigateway.AuthorizerTypeR\x04typeB\x1f\n" +
-	"\x1d_authorizerresultttlinseconds\"\xc4\x01\n" +
-	"\x1cCreateBasePathMappingRequest\x12\x1d\n" +
-	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tR\bbasepath\x12\"\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1a.apigateway.AuthorizerTypeR\x04typeB\v\n" +
+	"\t_authtypeB\x18\n" +
+	"\x16_authorizercredentialsB\x1f\n" +
+	"\x1d_authorizerresultttlinsecondsB\x10\n" +
+	"\x0e_authorizeruriB\x11\n" +
+	"\x0f_identitysourceB\x1f\n" +
+	"\x1d_identityvalidationexpression\"\xfb\x01\n" +
+	"\x1cCreateBasePathMappingRequest\x12\"\n" +
+	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tH\x00R\bbasepath\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x17\n" +
-	"\x05stage\x18\xae\xb4\xeaB \x01(\tR\x05stage\"\xfa\x04\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x01R\fdomainnameid\x88\x01\x01\x12 \n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1c\n" +
+	"\x05stage\x18\xae\xb4\xeaB \x01(\tH\x02R\x05stage\x88\x01\x01B\v\n" +
+	"\t_basepathB\x0f\n" +
+	"\r_domainnameidB\b\n" +
+	"\x06_stage\"\xbc\x05\n" +
 	"\x17CreateDeploymentRequest\x128\n" +
 	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12K\n" +
 	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeR\x10cacheclustersize\x12P\n" +
-	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2$.apigateway.DeploymentCanarySettingsR\x0ecanarysettings\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12.\n" +
-	"\x10stagedescription\x18\x82\xe8\xcb\xec\x01 \x01(\tR\x10stagedescription\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\x12/\n" +
-	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x01R\x0etracingenabled\x88\x01\x01\x12S\n" +
+	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2$.apigateway.DeploymentCanarySettingsR\x0ecanarysettings\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12 \n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x123\n" +
+	"\x10stagedescription\x18\x82\xe8\xcb\xec\x01 \x01(\tH\x02R\x10stagedescription\x88\x01\x01\x12$\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\x03R\tstagename\x88\x01\x01\x12/\n" +
+	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x04R\x0etracingenabled\x88\x01\x01\x12S\n" +
 	"\tvariables\x18\xc3ŭM \x03(\v22.apigateway.CreateDeploymentRequest.VariablesEntryR\tvariables\x1a<\n" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
-	"\x14_cacheclusterenabledB\x11\n" +
+	"\x14_cacheclusterenabledB\x0e\n" +
+	"\f_descriptionB\x13\n" +
+	"\x11_stagedescriptionB\f\n" +
+	"\n" +
+	"_stagenameB\x11\n" +
 	"\x0f_tracingenabled\"\xac\x01\n" +
 	"\x1eCreateDocumentationPartRequest\x12D\n" +
 	"\blocation\x18\xa7\xd3\xd6_ \x01(\v2%.apigateway.DocumentationPartLocationR\blocation\x12\"\n" +
 	"\n" +
 	"properties\x18\xdd\xd9\xf9\x8e\x01 \x01(\tR\n" +
 	"properties\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xc3\x01\n" +
-	"!CreateDocumentationVersionRequest\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x125\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xeb\x01\n" +
+	"!CreateDocumentationVersionRequest\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x125\n" +
 	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"\x90\x03\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12$\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\x01R\tstagename\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\f\n" +
+	"\n" +
+	"_stagename\"\x90\x03\n" +
 	"(CreateDomainNameAccessAssociationRequest\x12<\n" +
 	"\x17accessassociationsource\x18\xa4\xa2Ü\x01 \x01(\tR\x17accessassociationsource\x12l\n" +
 	"\x1baccessassociationsourcetype\x18\xbc\xba\x8eT \x01(\x0e2'.apigateway.AccessAssociationSourceTypeR\x1baccessassociationsourcetype\x12'\n" +
@@ -14805,76 +14863,95 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2>.apigateway.CreateDomainNameAccessAssociationRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb4\b\n" +
-	"\x17CreateDomainNameRequest\x12*\n" +
-	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tR\x0ecertificatearn\x12+\n" +
-	"\x0fcertificatebody\x18\xfd\xb6\xdaW \x01(\tR\x0fcertificatebody\x12-\n" +
-	"\x10certificatechain\x18\xfa\x95\x8d\x18 \x01(\tR\x10certificatechain\x12+\n" +
-	"\x0fcertificatename\x18\xd4\xe9\xf1B \x01(\tR\x0fcertificatename\x128\n" +
-	"\x15certificateprivatekey\x18\x83\xf9\xab\x84\x01 \x01(\tR\x15certificateprivatekey\x12\"\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\n" +
+	"\n" +
+	"\x17CreateDomainNameRequest\x12/\n" +
+	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x120\n" +
+	"\x0fcertificatebody\x18\xfd\xb6\xdaW \x01(\tH\x01R\x0fcertificatebody\x88\x01\x01\x122\n" +
+	"\x10certificatechain\x18\xfa\x95\x8d\x18 \x01(\tH\x02R\x10certificatechain\x88\x01\x01\x120\n" +
+	"\x0fcertificatename\x18\xd4\xe9\xf1B \x01(\tH\x03R\x0fcertificatename\x88\x01\x01\x12=\n" +
+	"\x15certificateprivatekey\x18\x83\xf9\xab\x84\x01 \x01(\tH\x04R\x15certificateprivatekey\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
 	"domainname\x12R\n" +
 	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
 	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12e\n" +
-	"\x17mutualtlsauthentication\x18\x9b\u05f6/ \x01(\v2(.apigateway.MutualTlsAuthenticationInputR\x17mutualtlsauthentication\x12S\n" +
-	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tR#ownershipverificationcertificatearn\x12\x19\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tR\x06policy\x129\n" +
-	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tR\x16regionalcertificatearn\x12<\n" +
-	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tR\x17regionalcertificatename\x12=\n" +
+	"\x17mutualtlsauthentication\x18\x9b\u05f6/ \x01(\v2(.apigateway.MutualTlsAuthenticationInputR\x17mutualtlsauthentication\x12X\n" +
+	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tH\x05R#ownershipverificationcertificatearn\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\x06R\x06policy\x88\x01\x01\x12>\n" +
+	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tH\aR\x16regionalcertificatearn\x88\x01\x01\x12A\n" +
+	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tH\bR\x17regionalcertificatename\x88\x01\x01\x12=\n" +
 	"\vroutingmode\x18\xe7ո\xf1\x01 \x01(\x0e2\x17.apigateway.RoutingModeR\vroutingmode\x12F\n" +
 	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x12E\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2-.apigateway.CreateDomainNameRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb5\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_certificatearnB\x12\n" +
+	"\x10_certificatebodyB\x13\n" +
+	"\x11_certificatechainB\x12\n" +
+	"\x10_certificatenameB\x18\n" +
+	"\x16_certificateprivatekeyB&\n" +
+	"$_ownershipverificationcertificatearnB\t\n" +
+	"\a_policyB\x19\n" +
+	"\x17_regionalcertificatearnB\x1a\n" +
+	"\x18_regionalcertificatename\"\xda\x01\n" +
 	"\x12CreateModelRequest\x12$\n" +
-	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tR\vcontenttype\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x15\n" +
+	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tR\vcontenttype\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1a\n" +
-	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tR\x06schema\"\x90\x02\n" +
-	"\x1dCreateRequestValidatorRequest\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12 \n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
+	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tH\x01R\x06schema\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\t\n" +
+	"\a_schema\"\x9e\x02\n" +
+	"\x1dCreateRequestValidatorRequest\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x00R\x04name\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x129\n" +
-	"\x13validaterequestbody\x18\xb1\xeaŽ\x01 \x01(\bH\x00R\x13validaterequestbody\x88\x01\x01\x12E\n" +
-	"\x19validaterequestparameters\x18ٿ\xa2\xdd\x01 \x01(\bH\x01R\x19validaterequestparameters\x88\x01\x01B\x16\n" +
+	"\x13validaterequestbody\x18\xb1\xeaŽ\x01 \x01(\bH\x01R\x13validaterequestbody\x88\x01\x01\x12E\n" +
+	"\x19validaterequestparameters\x18ٿ\xa2\xdd\x01 \x01(\bH\x02R\x19validaterequestparameters\x88\x01\x01B\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_validaterequestbodyB\x1c\n" +
 	"\x1a_validaterequestparameters\"x\n" +
 	"\x15CreateResourceRequest\x12\x1d\n" +
 	"\bparentid\x18\xa9\xea\xc82 \x01(\tR\bparentid\x12\x1e\n" +
 	"\bpathpart\x18Ѓ\xd4\xe8\x01 \x01(\tR\bpathpart\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xd6\x06\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x9f\a\n" +
 	"\x14CreateRestApiRequest\x12C\n" +
 	"\fapikeysource\x18\x94\x9c\xe03 \x01(\x0e2\x1c.apigateway.ApiKeySourceTypeR\fapikeysource\x12.\n" +
-	"\x10binarymediatypes\x18\x92\xd6\xe5\xc1\x01 \x03(\tR\x10binarymediatypes\x12\x1f\n" +
-	"\tclonefrom\x18\xa7\x9d\xcb} \x01(\tR\tclonefrom\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12D\n" +
-	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x00R\x19disableexecuteapiendpoint\x88\x01\x01\x12R\n" +
+	"\x10binarymediatypes\x18\x92\xd6\xe5\xc1\x01 \x03(\tR\x10binarymediatypes\x12$\n" +
+	"\tclonefrom\x18\xa7\x9d\xcb} \x01(\tH\x00R\tclonefrom\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12D\n" +
+	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x02R\x19disableexecuteapiendpoint\x88\x01\x01\x12R\n" +
 	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
 	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12>\n" +
-	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x01R\x16minimumcompressionsize\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x19\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tR\x06policy\x12F\n" +
+	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x03R\x16minimumcompressionsize\x88\x01\x01\x12\x15\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\x04R\x06policy\x88\x01\x01\x12F\n" +
 	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x12B\n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2*.apigateway.CreateRestApiRequest.TagsEntryR\x04tags\x12\x1b\n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tR\aversion\x1a7\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2*.apigateway.CreateRestApiRequest.TagsEntryR\x04tags\x12 \n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\x05R\aversion\x88\x01\x01\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1c\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\f\n" +
+	"\n" +
+	"_clonefromB\x0e\n" +
+	"\f_descriptionB\x1c\n" +
 	"\x1a_disableexecuteapiendpointB\x19\n" +
-	"\x17_minimumcompressionsize\"\x90\x06\n" +
+	"\x17_minimumcompressionsizeB\t\n" +
+	"\a_policyB\n" +
+	"\n" +
+	"\b_version\"\xc3\x06\n" +
 	"\x12CreateStageRequest\x128\n" +
 	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12K\n" +
 	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeR\x10cacheclustersize\x12F\n" +
 	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2\x1a.apigateway.CanarySettingsR\x0ecanarysettings\x12&\n" +
-	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x125\n" +
-	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12 \n" +
+	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12:\n" +
+	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tH\x02R\x14documentationversion\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
 	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\x12@\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2(.apigateway.CreateStageRequest.TagsEntryR\x04tags\x12/\n" +
-	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x01R\x0etracingenabled\x88\x01\x01\x12N\n" +
+	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x03R\x0etracingenabled\x88\x01\x01\x12N\n" +
 	"\tvariables\x18\xc3ŭM \x03(\v2-.apigateway.CreateStageRequest.VariablesEntryR\tvariables\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -14882,24 +14959,27 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
-	"\x14_cacheclusterenabledB\x11\n" +
+	"\x14_cacheclusterenabledB\x0e\n" +
+	"\f_descriptionB\x17\n" +
+	"\x15_documentationversionB\x11\n" +
 	"\x0f_tracingenabled\"x\n" +
 	"\x19CreateUsagePlanKeyRequest\x12\x18\n" +
 	"\x05keyid\x18\xc2\xca\xeb\xe4\x01 \x01(\tR\x05keyid\x12\x1b\n" +
 	"\akeytype\x18\x85\xe9\x833 \x01(\tR\akeytype\x12$\n" +
-	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"\xfd\x02\n" +
+	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"\x92\x03\n" +
 	"\x16CreateUsagePlanRequest\x125\n" +
-	"\tapistages\x18\xf1\xaa\xe4\x1e \x03(\v2\x14.apigateway.ApiStageR\tapistages\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x15\n" +
+	"\tapistages\x18\xf1\xaa\xe4\x1e \x03(\v2\x14.apigateway.ApiStageR\tapistages\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x122\n" +
 	"\x05quota\x18\x8c\xeb\xa1t \x01(\v2\x19.apigateway.QuotaSettingsR\x05quota\x12D\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2,.apigateway.CreateUsagePlanRequest.TagsEntryR\x04tags\x12<\n" +
 	"\bthrottle\x18\xde弼\x01 \x01(\v2\x1c.apigateway.ThrottleSettingsR\bthrottle\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf3\x01\n" +
-	"\x14CreateVpcLinkRequest\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x15\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"\x88\x02\n" +
+	"\x14CreateVpcLinkRequest\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12B\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2*.apigateway.CreateVpcLinkRequest.TagsEntryR\x04tags\x12!\n" +
 	"\n" +
@@ -14907,18 +14987,20 @@ const file_apigateway_proto_rawDesc = "" +
 	"targetarns\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"1\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"1\n" +
 	"\x13DeleteApiKeyRequest\x12\x1a\n" +
 	"\x06apikey\x18\x9f\x96\xf1\xe9\x01 \x01(\tR\x06apikey\"b\n" +
 	"\x17DeleteAuthorizerRequest\x12%\n" +
 	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x89\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x9f\x01\n" +
 	"\x1cDeleteBasePathMappingRequest\x12\x1d\n" +
 	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tR\bbasepath\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\"V\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01B\x0f\n" +
+	"\r_domainnameid\"V\n" +
 	"\x1eDeleteClientCertificateRequest\x124\n" +
 	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\"c\n" +
 	"\x17DeleteDeploymentRequest\x12&\n" +
@@ -14931,12 +15013,13 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"v\n" +
 	"(DeleteDomainNameAccessAssociationRequest\x12J\n" +
-	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tR\x1edomainnameaccessassociationarn\"e\n" +
+	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tR\x1edomainnameaccessassociationarn\"{\n" +
 	"\x17DeleteDomainNameRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\"\x89\x01\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01B\x0f\n" +
+	"\r_domainnameid\"\x89\x01\n" +
 	"\x1cDeleteGatewayResponseRequest\x12G\n" +
 	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x83\x01\n" +
@@ -15000,228 +15083,291 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x16DeleteUsagePlanRequest\x12$\n" +
 	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"7\n" +
 	"\x14DeleteVpcLinkRequest\x12\x1f\n" +
-	"\tvpclinkid\x18Ʒ\x8f\r \x01(\tR\tvpclinkid\"\xf5\x01\n" +
+	"\tvpclinkid\x18Ʒ\x8f\r \x01(\tR\tvpclinkid\"\xab\x02\n" +
 	"\n" +
 	"Deployment\x12I\n" +
 	"\n" +
 	"apisummary\x18\xa2\xe6\x91L \x03(\v2&.apigateway.Deployment.ApisummaryEntryR\n" +
-	"apisummary\x12#\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tR\vcreateddate\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x1a=\n" +
+	"apisummary\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x1a=\n" +
 	"\x0fApisummaryEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcd\x02\n" +
-	"\x18DeploymentCanarySettings\x12)\n" +
-	"\x0epercenttraffic\x18\x88\x83\x97F \x01(\x01R\x0epercenttraffic\x12{\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_createddateB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_id\"\xe5\x02\n" +
+	"\x18DeploymentCanarySettings\x12.\n" +
+	"\x0epercenttraffic\x18\x88\x83\x97F \x01(\x01H\x00R\x0epercenttraffic\x88\x01\x01\x12{\n" +
 	"\x16stagevariableoverrides\x18\xa3\xad\xb8i \x03(\v2@.apigateway.DeploymentCanarySettings.StagevariableoverridesEntryR\x16stagevariableoverrides\x12,\n" +
-	"\rusestagecache\x18\xa1\xd5\xe0U \x01(\bH\x00R\rusestagecache\x88\x01\x01\x1aI\n" +
+	"\rusestagecache\x18\xa1\xd5\xe0U \x01(\bH\x01R\rusestagecache\x88\x01\x01\x1aI\n" +
 	"\x1bStagevariableoverridesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
-	"\x0e_usestagecache\"_\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_percenttrafficB\x10\n" +
+	"\x0e_usestagecache\"q\n" +
 	"\vDeployments\x120\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.DeploymentR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\x91\x01\n" +
-	"\x11DocumentationPart\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12D\n" +
-	"\blocation\x18\xa7\xd3\xd6_ \x01(\v2%.apigateway.DocumentationPartLocationR\blocation\x12\"\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.DeploymentR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xb1\x01\n" +
+	"\x11DocumentationPart\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12D\n" +
+	"\blocation\x18\xa7\xd3\xd6_ \x01(\v2%.apigateway.DocumentationPartLocationR\blocation\x12'\n" +
 	"\n" +
-	"properties\x18\xdd\xd9\xf9\x8e\x01 \x01(\tR\n" +
-	"properties\"J\n" +
+	"properties\x18\xdd\xd9\xf9\x8e\x01 \x01(\tH\x01R\n" +
+	"properties\x88\x01\x01B\x05\n" +
+	"\x03_idB\r\n" +
+	"\v_properties\"J\n" +
 	"\x14DocumentationPartIds\x12\x13\n" +
 	"\x03ids\x18ꊿ\x06 \x03(\tR\x03ids\x12\x1d\n" +
-	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\"\xc3\x01\n" +
-	"\x19DocumentationPartLocation\x12\x19\n" +
-	"\x06method\x18\xb1\xee\x97Z \x01(\tR\x06method\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x15\n" +
-	"\x04path\x18\xb7\x9a\x9d$ \x01(\tR\x04path\x12\"\n" +
+	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\"\x83\x02\n" +
+	"\x19DocumentationPartLocation\x12\x1e\n" +
+	"\x06method\x18\xb1\xee\x97Z \x01(\tH\x00R\x06method\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1a\n" +
+	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x02R\x04path\x88\x01\x01\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\x129\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2!.apigateway.DocumentationPartTypeR\x04type\"m\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x03R\n" +
+	"statuscode\x88\x01\x01\x129\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2!.apigateway.DocumentationPartTypeR\x04typeB\t\n" +
+	"\a_methodB\a\n" +
+	"\x05_nameB\a\n" +
+	"\x05_pathB\r\n" +
+	"\v_statuscode\"\x7f\n" +
 	"\x12DocumentationParts\x127\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1d.apigateway.DocumentationPartR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"~\n" +
-	"\x14DocumentationVersion\x12#\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tR\vcreateddate\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x1b\n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tR\aversion\"s\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1d.apigateway.DocumentationPartR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xb9\x01\n" +
+	"\x14DocumentationVersion\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x00R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12 \n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\x02R\aversion\x88\x01\x01B\x0e\n" +
+	"\f_createddateB\x0e\n" +
+	"\f_descriptionB\n" +
+	"\n" +
+	"\b_version\"\x85\x01\n" +
 	"\x15DocumentationVersions\x12:\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2 .apigateway.DocumentationVersionR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xaa\v\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2 .apigateway.DocumentationVersionR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xf0\x0e\n" +
 	"\n" +
-	"DomainName\x12*\n" +
-	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tR\x0ecertificatearn\x12+\n" +
-	"\x0fcertificatename\x18\xd4\xe9\xf1B \x01(\tR\x0fcertificatename\x128\n" +
-	"\x15certificateuploaddate\x18\xfe\x9a\xc6\xf0\x01 \x01(\tR\x15certificateuploaddate\x129\n" +
-	"\x16distributiondomainname\x18ݫ\xf9~ \x01(\tR\x16distributiondomainname\x12=\n" +
-	"\x18distributionhostedzoneid\x18ȷ\xd0X \x01(\tR\x18distributionhostedzoneid\x12\"\n" +
+	"DomainName\x12/\n" +
+	"\x0ecertificatearn\x18\x98چ\xcb\x01 \x01(\tH\x00R\x0ecertificatearn\x88\x01\x01\x120\n" +
+	"\x0fcertificatename\x18\xd4\xe9\xf1B \x01(\tH\x01R\x0fcertificatename\x88\x01\x01\x12=\n" +
+	"\x15certificateuploaddate\x18\xfe\x9a\xc6\xf0\x01 \x01(\tH\x02R\x15certificateuploaddate\x88\x01\x01\x12>\n" +
+	"\x16distributiondomainname\x18ݫ\xf9~ \x01(\tH\x03R\x16distributiondomainname\x88\x01\x01\x12B\n" +
+	"\x18distributionhostedzoneid\x18ȷ\xd0X \x01(\tH\x04R\x18distributionhostedzoneid\x88\x01\x01\x12'\n" +
 	"\n" +
-	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12'\n" +
-	"\rdomainnamearn\x18\x96߭t \x01(\tR\rdomainnamearn\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\x12L\n" +
-	"\x10domainnamestatus\x18\xb5˕\x83\x01 \x01(\x0e2\x1c.apigateway.DomainNameStatusR\x10domainnamestatus\x12<\n" +
-	"\x17domainnamestatusmessage\x18\xb4\xc3\xe1\x9f\x01 \x01(\tR\x17domainnamestatusmessage\x12R\n" +
+	"domainname\x18\x8bӏ\xba\x01 \x01(\tH\x05R\n" +
+	"domainname\x88\x01\x01\x12,\n" +
+	"\rdomainnamearn\x18\x96߭t \x01(\tH\x06R\rdomainnamearn\x88\x01\x01\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\aR\fdomainnameid\x88\x01\x01\x12L\n" +
+	"\x10domainnamestatus\x18\xb5˕\x83\x01 \x01(\x0e2\x1c.apigateway.DomainNameStatusR\x10domainnamestatus\x12A\n" +
+	"\x17domainnamestatusmessage\x18\xb4\xc3\xe1\x9f\x01 \x01(\tH\bR\x17domainnamestatusmessage\x88\x01\x01\x12R\n" +
 	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
-	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12-\n" +
-	"\x10managementpolicy\x18\xb9\xbf\xfb* \x01(\tR\x10managementpolicy\x12`\n" +
-	"\x17mutualtlsauthentication\x18\x9b\u05f6/ \x01(\v2#.apigateway.MutualTlsAuthenticationR\x17mutualtlsauthentication\x12S\n" +
-	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tR#ownershipverificationcertificatearn\x12\x19\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tR\x06policy\x129\n" +
-	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tR\x16regionalcertificatearn\x12<\n" +
-	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tR\x17regionalcertificatename\x121\n" +
-	"\x12regionaldomainname\x18\xb0\xcf\xc4^ \x01(\tR\x12regionaldomainname\x126\n" +
-	"\x14regionalhostedzoneid\x18\x95\xa9\xe8\xde\x01 \x01(\tR\x14regionalhostedzoneid\x12=\n" +
+	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x122\n" +
+	"\x10managementpolicy\x18\xb9\xbf\xfb* \x01(\tH\tR\x10managementpolicy\x88\x01\x01\x12`\n" +
+	"\x17mutualtlsauthentication\x18\x9b\u05f6/ \x01(\v2#.apigateway.MutualTlsAuthenticationR\x17mutualtlsauthentication\x12X\n" +
+	"#ownershipverificationcertificatearn\x18\x94\x8f\xf9/ \x01(\tH\n" +
+	"R#ownershipverificationcertificatearn\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\vR\x06policy\x88\x01\x01\x12>\n" +
+	"\x16regionalcertificatearn\x18\xd3\xf0\xadA \x01(\tH\fR\x16regionalcertificatearn\x88\x01\x01\x12A\n" +
+	"\x17regionalcertificatename\x18\xcd\xf4\xed\xcd\x01 \x01(\tH\rR\x17regionalcertificatename\x88\x01\x01\x126\n" +
+	"\x12regionaldomainname\x18\xb0\xcf\xc4^ \x01(\tH\x0eR\x12regionaldomainname\x88\x01\x01\x12;\n" +
+	"\x14regionalhostedzoneid\x18\x95\xa9\xe8\xde\x01 \x01(\tH\x0fR\x14regionalhostedzoneid\x88\x01\x01\x12=\n" +
 	"\vroutingmode\x18\xe7ո\xf1\x01 \x01(\x0e2\x17.apigateway.RoutingModeR\vroutingmode\x12F\n" +
 	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x128\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2 .apigateway.DomainName.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc2\x03\n" +
-	"\x1bDomainNameAccessAssociation\x12<\n" +
-	"\x17accessassociationsource\x18\xa4\xa2Ü\x01 \x01(\tR\x17accessassociationsource\x12l\n" +
-	"\x1baccessassociationsourcetype\x18\xbc\xba\x8eT \x01(\x0e2'.apigateway.AccessAssociationSourceTypeR\x1baccessassociationsourcetype\x12J\n" +
-	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tR\x1edomainnameaccessassociationarn\x12'\n" +
-	"\rdomainnamearn\x18\x96߭t \x01(\tR\rdomainnamearn\x12I\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_certificatearnB\x12\n" +
+	"\x10_certificatenameB\x18\n" +
+	"\x16_certificateuploaddateB\x19\n" +
+	"\x17_distributiondomainnameB\x1b\n" +
+	"\x19_distributionhostedzoneidB\r\n" +
+	"\v_domainnameB\x10\n" +
+	"\x0e_domainnamearnB\x0f\n" +
+	"\r_domainnameidB\x1a\n" +
+	"\x18_domainnamestatusmessageB\x13\n" +
+	"\x11_managementpolicyB&\n" +
+	"$_ownershipverificationcertificatearnB\t\n" +
+	"\a_policyB\x19\n" +
+	"\x17_regionalcertificatearnB\x1a\n" +
+	"\x18_regionalcertificatenameB\x15\n" +
+	"\x13_regionaldomainnameB\x17\n" +
+	"\x15_regionalhostedzoneid\"\xa2\x04\n" +
+	"\x1bDomainNameAccessAssociation\x12A\n" +
+	"\x17accessassociationsource\x18\xa4\xa2Ü\x01 \x01(\tH\x00R\x17accessassociationsource\x88\x01\x01\x12l\n" +
+	"\x1baccessassociationsourcetype\x18\xbc\xba\x8eT \x01(\x0e2'.apigateway.AccessAssociationSourceTypeR\x1baccessassociationsourcetype\x12O\n" +
+	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tH\x01R\x1edomainnameaccessassociationarn\x88\x01\x01\x12,\n" +
+	"\rdomainnamearn\x18\x96߭t \x01(\tH\x02R\rdomainnamearn\x88\x01\x01\x12I\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v21.apigateway.DomainNameAccessAssociation.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x81\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1a\n" +
+	"\x18_accessassociationsourceB!\n" +
+	"\x1f_domainnameaccessassociationarnB\x10\n" +
+	"\x0e_domainnamearn\"\x93\x01\n" +
 	"\x1cDomainNameAccessAssociations\x12A\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2'.apigateway.DomainNameAccessAssociationR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"_\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2'.apigateway.DomainNameAccessAssociationR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"q\n" +
 	"\vDomainNames\x120\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.DomainNameR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xbb\x01\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x16.apigateway.DomainNameR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xbb\x01\n" +
 	"\x15EndpointConfiguration\x12C\n" +
 	"\ripaddresstype\x18\x85\xc5\xe7\xbb\x01 \x01(\x0e2\x19.apigateway.IpAddressTypeR\ripaddresstype\x122\n" +
 	"\x05types\x18\x9b\x89\x83\xff\x01 \x03(\x0e2\x18.apigateway.EndpointTypeR\x05types\x12)\n" +
-	"\x0evpcendpointids\x18\xbe\xfa\xb4@ \x03(\tR\x0evpcendpointids\"\x88\x01\n" +
-	"\x0eExportResponse\x12\x1c\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x122\n" +
-	"\x12contentdisposition\x18\xe2\x8f\xf1\xb2\x01 \x01(\tR\x12contentdisposition\x12$\n" +
-	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tR\vcontenttype\"f\n" +
+	"\x0evpcendpointids\x18\xbe\xfa\xb4@ \x03(\tR\x0evpcendpointids\"\xc7\x01\n" +
+	"\x0eExportResponse\x12!\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x04body\x88\x01\x01\x127\n" +
+	"\x12contentdisposition\x18\xe2\x8f\xf1\xb2\x01 \x01(\tH\x01R\x12contentdisposition\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tH\x02R\vcontenttype\x88\x01\x01B\a\n" +
+	"\x05_bodyB\x15\n" +
+	"\x13_contentdispositionB\x0e\n" +
+	"\f_contenttype\"f\n" +
 	"!FlushStageAuthorizersCacheRequest\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
 	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"[\n" +
 	"\x16FlushStageCacheRequest\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"\x9e\x04\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"\xb2\x04\n" +
 	"\x0fGatewayResponse\x120\n" +
 	"\x0fdefaultresponse\x18\xe2\xf7\xc3N \x01(\bH\x00R\x0fdefaultresponse\x88\x01\x01\x12f\n" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v23.apigateway.GatewayResponse.ResponseparametersEntryR\x12responseparameters\x12c\n" +
 	"\x11responsetemplates\x18\xbaߙ3 \x03(\v22.apigateway.GatewayResponse.ResponsetemplatesEntryR\x11responsetemplates\x12G\n" +
-	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12\"\n" +
+	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\x1aE\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x01R\n" +
+	"statuscode\x88\x01\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_defaultresponse\"i\n" +
+	"\x10_defaultresponseB\r\n" +
+	"\v_statuscode\"{\n" +
 	"\x10GatewayResponses\x125\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1b.apigateway.GatewayResponseR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xd1\x01\n" +
-	" GenerateClientCertificateRequest\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12N\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1b.apigateway.GatewayResponseR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xe6\x01\n" +
+	" GenerateClientCertificateRequest\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12N\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v26.apigateway.GenerateClientCertificateRequest.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x13\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"\x13\n" +
 	"\x11GetAccountRequest\"l\n" +
 	"\x10GetApiKeyRequest\x12\x1a\n" +
 	"\x06apikey\x18\x9f\x96\xf1\xe9\x01 \x01(\tR\x06apikey\x12+\n" +
 	"\fincludevalue\x18\x9d\xe3\xda\xdc\x01 \x01(\bH\x00R\fincludevalue\x88\x01\x01B\x0f\n" +
-	"\r_includevalue\"\xe1\x01\n" +
-	"\x11GetApiKeysRequest\x12!\n" +
+	"\r_includevalue\"\x9a\x02\n" +
+	"\x11GetApiKeysRequest\x12&\n" +
 	"\n" +
-	"customerid\x18\xfd\xd3\xd1l \x01(\tR\n" +
-	"customerid\x12-\n" +
-	"\rincludevalues\x18\xbe\xb6\xe8\xe9\x01 \x01(\bH\x00R\rincludevalues\x88\x01\x01\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12\x1f\n" +
-	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tR\tnamequery\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\x10\n" +
+	"customerid\x18\xfd\xd3\xd1l \x01(\tH\x00R\n" +
+	"customerid\x88\x01\x01\x12-\n" +
+	"\rincludevalues\x18\xbe\xb6\xe8\xe9\x01 \x01(\bH\x01R\rincludevalues\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x02R\x05limit\x88\x01\x01\x12$\n" +
+	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tH\x03R\tnamequery\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x04R\bposition\x88\x01\x01B\r\n" +
+	"\v_customeridB\x10\n" +
 	"\x0e_includevaluesB\b\n" +
-	"\x06_limit\"_\n" +
+	"\x06_limitB\f\n" +
+	"\n" +
+	"_namequeryB\v\n" +
+	"\t_position\"_\n" +
 	"\x14GetAuthorizerRequest\x12%\n" +
 	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x82\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x94\x01\n" +
 	"\x15GetAuthorizersRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"\x86\x01\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\x9c\x01\n" +
 	"\x19GetBasePathMappingRequest\x12\x1d\n" +
 	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tR\bbasepath\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\"\xb1\x01\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01B\x0f\n" +
+	"\r_domainnameid\"\xd9\x01\n" +
 	"\x1aGetBasePathMappingsRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\b\n" +
-	"\x06_limit\"S\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x02R\bposition\x88\x01\x01B\x0f\n" +
+	"\r_domainnameidB\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"S\n" +
 	"\x1bGetClientCertificateRequest\x124\n" +
-	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\"g\n" +
+	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\"y\n" +
 	"\x1cGetClientCertificatesRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\b\n" +
-	"\x06_limit\"y\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01B\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"y\n" +
 	"\x14GetDeploymentRequest\x12&\n" +
 	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12\x17\n" +
 	"\x05embed\x18\xcf\xcc\xee@ \x03(\tR\x05embed\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x82\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x94\x01\n" +
 	"\x15GetDeploymentsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"u\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"u\n" +
 	"\x1bGetDocumentationPartRequest\x124\n" +
 	"\x13documentationpartid\x18\xc6\xe5ш\x01 \x01(\tR\x13documentationpartid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xc8\x02\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xfb\x02\n" +
 	"\x1cGetDocumentationPartsRequest\x12\x1d\n" +
 	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12J\n" +
-	"\x0elocationstatus\x18\x89\xec\xe3\xfd\x01 \x01(\x0e2\x1e.apigateway.LocationStatusTypeR\x0elocationstatus\x12\x1f\n" +
-	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tR\tnamequery\x12\x15\n" +
-	"\x04path\x18\xb7\x9a\x9d$ \x01(\tR\x04path\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x0elocationstatus\x18\x89\xec\xe3\xfd\x01 \x01(\x0e2\x1e.apigateway.LocationStatusTypeR\x0elocationstatus\x12$\n" +
+	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tH\x01R\tnamequery\x88\x01\x01\x12\x1a\n" +
+	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x02R\x04path\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x03R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x129\n" +
 	"\x04type\x18\xce⟉\x01 \x01(\x0e2!.apigateway.DocumentationPartTypeR\x04typeB\b\n" +
-	"\x06_limit\"y\n" +
+	"\x06_limitB\f\n" +
+	"\n" +
+	"_namequeryB\a\n" +
+	"\x05_pathB\v\n" +
+	"\t_position\"y\n" +
 	"\x1eGetDocumentationVersionRequest\x125\n" +
 	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x8c\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x9e\x01\n" +
 	"\x1fGetDocumentationVersionsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"\xb5\x01\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\xc7\x01\n" +
 	"&GetDomainNameAccessAssociationsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12B\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12B\n" +
 	"\rresourceowner\x18\x85\xe7\xca{ \x01(\x0e2\x19.apigateway.ResourceOwnerR\rresourceownerB\b\n" +
-	"\x06_limit\"b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"x\n" +
 	"\x14GetDomainNameRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\"\xa4\x01\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01B\x0f\n" +
+	"\r_domainnameid\"\xb6\x01\n" +
 	"\x15GetDomainNamesRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12B\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12B\n" +
 	"\rresourceowner\x18\x85\xe7\xca{ \x01(\x0e2\x19.apigateway.ResourceOwnerR\rresourceownerB\b\n" +
-	"\x06_limit\"\xa5\x02\n" +
-	"\x10GetExportRequest\x12\x1b\n" +
-	"\aaccepts\x18\xaf\xcf\xcb[ \x01(\tR\aaccepts\x12!\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\xb6\x02\n" +
+	"\x10GetExportRequest\x12 \n" +
+	"\aaccepts\x18\xaf\xcf\xcb[ \x01(\tH\x00R\aaccepts\x88\x01\x01\x12!\n" +
 	"\n" +
 	"exporttype\x18\xec\xe6\x8dt \x01(\tR\n" +
 	"exporttype\x12O\n" +
@@ -15232,15 +15378,18 @@ const file_apigateway_proto_rawDesc = "" +
 	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\x1a=\n" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x86\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\n" +
+	"\b_accepts\"\x86\x01\n" +
 	"\x19GetGatewayResponseRequest\x12G\n" +
 	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x87\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x99\x01\n" +
 	"\x1aGetGatewayResponsesRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"\x80\x01\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\x80\x01\n" +
 	"\x15GetIntegrationRequest\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
@@ -15287,38 +15436,42 @@ const file_apigateway_proto_rawDesc = "" +
 	"\b_flatten\"\\\n" +
 	"\x17GetModelTemplateRequest\x12\x1f\n" +
 	"\tmodelname\x18\x82\x96\xa9T \x01(\tR\tmodelname\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"}\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x8f\x01\n" +
 	"\x10GetModelsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"r\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"r\n" +
 	"\x1aGetRequestValidatorRequest\x122\n" +
 	"\x12requestvalidatorid\x18\x96\xc1\xe4\xf6\x01 \x01(\tR\x12requestvalidatorid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x88\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x9a\x01\n" +
 	"\x1bGetRequestValidatorsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"s\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"s\n" +
 	"\x12GetResourceRequest\x12\x17\n" +
 	"\x05embed\x18\xcf\xcc\xee@ \x03(\tR\x05embed\x12\"\n" +
 	"\n" +
 	"resourceid\x18\xb1\xbd\x89\x98\x01 \x01(\tR\n" +
 	"resourceid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\x99\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xab\x01\n" +
 	"\x13GetResourcesRequest\x12\x17\n" +
 	"\x05embed\x18\xcf\xcc\xee@ \x03(\tR\x05embed\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\b\n" +
-	"\x06_limit\"5\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"5\n" +
 	"\x11GetRestApiRequest\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"]\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"o\n" +
 	"\x12GetRestApisRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\b\n" +
-	"\x06_limit\"\xfc\x01\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01B\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\xfc\x01\n" +
 	"\rGetSdkRequest\x12L\n" +
 	"\n" +
 	"parameters\x18\xdaݔE \x03(\v2).apigateway.GetSdkRequest.ParametersEntryR\n" +
@@ -15330,52 +15483,63 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"'\n" +
 	"\x11GetSdkTypeRequest\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"]\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"o\n" +
 	"\x12GetSdkTypesRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\b\n" +
-	"\x06_limit\"T\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01B\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"T\n" +
 	"\x0fGetStageRequest\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"\\\n" +
-	"\x10GetStagesRequest\x12&\n" +
-	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"~\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"r\n" +
+	"\x10GetStagesRequest\x12+\n" +
+	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tH\x00R\fdeploymentid\x88\x01\x01\x12 \n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiidB\x0f\n" +
+	"\r_deploymentid\"\x90\x01\n" +
 	"\x0eGetTagsRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12#\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearnB\b\n" +
-	"\x06_limit\"X\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"X\n" +
 	"\x16GetUsagePlanKeyRequest\x12\x18\n" +
 	"\x05keyid\x18\xc2\xca\xeb\xe4\x01 \x01(\tR\x05keyid\x12$\n" +
-	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"\xa9\x01\n" +
+	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"\xce\x01\n" +
 	"\x17GetUsagePlanKeysRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1f\n" +
-	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tR\tnamequery\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12$\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12$\n" +
+	"\tnamequery\x18\xab\xf8\xa9\x18 \x01(\tH\x01R\tnamequery\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x02R\bposition\x88\x01\x01\x12$\n" +
 	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanidB\b\n" +
-	"\x06_limit\";\n" +
+	"\x06_limitB\f\n" +
+	"\n" +
+	"_namequeryB\v\n" +
+	"\t_position\";\n" +
 	"\x13GetUsagePlanRequest\x12$\n" +
-	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"y\n" +
-	"\x14GetUsagePlansRequest\x12\x18\n" +
-	"\x05keyid\x18\xc2\xca\xeb\xe4\x01 \x01(\tR\x05keyid\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\b\n" +
-	"\x06_limit\"\xda\x01\n" +
+	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"\x9a\x01\n" +
+	"\x14GetUsagePlansRequest\x12\x1d\n" +
+	"\x05keyid\x18\xc2\xca\xeb\xe4\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x02R\bposition\x88\x01\x01B\b\n" +
+	"\x06_keyidB\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\xfb\x01\n" +
 	"\x0fGetUsageRequest\x12\x1c\n" +
-	"\aenddate\x18\xef\x9d\xc0\xb7\x01 \x01(\tR\aenddate\x12\x18\n" +
-	"\x05keyid\x18\xc2\xca\xeb\xe4\x01 \x01(\tR\x05keyid\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
+	"\aenddate\x18\xef\x9d\xc0\xb7\x01 \x01(\tR\aenddate\x12\x1d\n" +
+	"\x05keyid\x18\xc2\xca\xeb\xe4\x01 \x01(\tH\x00R\x05keyid\x88\x01\x01\x12\x1d\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x01R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x02R\bposition\x88\x01\x01\x12 \n" +
 	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12$\n" +
 	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanidB\b\n" +
-	"\x06_limit\"4\n" +
+	"\x06_keyidB\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"4\n" +
 	"\x11GetVpcLinkRequest\x12\x1f\n" +
-	"\tvpclinkid\x18Ʒ\x8f\r \x01(\tR\tvpclinkid\"]\n" +
+	"\tvpclinkid\x18Ʒ\x8f\r \x01(\tR\tvpclinkid\"o\n" +
 	"\x12GetVpcLinksRequest\x12\x1d\n" +
-	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bpositionB\b\n" +
-	"\x06_limit\"\xaf\x01\n" +
+	"\x05limit\x18\xb5\xb2\xeb\x96\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01B\b\n" +
+	"\x06_limitB\v\n" +
+	"\t_position\"\xaf\x01\n" +
 	"\x14ImportApiKeysRequest\x12\x1c\n" +
 	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x12/\n" +
 	"\x0efailonwarnings\x18\xb6\xbc\x8f\xcf\x01 \x01(\bH\x00R\x0efailonwarnings\x88\x01\x01\x125\n" +
@@ -15396,28 +15560,27 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0fParametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
-	"\x0f_failonwarnings\"\xa3\n" +
-	"\n" +
+	"\x0f_failonwarnings\"\xbf\v\n" +
 	"\vIntegration\x122\n" +
-	"\x12cachekeyparameters\x18\xa1\xec\xc8\xe5\x01 \x03(\tR\x12cachekeyparameters\x12)\n" +
-	"\x0ecachenamespace\x18\xa1\xa1\xca( \x01(\tR\x0ecachenamespace\x12&\n" +
-	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tR\fconnectionid\x12F\n" +
+	"\x12cachekeyparameters\x18\xa1\xec\xc8\xe5\x01 \x03(\tR\x12cachekeyparameters\x12.\n" +
+	"\x0ecachenamespace\x18\xa1\xa1\xca( \x01(\tH\x00R\x0ecachenamespace\x88\x01\x01\x12+\n" +
+	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tH\x01R\fconnectionid\x88\x01\x01\x12F\n" +
 	"\x0econnectiontype\x18\U000a1ae0\x01 \x01(\x0e2\x1a.apigateway.ConnectionTypeR\x0econnectiontype\x12Q\n" +
-	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12#\n" +
-	"\vcredentials\x18ҷ\xf6G \x01(\tR\vcredentials\x12!\n" +
+	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12(\n" +
+	"\vcredentials\x18ҷ\xf6G \x01(\tH\x02R\vcredentials\x88\x01\x01\x12&\n" +
 	"\n" +
-	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
-	"httpmethod\x12i\n" +
-	"\x14integrationresponses\x18\xf0\xff\xaa\xb8\x01 \x03(\v21.apigateway.Integration.IntegrationresponsesEntryR\x14integrationresponses\x12/\n" +
-	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tR\x11integrationtarget\x124\n" +
-	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tR\x13passthroughbehavior\x12`\n" +
+	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tH\x03R\n" +
+	"httpmethod\x88\x01\x01\x12i\n" +
+	"\x14integrationresponses\x18\xf0\xff\xaa\xb8\x01 \x03(\v21.apigateway.Integration.IntegrationresponsesEntryR\x14integrationresponses\x124\n" +
+	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tH\x04R\x11integrationtarget\x88\x01\x01\x129\n" +
+	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tH\x05R\x13passthroughbehavior\x88\x01\x01\x12`\n" +
 	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v2..apigateway.Integration.RequestparametersEntryR\x11requestparameters\x12]\n" +
 	"\x10requesttemplates\x18\xe6\xfb\x83\x9f\x01 \x03(\v2-.apigateway.Integration.RequesttemplatesEntryR\x10requesttemplates\x12X\n" +
 	"\x14responsetransfermode\x18\xc3\xd8\xe9\xda\x01 \x01(\x0e2 .apigateway.ResponseTransferModeR\x14responsetransfermode\x121\n" +
-	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\x00R\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
+	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\x06R\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
 	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x15.apigateway.TlsConfigR\ttlsconfig\x123\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeR\x04type\x12\x14\n" +
-	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tR\x03uri\x1ah\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeR\x04type\x12\x19\n" +
+	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tH\aR\x03uri\x88\x01\x01\x1ah\n" +
 	"\x19IntegrationresponsesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x125\n" +
 	"\x05value\x18\x02 \x01(\v2\x1f.apigateway.IntegrationResponseR\x05value:\x028\x01\x1aD\n" +
@@ -15426,39 +15589,51 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
 	"\x15RequesttemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_timeoutinmillis\"\x9e\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_cachenamespaceB\x0f\n" +
+	"\r_connectionidB\x0e\n" +
+	"\f_credentialsB\r\n" +
+	"\v_httpmethodB\x14\n" +
+	"\x12_integrationtargetB\x16\n" +
+	"\x14_passthroughbehaviorB\x12\n" +
+	"\x10_timeoutinmillisB\x06\n" +
+	"\x04_uri\"\xcc\x04\n" +
 	"\x13IntegrationResponse\x12Q\n" +
 	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12j\n" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v27.apigateway.IntegrationResponse.ResponseparametersEntryR\x12responseparameters\x12g\n" +
-	"\x11responsetemplates\x18\xbaߙ3 \x03(\v26.apigateway.IntegrationResponse.ResponsetemplatesEntryR\x11responsetemplates\x12.\n" +
-	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tR\x10selectionpattern\x12\"\n" +
+	"\x11responsetemplates\x18\xbaߙ3 \x03(\v26.apigateway.IntegrationResponse.ResponsetemplatesEntryR\x11responsetemplates\x123\n" +
+	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tH\x00R\x10selectionpattern\x88\x01\x01\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\x1aE\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x01R\n" +
+	"statuscode\x88\x01\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"g\n" +
-	"\x16LimitExceededException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x120\n" +
-	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tR\x11retryafterseconds\"\x92\a\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
+	"\x11_selectionpatternB\r\n" +
+	"\v_statuscode\"\x93\x01\n" +
+	"\x16LimitExceededException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x125\n" +
+	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tH\x01R\x11retryafterseconds\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x14\n" +
+	"\x12_retryafterseconds\"\x8a\b\n" +
 	"\x06Method\x12/\n" +
 	"\x0eapikeyrequired\x18\x98\xa3\xcc\xcf\x01 \x01(\bH\x00R\x0eapikeyrequired\x88\x01\x01\x124\n" +
-	"\x13authorizationscopes\x18\xec\x82\xe3\xc9\x01 \x03(\tR\x13authorizationscopes\x120\n" +
-	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tR\x11authorizationtype\x12%\n" +
-	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12!\n" +
+	"\x13authorizationscopes\x18\xec\x82\xe3\xc9\x01 \x03(\tR\x13authorizationscopes\x125\n" +
+	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tH\x01R\x11authorizationtype\x88\x01\x01\x12*\n" +
+	"\fauthorizerid\x18܋\xa65 \x01(\tH\x02R\fauthorizerid\x88\x01\x01\x12&\n" +
 	"\n" +
-	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
-	"httpmethod\x12I\n" +
+	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tH\x03R\n" +
+	"httpmethod\x88\x01\x01\x12I\n" +
 	"\x11methodintegration\x18Õ\x8f\xf7\x01 \x01(\v2\x17.apigateway.IntegrationR\x11methodintegration\x12T\n" +
-	"\x0fmethodresponses\x18\xb5\x89\xc5n \x03(\v2'.apigateway.Method.MethodresponsesEntryR\x0fmethodresponses\x12'\n" +
-	"\roperationname\x18\x86\xe3\xa7U \x01(\tR\roperationname\x12O\n" +
+	"\x0fmethodresponses\x18\xb5\x89\xc5n \x03(\v2'.apigateway.Method.MethodresponsesEntryR\x0fmethodresponses\x12,\n" +
+	"\roperationname\x18\x86\xe3\xa7U \x01(\tH\x04R\roperationname\x88\x01\x01\x12O\n" +
 	"\rrequestmodels\x18\xf5\xb1\xb6\xbd\x01 \x03(\v2%.apigateway.Method.RequestmodelsEntryR\rrequestmodels\x12[\n" +
-	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v2).apigateway.Method.RequestparametersEntryR\x11requestparameters\x122\n" +
-	"\x12requestvalidatorid\x18\x96\xc1\xe4\xf6\x01 \x01(\tR\x12requestvalidatorid\x1a^\n" +
+	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v2).apigateway.Method.RequestparametersEntryR\x11requestparameters\x127\n" +
+	"\x12requestvalidatorid\x18\x96\xc1\xe4\xf6\x01 \x01(\tH\x05R\x12requestvalidatorid\x88\x01\x01\x1a^\n" +
 	"\x14MethodresponsesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
 	"\x05value\x18\x02 \x01(\v2\x1a.apigateway.MethodResponseR\x05value:\x028\x01\x1a@\n" +
@@ -15468,91 +15643,116 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x16RequestparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01B\x11\n" +
-	"\x0f_apikeyrequired\"\x81\x03\n" +
+	"\x0f_apikeyrequiredB\x14\n" +
+	"\x12_authorizationtypeB\x0f\n" +
+	"\r_authorizeridB\r\n" +
+	"\v_httpmethodB\x10\n" +
+	"\x0e_operationnameB\x15\n" +
+	"\x13_requestvalidatorid\"\x95\x03\n" +
 	"\x0eMethodResponse\x12Z\n" +
 	"\x0eresponsemodels\x18\xe9ȃ\xaa\x01 \x03(\v2..apigateway.MethodResponse.ResponsemodelsEntryR\x0eresponsemodels\x12e\n" +
-	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v22.apigateway.MethodResponse.ResponseparametersEntryR\x12responseparameters\x12\"\n" +
+	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v22.apigateway.MethodResponse.ResponseparametersEntryR\x12responseparameters\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\x1aA\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x00R\n" +
+	"statuscode\x88\x01\x01\x1aA\n" +
 	"\x13ResponsemodelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01\"\xc3\x06\n" +
+	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01B\r\n" +
+	"\v_statuscode\"\xf6\x06\n" +
 	"\rMethodSetting\x127\n" +
 	"\x12cachedataencrypted\x18\xf4\xbe\xb2\xe5\x01 \x01(\bH\x00R\x12cachedataencrypted\x88\x01\x01\x124\n" +
 	"\x11cachettlinseconds\x18\xb6В& \x01(\x05H\x01R\x11cachettlinseconds\x88\x01\x01\x12/\n" +
 	"\x0ecachingenabled\x18\xbc\x96\xb6\xe9\x01 \x01(\bH\x02R\x0ecachingenabled\x88\x01\x01\x123\n" +
-	"\x10datatraceenabled\x18쾫\xad\x01 \x01(\bH\x03R\x10datatraceenabled\x88\x01\x01\x12%\n" +
-	"\flogginglevel\x18\x9d\xa4\xa9\x1c \x01(\tR\flogginglevel\x12.\n" +
-	"\x0emetricsenabled\x18\x84\x8b\xf7C \x01(\bH\x04R\x0emetricsenabled\x88\x01\x01\x12Y\n" +
-	"#requireauthorizationforcachecontrol\x18\xe0ٷ\xfc\x01 \x01(\bH\x05R#requireauthorizationforcachecontrol\x88\x01\x01\x12;\n" +
-	"\x14throttlingburstlimit\x18\xb8\x95\x8f\xc0\x01 \x01(\x05H\x06R\x14throttlingburstlimit\x88\x01\x01\x124\n" +
-	"\x13throttlingratelimit\x18\xc8\uf7f1\x01 \x01(\x01R\x13throttlingratelimit\x12\x8e\x01\n" +
+	"\x10datatraceenabled\x18쾫\xad\x01 \x01(\bH\x03R\x10datatraceenabled\x88\x01\x01\x12*\n" +
+	"\flogginglevel\x18\x9d\xa4\xa9\x1c \x01(\tH\x04R\flogginglevel\x88\x01\x01\x12.\n" +
+	"\x0emetricsenabled\x18\x84\x8b\xf7C \x01(\bH\x05R\x0emetricsenabled\x88\x01\x01\x12Y\n" +
+	"#requireauthorizationforcachecontrol\x18\xe0ٷ\xfc\x01 \x01(\bH\x06R#requireauthorizationforcachecontrol\x88\x01\x01\x12;\n" +
+	"\x14throttlingburstlimit\x18\xb8\x95\x8f\xc0\x01 \x01(\x05H\aR\x14throttlingburstlimit\x88\x01\x01\x129\n" +
+	"\x13throttlingratelimit\x18\xc8\uf7f1\x01 \x01(\x01H\bR\x13throttlingratelimit\x88\x01\x01\x12\x8e\x01\n" +
 	"&unauthorizedcachecontrolheaderstrategy\x18\x9d\xfd\xa9\xe3\x01 \x01(\x0e22.apigateway.UnauthorizedCacheControlHeaderStrategyR&unauthorizedcachecontrolheaderstrategyB\x15\n" +
 	"\x13_cachedataencryptedB\x14\n" +
 	"\x12_cachettlinsecondsB\x11\n" +
 	"\x0f_cachingenabledB\x13\n" +
-	"\x11_datatraceenabledB\x11\n" +
+	"\x11_datatraceenabledB\x0f\n" +
+	"\r_logginglevelB\x11\n" +
 	"\x0f_metricsenabledB&\n" +
 	"$_requireauthorizationforcachecontrolB\x17\n" +
-	"\x15_throttlingburstlimit\"\x86\x01\n" +
+	"\x15_throttlingburstlimitB\x16\n" +
+	"\x14_throttlingratelimit\"\xa1\x01\n" +
 	"\x0eMethodSnapshot\x12/\n" +
-	"\x0eapikeyrequired\x18\x98\xa3\xcc\xcf\x01 \x01(\bH\x00R\x0eapikeyrequired\x88\x01\x01\x120\n" +
-	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tR\x11authorizationtypeB\x11\n" +
-	"\x0f_apikeyrequired\"\x9a\x01\n" +
-	"\x05Model\x12$\n" +
-	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tR\vcontenttype\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x1a\n" +
-	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tR\x06schema\"U\n" +
+	"\x0eapikeyrequired\x18\x98\xa3\xcc\xcf\x01 \x01(\bH\x00R\x0eapikeyrequired\x88\x01\x01\x125\n" +
+	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tH\x01R\x11authorizationtype\x88\x01\x01B\x11\n" +
+	"\x0f_apikeyrequiredB\x14\n" +
+	"\x12_authorizationtype\"\xee\x01\n" +
+	"\x05Model\x12)\n" +
+	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tH\x00R\vcontenttype\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12\x1f\n" +
+	"\x06schema\x18\xb7\x86\xf4\x93\x01 \x01(\tH\x04R\x06schema\x88\x01\x01B\x0e\n" +
+	"\f_contenttypeB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_schema\"g\n" +
 	"\x06Models\x12+\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x11.apigateway.ModelR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xa7\x01\n" +
-	"\x17MutualTlsAuthentication\x12'\n" +
-	"\rtruststoreuri\x18\x91\xa2\xab9 \x01(\tR\rtruststoreuri\x12/\n" +
-	"\x11truststoreversion\x18\xe3\x8a\xe48 \x01(\tR\x11truststoreversion\x122\n" +
-	"\x12truststorewarnings\x18\xf4\xc3\xc3\xc8\x01 \x03(\tR\x12truststorewarnings\"x\n" +
-	"\x1cMutualTlsAuthenticationInput\x12'\n" +
-	"\rtruststoreuri\x18\x91\xa2\xab9 \x01(\tR\rtruststoreuri\x12/\n" +
-	"\x11truststoreversion\x18\xe3\x8a\xe48 \x01(\tR\x11truststoreversion\"0\n" +
-	"\x11NotFoundException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"|\n" +
-	"\x0ePatchOperation\x12\x16\n" +
-	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tR\x04from\x12\"\n" +
-	"\x02op\x18\xab\xd9\xd0\xf9\x01 \x01(\x0e2\x0e.apigateway.OpR\x02op\x12\x15\n" +
-	"\x04path\x18\xb7\x9a\x9d$ \x01(\tR\x04path\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\x98\x04\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x11.apigateway.ModelR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xd9\x01\n" +
+	"\x17MutualTlsAuthentication\x12,\n" +
+	"\rtruststoreuri\x18\x91\xa2\xab9 \x01(\tH\x00R\rtruststoreuri\x88\x01\x01\x124\n" +
+	"\x11truststoreversion\x18\xe3\x8a\xe48 \x01(\tH\x01R\x11truststoreversion\x88\x01\x01\x122\n" +
+	"\x12truststorewarnings\x18\xf4\xc3\xc3\xc8\x01 \x03(\tR\x12truststorewarningsB\x10\n" +
+	"\x0e_truststoreuriB\x14\n" +
+	"\x12_truststoreversion\"\xaa\x01\n" +
+	"\x1cMutualTlsAuthenticationInput\x12,\n" +
+	"\rtruststoreuri\x18\x91\xa2\xab9 \x01(\tH\x00R\rtruststoreuri\x88\x01\x01\x124\n" +
+	"\x11truststoreversion\x18\xe3\x8a\xe48 \x01(\tH\x01R\x11truststoreversion\x88\x01\x01B\x10\n" +
+	"\x0e_truststoreuriB\x14\n" +
+	"\x12_truststoreversion\"A\n" +
+	"\x11NotFoundException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa7\x01\n" +
+	"\x0ePatchOperation\x12\x1b\n" +
+	"\x04from\x18\xf6\x80\xb6\xae\x01 \x01(\tH\x00R\x04from\x88\x01\x01\x12\"\n" +
+	"\x02op\x18\xab\xd9\xd0\xf9\x01 \x01(\x0e2\x0e.apigateway.OpR\x02op\x12\x1a\n" +
+	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x01R\x04path\x88\x01\x01\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\x02R\x05value\x88\x01\x01B\a\n" +
+	"\x05_fromB\a\n" +
+	"\x05_pathB\b\n" +
+	"\x06_value\"\xac\x04\n" +
 	"\x19PutGatewayResponseRequest\x12p\n" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v2=.apigateway.PutGatewayResponseRequest.ResponseparametersEntryR\x12responseparameters\x12m\n" +
 	"\x11responsetemplates\x18\xbaߙ3 \x03(\v2<.apigateway.PutGatewayResponseRequest.ResponsetemplatesEntryR\x11responsetemplates\x12G\n" +
 	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\"\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12'\n" +
 	"\n" +
-	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
-	"statuscode\x1aE\n" +
+	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tH\x00R\n" +
+	"statuscode\x88\x01\x01\x1aE\n" +
 	"\x17ResponseparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xec\t\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\v_statuscode\"\x93\v\n" +
 	"\x15PutIntegrationRequest\x122\n" +
-	"\x12cachekeyparameters\x18\xa1\xec\xc8\xe5\x01 \x03(\tR\x12cachekeyparameters\x12)\n" +
-	"\x0ecachenamespace\x18\xa1\xa1\xca( \x01(\tR\x0ecachenamespace\x12&\n" +
-	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tR\fconnectionid\x12F\n" +
+	"\x12cachekeyparameters\x18\xa1\xec\xc8\xe5\x01 \x03(\tR\x12cachekeyparameters\x12.\n" +
+	"\x0ecachenamespace\x18\xa1\xa1\xca( \x01(\tH\x00R\x0ecachenamespace\x88\x01\x01\x12+\n" +
+	"\fconnectionid\x18\xbd\xc3\xcb\xd6\x01 \x01(\tH\x01R\fconnectionid\x88\x01\x01\x12F\n" +
 	"\x0econnectiontype\x18\U000a1ae0\x01 \x01(\x0e2\x1a.apigateway.ConnectionTypeR\x0econnectiontype\x12Q\n" +
-	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12#\n" +
-	"\vcredentials\x18ҷ\xf6G \x01(\tR\vcredentials\x12!\n" +
+	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12(\n" +
+	"\vcredentials\x18ҷ\xf6G \x01(\tH\x02R\vcredentials\x88\x01\x01\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
-	"httpmethod\x128\n" +
-	"\x15integrationhttpmethod\x18\x99Ӷ\xa9\x01 \x01(\tR\x15integrationhttpmethod\x12/\n" +
-	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tR\x11integrationtarget\x124\n" +
-	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tR\x13passthroughbehavior\x12j\n" +
+	"httpmethod\x12=\n" +
+	"\x15integrationhttpmethod\x18\x99Ӷ\xa9\x01 \x01(\tH\x03R\x15integrationhttpmethod\x88\x01\x01\x124\n" +
+	"\x11integrationtarget\x18\xf1\x88\xb5\b \x01(\tH\x04R\x11integrationtarget\x88\x01\x01\x129\n" +
+	"\x13passthroughbehavior\x18\xecę\x94\x01 \x01(\tH\x05R\x13passthroughbehavior\x88\x01\x01\x12j\n" +
 	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v28.apigateway.PutIntegrationRequest.RequestparametersEntryR\x11requestparameters\x12g\n" +
 	"\x10requesttemplates\x18\xe6\xfb\x83\x9f\x01 \x03(\v27.apigateway.PutIntegrationRequest.RequesttemplatesEntryR\x10requesttemplates\x12\"\n" +
 	"\n" +
@@ -15560,17 +15760,24 @@ const file_apigateway_proto_rawDesc = "" +
 	"resourceid\x12X\n" +
 	"\x14responsetransfermode\x18\xc3\xd8\xe9\xda\x01 \x01(\x0e2 .apigateway.ResponseTransferModeR\x14responsetransfermode\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x121\n" +
-	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\x00R\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
+	"\x0ftimeoutinmillis\x18\x86\xa3\xad\xb4\x01 \x01(\x05H\x06R\x0ftimeoutinmillis\x88\x01\x01\x126\n" +
 	"\ttlsconfig\x18\x85\xca\xf93 \x01(\v2\x15.apigateway.TlsConfigR\ttlsconfig\x123\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeR\x04type\x12\x14\n" +
-	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tR\x03uri\x1aD\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\x0e2\x1b.apigateway.IntegrationTypeR\x04type\x12\x19\n" +
+	"\x03uri\x18\xfe\xa7\xbd\xbc\x01 \x01(\tH\aR\x03uri\x88\x01\x01\x1aD\n" +
 	"\x16RequestparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
 	"\x15RequesttemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x12\n" +
-	"\x10_timeoutinmillis\"\xa5\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x11\n" +
+	"\x0f_cachenamespaceB\x0f\n" +
+	"\r_connectionidB\x0e\n" +
+	"\f_credentialsB\x18\n" +
+	"\x16_integrationhttpmethodB\x14\n" +
+	"\x12_integrationtargetB\x16\n" +
+	"\x14_passthroughbehaviorB\x12\n" +
+	"\x10_timeoutinmillisB\x06\n" +
+	"\x04_uri\"\xbf\x05\n" +
 	"\x1dPutIntegrationResponseRequest\x12Q\n" +
 	"\x0fcontenthandling\x18\xf0\xf2\x9e\xfe\x01 \x01(\x0e2#.apigateway.ContentHandlingStrategyR\x0fcontenthandling\x12!\n" +
 	"\n" +
@@ -15581,8 +15788,8 @@ const file_apigateway_proto_rawDesc = "" +
 	"resourceid\x12t\n" +
 	"\x12responseparameters\x18\xdf\xeb\xd2\x1e \x03(\v2A.apigateway.PutIntegrationResponseRequest.ResponseparametersEntryR\x12responseparameters\x12q\n" +
 	"\x11responsetemplates\x18\xbaߙ3 \x03(\v2@.apigateway.PutIntegrationResponseRequest.ResponsetemplatesEntryR\x11responsetemplates\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12.\n" +
-	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tR\x10selectionpattern\x12\"\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x123\n" +
+	"\x10selectionpattern\x18\xba\x9c\xb5\xe0\x01 \x01(\tH\x00R\x10selectionpattern\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"statuscode\x18\x9f\x81ߎ\x01 \x01(\tR\n" +
 	"statuscode\x1aE\n" +
@@ -15591,19 +15798,20 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16ResponsetemplatesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xf5\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
+	"\x11_selectionpattern\"\xbe\x06\n" +
 	"\x10PutMethodRequest\x12/\n" +
 	"\x0eapikeyrequired\x18\x98\xa3\xcc\xcf\x01 \x01(\bH\x00R\x0eapikeyrequired\x88\x01\x01\x124\n" +
 	"\x13authorizationscopes\x18\xec\x82\xe3\xc9\x01 \x03(\tR\x13authorizationscopes\x120\n" +
-	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tR\x11authorizationtype\x12%\n" +
-	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12!\n" +
+	"\x11authorizationtype\x18\xdf뀹\x01 \x01(\tR\x11authorizationtype\x12*\n" +
+	"\fauthorizerid\x18܋\xa65 \x01(\tH\x01R\fauthorizerid\x88\x01\x01\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
-	"httpmethod\x12'\n" +
-	"\roperationname\x18\x86\xe3\xa7U \x01(\tR\roperationname\x12Y\n" +
+	"httpmethod\x12,\n" +
+	"\roperationname\x18\x86\xe3\xa7U \x01(\tH\x02R\roperationname\x88\x01\x01\x12Y\n" +
 	"\rrequestmodels\x18\xf5\xb1\xb6\xbd\x01 \x03(\v2/.apigateway.PutMethodRequest.RequestmodelsEntryR\rrequestmodels\x12e\n" +
-	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v23.apigateway.PutMethodRequest.RequestparametersEntryR\x11requestparameters\x122\n" +
-	"\x12requestvalidatorid\x18\x96\xc1\xe4\xf6\x01 \x01(\tR\x12requestvalidatorid\x12\"\n" +
+	"\x11requestparameters\x18\xa3\xf3\xcf\xf9\x01 \x03(\v23.apigateway.PutMethodRequest.RequestparametersEntryR\x11requestparameters\x127\n" +
+	"\x12requestvalidatorid\x18\x96\xc1\xe4\xf6\x01 \x01(\tH\x03R\x12requestvalidatorid\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"resourceid\x18\xb1\xbd\x89\x98\x01 \x01(\tR\n" +
 	"resourceid\x12 \n" +
@@ -15614,7 +15822,10 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x16RequestparametersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\bR\x05value:\x028\x01B\x11\n" +
-	"\x0f_apikeyrequired\"\x88\x04\n" +
+	"\x0f_apikeyrequiredB\x0f\n" +
+	"\r_authorizeridB\x10\n" +
+	"\x0e_operationnameB\x15\n" +
+	"\x13_requestvalidatorid\"\x88\x04\n" +
 	"\x18PutMethodResponseRequest\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
@@ -15654,95 +15865,127 @@ const file_apigateway_proto_rawDesc = "" +
 	"\a_offset\"\x9f\x01\n" +
 	"(RejectDomainNameAccessAssociationRequest\x12J\n" +
 	"\x1edomainnameaccessassociationarn\x18\xc7\xfc\xff\x85\x01 \x01(\tR\x1edomainnameaccessassociationarn\x12'\n" +
-	"\rdomainnamearn\x18\x96߭t \x01(\tR\rdomainnamearn\"\xf5\x01\n" +
-	"\x10RequestValidator\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x129\n" +
-	"\x13validaterequestbody\x18\xb1\xeaŽ\x01 \x01(\bH\x00R\x13validaterequestbody\x88\x01\x01\x12E\n" +
-	"\x19validaterequestparameters\x18ٿ\xa2\xdd\x01 \x01(\bH\x01R\x19validaterequestparameters\x88\x01\x01B\x16\n" +
+	"\rdomainnamearn\x18\x96߭t \x01(\tR\rdomainnamearn\"\x8f\x02\n" +
+	"\x10RequestValidator\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01\x129\n" +
+	"\x13validaterequestbody\x18\xb1\xeaŽ\x01 \x01(\bH\x02R\x13validaterequestbody\x88\x01\x01\x12E\n" +
+	"\x19validaterequestparameters\x18ٿ\xa2\xdd\x01 \x01(\bH\x03R\x19validaterequestparameters\x88\x01\x01B\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\x16\n" +
 	"\x14_validaterequestbodyB\x1c\n" +
-	"\x1a_validaterequestparameters\"k\n" +
+	"\x1a_validaterequestparameters\"}\n" +
 	"\x11RequestValidators\x126\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1c.apigateway.RequestValidatorR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xa5\x02\n" +
-	"\bResource\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x1d\n" +
-	"\bparentid\x18\xa9\xea\xc82 \x01(\tR\bparentid\x12\x15\n" +
-	"\x04path\x18\xb7\x9a\x9d$ \x01(\tR\x04path\x12\x1e\n" +
-	"\bpathpart\x18Ѓ\xd4\xe8\x01 \x01(\tR\bpathpart\x12W\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1c.apigateway.RequestValidatorR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xe3\x02\n" +
+	"\bResource\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\"\n" +
+	"\bparentid\x18\xa9\xea\xc82 \x01(\tH\x01R\bparentid\x88\x01\x01\x12\x1a\n" +
+	"\x04path\x18\xb7\x9a\x9d$ \x01(\tH\x02R\x04path\x88\x01\x01\x12#\n" +
+	"\bpathpart\x18Ѓ\xd4\xe8\x01 \x01(\tH\x03R\bpathpart\x88\x01\x01\x12W\n" +
 	"\x0fresourcemethods\x18\xea\xc5ܒ\x01 \x03(\v2).apigateway.Resource.ResourcemethodsEntryR\x0fresourcemethods\x1aV\n" +
 	"\x14ResourcemethodsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12(\n" +
-	"\x05value\x18\x02 \x01(\v2\x12.apigateway.MethodR\x05value:\x028\x01\"[\n" +
+	"\x05value\x18\x02 \x01(\v2\x12.apigateway.MethodR\x05value:\x028\x01B\x05\n" +
+	"\x03_idB\v\n" +
+	"\t_parentidB\a\n" +
+	"\x05_pathB\v\n" +
+	"\t_pathpart\"m\n" +
 	"\tResources\x12.\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x14.apigateway.ResourceR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\x87\b\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x14.apigateway.ResourceR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\x9e\t\n" +
 	"\aRestApi\x12C\n" +
 	"\fapikeysource\x18\x94\x9c\xe03 \x01(\x0e2\x1c.apigateway.ApiKeySourceTypeR\fapikeysource\x126\n" +
-	"\tapistatus\x18\xd2\xd9\xd1_ \x01(\x0e2\x15.apigateway.ApiStatusR\tapistatus\x12.\n" +
-	"\x10apistatusmessage\x18ɓ\xe6\xa8\x01 \x01(\tR\x10apistatusmessage\x12.\n" +
-	"\x10binarymediatypes\x18\x92\xd6\xe5\xc1\x01 \x03(\tR\x10binarymediatypes\x12#\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tR\vcreateddate\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12D\n" +
-	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x00R\x19disableexecuteapiendpoint\x88\x01\x01\x12R\n" +
+	"\tapistatus\x18\xd2\xd9\xd1_ \x01(\x0e2\x15.apigateway.ApiStatusR\tapistatus\x123\n" +
+	"\x10apistatusmessage\x18ɓ\xe6\xa8\x01 \x01(\tH\x00R\x10apistatusmessage\x88\x01\x01\x12.\n" +
+	"\x10binarymediatypes\x18\x92\xd6\xe5\xc1\x01 \x03(\tR\x10binarymediatypes\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x01R\vcreateddate\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x02R\vdescription\x88\x01\x01\x12D\n" +
+	"\x19disableexecuteapiendpoint\x18\x98\xe5\xd1F \x01(\bH\x03R\x19disableexecuteapiendpoint\x88\x01\x01\x12R\n" +
 	"\x12endpointaccessmode\x18\xdeʋ\xaa\x01 \x01(\x0e2\x1e.apigateway.EndpointAccessModeR\x12endpointaccessmode\x12[\n" +
-	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12>\n" +
-	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x01R\x16minimumcompressionsize\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x19\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tR\x06policy\x12*\n" +
-	"\x0erootresourceid\x18\x91\xa3ޫ\x01 \x01(\tR\x0erootresourceid\x12F\n" +
+	"\x15endpointconfiguration\x18\xb7\xa7\xbd\xe8\x01 \x01(\v2!.apigateway.EndpointConfigurationR\x15endpointconfiguration\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x04R\x02id\x88\x01\x01\x12>\n" +
+	"\x16minimumcompressionsize\x18\xbf\x83\xc6y \x01(\x05H\x05R\x16minimumcompressionsize\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x06R\x04name\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\aR\x06policy\x88\x01\x01\x12/\n" +
+	"\x0erootresourceid\x18\x91\xa3ޫ\x01 \x01(\tH\bR\x0erootresourceid\x88\x01\x01\x12F\n" +
 	"\x0esecuritypolicy\x18\xde\xd4\xc0\xea\x01 \x01(\x0e2\x1a.apigateway.SecurityPolicyR\x0esecuritypolicy\x125\n" +
-	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.apigateway.RestApi.TagsEntryR\x04tags\x12\x1b\n" +
-	"\aversion\x18\x98\xdd\xc63 \x01(\tR\aversion\x12\x1d\n" +
+	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.apigateway.RestApi.TagsEntryR\x04tags\x12 \n" +
+	"\aversion\x18\x98\xdd\xc63 \x01(\tH\tR\aversion\x88\x01\x01\x12\x1d\n" +
 	"\bwarnings\x18\x95\x97\xc1X \x03(\tR\bwarnings\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x1c\n" +
-	"\x1a_disableexecuteapiendpointB\x19\n" +
-	"\x17_minimumcompressionsize\"Y\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x13\n" +
+	"\x11_apistatusmessageB\x0e\n" +
+	"\f_createddateB\x0e\n" +
+	"\f_descriptionB\x1c\n" +
+	"\x1a_disableexecuteapiendpointB\x05\n" +
+	"\x03_idB\x19\n" +
+	"\x17_minimumcompressionsizeB\a\n" +
+	"\x05_nameB\t\n" +
+	"\a_policyB\x11\n" +
+	"\x0f_rootresourceidB\n" +
+	"\n" +
+	"\b_version\"k\n" +
 	"\bRestApis\x12-\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.RestApiR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xd7\x01\n" +
-	"\x18SdkConfigurationProperty\x12&\n" +
-	"\fdefaultvalue\x18\xc0\xc9\xc9\xc0\x01 \x01(\tR\fdefaultvalue\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12%\n" +
-	"\ffriendlyname\x18\xbe\xfb\xda\x12 \x01(\tR\ffriendlyname\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\"\n" +
-	"\brequired\x18\xa1\x8c\xb2$ \x01(\bH\x00R\brequired\x88\x01\x01B\v\n" +
-	"\t_required\"\x85\x01\n" +
-	"\vSdkResponse\x12\x1c\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01R\x04body\x122\n" +
-	"\x12contentdisposition\x18\xe2\x8f\xf1\xb2\x01 \x01(\tR\x12contentdisposition\x12$\n" +
-	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tR\vcontenttype\"\xcd\x01\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.RestApiR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\xa6\x02\n" +
+	"\x18SdkConfigurationProperty\x12+\n" +
+	"\fdefaultvalue\x18\xc0\xc9\xc9\xc0\x01 \x01(\tH\x00R\fdefaultvalue\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x01R\vdescription\x88\x01\x01\x12*\n" +
+	"\ffriendlyname\x18\xbe\xfb\xda\x12 \x01(\tH\x02R\ffriendlyname\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x03R\x04name\x88\x01\x01\x12\"\n" +
+	"\brequired\x18\xa1\x8c\xb2$ \x01(\bH\x04R\brequired\x88\x01\x01B\x0f\n" +
+	"\r_defaultvalueB\x0e\n" +
+	"\f_descriptionB\x0f\n" +
+	"\r_friendlynameB\a\n" +
+	"\x05_nameB\v\n" +
+	"\t_required\"\xc4\x01\n" +
+	"\vSdkResponse\x12!\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\fB\x04\x88\xb5\x18\x01H\x00R\x04body\x88\x01\x01\x127\n" +
+	"\x12contentdisposition\x18\xe2\x8f\xf1\xb2\x01 \x01(\tH\x01R\x12contentdisposition\x88\x01\x01\x12)\n" +
+	"\vcontenttype\x18\xb3ƭ\x86\x01 \x01(\tH\x02R\vcontenttype\x88\x01\x01B\a\n" +
+	"\x05_bodyB\x15\n" +
+	"\x13_contentdispositionB\x0e\n" +
+	"\f_contenttype\"\x84\x02\n" +
 	"\aSdkType\x12a\n" +
-	"\x17configurationproperties\x18\xc1Ԙ6 \x03(\v2$.apigateway.SdkConfigurationPropertyR\x17configurationproperties\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12%\n" +
-	"\ffriendlyname\x18\xbe\xfb\xda\x12 \x01(\tR\ffriendlyname\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\"9\n" +
+	"\x17configurationproperties\x18\xc1Ԙ6 \x03(\v2$.apigateway.SdkConfigurationPropertyR\x17configurationproperties\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12*\n" +
+	"\ffriendlyname\x18\xbe\xfb\xda\x12 \x01(\tH\x01R\ffriendlyname\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x02R\x02id\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\x0f\n" +
+	"\r_friendlynameB\x05\n" +
+	"\x03_id\"9\n" +
 	"\bSdkTypes\x12-\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.SdkTypeR\x05items\"l\n" +
-	"\x1bServiceUnavailableException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x120\n" +
-	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tR\x11retryafterseconds\"\xc5\t\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.SdkTypeR\x05items\"\x98\x01\n" +
+	"\x1bServiceUnavailableException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x125\n" +
+	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tH\x01R\x11retryafterseconds\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x14\n" +
+	"\x12_retryafterseconds\"\xff\n" +
+	"\n" +
 	"\x05Stage\x12N\n" +
 	"\x11accesslogsettings\x18\xe7\xf3\xab$ \x01(\v2\x1d.apigateway.AccessLogSettingsR\x11accesslogsettings\x128\n" +
 	"\x13cacheclusterenabled\x18\xf7\xa5\xc0\x1e \x01(\bH\x00R\x13cacheclusterenabled\x88\x01\x01\x12K\n" +
 	"\x10cacheclustersize\x18\xa5\xdf\xdbn \x01(\x0e2\x1c.apigateway.CacheClusterSizeR\x10cacheclustersize\x12R\n" +
 	"\x12cacheclusterstatus\x18ػܷ\x01 \x01(\x0e2\x1e.apigateway.CacheClusterStatusR\x12cacheclusterstatus\x12F\n" +
-	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2\x1a.apigateway.CanarySettingsR\x0ecanarysettings\x124\n" +
-	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\x12#\n" +
-	"\vcreateddate\x18\xd0̦\x19 \x01(\tR\vcreateddate\x12&\n" +
-	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tR\fdeploymentid\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x125\n" +
-	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12,\n" +
-	"\x0flastupdateddate\x18\xf1\xb5\xeb\xd5\x01 \x01(\tR\x0flastupdateddate\x12P\n" +
-	"\x0emethodsettings\x18\xfeܾ\x0e \x03(\v2%.apigateway.Stage.MethodsettingsEntryR\x0emethodsettings\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\x123\n" +
+	"\x0ecanarysettings\x18Ş\x94\x88\x01 \x01(\v2\x1a.apigateway.CanarySettingsR\x0ecanarysettings\x129\n" +
+	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tH\x01R\x13clientcertificateid\x88\x01\x01\x12(\n" +
+	"\vcreateddate\x18\xd0̦\x19 \x01(\tH\x02R\vcreateddate\x88\x01\x01\x12+\n" +
+	"\fdeploymentid\x18\xe4\xfb\xc0\xd1\x01 \x01(\tH\x03R\fdeploymentid\x88\x01\x01\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x04R\vdescription\x88\x01\x01\x12:\n" +
+	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tH\x05R\x14documentationversion\x88\x01\x01\x121\n" +
+	"\x0flastupdateddate\x18\xf1\xb5\xeb\xd5\x01 \x01(\tH\x06R\x0flastupdateddate\x88\x01\x01\x12P\n" +
+	"\x0emethodsettings\x18\xfeܾ\x0e \x03(\v2%.apigateway.Stage.MethodsettingsEntryR\x0emethodsettings\x12$\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\aR\tstagename\x88\x01\x01\x123\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1b.apigateway.Stage.TagsEntryR\x04tags\x12/\n" +
-	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\x01R\x0etracingenabled\x88\x01\x01\x12A\n" +
-	"\tvariables\x18\xc3ŭM \x03(\v2 .apigateway.Stage.VariablesEntryR\tvariables\x12\x1f\n" +
-	"\twebaclarn\x18\x83\xb0\x9at \x01(\tR\twebaclarn\x1a\\\n" +
+	"\x0etracingenabled\x18\x93\xbe\xb8\xba\x01 \x01(\bH\bR\x0etracingenabled\x88\x01\x01\x12A\n" +
+	"\tvariables\x18\xc3ŭM \x03(\v2 .apigateway.Stage.VariablesEntryR\tvariables\x12$\n" +
+	"\twebaclarn\x18\x83\xb0\x9at \x01(\tH\tR\twebaclarn\x88\x01\x01\x1a\\\n" +
 	"\x13MethodsettingsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
 	"\x05value\x18\x02 \x01(\v2\x19.apigateway.MethodSettingR\x05value:\x028\x01\x1a7\n" +
@@ -15752,11 +15995,25 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x0eVariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x16\n" +
-	"\x14_cacheclusterenabledB\x11\n" +
-	"\x0f_tracingenabled\"M\n" +
-	"\bStageKey\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12\x1f\n" +
-	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tR\tstagename\"3\n" +
+	"\x14_cacheclusterenabledB\x16\n" +
+	"\x14_clientcertificateidB\x0e\n" +
+	"\f_createddateB\x0f\n" +
+	"\r_deploymentidB\x0e\n" +
+	"\f_descriptionB\x17\n" +
+	"\x15_documentationversionB\x12\n" +
+	"\x10_lastupdateddateB\f\n" +
+	"\n" +
+	"_stagenameB\x11\n" +
+	"\x0f_tracingenabledB\f\n" +
+	"\n" +
+	"_webaclarn\"s\n" +
+	"\bStageKey\x12%\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tH\x00R\trestapiid\x88\x01\x01\x12$\n" +
+	"\tstagename\x18\x8f\xdc\xc7\x04 \x01(\tH\x01R\tstagename\x88\x01\x01B\f\n" +
+	"\n" +
+	"_restapiidB\f\n" +
+	"\n" +
+	"_stagename\"3\n" +
 	"\x06Stages\x12)\n" +
 	"\x04item\x18\xe7\xe7\xe0\xf9\x01 \x03(\v2\x11.apigateway.StageR\x04item\"\xb4\x01\n" +
 	"\x12TagResourceRequest\x12#\n" +
@@ -15769,16 +16026,17 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1a.apigateway.Tags.TagsEntryR\x04tags\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"#\n" +
-	"\bTemplate\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"\xdd\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"2\n" +
+	"\bTemplate\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\x00R\x05value\x88\x01\x01B\b\n" +
+	"\x06_value\"\x88\a\n" +
 	"\x1bTestInvokeAuthorizerRequest\x12p\n" +
 	"\x11additionalcontext\x18྅\xe1\x01 \x03(\v2>.apigateway.TestInvokeAuthorizerRequest.AdditionalcontextEntryR\x11additionalcontext\x12%\n" +
-	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12\x16\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tR\x04body\x12R\n" +
+	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12\x1b\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tH\x00R\x04body\x88\x01\x01\x12R\n" +
 	"\aheaders\x18곗\xb3\x01 \x03(\v24.apigateway.TestInvokeAuthorizerRequest.HeadersEntryR\aheaders\x12o\n" +
-	"\x11multivalueheaders\x18\xac\xdb\xf4C \x03(\v2>.apigateway.TestInvokeAuthorizerRequest.MultivalueheadersEntryR\x11multivalueheaders\x123\n" +
-	"\x13pathwithquerystring\x18\x90ϢL \x01(\tR\x13pathwithquerystring\x12 \n" +
+	"\x11multivalueheaders\x18\xac\xdb\xf4C \x03(\v2>.apigateway.TestInvokeAuthorizerRequest.MultivalueheadersEntryR\x11multivalueheaders\x128\n" +
+	"\x13pathwithquerystring\x18\x90ϢL \x01(\tH\x01R\x13pathwithquerystring\x88\x01\x01\x12 \n" +
 	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\x12f\n" +
 	"\x0estagevariables\x18\xfb\xac\xb7c \x03(\v2;.apigateway.TestInvokeAuthorizerRequest.StagevariablesEntryR\x0estagevariables\x1aD\n" +
 	"\x16AdditionalcontextEntry\x12\x10\n" +
@@ -15792,15 +16050,17 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aA\n" +
 	"\x13StagevariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x97\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\a\n" +
+	"\x05_bodyB\x16\n" +
+	"\x14_pathwithquerystring\"\xc9\x04\n" +
 	"\x1cTestInvokeAuthorizerResponse\x12e\n" +
 	"\rauthorization\x18\xbf\xafى\x01 \x03(\v2;.apigateway.TestInvokeAuthorizerResponse.AuthorizationEntryR\rauthorization\x12P\n" +
 	"\x06claims\x18\x95\xb8\xbb\xe4\x01 \x03(\v24.apigateway.TestInvokeAuthorizerResponse.ClaimsEntryR\x06claims\x12*\n" +
 	"\fclientstatus\x18\xa1\xbc\xff\x10 \x01(\x05H\x00R\fclientstatus\x88\x01\x01\x12!\n" +
-	"\alatency\x18چ\xee\x97\x01 \x01(\x03H\x01R\alatency\x88\x01\x01\x12\x14\n" +
-	"\x03log\x18Ң\xc5\xfa\x01 \x01(\tR\x03log\x12\x19\n" +
-	"\x06policy\x18\x80\xf5\x83v \x01(\tR\x06policy\x12$\n" +
-	"\vprincipalid\x18\x8dԝ\xa7\x01 \x01(\tR\vprincipalid\x1a@\n" +
+	"\alatency\x18چ\xee\x97\x01 \x01(\x03H\x01R\alatency\x88\x01\x01\x12\x19\n" +
+	"\x03log\x18Ң\xc5\xfa\x01 \x01(\tH\x02R\x03log\x88\x01\x01\x12\x1e\n" +
+	"\x06policy\x18\x80\xf5\x83v \x01(\tH\x03R\x06policy\x88\x01\x01\x12)\n" +
+	"\vprincipalid\x18\x8dԝ\xa7\x01 \x01(\tH\x04R\vprincipalid\x88\x01\x01\x1a@\n" +
 	"\x12AuthorizationEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1a9\n" +
@@ -15809,16 +16069,19 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0f\n" +
 	"\r_clientstatusB\n" +
 	"\n" +
-	"\b_latency\"\xeb\x05\n" +
-	"\x17TestInvokeMethodRequest\x12\x16\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tR\x04body\x124\n" +
-	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\x12N\n" +
+	"\b_latencyB\x06\n" +
+	"\x04_logB\t\n" +
+	"\a_policyB\x0e\n" +
+	"\f_principalid\"\xb3\x06\n" +
+	"\x17TestInvokeMethodRequest\x12\x1b\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tH\x00R\x04body\x88\x01\x01\x129\n" +
+	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tH\x01R\x13clientcertificateid\x88\x01\x01\x12N\n" +
 	"\aheaders\x18곗\xb3\x01 \x03(\v20.apigateway.TestInvokeMethodRequest.HeadersEntryR\aheaders\x12!\n" +
 	"\n" +
 	"httpmethod\x18\xf1\xf3\xfb6 \x01(\tR\n" +
 	"httpmethod\x12k\n" +
-	"\x11multivalueheaders\x18\xac\xdb\xf4C \x03(\v2:.apigateway.TestInvokeMethodRequest.MultivalueheadersEntryR\x11multivalueheaders\x123\n" +
-	"\x13pathwithquerystring\x18\x90ϢL \x01(\tR\x13pathwithquerystring\x12\"\n" +
+	"\x11multivalueheaders\x18\xac\xdb\xf4C \x03(\v2:.apigateway.TestInvokeMethodRequest.MultivalueheadersEntryR\x11multivalueheaders\x128\n" +
+	"\x13pathwithquerystring\x18\x90ϢL \x01(\tH\x02R\x13pathwithquerystring\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"resourceid\x18\xb1\xbd\x89\x98\x01 \x01(\tR\n" +
 	"resourceid\x12 \n" +
@@ -15832,37 +16095,49 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aA\n" +
 	"\x13StagevariablesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe4\x03\n" +
-	"\x18TestInvokeMethodResponse\x12\x16\n" +
-	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tR\x04body\x12O\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\a\n" +
+	"\x05_bodyB\x16\n" +
+	"\x14_clientcertificateidB\x16\n" +
+	"\x14_pathwithquerystring\"\xff\x03\n" +
+	"\x18TestInvokeMethodResponse\x12\x1b\n" +
+	"\x04body\x18\xf6\xf2\xa9\xdd\x01 \x01(\tH\x00R\x04body\x88\x01\x01\x12O\n" +
 	"\aheaders\x18곗\xb3\x01 \x03(\v21.apigateway.TestInvokeMethodResponse.HeadersEntryR\aheaders\x12!\n" +
-	"\alatency\x18چ\xee\x97\x01 \x01(\x03H\x00R\alatency\x88\x01\x01\x12\x14\n" +
-	"\x03log\x18Ң\xc5\xfa\x01 \x01(\tR\x03log\x12l\n" +
+	"\alatency\x18چ\xee\x97\x01 \x01(\x03H\x01R\alatency\x88\x01\x01\x12\x19\n" +
+	"\x03log\x18Ң\xc5\xfa\x01 \x01(\tH\x02R\x03log\x88\x01\x01\x12l\n" +
 	"\x11multivalueheaders\x18\xac\xdb\xf4C \x03(\v2;.apigateway.TestInvokeMethodResponse.MultivalueheadersEntryR\x11multivalueheaders\x12\x1f\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x05H\x01R\x06status\x88\x01\x01\x1a:\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x05H\x03R\x06status\x88\x01\x01\x1a:\n" +
 	"\fHeadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aD\n" +
 	"\x16MultivalueheadersEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\a\n" +
+	"\x05_bodyB\n" +
 	"\n" +
-	"\b_latencyB\t\n" +
-	"\a_status\"k\n" +
+	"\b_latencyB\x06\n" +
+	"\x04_logB\t\n" +
+	"\a_status\"~\n" +
 	"\x10ThrottleSettings\x12&\n" +
 	"\n" +
 	"burstlimit\x18\xc1\xbe\x86\x12 \x01(\x05H\x00R\n" +
-	"burstlimit\x88\x01\x01\x12 \n" +
-	"\tratelimit\x18\xe3\xf8\x96\xf1\x01 \x01(\x01R\tratelimitB\r\n" +
-	"\v_burstlimit\"l\n" +
+	"burstlimit\x88\x01\x01\x12%\n" +
+	"\tratelimit\x18\xe3\xf8\x96\xf1\x01 \x01(\x01H\x01R\tratelimit\x88\x01\x01B\r\n" +
+	"\v_burstlimitB\f\n" +
+	"\n" +
+	"_ratelimit\"l\n" +
 	"\tTlsConfig\x12B\n" +
 	"\x18insecureskipverification\x18\x84\xee\x9e% \x01(\bH\x00R\x18insecureskipverification\x88\x01\x01B\x1b\n" +
-	"\x19_insecureskipverification\"i\n" +
-	"\x18TooManyRequestsException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\x120\n" +
-	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tR\x11retryafterseconds\"4\n" +
-	"\x15UnauthorizedException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"X\n" +
+	"\x19_insecureskipverification\"\x95\x01\n" +
+	"\x18TooManyRequestsException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01\x125\n" +
+	"\x11retryafterseconds\x18\x83\xdf\xf5\xcf\x01 \x01(\tH\x01R\x11retryafterseconds\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\x14\n" +
+	"\x12_retryafterseconds\"E\n" +
+	"\x15UnauthorizedException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"X\n" +
 	"\x14UntagResourceRequest\x12#\n" +
 	"\vresourcearn\x18\xcd̪  \x01(\tR\vresourcearn\x12\x1b\n" +
 	"\atagkeys\x18\x9c\x9f\xca% \x03(\tR\atagkeys\"_\n" +
@@ -15874,14 +16149,15 @@ const file_apigateway_proto_rawDesc = "" +
 	"\x17UpdateAuthorizerRequest\x12%\n" +
 	"\fauthorizerid\x18܋\xa65 \x01(\tR\fauthorizerid\x12G\n" +
 	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xd2\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xe8\x01\n" +
 	"\x1cUpdateBasePathMappingRequest\x12\x1d\n" +
 	"\bbasepath\x18\xb0\xd5\xc8\x7f \x01(\tR\bbasepath\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\x12G\n" +
-	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\"\x9f\x01\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01\x12G\n" +
+	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperationsB\x0f\n" +
+	"\r_domainnameid\"\x9f\x01\n" +
 	"\x1eUpdateClientCertificateRequest\x124\n" +
 	"\x13clientcertificateid\x18\xbd\xa7ۃ\x01 \x01(\tR\x13clientcertificateid\x12G\n" +
 	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\"\xac\x01\n" +
@@ -15896,13 +16172,14 @@ const file_apigateway_proto_rawDesc = "" +
 	"!UpdateDocumentationVersionRequest\x125\n" +
 	"\x14documentationversion\x18\x8c\xbc\xd1O \x01(\tR\x14documentationversion\x12G\n" +
 	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\x12 \n" +
-	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xae\x01\n" +
+	"\trestapiid\x18\x99\xa4\x81\xb7\x01 \x01(\tR\trestapiid\"\xc4\x01\n" +
 	"\x17UpdateDomainNameRequest\x12\"\n" +
 	"\n" +
 	"domainname\x18\x8bӏ\xba\x01 \x01(\tR\n" +
-	"domainname\x12&\n" +
-	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tR\fdomainnameid\x12G\n" +
-	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\"\xd2\x01\n" +
+	"domainname\x12+\n" +
+	"\fdomainnameid\x18\xa8\xfc\x9c\x8e\x01 \x01(\tH\x00R\fdomainnameid\x88\x01\x01\x12G\n" +
+	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperationsB\x0f\n" +
+	"\r_domainnameid\"\xd2\x01\n" +
 	"\x1cUpdateGatewayResponseRequest\x12G\n" +
 	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\x12G\n" +
 	"\fresponsetype\x18\xbf\xb0\x9b\xb4\x01 \x01(\x0e2\x1f.apigateway.GatewayResponseTypeR\fresponsetype\x12 \n" +
@@ -15979,57 +16256,78 @@ const file_apigateway_proto_rawDesc = "" +
 	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\"\x80\x01\n" +
 	"\x14UpdateVpcLinkRequest\x12G\n" +
 	"\x0fpatchoperations\x18\xac\xfc\x92` \x03(\v2\x1a.apigateway.PatchOperationR\x0fpatchoperations\x12\x1f\n" +
-	"\tvpclinkid\x18Ʒ\x8f\r \x01(\tR\tvpclinkid\"\xff\x01\n" +
-	"\x05Usage\x12\x1c\n" +
-	"\aenddate\x18\xef\x9d\xc0\xb7\x01 \x01(\tR\aenddate\x126\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1c.apigateway.Usage.ItemsEntryR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\x12 \n" +
-	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tR\tstartdate\x12$\n" +
-	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tR\vusageplanid\x1a8\n" +
+	"\tvpclinkid\x18Ʒ\x8f\r \x01(\tR\tvpclinkid\"\xca\x02\n" +
+	"\x05Usage\x12!\n" +
+	"\aenddate\x18\xef\x9d\xc0\xb7\x01 \x01(\tH\x00R\aenddate\x88\x01\x01\x126\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x1c.apigateway.Usage.ItemsEntryR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x01R\bposition\x88\x01\x01\x12%\n" +
+	"\tstartdate\x18\x9c\x8e\xfc\xad\x01 \x01(\tH\x02R\tstartdate\x88\x01\x01\x12)\n" +
+	"\vusageplanid\x18\xd7\xf0\xe5\xf2\x01 \x01(\tH\x03R\vusageplanid\x88\x01\x01\x1a8\n" +
 	"\n" +
 	"ItemsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9d\x03\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\n" +
+	"\n" +
+	"\b_enddateB\v\n" +
+	"\t_positionB\f\n" +
+	"\n" +
+	"_startdateB\x0e\n" +
+	"\f_usageplanid\"\xe1\x03\n" +
 	"\tUsagePlan\x125\n" +
-	"\tapistages\x18\xf1\xaa\xe4\x1e \x03(\v2\x14.apigateway.ApiStageR\tapistages\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12$\n" +
-	"\vproductcode\x18ꀫ\xfe\x01 \x01(\tR\vproductcode\x122\n" +
+	"\tapistages\x18\xf1\xaa\xe4\x1e \x03(\v2\x14.apigateway.ApiStageR\tapistages\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x12)\n" +
+	"\vproductcode\x18ꀫ\xfe\x01 \x01(\tH\x03R\vproductcode\x88\x01\x01\x122\n" +
 	"\x05quota\x18\x8c\xeb\xa1t \x01(\v2\x19.apigateway.QuotaSettingsR\x05quota\x127\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1f.apigateway.UsagePlan.TagsEntryR\x04tags\x12<\n" +
 	"\bthrottle\x18\xde弼\x01 \x01(\v2\x1c.apigateway.ThrottleSettingsR\bthrottle\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"j\n" +
-	"\fUsagePlanKey\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x12\x16\n" +
-	"\x04type\x18\xce⟉\x01 \x01(\tR\x04type\x12\x17\n" +
-	"\x05value\x18˧\xfb\x12 \x01(\tR\x05value\"c\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\x0e\n" +
+	"\f_productcode\"\xa1\x01\n" +
+	"\fUsagePlanKey\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x00R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x01R\x04name\x88\x01\x01\x12\x1b\n" +
+	"\x04type\x18\xce⟉\x01 \x01(\tH\x02R\x04type\x88\x01\x01\x12\x1c\n" +
+	"\x05value\x18˧\xfb\x12 \x01(\tH\x03R\x05value\x88\x01\x01B\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\a\n" +
+	"\x05_typeB\b\n" +
+	"\x06_value\"u\n" +
 	"\rUsagePlanKeys\x122\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x18.apigateway.UsagePlanKeyR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"]\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x18.apigateway.UsagePlanKeyR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"o\n" +
 	"\n" +
 	"UsagePlans\x12/\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x15.apigateway.UsagePlanR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition\"\xce\x02\n" +
-	"\aVpcLink\x12$\n" +
-	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\xe7\xfb\xe6i \x01(\tR\x04name\x125\n" +
-	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.apigateway.VpcLinkStatusR\x06status\x12(\n" +
-	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tR\rstatusmessage\x125\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x15.apigateway.UsagePlanR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position\"\x94\x03\n" +
+	"\aVpcLink\x12)\n" +
+	"\vdescription\x18\xea\xf6\xbc\xa3\x01 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\xe1\xd5\xe1\xb9\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\xe7\xfb\xe6i \x01(\tH\x02R\x04name\x88\x01\x01\x125\n" +
+	"\x06status\x18\xf0\xef\xad\xd2\x01 \x01(\x0e2\x19.apigateway.VpcLinkStatusR\x06status\x12-\n" +
+	"\rstatusmessage\x18\xaf\xf0\x9e\xe2\x01 \x01(\tH\x03R\rstatusmessage\x88\x01\x01\x125\n" +
 	"\x04tags\x18\xa1\xd7۠\x01 \x03(\v2\x1d.apigateway.VpcLink.TagsEntryR\x04tags\x12!\n" +
 	"\n" +
 	"targetarns\x18Ս\x8b\x16 \x03(\tR\n" +
 	"targetarns\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"Y\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_nameB\x10\n" +
+	"\x0e_statusmessage\"k\n" +
 	"\bVpcLinks\x12-\n" +
-	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.VpcLinkR\x05items\x12\x1e\n" +
-	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tR\bposition*F\n" +
+	"\x05items\x18\x90\xe7\xe4\xd3\x01 \x03(\v2\x13.apigateway.VpcLinkR\x05items\x12#\n" +
+	"\bposition\x18\x8b\x9c\xbd\x9a\x01 \x01(\tH\x00R\bposition\x88\x01\x01B\v\n" +
+	"\t_position*F\n" +
 	"\x1bAccessAssociationSourceType\x12'\n" +
 	"#ACCESS_ASSOCIATION_SOURCE_TYPE_VPCE\x10\x00*V\n" +
 	"\x10ApiKeySourceType\x12\"\n" +
@@ -17065,27 +17363,63 @@ func file_apigateway_proto_init() {
 	if File_apigateway_proto != nil {
 		return
 	}
+	file_apigateway_proto_msgTypes[0].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[1].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[2].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[4].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[5].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[6].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[7].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[8].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[9].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[10].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[11].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[12].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[13].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[14].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[15].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[16].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[17].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[18].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[20].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[22].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[23].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[24].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[26].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[27].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[29].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[30].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[33].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[39].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[53].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[54].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[55].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[56].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[58].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[59].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[60].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[61].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[62].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[63].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[64].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[65].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[67].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[70].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[71].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[72].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[74].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[75].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[77].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[78].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[79].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[81].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[83].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[85].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[87].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[88].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[89].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[90].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[91].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[93].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[98].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[100].OneofWrappers = []any{}
@@ -17093,6 +17427,7 @@ func file_apigateway_proto_init() {
 	file_apigateway_proto_msgTypes[104].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[106].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[109].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[111].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[112].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[114].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[116].OneofWrappers = []any{}
@@ -17102,21 +17437,54 @@ func file_apigateway_proto_init() {
 	file_apigateway_proto_msgTypes[121].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[122].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[123].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[124].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[125].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[126].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[127].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[128].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[129].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[130].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[131].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[132].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[133].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[134].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[135].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[136].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[137].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[138].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[139].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[141].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[142].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[144].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[145].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[146].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[147].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[148].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[149].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[150].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[151].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[152].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[154].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[155].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[156].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[160].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[161].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[162].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[163].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[164].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[165].OneofWrappers = []any{}
 	file_apigateway_proto_msgTypes[166].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[167].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[168].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[173].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[178].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[192].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[193].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[194].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[195].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[196].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[197].OneofWrappers = []any{}
+	file_apigateway_proto_msgTypes[198].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

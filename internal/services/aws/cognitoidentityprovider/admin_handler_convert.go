@@ -90,19 +90,19 @@ func userPoolToProto(pool *cognitostore.UserPool) *pb.UserPoolType {
 	}
 
 	result := &pb.UserPoolType{
-		Id:                 pool.ID,
-		Name:               pool.Name,
-		Arn:                pool.Arn,
+		Id:                 proto.String(pool.ID),
+		Name:               proto.String(pool.Name),
+		Arn:                proto.String(pool.Arn),
 		Status:             statusToProto(pool.Status),
 		Mfaconfiguration:   mfaConfigurationToProto(pool.MfaConfiguration),
 		Deletionprotection: deletionProtectionToProto(pool.DeletionProtection),
 	}
 
 	if !pool.CreationDate.IsZero() {
-		result.Creationdate = pool.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		result.Creationdate = proto.String(pool.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !pool.LastModifiedDate.IsZero() {
-		result.Lastmodifieddate = pool.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		result.Lastmodifieddate = proto.String(pool.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 
 	if len(pool.AliasAttributes) > 0 {
@@ -202,17 +202,17 @@ func identityProviderToProto(ip *cognitostore.IdentityProvider) *pb.IdentityProv
 	}
 
 	result := &pb.IdentityProviderType{
-		Providername:     ip.ProviderName,
+		Providername:     proto.String(ip.ProviderName),
 		Providertype:     identityProviderTypeToProto(ip.ProviderType),
 		Providerdetails:  ip.ProviderDetails,
 		Attributemapping: ip.AttributeMapping,
 		Idpidentifiers:   ip.IdpIdentifiers,
 	}
 	if !ip.CreationDate.IsZero() {
-		result.Creationdate = ip.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		result.Creationdate = proto.String(ip.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !ip.LastModifiedDate.IsZero() {
-		result.Lastmodifieddate = ip.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		result.Lastmodifieddate = proto.String(ip.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	return result
 }
@@ -224,14 +224,14 @@ func providerDescriptionToProto(ip *cognitostore.IdentityProvider) *pb.ProviderD
 		return nil
 	}
 	result := &pb.ProviderDescription{
-		Providername: ip.ProviderName,
+		Providername: proto.String(ip.ProviderName),
 		Providertype: identityProviderTypeToProto(ip.ProviderType),
 	}
 	if !ip.CreationDate.IsZero() {
-		result.Creationdate = ip.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		result.Creationdate = proto.String(ip.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !ip.LastModifiedDate.IsZero() {
-		result.Lastmodifieddate = ip.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		result.Lastmodifieddate = proto.String(ip.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	return result
 }
@@ -268,20 +268,20 @@ func userToProto(user *cognitostore.User) *pb.UserType {
 	}
 
 	u := &pb.UserType{
-		Username:   user.Username,
+		Username:   proto.String(user.Username),
 		Userstatus: userStatusToProto(user.UserStatus),
 		Enabled:    proto.Bool(user.Enabled),
 	}
 	if !user.CreatedDate.IsZero() {
-		u.Usercreatedate = user.CreatedDate.Format(timeutils.ISO8601UTCFormat)
+		u.Usercreatedate = proto.String(user.CreatedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !user.LastModifiedDate.IsZero() {
-		u.Userlastmodifieddate = user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		u.Userlastmodifieddate = proto.String(user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if len(user.Attributes) > 0 {
 		attrs := make([]*pb.AttributeType, 0, len(user.Attributes))
 		for k, v := range user.Attributes {
-			attrs = append(attrs, &pb.AttributeType{Name: k, Value: v})
+			attrs = append(attrs, &pb.AttributeType{Name: k, Value: proto.String(v)})
 		}
 		u.Attributes = attrs
 	}
@@ -299,17 +299,17 @@ func groupToProto(group *cognitostore.Group) *pb.GroupType {
 	}
 
 	result := &pb.GroupType{
-		Groupname: group.Name,
-		Rolearn:   group.RoleArn,
+		Groupname: proto.String(group.Name),
+		Rolearn:   proto.String(group.RoleArn),
 	}
 	if group.Description != "" {
-		result.Description = group.Description
+		result.Description = proto.String(group.Description)
 	}
 	if !group.CreationDate.IsZero() {
-		result.Creationdate = group.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		result.Creationdate = proto.String(group.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !group.LastModifiedDate.IsZero() {
-		result.Lastmodifieddate = group.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		result.Lastmodifieddate = proto.String(group.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if group.Precedence != nil {
 		result.Precedence = proto.Int32(int32(*group.Precedence))
@@ -370,19 +370,19 @@ func userPoolClientToProto(client *cognitostore.UserPoolClient) *pb.UserPoolClie
 	}
 
 	result := &pb.UserPoolClientType{
-		Clientid:                   client.ClientID,
-		Clientname:                 client.ClientName,
-		Userpoolid:                 client.UserPoolID,
-		Clientsecret:               client.ClientSecret,
-		Defaultredirecturi:         client.DefaultRedirectURI,
+		Clientid:                   proto.String(client.ClientID),
+		Clientname:                 proto.String(client.ClientName),
+		Userpoolid:                 proto.String(client.UserPoolID),
+		Clientsecret:               proto.String(client.ClientSecret),
+		Defaultredirecturi:         proto.String(client.DefaultRedirectURI),
 		Preventuserexistenceerrors: preventUserExistenceErrorsToProto(client.PreventUserExistenceErrors),
 	}
 
 	if !client.CreationDate.IsZero() {
-		result.Creationdate = client.CreationDate.Format(timeutils.ISO8601UTCFormat)
+		result.Creationdate = proto.String(client.CreationDate.Format(timeutils.ISO8601UTCFormat))
 	}
 	if !client.LastModifiedDate.IsZero() {
-		result.Lastmodifieddate = client.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)
+		result.Lastmodifieddate = proto.String(client.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
 
 	if client.RefreshTokenValidity > 0 {

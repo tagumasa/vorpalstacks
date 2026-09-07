@@ -1,8 +1,6 @@
 package dynamodb
 
 import (
-	"time"
-
 	"google.golang.org/protobuf/proto"
 	pb "vorpalstacks/internal/pb/aws/dynamodb"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -14,10 +12,10 @@ func storeAVToProto(av *dbstore.AttributeValue) *pb.AttributeValue {
 	}
 	p := &pb.AttributeValue{}
 	if av.S != nil {
-		p.S = *av.S
+		p.S = proto.String(*av.S)
 	}
 	if av.N != nil {
-		p.N = *av.N
+		p.N = proto.String(*av.N)
 	}
 	if av.B != nil {
 		p.B = av.B
@@ -51,11 +49,11 @@ func protoAVToStore(p *pb.AttributeValue) *dbstore.AttributeValue {
 		return nil
 	}
 	av := &dbstore.AttributeValue{}
-	if p.S != "" {
-		av.S = &p.S
+	if p.GetS() != "" {
+		av.S = p.S
 	}
-	if p.N != "" {
-		av.N = &p.N
+	if p.GetN() != "" {
+		av.N = p.N
 	}
 	if len(p.B) > 0 {
 		av.B = p.B
@@ -134,10 +132,10 @@ func storeTableToProtoDescription(table *dbstore.Table) *pb.TableDescription {
 		return nil
 	}
 	desc := &pb.TableDescription{
-		Tablename:                 table.Name,
-		Tablearn:                  table.ARN,
+		Tablename:                 proto.String(table.Name),
+		Tablearn:                  proto.String(table.ARN),
 		Tablestatus:               tableStatusToProto(table.Status),
-		Creationdatetime:          table.CreationDateTime.Format(time.RFC3339),
+		Creationdatetime:          proto.String(table.CreationDateTime.Format("2006-01-02T15:04:05.000Z07:00")),
 		Itemcount:                 proto.Int64(table.ItemCount),
 		Tablesizebytes:            proto.Int64(table.TableSizeBytes),
 		Deletionprotectionenabled: proto.Bool(table.DeletionProtectionEnabled),

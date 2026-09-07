@@ -1,6 +1,7 @@
 package dynamodb
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -8,8 +9,6 @@ import (
 	"vorpalstacks/internal/common/request"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 )
-
-const maxItemSizeBytes = 400 * 1024
 
 func isKeyAttribute(table *dbstore.Table, attrName string) bool {
 	for _, ks := range table.KeySchema {
@@ -44,6 +43,72 @@ func buildConsumedCapacityResponse(tableName string, capacityUnits float64) map[
 	}
 }
 
+// buildReadConsumedCapacityResponse renders a read operation's
+// ConsumedCapacity entry: the ConsumedCapacity shape defines both the
+// aggregate member and the read-specific member, and read operations
+// populate them with the same figure.
+func buildReadConsumedCapacityResponse(tableName string, capacityUnits float64) map[string]interface{} {
+	return map[string]interface{}{
+		"TableName":         tableName,
+		"CapacityUnits":     capacityUnits,
+		"ReadCapacityUnits": capacityUnits,
+	}
+}
+
+// buildConsumedCapacityResponseWithVector adds the per-index vector write
+// bytes to a ConsumedCapacity response when the write indexed any vectors.
+func buildConsumedCapacityResponseWithVector(tableName string, capacityUnits float64, vectorIndexes map[string]interface{}) map[string]interface{} {
+	resp := buildConsumedCapacityResponse(tableName, capacityUnits)
+	if vectorIndexes != nil {
+		resp["VectorIndexes"] = vectorIndexes
+	}
+	return resp
+}
+
+// vectorWriteCapacityForItems builds the ConsumedCapacity.VectorIndexes map
+// for a write that modifies attributes indexed by a vector index: per index,
+// the serialised byte length of the vector attribute values the write puts
+// into the index (AWS documents the member but not its formula). Items whose
+// vector attribute is absent, malformed, or dimension-mismatched are not
+// indexed and report nothing. Returns nil when the table has no vector
+// indexes or none of the items carries an indexable vector.
+func vectorWriteCapacityForItems(table *dbstore.Table, items ...*dbstore.Item) map[string]interface{} {
+	if table == nil || len(table.VectorIndexes) == 0 {
+		return nil
+	}
+	var indexes map[string]interface{}
+	for _, vi := range table.VectorIndexes {
+		var bytes int
+		for _, item := range items {
+			if item == nil {
+				continue
+			}
+			var attr *dbstore.AttributeValue
+			if item.Attributes != nil {
+				attr = item.Attributes[vi.VectorAttributeName]
+			}
+			if attr == nil && item.Key != nil {
+				attr = item.Key[vi.VectorAttributeName]
+			}
+			if attr == nil || attr.L == nil || int64(len(attr.L)) != vi.Dimensions {
+				continue
+			}
+			if encoded, err := json.Marshal(buildItemResponse(map[string]*dbstore.AttributeValue{"v": attr})); err == nil {
+				bytes += len(encoded)
+			}
+		}
+		if bytes > 0 {
+			if indexes == nil {
+				indexes = make(map[string]interface{})
+			}
+			indexes[vi.IndexName] = map[string]interface{}{
+				"VectorWriteRequestBytes": float64(bytes),
+			}
+		}
+	}
+	return indexes
+}
+
 func buildConsumedCapacityResponseWithIndex(tableName string, indexName string, capacityUnits float64, isLSI bool) map[string]interface{} {
 	resp := map[string]interface{}{
 		"TableName":     tableName,
@@ -76,110 +141,6 @@ func (s *DynamoDBService) extractKeyFromItem(table *dbstore.Table, item map[stri
 	}
 
 	return key
-}
-
-func calculateItemSize(item map[string]*dbstore.AttributeValue) int64 {
-	var size int64
-	for attrName, av := range item {
-		size += int64(len(attrName))
-		size += calculateAttributeValueSize(av)
-	}
-	return size
-}
-
-func calculateAttributeValueSize(av *dbstore.AttributeValue) int64 {
-	if av == nil {
-		return 0
-	}
-
-	if av.S != nil {
-		return int64(len(*av.S))
-	}
-	if av.N != nil {
-		return calculateNumberSize(*av.N)
-	}
-	if av.B != nil {
-		return int64(len(av.B))
-	}
-	if av.BOOL != nil {
-		return 1
-	}
-	if av.NULL != nil {
-		return 1
-	}
-	if av.SS != nil {
-		var size int64
-		for _, s := range av.SS {
-			size += int64(len(s))
-		}
-		return size
-	}
-	if av.NS != nil {
-		var size int64
-		for _, n := range av.NS {
-			size += calculateNumberSize(n)
-		}
-		return size
-	}
-	if av.BS != nil {
-		var size int64
-		for _, b := range av.BS {
-			size += int64(len(b))
-		}
-		return size
-	}
-	if av.M != nil {
-		var size int64 = 3
-		for k, v := range av.M {
-			size += int64(len(k))
-			size += calculateAttributeValueSize(v)
-		}
-		return size
-	}
-	if av.L != nil {
-		var size int64 = 3
-		for _, v := range av.L {
-			size += calculateAttributeValueSize(v)
-		}
-		return size
-	}
-	return 0
-}
-
-// calculateNumberSize returns the size in bytes for a DynamoDB Number value.
-// AWS counts each pair of significant digits as 1 byte, minimum 1 byte.
-func calculateNumberSize(numStr string) int64 {
-	if numStr == "" {
-		return 1
-	}
-	significantDigits := 0
-	for _, c := range numStr {
-		if c >= '0' && c <= '9' {
-			significantDigits++
-		}
-	}
-	if significantDigits == 0 {
-		return 1
-	}
-	return int64((significantDigits + 1) / 2)
-}
-
-func validateKeyValueNotEmpty(key map[string]*dbstore.AttributeValue) bool {
-	for _, av := range key {
-		if av == nil {
-			return false
-		}
-		if av.S != nil && *av.S == "" {
-			return false
-		}
-		if av.N != nil && *av.N == "" {
-			return false
-		}
-		if av.B != nil && len(av.B) == 0 {
-			return false
-		}
-	}
-	return true
 }
 
 func tokenizeExpression(expr string) []string {

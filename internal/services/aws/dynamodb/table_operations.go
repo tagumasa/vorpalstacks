@@ -14,31 +14,22 @@ import (
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_CreateTable.html
 func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	tableName := request.GetStringParam(req.Parameters, "TableName")
-	if tableName == "" {
-		return nil, ErrInvalidParameter
-	}
 
 	keySchema := parseKeySchema(req.Parameters)
 	attrDefs := parseAttributeDefinitions(req.Parameters)
 
 	billingMode := dbstore.BillingMode(request.GetStringParam(req.Parameters, "BillingMode"))
-
-	var provThroughput *dbstore.ProvisionedThroughput
-	if billingMode == dbstore.BillingModeProvisioned {
-		provThroughput = parseProvisionedThroughput(req.Parameters)
-	} else if billingMode == dbstore.BillingModePayPerRequest {
-		// ProvisionedThroughput cannot be specified together with
-		// PAY_PER_REQUEST billing.
-		if _, ok := req.Parameters["ProvisionedThroughput"].(map[string]interface{}); ok {
-			return nil, ErrInvalidParameter
-		}
-	}
+	provThroughput := parseProvisionedThroughput(req.Parameters)
 
 	gsi, err := parseGlobalSecondaryIndexes(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
 	lsi, err := parseLocalSecondaryIndexes(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	vectorIdx, err := parseVectorIndexes(req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +83,7 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 		ProvisionedThroughput:     provThroughput,
 		GlobalSecondaryIndexes:    gsi,
 		LocalSecondaryIndexes:     lsi,
+		VectorIndexes:             vectorIdx,
 		StreamSpecification:       streamSpec,
 		Tags:                      tagList,
 		DeletionProtectionEnabled: deletionProtectionEnabled,
@@ -106,7 +98,7 @@ func (s *DynamoDBService) CreateTable(ctx context.Context, reqCtx *request.Reque
 	}
 
 	return map[string]interface{}{
-		"TableDescription": s.buildTableDescription(table),
+		"TableDescription": s.buildTableDescription(table, nil),
 	}, nil
 }
 
@@ -124,8 +116,9 @@ func (s *DynamoDBService) DeleteTable(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
+	replicas := s.replicasForTable(store, deletedTable.Name)
 	return map[string]interface{}{
-		"TableDescription": s.buildTableDescription(deletedTable),
+		"TableDescription": s.buildTableDescription(deletedTable, replicas),
 	}, nil
 }
 
@@ -144,7 +137,7 @@ func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.Req
 	}
 
 	return map[string]interface{}{
-		"Table": s.buildTableDescription(table),
+		"Table": s.buildTableDescription(table, s.replicasForTable(store, table.Name)),
 	}, nil
 }
 
@@ -153,18 +146,9 @@ func (s *DynamoDBService) DescribeTable(ctx context.Context, reqCtx *request.Req
 func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	limit := listTablesMaxLimit
 	if _, ok := req.Parameters["Limit"]; ok {
-		v := request.GetIntParam(req.Parameters, "Limit")
-		if !validateListTablesLimit(v) {
-			return nil, ErrInvalidParameter
-		}
-		limit = v
+		limit = request.GetIntParam(req.Parameters, "Limit")
 	}
 	marker := pagination.GetMarker(req.Parameters, "ExclusiveStartTableName")
-	if estn := request.GetStringParam(req.Parameters, "ExclusiveStartTableName"); estn != "" {
-		if !validateResourceName(estn) {
-			return nil, ErrInvalidParameter
-		}
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -191,7 +175,6 @@ func (s *DynamoDBService) ListTables(ctx context.Context, reqCtx *request.Reques
 }
 
 // UpdateTable updates a DynamoDB table.
-// UpdateTable updates a DynamoDB table.
 // https://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html
 func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	store, err := s.store(reqCtx)
@@ -208,6 +191,9 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 	}
 	if gsiUpdates, ok := req.Parameters["GlobalSecondaryIndexUpdates"].([]interface{}); ok {
 		in.GSIUpdates = gsiUpdates
+	}
+	if viUpdates, ok := req.Parameters["VectorIndexUpdates"].([]interface{}); ok {
+		in.VectorIndexUpdates = viUpdates
 	}
 	streamSpec, streamErr := parseStreamSpecification(req.Parameters)
 	if streamErr != nil {
@@ -232,6 +218,6 @@ func (s *DynamoDBService) UpdateTable(ctx context.Context, reqCtx *request.Reque
 	}
 
 	return map[string]interface{}{
-		"TableDescription": s.buildTableDescription(table),
+		"TableDescription": s.buildTableDescription(table, s.replicasForTable(store, table.Name)),
 	}, nil
 }

@@ -62,8 +62,8 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 	summaries := make([]*pb.CertificateSummary, 0, len(result.Certificates))
 	for _, s := range result.Certificates {
 		summary := &pb.CertificateSummary{
-			Certificatearn:                       s.CertificateArn,
-			Domainname:                           s.DomainName,
+			Certificatearn:                       proto.String(s.CertificateArn),
+			Domainname:                           proto.String(s.DomainName),
 			Status:                               certificateStatusToProto(s.Status),
 			Type:                                 certificateTypeToProto(s.Type),
 			Renewaleligibility:                   renewalEligibilityToProto(s.RenewalEligibility),
@@ -76,26 +76,26 @@ func (h *AdminHandler) ListCertificates(ctx context.Context, req *connect.Reques
 			summary.Subjectalternativenamesummaries = s.SubjectAlternativeNameSummaries
 		}
 		if s.NotBefore != 0 {
-			summary.Notbefore = time.Unix(int64(s.NotBefore), 0).UTC().Format(timeutils.ISO8601UTCFormat)
+			summary.Notbefore = proto.String(time.Unix(int64(s.NotBefore), 0).UTC().Format(timeutils.ISO8601UTCFormat))
 		}
 		if s.NotAfter != 0 {
-			summary.Notafter = time.Unix(int64(s.NotAfter), 0).UTC().Format(timeutils.ISO8601UTCFormat)
+			summary.Notafter = proto.String(time.Unix(int64(s.NotAfter), 0).UTC().Format(timeutils.ISO8601UTCFormat))
 		}
 		if s.CreatedAt != 0 {
-			summary.Createdat = time.Unix(int64(s.CreatedAt), 0).UTC().Format(timeutils.ISO8601UTCFormat)
+			summary.Createdat = proto.String(time.Unix(int64(s.CreatedAt), 0).UTC().Format(timeutils.ISO8601UTCFormat))
 		}
 		if s.IssuedAt != 0 {
-			summary.Issuedat = time.Unix(int64(s.IssuedAt), 0).UTC().Format(timeutils.ISO8601UTCFormat)
+			summary.Issuedat = proto.String(time.Unix(int64(s.IssuedAt), 0).UTC().Format(timeutils.ISO8601UTCFormat))
 		}
 		if s.ImportedAt != 0 {
-			summary.Importedat = time.Unix(int64(s.ImportedAt), 0).UTC().Format(timeutils.ISO8601UTCFormat)
+			summary.Importedat = proto.String(time.Unix(int64(s.ImportedAt), 0).UTC().Format(timeutils.ISO8601UTCFormat))
 		}
 		summaries = append(summaries, summary)
 	}
 
 	return connect.NewResponse(&pb.ListCertificatesResponse{
 		Certificatesummarylist: summaries,
-		Nexttoken:              result.NextToken,
+		Nexttoken:              proto.String(result.NextToken),
 	}), nil
 }
 
@@ -112,8 +112,8 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 		DomainName:       req.Msg.Domainname,
 		SANs:             req.Msg.Subjectalternativenames,
 		SANsProvided:     len(req.Msg.Subjectalternativenames) > 0,
-		IdempotencyToken: req.Msg.Idempotencytoken,
-		PCAArn:           req.Msg.Certificateauthorityarn,
+		IdempotencyToken: req.Msg.GetIdempotencytoken(),
+		PCAArn:           req.Msg.GetCertificateauthorityarn(),
 		TagsProvided:     len(req.Msg.Tags) > 0,
 		AccountID:        h.service.accountID,
 		Region:           region,
@@ -138,7 +138,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 	if input.TagsProvided {
 		tags := make([]types.Tag, 0, len(req.Msg.Tags))
 		for _, t := range req.Msg.Tags {
-			tags = append(tags, types.Tag{Key: t.Key, Value: t.Value})
+			tags = append(tags, types.Tag{Key: t.Key, Value: t.GetValue()})
 		}
 		input.Tags = tags
 	}
@@ -176,7 +176,7 @@ func (h *AdminHandler) RequestCertificate(ctx context.Context, req *connect.Requ
 	}
 
 	return connect.NewResponse(&pb.RequestCertificateResponse{
-		Certificatearn: certArn,
+		Certificatearn: proto.String(certArn),
 	}), nil
 }
 

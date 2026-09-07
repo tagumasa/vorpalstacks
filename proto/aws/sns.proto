@@ -245,7 +245,7 @@ message AddPermissionInput {
 
 message AuthorizationErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -255,7 +255,7 @@ message AuthorizationErrorException {
 
 message BatchEntryIdsNotDistinctException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -265,7 +265,7 @@ message BatchEntryIdsNotDistinctException {
 
 message BatchRequestTooLongException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -279,7 +279,7 @@ message BatchResultErrorEntry {
 
   string id = 384350465;
 
-  string message = 235854213;
+  optional string message = 235854213;
 
   optional bool senderfault = 28412929;
 
@@ -311,7 +311,7 @@ message CheckIfPhoneNumberIsOptedOutResponse {
 
 message ConcurrentAccessException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -321,7 +321,7 @@ message ConcurrentAccessException {
 
 message ConfirmSubscriptionInput {
 
-  string authenticateonunsubscribe = 529251911;
+  optional string authenticateonunsubscribe = 529251911;
 
   string token = 439704531;
 
@@ -335,7 +335,7 @@ message ConfirmSubscriptionInput {
 
 message ConfirmSubscriptionResponse {
 
-  string subscriptionarn = 279547820;
+  optional string subscriptionarn = 279547820;
 
 }
 
@@ -345,7 +345,7 @@ message ConfirmSubscriptionResponse {
 
 message CreateEndpointResponse {
 
-  string endpointarn = 32228660;
+  optional string endpointarn = 32228660;
 
 }
 
@@ -369,7 +369,7 @@ message CreatePlatformApplicationInput {
 
 message CreatePlatformApplicationResponse {
 
-  string platformapplicationarn = 241250568;
+  optional string platformapplicationarn = 241250568;
 
 }
 
@@ -381,7 +381,7 @@ message CreatePlatformEndpointInput {
 
   map<string, string> attributes = 209638581;
 
-  string customuserdata = 388962962;
+  optional string customuserdata = 388962962;
 
   string platformapplicationarn = 241250568;
 
@@ -413,7 +413,7 @@ message CreateTopicInput {
 
   map<string, string> attributes = 209638581;
 
-  string dataprotectionpolicy = 519444573;
+  optional string dataprotectionpolicy = 519444573;
 
   string name = 266367751;
 
@@ -427,7 +427,7 @@ message CreateTopicInput {
 
 message CreateTopicResponse {
 
-  string topicarn = 30652956;
+  optional string topicarn = 30652956;
 
 }
 
@@ -479,7 +479,7 @@ message DeleteTopicInput {
 
 message EmptyBatchRequestException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -491,7 +491,7 @@ message Endpoint {
 
   map<string, string> attributes = 209638581;
 
-  string endpointarn = 32228660;
+  optional string endpointarn = 32228660;
 
 }
 
@@ -501,7 +501,7 @@ message Endpoint {
 
 message EndpointDisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -511,7 +511,7 @@ message EndpointDisabledException {
 
 message FilterPolicyLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -527,7 +527,7 @@ message GetDataProtectionPolicyInput {
 
 message GetDataProtectionPolicyResponse {
 
-  string dataprotectionpolicy = 519444573;
+  optional string dataprotectionpolicy = 519444573;
 
 }
 
@@ -651,7 +651,7 @@ message GetTopicAttributesResponse {
 
 message InternalErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -661,7 +661,7 @@ message InternalErrorException {
 
 message InvalidBatchEntryIdException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -671,7 +671,7 @@ message InvalidBatchEntryIdException {
 
 message InvalidParameterException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -681,7 +681,7 @@ message InvalidParameterException {
 
 message InvalidParameterValueException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -691,7 +691,7 @@ message InvalidParameterValueException {
 
 message InvalidSecurityException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -701,7 +701,7 @@ message InvalidSecurityException {
 
 message InvalidStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -711,7 +711,7 @@ message InvalidStateException {
 
 message KMSAccessDeniedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -721,7 +721,7 @@ message KMSAccessDeniedException {
 
 message KMSDisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -731,7 +731,7 @@ message KMSDisabledException {
 
 message KMSInvalidStateException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -741,7 +741,7 @@ message KMSInvalidStateException {
 
 message KMSNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -751,7 +751,7 @@ message KMSNotFoundException {
 
 message KMSOptInRequired {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -761,7 +761,7 @@ message KMSOptInRequired {
 
 message KMSThrottlingException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -803,7 +803,7 @@ enum LanguageCodeString {
 
 message ListEndpointsByPlatformApplicationInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string platformapplicationarn = 241250568;
 
@@ -817,7 +817,7 @@ message ListEndpointsByPlatformApplicationResponse {
 
   repeated Endpoint endpoints = 16210494;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -827,7 +827,7 @@ message ListOriginationNumbersRequest {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -835,7 +835,7 @@ message ListOriginationNumbersRequest {
 
 message ListOriginationNumbersResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PhoneNumberInformation phonenumbers = 457192616;
 
@@ -847,7 +847,7 @@ message ListOriginationNumbersResult {
 
 message ListPhoneNumbersOptedOutInput {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
 }
 
@@ -857,7 +857,7 @@ message ListPhoneNumbersOptedOutInput {
 
 message ListPhoneNumbersOptedOutResponse {
 
-  string nexttoken = 115833246;
+  optional string nexttoken = 115833246;
 
   repeated string phonenumbers = 156149576;
 
@@ -869,7 +869,7 @@ message ListPhoneNumbersOptedOutResponse {
 
 message ListPlatformApplicationsInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -879,7 +879,7 @@ message ListPlatformApplicationsInput {
 
 message ListPlatformApplicationsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated PlatformApplication platformapplications = 209735978;
 
@@ -891,7 +891,7 @@ message ListSMSSandboxPhoneNumbersInput {
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -899,7 +899,7 @@ message ListSMSSandboxPhoneNumbersInput {
 
 message ListSMSSandboxPhoneNumbersResult {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated SMSSandboxPhoneNumber phonenumbers = 457192616;
 
@@ -911,7 +911,7 @@ message ListSMSSandboxPhoneNumbersResult {
 
 message ListSubscriptionsByTopicInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   string topicarn = 30652956;
 
@@ -923,7 +923,7 @@ message ListSubscriptionsByTopicInput {
 
 message ListSubscriptionsByTopicResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Subscription subscriptions = 169711430;
 
@@ -935,7 +935,7 @@ message ListSubscriptionsByTopicResponse {
 
 message ListSubscriptionsInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -945,7 +945,7 @@ message ListSubscriptionsInput {
 
 message ListSubscriptionsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Subscription subscriptions = 169711430;
 
@@ -971,7 +971,7 @@ message ListTagsForResourceResponse {
 
 message ListTopicsInput {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -981,7 +981,7 @@ message ListTopicsInput {
 
 message ListTopicsResponse {
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
   repeated Topic topics = 219850038;
 
@@ -993,11 +993,11 @@ message ListTopicsResponse {
 
 message MessageAttributeValue {
 
-  bytes binaryvalue = 255476278;
+  optional bytes binaryvalue = 255476278;
 
   string datatype = 67988590;
 
-  string stringvalue = 184416138;
+  optional string stringvalue = 184416138;
 
 }
 
@@ -1007,7 +1007,7 @@ message MessageAttributeValue {
 
 message NotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1047,7 +1047,7 @@ message OptInPhoneNumberResponse {
 
 message OptedOutException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1057,17 +1057,17 @@ message OptedOutException {
 
 message PhoneNumberInformation {
 
-  string createdat = 258192751;
+  optional string createdat = 258192751;
 
-  string iso2countrycode = 283246908;
+  optional string iso2countrycode = 283246908;
 
   repeated NumberCapability numbercapabilities = 54004711;
 
-  string phonenumber = 379600239;
+  optional string phonenumber = 379600239;
 
   RouteType routetype = 170172127;
 
-  string status = 6222352;
+  optional string status = 6222352;
 
 }
 
@@ -1079,7 +1079,7 @@ message PlatformApplication {
 
   map<string, string> attributes = 209638581;
 
-  string platformapplicationarn = 241250568;
+  optional string platformapplicationarn = 241250568;
 
 }
 
@@ -1089,7 +1089,7 @@ message PlatformApplication {
 
 message PlatformApplicationDisabledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1115,13 +1115,13 @@ message PublishBatchRequestEntry {
 
   map<string, MessageAttributeValue> messageattributes = 56443766;
 
-  string messagededuplicationid = 379560665;
+  optional string messagededuplicationid = 379560665;
 
-  string messagegroupid = 419537435;
+  optional string messagegroupid = 419537435;
 
-  string messagestructure = 402672330;
+  optional string messagestructure = 402672330;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
 }
 
@@ -1141,11 +1141,11 @@ message PublishBatchResponse {
 
 message PublishBatchResultEntry {
 
-  string id = 384350465;
+  optional string id = 384350465;
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
-  string sequencenumber = 98094362;
+  optional string sequencenumber = 98094362;
 
 }
 
@@ -1159,19 +1159,19 @@ message PublishInput {
 
   map<string, MessageAttributeValue> messageattributes = 56443766;
 
-  string messagededuplicationid = 379560665;
+  optional string messagededuplicationid = 379560665;
 
-  string messagegroupid = 419537435;
+  optional string messagegroupid = 419537435;
 
-  string messagestructure = 402672330;
+  optional string messagestructure = 402672330;
 
-  string phonenumber = 379600239;
+  optional string phonenumber = 379600239;
 
-  string subject = 7939312;
+  optional string subject = 7939312;
 
-  string targetarn = 217664144;
+  optional string targetarn = 217664144;
 
-  string topicarn = 30652956;
+  optional string topicarn = 30652956;
 
 }
 
@@ -1181,9 +1181,9 @@ message PublishInput {
 
 message PublishResponse {
 
-  string messageid = 360526634;
+  optional string messageid = 360526634;
 
-  string sequencenumber = 98094362;
+  optional string sequencenumber = 98094362;
 
 }
 
@@ -1215,7 +1215,7 @@ message RemovePermissionInput {
 
 message ReplayLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1225,7 +1225,7 @@ message ReplayLimitExceededException {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1247,7 +1247,7 @@ enum RouteType {
 
 message SMSSandboxPhoneNumber {
 
-  string phonenumber = 379600239;
+  optional string phonenumber = 379600239;
 
   SMSSandboxPhoneNumberVerificationStatus status = 6222352;
 
@@ -1313,7 +1313,7 @@ message SetSubscriptionAttributesInput {
 
   string attributename = 352717485;
 
-  string attributevalue = 96769221;
+  optional string attributevalue = 96769221;
 
   string subscriptionarn = 279547820;
 
@@ -1327,7 +1327,7 @@ message SetTopicAttributesInput {
 
   string attributename = 352717485;
 
-  string attributevalue = 96769221;
+  optional string attributevalue = 96769221;
 
   string topicarn = 30652956;
 
@@ -1339,7 +1339,7 @@ message SetTopicAttributesInput {
 
 message StaleTagException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1351,7 +1351,7 @@ message SubscribeInput {
 
   map<string, string> attributes = 209638581;
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
   string protocol = 173534166;
 
@@ -1367,7 +1367,7 @@ message SubscribeInput {
 
 message SubscribeResponse {
 
-  string subscriptionarn = 279547820;
+  optional string subscriptionarn = 279547820;
 
 }
 
@@ -1377,15 +1377,15 @@ message SubscribeResponse {
 
 message Subscription {
 
-  string endpoint = 132634269;
+  optional string endpoint = 132634269;
 
-  string owner = 455261813;
+  optional string owner = 455261813;
 
-  string protocol = 173534166;
+  optional string protocol = 173534166;
 
-  string subscriptionarn = 279547820;
+  optional string subscriptionarn = 279547820;
 
-  string topicarn = 30652956;
+  optional string topicarn = 30652956;
 
 }
 
@@ -1395,7 +1395,7 @@ message Subscription {
 
 message SubscriptionLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1417,7 +1417,7 @@ message Tag {
 
 message TagLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1427,7 +1427,7 @@ message TagLimitExceededException {
 
 message TagPolicyException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1453,7 +1453,7 @@ message TagResourceResponse {
 
 message ThrottledException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1463,7 +1463,7 @@ message ThrottledException {
 
 message TooManyEntriesInBatchRequestException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1473,7 +1473,7 @@ message TooManyEntriesInBatchRequestException {
 
 message Topic {
 
-  string topicarn = 30652956;
+  optional string topicarn = 30652956;
 
 }
 
@@ -1483,7 +1483,7 @@ message Topic {
 
 message TopicLimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -1519,7 +1519,7 @@ message UntagResourceResponse {
 
 message UserErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 

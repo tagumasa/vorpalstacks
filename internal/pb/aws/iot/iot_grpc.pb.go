@@ -331,7 +331,7 @@ type IoTServiceClient interface {
 	// HTTP: PUT /principal-policies/{policyName}
 	// Protocol: restJson1
 	AttachPrincipalPolicy(ctx context.Context, in *AttachPrincipalPolicyRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Associates a Device Defender security profile with a thing group or this account. Each thing group or account can have up to five security profiles associated with it. Requires permission to access...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PUT /security-profiles/{securityProfileName}/targets
 	// Protocol: restJson1
 	AttachSecurityProfile(ctx context.Context, in *AttachSecurityProfileRequest, opts ...grpc.CallOption) (*AttachSecurityProfileResponse, error)
@@ -351,7 +351,7 @@ type IoTServiceClient interface {
 	// HTTP: PATCH /cancel-certificate-transfer/{certificateId}
 	// Protocol: restJson1
 	CancelCertificateTransfer(ctx context.Context, in *CancelCertificateTransferRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Cancels a Device Defender ML Detect mitigation action. Requires permission to access the CancelDetectMitigationActionsTask action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PUT /detect/mitigationactions/tasks/{taskId}/cancel
 	// Protocol: restJson1
 	CancelDetectMitigationActionsTask(ctx context.Context, in *CancelDetectMitigationActionsTaskRequest, opts ...grpc.CallOption) (*CancelDetectMitigationActionsTaskResponse, error)
@@ -395,11 +395,11 @@ type IoTServiceClient interface {
 	// HTTP: PUT /commands/{commandId}
 	// Protocol: restJson1
 	CreateCommand(ctx context.Context, in *CreateCommandRequest, opts ...grpc.CallOption) (*CreateCommandResponse, error)
-	// Use this API to define a Custom Metric published by your devices to Device Defender. Requires permission to access the CreateCustomMetric action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /custom-metric/{metricName}
 	// Protocol: restJson1
 	CreateCustomMetric(ctx context.Context, in *CreateCustomMetricRequest, opts ...grpc.CallOption) (*CreateCustomMetricResponse, error)
-	// Create a dimension that you can use to limit the scope of a metric used in a security profile for IoT Device Defender. For example, using a TOPIC_FILTER dimension, you can narrow down the scope of ...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /dimensions/{name}
 	// Protocol: restJson1
 	CreateDimension(ctx context.Context, in *CreateDimensionRequest, opts ...grpc.CallOption) (*CreateDimensionResponse, error)
@@ -471,7 +471,7 @@ type IoTServiceClient interface {
 	// HTTP: POST /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	CreateScheduledAudit(ctx context.Context, in *CreateScheduledAuditRequest, opts ...grpc.CallOption) (*CreateScheduledAuditResponse, error)
-	// Creates a Device Defender security profile. Requires permission to access the CreateSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	CreateSecurityProfile(ctx context.Context, in *CreateSecurityProfileRequest, opts ...grpc.CallOption) (*CreateSecurityProfileResponse, error)
@@ -535,11 +535,11 @@ type IoTServiceClient interface {
 	// HTTP: DELETE /command-executions/{executionId}
 	// Protocol: restJson1
 	DeleteCommandExecution(ctx context.Context, in *DeleteCommandExecutionRequest, opts ...grpc.CallOption) (*DeleteCommandExecutionResponse, error)
-	// Deletes a Device Defender detect custom metric. Requires permission to access the DeleteCustomMetric action. Before you can delete a custom metric, you must first remove the custom metric from all ...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /custom-metric/{metricName}
 	// Protocol: restJson1
 	DeleteCustomMetric(ctx context.Context, in *DeleteCustomMetricRequest, opts ...grpc.CallOption) (*DeleteCustomMetricResponse, error)
-	// Removes the specified dimension from your Amazon Web Services accounts. Requires permission to access the DeleteDimension action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /dimensions/{name}
 	// Protocol: restJson1
 	DeleteDimension(ctx context.Context, in *DeleteDimensionRequest, opts ...grpc.CallOption) (*DeleteDimensionResponse, error)
@@ -611,7 +611,7 @@ type IoTServiceClient interface {
 	// HTTP: DELETE /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	DeleteScheduledAudit(ctx context.Context, in *DeleteScheduledAuditRequest, opts ...grpc.CallOption) (*DeleteScheduledAuditResponse, error)
-	// Deletes a Device Defender security profile. Requires permission to access the DeleteSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	DeleteSecurityProfile(ctx context.Context, in *DeleteSecurityProfileRequest, opts ...grpc.CallOption) (*DeleteSecurityProfileResponse, error)
@@ -687,7 +687,7 @@ type IoTServiceClient interface {
 	// HTTP: GET /certificate-providers/{certificateProviderName}
 	// Protocol: restJson1
 	DescribeCertificateProvider(ctx context.Context, in *DescribeCertificateProviderRequest, opts ...grpc.CallOption) (*DescribeCertificateProviderResponse, error)
-	// Gets information about a Device Defender detect custom metric. Requires permission to access the DescribeCustomMetric action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /custom-metric/{metricName}
 	// Protocol: restJson1
 	DescribeCustomMetric(ctx context.Context, in *DescribeCustomMetricRequest, opts ...grpc.CallOption) (*DescribeCustomMetricResponse, error)
@@ -695,11 +695,11 @@ type IoTServiceClient interface {
 	// HTTP: GET /default-authorizer
 	// Protocol: restJson1
 	DescribeDefaultAuthorizer(ctx context.Context, in *DescribeDefaultAuthorizerRequest, opts ...grpc.CallOption) (*DescribeDefaultAuthorizerResponse, error)
-	// Gets information about a Device Defender ML Detect mitigation action. Requires permission to access the DescribeDetectMitigationActionsTask action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /detect/mitigationactions/tasks/{taskId}
 	// Protocol: restJson1
 	DescribeDetectMitigationActionsTask(ctx context.Context, in *DescribeDetectMitigationActionsTaskRequest, opts ...grpc.CallOption) (*DescribeDetectMitigationActionsTaskResponse, error)
-	// Provides details about a dimension that is defined in your Amazon Web Services accounts. Requires permission to access the DescribeDimension action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /dimensions/{name}
 	// Protocol: restJson1
 	DescribeDimension(ctx context.Context, in *DescribeDimensionRequest, opts ...grpc.CallOption) (*DescribeDimensionResponse, error)
@@ -763,7 +763,7 @@ type IoTServiceClient interface {
 	// HTTP: GET /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	DescribeScheduledAudit(ctx context.Context, in *DescribeScheduledAuditRequest, opts ...grpc.CallOption) (*DescribeScheduledAuditResponse, error)
-	// Gets information about a Device Defender security profile. Requires permission to access the DescribeSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	DescribeSecurityProfile(ctx context.Context, in *DescribeSecurityProfileRequest, opts ...grpc.CallOption) (*DescribeSecurityProfileResponse, error)
@@ -795,7 +795,7 @@ type IoTServiceClient interface {
 	// HTTP: DELETE /principal-policies/{policyName}
 	// Protocol: restJson1
 	DetachPrincipalPolicy(ctx context.Context, in *DetachPrincipalPolicyRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Disassociates a Device Defender security profile from a thing group or from this account. Requires permission to access the DetachSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /security-profiles/{securityProfileName}/targets
 	// Protocol: restJson1
 	DetachSecurityProfile(ctx context.Context, in *DetachSecurityProfileRequest, opts ...grpc.CallOption) (*DetachSecurityProfileResponse, error)
@@ -815,7 +815,7 @@ type IoTServiceClient interface {
 	// HTTP: POST /rules/{ruleName}/enable
 	// Protocol: restJson1
 	EnableTopicRule(ctx context.Context, in *EnableTopicRuleRequest, opts ...grpc.CallOption) (*common.Empty, error)
-	// Returns a Device Defender's ML Detect Security Profile training model's status. Requires permission to access the GetBehaviorModelTrainingSummaries action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /behavior-model-training/summaries
 	// Protocol: restJson1
 	GetBehaviorModelTrainingSummaries(ctx context.Context, in *GetBehaviorModelTrainingSummariesRequest, opts ...grpc.CallOption) (*GetBehaviorModelTrainingSummariesResponse, error)
@@ -903,7 +903,7 @@ type IoTServiceClient interface {
 	// HTTP: GET /v2LoggingOptions
 	// Protocol: restJson1
 	GetV2LoggingOptions(ctx context.Context, in *GetV2LoggingOptionsRequest, opts ...grpc.CallOption) (*GetV2LoggingOptionsResponse, error)
-	// Lists the active violations for a given Device Defender security profile. Requires permission to access the ListActiveViolations action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /active-violations
 	// Protocol: restJson1
 	ListActiveViolations(ctx context.Context, in *ListActiveViolationsRequest, opts ...grpc.CallOption) (*ListActiveViolationsResponse, error)
@@ -963,19 +963,19 @@ type IoTServiceClient interface {
 	// HTTP: GET /commands
 	// Protocol: restJson1
 	ListCommands(ctx context.Context, in *ListCommandsRequest, opts ...grpc.CallOption) (*ListCommandsResponse, error)
-	// Lists your Device Defender detect custom metrics. Requires permission to access the ListCustomMetrics action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /custom-metrics
 	// Protocol: restJson1
 	ListCustomMetrics(ctx context.Context, in *ListCustomMetricsRequest, opts ...grpc.CallOption) (*ListCustomMetricsResponse, error)
-	// Lists mitigation actions executions for a Device Defender ML Detect Security Profile. Requires permission to access the ListDetectMitigationActionsExecutions action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /detect/mitigationactions/executions
 	// Protocol: restJson1
 	ListDetectMitigationActionsExecutions(ctx context.Context, in *ListDetectMitigationActionsExecutionsRequest, opts ...grpc.CallOption) (*ListDetectMitigationActionsExecutionsResponse, error)
-	// List of Device Defender ML Detect mitigation actions tasks. Requires permission to access the ListDetectMitigationActionsTasks action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /detect/mitigationactions/tasks
 	// Protocol: restJson1
 	ListDetectMitigationActionsTasks(ctx context.Context, in *ListDetectMitigationActionsTasksRequest, opts ...grpc.CallOption) (*ListDetectMitigationActionsTasksResponse, error)
-	// List the set of dimensions that are defined for your Amazon Web Services accounts. Requires permission to access the ListDimensions action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /dimensions
 	// Protocol: restJson1
 	ListDimensions(ctx context.Context, in *ListDimensionsRequest, opts ...grpc.CallOption) (*ListDimensionsResponse, error)
@@ -1083,11 +1083,11 @@ type IoTServiceClient interface {
 	// HTTP: GET /audit/scheduledaudits
 	// Protocol: restJson1
 	ListScheduledAudits(ctx context.Context, in *ListScheduledAuditsRequest, opts ...grpc.CallOption) (*ListScheduledAuditsResponse, error)
-	// Lists the Device Defender security profiles you've created. You can filter security profiles by dimension or custom metric. Requires permission to access the ListSecurityProfiles action. dimensionN...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles
 	// Protocol: restJson1
 	ListSecurityProfiles(ctx context.Context, in *ListSecurityProfilesRequest, opts ...grpc.CallOption) (*ListSecurityProfilesResponse, error)
-	// Lists the Device Defender security profiles attached to a target (thing group). Requires permission to access the ListSecurityProfilesForTarget action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles-for-target
 	// Protocol: restJson1
 	ListSecurityProfilesForTarget(ctx context.Context, in *ListSecurityProfilesForTargetRequest, opts ...grpc.CallOption) (*ListSecurityProfilesForTargetResponse, error)
@@ -1103,7 +1103,7 @@ type IoTServiceClient interface {
 	// HTTP: POST /policy-targets/{policyName}
 	// Protocol: restJson1
 	ListTargetsForPolicy(ctx context.Context, in *ListTargetsForPolicyRequest, opts ...grpc.CallOption) (*ListTargetsForPolicyResponse, error)
-	// Lists the targets (thing groups) associated with a given Device Defender security profile. Requires permission to access the ListTargetsForSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles/{securityProfileName}/targets
 	// Protocol: restJson1
 	ListTargetsForSecurityProfile(ctx context.Context, in *ListTargetsForSecurityProfileRequest, opts ...grpc.CallOption) (*ListTargetsForSecurityProfileResponse, error)
@@ -1159,11 +1159,11 @@ type IoTServiceClient interface {
 	// HTTP: GET /v2LoggingLevel
 	// Protocol: restJson1
 	ListV2LoggingLevels(ctx context.Context, in *ListV2LoggingLevelsRequest, opts ...grpc.CallOption) (*ListV2LoggingLevelsResponse, error)
-	// Lists the Device Defender security profile violations discovered during the given time period. You can use filters to limit the results to those alerts issued for a particular security profile, beh...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /violation-events
 	// Protocol: restJson1
 	ListViolationEvents(ctx context.Context, in *ListViolationEventsRequest, opts ...grpc.CallOption) (*ListViolationEventsResponse, error)
-	// Set a verification state and provide a description of that verification state on a violation (detect alarm).
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /violations/verification-state/{violationId}
 	// Protocol: restJson1
 	PutVerificationStateOnViolation(ctx context.Context, in *PutVerificationStateOnViolationRequest, opts ...grpc.CallOption) (*PutVerificationStateOnViolationResponse, error)
@@ -1227,7 +1227,7 @@ type IoTServiceClient interface {
 	// HTTP: POST /audit/mitigationactions/tasks/{taskId}
 	// Protocol: restJson1
 	StartAuditMitigationActionsTask(ctx context.Context, in *StartAuditMitigationActionsTaskRequest, opts ...grpc.CallOption) (*StartAuditMitigationActionsTaskResponse, error)
-	// Starts a Device Defender ML Detect mitigation actions task. Requires permission to access the StartDetectMitigationActionsTask action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PUT /detect/mitigationactions/tasks/{taskId}
 	// Protocol: restJson1
 	StartDetectMitigationActionsTask(ctx context.Context, in *StartDetectMitigationActionsTaskRequest, opts ...grpc.CallOption) (*StartDetectMitigationActionsTaskResponse, error)
@@ -1295,11 +1295,11 @@ type IoTServiceClient interface {
 	// HTTP: PATCH /commands/{commandId}
 	// Protocol: restJson1
 	UpdateCommand(ctx context.Context, in *UpdateCommandRequest, opts ...grpc.CallOption) (*UpdateCommandResponse, error)
-	// Updates a Device Defender detect custom metric. Requires permission to access the UpdateCustomMetric action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PATCH /custom-metric/{metricName}
 	// Protocol: restJson1
 	UpdateCustomMetric(ctx context.Context, in *UpdateCustomMetricRequest, opts ...grpc.CallOption) (*UpdateCustomMetricResponse, error)
-	// Updates the definition for a dimension. You cannot change the type of a dimension after it is created (you can delete it and recreate it). Requires permission to access the UpdateDimension action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PATCH /dimensions/{name}
 	// Protocol: restJson1
 	UpdateDimension(ctx context.Context, in *UpdateDimensionRequest, opts ...grpc.CallOption) (*UpdateDimensionResponse, error)
@@ -1359,7 +1359,7 @@ type IoTServiceClient interface {
 	// HTTP: PATCH /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	UpdateScheduledAudit(ctx context.Context, in *UpdateScheduledAuditRequest, opts ...grpc.CallOption) (*UpdateScheduledAuditResponse, error)
-	// Updates a Device Defender security profile. Requires permission to access the UpdateSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PATCH /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	UpdateSecurityProfile(ctx context.Context, in *UpdateSecurityProfileRequest, opts ...grpc.CallOption) (*UpdateSecurityProfileResponse, error)
@@ -1387,7 +1387,7 @@ type IoTServiceClient interface {
 	// HTTP: PATCH /destinations
 	// Protocol: restJson1
 	UpdateTopicRuleDestination(ctx context.Context, in *UpdateTopicRuleDestinationRequest, opts ...grpc.CallOption) (*UpdateTopicRuleDestinationResponse, error)
-	// Validates a Device Defender security profile behaviors specification. Requires permission to access the ValidateSecurityProfileBehaviors action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /security-profile-behaviors/validate
 	// Protocol: restJson1
 	ValidateSecurityProfileBehaviors(ctx context.Context, in *ValidateSecurityProfileBehaviorsRequest, opts ...grpc.CallOption) (*ValidateSecurityProfileBehaviorsResponse, error)
@@ -4155,7 +4155,7 @@ type IoTServiceServer interface {
 	// HTTP: PUT /principal-policies/{policyName}
 	// Protocol: restJson1
 	AttachPrincipalPolicy(context.Context, *AttachPrincipalPolicyRequest) (*common.Empty, error)
-	// Associates a Device Defender security profile with a thing group or this account. Each thing group or account can have up to five security profiles associated with it. Requires permission to access...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PUT /security-profiles/{securityProfileName}/targets
 	// Protocol: restJson1
 	AttachSecurityProfile(context.Context, *AttachSecurityProfileRequest) (*AttachSecurityProfileResponse, error)
@@ -4175,7 +4175,7 @@ type IoTServiceServer interface {
 	// HTTP: PATCH /cancel-certificate-transfer/{certificateId}
 	// Protocol: restJson1
 	CancelCertificateTransfer(context.Context, *CancelCertificateTransferRequest) (*common.Empty, error)
-	// Cancels a Device Defender ML Detect mitigation action. Requires permission to access the CancelDetectMitigationActionsTask action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PUT /detect/mitigationactions/tasks/{taskId}/cancel
 	// Protocol: restJson1
 	CancelDetectMitigationActionsTask(context.Context, *CancelDetectMitigationActionsTaskRequest) (*CancelDetectMitigationActionsTaskResponse, error)
@@ -4219,11 +4219,11 @@ type IoTServiceServer interface {
 	// HTTP: PUT /commands/{commandId}
 	// Protocol: restJson1
 	CreateCommand(context.Context, *CreateCommandRequest) (*CreateCommandResponse, error)
-	// Use this API to define a Custom Metric published by your devices to Device Defender. Requires permission to access the CreateCustomMetric action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /custom-metric/{metricName}
 	// Protocol: restJson1
 	CreateCustomMetric(context.Context, *CreateCustomMetricRequest) (*CreateCustomMetricResponse, error)
-	// Create a dimension that you can use to limit the scope of a metric used in a security profile for IoT Device Defender. For example, using a TOPIC_FILTER dimension, you can narrow down the scope of ...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /dimensions/{name}
 	// Protocol: restJson1
 	CreateDimension(context.Context, *CreateDimensionRequest) (*CreateDimensionResponse, error)
@@ -4295,7 +4295,7 @@ type IoTServiceServer interface {
 	// HTTP: POST /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	CreateScheduledAudit(context.Context, *CreateScheduledAuditRequest) (*CreateScheduledAuditResponse, error)
-	// Creates a Device Defender security profile. Requires permission to access the CreateSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	CreateSecurityProfile(context.Context, *CreateSecurityProfileRequest) (*CreateSecurityProfileResponse, error)
@@ -4359,11 +4359,11 @@ type IoTServiceServer interface {
 	// HTTP: DELETE /command-executions/{executionId}
 	// Protocol: restJson1
 	DeleteCommandExecution(context.Context, *DeleteCommandExecutionRequest) (*DeleteCommandExecutionResponse, error)
-	// Deletes a Device Defender detect custom metric. Requires permission to access the DeleteCustomMetric action. Before you can delete a custom metric, you must first remove the custom metric from all ...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /custom-metric/{metricName}
 	// Protocol: restJson1
 	DeleteCustomMetric(context.Context, *DeleteCustomMetricRequest) (*DeleteCustomMetricResponse, error)
-	// Removes the specified dimension from your Amazon Web Services accounts. Requires permission to access the DeleteDimension action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /dimensions/{name}
 	// Protocol: restJson1
 	DeleteDimension(context.Context, *DeleteDimensionRequest) (*DeleteDimensionResponse, error)
@@ -4435,7 +4435,7 @@ type IoTServiceServer interface {
 	// HTTP: DELETE /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	DeleteScheduledAudit(context.Context, *DeleteScheduledAuditRequest) (*DeleteScheduledAuditResponse, error)
-	// Deletes a Device Defender security profile. Requires permission to access the DeleteSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	DeleteSecurityProfile(context.Context, *DeleteSecurityProfileRequest) (*DeleteSecurityProfileResponse, error)
@@ -4511,7 +4511,7 @@ type IoTServiceServer interface {
 	// HTTP: GET /certificate-providers/{certificateProviderName}
 	// Protocol: restJson1
 	DescribeCertificateProvider(context.Context, *DescribeCertificateProviderRequest) (*DescribeCertificateProviderResponse, error)
-	// Gets information about a Device Defender detect custom metric. Requires permission to access the DescribeCustomMetric action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /custom-metric/{metricName}
 	// Protocol: restJson1
 	DescribeCustomMetric(context.Context, *DescribeCustomMetricRequest) (*DescribeCustomMetricResponse, error)
@@ -4519,11 +4519,11 @@ type IoTServiceServer interface {
 	// HTTP: GET /default-authorizer
 	// Protocol: restJson1
 	DescribeDefaultAuthorizer(context.Context, *DescribeDefaultAuthorizerRequest) (*DescribeDefaultAuthorizerResponse, error)
-	// Gets information about a Device Defender ML Detect mitigation action. Requires permission to access the DescribeDetectMitigationActionsTask action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /detect/mitigationactions/tasks/{taskId}
 	// Protocol: restJson1
 	DescribeDetectMitigationActionsTask(context.Context, *DescribeDetectMitigationActionsTaskRequest) (*DescribeDetectMitigationActionsTaskResponse, error)
-	// Provides details about a dimension that is defined in your Amazon Web Services accounts. Requires permission to access the DescribeDimension action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /dimensions/{name}
 	// Protocol: restJson1
 	DescribeDimension(context.Context, *DescribeDimensionRequest) (*DescribeDimensionResponse, error)
@@ -4587,7 +4587,7 @@ type IoTServiceServer interface {
 	// HTTP: GET /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	DescribeScheduledAudit(context.Context, *DescribeScheduledAuditRequest) (*DescribeScheduledAuditResponse, error)
-	// Gets information about a Device Defender security profile. Requires permission to access the DescribeSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	DescribeSecurityProfile(context.Context, *DescribeSecurityProfileRequest) (*DescribeSecurityProfileResponse, error)
@@ -4619,7 +4619,7 @@ type IoTServiceServer interface {
 	// HTTP: DELETE /principal-policies/{policyName}
 	// Protocol: restJson1
 	DetachPrincipalPolicy(context.Context, *DetachPrincipalPolicyRequest) (*common.Empty, error)
-	// Disassociates a Device Defender security profile from a thing group or from this account. Requires permission to access the DetachSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: DELETE /security-profiles/{securityProfileName}/targets
 	// Protocol: restJson1
 	DetachSecurityProfile(context.Context, *DetachSecurityProfileRequest) (*DetachSecurityProfileResponse, error)
@@ -4639,7 +4639,7 @@ type IoTServiceServer interface {
 	// HTTP: POST /rules/{ruleName}/enable
 	// Protocol: restJson1
 	EnableTopicRule(context.Context, *EnableTopicRuleRequest) (*common.Empty, error)
-	// Returns a Device Defender's ML Detect Security Profile training model's status. Requires permission to access the GetBehaviorModelTrainingSummaries action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /behavior-model-training/summaries
 	// Protocol: restJson1
 	GetBehaviorModelTrainingSummaries(context.Context, *GetBehaviorModelTrainingSummariesRequest) (*GetBehaviorModelTrainingSummariesResponse, error)
@@ -4727,7 +4727,7 @@ type IoTServiceServer interface {
 	// HTTP: GET /v2LoggingOptions
 	// Protocol: restJson1
 	GetV2LoggingOptions(context.Context, *GetV2LoggingOptionsRequest) (*GetV2LoggingOptionsResponse, error)
-	// Lists the active violations for a given Device Defender security profile. Requires permission to access the ListActiveViolations action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /active-violations
 	// Protocol: restJson1
 	ListActiveViolations(context.Context, *ListActiveViolationsRequest) (*ListActiveViolationsResponse, error)
@@ -4787,19 +4787,19 @@ type IoTServiceServer interface {
 	// HTTP: GET /commands
 	// Protocol: restJson1
 	ListCommands(context.Context, *ListCommandsRequest) (*ListCommandsResponse, error)
-	// Lists your Device Defender detect custom metrics. Requires permission to access the ListCustomMetrics action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /custom-metrics
 	// Protocol: restJson1
 	ListCustomMetrics(context.Context, *ListCustomMetricsRequest) (*ListCustomMetricsResponse, error)
-	// Lists mitigation actions executions for a Device Defender ML Detect Security Profile. Requires permission to access the ListDetectMitigationActionsExecutions action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /detect/mitigationactions/executions
 	// Protocol: restJson1
 	ListDetectMitigationActionsExecutions(context.Context, *ListDetectMitigationActionsExecutionsRequest) (*ListDetectMitigationActionsExecutionsResponse, error)
-	// List of Device Defender ML Detect mitigation actions tasks. Requires permission to access the ListDetectMitigationActionsTasks action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /detect/mitigationactions/tasks
 	// Protocol: restJson1
 	ListDetectMitigationActionsTasks(context.Context, *ListDetectMitigationActionsTasksRequest) (*ListDetectMitigationActionsTasksResponse, error)
-	// List the set of dimensions that are defined for your Amazon Web Services accounts. Requires permission to access the ListDimensions action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /dimensions
 	// Protocol: restJson1
 	ListDimensions(context.Context, *ListDimensionsRequest) (*ListDimensionsResponse, error)
@@ -4907,11 +4907,11 @@ type IoTServiceServer interface {
 	// HTTP: GET /audit/scheduledaudits
 	// Protocol: restJson1
 	ListScheduledAudits(context.Context, *ListScheduledAuditsRequest) (*ListScheduledAuditsResponse, error)
-	// Lists the Device Defender security profiles you've created. You can filter security profiles by dimension or custom metric. Requires permission to access the ListSecurityProfiles action. dimensionN...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles
 	// Protocol: restJson1
 	ListSecurityProfiles(context.Context, *ListSecurityProfilesRequest) (*ListSecurityProfilesResponse, error)
-	// Lists the Device Defender security profiles attached to a target (thing group). Requires permission to access the ListSecurityProfilesForTarget action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles-for-target
 	// Protocol: restJson1
 	ListSecurityProfilesForTarget(context.Context, *ListSecurityProfilesForTargetRequest) (*ListSecurityProfilesForTargetResponse, error)
@@ -4927,7 +4927,7 @@ type IoTServiceServer interface {
 	// HTTP: POST /policy-targets/{policyName}
 	// Protocol: restJson1
 	ListTargetsForPolicy(context.Context, *ListTargetsForPolicyRequest) (*ListTargetsForPolicyResponse, error)
-	// Lists the targets (thing groups) associated with a given Device Defender security profile. Requires permission to access the ListTargetsForSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /security-profiles/{securityProfileName}/targets
 	// Protocol: restJson1
 	ListTargetsForSecurityProfile(context.Context, *ListTargetsForSecurityProfileRequest) (*ListTargetsForSecurityProfileResponse, error)
@@ -4983,11 +4983,11 @@ type IoTServiceServer interface {
 	// HTTP: GET /v2LoggingLevel
 	// Protocol: restJson1
 	ListV2LoggingLevels(context.Context, *ListV2LoggingLevelsRequest) (*ListV2LoggingLevelsResponse, error)
-	// Lists the Device Defender security profile violations discovered during the given time period. You can use filters to limit the results to those alerts issued for a particular security profile, beh...
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: GET /violation-events
 	// Protocol: restJson1
 	ListViolationEvents(context.Context, *ListViolationEventsRequest) (*ListViolationEventsResponse, error)
-	// Set a verification state and provide a description of that verification state on a violation (detect alarm).
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /violations/verification-state/{violationId}
 	// Protocol: restJson1
 	PutVerificationStateOnViolation(context.Context, *PutVerificationStateOnViolationRequest) (*PutVerificationStateOnViolationResponse, error)
@@ -5051,7 +5051,7 @@ type IoTServiceServer interface {
 	// HTTP: POST /audit/mitigationactions/tasks/{taskId}
 	// Protocol: restJson1
 	StartAuditMitigationActionsTask(context.Context, *StartAuditMitigationActionsTaskRequest) (*StartAuditMitigationActionsTaskResponse, error)
-	// Starts a Device Defender ML Detect mitigation actions task. Requires permission to access the StartDetectMitigationActionsTask action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PUT /detect/mitigationactions/tasks/{taskId}
 	// Protocol: restJson1
 	StartDetectMitigationActionsTask(context.Context, *StartDetectMitigationActionsTaskRequest) (*StartDetectMitigationActionsTaskResponse, error)
@@ -5119,11 +5119,11 @@ type IoTServiceServer interface {
 	// HTTP: PATCH /commands/{commandId}
 	// Protocol: restJson1
 	UpdateCommand(context.Context, *UpdateCommandRequest) (*UpdateCommandResponse, error)
-	// Updates a Device Defender detect custom metric. Requires permission to access the UpdateCustomMetric action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PATCH /custom-metric/{metricName}
 	// Protocol: restJson1
 	UpdateCustomMetric(context.Context, *UpdateCustomMetricRequest) (*UpdateCustomMetricResponse, error)
-	// Updates the definition for a dimension. You cannot change the type of a dimension after it is created (you can delete it and recreate it). Requires permission to access the UpdateDimension action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PATCH /dimensions/{name}
 	// Protocol: restJson1
 	UpdateDimension(context.Context, *UpdateDimensionRequest) (*UpdateDimensionResponse, error)
@@ -5183,7 +5183,7 @@ type IoTServiceServer interface {
 	// HTTP: PATCH /audit/scheduledaudits/{scheduledAuditName}
 	// Protocol: restJson1
 	UpdateScheduledAudit(context.Context, *UpdateScheduledAuditRequest) (*UpdateScheduledAuditResponse, error)
-	// Updates a Device Defender security profile. Requires permission to access the UpdateSecurityProfile action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: PATCH /security-profiles/{securityProfileName}
 	// Protocol: restJson1
 	UpdateSecurityProfile(context.Context, *UpdateSecurityProfileRequest) (*UpdateSecurityProfileResponse, error)
@@ -5211,7 +5211,7 @@ type IoTServiceServer interface {
 	// HTTP: PATCH /destinations
 	// Protocol: restJson1
 	UpdateTopicRuleDestination(context.Context, *UpdateTopicRuleDestinationRequest) (*UpdateTopicRuleDestinationResponse, error)
-	// Validates a Device Defender security profile behaviors specification. Requires permission to access the ValidateSecurityProfileBehaviors action.
+	// The IoT Device Defender detect feature will no longer be available to new customers starting August 31, 2026. If you would like to use the detect feature, sign up prior to August 31, 2026. To learn...
 	// HTTP: POST /security-profile-behaviors/validate
 	// Protocol: restJson1
 	ValidateSecurityProfileBehaviors(context.Context, *ValidateSecurityProfileBehaviorsRequest) (*ValidateSecurityProfileBehaviorsResponse, error)

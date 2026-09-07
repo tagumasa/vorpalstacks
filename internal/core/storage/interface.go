@@ -82,6 +82,11 @@ type Bucket interface {
 	Has(key []byte) bool
 	ForEach(fn func(k, v []byte) error) error
 	ScanPrefix(prefix []byte) Iterator
+	// ScanPrefixReverse walks the keys with the given prefix in descending
+	// order. When before is non-nil, iteration starts at the largest key
+	// strictly less than before; otherwise it starts at the largest key in
+	// the prefix.
+	ScanPrefixReverse(prefix, before []byte) Iterator
 	ScanRange(start, end []byte) Iterator
 	Count() int
 }

@@ -146,8 +146,13 @@ func (s *DynamoDBService) RestoreTableFromBackup(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	return map[string]interface{}{
-		"TableDescription": s.buildTableDescription(table),
+		"TableDescription": s.buildTableDescription(table, s.replicasForTable(store, table.Name)),
 	}, nil
 }
 
@@ -160,10 +165,15 @@ func (s *DynamoDBService) RestoreTableToPointInTime(ctx context.Context, reqCtx 
 		return nil, err
 	}
 
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
 	// The restore summary travels with the table description (both the
 	// restore response and later DescribeTable reads) from the persisted
 	// table record.
-	description := s.buildTableDescription(table)
+	description := s.buildTableDescription(table, s.replicasForTable(store, table.Name))
 
 	return map[string]interface{}{
 		"TableDescription": description,

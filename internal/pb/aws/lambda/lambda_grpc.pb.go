@@ -23,22 +23,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	LambdaService_CheckpointDurableExecution_FullMethodName             = "/lambda.LambdaService/CheckpointDurableExecution"
 	LambdaService_DeleteFunction_FullMethodName                         = "/lambda.LambdaService/DeleteFunction"
 	LambdaService_DeleteFunctionEventInvokeConfig_FullMethodName        = "/lambda.LambdaService/DeleteFunctionEventInvokeConfig"
+	LambdaService_DeleteResourcePolicy_FullMethodName                   = "/lambda.LambdaService/DeleteResourcePolicy"
 	LambdaService_GetAccountSettings_FullMethodName                     = "/lambda.LambdaService/GetAccountSettings"
-	LambdaService_GetDurableExecution_FullMethodName                    = "/lambda.LambdaService/GetDurableExecution"
-	LambdaService_GetDurableExecutionHistory_FullMethodName             = "/lambda.LambdaService/GetDurableExecutionHistory"
-	LambdaService_GetDurableExecutionState_FullMethodName               = "/lambda.LambdaService/GetDurableExecutionState"
 	LambdaService_GetFunctionEventInvokeConfig_FullMethodName           = "/lambda.LambdaService/GetFunctionEventInvokeConfig"
-	LambdaService_ListDurableExecutionsByFunction_FullMethodName        = "/lambda.LambdaService/ListDurableExecutionsByFunction"
+	LambdaService_GetResourcePolicy_FullMethodName                      = "/lambda.LambdaService/GetResourcePolicy"
 	LambdaService_ListFunctionEventInvokeConfigs_FullMethodName         = "/lambda.LambdaService/ListFunctionEventInvokeConfigs"
 	LambdaService_ListTags_FullMethodName                               = "/lambda.LambdaService/ListTags"
 	LambdaService_PutFunctionEventInvokeConfig_FullMethodName           = "/lambda.LambdaService/PutFunctionEventInvokeConfig"
+	LambdaService_PutResourcePolicy_FullMethodName                      = "/lambda.LambdaService/PutResourcePolicy"
 	LambdaService_SendDurableExecutionCallbackFailure_FullMethodName    = "/lambda.LambdaService/SendDurableExecutionCallbackFailure"
 	LambdaService_SendDurableExecutionCallbackHeartbeat_FullMethodName  = "/lambda.LambdaService/SendDurableExecutionCallbackHeartbeat"
 	LambdaService_SendDurableExecutionCallbackSuccess_FullMethodName    = "/lambda.LambdaService/SendDurableExecutionCallbackSuccess"
-	LambdaService_StopDurableExecution_FullMethodName                   = "/lambda.LambdaService/StopDurableExecution"
 	LambdaService_TagResource_FullMethodName                            = "/lambda.LambdaService/TagResource"
 	LambdaService_UntagResource_FullMethodName                          = "/lambda.LambdaService/UntagResource"
 	LambdaService_UpdateFunctionEventInvokeConfig_FullMethodName        = "/lambda.LambdaService/UpdateFunctionEventInvokeConfig"
@@ -50,6 +47,11 @@ const (
 	LambdaService_ListFunctionVersionsByCapacityProvider_FullMethodName = "/lambda.LambdaService/ListFunctionVersionsByCapacityProvider"
 	LambdaService_ListCodeSigningConfigs_FullMethodName                 = "/lambda.LambdaService/ListCodeSigningConfigs"
 	LambdaService_CreateCodeSigningConfig_FullMethodName                = "/lambda.LambdaService/CreateCodeSigningConfig"
+	LambdaService_GetDurableExecution_FullMethodName                    = "/lambda.LambdaService/GetDurableExecution"
+	LambdaService_CheckpointDurableExecution_FullMethodName             = "/lambda.LambdaService/CheckpointDurableExecution"
+	LambdaService_GetDurableExecutionHistory_FullMethodName             = "/lambda.LambdaService/GetDurableExecutionHistory"
+	LambdaService_GetDurableExecutionState_FullMethodName               = "/lambda.LambdaService/GetDurableExecutionState"
+	LambdaService_StopDurableExecution_FullMethodName                   = "/lambda.LambdaService/StopDurableExecution"
 	LambdaService_ListEventSourceMappings_FullMethodName                = "/lambda.LambdaService/ListEventSourceMappings"
 	LambdaService_CreateEventSourceMapping_FullMethodName               = "/lambda.LambdaService/CreateEventSourceMapping"
 	LambdaService_GetEventSourceMapping_FullMethodName                  = "/lambda.LambdaService/GetEventSourceMapping"
@@ -82,10 +84,6 @@ const (
 //
 // LambdaService provides lambda API operations.
 type LambdaServiceClient interface {
-	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
-	// Protocol: restJson1
-	CheckpointDurableExecution(ctx context.Context, in *CheckpointDurableExecutionRequest, opts ...grpc.CallOption) (*CheckpointDurableExecutionResponse, error)
 	// Deletes a Lambda function. To delete a specific function version, use the Qualifier parameter. Otherwise, all versions and aliases are deleted. This doesn't require the user to have explicit permis...
 	// HTTP: DELETE /2015-03-31/functions/{FunctionName}
 	// Protocol: restJson1
@@ -94,30 +92,22 @@ type LambdaServiceClient interface {
 	// HTTP: DELETE /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	DeleteFunctionEventInvokeConfig(ctx context.Context, in *DeleteFunctionEventInvokeConfigRequest, opts ...grpc.CallOption) (*common.Empty, error)
+	// Deletes a resource-based policy from a Lambda resource.
+	// HTTP: DELETE /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	DeleteResourcePolicy(ctx context.Context, in *DeleteResourcePolicyRequest, opts ...grpc.CallOption) (*common.Empty, error)
 	// Retrieves details about your account's limits and usage in an Amazon Web Services Region.
 	// HTTP: GET /2016-08-19/account-settings
 	// Protocol: restJson1
 	GetAccountSettings(ctx context.Context, in *GetAccountSettingsRequest, opts ...grpc.CallOption) (*GetAccountSettingsResponse, error)
-	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
-	// Protocol: restJson1
-	GetDurableExecution(ctx context.Context, in *GetDurableExecutionRequest, opts ...grpc.CallOption) (*GetDurableExecutionResponse, error)
-	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
-	// Protocol: restJson1
-	GetDurableExecutionHistory(ctx context.Context, in *GetDurableExecutionHistoryRequest, opts ...grpc.CallOption) (*GetDurableExecutionHistoryResponse, error)
-	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
-	// Protocol: restJson1
-	GetDurableExecutionState(ctx context.Context, in *GetDurableExecutionStateRequest, opts ...grpc.CallOption) (*GetDurableExecutionStateResponse, error)
 	// Retrieves the configuration for asynchronous invocation for a function, version, or alias. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	GetFunctionEventInvokeConfig(ctx context.Context, in *GetFunctionEventInvokeConfigRequest, opts ...grpc.CallOption) (*FunctionEventInvokeConfig, error)
-	// Returns a list of durable executions for a specified Lambda function. You can filter the results by execution name, status, and start time range. This API supports pagination for large result sets.
-	// HTTP: GET /2025-12-01/functions/{FunctionName}/durable-executions
+	// Retrieves the resource-based policy attached to a Lambda resource.
+	// HTTP: GET /2026-07-09/resource-policy/{ResourceArn}
 	// Protocol: restJson1
-	ListDurableExecutionsByFunction(ctx context.Context, in *ListDurableExecutionsByFunctionRequest, opts ...grpc.CallOption) (*ListDurableExecutionsByFunctionResponse, error)
+	GetResourcePolicy(ctx context.Context, in *GetResourcePolicyRequest, opts ...grpc.CallOption) (*GetResourcePolicyResponse, error)
 	// Retrieves a list of configurations for asynchronous invocation for a function. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config/list
 	// Protocol: restJson1
@@ -130,6 +120,10 @@ type LambdaServiceClient interface {
 	// HTTP: PUT /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	PutFunctionEventInvokeConfig(ctx context.Context, in *PutFunctionEventInvokeConfigRequest, opts ...grpc.CallOption) (*FunctionEventInvokeConfig, error)
+	// Adds a resource-based policy to a Lambda resource. Resource-based policies grant access to other Amazon Web Services accounts, organizations, or services. Resource-based policies apply to a single ...
+	// HTTP: PUT /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	PutResourcePolicy(ctx context.Context, in *PutResourcePolicyRequest, opts ...grpc.CallOption) (*PutResourcePolicyResponse, error)
 	// Sends a failure response for a callback operation in a durable execution. Use this API when an external system cannot complete a callback operation successfully.
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/fail
 	// Protocol: restJson1
@@ -142,10 +136,6 @@ type LambdaServiceClient interface {
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/succeed
 	// Protocol: restJson1
 	SendDurableExecutionCallbackSuccess(ctx context.Context, in *SendDurableExecutionCallbackSuccessRequest, opts ...grpc.CallOption) (*SendDurableExecutionCallbackSuccessResponse, error)
-	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
-	// Protocol: restJson1
-	StopDurableExecution(ctx context.Context, in *StopDurableExecutionRequest, opts ...grpc.CallOption) (*StopDurableExecutionResponse, error)
 	// Adds tags to a function, event source mapping, or code signing configuration.
 	// HTTP: POST /2017-03-31/tags/{Resource}
 	// Protocol: restJson1
@@ -190,6 +180,26 @@ type LambdaServiceClient interface {
 	// HTTP: POST /2020-04-22/code-signing-configs
 	// Protocol: restJson1
 	CreateCodeSigningConfig(ctx context.Context, in *CreateCodeSigningConfigRequest, opts ...grpc.CallOption) (*CreateCodeSigningConfigResponse, error)
+	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
+	// Protocol: restJson1
+	GetDurableExecution(ctx context.Context, in *GetDurableExecutionRequest, opts ...grpc.CallOption) (*GetDurableExecutionResponse, error)
+	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
+	// Protocol: restJson1
+	CheckpointDurableExecution(ctx context.Context, in *CheckpointDurableExecutionRequest, opts ...grpc.CallOption) (*CheckpointDurableExecutionResponse, error)
+	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
+	// Protocol: restJson1
+	GetDurableExecutionHistory(ctx context.Context, in *GetDurableExecutionHistoryRequest, opts ...grpc.CallOption) (*GetDurableExecutionHistoryResponse, error)
+	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
+	// Protocol: restJson1
+	GetDurableExecutionState(ctx context.Context, in *GetDurableExecutionStateRequest, opts ...grpc.CallOption) (*GetDurableExecutionStateResponse, error)
+	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
+	// Protocol: restJson1
+	StopDurableExecution(ctx context.Context, in *StopDurableExecutionRequest, opts ...grpc.CallOption) (*StopDurableExecutionResponse, error)
 	// Lists event source mappings. Specify an EventSourceArn to show only event source mappings for a single event source.
 	// HTTP: GET /2015-03-31/event-source-mappings
 	// Protocol: restJson1
@@ -296,16 +306,6 @@ func NewLambdaServiceClient(cc grpc.ClientConnInterface) LambdaServiceClient {
 	return &lambdaServiceClient{cc}
 }
 
-func (c *lambdaServiceClient) CheckpointDurableExecution(ctx context.Context, in *CheckpointDurableExecutionRequest, opts ...grpc.CallOption) (*CheckpointDurableExecutionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CheckpointDurableExecutionResponse)
-	err := c.cc.Invoke(ctx, LambdaService_CheckpointDurableExecution_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *lambdaServiceClient) DeleteFunction(ctx context.Context, in *DeleteFunctionRequest, opts ...grpc.CallOption) (*DeleteFunctionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteFunctionResponse)
@@ -326,40 +326,20 @@ func (c *lambdaServiceClient) DeleteFunctionEventInvokeConfig(ctx context.Contex
 	return out, nil
 }
 
+func (c *lambdaServiceClient) DeleteResourcePolicy(ctx context.Context, in *DeleteResourcePolicyRequest, opts ...grpc.CallOption) (*common.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(common.Empty)
+	err := c.cc.Invoke(ctx, LambdaService_DeleteResourcePolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *lambdaServiceClient) GetAccountSettings(ctx context.Context, in *GetAccountSettingsRequest, opts ...grpc.CallOption) (*GetAccountSettingsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetAccountSettingsResponse)
 	err := c.cc.Invoke(ctx, LambdaService_GetAccountSettings_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *lambdaServiceClient) GetDurableExecution(ctx context.Context, in *GetDurableExecutionRequest, opts ...grpc.CallOption) (*GetDurableExecutionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetDurableExecutionResponse)
-	err := c.cc.Invoke(ctx, LambdaService_GetDurableExecution_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *lambdaServiceClient) GetDurableExecutionHistory(ctx context.Context, in *GetDurableExecutionHistoryRequest, opts ...grpc.CallOption) (*GetDurableExecutionHistoryResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetDurableExecutionHistoryResponse)
-	err := c.cc.Invoke(ctx, LambdaService_GetDurableExecutionHistory_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *lambdaServiceClient) GetDurableExecutionState(ctx context.Context, in *GetDurableExecutionStateRequest, opts ...grpc.CallOption) (*GetDurableExecutionStateResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetDurableExecutionStateResponse)
-	err := c.cc.Invoke(ctx, LambdaService_GetDurableExecutionState_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -376,10 +356,10 @@ func (c *lambdaServiceClient) GetFunctionEventInvokeConfig(ctx context.Context, 
 	return out, nil
 }
 
-func (c *lambdaServiceClient) ListDurableExecutionsByFunction(ctx context.Context, in *ListDurableExecutionsByFunctionRequest, opts ...grpc.CallOption) (*ListDurableExecutionsByFunctionResponse, error) {
+func (c *lambdaServiceClient) GetResourcePolicy(ctx context.Context, in *GetResourcePolicyRequest, opts ...grpc.CallOption) (*GetResourcePolicyResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListDurableExecutionsByFunctionResponse)
-	err := c.cc.Invoke(ctx, LambdaService_ListDurableExecutionsByFunction_FullMethodName, in, out, cOpts...)
+	out := new(GetResourcePolicyResponse)
+	err := c.cc.Invoke(ctx, LambdaService_GetResourcePolicy_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -416,6 +396,16 @@ func (c *lambdaServiceClient) PutFunctionEventInvokeConfig(ctx context.Context, 
 	return out, nil
 }
 
+func (c *lambdaServiceClient) PutResourcePolicy(ctx context.Context, in *PutResourcePolicyRequest, opts ...grpc.CallOption) (*PutResourcePolicyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PutResourcePolicyResponse)
+	err := c.cc.Invoke(ctx, LambdaService_PutResourcePolicy_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *lambdaServiceClient) SendDurableExecutionCallbackFailure(ctx context.Context, in *SendDurableExecutionCallbackFailureRequest, opts ...grpc.CallOption) (*SendDurableExecutionCallbackFailureResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SendDurableExecutionCallbackFailureResponse)
@@ -440,16 +430,6 @@ func (c *lambdaServiceClient) SendDurableExecutionCallbackSuccess(ctx context.Co
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SendDurableExecutionCallbackSuccessResponse)
 	err := c.cc.Invoke(ctx, LambdaService_SendDurableExecutionCallbackSuccess_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *lambdaServiceClient) StopDurableExecution(ctx context.Context, in *StopDurableExecutionRequest, opts ...grpc.CallOption) (*StopDurableExecutionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StopDurableExecutionResponse)
-	err := c.cc.Invoke(ctx, LambdaService_StopDurableExecution_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -560,6 +540,56 @@ func (c *lambdaServiceClient) CreateCodeSigningConfig(ctx context.Context, in *C
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateCodeSigningConfigResponse)
 	err := c.cc.Invoke(ctx, LambdaService_CreateCodeSigningConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *lambdaServiceClient) GetDurableExecution(ctx context.Context, in *GetDurableExecutionRequest, opts ...grpc.CallOption) (*GetDurableExecutionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDurableExecutionResponse)
+	err := c.cc.Invoke(ctx, LambdaService_GetDurableExecution_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *lambdaServiceClient) CheckpointDurableExecution(ctx context.Context, in *CheckpointDurableExecutionRequest, opts ...grpc.CallOption) (*CheckpointDurableExecutionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckpointDurableExecutionResponse)
+	err := c.cc.Invoke(ctx, LambdaService_CheckpointDurableExecution_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *lambdaServiceClient) GetDurableExecutionHistory(ctx context.Context, in *GetDurableExecutionHistoryRequest, opts ...grpc.CallOption) (*GetDurableExecutionHistoryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDurableExecutionHistoryResponse)
+	err := c.cc.Invoke(ctx, LambdaService_GetDurableExecutionHistory_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *lambdaServiceClient) GetDurableExecutionState(ctx context.Context, in *GetDurableExecutionStateRequest, opts ...grpc.CallOption) (*GetDurableExecutionStateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetDurableExecutionStateResponse)
+	err := c.cc.Invoke(ctx, LambdaService_GetDurableExecutionState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *lambdaServiceClient) StopDurableExecution(ctx context.Context, in *StopDurableExecutionRequest, opts ...grpc.CallOption) (*StopDurableExecutionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StopDurableExecutionResponse)
+	err := c.cc.Invoke(ctx, LambdaService_StopDurableExecution_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -812,10 +842,6 @@ func (c *lambdaServiceClient) DeleteProvisionedConcurrencyConfig(ctx context.Con
 //
 // LambdaService provides lambda API operations.
 type LambdaServiceServer interface {
-	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
-	// Protocol: restJson1
-	CheckpointDurableExecution(context.Context, *CheckpointDurableExecutionRequest) (*CheckpointDurableExecutionResponse, error)
 	// Deletes a Lambda function. To delete a specific function version, use the Qualifier parameter. Otherwise, all versions and aliases are deleted. This doesn't require the user to have explicit permis...
 	// HTTP: DELETE /2015-03-31/functions/{FunctionName}
 	// Protocol: restJson1
@@ -824,30 +850,22 @@ type LambdaServiceServer interface {
 	// HTTP: DELETE /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	DeleteFunctionEventInvokeConfig(context.Context, *DeleteFunctionEventInvokeConfigRequest) (*common.Empty, error)
+	// Deletes a resource-based policy from a Lambda resource.
+	// HTTP: DELETE /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	DeleteResourcePolicy(context.Context, *DeleteResourcePolicyRequest) (*common.Empty, error)
 	// Retrieves details about your account's limits and usage in an Amazon Web Services Region.
 	// HTTP: GET /2016-08-19/account-settings
 	// Protocol: restJson1
 	GetAccountSettings(context.Context, *GetAccountSettingsRequest) (*GetAccountSettingsResponse, error)
-	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
-	// Protocol: restJson1
-	GetDurableExecution(context.Context, *GetDurableExecutionRequest) (*GetDurableExecutionResponse, error)
-	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
-	// Protocol: restJson1
-	GetDurableExecutionHistory(context.Context, *GetDurableExecutionHistoryRequest) (*GetDurableExecutionHistoryResponse, error)
-	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
-	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
-	// Protocol: restJson1
-	GetDurableExecutionState(context.Context, *GetDurableExecutionStateRequest) (*GetDurableExecutionStateResponse, error)
 	// Retrieves the configuration for asynchronous invocation for a function, version, or alias. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	GetFunctionEventInvokeConfig(context.Context, *GetFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error)
-	// Returns a list of durable executions for a specified Lambda function. You can filter the results by execution name, status, and start time range. This API supports pagination for large result sets.
-	// HTTP: GET /2025-12-01/functions/{FunctionName}/durable-executions
+	// Retrieves the resource-based policy attached to a Lambda resource.
+	// HTTP: GET /2026-07-09/resource-policy/{ResourceArn}
 	// Protocol: restJson1
-	ListDurableExecutionsByFunction(context.Context, *ListDurableExecutionsByFunctionRequest) (*ListDurableExecutionsByFunctionResponse, error)
+	GetResourcePolicy(context.Context, *GetResourcePolicyRequest) (*GetResourcePolicyResponse, error)
 	// Retrieves a list of configurations for asynchronous invocation for a function. To configure options for asynchronous invocation, use PutFunctionEventInvokeConfig.
 	// HTTP: GET /2019-09-25/functions/{FunctionName}/event-invoke-config/list
 	// Protocol: restJson1
@@ -860,6 +878,10 @@ type LambdaServiceServer interface {
 	// HTTP: PUT /2019-09-25/functions/{FunctionName}/event-invoke-config
 	// Protocol: restJson1
 	PutFunctionEventInvokeConfig(context.Context, *PutFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error)
+	// Adds a resource-based policy to a Lambda resource. Resource-based policies grant access to other Amazon Web Services accounts, organizations, or services. Resource-based policies apply to a single ...
+	// HTTP: PUT /2026-07-09/resource-policy/{ResourceArn}
+	// Protocol: restJson1
+	PutResourcePolicy(context.Context, *PutResourcePolicyRequest) (*PutResourcePolicyResponse, error)
 	// Sends a failure response for a callback operation in a durable execution. Use this API when an external system cannot complete a callback operation successfully.
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/fail
 	// Protocol: restJson1
@@ -872,10 +894,6 @@ type LambdaServiceServer interface {
 	// HTTP: POST /2025-12-01/durable-execution-callbacks/{CallbackId}/succeed
 	// Protocol: restJson1
 	SendDurableExecutionCallbackSuccess(context.Context, *SendDurableExecutionCallbackSuccessRequest) (*SendDurableExecutionCallbackSuccessResponse, error)
-	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
-	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
-	// Protocol: restJson1
-	StopDurableExecution(context.Context, *StopDurableExecutionRequest) (*StopDurableExecutionResponse, error)
 	// Adds tags to a function, event source mapping, or code signing configuration.
 	// HTTP: POST /2017-03-31/tags/{Resource}
 	// Protocol: restJson1
@@ -920,6 +938,26 @@ type LambdaServiceServer interface {
 	// HTTP: POST /2020-04-22/code-signing-configs
 	// Protocol: restJson1
 	CreateCodeSigningConfig(context.Context, *CreateCodeSigningConfigRequest) (*CreateCodeSigningConfigResponse, error)
+	// Retrieves detailed information about a specific durable execution, including its current status, input payload, result or error information, and execution metadata such as start time and usage stat...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}
+	// Protocol: restJson1
+	GetDurableExecution(context.Context, *GetDurableExecutionRequest) (*GetDurableExecutionResponse, error)
+	// Saves the progress of a durable function execution during runtime. This API is used by the Lambda durable functions SDK to checkpoint completed steps and schedule asynchronous operations. You typic...
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/checkpoint
+	// Protocol: restJson1
+	CheckpointDurableExecution(context.Context, *CheckpointDurableExecutionRequest) (*CheckpointDurableExecutionResponse, error)
+	// Retrieves the execution history for a durable execution, showing all the steps, callbacks, and events that occurred during the execution. This provides a detailed audit trail of the execution's pro...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/history
+	// Protocol: restJson1
+	GetDurableExecutionHistory(context.Context, *GetDurableExecutionHistoryRequest) (*GetDurableExecutionHistoryResponse, error)
+	// Retrieves the current execution state required for the replay process during durable function execution. This API is used by the Lambda durable functions SDK to get state information needed for rep...
+	// HTTP: GET /2025-12-01/durable-executions/{DurableExecutionArn}/state
+	// Protocol: restJson1
+	GetDurableExecutionState(context.Context, *GetDurableExecutionStateRequest) (*GetDurableExecutionStateResponse, error)
+	// Stops a running durable execution. The execution transitions to STOPPED status and cannot be resumed. Any in-progress operations are terminated.
+	// HTTP: POST /2025-12-01/durable-executions/{DurableExecutionArn}/stop
+	// Protocol: restJson1
+	StopDurableExecution(context.Context, *StopDurableExecutionRequest) (*StopDurableExecutionResponse, error)
 	// Lists event source mappings. Specify an EventSourceArn to show only event source mappings for a single event source.
 	// HTTP: GET /2015-03-31/event-source-mappings
 	// Protocol: restJson1
@@ -1026,32 +1064,23 @@ type LambdaServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedLambdaServiceServer struct{}
 
-func (UnimplementedLambdaServiceServer) CheckpointDurableExecution(context.Context, *CheckpointDurableExecutionRequest) (*CheckpointDurableExecutionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CheckpointDurableExecution not implemented")
-}
 func (UnimplementedLambdaServiceServer) DeleteFunction(context.Context, *DeleteFunctionRequest) (*DeleteFunctionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteFunction not implemented")
 }
 func (UnimplementedLambdaServiceServer) DeleteFunctionEventInvokeConfig(context.Context, *DeleteFunctionEventInvokeConfigRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteFunctionEventInvokeConfig not implemented")
 }
+func (UnimplementedLambdaServiceServer) DeleteResourcePolicy(context.Context, *DeleteResourcePolicyRequest) (*common.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteResourcePolicy not implemented")
+}
 func (UnimplementedLambdaServiceServer) GetAccountSettings(context.Context, *GetAccountSettingsRequest) (*GetAccountSettingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetAccountSettings not implemented")
-}
-func (UnimplementedLambdaServiceServer) GetDurableExecution(context.Context, *GetDurableExecutionRequest) (*GetDurableExecutionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetDurableExecution not implemented")
-}
-func (UnimplementedLambdaServiceServer) GetDurableExecutionHistory(context.Context, *GetDurableExecutionHistoryRequest) (*GetDurableExecutionHistoryResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetDurableExecutionHistory not implemented")
-}
-func (UnimplementedLambdaServiceServer) GetDurableExecutionState(context.Context, *GetDurableExecutionStateRequest) (*GetDurableExecutionStateResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetDurableExecutionState not implemented")
 }
 func (UnimplementedLambdaServiceServer) GetFunctionEventInvokeConfig(context.Context, *GetFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetFunctionEventInvokeConfig not implemented")
 }
-func (UnimplementedLambdaServiceServer) ListDurableExecutionsByFunction(context.Context, *ListDurableExecutionsByFunctionRequest) (*ListDurableExecutionsByFunctionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method ListDurableExecutionsByFunction not implemented")
+func (UnimplementedLambdaServiceServer) GetResourcePolicy(context.Context, *GetResourcePolicyRequest) (*GetResourcePolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetResourcePolicy not implemented")
 }
 func (UnimplementedLambdaServiceServer) ListFunctionEventInvokeConfigs(context.Context, *ListFunctionEventInvokeConfigsRequest) (*ListFunctionEventInvokeConfigsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListFunctionEventInvokeConfigs not implemented")
@@ -1062,6 +1091,9 @@ func (UnimplementedLambdaServiceServer) ListTags(context.Context, *ListTagsReque
 func (UnimplementedLambdaServiceServer) PutFunctionEventInvokeConfig(context.Context, *PutFunctionEventInvokeConfigRequest) (*FunctionEventInvokeConfig, error) {
 	return nil, status.Error(codes.Unimplemented, "method PutFunctionEventInvokeConfig not implemented")
 }
+func (UnimplementedLambdaServiceServer) PutResourcePolicy(context.Context, *PutResourcePolicyRequest) (*PutResourcePolicyResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method PutResourcePolicy not implemented")
+}
 func (UnimplementedLambdaServiceServer) SendDurableExecutionCallbackFailure(context.Context, *SendDurableExecutionCallbackFailureRequest) (*SendDurableExecutionCallbackFailureResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendDurableExecutionCallbackFailure not implemented")
 }
@@ -1070,9 +1102,6 @@ func (UnimplementedLambdaServiceServer) SendDurableExecutionCallbackHeartbeat(co
 }
 func (UnimplementedLambdaServiceServer) SendDurableExecutionCallbackSuccess(context.Context, *SendDurableExecutionCallbackSuccessRequest) (*SendDurableExecutionCallbackSuccessResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SendDurableExecutionCallbackSuccess not implemented")
-}
-func (UnimplementedLambdaServiceServer) StopDurableExecution(context.Context, *StopDurableExecutionRequest) (*StopDurableExecutionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method StopDurableExecution not implemented")
 }
 func (UnimplementedLambdaServiceServer) TagResource(context.Context, *TagResourceRequest) (*common.Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method TagResource not implemented")
@@ -1106,6 +1135,21 @@ func (UnimplementedLambdaServiceServer) ListCodeSigningConfigs(context.Context, 
 }
 func (UnimplementedLambdaServiceServer) CreateCodeSigningConfig(context.Context, *CreateCodeSigningConfigRequest) (*CreateCodeSigningConfigResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateCodeSigningConfig not implemented")
+}
+func (UnimplementedLambdaServiceServer) GetDurableExecution(context.Context, *GetDurableExecutionRequest) (*GetDurableExecutionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDurableExecution not implemented")
+}
+func (UnimplementedLambdaServiceServer) CheckpointDurableExecution(context.Context, *CheckpointDurableExecutionRequest) (*CheckpointDurableExecutionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckpointDurableExecution not implemented")
+}
+func (UnimplementedLambdaServiceServer) GetDurableExecutionHistory(context.Context, *GetDurableExecutionHistoryRequest) (*GetDurableExecutionHistoryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDurableExecutionHistory not implemented")
+}
+func (UnimplementedLambdaServiceServer) GetDurableExecutionState(context.Context, *GetDurableExecutionStateRequest) (*GetDurableExecutionStateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDurableExecutionState not implemented")
+}
+func (UnimplementedLambdaServiceServer) StopDurableExecution(context.Context, *StopDurableExecutionRequest) (*StopDurableExecutionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StopDurableExecution not implemented")
 }
 func (UnimplementedLambdaServiceServer) ListEventSourceMappings(context.Context, *ListEventSourceMappingsRequest) (*ListEventSourceMappingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListEventSourceMappings not implemented")
@@ -1200,24 +1244,6 @@ func RegisterLambdaServiceServer(s grpc.ServiceRegistrar, srv LambdaServiceServe
 	s.RegisterService(&LambdaService_ServiceDesc, srv)
 }
 
-func _LambdaService_CheckpointDurableExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CheckpointDurableExecutionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LambdaServiceServer).CheckpointDurableExecution(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LambdaService_CheckpointDurableExecution_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LambdaServiceServer).CheckpointDurableExecution(ctx, req.(*CheckpointDurableExecutionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _LambdaService_DeleteFunction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteFunctionRequest)
 	if err := dec(in); err != nil {
@@ -1254,6 +1280,24 @@ func _LambdaService_DeleteFunctionEventInvokeConfig_Handler(srv interface{}, ctx
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LambdaService_DeleteResourcePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteResourcePolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).DeleteResourcePolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_DeleteResourcePolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).DeleteResourcePolicy(ctx, req.(*DeleteResourcePolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LambdaService_GetAccountSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetAccountSettingsRequest)
 	if err := dec(in); err != nil {
@@ -1268,60 +1312,6 @@ func _LambdaService_GetAccountSettings_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LambdaServiceServer).GetAccountSettings(ctx, req.(*GetAccountSettingsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LambdaService_GetDurableExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDurableExecutionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LambdaServiceServer).GetDurableExecution(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LambdaService_GetDurableExecution_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LambdaServiceServer).GetDurableExecution(ctx, req.(*GetDurableExecutionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LambdaService_GetDurableExecutionHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDurableExecutionHistoryRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LambdaServiceServer).GetDurableExecutionHistory(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LambdaService_GetDurableExecutionHistory_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LambdaServiceServer).GetDurableExecutionHistory(ctx, req.(*GetDurableExecutionHistoryRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LambdaService_GetDurableExecutionState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetDurableExecutionStateRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LambdaServiceServer).GetDurableExecutionState(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LambdaService_GetDurableExecutionState_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LambdaServiceServer).GetDurableExecutionState(ctx, req.(*GetDurableExecutionStateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1344,20 +1334,20 @@ func _LambdaService_GetFunctionEventInvokeConfig_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LambdaService_ListDurableExecutionsByFunction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListDurableExecutionsByFunctionRequest)
+func _LambdaService_GetResourcePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetResourcePolicyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LambdaServiceServer).ListDurableExecutionsByFunction(ctx, in)
+		return srv.(LambdaServiceServer).GetResourcePolicy(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LambdaService_ListDurableExecutionsByFunction_FullMethodName,
+		FullMethod: LambdaService_GetResourcePolicy_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LambdaServiceServer).ListDurableExecutionsByFunction(ctx, req.(*ListDurableExecutionsByFunctionRequest))
+		return srv.(LambdaServiceServer).GetResourcePolicy(ctx, req.(*GetResourcePolicyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1416,6 +1406,24 @@ func _LambdaService_PutFunctionEventInvokeConfig_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LambdaService_PutResourcePolicy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PutResourcePolicyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).PutResourcePolicy(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_PutResourcePolicy_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).PutResourcePolicy(ctx, req.(*PutResourcePolicyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _LambdaService_SendDurableExecutionCallbackFailure_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SendDurableExecutionCallbackFailureRequest)
 	if err := dec(in); err != nil {
@@ -1466,24 +1474,6 @@ func _LambdaService_SendDurableExecutionCallbackSuccess_Handler(srv interface{},
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LambdaServiceServer).SendDurableExecutionCallbackSuccess(ctx, req.(*SendDurableExecutionCallbackSuccessRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _LambdaService_StopDurableExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StopDurableExecutionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(LambdaServiceServer).StopDurableExecution(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: LambdaService_StopDurableExecution_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LambdaServiceServer).StopDurableExecution(ctx, req.(*StopDurableExecutionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1682,6 +1672,96 @@ func _LambdaService_CreateCodeSigningConfig_Handler(srv interface{}, ctx context
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LambdaServiceServer).CreateCodeSigningConfig(ctx, req.(*CreateCodeSigningConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LambdaService_GetDurableExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDurableExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).GetDurableExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_GetDurableExecution_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).GetDurableExecution(ctx, req.(*GetDurableExecutionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LambdaService_CheckpointDurableExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckpointDurableExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).CheckpointDurableExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_CheckpointDurableExecution_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).CheckpointDurableExecution(ctx, req.(*CheckpointDurableExecutionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LambdaService_GetDurableExecutionHistory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDurableExecutionHistoryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).GetDurableExecutionHistory(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_GetDurableExecutionHistory_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).GetDurableExecutionHistory(ctx, req.(*GetDurableExecutionHistoryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LambdaService_GetDurableExecutionState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDurableExecutionStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).GetDurableExecutionState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_GetDurableExecutionState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).GetDurableExecutionState(ctx, req.(*GetDurableExecutionStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LambdaService_StopDurableExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StopDurableExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LambdaServiceServer).StopDurableExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LambdaService_StopDurableExecution_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LambdaServiceServer).StopDurableExecution(ctx, req.(*StopDurableExecutionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2126,10 +2206,6 @@ var LambdaService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LambdaServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CheckpointDurableExecution",
-			Handler:    _LambdaService_CheckpointDurableExecution_Handler,
-		},
-		{
 			MethodName: "DeleteFunction",
 			Handler:    _LambdaService_DeleteFunction_Handler,
 		},
@@ -2138,28 +2214,20 @@ var LambdaService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LambdaService_DeleteFunctionEventInvokeConfig_Handler,
 		},
 		{
+			MethodName: "DeleteResourcePolicy",
+			Handler:    _LambdaService_DeleteResourcePolicy_Handler,
+		},
+		{
 			MethodName: "GetAccountSettings",
 			Handler:    _LambdaService_GetAccountSettings_Handler,
-		},
-		{
-			MethodName: "GetDurableExecution",
-			Handler:    _LambdaService_GetDurableExecution_Handler,
-		},
-		{
-			MethodName: "GetDurableExecutionHistory",
-			Handler:    _LambdaService_GetDurableExecutionHistory_Handler,
-		},
-		{
-			MethodName: "GetDurableExecutionState",
-			Handler:    _LambdaService_GetDurableExecutionState_Handler,
 		},
 		{
 			MethodName: "GetFunctionEventInvokeConfig",
 			Handler:    _LambdaService_GetFunctionEventInvokeConfig_Handler,
 		},
 		{
-			MethodName: "ListDurableExecutionsByFunction",
-			Handler:    _LambdaService_ListDurableExecutionsByFunction_Handler,
+			MethodName: "GetResourcePolicy",
+			Handler:    _LambdaService_GetResourcePolicy_Handler,
 		},
 		{
 			MethodName: "ListFunctionEventInvokeConfigs",
@@ -2174,6 +2242,10 @@ var LambdaService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LambdaService_PutFunctionEventInvokeConfig_Handler,
 		},
 		{
+			MethodName: "PutResourcePolicy",
+			Handler:    _LambdaService_PutResourcePolicy_Handler,
+		},
+		{
 			MethodName: "SendDurableExecutionCallbackFailure",
 			Handler:    _LambdaService_SendDurableExecutionCallbackFailure_Handler,
 		},
@@ -2184,10 +2256,6 @@ var LambdaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SendDurableExecutionCallbackSuccess",
 			Handler:    _LambdaService_SendDurableExecutionCallbackSuccess_Handler,
-		},
-		{
-			MethodName: "StopDurableExecution",
-			Handler:    _LambdaService_StopDurableExecution_Handler,
 		},
 		{
 			MethodName: "TagResource",
@@ -2232,6 +2300,26 @@ var LambdaService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateCodeSigningConfig",
 			Handler:    _LambdaService_CreateCodeSigningConfig_Handler,
+		},
+		{
+			MethodName: "GetDurableExecution",
+			Handler:    _LambdaService_GetDurableExecution_Handler,
+		},
+		{
+			MethodName: "CheckpointDurableExecution",
+			Handler:    _LambdaService_CheckpointDurableExecution_Handler,
+		},
+		{
+			MethodName: "GetDurableExecutionHistory",
+			Handler:    _LambdaService_GetDurableExecutionHistory_Handler,
+		},
+		{
+			MethodName: "GetDurableExecutionState",
+			Handler:    _LambdaService_GetDurableExecutionState_Handler,
+		},
+		{
+			MethodName: "StopDurableExecution",
+			Handler:    _LambdaService_StopDurableExecution_Handler,
 		},
 		{
 			MethodName: "ListEventSourceMappings",

@@ -16,6 +16,14 @@ type LazyIterator struct {
 	err       error
 	closed    bool
 	first     bool
+	// seekFirst positions the iterator at the first entry to yield (First
+	// for a forward walk; Last or SeekLT(before) for a reverse walk), and
+	// move advances the underlying pebble iterator one entry in the
+	// iterator's direction (Next forward, Prev reverse), including when the
+	// TTL sweep skips expired entries. move's result is discarded: advance
+	// re-checks validity itself.
+	seekFirst func() bool
+	move      func() bool
 }
 
 // NewLazyIterator creates a lazy iterator over the given range.
@@ -46,6 +54,48 @@ func (d *DB) NewLazyIterator(start, end []byte) *LazyIterator {
 		encryptor: d.encryptor,
 		ttlOpts:   ttlOpts,
 		first:     true,
+		seekFirst: iter.First,
+		move:      iter.Next,
+	}
+}
+
+// NewReverseLazyIterator creates a lazy iterator that walks the given range
+// backwards. Iteration starts at the largest key strictly less than before
+// (or the largest key in range when before is nil). The caller must call
+// Close when finished.
+func (d *DB) NewReverseLazyIterator(start, end, before []byte) *LazyIterator {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+
+	if d.closed {
+		return &LazyIterator{err: ErrClosed}
+	}
+
+	iter, err := d.db.NewIter(&pebble.IterOptions{
+		LowerBound: start,
+		UpperBound: end,
+	})
+	if err != nil {
+		return &LazyIterator{err: err}
+	}
+
+	var ttlOpts *TTLOptions
+	if d.opts.TTL.Enabled {
+		ttlOpts = &d.opts.TTL
+	}
+
+	seek := iter.Last
+	if before != nil {
+		seek = func() bool { return iter.SeekLT(before) }
+	}
+
+	return &LazyIterator{
+		iter:      iter,
+		encryptor: d.encryptor,
+		ttlOpts:   ttlOpts,
+		first:     true,
+		seekFirst: seek,
+		move:      iter.Prev,
 	}
 }
 
@@ -67,7 +117,7 @@ func (li *LazyIterator) advance() {
 			return
 		}
 		if expired {
-			li.iter.Next()
+			li.move()
 			continue
 		}
 
@@ -89,9 +139,9 @@ func (li *LazyIterator) Next() bool {
 	}
 	if li.first {
 		li.first = false
-		li.iter.First()
+		li.seekFirst()
 	} else {
-		li.iter.Next()
+		li.move()
 	}
 	li.advance()
 	return li.key != nil

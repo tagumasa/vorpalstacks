@@ -46,10 +46,29 @@ func kinesisStream(ts, name string) string {
 	return fmt.Sprintf("kinesis-%s-%s", name, ts)
 }
 
-// kinesisCreateStream creates a provisioned stream and lets it settle for
-// the caller-provided duration before returning; the returned closure
-// deletes the stream.
-func kinesisCreateStream(ctx context.Context, client *kinesis.Client, streamName string, shardCount int32, settle time.Duration) (func(), error) {
+// kinesisDescribeWhenReady polls DescribeStream until the stream reports
+// ACTIVE, returning the description. It replaces blind post-create settle
+// sleeps: the wait ends the moment the status is observable.
+func kinesisDescribeWhenReady(ctx context.Context, client *kinesis.Client, streamName string, timeout time.Duration) (*kinesis.DescribeStreamOutput, error) {
+	var out *kinesis.DescribeStreamOutput
+	err := waitFor(250*time.Millisecond, timeout, func() bool {
+		resp, derr := client.DescribeStream(ctx, &kinesis.DescribeStreamInput{StreamName: aws.String(streamName)})
+		if derr != nil {
+			return false
+		}
+		out = resp
+		return out.StreamDescription != nil && out.StreamDescription.StreamStatus == types.StreamStatusActive
+	})
+	if err != nil {
+		return nil, fmt.Errorf("stream %q did not become ready: %w", streamName, err)
+	}
+	return out, nil
+}
+
+// kinesisCreateStream creates a provisioned stream and waits until it is
+// ACTIVE (bounded by the caller-provided duration) before returning; the
+// returned closure deletes the stream.
+func kinesisCreateStream(ctx context.Context, client *kinesis.Client, streamName string, shardCount int32, timeout time.Duration) (func(), error) {
 	_, err := client.CreateStream(ctx, &kinesis.CreateStreamInput{
 		StreamName: aws.String(streamName),
 		ShardCount: aws.Int32(shardCount),
@@ -60,7 +79,10 @@ func kinesisCreateStream(ctx context.Context, client *kinesis.Client, streamName
 	cleanup := func() {
 		client.DeleteStream(ctx, &kinesis.DeleteStreamInput{StreamName: aws.String(streamName)})
 	}
-	time.Sleep(settle)
+	if _, err := kinesisDescribeWhenReady(ctx, client, streamName, timeout); err != nil {
+		cleanup()
+		return nil, err
+	}
 	return cleanup, nil
 }
 

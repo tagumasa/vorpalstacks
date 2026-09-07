@@ -3,7 +3,7 @@ module vorpalstacks-sdk-tests
 go 1.25.13
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.43.6
+	github.com/aws/aws-sdk-go-v2 v1.46.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.30
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.29
 	github.com/aws/aws-sdk-go-v2/service/acm v1.42.1
@@ -16,7 +16,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs v1.82.2
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentity v1.35.1
 	github.com/aws/aws-sdk-go-v2/service/cognitoidentityprovider v1.67.6
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.60.1
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.67.0
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.36.6
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.316.1
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.47.1
@@ -43,20 +43,21 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/timestreamquery v1.38.1
 	github.com/aws/aws-sdk-go-v2/service/timestreamwrite v1.37.1
 	github.com/aws/aws-sdk-go-v2/service/wafv2 v1.75.1
-	github.com/aws/smithy-go v1.27.8
+	github.com/aws/smithy-go v1.28.1
 	github.com/eclipse/paho.golang v0.23.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/scritchley/orc v0.0.0-20210513144143-06dddf1ad665
 )
 
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.18 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.37 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.37 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.31 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.13 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.12.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.30 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.19.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.4.1 // indirect
@@ -64,6 +65,5 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.37.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
-	github.com/scritchley/orc v0.0.0-20210513144143-06dddf1ad665 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 )

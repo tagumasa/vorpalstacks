@@ -40,9 +40,39 @@ const (
 	// ACMServiceAddTagsToCertificateProcedure is the fully-qualified name of the ACMService's
 	// AddTagsToCertificate RPC.
 	ACMServiceAddTagsToCertificateProcedure = "/acm.ACMService/AddTagsToCertificate"
+	// ACMServiceCreateAcmeDomainValidationProcedure is the fully-qualified name of the ACMService's
+	// CreateAcmeDomainValidation RPC.
+	ACMServiceCreateAcmeDomainValidationProcedure = "/acm.ACMService/CreateAcmeDomainValidation"
+	// ACMServiceCreateAcmeEndpointProcedure is the fully-qualified name of the ACMService's
+	// CreateAcmeEndpoint RPC.
+	ACMServiceCreateAcmeEndpointProcedure = "/acm.ACMService/CreateAcmeEndpoint"
+	// ACMServiceCreateAcmeExternalAccountBindingProcedure is the fully-qualified name of the
+	// ACMService's CreateAcmeExternalAccountBinding RPC.
+	ACMServiceCreateAcmeExternalAccountBindingProcedure = "/acm.ACMService/CreateAcmeExternalAccountBinding"
+	// ACMServiceDeleteAcmeDomainValidationProcedure is the fully-qualified name of the ACMService's
+	// DeleteAcmeDomainValidation RPC.
+	ACMServiceDeleteAcmeDomainValidationProcedure = "/acm.ACMService/DeleteAcmeDomainValidation"
+	// ACMServiceDeleteAcmeEndpointProcedure is the fully-qualified name of the ACMService's
+	// DeleteAcmeEndpoint RPC.
+	ACMServiceDeleteAcmeEndpointProcedure = "/acm.ACMService/DeleteAcmeEndpoint"
+	// ACMServiceDeleteAcmeExternalAccountBindingProcedure is the fully-qualified name of the
+	// ACMService's DeleteAcmeExternalAccountBinding RPC.
+	ACMServiceDeleteAcmeExternalAccountBindingProcedure = "/acm.ACMService/DeleteAcmeExternalAccountBinding"
 	// ACMServiceDeleteCertificateProcedure is the fully-qualified name of the ACMService's
 	// DeleteCertificate RPC.
 	ACMServiceDeleteCertificateProcedure = "/acm.ACMService/DeleteCertificate"
+	// ACMServiceDescribeAcmeAccountProcedure is the fully-qualified name of the ACMService's
+	// DescribeAcmeAccount RPC.
+	ACMServiceDescribeAcmeAccountProcedure = "/acm.ACMService/DescribeAcmeAccount"
+	// ACMServiceDescribeAcmeDomainValidationProcedure is the fully-qualified name of the ACMService's
+	// DescribeAcmeDomainValidation RPC.
+	ACMServiceDescribeAcmeDomainValidationProcedure = "/acm.ACMService/DescribeAcmeDomainValidation"
+	// ACMServiceDescribeAcmeEndpointProcedure is the fully-qualified name of the ACMService's
+	// DescribeAcmeEndpoint RPC.
+	ACMServiceDescribeAcmeEndpointProcedure = "/acm.ACMService/DescribeAcmeEndpoint"
+	// ACMServiceDescribeAcmeExternalAccountBindingProcedure is the fully-qualified name of the
+	// ACMService's DescribeAcmeExternalAccountBinding RPC.
+	ACMServiceDescribeAcmeExternalAccountBindingProcedure = "/acm.ACMService/DescribeAcmeExternalAccountBinding"
 	// ACMServiceDescribeCertificateProcedure is the fully-qualified name of the ACMService's
 	// DescribeCertificate RPC.
 	ACMServiceDescribeCertificateProcedure = "/acm.ACMService/DescribeCertificate"
@@ -52,18 +82,39 @@ const (
 	// ACMServiceGetAccountConfigurationProcedure is the fully-qualified name of the ACMService's
 	// GetAccountConfiguration RPC.
 	ACMServiceGetAccountConfigurationProcedure = "/acm.ACMService/GetAccountConfiguration"
+	// ACMServiceGetAcmeExternalAccountBindingCredentialsProcedure is the fully-qualified name of the
+	// ACMService's GetAcmeExternalAccountBindingCredentials RPC.
+	ACMServiceGetAcmeExternalAccountBindingCredentialsProcedure = "/acm.ACMService/GetAcmeExternalAccountBindingCredentials"
 	// ACMServiceGetCertificateProcedure is the fully-qualified name of the ACMService's GetCertificate
 	// RPC.
 	ACMServiceGetCertificateProcedure = "/acm.ACMService/GetCertificate"
 	// ACMServiceImportCertificateProcedure is the fully-qualified name of the ACMService's
 	// ImportCertificate RPC.
 	ACMServiceImportCertificateProcedure = "/acm.ACMService/ImportCertificate"
+	// ACMServiceListAcmeAccountsProcedure is the fully-qualified name of the ACMService's
+	// ListAcmeAccounts RPC.
+	ACMServiceListAcmeAccountsProcedure = "/acm.ACMService/ListAcmeAccounts"
+	// ACMServiceListAcmeDomainValidationsProcedure is the fully-qualified name of the ACMService's
+	// ListAcmeDomainValidations RPC.
+	ACMServiceListAcmeDomainValidationsProcedure = "/acm.ACMService/ListAcmeDomainValidations"
+	// ACMServiceListAcmeEndpointsProcedure is the fully-qualified name of the ACMService's
+	// ListAcmeEndpoints RPC.
+	ACMServiceListAcmeEndpointsProcedure = "/acm.ACMService/ListAcmeEndpoints"
+	// ACMServiceListAcmeExternalAccountBindingsProcedure is the fully-qualified name of the
+	// ACMService's ListAcmeExternalAccountBindings RPC.
+	ACMServiceListAcmeExternalAccountBindingsProcedure = "/acm.ACMService/ListAcmeExternalAccountBindings"
+	// ACMServiceListCertificateDomainValidationsProcedure is the fully-qualified name of the
+	// ACMService's ListCertificateDomainValidations RPC.
+	ACMServiceListCertificateDomainValidationsProcedure = "/acm.ACMService/ListCertificateDomainValidations"
 	// ACMServiceListCertificatesProcedure is the fully-qualified name of the ACMService's
 	// ListCertificates RPC.
 	ACMServiceListCertificatesProcedure = "/acm.ACMService/ListCertificates"
 	// ACMServiceListTagsForCertificateProcedure is the fully-qualified name of the ACMService's
 	// ListTagsForCertificate RPC.
 	ACMServiceListTagsForCertificateProcedure = "/acm.ACMService/ListTagsForCertificate"
+	// ACMServiceListTagsForResourceProcedure is the fully-qualified name of the ACMService's
+	// ListTagsForResource RPC.
+	ACMServiceListTagsForResourceProcedure = "/acm.ACMService/ListTagsForResource"
 	// ACMServicePutAccountConfigurationProcedure is the fully-qualified name of the ACMService's
 	// PutAccountConfiguration RPC.
 	ACMServicePutAccountConfigurationProcedure = "/acm.ACMService/PutAccountConfiguration"
@@ -79,12 +130,29 @@ const (
 	// ACMServiceResendValidationEmailProcedure is the fully-qualified name of the ACMService's
 	// ResendValidationEmail RPC.
 	ACMServiceResendValidationEmailProcedure = "/acm.ACMService/ResendValidationEmail"
+	// ACMServiceRevokeAcmeAccountProcedure is the fully-qualified name of the ACMService's
+	// RevokeAcmeAccount RPC.
+	ACMServiceRevokeAcmeAccountProcedure = "/acm.ACMService/RevokeAcmeAccount"
+	// ACMServiceRevokeAcmeExternalAccountBindingProcedure is the fully-qualified name of the
+	// ACMService's RevokeAcmeExternalAccountBinding RPC.
+	ACMServiceRevokeAcmeExternalAccountBindingProcedure = "/acm.ACMService/RevokeAcmeExternalAccountBinding"
 	// ACMServiceRevokeCertificateProcedure is the fully-qualified name of the ACMService's
 	// RevokeCertificate RPC.
 	ACMServiceRevokeCertificateProcedure = "/acm.ACMService/RevokeCertificate"
 	// ACMServiceSearchCertificatesProcedure is the fully-qualified name of the ACMService's
 	// SearchCertificates RPC.
 	ACMServiceSearchCertificatesProcedure = "/acm.ACMService/SearchCertificates"
+	// ACMServiceTagResourceProcedure is the fully-qualified name of the ACMService's TagResource RPC.
+	ACMServiceTagResourceProcedure = "/acm.ACMService/TagResource"
+	// ACMServiceUntagResourceProcedure is the fully-qualified name of the ACMService's UntagResource
+	// RPC.
+	ACMServiceUntagResourceProcedure = "/acm.ACMService/UntagResource"
+	// ACMServiceUpdateAcmeDomainValidationProcedure is the fully-qualified name of the ACMService's
+	// UpdateAcmeDomainValidation RPC.
+	ACMServiceUpdateAcmeDomainValidationProcedure = "/acm.ACMService/UpdateAcmeDomainValidation"
+	// ACMServiceUpdateAcmeEndpointProcedure is the fully-qualified name of the ACMService's
+	// UpdateAcmeEndpoint RPC.
+	ACMServiceUpdateAcmeEndpointProcedure = "/acm.ACMService/UpdateAcmeEndpoint"
 	// ACMServiceUpdateCertificateOptionsProcedure is the fully-qualified name of the ACMService's
 	// UpdateCertificateOptions RPC.
 	ACMServiceUpdateCertificateOptionsProcedure = "/acm.ACMService/UpdateCertificateOptions"
@@ -96,10 +164,50 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(context.Context, *connect.Request[acm.AddTagsToCertificateRequest]) (*connect.Response[common.Empty], error)
+	// Creates a domain validation for an ACME endpoint. Domain validations authorize the endpoint to issue certificates for specified domain names. You configure prevalidation to prove domain ownership.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeDomainValidation(context.Context, *connect.Request[acm.CreateAcmeDomainValidationRequest]) (*connect.Response[acm.CreateAcmeDomainValidationResponse], error)
+	// Creates an ACME endpoint, which is a managed ACME server with a unique endpoint URL. After creation, ACME clients can use the endpoint URL to automate certificate issuance using the ACME protocol.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeEndpoint(context.Context, *connect.Request[acm.CreateAcmeEndpointRequest]) (*connect.Response[acm.CreateAcmeEndpointResponse], error)
+	// Creates an external account binding (EAB) for an ACME endpoint. An EAB provides credentials that authorize an ACME client to register an account with the endpoint. Each EAB is associated with an IA...
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeExternalAccountBinding(context.Context, *connect.Request[acm.CreateAcmeExternalAccountBindingRequest]) (*connect.Response[acm.CreateAcmeExternalAccountBindingResponse], error)
+	// Deletes a domain validation. After deletion, the ACME endpoint can no longer issue certificates for the associated domain.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeDomainValidation(context.Context, *connect.Request[acm.DeleteAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error)
+	// Deletes an ACME endpoint. After deletion, the endpoint URL is no longer accessible and ACME clients cannot issue certificates through it. Any existing external account bindings and domain validatio...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeEndpoint(context.Context, *connect.Request[acm.DeleteAcmeEndpointRequest]) (*connect.Response[common.Empty], error)
+	// Deletes an external account binding. Previously fetched credentials for this binding will no longer be usable for account registration. A deleted binding cannot be recovered.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeExternalAccountBinding(context.Context, *connect.Request[acm.DeleteAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error)
 	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(context.Context, *connect.Request[acm.DeleteCertificateRequest]) (*connect.Response[common.Empty], error)
+	// Returns detailed metadata about the specified ACME account, including its status, public key thumbprint, and associated external account binding.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeAccount(context.Context, *connect.Request[acm.DescribeAcmeAccountRequest]) (*connect.Response[acm.DescribeAcmeAccountResponse], error)
+	// Returns detailed metadata about the specified domain validation, including its status, domain scope, and DNS resource records required for validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeDomainValidation(context.Context, *connect.Request[acm.DescribeAcmeDomainValidationRequest]) (*connect.Response[acm.DescribeAcmeDomainValidationResponse], error)
+	// Returns detailed metadata about the specified ACME endpoint, including its status, URL, authorization behavior, and certificate authority configuration.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeEndpoint(context.Context, *connect.Request[acm.DescribeAcmeEndpointRequest]) (*connect.Response[acm.DescribeAcmeEndpointResponse], error)
+	// Returns detailed metadata about the specified external account binding, including the associated IAM role, expiration time, and usage history.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeExternalAccountBinding(context.Context, *connect.Request[acm.DescribeAcmeExternalAccountBindingRequest]) (*connect.Response[acm.DescribeAcmeExternalAccountBindingResponse], error)
 	// Returns detailed metadata about the specified ACM certificate. If you have just created a certificate using the RequestCertificate action, there is a delay of several seconds before you can retriev...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -112,6 +220,10 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetAccountConfiguration(context.Context, *connect.Request[common.Empty]) (*connect.Response[acm.GetAccountConfigurationResponse], error)
+	// Retrieves the key ID and MAC key credentials for an external account binding. These credentials are used by ACME clients during account registration to bind to the endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetAcmeExternalAccountBindingCredentials(context.Context, *connect.Request[acm.GetAcmeExternalAccountBindingCredentialsRequest]) (*connect.Response[acm.GetAcmeExternalAccountBindingCredentialsResponse], error)
 	// Retrieves a certificate and its certificate chain. The certificate may be either a public or private certificate issued using the ACM RequestCertificate action, or a certificate imported into ACM u...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -120,6 +232,26 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ImportCertificate(context.Context, *connect.Request[acm.ImportCertificateRequest]) (*connect.Response[acm.ImportCertificateResponse], error)
+	// Retrieves a list of ACME accounts registered with the specified ACME endpoint. ACME accounts are created when clients use external account binding credentials to register.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeAccounts(context.Context, *connect.Request[acm.ListAcmeAccountsRequest]) (*connect.Response[acm.ListAcmeAccountsResponse], error)
+	// Retrieves a list of domain validations for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeDomainValidations(context.Context, *connect.Request[acm.ListAcmeDomainValidationsRequest]) (*connect.Response[acm.ListAcmeDomainValidationsResponse], error)
+	// Retrieves a list of ACME endpoints in your account. Use this operation to view all configured ACME endpoints and their current status.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeEndpoints(context.Context, *connect.Request[acm.ListAcmeEndpointsRequest]) (*connect.Response[acm.ListAcmeEndpointsResponse], error)
+	// Retrieves a list of external account bindings for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeExternalAccountBindings(context.Context, *connect.Request[acm.ListAcmeExternalAccountBindingsRequest]) (*connect.Response[acm.ListAcmeExternalAccountBindingsResponse], error)
+	// Returns per-domain validation summaries for an ACM certificate. Each summary includes the domain name, the active validation configuration, and the requested validation configuration when a validat...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListCertificateDomainValidations(context.Context, *connect.Request[acm.ListCertificateDomainValidationsRequest]) (*connect.Response[acm.ListCertificateDomainValidationsResponse], error)
 	// Retrieves a list of certificate ARNs and domain names. You can request that only certificates that match a specific status be listed. You can also filter by specific attributes of the certificate. ...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -128,6 +260,10 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListTagsForCertificate(context.Context, *connect.Request[acm.ListTagsForCertificateRequest]) (*connect.Response[acm.ListTagsForCertificateResponse], error)
+	// Lists the tags associated with an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use ListTagsForCertificate instead. To ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListTagsForResource(context.Context, *connect.Request[acm.ListTagsForResourceRequest]) (*connect.Response[acm.ListTagsForResourceResponse], error)
 	// Adds or modifies account-level configurations in ACM. The supported configuration option is DaysBeforeExpiry. This option specifies the number of days prior to certificate expiration when ACM start...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -148,6 +284,14 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(context.Context, *connect.Request[acm.ResendValidationEmailRequest]) (*connect.Response[common.Empty], error)
+	// Revokes an ACME account, preventing it from requesting or revoking certificates. This operation is irreversible.
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeAccount(context.Context, *connect.Request[acm.RevokeAcmeAccountRequest]) (*connect.Response[common.Empty], error)
+	// Revokes an external account binding, preventing new ACME accounts from being registered using this binding. Existing ACME accounts that were previously registered using the binding are not affected...
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeExternalAccountBinding(context.Context, *connect.Request[acm.RevokeAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error)
 	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -156,7 +300,23 @@ type ACMServiceClient interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	SearchCertificates(context.Context, *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error)
-	// Updates a certificate. You can use this function to specify whether to export your certificate. Certificate transparency logging opt-out is no longer available. For more information, see Certificat...
+	// Adds one or more tags to an ACM resource. Tags are labels that you can use to identify and organize your Amazon Web Services resources. Each tag consists of a key and an optional value. Use this ac...
+	// HTTP:
+	// Protocol: awsJson1_1
+	TagResource(context.Context, *connect.Request[acm.TagResourceRequest]) (*connect.Response[common.Empty], error)
+	// Removes one or more tags from an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use RemoveTagsFromCertificate instead. To ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UntagResource(context.Context, *connect.Request[acm.UntagResourceRequest]) (*connect.Response[common.Empty], error)
+	// Updates the prevalidation configuration of an existing domain validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeDomainValidation(context.Context, *connect.Request[acm.UpdateAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error)
+	// Updates the configuration of an existing ACME endpoint. You can change the authorization behavior, contact requirement, or certificate authority settings.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeEndpoint(context.Context, *connect.Request[acm.UpdateAcmeEndpointRequest]) (*connect.Response[common.Empty], error)
+	// Updates certificate options. You can use this operation to change the domain validation method or specify whether to export your certificate. For more information, see Migrate from email to DNS val...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateCertificateOptions(context.Context, *connect.Request[acm.UpdateCertificateOptionsRequest]) (*connect.Response[common.Empty], error)
@@ -179,10 +339,70 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(aCMServiceMethods.ByName("AddTagsToCertificate")),
 			connect.WithClientOptions(opts...),
 		),
+		createAcmeDomainValidation: connect.NewClient[acm.CreateAcmeDomainValidationRequest, acm.CreateAcmeDomainValidationResponse](
+			httpClient,
+			baseURL+ACMServiceCreateAcmeDomainValidationProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("CreateAcmeDomainValidation")),
+			connect.WithClientOptions(opts...),
+		),
+		createAcmeEndpoint: connect.NewClient[acm.CreateAcmeEndpointRequest, acm.CreateAcmeEndpointResponse](
+			httpClient,
+			baseURL+ACMServiceCreateAcmeEndpointProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("CreateAcmeEndpoint")),
+			connect.WithClientOptions(opts...),
+		),
+		createAcmeExternalAccountBinding: connect.NewClient[acm.CreateAcmeExternalAccountBindingRequest, acm.CreateAcmeExternalAccountBindingResponse](
+			httpClient,
+			baseURL+ACMServiceCreateAcmeExternalAccountBindingProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("CreateAcmeExternalAccountBinding")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteAcmeDomainValidation: connect.NewClient[acm.DeleteAcmeDomainValidationRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceDeleteAcmeDomainValidationProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DeleteAcmeDomainValidation")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteAcmeEndpoint: connect.NewClient[acm.DeleteAcmeEndpointRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceDeleteAcmeEndpointProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DeleteAcmeEndpoint")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteAcmeExternalAccountBinding: connect.NewClient[acm.DeleteAcmeExternalAccountBindingRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceDeleteAcmeExternalAccountBindingProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DeleteAcmeExternalAccountBinding")),
+			connect.WithClientOptions(opts...),
+		),
 		deleteCertificate: connect.NewClient[acm.DeleteCertificateRequest, common.Empty](
 			httpClient,
 			baseURL+ACMServiceDeleteCertificateProcedure,
 			connect.WithSchema(aCMServiceMethods.ByName("DeleteCertificate")),
+			connect.WithClientOptions(opts...),
+		),
+		describeAcmeAccount: connect.NewClient[acm.DescribeAcmeAccountRequest, acm.DescribeAcmeAccountResponse](
+			httpClient,
+			baseURL+ACMServiceDescribeAcmeAccountProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeAccount")),
+			connect.WithClientOptions(opts...),
+		),
+		describeAcmeDomainValidation: connect.NewClient[acm.DescribeAcmeDomainValidationRequest, acm.DescribeAcmeDomainValidationResponse](
+			httpClient,
+			baseURL+ACMServiceDescribeAcmeDomainValidationProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeDomainValidation")),
+			connect.WithClientOptions(opts...),
+		),
+		describeAcmeEndpoint: connect.NewClient[acm.DescribeAcmeEndpointRequest, acm.DescribeAcmeEndpointResponse](
+			httpClient,
+			baseURL+ACMServiceDescribeAcmeEndpointProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeEndpoint")),
+			connect.WithClientOptions(opts...),
+		),
+		describeAcmeExternalAccountBinding: connect.NewClient[acm.DescribeAcmeExternalAccountBindingRequest, acm.DescribeAcmeExternalAccountBindingResponse](
+			httpClient,
+			baseURL+ACMServiceDescribeAcmeExternalAccountBindingProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeExternalAccountBinding")),
 			connect.WithClientOptions(opts...),
 		),
 		describeCertificate: connect.NewClient[acm.DescribeCertificateRequest, acm.DescribeCertificateResponse](
@@ -203,6 +423,12 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(aCMServiceMethods.ByName("GetAccountConfiguration")),
 			connect.WithClientOptions(opts...),
 		),
+		getAcmeExternalAccountBindingCredentials: connect.NewClient[acm.GetAcmeExternalAccountBindingCredentialsRequest, acm.GetAcmeExternalAccountBindingCredentialsResponse](
+			httpClient,
+			baseURL+ACMServiceGetAcmeExternalAccountBindingCredentialsProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("GetAcmeExternalAccountBindingCredentials")),
+			connect.WithClientOptions(opts...),
+		),
 		getCertificate: connect.NewClient[acm.GetCertificateRequest, acm.GetCertificateResponse](
 			httpClient,
 			baseURL+ACMServiceGetCertificateProcedure,
@@ -215,6 +441,36 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(aCMServiceMethods.ByName("ImportCertificate")),
 			connect.WithClientOptions(opts...),
 		),
+		listAcmeAccounts: connect.NewClient[acm.ListAcmeAccountsRequest, acm.ListAcmeAccountsResponse](
+			httpClient,
+			baseURL+ACMServiceListAcmeAccountsProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("ListAcmeAccounts")),
+			connect.WithClientOptions(opts...),
+		),
+		listAcmeDomainValidations: connect.NewClient[acm.ListAcmeDomainValidationsRequest, acm.ListAcmeDomainValidationsResponse](
+			httpClient,
+			baseURL+ACMServiceListAcmeDomainValidationsProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("ListAcmeDomainValidations")),
+			connect.WithClientOptions(opts...),
+		),
+		listAcmeEndpoints: connect.NewClient[acm.ListAcmeEndpointsRequest, acm.ListAcmeEndpointsResponse](
+			httpClient,
+			baseURL+ACMServiceListAcmeEndpointsProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("ListAcmeEndpoints")),
+			connect.WithClientOptions(opts...),
+		),
+		listAcmeExternalAccountBindings: connect.NewClient[acm.ListAcmeExternalAccountBindingsRequest, acm.ListAcmeExternalAccountBindingsResponse](
+			httpClient,
+			baseURL+ACMServiceListAcmeExternalAccountBindingsProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("ListAcmeExternalAccountBindings")),
+			connect.WithClientOptions(opts...),
+		),
+		listCertificateDomainValidations: connect.NewClient[acm.ListCertificateDomainValidationsRequest, acm.ListCertificateDomainValidationsResponse](
+			httpClient,
+			baseURL+ACMServiceListCertificateDomainValidationsProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("ListCertificateDomainValidations")),
+			connect.WithClientOptions(opts...),
+		),
 		listCertificates: connect.NewClient[acm.ListCertificatesRequest, acm.ListCertificatesResponse](
 			httpClient,
 			baseURL+ACMServiceListCertificatesProcedure,
@@ -225,6 +481,12 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+ACMServiceListTagsForCertificateProcedure,
 			connect.WithSchema(aCMServiceMethods.ByName("ListTagsForCertificate")),
+			connect.WithClientOptions(opts...),
+		),
+		listTagsForResource: connect.NewClient[acm.ListTagsForResourceRequest, acm.ListTagsForResourceResponse](
+			httpClient,
+			baseURL+ACMServiceListTagsForResourceProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("ListTagsForResource")),
 			connect.WithClientOptions(opts...),
 		),
 		putAccountConfiguration: connect.NewClient[acm.PutAccountConfigurationRequest, common.Empty](
@@ -257,6 +519,18 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			connect.WithSchema(aCMServiceMethods.ByName("ResendValidationEmail")),
 			connect.WithClientOptions(opts...),
 		),
+		revokeAcmeAccount: connect.NewClient[acm.RevokeAcmeAccountRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceRevokeAcmeAccountProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("RevokeAcmeAccount")),
+			connect.WithClientOptions(opts...),
+		),
+		revokeAcmeExternalAccountBinding: connect.NewClient[acm.RevokeAcmeExternalAccountBindingRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceRevokeAcmeExternalAccountBindingProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("RevokeAcmeExternalAccountBinding")),
+			connect.WithClientOptions(opts...),
+		),
 		revokeCertificate: connect.NewClient[acm.RevokeCertificateRequest, acm.RevokeCertificateResponse](
 			httpClient,
 			baseURL+ACMServiceRevokeCertificateProcedure,
@@ -267,6 +541,30 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 			httpClient,
 			baseURL+ACMServiceSearchCertificatesProcedure,
 			connect.WithSchema(aCMServiceMethods.ByName("SearchCertificates")),
+			connect.WithClientOptions(opts...),
+		),
+		tagResource: connect.NewClient[acm.TagResourceRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceTagResourceProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("TagResource")),
+			connect.WithClientOptions(opts...),
+		),
+		untagResource: connect.NewClient[acm.UntagResourceRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceUntagResourceProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("UntagResource")),
+			connect.WithClientOptions(opts...),
+		),
+		updateAcmeDomainValidation: connect.NewClient[acm.UpdateAcmeDomainValidationRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceUpdateAcmeDomainValidationProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("UpdateAcmeDomainValidation")),
+			connect.WithClientOptions(opts...),
+		),
+		updateAcmeEndpoint: connect.NewClient[acm.UpdateAcmeEndpointRequest, common.Empty](
+			httpClient,
+			baseURL+ACMServiceUpdateAcmeEndpointProcedure,
+			connect.WithSchema(aCMServiceMethods.ByName("UpdateAcmeEndpoint")),
 			connect.WithClientOptions(opts...),
 		),
 		updateCertificateOptions: connect.NewClient[acm.UpdateCertificateOptionsRequest, common.Empty](
@@ -280,23 +578,46 @@ func NewACMServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...
 
 // aCMServiceClient implements ACMServiceClient.
 type aCMServiceClient struct {
-	addTagsToCertificate      *connect.Client[acm.AddTagsToCertificateRequest, common.Empty]
-	deleteCertificate         *connect.Client[acm.DeleteCertificateRequest, common.Empty]
-	describeCertificate       *connect.Client[acm.DescribeCertificateRequest, acm.DescribeCertificateResponse]
-	exportCertificate         *connect.Client[acm.ExportCertificateRequest, acm.ExportCertificateResponse]
-	getAccountConfiguration   *connect.Client[common.Empty, acm.GetAccountConfigurationResponse]
-	getCertificate            *connect.Client[acm.GetCertificateRequest, acm.GetCertificateResponse]
-	importCertificate         *connect.Client[acm.ImportCertificateRequest, acm.ImportCertificateResponse]
-	listCertificates          *connect.Client[acm.ListCertificatesRequest, acm.ListCertificatesResponse]
-	listTagsForCertificate    *connect.Client[acm.ListTagsForCertificateRequest, acm.ListTagsForCertificateResponse]
-	putAccountConfiguration   *connect.Client[acm.PutAccountConfigurationRequest, common.Empty]
-	removeTagsFromCertificate *connect.Client[acm.RemoveTagsFromCertificateRequest, common.Empty]
-	renewCertificate          *connect.Client[acm.RenewCertificateRequest, common.Empty]
-	requestCertificate        *connect.Client[acm.RequestCertificateRequest, acm.RequestCertificateResponse]
-	resendValidationEmail     *connect.Client[acm.ResendValidationEmailRequest, common.Empty]
-	revokeCertificate         *connect.Client[acm.RevokeCertificateRequest, acm.RevokeCertificateResponse]
-	searchCertificates        *connect.Client[acm.SearchCertificatesRequest, acm.SearchCertificatesResponse]
-	updateCertificateOptions  *connect.Client[acm.UpdateCertificateOptionsRequest, common.Empty]
+	addTagsToCertificate                     *connect.Client[acm.AddTagsToCertificateRequest, common.Empty]
+	createAcmeDomainValidation               *connect.Client[acm.CreateAcmeDomainValidationRequest, acm.CreateAcmeDomainValidationResponse]
+	createAcmeEndpoint                       *connect.Client[acm.CreateAcmeEndpointRequest, acm.CreateAcmeEndpointResponse]
+	createAcmeExternalAccountBinding         *connect.Client[acm.CreateAcmeExternalAccountBindingRequest, acm.CreateAcmeExternalAccountBindingResponse]
+	deleteAcmeDomainValidation               *connect.Client[acm.DeleteAcmeDomainValidationRequest, common.Empty]
+	deleteAcmeEndpoint                       *connect.Client[acm.DeleteAcmeEndpointRequest, common.Empty]
+	deleteAcmeExternalAccountBinding         *connect.Client[acm.DeleteAcmeExternalAccountBindingRequest, common.Empty]
+	deleteCertificate                        *connect.Client[acm.DeleteCertificateRequest, common.Empty]
+	describeAcmeAccount                      *connect.Client[acm.DescribeAcmeAccountRequest, acm.DescribeAcmeAccountResponse]
+	describeAcmeDomainValidation             *connect.Client[acm.DescribeAcmeDomainValidationRequest, acm.DescribeAcmeDomainValidationResponse]
+	describeAcmeEndpoint                     *connect.Client[acm.DescribeAcmeEndpointRequest, acm.DescribeAcmeEndpointResponse]
+	describeAcmeExternalAccountBinding       *connect.Client[acm.DescribeAcmeExternalAccountBindingRequest, acm.DescribeAcmeExternalAccountBindingResponse]
+	describeCertificate                      *connect.Client[acm.DescribeCertificateRequest, acm.DescribeCertificateResponse]
+	exportCertificate                        *connect.Client[acm.ExportCertificateRequest, acm.ExportCertificateResponse]
+	getAccountConfiguration                  *connect.Client[common.Empty, acm.GetAccountConfigurationResponse]
+	getAcmeExternalAccountBindingCredentials *connect.Client[acm.GetAcmeExternalAccountBindingCredentialsRequest, acm.GetAcmeExternalAccountBindingCredentialsResponse]
+	getCertificate                           *connect.Client[acm.GetCertificateRequest, acm.GetCertificateResponse]
+	importCertificate                        *connect.Client[acm.ImportCertificateRequest, acm.ImportCertificateResponse]
+	listAcmeAccounts                         *connect.Client[acm.ListAcmeAccountsRequest, acm.ListAcmeAccountsResponse]
+	listAcmeDomainValidations                *connect.Client[acm.ListAcmeDomainValidationsRequest, acm.ListAcmeDomainValidationsResponse]
+	listAcmeEndpoints                        *connect.Client[acm.ListAcmeEndpointsRequest, acm.ListAcmeEndpointsResponse]
+	listAcmeExternalAccountBindings          *connect.Client[acm.ListAcmeExternalAccountBindingsRequest, acm.ListAcmeExternalAccountBindingsResponse]
+	listCertificateDomainValidations         *connect.Client[acm.ListCertificateDomainValidationsRequest, acm.ListCertificateDomainValidationsResponse]
+	listCertificates                         *connect.Client[acm.ListCertificatesRequest, acm.ListCertificatesResponse]
+	listTagsForCertificate                   *connect.Client[acm.ListTagsForCertificateRequest, acm.ListTagsForCertificateResponse]
+	listTagsForResource                      *connect.Client[acm.ListTagsForResourceRequest, acm.ListTagsForResourceResponse]
+	putAccountConfiguration                  *connect.Client[acm.PutAccountConfigurationRequest, common.Empty]
+	removeTagsFromCertificate                *connect.Client[acm.RemoveTagsFromCertificateRequest, common.Empty]
+	renewCertificate                         *connect.Client[acm.RenewCertificateRequest, common.Empty]
+	requestCertificate                       *connect.Client[acm.RequestCertificateRequest, acm.RequestCertificateResponse]
+	resendValidationEmail                    *connect.Client[acm.ResendValidationEmailRequest, common.Empty]
+	revokeAcmeAccount                        *connect.Client[acm.RevokeAcmeAccountRequest, common.Empty]
+	revokeAcmeExternalAccountBinding         *connect.Client[acm.RevokeAcmeExternalAccountBindingRequest, common.Empty]
+	revokeCertificate                        *connect.Client[acm.RevokeCertificateRequest, acm.RevokeCertificateResponse]
+	searchCertificates                       *connect.Client[acm.SearchCertificatesRequest, acm.SearchCertificatesResponse]
+	tagResource                              *connect.Client[acm.TagResourceRequest, common.Empty]
+	untagResource                            *connect.Client[acm.UntagResourceRequest, common.Empty]
+	updateAcmeDomainValidation               *connect.Client[acm.UpdateAcmeDomainValidationRequest, common.Empty]
+	updateAcmeEndpoint                       *connect.Client[acm.UpdateAcmeEndpointRequest, common.Empty]
+	updateCertificateOptions                 *connect.Client[acm.UpdateCertificateOptionsRequest, common.Empty]
 }
 
 // AddTagsToCertificate calls acm.ACMService.AddTagsToCertificate.
@@ -304,9 +625,59 @@ func (c *aCMServiceClient) AddTagsToCertificate(ctx context.Context, req *connec
 	return c.addTagsToCertificate.CallUnary(ctx, req)
 }
 
+// CreateAcmeDomainValidation calls acm.ACMService.CreateAcmeDomainValidation.
+func (c *aCMServiceClient) CreateAcmeDomainValidation(ctx context.Context, req *connect.Request[acm.CreateAcmeDomainValidationRequest]) (*connect.Response[acm.CreateAcmeDomainValidationResponse], error) {
+	return c.createAcmeDomainValidation.CallUnary(ctx, req)
+}
+
+// CreateAcmeEndpoint calls acm.ACMService.CreateAcmeEndpoint.
+func (c *aCMServiceClient) CreateAcmeEndpoint(ctx context.Context, req *connect.Request[acm.CreateAcmeEndpointRequest]) (*connect.Response[acm.CreateAcmeEndpointResponse], error) {
+	return c.createAcmeEndpoint.CallUnary(ctx, req)
+}
+
+// CreateAcmeExternalAccountBinding calls acm.ACMService.CreateAcmeExternalAccountBinding.
+func (c *aCMServiceClient) CreateAcmeExternalAccountBinding(ctx context.Context, req *connect.Request[acm.CreateAcmeExternalAccountBindingRequest]) (*connect.Response[acm.CreateAcmeExternalAccountBindingResponse], error) {
+	return c.createAcmeExternalAccountBinding.CallUnary(ctx, req)
+}
+
+// DeleteAcmeDomainValidation calls acm.ACMService.DeleteAcmeDomainValidation.
+func (c *aCMServiceClient) DeleteAcmeDomainValidation(ctx context.Context, req *connect.Request[acm.DeleteAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error) {
+	return c.deleteAcmeDomainValidation.CallUnary(ctx, req)
+}
+
+// DeleteAcmeEndpoint calls acm.ACMService.DeleteAcmeEndpoint.
+func (c *aCMServiceClient) DeleteAcmeEndpoint(ctx context.Context, req *connect.Request[acm.DeleteAcmeEndpointRequest]) (*connect.Response[common.Empty], error) {
+	return c.deleteAcmeEndpoint.CallUnary(ctx, req)
+}
+
+// DeleteAcmeExternalAccountBinding calls acm.ACMService.DeleteAcmeExternalAccountBinding.
+func (c *aCMServiceClient) DeleteAcmeExternalAccountBinding(ctx context.Context, req *connect.Request[acm.DeleteAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error) {
+	return c.deleteAcmeExternalAccountBinding.CallUnary(ctx, req)
+}
+
 // DeleteCertificate calls acm.ACMService.DeleteCertificate.
 func (c *aCMServiceClient) DeleteCertificate(ctx context.Context, req *connect.Request[acm.DeleteCertificateRequest]) (*connect.Response[common.Empty], error) {
 	return c.deleteCertificate.CallUnary(ctx, req)
+}
+
+// DescribeAcmeAccount calls acm.ACMService.DescribeAcmeAccount.
+func (c *aCMServiceClient) DescribeAcmeAccount(ctx context.Context, req *connect.Request[acm.DescribeAcmeAccountRequest]) (*connect.Response[acm.DescribeAcmeAccountResponse], error) {
+	return c.describeAcmeAccount.CallUnary(ctx, req)
+}
+
+// DescribeAcmeDomainValidation calls acm.ACMService.DescribeAcmeDomainValidation.
+func (c *aCMServiceClient) DescribeAcmeDomainValidation(ctx context.Context, req *connect.Request[acm.DescribeAcmeDomainValidationRequest]) (*connect.Response[acm.DescribeAcmeDomainValidationResponse], error) {
+	return c.describeAcmeDomainValidation.CallUnary(ctx, req)
+}
+
+// DescribeAcmeEndpoint calls acm.ACMService.DescribeAcmeEndpoint.
+func (c *aCMServiceClient) DescribeAcmeEndpoint(ctx context.Context, req *connect.Request[acm.DescribeAcmeEndpointRequest]) (*connect.Response[acm.DescribeAcmeEndpointResponse], error) {
+	return c.describeAcmeEndpoint.CallUnary(ctx, req)
+}
+
+// DescribeAcmeExternalAccountBinding calls acm.ACMService.DescribeAcmeExternalAccountBinding.
+func (c *aCMServiceClient) DescribeAcmeExternalAccountBinding(ctx context.Context, req *connect.Request[acm.DescribeAcmeExternalAccountBindingRequest]) (*connect.Response[acm.DescribeAcmeExternalAccountBindingResponse], error) {
+	return c.describeAcmeExternalAccountBinding.CallUnary(ctx, req)
 }
 
 // DescribeCertificate calls acm.ACMService.DescribeCertificate.
@@ -324,6 +695,12 @@ func (c *aCMServiceClient) GetAccountConfiguration(ctx context.Context, req *con
 	return c.getAccountConfiguration.CallUnary(ctx, req)
 }
 
+// GetAcmeExternalAccountBindingCredentials calls
+// acm.ACMService.GetAcmeExternalAccountBindingCredentials.
+func (c *aCMServiceClient) GetAcmeExternalAccountBindingCredentials(ctx context.Context, req *connect.Request[acm.GetAcmeExternalAccountBindingCredentialsRequest]) (*connect.Response[acm.GetAcmeExternalAccountBindingCredentialsResponse], error) {
+	return c.getAcmeExternalAccountBindingCredentials.CallUnary(ctx, req)
+}
+
 // GetCertificate calls acm.ACMService.GetCertificate.
 func (c *aCMServiceClient) GetCertificate(ctx context.Context, req *connect.Request[acm.GetCertificateRequest]) (*connect.Response[acm.GetCertificateResponse], error) {
 	return c.getCertificate.CallUnary(ctx, req)
@@ -334,6 +711,31 @@ func (c *aCMServiceClient) ImportCertificate(ctx context.Context, req *connect.R
 	return c.importCertificate.CallUnary(ctx, req)
 }
 
+// ListAcmeAccounts calls acm.ACMService.ListAcmeAccounts.
+func (c *aCMServiceClient) ListAcmeAccounts(ctx context.Context, req *connect.Request[acm.ListAcmeAccountsRequest]) (*connect.Response[acm.ListAcmeAccountsResponse], error) {
+	return c.listAcmeAccounts.CallUnary(ctx, req)
+}
+
+// ListAcmeDomainValidations calls acm.ACMService.ListAcmeDomainValidations.
+func (c *aCMServiceClient) ListAcmeDomainValidations(ctx context.Context, req *connect.Request[acm.ListAcmeDomainValidationsRequest]) (*connect.Response[acm.ListAcmeDomainValidationsResponse], error) {
+	return c.listAcmeDomainValidations.CallUnary(ctx, req)
+}
+
+// ListAcmeEndpoints calls acm.ACMService.ListAcmeEndpoints.
+func (c *aCMServiceClient) ListAcmeEndpoints(ctx context.Context, req *connect.Request[acm.ListAcmeEndpointsRequest]) (*connect.Response[acm.ListAcmeEndpointsResponse], error) {
+	return c.listAcmeEndpoints.CallUnary(ctx, req)
+}
+
+// ListAcmeExternalAccountBindings calls acm.ACMService.ListAcmeExternalAccountBindings.
+func (c *aCMServiceClient) ListAcmeExternalAccountBindings(ctx context.Context, req *connect.Request[acm.ListAcmeExternalAccountBindingsRequest]) (*connect.Response[acm.ListAcmeExternalAccountBindingsResponse], error) {
+	return c.listAcmeExternalAccountBindings.CallUnary(ctx, req)
+}
+
+// ListCertificateDomainValidations calls acm.ACMService.ListCertificateDomainValidations.
+func (c *aCMServiceClient) ListCertificateDomainValidations(ctx context.Context, req *connect.Request[acm.ListCertificateDomainValidationsRequest]) (*connect.Response[acm.ListCertificateDomainValidationsResponse], error) {
+	return c.listCertificateDomainValidations.CallUnary(ctx, req)
+}
+
 // ListCertificates calls acm.ACMService.ListCertificates.
 func (c *aCMServiceClient) ListCertificates(ctx context.Context, req *connect.Request[acm.ListCertificatesRequest]) (*connect.Response[acm.ListCertificatesResponse], error) {
 	return c.listCertificates.CallUnary(ctx, req)
@@ -342,6 +744,11 @@ func (c *aCMServiceClient) ListCertificates(ctx context.Context, req *connect.Re
 // ListTagsForCertificate calls acm.ACMService.ListTagsForCertificate.
 func (c *aCMServiceClient) ListTagsForCertificate(ctx context.Context, req *connect.Request[acm.ListTagsForCertificateRequest]) (*connect.Response[acm.ListTagsForCertificateResponse], error) {
 	return c.listTagsForCertificate.CallUnary(ctx, req)
+}
+
+// ListTagsForResource calls acm.ACMService.ListTagsForResource.
+func (c *aCMServiceClient) ListTagsForResource(ctx context.Context, req *connect.Request[acm.ListTagsForResourceRequest]) (*connect.Response[acm.ListTagsForResourceResponse], error) {
+	return c.listTagsForResource.CallUnary(ctx, req)
 }
 
 // PutAccountConfiguration calls acm.ACMService.PutAccountConfiguration.
@@ -369,6 +776,16 @@ func (c *aCMServiceClient) ResendValidationEmail(ctx context.Context, req *conne
 	return c.resendValidationEmail.CallUnary(ctx, req)
 }
 
+// RevokeAcmeAccount calls acm.ACMService.RevokeAcmeAccount.
+func (c *aCMServiceClient) RevokeAcmeAccount(ctx context.Context, req *connect.Request[acm.RevokeAcmeAccountRequest]) (*connect.Response[common.Empty], error) {
+	return c.revokeAcmeAccount.CallUnary(ctx, req)
+}
+
+// RevokeAcmeExternalAccountBinding calls acm.ACMService.RevokeAcmeExternalAccountBinding.
+func (c *aCMServiceClient) RevokeAcmeExternalAccountBinding(ctx context.Context, req *connect.Request[acm.RevokeAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error) {
+	return c.revokeAcmeExternalAccountBinding.CallUnary(ctx, req)
+}
+
 // RevokeCertificate calls acm.ACMService.RevokeCertificate.
 func (c *aCMServiceClient) RevokeCertificate(ctx context.Context, req *connect.Request[acm.RevokeCertificateRequest]) (*connect.Response[acm.RevokeCertificateResponse], error) {
 	return c.revokeCertificate.CallUnary(ctx, req)
@@ -377,6 +794,26 @@ func (c *aCMServiceClient) RevokeCertificate(ctx context.Context, req *connect.R
 // SearchCertificates calls acm.ACMService.SearchCertificates.
 func (c *aCMServiceClient) SearchCertificates(ctx context.Context, req *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error) {
 	return c.searchCertificates.CallUnary(ctx, req)
+}
+
+// TagResource calls acm.ACMService.TagResource.
+func (c *aCMServiceClient) TagResource(ctx context.Context, req *connect.Request[acm.TagResourceRequest]) (*connect.Response[common.Empty], error) {
+	return c.tagResource.CallUnary(ctx, req)
+}
+
+// UntagResource calls acm.ACMService.UntagResource.
+func (c *aCMServiceClient) UntagResource(ctx context.Context, req *connect.Request[acm.UntagResourceRequest]) (*connect.Response[common.Empty], error) {
+	return c.untagResource.CallUnary(ctx, req)
+}
+
+// UpdateAcmeDomainValidation calls acm.ACMService.UpdateAcmeDomainValidation.
+func (c *aCMServiceClient) UpdateAcmeDomainValidation(ctx context.Context, req *connect.Request[acm.UpdateAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error) {
+	return c.updateAcmeDomainValidation.CallUnary(ctx, req)
+}
+
+// UpdateAcmeEndpoint calls acm.ACMService.UpdateAcmeEndpoint.
+func (c *aCMServiceClient) UpdateAcmeEndpoint(ctx context.Context, req *connect.Request[acm.UpdateAcmeEndpointRequest]) (*connect.Response[common.Empty], error) {
+	return c.updateAcmeEndpoint.CallUnary(ctx, req)
 }
 
 // UpdateCertificateOptions calls acm.ACMService.UpdateCertificateOptions.
@@ -390,10 +827,50 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	AddTagsToCertificate(context.Context, *connect.Request[acm.AddTagsToCertificateRequest]) (*connect.Response[common.Empty], error)
+	// Creates a domain validation for an ACME endpoint. Domain validations authorize the endpoint to issue certificates for specified domain names. You configure prevalidation to prove domain ownership.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeDomainValidation(context.Context, *connect.Request[acm.CreateAcmeDomainValidationRequest]) (*connect.Response[acm.CreateAcmeDomainValidationResponse], error)
+	// Creates an ACME endpoint, which is a managed ACME server with a unique endpoint URL. After creation, ACME clients can use the endpoint URL to automate certificate issuance using the ACME protocol.
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeEndpoint(context.Context, *connect.Request[acm.CreateAcmeEndpointRequest]) (*connect.Response[acm.CreateAcmeEndpointResponse], error)
+	// Creates an external account binding (EAB) for an ACME endpoint. An EAB provides credentials that authorize an ACME client to register an account with the endpoint. Each EAB is associated with an IA...
+	// HTTP:
+	// Protocol: awsJson1_1
+	CreateAcmeExternalAccountBinding(context.Context, *connect.Request[acm.CreateAcmeExternalAccountBindingRequest]) (*connect.Response[acm.CreateAcmeExternalAccountBindingResponse], error)
+	// Deletes a domain validation. After deletion, the ACME endpoint can no longer issue certificates for the associated domain.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeDomainValidation(context.Context, *connect.Request[acm.DeleteAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error)
+	// Deletes an ACME endpoint. After deletion, the endpoint URL is no longer accessible and ACME clients cannot issue certificates through it. Any existing external account bindings and domain validatio...
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeEndpoint(context.Context, *connect.Request[acm.DeleteAcmeEndpointRequest]) (*connect.Response[common.Empty], error)
+	// Deletes an external account binding. Previously fetched credentials for this binding will no longer be usable for account registration. A deleted binding cannot be recovered.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DeleteAcmeExternalAccountBinding(context.Context, *connect.Request[acm.DeleteAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error)
 	// Deletes a certificate and its associated private key. If this action succeeds, the certificate is not available for use by Amazon Web Services services integrated with ACM. Deleting a certificate i...
 	// HTTP:
 	// Protocol: awsJson1_1
 	DeleteCertificate(context.Context, *connect.Request[acm.DeleteCertificateRequest]) (*connect.Response[common.Empty], error)
+	// Returns detailed metadata about the specified ACME account, including its status, public key thumbprint, and associated external account binding.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeAccount(context.Context, *connect.Request[acm.DescribeAcmeAccountRequest]) (*connect.Response[acm.DescribeAcmeAccountResponse], error)
+	// Returns detailed metadata about the specified domain validation, including its status, domain scope, and DNS resource records required for validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeDomainValidation(context.Context, *connect.Request[acm.DescribeAcmeDomainValidationRequest]) (*connect.Response[acm.DescribeAcmeDomainValidationResponse], error)
+	// Returns detailed metadata about the specified ACME endpoint, including its status, URL, authorization behavior, and certificate authority configuration.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeEndpoint(context.Context, *connect.Request[acm.DescribeAcmeEndpointRequest]) (*connect.Response[acm.DescribeAcmeEndpointResponse], error)
+	// Returns detailed metadata about the specified external account binding, including the associated IAM role, expiration time, and usage history.
+	// HTTP:
+	// Protocol: awsJson1_1
+	DescribeAcmeExternalAccountBinding(context.Context, *connect.Request[acm.DescribeAcmeExternalAccountBindingRequest]) (*connect.Response[acm.DescribeAcmeExternalAccountBindingResponse], error)
 	// Returns detailed metadata about the specified ACM certificate. If you have just created a certificate using the RequestCertificate action, there is a delay of several seconds before you can retriev...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -406,6 +883,10 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	GetAccountConfiguration(context.Context, *connect.Request[common.Empty]) (*connect.Response[acm.GetAccountConfigurationResponse], error)
+	// Retrieves the key ID and MAC key credentials for an external account binding. These credentials are used by ACME clients during account registration to bind to the endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	GetAcmeExternalAccountBindingCredentials(context.Context, *connect.Request[acm.GetAcmeExternalAccountBindingCredentialsRequest]) (*connect.Response[acm.GetAcmeExternalAccountBindingCredentialsResponse], error)
 	// Retrieves a certificate and its certificate chain. The certificate may be either a public or private certificate issued using the ACM RequestCertificate action, or a certificate imported into ACM u...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -414,6 +895,26 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ImportCertificate(context.Context, *connect.Request[acm.ImportCertificateRequest]) (*connect.Response[acm.ImportCertificateResponse], error)
+	// Retrieves a list of ACME accounts registered with the specified ACME endpoint. ACME accounts are created when clients use external account binding credentials to register.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeAccounts(context.Context, *connect.Request[acm.ListAcmeAccountsRequest]) (*connect.Response[acm.ListAcmeAccountsResponse], error)
+	// Retrieves a list of domain validations for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeDomainValidations(context.Context, *connect.Request[acm.ListAcmeDomainValidationsRequest]) (*connect.Response[acm.ListAcmeDomainValidationsResponse], error)
+	// Retrieves a list of ACME endpoints in your account. Use this operation to view all configured ACME endpoints and their current status.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeEndpoints(context.Context, *connect.Request[acm.ListAcmeEndpointsRequest]) (*connect.Response[acm.ListAcmeEndpointsResponse], error)
+	// Retrieves a list of external account bindings for the specified ACME endpoint.
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListAcmeExternalAccountBindings(context.Context, *connect.Request[acm.ListAcmeExternalAccountBindingsRequest]) (*connect.Response[acm.ListAcmeExternalAccountBindingsResponse], error)
+	// Returns per-domain validation summaries for an ACM certificate. Each summary includes the domain name, the active validation configuration, and the requested validation configuration when a validat...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListCertificateDomainValidations(context.Context, *connect.Request[acm.ListCertificateDomainValidationsRequest]) (*connect.Response[acm.ListCertificateDomainValidationsResponse], error)
 	// Retrieves a list of certificate ARNs and domain names. You can request that only certificates that match a specific status be listed. You can also filter by specific attributes of the certificate. ...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -422,6 +923,10 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ListTagsForCertificate(context.Context, *connect.Request[acm.ListTagsForCertificateRequest]) (*connect.Response[acm.ListTagsForCertificateResponse], error)
+	// Lists the tags associated with an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use ListTagsForCertificate instead. To ad...
+	// HTTP:
+	// Protocol: awsJson1_1
+	ListTagsForResource(context.Context, *connect.Request[acm.ListTagsForResourceRequest]) (*connect.Response[acm.ListTagsForResourceResponse], error)
 	// Adds or modifies account-level configurations in ACM. The supported configuration option is DaysBeforeExpiry. This option specifies the number of days prior to certificate expiration when ACM start...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -442,6 +947,14 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	ResendValidationEmail(context.Context, *connect.Request[acm.ResendValidationEmailRequest]) (*connect.Response[common.Empty], error)
+	// Revokes an ACME account, preventing it from requesting or revoking certificates. This operation is irreversible.
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeAccount(context.Context, *connect.Request[acm.RevokeAcmeAccountRequest]) (*connect.Response[common.Empty], error)
+	// Revokes an external account binding, preventing new ACME accounts from being registered using this binding. Existing ACME accounts that were previously registered using the binding are not affected...
+	// HTTP:
+	// Protocol: awsJson1_1
+	RevokeAcmeExternalAccountBinding(context.Context, *connect.Request[acm.RevokeAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error)
 	// Revokes a public ACM certificate. You can only revoke certificates that have been previously exported. Once a certificate is revoked, you cannot reuse the certificate. Revoking a certificate is per...
 	// HTTP:
 	// Protocol: awsJson1_1
@@ -450,7 +963,23 @@ type ACMServiceHandler interface {
 	// HTTP:
 	// Protocol: awsJson1_1
 	SearchCertificates(context.Context, *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error)
-	// Updates a certificate. You can use this function to specify whether to export your certificate. Certificate transparency logging opt-out is no longer available. For more information, see Certificat...
+	// Adds one or more tags to an ACM resource. Tags are labels that you can use to identify and organize your Amazon Web Services resources. Each tag consists of a key and an optional value. Use this ac...
+	// HTTP:
+	// Protocol: awsJson1_1
+	TagResource(context.Context, *connect.Request[acm.TagResourceRequest]) (*connect.Response[common.Empty], error)
+	// Removes one or more tags from an ACM resource. Use this action for all ACM resource types except the certificate resource type. For certificate resources, use RemoveTagsFromCertificate instead. To ...
+	// HTTP:
+	// Protocol: awsJson1_1
+	UntagResource(context.Context, *connect.Request[acm.UntagResourceRequest]) (*connect.Response[common.Empty], error)
+	// Updates the prevalidation configuration of an existing domain validation.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeDomainValidation(context.Context, *connect.Request[acm.UpdateAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error)
+	// Updates the configuration of an existing ACME endpoint. You can change the authorization behavior, contact requirement, or certificate authority settings.
+	// HTTP:
+	// Protocol: awsJson1_1
+	UpdateAcmeEndpoint(context.Context, *connect.Request[acm.UpdateAcmeEndpointRequest]) (*connect.Response[common.Empty], error)
+	// Updates certificate options. You can use this operation to change the domain validation method or specify whether to export your certificate. For more information, see Migrate from email to DNS val...
 	// HTTP:
 	// Protocol: awsJson1_1
 	UpdateCertificateOptions(context.Context, *connect.Request[acm.UpdateCertificateOptionsRequest]) (*connect.Response[common.Empty], error)
@@ -469,10 +998,70 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(aCMServiceMethods.ByName("AddTagsToCertificate")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aCMServiceCreateAcmeDomainValidationHandler := connect.NewUnaryHandler(
+		ACMServiceCreateAcmeDomainValidationProcedure,
+		svc.CreateAcmeDomainValidation,
+		connect.WithSchema(aCMServiceMethods.ByName("CreateAcmeDomainValidation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceCreateAcmeEndpointHandler := connect.NewUnaryHandler(
+		ACMServiceCreateAcmeEndpointProcedure,
+		svc.CreateAcmeEndpoint,
+		connect.WithSchema(aCMServiceMethods.ByName("CreateAcmeEndpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceCreateAcmeExternalAccountBindingHandler := connect.NewUnaryHandler(
+		ACMServiceCreateAcmeExternalAccountBindingProcedure,
+		svc.CreateAcmeExternalAccountBinding,
+		connect.WithSchema(aCMServiceMethods.ByName("CreateAcmeExternalAccountBinding")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDeleteAcmeDomainValidationHandler := connect.NewUnaryHandler(
+		ACMServiceDeleteAcmeDomainValidationProcedure,
+		svc.DeleteAcmeDomainValidation,
+		connect.WithSchema(aCMServiceMethods.ByName("DeleteAcmeDomainValidation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDeleteAcmeEndpointHandler := connect.NewUnaryHandler(
+		ACMServiceDeleteAcmeEndpointProcedure,
+		svc.DeleteAcmeEndpoint,
+		connect.WithSchema(aCMServiceMethods.ByName("DeleteAcmeEndpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDeleteAcmeExternalAccountBindingHandler := connect.NewUnaryHandler(
+		ACMServiceDeleteAcmeExternalAccountBindingProcedure,
+		svc.DeleteAcmeExternalAccountBinding,
+		connect.WithSchema(aCMServiceMethods.ByName("DeleteAcmeExternalAccountBinding")),
+		connect.WithHandlerOptions(opts...),
+	)
 	aCMServiceDeleteCertificateHandler := connect.NewUnaryHandler(
 		ACMServiceDeleteCertificateProcedure,
 		svc.DeleteCertificate,
 		connect.WithSchema(aCMServiceMethods.ByName("DeleteCertificate")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDescribeAcmeAccountHandler := connect.NewUnaryHandler(
+		ACMServiceDescribeAcmeAccountProcedure,
+		svc.DescribeAcmeAccount,
+		connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeAccount")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDescribeAcmeDomainValidationHandler := connect.NewUnaryHandler(
+		ACMServiceDescribeAcmeDomainValidationProcedure,
+		svc.DescribeAcmeDomainValidation,
+		connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeDomainValidation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDescribeAcmeEndpointHandler := connect.NewUnaryHandler(
+		ACMServiceDescribeAcmeEndpointProcedure,
+		svc.DescribeAcmeEndpoint,
+		connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeEndpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceDescribeAcmeExternalAccountBindingHandler := connect.NewUnaryHandler(
+		ACMServiceDescribeAcmeExternalAccountBindingProcedure,
+		svc.DescribeAcmeExternalAccountBinding,
+		connect.WithSchema(aCMServiceMethods.ByName("DescribeAcmeExternalAccountBinding")),
 		connect.WithHandlerOptions(opts...),
 	)
 	aCMServiceDescribeCertificateHandler := connect.NewUnaryHandler(
@@ -493,6 +1082,12 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(aCMServiceMethods.ByName("GetAccountConfiguration")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aCMServiceGetAcmeExternalAccountBindingCredentialsHandler := connect.NewUnaryHandler(
+		ACMServiceGetAcmeExternalAccountBindingCredentialsProcedure,
+		svc.GetAcmeExternalAccountBindingCredentials,
+		connect.WithSchema(aCMServiceMethods.ByName("GetAcmeExternalAccountBindingCredentials")),
+		connect.WithHandlerOptions(opts...),
+	)
 	aCMServiceGetCertificateHandler := connect.NewUnaryHandler(
 		ACMServiceGetCertificateProcedure,
 		svc.GetCertificate,
@@ -505,6 +1100,36 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(aCMServiceMethods.ByName("ImportCertificate")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aCMServiceListAcmeAccountsHandler := connect.NewUnaryHandler(
+		ACMServiceListAcmeAccountsProcedure,
+		svc.ListAcmeAccounts,
+		connect.WithSchema(aCMServiceMethods.ByName("ListAcmeAccounts")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceListAcmeDomainValidationsHandler := connect.NewUnaryHandler(
+		ACMServiceListAcmeDomainValidationsProcedure,
+		svc.ListAcmeDomainValidations,
+		connect.WithSchema(aCMServiceMethods.ByName("ListAcmeDomainValidations")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceListAcmeEndpointsHandler := connect.NewUnaryHandler(
+		ACMServiceListAcmeEndpointsProcedure,
+		svc.ListAcmeEndpoints,
+		connect.WithSchema(aCMServiceMethods.ByName("ListAcmeEndpoints")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceListAcmeExternalAccountBindingsHandler := connect.NewUnaryHandler(
+		ACMServiceListAcmeExternalAccountBindingsProcedure,
+		svc.ListAcmeExternalAccountBindings,
+		connect.WithSchema(aCMServiceMethods.ByName("ListAcmeExternalAccountBindings")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceListCertificateDomainValidationsHandler := connect.NewUnaryHandler(
+		ACMServiceListCertificateDomainValidationsProcedure,
+		svc.ListCertificateDomainValidations,
+		connect.WithSchema(aCMServiceMethods.ByName("ListCertificateDomainValidations")),
+		connect.WithHandlerOptions(opts...),
+	)
 	aCMServiceListCertificatesHandler := connect.NewUnaryHandler(
 		ACMServiceListCertificatesProcedure,
 		svc.ListCertificates,
@@ -515,6 +1140,12 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		ACMServiceListTagsForCertificateProcedure,
 		svc.ListTagsForCertificate,
 		connect.WithSchema(aCMServiceMethods.ByName("ListTagsForCertificate")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceListTagsForResourceHandler := connect.NewUnaryHandler(
+		ACMServiceListTagsForResourceProcedure,
+		svc.ListTagsForResource,
+		connect.WithSchema(aCMServiceMethods.ByName("ListTagsForResource")),
 		connect.WithHandlerOptions(opts...),
 	)
 	aCMServicePutAccountConfigurationHandler := connect.NewUnaryHandler(
@@ -547,6 +1178,18 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(aCMServiceMethods.ByName("ResendValidationEmail")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aCMServiceRevokeAcmeAccountHandler := connect.NewUnaryHandler(
+		ACMServiceRevokeAcmeAccountProcedure,
+		svc.RevokeAcmeAccount,
+		connect.WithSchema(aCMServiceMethods.ByName("RevokeAcmeAccount")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceRevokeAcmeExternalAccountBindingHandler := connect.NewUnaryHandler(
+		ACMServiceRevokeAcmeExternalAccountBindingProcedure,
+		svc.RevokeAcmeExternalAccountBinding,
+		connect.WithSchema(aCMServiceMethods.ByName("RevokeAcmeExternalAccountBinding")),
+		connect.WithHandlerOptions(opts...),
+	)
 	aCMServiceRevokeCertificateHandler := connect.NewUnaryHandler(
 		ACMServiceRevokeCertificateProcedure,
 		svc.RevokeCertificate,
@@ -559,6 +1202,30 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		connect.WithSchema(aCMServiceMethods.ByName("SearchCertificates")),
 		connect.WithHandlerOptions(opts...),
 	)
+	aCMServiceTagResourceHandler := connect.NewUnaryHandler(
+		ACMServiceTagResourceProcedure,
+		svc.TagResource,
+		connect.WithSchema(aCMServiceMethods.ByName("TagResource")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceUntagResourceHandler := connect.NewUnaryHandler(
+		ACMServiceUntagResourceProcedure,
+		svc.UntagResource,
+		connect.WithSchema(aCMServiceMethods.ByName("UntagResource")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceUpdateAcmeDomainValidationHandler := connect.NewUnaryHandler(
+		ACMServiceUpdateAcmeDomainValidationProcedure,
+		svc.UpdateAcmeDomainValidation,
+		connect.WithSchema(aCMServiceMethods.ByName("UpdateAcmeDomainValidation")),
+		connect.WithHandlerOptions(opts...),
+	)
+	aCMServiceUpdateAcmeEndpointHandler := connect.NewUnaryHandler(
+		ACMServiceUpdateAcmeEndpointProcedure,
+		svc.UpdateAcmeEndpoint,
+		connect.WithSchema(aCMServiceMethods.ByName("UpdateAcmeEndpoint")),
+		connect.WithHandlerOptions(opts...),
+	)
 	aCMServiceUpdateCertificateOptionsHandler := connect.NewUnaryHandler(
 		ACMServiceUpdateCertificateOptionsProcedure,
 		svc.UpdateCertificateOptions,
@@ -569,22 +1236,56 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 		switch r.URL.Path {
 		case ACMServiceAddTagsToCertificateProcedure:
 			aCMServiceAddTagsToCertificateHandler.ServeHTTP(w, r)
+		case ACMServiceCreateAcmeDomainValidationProcedure:
+			aCMServiceCreateAcmeDomainValidationHandler.ServeHTTP(w, r)
+		case ACMServiceCreateAcmeEndpointProcedure:
+			aCMServiceCreateAcmeEndpointHandler.ServeHTTP(w, r)
+		case ACMServiceCreateAcmeExternalAccountBindingProcedure:
+			aCMServiceCreateAcmeExternalAccountBindingHandler.ServeHTTP(w, r)
+		case ACMServiceDeleteAcmeDomainValidationProcedure:
+			aCMServiceDeleteAcmeDomainValidationHandler.ServeHTTP(w, r)
+		case ACMServiceDeleteAcmeEndpointProcedure:
+			aCMServiceDeleteAcmeEndpointHandler.ServeHTTP(w, r)
+		case ACMServiceDeleteAcmeExternalAccountBindingProcedure:
+			aCMServiceDeleteAcmeExternalAccountBindingHandler.ServeHTTP(w, r)
 		case ACMServiceDeleteCertificateProcedure:
 			aCMServiceDeleteCertificateHandler.ServeHTTP(w, r)
+		case ACMServiceDescribeAcmeAccountProcedure:
+			aCMServiceDescribeAcmeAccountHandler.ServeHTTP(w, r)
+		case ACMServiceDescribeAcmeDomainValidationProcedure:
+			aCMServiceDescribeAcmeDomainValidationHandler.ServeHTTP(w, r)
+		case ACMServiceDescribeAcmeEndpointProcedure:
+			aCMServiceDescribeAcmeEndpointHandler.ServeHTTP(w, r)
+		case ACMServiceDescribeAcmeExternalAccountBindingProcedure:
+			aCMServiceDescribeAcmeExternalAccountBindingHandler.ServeHTTP(w, r)
 		case ACMServiceDescribeCertificateProcedure:
 			aCMServiceDescribeCertificateHandler.ServeHTTP(w, r)
 		case ACMServiceExportCertificateProcedure:
 			aCMServiceExportCertificateHandler.ServeHTTP(w, r)
 		case ACMServiceGetAccountConfigurationProcedure:
 			aCMServiceGetAccountConfigurationHandler.ServeHTTP(w, r)
+		case ACMServiceGetAcmeExternalAccountBindingCredentialsProcedure:
+			aCMServiceGetAcmeExternalAccountBindingCredentialsHandler.ServeHTTP(w, r)
 		case ACMServiceGetCertificateProcedure:
 			aCMServiceGetCertificateHandler.ServeHTTP(w, r)
 		case ACMServiceImportCertificateProcedure:
 			aCMServiceImportCertificateHandler.ServeHTTP(w, r)
+		case ACMServiceListAcmeAccountsProcedure:
+			aCMServiceListAcmeAccountsHandler.ServeHTTP(w, r)
+		case ACMServiceListAcmeDomainValidationsProcedure:
+			aCMServiceListAcmeDomainValidationsHandler.ServeHTTP(w, r)
+		case ACMServiceListAcmeEndpointsProcedure:
+			aCMServiceListAcmeEndpointsHandler.ServeHTTP(w, r)
+		case ACMServiceListAcmeExternalAccountBindingsProcedure:
+			aCMServiceListAcmeExternalAccountBindingsHandler.ServeHTTP(w, r)
+		case ACMServiceListCertificateDomainValidationsProcedure:
+			aCMServiceListCertificateDomainValidationsHandler.ServeHTTP(w, r)
 		case ACMServiceListCertificatesProcedure:
 			aCMServiceListCertificatesHandler.ServeHTTP(w, r)
 		case ACMServiceListTagsForCertificateProcedure:
 			aCMServiceListTagsForCertificateHandler.ServeHTTP(w, r)
+		case ACMServiceListTagsForResourceProcedure:
+			aCMServiceListTagsForResourceHandler.ServeHTTP(w, r)
 		case ACMServicePutAccountConfigurationProcedure:
 			aCMServicePutAccountConfigurationHandler.ServeHTTP(w, r)
 		case ACMServiceRemoveTagsFromCertificateProcedure:
@@ -595,10 +1296,22 @@ func NewACMServiceHandler(svc ACMServiceHandler, opts ...connect.HandlerOption) 
 			aCMServiceRequestCertificateHandler.ServeHTTP(w, r)
 		case ACMServiceResendValidationEmailProcedure:
 			aCMServiceResendValidationEmailHandler.ServeHTTP(w, r)
+		case ACMServiceRevokeAcmeAccountProcedure:
+			aCMServiceRevokeAcmeAccountHandler.ServeHTTP(w, r)
+		case ACMServiceRevokeAcmeExternalAccountBindingProcedure:
+			aCMServiceRevokeAcmeExternalAccountBindingHandler.ServeHTTP(w, r)
 		case ACMServiceRevokeCertificateProcedure:
 			aCMServiceRevokeCertificateHandler.ServeHTTP(w, r)
 		case ACMServiceSearchCertificatesProcedure:
 			aCMServiceSearchCertificatesHandler.ServeHTTP(w, r)
+		case ACMServiceTagResourceProcedure:
+			aCMServiceTagResourceHandler.ServeHTTP(w, r)
+		case ACMServiceUntagResourceProcedure:
+			aCMServiceUntagResourceHandler.ServeHTTP(w, r)
+		case ACMServiceUpdateAcmeDomainValidationProcedure:
+			aCMServiceUpdateAcmeDomainValidationHandler.ServeHTTP(w, r)
+		case ACMServiceUpdateAcmeEndpointProcedure:
+			aCMServiceUpdateAcmeEndpointHandler.ServeHTTP(w, r)
 		case ACMServiceUpdateCertificateOptionsProcedure:
 			aCMServiceUpdateCertificateOptionsHandler.ServeHTTP(w, r)
 		default:
@@ -614,8 +1327,48 @@ func (UnimplementedACMServiceHandler) AddTagsToCertificate(context.Context, *con
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.AddTagsToCertificate is not implemented"))
 }
 
+func (UnimplementedACMServiceHandler) CreateAcmeDomainValidation(context.Context, *connect.Request[acm.CreateAcmeDomainValidationRequest]) (*connect.Response[acm.CreateAcmeDomainValidationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.CreateAcmeDomainValidation is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) CreateAcmeEndpoint(context.Context, *connect.Request[acm.CreateAcmeEndpointRequest]) (*connect.Response[acm.CreateAcmeEndpointResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.CreateAcmeEndpoint is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) CreateAcmeExternalAccountBinding(context.Context, *connect.Request[acm.CreateAcmeExternalAccountBindingRequest]) (*connect.Response[acm.CreateAcmeExternalAccountBindingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.CreateAcmeExternalAccountBinding is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DeleteAcmeDomainValidation(context.Context, *connect.Request[acm.DeleteAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DeleteAcmeDomainValidation is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DeleteAcmeEndpoint(context.Context, *connect.Request[acm.DeleteAcmeEndpointRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DeleteAcmeEndpoint is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DeleteAcmeExternalAccountBinding(context.Context, *connect.Request[acm.DeleteAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DeleteAcmeExternalAccountBinding is not implemented"))
+}
+
 func (UnimplementedACMServiceHandler) DeleteCertificate(context.Context, *connect.Request[acm.DeleteCertificateRequest]) (*connect.Response[common.Empty], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DeleteCertificate is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DescribeAcmeAccount(context.Context, *connect.Request[acm.DescribeAcmeAccountRequest]) (*connect.Response[acm.DescribeAcmeAccountResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DescribeAcmeAccount is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DescribeAcmeDomainValidation(context.Context, *connect.Request[acm.DescribeAcmeDomainValidationRequest]) (*connect.Response[acm.DescribeAcmeDomainValidationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DescribeAcmeDomainValidation is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DescribeAcmeEndpoint(context.Context, *connect.Request[acm.DescribeAcmeEndpointRequest]) (*connect.Response[acm.DescribeAcmeEndpointResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DescribeAcmeEndpoint is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) DescribeAcmeExternalAccountBinding(context.Context, *connect.Request[acm.DescribeAcmeExternalAccountBindingRequest]) (*connect.Response[acm.DescribeAcmeExternalAccountBindingResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.DescribeAcmeExternalAccountBinding is not implemented"))
 }
 
 func (UnimplementedACMServiceHandler) DescribeCertificate(context.Context, *connect.Request[acm.DescribeCertificateRequest]) (*connect.Response[acm.DescribeCertificateResponse], error) {
@@ -630,6 +1383,10 @@ func (UnimplementedACMServiceHandler) GetAccountConfiguration(context.Context, *
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.GetAccountConfiguration is not implemented"))
 }
 
+func (UnimplementedACMServiceHandler) GetAcmeExternalAccountBindingCredentials(context.Context, *connect.Request[acm.GetAcmeExternalAccountBindingCredentialsRequest]) (*connect.Response[acm.GetAcmeExternalAccountBindingCredentialsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.GetAcmeExternalAccountBindingCredentials is not implemented"))
+}
+
 func (UnimplementedACMServiceHandler) GetCertificate(context.Context, *connect.Request[acm.GetCertificateRequest]) (*connect.Response[acm.GetCertificateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.GetCertificate is not implemented"))
 }
@@ -638,12 +1395,36 @@ func (UnimplementedACMServiceHandler) ImportCertificate(context.Context, *connec
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ImportCertificate is not implemented"))
 }
 
+func (UnimplementedACMServiceHandler) ListAcmeAccounts(context.Context, *connect.Request[acm.ListAcmeAccountsRequest]) (*connect.Response[acm.ListAcmeAccountsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListAcmeAccounts is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) ListAcmeDomainValidations(context.Context, *connect.Request[acm.ListAcmeDomainValidationsRequest]) (*connect.Response[acm.ListAcmeDomainValidationsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListAcmeDomainValidations is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) ListAcmeEndpoints(context.Context, *connect.Request[acm.ListAcmeEndpointsRequest]) (*connect.Response[acm.ListAcmeEndpointsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListAcmeEndpoints is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) ListAcmeExternalAccountBindings(context.Context, *connect.Request[acm.ListAcmeExternalAccountBindingsRequest]) (*connect.Response[acm.ListAcmeExternalAccountBindingsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListAcmeExternalAccountBindings is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) ListCertificateDomainValidations(context.Context, *connect.Request[acm.ListCertificateDomainValidationsRequest]) (*connect.Response[acm.ListCertificateDomainValidationsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListCertificateDomainValidations is not implemented"))
+}
+
 func (UnimplementedACMServiceHandler) ListCertificates(context.Context, *connect.Request[acm.ListCertificatesRequest]) (*connect.Response[acm.ListCertificatesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListCertificates is not implemented"))
 }
 
 func (UnimplementedACMServiceHandler) ListTagsForCertificate(context.Context, *connect.Request[acm.ListTagsForCertificateRequest]) (*connect.Response[acm.ListTagsForCertificateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListTagsForCertificate is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) ListTagsForResource(context.Context, *connect.Request[acm.ListTagsForResourceRequest]) (*connect.Response[acm.ListTagsForResourceResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ListTagsForResource is not implemented"))
 }
 
 func (UnimplementedACMServiceHandler) PutAccountConfiguration(context.Context, *connect.Request[acm.PutAccountConfigurationRequest]) (*connect.Response[common.Empty], error) {
@@ -666,12 +1447,36 @@ func (UnimplementedACMServiceHandler) ResendValidationEmail(context.Context, *co
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.ResendValidationEmail is not implemented"))
 }
 
+func (UnimplementedACMServiceHandler) RevokeAcmeAccount(context.Context, *connect.Request[acm.RevokeAcmeAccountRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.RevokeAcmeAccount is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) RevokeAcmeExternalAccountBinding(context.Context, *connect.Request[acm.RevokeAcmeExternalAccountBindingRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.RevokeAcmeExternalAccountBinding is not implemented"))
+}
+
 func (UnimplementedACMServiceHandler) RevokeCertificate(context.Context, *connect.Request[acm.RevokeCertificateRequest]) (*connect.Response[acm.RevokeCertificateResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.RevokeCertificate is not implemented"))
 }
 
 func (UnimplementedACMServiceHandler) SearchCertificates(context.Context, *connect.Request[acm.SearchCertificatesRequest]) (*connect.Response[acm.SearchCertificatesResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.SearchCertificates is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) TagResource(context.Context, *connect.Request[acm.TagResourceRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.TagResource is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) UntagResource(context.Context, *connect.Request[acm.UntagResourceRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.UntagResource is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) UpdateAcmeDomainValidation(context.Context, *connect.Request[acm.UpdateAcmeDomainValidationRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.UpdateAcmeDomainValidation is not implemented"))
+}
+
+func (UnimplementedACMServiceHandler) UpdateAcmeEndpoint(context.Context, *connect.Request[acm.UpdateAcmeEndpointRequest]) (*connect.Response[common.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("acm.ACMService.UpdateAcmeEndpoint is not implemented"))
 }
 
 func (UnimplementedACMServiceHandler) UpdateCertificateOptions(context.Context, *connect.Request[acm.UpdateCertificateOptionsRequest]) (*connect.Response[common.Empty], error) {

@@ -73,6 +73,34 @@ func TestPebbleStorage(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 
+	t.Run("ScanPrefixReverse", func(t *testing.T) {
+		bucket := s.Bucket("reverse-test")
+		for _, k := range []string{"user:1", "user:2", "user:3", "user:4", "user:5"} {
+			require.NoError(t, bucket.Put([]byte(k), []byte("v-"+k)))
+		}
+		bucket.Put([]byte("other:1"), []byte("outside"))
+
+		collect := func(before []byte) []string {
+			var keys []string
+			iter := bucket.ScanPrefixReverse([]byte("user:"), before)
+			defer iter.Close()
+			for iter.Next() {
+				keys = append(keys, string(iter.Key()))
+			}
+			require.NoError(t, iter.Error())
+			return keys
+		}
+
+		// No before-key: the whole prefix, descending.
+		assert.Equal(t, []string{"user:5", "user:4", "user:3", "user:2", "user:1"}, collect(nil))
+		// before excludes the named key and everything after it.
+		assert.Equal(t, []string{"user:2", "user:1"}, collect([]byte("user:3")))
+		// before below the range start yields nothing.
+		assert.Empty(t, collect([]byte("user:0")))
+		// before above the range end behaves like no before-key.
+		assert.Equal(t, []string{"user:5", "user:4", "user:3", "user:2", "user:1"}, collect([]byte("user:9")))
+	})
+
 	t.Run("ScanRange", func(t *testing.T) {
 		bucket := s.Bucket("range-test")
 		bucket.Put([]byte("a"), []byte("1"))

@@ -146,9 +146,9 @@ enum AmbiguousRoleResolutionType {
 
 message CognitoIdentityProvider {
 
-  string clientid = 448902180;
+  optional string clientid = 448902180;
 
-  string providername = 485101816;
+  optional string providername = 485101816;
 
   optional bool serversidetokencheck = 291427543;
 
@@ -160,7 +160,7 @@ message CognitoIdentityProvider {
 
 message ConcurrentModificationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -176,7 +176,7 @@ message CreateIdentityPoolInput {
 
   repeated CognitoIdentityProvider cognitoidentityproviders = 109610365;
 
-  string developerprovidername = 517589792;
+  optional string developerprovidername = 517589792;
 
   string identitypoolname = 41275091;
 
@@ -196,13 +196,13 @@ message CreateIdentityPoolInput {
 
 message Credentials {
 
-  string accesskeyid = 453893024;
+  optional string accesskeyid = 453893024;
 
-  string expiration = 245879945;
+  optional string expiration = 245879945;
 
-  string secretkey = 465028505;
+  optional string secretkey = 465028505;
 
-  string sessiontoken = 211161069;
+  optional string sessiontoken = 211161069;
 
 }
 
@@ -262,7 +262,7 @@ message DescribeIdentityPoolInput {
 
 message DeveloperUserAlreadyRegisteredException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -282,7 +282,7 @@ enum ErrorCode {
 
 message ExternalServiceException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -292,7 +292,7 @@ message ExternalServiceException {
 
 message GetCredentialsForIdentityInput {
 
-  string customrolearn = 146997938;
+  optional string customrolearn = 146997938;
 
   string identityid = 234187223;
 
@@ -308,7 +308,7 @@ message GetCredentialsForIdentityResponse {
 
   Credentials credentials = 381914482;
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
 }
 
@@ -318,7 +318,7 @@ message GetCredentialsForIdentityResponse {
 
 message GetIdInput {
 
-  string accountid = 65954002;
+  optional string accountid = 65954002;
 
   string identitypoolid = 23936765;
 
@@ -332,7 +332,7 @@ message GetIdInput {
 
 message GetIdResponse {
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
 }
 
@@ -352,7 +352,7 @@ message GetIdentityPoolRolesInput {
 
 message GetIdentityPoolRolesResponse {
 
-  string identitypoolid = 23936765;
+  optional string identitypoolid = 23936765;
 
   map<string, RoleMapping> rolemappings = 96154047;
 
@@ -366,7 +366,7 @@ message GetIdentityPoolRolesResponse {
 
 message GetOpenIdTokenForDeveloperIdentityInput {
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
   string identitypoolid = 23936765;
 
@@ -384,9 +384,9 @@ message GetOpenIdTokenForDeveloperIdentityInput {
 
 message GetOpenIdTokenForDeveloperIdentityResponse {
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
-  string token = 439704531;
+  optional string token = 439704531;
 
 }
 
@@ -408,9 +408,9 @@ message GetOpenIdTokenInput {
 
 message GetOpenIdTokenResponse {
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
-  string token = 439704531;
+  optional string token = 439704531;
 
 }
 
@@ -428,9 +428,9 @@ message GetPrincipalTagAttributeMapInput {
 
 message GetPrincipalTagAttributeMapResponse {
 
-  string identitypoolid = 23936765;
+  optional string identitypoolid = 23936765;
 
-  string identityprovidername = 419175410;
+  optional string identityprovidername = 419175410;
 
   map<string, string> principaltags = 346698229;
 
@@ -444,11 +444,11 @@ message GetPrincipalTagAttributeMapResponse {
 
 message IdentityDescription {
 
-  string creationdate = 288222305;
+  optional string creationdate = 288222305;
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
-  string lastmodifieddate = 24249427;
+  optional string lastmodifieddate = 24249427;
 
   repeated string logins = 109702772;
 
@@ -466,7 +466,7 @@ message IdentityPool {
 
   repeated CognitoIdentityProvider cognitoidentityproviders = 109610365;
 
-  string developerprovidername = 517589792;
+  optional string developerprovidername = 517589792;
 
   string identitypoolid = 23936765;
 
@@ -488,9 +488,9 @@ message IdentityPool {
 
 message IdentityPoolShortDescription {
 
-  string identitypoolid = 23936765;
+  optional string identitypoolid = 23936765;
 
-  string identitypoolname = 41275091;
+  optional string identitypoolname = 41275091;
 
 }
 
@@ -500,7 +500,7 @@ message IdentityPoolShortDescription {
 
 message InternalErrorException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -510,7 +510,7 @@ message InternalErrorException {
 
 message InvalidIdentityPoolConfigurationException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -520,7 +520,7 @@ message InvalidIdentityPoolConfigurationException {
 
 message InvalidParameterException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -530,7 +530,7 @@ message InvalidParameterException {
 
 message LimitExceededException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -546,7 +546,7 @@ message ListIdentitiesInput {
 
   int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -558,9 +558,9 @@ message ListIdentitiesResponse {
 
   repeated IdentityDescription identities = 452470428;
 
-  string identitypoolid = 23936765;
+  optional string identitypoolid = 23936765;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -572,7 +572,7 @@ message ListIdentityPoolsInput {
 
   int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -584,7 +584,7 @@ message ListIdentityPoolsResponse {
 
   repeated IdentityPoolShortDescription identitypools = 158350303;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -610,15 +610,15 @@ message ListTagsForResourceResponse {
 
 message LookupDeveloperIdentityInput {
 
-  string developeruseridentifier = 349826618;
+  optional string developeruseridentifier = 349826618;
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
   string identitypoolid = 23936765;
 
   optional int32 maxresults = 275174450;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -630,9 +630,9 @@ message LookupDeveloperIdentityResponse {
 
   repeated string developeruseridentifierlist = 86156134;
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
-  string nexttoken = 216957566;
+  optional string nexttoken = 216957566;
 
 }
 
@@ -688,7 +688,7 @@ message MergeDeveloperIdentitiesInput {
 
 message MergeDeveloperIdentitiesResponse {
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
 }
 
@@ -698,7 +698,7 @@ message MergeDeveloperIdentitiesResponse {
 
 message NotAuthorizedException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -708,7 +708,7 @@ message NotAuthorizedException {
 
 message ResourceConflictException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -718,7 +718,7 @@ message ResourceConflictException {
 
 message ResourceNotFoundException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -788,9 +788,9 @@ message SetPrincipalTagAttributeMapInput {
 
 message SetPrincipalTagAttributeMapResponse {
 
-  string identitypoolid = 23936765;
+  optional string identitypoolid = 23936765;
 
-  string identityprovidername = 419175410;
+  optional string identityprovidername = 419175410;
 
   map<string, string> principaltags = 346698229;
 
@@ -820,7 +820,7 @@ message TagResourceResponse {
 
 message TooManyRequestsException {
 
-  string message = 82970853;
+  optional string message = 82970853;
 
 }
 
@@ -862,7 +862,7 @@ message UnprocessedIdentityId {
 
   ErrorCode errorcode = 34663193;
 
-  string identityid = 234187223;
+  optional string identityid = 234187223;
 
 }
 

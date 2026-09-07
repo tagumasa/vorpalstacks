@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"google.golang.org/protobuf/proto"
 	"net/http"
 
 	svcerrors "vorpalstacks/internal/common/errors"
@@ -39,11 +40,11 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 	}
 
 	result, err := h.service.listSchedulesCore(ctx, store, &ListSchedulesInput{
-		GroupName:  req.Msg.Groupname,
-		NamePrefix: req.Msg.Nameprefix,
-		State:      req.Msg.State,
+		GroupName:  req.Msg.GetGroupname(),
+		NamePrefix: req.Msg.GetNameprefix(),
+		State:      req.Msg.GetState(),
 		MaxResults: req.Msg.Maxresults,
-		NextToken:  req.Msg.Nexttoken,
+		NextToken:  req.Msg.GetNexttoken(),
 	})
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -52,16 +53,16 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 	var summaries []*pb.ScheduleSummary
 	for _, s := range result.Schedules {
 		summary := &pb.ScheduleSummary{
-			Arn:       s.Arn,
-			Name:      s.Name,
-			Groupname: s.GroupName,
-			State:     string(s.State),
+			Arn:       proto.String(s.Arn),
+			Name:      proto.String(s.Name),
+			Groupname: proto.String(s.GroupName),
+			State:     proto.String(string(s.State)),
 		}
 		if s.CreationDate != nil {
-			summary.Creationdate = s.CreationDate.Format(timeutils.ISO8601UTCFormat)
+			summary.Creationdate = proto.String(s.CreationDate.Format(timeutils.ISO8601UTCFormat))
 		}
 		if s.LastModificationDate != nil {
-			summary.Lastmodificationdate = s.LastModificationDate.Format(timeutils.ISO8601UTCFormat)
+			summary.Lastmodificationdate = proto.String(s.LastModificationDate.Format(timeutils.ISO8601UTCFormat))
 		}
 		if s.Target != nil {
 			summary.Target = &pb.TargetSummary{Arn: s.Target.Arn}
@@ -71,7 +72,7 @@ func (h *AdminHandler) ListSchedules(ctx context.Context, req *connect.Request[p
 
 	return connect.NewResponse(&pb.ListSchedulesOutput{
 		Schedules: summaries,
-		Nexttoken: result.NextToken,
+		Nexttoken: proto.String(result.NextToken),
 	}), nil
 }
 
@@ -93,18 +94,18 @@ func (h *AdminHandler) CreateSchedule(ctx context.Context, req *connect.Request[
 
 	result, err := h.service.createScheduleFromAdmin(ctx, store, AdminCreateScheduleInput{
 		Name:                       req.Msg.Name,
-		GroupName:                  req.Msg.Groupname,
+		GroupName:                  req.Msg.GetGroupname(),
 		ScheduleExpression:         req.Msg.Scheduleexpression,
-		ScheduleExpressionTimezone: req.Msg.Scheduleexpressiontimezone,
-		Description:                req.Msg.Description,
-		State:                      req.Msg.State,
-		KmsKeyArn:                  req.Msg.Kmskeyarn,
-		StartDate:                  req.Msg.Startdate,
-		EndDate:                    req.Msg.Enddate,
-		ActionAfterCompletion:      req.Msg.Actionaftercompletion,
+		ScheduleExpressionTimezone: req.Msg.GetScheduleexpressiontimezone(),
+		Description:                req.Msg.GetDescription(),
+		State:                      req.Msg.GetState(),
+		KmsKeyArn:                  req.Msg.GetKmskeyarn(),
+		StartDate:                  req.Msg.GetStartdate(),
+		EndDate:                    req.Msg.GetEnddate(),
+		ActionAfterCompletion:      req.Msg.GetActionaftercompletion(),
 		Target:                     req.Msg.Target,
 		FlexibleTimeWindow:         req.Msg.Flexibletimewindow,
-		ClientToken:                req.Msg.Clienttoken,
+		ClientToken:                req.Msg.GetClienttoken(),
 		Region:                     store.GetRegion(),
 		IAMValidator:               iamValidator,
 	})
@@ -126,7 +127,7 @@ func (h *AdminHandler) DeleteSchedule(ctx context.Context, req *connect.Request[
 
 	if err := h.service.deleteScheduleCore(ctx, store, &DeleteScheduleInput{
 		Name:      req.Msg.Name,
-		GroupName: req.Msg.Groupname,
+		GroupName: req.Msg.GetGroupname(),
 	}); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

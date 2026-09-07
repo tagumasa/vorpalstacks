@@ -1,6 +1,7 @@
 package wafv2
 
 import (
+	"google.golang.org/protobuf/proto"
 	pb "vorpalstacks/internal/pb/aws/wafv2"
 	wafstore "vorpalstacks/internal/store/aws/waf"
 )
@@ -10,11 +11,11 @@ import (
 // location in the admin handler layer that imports the store package.
 func toPbWebACLSummary(wa *wafstore.WebACL) *pb.WebACLSummary {
 	return &pb.WebACLSummary{
-		Id:          wa.ID,
-		Name:        wa.Name,
-		Arn:         wa.ARN,
-		Description: wa.Description,
-		Locktoken:   wa.LockToken,
+		Id:          proto.String(wa.ID),
+		Name:        proto.String(wa.Name),
+		Arn:         proto.String(wa.ARN),
+		Description: proto.String(wa.Description),
+		Locktoken:   proto.String(wa.LockToken),
 	}
 }
 

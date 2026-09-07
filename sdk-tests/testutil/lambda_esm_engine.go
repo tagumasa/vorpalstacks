@@ -49,7 +49,7 @@ func (ec *esmEngineContext) waitForProcessingResult(uuid, want, failOn string, t
 		if failOn != "" && strings.Contains(last, failOn) {
 			return last, fmt.Errorf("unexpected LastProcessingResult=%q", last)
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 	return "", fmt.Errorf("timed out waiting for LastProcessingResult to contain %q", want)
 }
@@ -88,7 +88,7 @@ func (ec *esmEngineContext) waitForWindowEvent(fnName string, check func(map[str
 			}
 			nextToken = out.NextToken
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 	return nil, fmt.Errorf("timed out waiting for a matching WINDOW_EVENT log in %s", logGroupName)
 
@@ -153,7 +153,7 @@ func (ec *esmEngineContext) waitForDelivery(fnName, id string, timeout time.Dura
 		if err == nil && ids[id] {
 			return nil
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 	return fmt.Errorf("timed out waiting for delivery of %q", id)
 
@@ -168,7 +168,7 @@ func (ec *esmEngineContext) waitForDeliveryCount(fnName, id string, min int, tim
 		if err == nil && counts[id] >= min {
 			return nil
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 	return fmt.Errorf("timed out waiting for %d deliveries of %q", min, id)
 
@@ -850,7 +850,7 @@ func (ec *esmEngineContext) kinesisParallelizationFactorExactlyOnce() error {
 		if complete {
 			return nil
 		}
-		time.Sleep(1 * time.Second)
+		time.Sleep(250 * time.Millisecond)
 	}
 	return nil
 }

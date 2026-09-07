@@ -1,7 +1,6 @@
 package dynamodb
 
 import (
-	"encoding/base64"
 	"strings"
 
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
@@ -70,14 +69,11 @@ func extractKeyConditionFromSchema(hashKeyName, sortKeyName, expr string, names 
 		attrName := resolveName(tokens[i], names)
 		if attrName == hashKeyName && i+2 < len(tokens) && tokens[i+1] == "=" {
 			val := resolveValue(tokens[i+2], values, names)
-			if val != nil && val.S != nil {
-				hashKeyValue = *val.S
-			} else if val != nil && val.N != nil {
-				hashKeyValue = *val.N
-			} else if val != nil && val.B != nil {
-				hashKeyValue = base64.StdEncoding.EncodeToString(val.B)
-			}
 			if val != nil {
+				// The hash value is the storage partition prefix; it must be
+				// the store's key encoding or the prefix scan never matches
+				// stored keys of non-string types.
+				hashKeyValue = dbstore.EncodeKeyValue(val)
 				hashKeyAttr = val
 			}
 			i += 2
@@ -147,21 +143,19 @@ func isGSI(table *dbstore.Table, indexName string) bool {
 	return false
 }
 
-func filterBySortKeyCondition(items []*dbstore.Item, cond *sortKeyCondition) []*dbstore.Item {
+// sortKeyConditionMatches reports whether an item's sort-key attribute
+// satisfies the sort-key condition of a Query. A nil or value-less
+// condition matches everything; an item lacking the sort-key attribute
+// never matches.
+func sortKeyConditionMatches(item *dbstore.Item, cond *sortKeyCondition) bool {
 	if cond == nil || cond.value == nil || cond.attrName == "" {
-		return items
+		return true
 	}
-	var result []*dbstore.Item
-	for _, item := range items {
-		av, ok := item.Attributes[cond.attrName]
-		if !ok || av == nil {
-			continue
-		}
-		if compareWithCondition(av, cond) {
-			result = append(result, item)
-		}
+	av, ok := item.Attributes[cond.attrName]
+	if !ok || av == nil {
+		return false
 	}
-	return result
+	return compareWithCondition(av, cond)
 }
 
 func compareWithCondition(attr *dbstore.AttributeValue, cond *sortKeyCondition) bool {

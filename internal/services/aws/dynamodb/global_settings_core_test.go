@@ -1,7 +1,6 @@
 package dynamodb
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -25,29 +24,28 @@ func TestParseAutoScalingSettingsTargetTracking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("parse failed: %v", err)
 	}
-	policies, ok := desc["ScalingPolicies"].([]interface{})
-	if !ok || len(policies) != 1 {
-		t.Fatalf("expected one scaling policy, got %#v", desc["ScalingPolicies"])
+	if len(desc.ScalingPolicies) != 1 {
+		t.Fatalf("expected one scaling policy, got %#v", desc.ScalingPolicies)
 	}
-	policy, ok := policies[0].(map[string]interface{})
-	if !ok {
-		t.Fatalf("expected a policy map, got %#v", policies[0])
+	policy := desc.ScalingPolicies[0]
+	if policy.PolicyName == nil || *policy.PolicyName != "write-tracking" {
+		t.Errorf("policy name = %#v", policy.PolicyName)
 	}
-	if policy["PolicyName"] != "write-tracking" {
-		t.Errorf("policy name = %#v", policy["PolicyName"])
+	tt := policy.TargetTrackingScalingPolicyConfiguration
+	if tt == nil {
+		t.Fatalf("expected a target tracking configuration, got nil")
 	}
-	want := map[string]interface{}{
-		"TargetValue":      50.0,
-		"DisableScaleIn":   true,
-		"ScaleInCooldown":  60.0,
-		"ScaleOutCooldown": 30.0,
+	if tt.TargetValue != 50.0 {
+		t.Errorf("target value = %#v", tt.TargetValue)
 	}
-	tt, ok := policy["TargetTrackingScalingPolicyConfiguration"].(map[string]interface{})
-	if !ok {
-		t.Fatalf("expected a target tracking map, got %#v", policy["TargetTrackingScalingPolicyConfiguration"])
+	if tt.DisableScaleIn == nil || !*tt.DisableScaleIn {
+		t.Errorf("disable scale-in = %#v", tt.DisableScaleIn)
 	}
-	if !reflect.DeepEqual(tt, want) {
-		t.Errorf("target tracking = %#v, want %#v", tt, want)
+	if tt.ScaleInCooldown == nil || *tt.ScaleInCooldown != 60 {
+		t.Errorf("scale-in cooldown = %#v", tt.ScaleInCooldown)
+	}
+	if tt.ScaleOutCooldown == nil || *tt.ScaleOutCooldown != 30 {
+		t.Errorf("scale-out cooldown = %#v", tt.ScaleOutCooldown)
 	}
 
 	// A missing TargetValue is rejected.

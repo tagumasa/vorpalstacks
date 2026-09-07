@@ -3,12 +3,9 @@ package dynamodb
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/resilience"
 	dbstore "vorpalstacks/internal/store/aws/dynamodb"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
@@ -62,6 +59,7 @@ func (s *DynamoDBService) createBackupCore(ctx context.Context, reqCtx *request.
 	backup.ProvisionedThroughput = table.ProvisionedThroughput
 	backup.GlobalSecondaryIndexes = table.GlobalSecondaryIndexes
 	backup.LocalSecondaryIndexes = table.LocalSecondaryIndexes
+	backup.VectorIndexes = table.VectorIndexes
 	backup.SourceTableCreationTime = table.CreationDateTime
 	backup.SourceTableSizeBytes = table.TableSizeBytes
 	backup.SourceTableItemCount = table.ItemCount
@@ -72,39 +70,35 @@ func (s *DynamoDBService) createBackupCore(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 
-	tableName := table.Name
-	go func() {
-		defer func() { resilience.RecoverPanic("dynamodb backup snapshot transition") }()
-		var snapshotItems []*dbstore.Item
-		if err := store.Items().Scan(tableName, func(item *dbstore.Item) error {
-			snapshotItems = append(snapshotItems, &dbstore.Item{
-				TableName:  tableName,
-				Key:        copyAttributes(item.Key),
-				Attributes: copyAttributes(item.Attributes),
-			})
-			return nil
-		}); err != nil {
-			logs.Error("Failed to scan items for backup",
-				logs.Err(err),
-				logs.String("tableName", tableName),
-			)
-			return
-		}
-		if err := store.Backups().SaveSnapshot(backupName, snapshotItems); err != nil {
-			logs.Error("Failed to save backup snapshot",
-				logs.Err(err),
-				logs.String("backupName", backupName),
-			)
-			return
-		}
-		backup.BackupStatus = dbstore.BackupStatusAvailable
-		if err := store.Backups().Put(backup); err != nil {
-			logs.Error("Failed to update backup status to AVAILABLE",
-				logs.Err(err),
-				logs.String("backupName", backupName),
-			)
-		}
-	}()
+	// The item snapshot is taken synchronously, before the response
+	// returns: the backup must capture the table exactly as of the request
+	// (CreateBackup is a point-in-time operation), not whatever the table
+	// holds whenever a background scan would happen to reach it. The backup
+	// is therefore complete — and AVAILABLE — by the time the caller hears
+	// back.
+	var snapshotItems []*dbstore.Item
+	if err := store.Items().Scan(table.Name, func(item *dbstore.Item) error {
+		snapshotItems = append(snapshotItems, &dbstore.Item{
+			TableName:  table.Name,
+			Key:        copyAttributes(item.Key),
+			Attributes: copyAttributes(item.Attributes),
+		})
+		return nil
+	}); err != nil {
+		// A half-created backup must not linger as CREATING forever: the
+		// record and any partial snapshot are removed, and the caller
+		// retries the whole creation.
+		_ = store.Backups().Delete(backupName)
+		return nil, err
+	}
+	if err := store.Backups().SaveSnapshot(backupName, snapshotItems); err != nil {
+		_ = store.Backups().Delete(backupName)
+		return nil, err
+	}
+	backup.BackupStatus = dbstore.BackupStatusAvailable
+	if err := store.Backups().Put(backup); err != nil {
+		return nil, err
+	}
 
 	return backup, nil
 }
@@ -166,7 +160,10 @@ type ListBackupsCoreResult struct {
 }
 
 // listBackupsCore validates the request, then returns a filtered, paginated
-// list of backups.
+// list of backups. The walk is driven by the store's own continuation
+// marker: filters are applied across store pages until the request's limit
+// is filled or the store is exhausted, so an active filter can no longer
+// terminate the walk early.
 func (s *DynamoDBService) listBackupsCore(ctx context.Context, reqCtx *request.RequestContext, in ListBackupsCoreInput) (*ListBackupsCoreResult, error) {
 	if in.Limit == 0 {
 		in.Limit = listBackupsMaxLimit
@@ -188,34 +185,43 @@ func (s *DynamoDBService) listBackupsCore(ctx context.Context, reqCtx *request.R
 
 	marker := ""
 	if in.ExclusiveStartBackupArn != "" {
-		parts := strings.Split(in.ExclusiveStartBackupArn, "/")
-		if len(parts) > 0 {
-			marker = parts[len(parts)-1]
-		}
+		marker = svcarn.ExtractBackupNameFromARN(in.ExclusiveStartBackupArn)
 	}
 
-	fetchLimit := in.Limit
-	if fetchLimit < listBackupsMinFetchSize {
-		fetchLimit = listBackupsMinFetchSize
-	}
-	backups, _, err := store.Backups().List(marker, fetchLimit, in.TableName)
-	if err != nil {
-		return nil, err
+	// BackupType ALL lists every on-demand backup type (model enum
+	// USER|SYSTEM|AWS_BACKUP|ALL); only a specific type filters.
+	typeFilter := in.BackupTypeFilter
+	if typeFilter == "ALL" {
+		typeFilter = ""
 	}
 
 	var filtered []*dbstore.Backup
-	for _, b := range backups {
-		if in.BackupTypeFilter != "" && string(b.BackupType) != in.BackupTypeFilter {
-			continue
+	for {
+		backups, nextMarker, err := store.Backups().List(marker, listBackupsMinFetchSize, in.TableName)
+		if err != nil {
+			return nil, err
 		}
-		backupTime := b.BackupCreationDateTime.Unix()
-		if in.TimeRangeLowerBound > 0 && backupTime < in.TimeRangeLowerBound {
-			continue
+		for _, b := range backups {
+			if typeFilter != "" && string(b.BackupType) != typeFilter {
+				continue
+			}
+			backupTime := b.BackupCreationDateTime.Unix()
+			if in.TimeRangeLowerBound > 0 && backupTime < in.TimeRangeLowerBound {
+				continue
+			}
+			if in.TimeRangeUpperBound > 0 && backupTime > in.TimeRangeUpperBound {
+				continue
+			}
+			filtered = append(filtered, b)
+			// One item beyond the limit proves more results may exist.
+			if len(filtered) > in.Limit {
+				break
+			}
 		}
-		if in.TimeRangeUpperBound > 0 && backupTime > in.TimeRangeUpperBound {
-			continue
+		if len(filtered) > in.Limit || nextMarker == "" {
+			break
 		}
-		filtered = append(filtered, b)
+		marker = nextMarker
 	}
 
 	result := &ListBackupsCoreResult{}
@@ -265,6 +271,7 @@ func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, reqCtx
 	var provThroughput *dbstore.ProvisionedThroughput
 	var gsi []*dbstore.GlobalSecondaryIndex
 	var lsi []*dbstore.LocalSecondaryIndex
+	var vectorIdx []*dbstore.VectorIndex
 
 	if len(backup.KeySchema) > 0 {
 		keySchema = backup.KeySchema
@@ -273,6 +280,7 @@ func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, reqCtx
 		provThroughput = backup.ProvisionedThroughput
 		gsi = backup.GlobalSecondaryIndexes
 		lsi = backup.LocalSecondaryIndexes
+		vectorIdx = backup.VectorIndexes
 	} else {
 		sourceTable, err := store.Tables().Get(backup.SourceTableName)
 		if err != nil {
@@ -284,22 +292,32 @@ func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, reqCtx
 		provThroughput = sourceTable.ProvisionedThroughput
 		gsi = sourceTable.GlobalSecondaryIndexes
 		lsi = sourceTable.LocalSecondaryIndexes
+		vectorIdx = sourceTable.VectorIndexes
 	}
 
 	if !validateBillingModeConsistency(billingMode, provThroughput) {
 		return nil, ErrInvalidParameter
 	}
 
-	table, err := store.Tables().Create(
-		in.TargetTableName, keySchema, attrDefs, billingMode, provThroughput,
-		gsi, lsi, nil, nil, false,
-	)
+	table, err := store.Tables().Create(dbstore.CreateTableParams{
+		Name:                   in.TargetTableName,
+		KeySchema:              keySchema,
+		AttributeDefinitions:   attrDefs,
+		BillingMode:            billingMode,
+		ProvisionedThroughput:  provThroughput,
+		GlobalSecondaryIndexes: gsi,
+		LocalSecondaryIndexes:  lsi,
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	// Set table to CREATING status so clients cannot see partial data.
 	table.Status = dbstore.TableStatusCreating
+	// Vector index metadata carries over with index ARNs re-derived for the
+	// restored table's ARN; the entries themselves are rebuilt by the same
+	// item write path that restores the items.
+	applyRestoredVectorIndexes(table, vectorIdx)
 	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}
@@ -323,20 +341,20 @@ func (s *DynamoDBService) restoreTableFromBackupCore(ctx context.Context, reqCtx
 		}
 	}
 
-	// All items copied — re-fetch to preserve ItemCount/TableSizeBytes
-	// updated during chunked restore, then transition to ACTIVE.
-	table, err = store.Tables().Get(in.TargetTableName)
+	// All items copied — transition to ACTIVE under the table's record
+	// lock, re-reading the record so the ItemCount/TableSizeBytes the
+	// chunked restore flushed are preserved in the final write.
+	table, err = store.Tables().Update(in.TargetTableName, func(table *dbstore.Table) error {
+		table.Status = dbstore.TableStatusActive
+		table.RestoreSummary = &dbstore.RestoreSummary{
+			SourceBackupArn:   backup.BackupArn,
+			SourceTableArn:    backup.SourceTableArn,
+			RestoreDateTime:   backup.BackupCreationDateTime,
+			RestoreInProgress: false,
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	table.Status = dbstore.TableStatusActive
-	table.RestoreSummary = &dbstore.RestoreSummary{
-		SourceBackupArn:   backup.BackupArn,
-		SourceTableArn:    backup.SourceTableArn,
-		RestoreDateTime:   backup.BackupCreationDateTime,
-		RestoreInProgress: false,
-	}
-	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}
 
@@ -424,7 +442,7 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, req
 	case !hasRestoreDateTime:
 		return nil, ErrInvalidParameter
 	}
-	if restoreDateTime.Before(pitr.EarliestRestorableDateTime) || restoreDateTime.After(now) {
+	if restoreDateTime.Before(pitrEarliestRestorable(pitr, now)) || restoreDateTime.After(now) {
 		return nil, ErrInvalidRestoreTime
 	}
 
@@ -433,6 +451,7 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, req
 	provThroughput := sourceTable.ProvisionedThroughput
 	gsi := sourceTable.GlobalSecondaryIndexes
 	lsi := sourceTable.LocalSecondaryIndexes
+	vectorIdx := sourceTable.VectorIndexes
 	var sseDesc *dbstore.SSEDescription
 
 	if billingModeOverride := request.GetStringParam(in.Parameters, "BillingModeOverride"); billingModeOverride != "" {
@@ -468,10 +487,15 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, req
 		return nil, ErrInvalidParameter
 	}
 
-	table, err := store.Tables().Create(
-		targetTableName, sourceTable.KeySchema, sourceTable.AttributeDefinitions,
-		billingMode, provThroughput, gsi, lsi, nil, nil, false,
-	)
+	table, err := store.Tables().Create(dbstore.CreateTableParams{
+		Name:                   targetTableName,
+		KeySchema:              sourceTable.KeySchema,
+		AttributeDefinitions:   sourceTable.AttributeDefinitions,
+		BillingMode:            billingMode,
+		ProvisionedThroughput:  provThroughput,
+		GlobalSecondaryIndexes: gsi,
+		LocalSecondaryIndexes:  lsi,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -482,6 +506,10 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, req
 	if sseDesc != nil {
 		table.SSEDescription = sseDesc
 	}
+	// Vector index metadata carries over with index ARNs re-derived for the
+	// restored table's ARN; the entries themselves are rebuilt by the same
+	// item write path that restores the items.
+	applyRestoredVectorIndexes(table, vectorIdx)
 	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}
@@ -518,19 +546,19 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, req
 		}
 	}
 
-	// All items copied — re-fetch to preserve ItemCount/TableSizeBytes
-	// updated during chunked restore, then transition to ACTIVE.
-	table, err = store.Tables().Get(targetTableName)
+	// All items copied — transition to ACTIVE under the table's record
+	// lock, re-reading the record so the ItemCount/TableSizeBytes the
+	// chunked restore flushed are preserved in the final write.
+	table, err = store.Tables().Update(targetTableName, func(table *dbstore.Table) error {
+		table.Status = dbstore.TableStatusActive
+		table.RestoreSummary = &dbstore.RestoreSummary{
+			SourceTableArn:    sourceTable.ARN,
+			RestoreDateTime:   restoreDateTime,
+			RestoreInProgress: false,
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, err
-	}
-	table.Status = dbstore.TableStatusActive
-	table.RestoreSummary = &dbstore.RestoreSummary{
-		SourceTableArn:    sourceTable.ARN,
-		RestoreDateTime:   restoreDateTime,
-		RestoreInProgress: false,
-	}
-	if err := store.Tables().Put(table); err != nil {
 		return nil, err
 	}
 
@@ -543,7 +571,7 @@ func (s *DynamoDBService) restoreTableToPointInTimeCore(ctx context.Context, req
 func (s *DynamoDBService) flushRestoreChunk(ctx context.Context, store dbstore.DynamoDBStoreInterface, tableName string, items []*dbstore.Item) error {
 	return store.Update(ctx, func(txn *dbstore.DynamoDBTxn) error {
 		for _, item := range items {
-			itemSize := calculateItemSize(item.Attributes)
+			itemSize := dbstore.CalculateItemSize(item.Attributes)
 			if err := txn.PutItem(tableName, item.Key, item.Attributes); err != nil {
 				return err
 			}

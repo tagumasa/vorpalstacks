@@ -92,9 +92,10 @@ type AssociatedResourceType int32
 const (
 	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_COGNITO_USER_POOL        AssociatedResourceType = 0
 	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE AssociatedResourceType = 1
-	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT               AssociatedResourceType = 2
-	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_API_GATEWAY              AssociatedResourceType = 3
-	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE       AssociatedResourceType = 4
+	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_AGENTCORE_GATEWAY        AssociatedResourceType = 2
+	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT               AssociatedResourceType = 3
+	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_API_GATEWAY              AssociatedResourceType = 4
+	AssociatedResourceType_ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE       AssociatedResourceType = 5
 )
 
 // Enum value maps for AssociatedResourceType.
@@ -102,16 +103,18 @@ var (
 	AssociatedResourceType_name = map[int32]string{
 		0: "ASSOCIATED_RESOURCE_TYPE_COGNITO_USER_POOL",
 		1: "ASSOCIATED_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE",
-		2: "ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT",
-		3: "ASSOCIATED_RESOURCE_TYPE_API_GATEWAY",
-		4: "ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE",
+		2: "ASSOCIATED_RESOURCE_TYPE_AGENTCORE_GATEWAY",
+		3: "ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT",
+		4: "ASSOCIATED_RESOURCE_TYPE_API_GATEWAY",
+		5: "ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE",
 	}
 	AssociatedResourceType_value = map[string]int32{
 		"ASSOCIATED_RESOURCE_TYPE_COGNITO_USER_POOL":        0,
 		"ASSOCIATED_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE": 1,
-		"ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT":               2,
-		"ASSOCIATED_RESOURCE_TYPE_API_GATEWAY":              3,
-		"ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE":       4,
+		"ASSOCIATED_RESOURCE_TYPE_AGENTCORE_GATEWAY":        2,
+		"ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT":               3,
+		"ASSOCIATED_RESOURCE_TYPE_API_GATEWAY":              4,
+		"ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE":       5,
 	}
 )
 
@@ -2107,71 +2110,72 @@ const (
 	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ASSOCIABLE_RESOURCE               ParameterExceptionField = 8
 	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SINGLE_HEADER                     ParameterExceptionField = 9
 	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_WALLET_ADDRESS                    ParameterExceptionField = 10
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION  ParameterExceptionField = 11
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG        ParameterExceptionField = 12
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE                     ParameterExceptionField = 13
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_ADDRESS                        ParameterExceptionField = 14
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_METRIC_NAME                       ParameterExceptionField = 15
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION                  ParameterExceptionField = 16
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION                   ParameterExceptionField = 17
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_WEB_ACL                           ParameterExceptionField = 18
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION               ParameterExceptionField = 19
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN                ParameterExceptionField = 20
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR    ParameterExceptionField = 21
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE                      ParameterExceptionField = 22
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG                  ParameterExceptionField = 23
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN              ParameterExceptionField = 24
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_HEADER_NAME                       ParameterExceptionField = 25
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_AND_STATEMENT                     ParameterExceptionField = 26
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET                  ParameterExceptionField = 27
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG               ParameterExceptionField = 28
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE                   ParameterExceptionField = 29
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_OR_STATEMENT                      ParameterExceptionField = 30
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE             ParameterExceptionField = 31
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT              ParameterExceptionField = 32
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER                    ParameterExceptionField = 33
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT              ParameterExceptionField = 34
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_STATEMENT                         ParameterExceptionField = 35
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT        ParameterExceptionField = 36
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR                 ParameterExceptionField = 37
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT             ParameterExceptionField = 38
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT        ParameterExceptionField = 39
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK                   ParameterExceptionField = 40
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE                              ParameterExceptionField = 41
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT               ParameterExceptionField = 42
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE                  ParameterExceptionField = 43
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG         ParameterExceptionField = 44
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN                        ParameterExceptionField = 45
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT ParameterExceptionField = 46
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TAGS                              ParameterExceptionField = 47
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT         ParameterExceptionField = 48
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT               ParameterExceptionField = 49
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE                   ParameterExceptionField = 50
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT             ParameterExceptionField = 51
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION  ParameterExceptionField = 52
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE          ParameterExceptionField = 53
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT        ParameterExceptionField = 54
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY              ParameterExceptionField = 55
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE                       ParameterExceptionField = 56
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_POSITION                          ParameterExceptionField = 57
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING                 ParameterExceptionField = 58
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION                   ParameterExceptionField = 59
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_SET                            ParameterExceptionField = 60
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET                 ParameterExceptionField = 61
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE_GROUP                        ParameterExceptionField = 62
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE                     ParameterExceptionField = 63
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT                      ParameterExceptionField = 64
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN                      ParameterExceptionField = 65
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION                    ParameterExceptionField = 66
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT              ParameterExceptionField = 67
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING           ParameterExceptionField = 68
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TAG_KEYS                          ParameterExceptionField = 69
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH                    ParameterExceptionField = 70
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE_ACTION                       ParameterExceptionField = 71
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS                       ParameterExceptionField = 72
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT                      ParameterExceptionField = 73
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN                      ParameterExceptionField = 74
-	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT    ParameterExceptionField = 75
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PRE_PARSE_TEXT_TRANSFORMATION     ParameterExceptionField = 11
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION  ParameterExceptionField = 12
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG        ParameterExceptionField = 13
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE                     ParameterExceptionField = 14
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_ADDRESS                        ParameterExceptionField = 15
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_METRIC_NAME                       ParameterExceptionField = 16
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION                  ParameterExceptionField = 17
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION                   ParameterExceptionField = 18
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_WEB_ACL                           ParameterExceptionField = 19
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION               ParameterExceptionField = 20
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN                ParameterExceptionField = 21
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR    ParameterExceptionField = 22
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE                      ParameterExceptionField = 23
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG                  ParameterExceptionField = 24
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN              ParameterExceptionField = 25
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_HEADER_NAME                       ParameterExceptionField = 26
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_AND_STATEMENT                     ParameterExceptionField = 27
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET                  ParameterExceptionField = 28
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG               ParameterExceptionField = 29
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE                   ParameterExceptionField = 30
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_OR_STATEMENT                      ParameterExceptionField = 31
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE             ParameterExceptionField = 32
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT              ParameterExceptionField = 33
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER                    ParameterExceptionField = 34
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT              ParameterExceptionField = 35
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_STATEMENT                         ParameterExceptionField = 36
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT        ParameterExceptionField = 37
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR                 ParameterExceptionField = 38
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT             ParameterExceptionField = 39
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT        ParameterExceptionField = 40
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK                   ParameterExceptionField = 41
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE                              ParameterExceptionField = 42
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT               ParameterExceptionField = 43
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE                  ParameterExceptionField = 44
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG         ParameterExceptionField = 45
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN                        ParameterExceptionField = 46
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT ParameterExceptionField = 47
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TAGS                              ParameterExceptionField = 48
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT         ParameterExceptionField = 49
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT               ParameterExceptionField = 50
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE                   ParameterExceptionField = 51
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT             ParameterExceptionField = 52
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION  ParameterExceptionField = 53
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE          ParameterExceptionField = 54
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT        ParameterExceptionField = 55
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY              ParameterExceptionField = 56
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE                       ParameterExceptionField = 57
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_POSITION                          ParameterExceptionField = 58
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING                 ParameterExceptionField = 59
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION                   ParameterExceptionField = 60
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_IP_SET                            ParameterExceptionField = 61
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET                 ParameterExceptionField = 62
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE_GROUP                        ParameterExceptionField = 63
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE                     ParameterExceptionField = 64
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT                      ParameterExceptionField = 65
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN                      ParameterExceptionField = 66
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION                    ParameterExceptionField = 67
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT              ParameterExceptionField = 68
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING           ParameterExceptionField = 69
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TAG_KEYS                          ParameterExceptionField = 70
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH                    ParameterExceptionField = 71
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE_ACTION                       ParameterExceptionField = 72
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS                       ParameterExceptionField = 73
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT                      ParameterExceptionField = 74
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN                      ParameterExceptionField = 75
+	ParameterExceptionField_PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT    ParameterExceptionField = 76
 )
 
 // Enum value maps for ParameterExceptionField.
@@ -2188,71 +2192,72 @@ var (
 		8:  "PARAMETER_EXCEPTION_FIELD_ASSOCIABLE_RESOURCE",
 		9:  "PARAMETER_EXCEPTION_FIELD_SINGLE_HEADER",
 		10: "PARAMETER_EXCEPTION_FIELD_WALLET_ADDRESS",
-		11: "PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION",
-		12: "PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG",
-		13: "PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE",
-		14: "PARAMETER_EXCEPTION_FIELD_IP_ADDRESS",
-		15: "PARAMETER_EXCEPTION_FIELD_METRIC_NAME",
-		16: "PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION",
-		17: "PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION",
-		18: "PARAMETER_EXCEPTION_FIELD_WEB_ACL",
-		19: "PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION",
-		20: "PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN",
-		21: "PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR",
-		22: "PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE",
-		23: "PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG",
-		24: "PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN",
-		25: "PARAMETER_EXCEPTION_FIELD_HEADER_NAME",
-		26: "PARAMETER_EXCEPTION_FIELD_AND_STATEMENT",
-		27: "PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET",
-		28: "PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG",
-		29: "PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE",
-		30: "PARAMETER_EXCEPTION_FIELD_OR_STATEMENT",
-		31: "PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE",
-		32: "PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT",
-		33: "PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER",
-		34: "PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT",
-		35: "PARAMETER_EXCEPTION_FIELD_STATEMENT",
-		36: "PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT",
-		37: "PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR",
-		38: "PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT",
-		39: "PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT",
-		40: "PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK",
-		41: "PARAMETER_EXCEPTION_FIELD_RULE",
-		42: "PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT",
-		43: "PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE",
-		44: "PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG",
-		45: "PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN",
-		46: "PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT",
-		47: "PARAMETER_EXCEPTION_FIELD_TAGS",
-		48: "PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT",
-		49: "PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT",
-		50: "PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE",
-		51: "PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT",
-		52: "PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION",
-		53: "PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE",
-		54: "PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT",
-		55: "PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY",
-		56: "PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE",
-		57: "PARAMETER_EXCEPTION_FIELD_POSITION",
-		58: "PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING",
-		59: "PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION",
-		60: "PARAMETER_EXCEPTION_FIELD_IP_SET",
-		61: "PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET",
-		62: "PARAMETER_EXCEPTION_FIELD_RULE_GROUP",
-		63: "PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE",
-		64: "PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT",
-		65: "PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN",
-		66: "PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION",
-		67: "PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT",
-		68: "PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING",
-		69: "PARAMETER_EXCEPTION_FIELD_TAG_KEYS",
-		70: "PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH",
-		71: "PARAMETER_EXCEPTION_FIELD_RULE_ACTION",
-		72: "PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS",
-		73: "PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT",
-		74: "PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN",
-		75: "PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT",
+		11: "PARAMETER_EXCEPTION_FIELD_PRE_PARSE_TEXT_TRANSFORMATION",
+		12: "PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION",
+		13: "PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG",
+		14: "PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE",
+		15: "PARAMETER_EXCEPTION_FIELD_IP_ADDRESS",
+		16: "PARAMETER_EXCEPTION_FIELD_METRIC_NAME",
+		17: "PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION",
+		18: "PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION",
+		19: "PARAMETER_EXCEPTION_FIELD_WEB_ACL",
+		20: "PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION",
+		21: "PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN",
+		22: "PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR",
+		23: "PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE",
+		24: "PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG",
+		25: "PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN",
+		26: "PARAMETER_EXCEPTION_FIELD_HEADER_NAME",
+		27: "PARAMETER_EXCEPTION_FIELD_AND_STATEMENT",
+		28: "PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET",
+		29: "PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG",
+		30: "PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE",
+		31: "PARAMETER_EXCEPTION_FIELD_OR_STATEMENT",
+		32: "PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE",
+		33: "PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT",
+		34: "PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER",
+		35: "PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT",
+		36: "PARAMETER_EXCEPTION_FIELD_STATEMENT",
+		37: "PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT",
+		38: "PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR",
+		39: "PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT",
+		40: "PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT",
+		41: "PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK",
+		42: "PARAMETER_EXCEPTION_FIELD_RULE",
+		43: "PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT",
+		44: "PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE",
+		45: "PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG",
+		46: "PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN",
+		47: "PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT",
+		48: "PARAMETER_EXCEPTION_FIELD_TAGS",
+		49: "PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT",
+		50: "PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT",
+		51: "PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE",
+		52: "PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT",
+		53: "PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION",
+		54: "PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE",
+		55: "PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT",
+		56: "PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY",
+		57: "PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE",
+		58: "PARAMETER_EXCEPTION_FIELD_POSITION",
+		59: "PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING",
+		60: "PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION",
+		61: "PARAMETER_EXCEPTION_FIELD_IP_SET",
+		62: "PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET",
+		63: "PARAMETER_EXCEPTION_FIELD_RULE_GROUP",
+		64: "PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE",
+		65: "PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT",
+		66: "PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN",
+		67: "PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION",
+		68: "PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT",
+		69: "PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING",
+		70: "PARAMETER_EXCEPTION_FIELD_TAG_KEYS",
+		71: "PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH",
+		72: "PARAMETER_EXCEPTION_FIELD_RULE_ACTION",
+		73: "PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS",
+		74: "PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT",
+		75: "PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN",
+		76: "PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT",
 	}
 	ParameterExceptionField_value = map[string]int32{
 		"PARAMETER_EXCEPTION_FIELD_COOKIE_MATCH_PATTERN":              0,
@@ -2266,71 +2271,72 @@ var (
 		"PARAMETER_EXCEPTION_FIELD_ASSOCIABLE_RESOURCE":               8,
 		"PARAMETER_EXCEPTION_FIELD_SINGLE_HEADER":                     9,
 		"PARAMETER_EXCEPTION_FIELD_WALLET_ADDRESS":                    10,
-		"PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION":  11,
-		"PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG":        12,
-		"PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE":                     13,
-		"PARAMETER_EXCEPTION_FIELD_IP_ADDRESS":                        14,
-		"PARAMETER_EXCEPTION_FIELD_METRIC_NAME":                       15,
-		"PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION":                  16,
-		"PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION":                   17,
-		"PARAMETER_EXCEPTION_FIELD_WEB_ACL":                           18,
-		"PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION":               19,
-		"PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN":                20,
-		"PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR":    21,
-		"PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE":                      22,
-		"PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG":                  23,
-		"PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN":              24,
-		"PARAMETER_EXCEPTION_FIELD_HEADER_NAME":                       25,
-		"PARAMETER_EXCEPTION_FIELD_AND_STATEMENT":                     26,
-		"PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET":                  27,
-		"PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG":               28,
-		"PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE":                   29,
-		"PARAMETER_EXCEPTION_FIELD_OR_STATEMENT":                      30,
-		"PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE":             31,
-		"PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT":              32,
-		"PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER":                    33,
-		"PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT":              34,
-		"PARAMETER_EXCEPTION_FIELD_STATEMENT":                         35,
-		"PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT":        36,
-		"PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR":                 37,
-		"PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT":             38,
-		"PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT":        39,
-		"PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK":                   40,
-		"PARAMETER_EXCEPTION_FIELD_RULE":                              41,
-		"PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT":               42,
-		"PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE":                  43,
-		"PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG":         44,
-		"PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN":                        45,
-		"PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT": 46,
-		"PARAMETER_EXCEPTION_FIELD_TAGS":                              47,
-		"PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT":         48,
-		"PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT":               49,
-		"PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE":                   50,
-		"PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT":             51,
-		"PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION":  52,
-		"PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE":          53,
-		"PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT":        54,
-		"PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY":              55,
-		"PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE":                       56,
-		"PARAMETER_EXCEPTION_FIELD_POSITION":                          57,
-		"PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING":                 58,
-		"PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION":                   59,
-		"PARAMETER_EXCEPTION_FIELD_IP_SET":                            60,
-		"PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET":                 61,
-		"PARAMETER_EXCEPTION_FIELD_RULE_GROUP":                        62,
-		"PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE":                     63,
-		"PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT":                      64,
-		"PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN":                      65,
-		"PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION":                    66,
-		"PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT":              67,
-		"PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING":           68,
-		"PARAMETER_EXCEPTION_FIELD_TAG_KEYS":                          69,
-		"PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH":                    70,
-		"PARAMETER_EXCEPTION_FIELD_RULE_ACTION":                       71,
-		"PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS":                       72,
-		"PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT":                      73,
-		"PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN":                      74,
-		"PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT":    75,
+		"PARAMETER_EXCEPTION_FIELD_PRE_PARSE_TEXT_TRANSFORMATION":     11,
+		"PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION":  12,
+		"PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG":        13,
+		"PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE":                     14,
+		"PARAMETER_EXCEPTION_FIELD_IP_ADDRESS":                        15,
+		"PARAMETER_EXCEPTION_FIELD_METRIC_NAME":                       16,
+		"PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION":                  17,
+		"PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION":                   18,
+		"PARAMETER_EXCEPTION_FIELD_WEB_ACL":                           19,
+		"PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION":               20,
+		"PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN":                21,
+		"PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR":    22,
+		"PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE":                      23,
+		"PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG":                  24,
+		"PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN":              25,
+		"PARAMETER_EXCEPTION_FIELD_HEADER_NAME":                       26,
+		"PARAMETER_EXCEPTION_FIELD_AND_STATEMENT":                     27,
+		"PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET":                  28,
+		"PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG":               29,
+		"PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE":                   30,
+		"PARAMETER_EXCEPTION_FIELD_OR_STATEMENT":                      31,
+		"PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE":             32,
+		"PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT":              33,
+		"PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER":                    34,
+		"PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT":              35,
+		"PARAMETER_EXCEPTION_FIELD_STATEMENT":                         36,
+		"PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT":        37,
+		"PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR":                 38,
+		"PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT":             39,
+		"PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT":        40,
+		"PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK":                   41,
+		"PARAMETER_EXCEPTION_FIELD_RULE":                              42,
+		"PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT":               43,
+		"PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE":                  44,
+		"PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG":         45,
+		"PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN":                        46,
+		"PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT": 47,
+		"PARAMETER_EXCEPTION_FIELD_TAGS":                              48,
+		"PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT":         49,
+		"PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT":               50,
+		"PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE":                   51,
+		"PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT":             52,
+		"PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION":  53,
+		"PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE":          54,
+		"PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT":        55,
+		"PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY":              56,
+		"PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE":                       57,
+		"PARAMETER_EXCEPTION_FIELD_POSITION":                          58,
+		"PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING":                 59,
+		"PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION":                   60,
+		"PARAMETER_EXCEPTION_FIELD_IP_SET":                            61,
+		"PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET":                 62,
+		"PARAMETER_EXCEPTION_FIELD_RULE_GROUP":                        63,
+		"PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE":                     64,
+		"PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT":                      65,
+		"PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN":                      66,
+		"PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION":                    67,
+		"PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT":              68,
+		"PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING":           69,
+		"PARAMETER_EXCEPTION_FIELD_TAG_KEYS":                          70,
+		"PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH":                    71,
+		"PARAMETER_EXCEPTION_FIELD_RULE_ACTION":                       72,
+		"PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS":                       73,
+		"PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT":                      74,
+		"PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN":                      75,
+		"PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT":    76,
 	}
 )
 
@@ -2508,6 +2514,61 @@ func (PositionalConstraint) EnumDescriptor() ([]byte, []int) {
 	return file_wafv2_proto_rawDescGZIP(), []int{30}
 }
 
+type PreParseTextTransformationType int32
+
+const (
+	PreParseTextTransformationType_PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE                            PreParseTextTransformationType = 0
+	PreParseTextTransformationType_PRE_PARSE_TEXT_TRANSFORMATION_TYPE_REPLACE_SEMICOLONS_WITH_AMPERSANDS    PreParseTextTransformationType = 1
+	PreParseTextTransformationType_PRE_PARSE_TEXT_TRANSFORMATION_TYPE_NONE                                  PreParseTextTransformationType = 2
+	PreParseTextTransformationType_PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI                        PreParseTextTransformationType = 3
+	PreParseTextTransformationType_PRE_PARSE_TEXT_TRANSFORMATION_TYPE_COMBINE_DUPLICATE_QUERY_ARGS_BY_COMMA PreParseTextTransformationType = 4
+)
+
+// Enum value maps for PreParseTextTransformationType.
+var (
+	PreParseTextTransformationType_name = map[int32]string{
+		0: "PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE",
+		1: "PRE_PARSE_TEXT_TRANSFORMATION_TYPE_REPLACE_SEMICOLONS_WITH_AMPERSANDS",
+		2: "PRE_PARSE_TEXT_TRANSFORMATION_TYPE_NONE",
+		3: "PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI",
+		4: "PRE_PARSE_TEXT_TRANSFORMATION_TYPE_COMBINE_DUPLICATE_QUERY_ARGS_BY_COMMA",
+	}
+	PreParseTextTransformationType_value = map[string]int32{
+		"PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE":                            0,
+		"PRE_PARSE_TEXT_TRANSFORMATION_TYPE_REPLACE_SEMICOLONS_WITH_AMPERSANDS":    1,
+		"PRE_PARSE_TEXT_TRANSFORMATION_TYPE_NONE":                                  2,
+		"PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI":                        3,
+		"PRE_PARSE_TEXT_TRANSFORMATION_TYPE_COMBINE_DUPLICATE_QUERY_ARGS_BY_COMMA": 4,
+	}
+)
+
+func (x PreParseTextTransformationType) Enum() *PreParseTextTransformationType {
+	p := new(PreParseTextTransformationType)
+	*p = x
+	return p
+}
+
+func (x PreParseTextTransformationType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (PreParseTextTransformationType) Descriptor() protoreflect.EnumDescriptor {
+	return file_wafv2_proto_enumTypes[31].Descriptor()
+}
+
+func (PreParseTextTransformationType) Type() protoreflect.EnumType {
+	return &file_wafv2_proto_enumTypes[31]
+}
+
+func (x PreParseTextTransformationType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use PreParseTextTransformationType.Descriptor instead.
+func (PreParseTextTransformationType) EnumDescriptor() ([]byte, []int) {
+	return file_wafv2_proto_rawDescGZIP(), []int{31}
+}
+
 type RankingSortBy int32
 
 const (
@@ -2541,11 +2602,11 @@ func (x RankingSortBy) String() string {
 }
 
 func (RankingSortBy) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[31].Descriptor()
+	return file_wafv2_proto_enumTypes[32].Descriptor()
 }
 
 func (RankingSortBy) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[31]
+	return &file_wafv2_proto_enumTypes[32]
 }
 
 func (x RankingSortBy) Number() protoreflect.EnumNumber {
@@ -2554,7 +2615,7 @@ func (x RankingSortBy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RankingSortBy.Descriptor instead.
 func (RankingSortBy) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{31}
+	return file_wafv2_proto_rawDescGZIP(), []int{32}
 }
 
 type RankingStatisticType int32
@@ -2587,11 +2648,11 @@ func (x RankingStatisticType) String() string {
 }
 
 func (RankingStatisticType) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[32].Descriptor()
+	return file_wafv2_proto_enumTypes[33].Descriptor()
 }
 
 func (RankingStatisticType) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[32]
+	return &file_wafv2_proto_enumTypes[33]
 }
 
 func (x RankingStatisticType) Number() protoreflect.EnumNumber {
@@ -2600,7 +2661,7 @@ func (x RankingStatisticType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RankingStatisticType.Descriptor instead.
 func (RankingStatisticType) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{32}
+	return file_wafv2_proto_rawDescGZIP(), []int{33}
 }
 
 type RateBasedStatementAggregateKeyType int32
@@ -2639,11 +2700,11 @@ func (x RateBasedStatementAggregateKeyType) String() string {
 }
 
 func (RateBasedStatementAggregateKeyType) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[33].Descriptor()
+	return file_wafv2_proto_enumTypes[34].Descriptor()
 }
 
 func (RateBasedStatementAggregateKeyType) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[33]
+	return &file_wafv2_proto_enumTypes[34]
 }
 
 func (x RateBasedStatementAggregateKeyType) Number() protoreflect.EnumNumber {
@@ -2652,7 +2713,7 @@ func (x RateBasedStatementAggregateKeyType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use RateBasedStatementAggregateKeyType.Descriptor instead.
 func (RateBasedStatementAggregateKeyType) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{33}
+	return file_wafv2_proto_rawDescGZIP(), []int{34}
 }
 
 type ResourceType int32
@@ -2660,11 +2721,12 @@ type ResourceType int32
 const (
 	ResourceType_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE  ResourceType = 0
 	ResourceType_RESOURCE_TYPE_COGNITIO_USER_POOL        ResourceType = 1
-	ResourceType_RESOURCE_TYPE_APPLICATION_LOAD_BALANCER ResourceType = 2
-	ResourceType_RESOURCE_TYPE_APPSYNC                   ResourceType = 3
-	ResourceType_RESOURCE_TYPE_AMPLIFY                   ResourceType = 4
-	ResourceType_RESOURCE_TYPE_API_GATEWAY               ResourceType = 5
-	ResourceType_RESOURCE_TYPE_APP_RUNNER_SERVICE        ResourceType = 6
+	ResourceType_RESOURCE_TYPE_AGENTCORE_GATEWAY         ResourceType = 2
+	ResourceType_RESOURCE_TYPE_APPLICATION_LOAD_BALANCER ResourceType = 3
+	ResourceType_RESOURCE_TYPE_APPSYNC                   ResourceType = 4
+	ResourceType_RESOURCE_TYPE_AMPLIFY                   ResourceType = 5
+	ResourceType_RESOURCE_TYPE_API_GATEWAY               ResourceType = 6
+	ResourceType_RESOURCE_TYPE_APP_RUNNER_SERVICE        ResourceType = 7
 )
 
 // Enum value maps for ResourceType.
@@ -2672,20 +2734,22 @@ var (
 	ResourceType_name = map[int32]string{
 		0: "RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE",
 		1: "RESOURCE_TYPE_COGNITIO_USER_POOL",
-		2: "RESOURCE_TYPE_APPLICATION_LOAD_BALANCER",
-		3: "RESOURCE_TYPE_APPSYNC",
-		4: "RESOURCE_TYPE_AMPLIFY",
-		5: "RESOURCE_TYPE_API_GATEWAY",
-		6: "RESOURCE_TYPE_APP_RUNNER_SERVICE",
+		2: "RESOURCE_TYPE_AGENTCORE_GATEWAY",
+		3: "RESOURCE_TYPE_APPLICATION_LOAD_BALANCER",
+		4: "RESOURCE_TYPE_APPSYNC",
+		5: "RESOURCE_TYPE_AMPLIFY",
+		6: "RESOURCE_TYPE_API_GATEWAY",
+		7: "RESOURCE_TYPE_APP_RUNNER_SERVICE",
 	}
 	ResourceType_value = map[string]int32{
 		"RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE":  0,
 		"RESOURCE_TYPE_COGNITIO_USER_POOL":        1,
-		"RESOURCE_TYPE_APPLICATION_LOAD_BALANCER": 2,
-		"RESOURCE_TYPE_APPSYNC":                   3,
-		"RESOURCE_TYPE_AMPLIFY":                   4,
-		"RESOURCE_TYPE_API_GATEWAY":               5,
-		"RESOURCE_TYPE_APP_RUNNER_SERVICE":        6,
+		"RESOURCE_TYPE_AGENTCORE_GATEWAY":         2,
+		"RESOURCE_TYPE_APPLICATION_LOAD_BALANCER": 3,
+		"RESOURCE_TYPE_APPSYNC":                   4,
+		"RESOURCE_TYPE_AMPLIFY":                   5,
+		"RESOURCE_TYPE_API_GATEWAY":               6,
+		"RESOURCE_TYPE_APP_RUNNER_SERVICE":        7,
 	}
 )
 
@@ -2700,11 +2764,11 @@ func (x ResourceType) String() string {
 }
 
 func (ResourceType) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[34].Descriptor()
+	return file_wafv2_proto_enumTypes[35].Descriptor()
 }
 
 func (ResourceType) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[34]
+	return &file_wafv2_proto_enumTypes[35]
 }
 
 func (x ResourceType) Number() protoreflect.EnumNumber {
@@ -2713,7 +2777,7 @@ func (x ResourceType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ResourceType.Descriptor instead.
 func (ResourceType) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{34}
+	return file_wafv2_proto_rawDescGZIP(), []int{35}
 }
 
 type ResponseContentType int32
@@ -2749,11 +2813,11 @@ func (x ResponseContentType) String() string {
 }
 
 func (ResponseContentType) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[35].Descriptor()
+	return file_wafv2_proto_enumTypes[36].Descriptor()
 }
 
 func (ResponseContentType) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[35]
+	return &file_wafv2_proto_enumTypes[36]
 }
 
 func (x ResponseContentType) Number() protoreflect.EnumNumber {
@@ -2762,7 +2826,7 @@ func (x ResponseContentType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ResponseContentType.Descriptor instead.
 func (ResponseContentType) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{35}
+	return file_wafv2_proto_rawDescGZIP(), []int{36}
 }
 
 type Scope int32
@@ -2795,11 +2859,11 @@ func (x Scope) String() string {
 }
 
 func (Scope) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[36].Descriptor()
+	return file_wafv2_proto_enumTypes[37].Descriptor()
 }
 
 func (Scope) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[36]
+	return &file_wafv2_proto_enumTypes[37]
 }
 
 func (x Scope) Number() protoreflect.EnumNumber {
@@ -2808,7 +2872,7 @@ func (x Scope) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Scope.Descriptor instead.
 func (Scope) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{36}
+	return file_wafv2_proto_rawDescGZIP(), []int{37}
 }
 
 type SensitivityLevel int32
@@ -2841,11 +2905,11 @@ func (x SensitivityLevel) String() string {
 }
 
 func (SensitivityLevel) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[37].Descriptor()
+	return file_wafv2_proto_enumTypes[38].Descriptor()
 }
 
 func (SensitivityLevel) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[37]
+	return &file_wafv2_proto_enumTypes[38]
 }
 
 func (x SensitivityLevel) Number() protoreflect.EnumNumber {
@@ -2854,7 +2918,7 @@ func (x SensitivityLevel) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SensitivityLevel.Descriptor instead.
 func (SensitivityLevel) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{37}
+	return file_wafv2_proto_rawDescGZIP(), []int{38}
 }
 
 type SensitivityToAct int32
@@ -2890,11 +2954,11 @@ func (x SensitivityToAct) String() string {
 }
 
 func (SensitivityToAct) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[38].Descriptor()
+	return file_wafv2_proto_enumTypes[39].Descriptor()
 }
 
 func (SensitivityToAct) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[38]
+	return &file_wafv2_proto_enumTypes[39]
 }
 
 func (x SensitivityToAct) Number() protoreflect.EnumNumber {
@@ -2903,7 +2967,7 @@ func (x SensitivityToAct) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SensitivityToAct.Descriptor instead.
 func (SensitivityToAct) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{38}
+	return file_wafv2_proto_rawDescGZIP(), []int{39}
 }
 
 type SettlementSortBy int32
@@ -2942,11 +3006,11 @@ func (x SettlementSortBy) String() string {
 }
 
 func (SettlementSortBy) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[39].Descriptor()
+	return file_wafv2_proto_enumTypes[40].Descriptor()
 }
 
 func (SettlementSortBy) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[39]
+	return &file_wafv2_proto_enumTypes[40]
 }
 
 func (x SettlementSortBy) Number() protoreflect.EnumNumber {
@@ -2955,7 +3019,7 @@ func (x SettlementSortBy) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SettlementSortBy.Descriptor instead.
 func (SettlementSortBy) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{39}
+	return file_wafv2_proto_rawDescGZIP(), []int{40}
 }
 
 type SettlementStatus int32
@@ -3000,11 +3064,11 @@ func (x SettlementStatus) String() string {
 }
 
 func (SettlementStatus) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[40].Descriptor()
+	return file_wafv2_proto_enumTypes[41].Descriptor()
 }
 
 func (SettlementStatus) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[40]
+	return &file_wafv2_proto_enumTypes[41]
 }
 
 func (x SettlementStatus) Number() protoreflect.EnumNumber {
@@ -3013,7 +3077,7 @@ func (x SettlementStatus) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SettlementStatus.Descriptor instead.
 func (SettlementStatus) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{40}
+	return file_wafv2_proto_rawDescGZIP(), []int{41}
 }
 
 type SizeInspectionLimit int32
@@ -3052,11 +3116,11 @@ func (x SizeInspectionLimit) String() string {
 }
 
 func (SizeInspectionLimit) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[41].Descriptor()
+	return file_wafv2_proto_enumTypes[42].Descriptor()
 }
 
 func (SizeInspectionLimit) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[41]
+	return &file_wafv2_proto_enumTypes[42]
 }
 
 func (x SizeInspectionLimit) Number() protoreflect.EnumNumber {
@@ -3065,7 +3129,7 @@ func (x SizeInspectionLimit) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SizeInspectionLimit.Descriptor instead.
 func (SizeInspectionLimit) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{41}
+	return file_wafv2_proto_rawDescGZIP(), []int{42}
 }
 
 type SortOrder int32
@@ -3098,11 +3162,11 @@ func (x SortOrder) String() string {
 }
 
 func (SortOrder) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[42].Descriptor()
+	return file_wafv2_proto_enumTypes[43].Descriptor()
 }
 
 func (SortOrder) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[42]
+	return &file_wafv2_proto_enumTypes[43]
 }
 
 func (x SortOrder) Number() protoreflect.EnumNumber {
@@ -3111,7 +3175,7 @@ func (x SortOrder) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use SortOrder.Descriptor instead.
 func (SortOrder) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{42}
+	return file_wafv2_proto_rawDescGZIP(), []int{43}
 }
 
 type TextTransformationType int32
@@ -3119,25 +3183,35 @@ type TextTransformationType int32
 const (
 	TextTransformationType_TEXT_TRANSFORMATION_TYPE_SQL_HEX_DECODE       TextTransformationType = 0
 	TextTransformationType_TEXT_TRANSFORMATION_TYPE_URL_DECODE           TextTransformationType = 1
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_HEX_DECODE           TextTransformationType = 2
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH       TextTransformationType = 3
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE TextTransformationType = 4
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_NONE                 TextTransformationType = 5
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_BASE64_DECODE        TextTransformationType = 6
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI       TextTransformationType = 7
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE   TextTransformationType = 8
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_JS_DECODE            TextTransformationType = 9
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_MD5                  TextTransformationType = 10
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN   TextTransformationType = 11
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS     TextTransformationType = 12
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT    TextTransformationType = 13
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE      TextTransformationType = 14
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE    TextTransformationType = 15
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_CSS_DECODE           TextTransformationType = 16
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS        TextTransformationType = 17
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_LOWERCASE            TextTransformationType = 18
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_CMD_LINE             TextTransformationType = 19
-	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS         TextTransformationType = 20
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_TRIM_LEFT            TextTransformationType = 2
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_HEX_DECODE           TextTransformationType = 3
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_CMD_LINE_WIN         TextTransformationType = 4
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH       TextTransformationType = 5
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE TextTransformationType = 6
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_NONE                 TextTransformationType = 7
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_BASE64_DECODE        TextTransformationType = 8
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_TRIM_RIGHT           TextTransformationType = 9
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI       TextTransformationType = 10
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE   TextTransformationType = 11
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_JS_DECODE            TextTransformationType = 12
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_SHA256               TextTransformationType = 13
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_CMD_LINE_UNIX        TextTransformationType = 14
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_TRIM                 TextTransformationType = 15
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_MD5                  TextTransformationType = 16
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN   TextTransformationType = 17
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS     TextTransformationType = 18
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT    TextTransformationType = 19
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE      TextTransformationType = 20
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REMOVE_WHITESPACE    TextTransformationType = 21
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE    TextTransformationType = 22
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REMOVE_COMMENTS_CHAR TextTransformationType = 23
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_CSS_DECODE           TextTransformationType = 24
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS        TextTransformationType = 25
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_JS_DECODE_EXT        TextTransformationType = 26
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_LOWERCASE            TextTransformationType = 27
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_CMD_LINE             TextTransformationType = 28
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS         TextTransformationType = 29
+	TextTransformationType_TEXT_TRANSFORMATION_TYPE_UPPERCASE            TextTransformationType = 30
 )
 
 // Enum value maps for TextTransformationType.
@@ -3145,48 +3219,68 @@ var (
 	TextTransformationType_name = map[int32]string{
 		0:  "TEXT_TRANSFORMATION_TYPE_SQL_HEX_DECODE",
 		1:  "TEXT_TRANSFORMATION_TYPE_URL_DECODE",
-		2:  "TEXT_TRANSFORMATION_TYPE_HEX_DECODE",
-		3:  "TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH",
-		4:  "TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE",
-		5:  "TEXT_TRANSFORMATION_TYPE_NONE",
-		6:  "TEXT_TRANSFORMATION_TYPE_BASE64_DECODE",
-		7:  "TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI",
-		8:  "TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE",
-		9:  "TEXT_TRANSFORMATION_TYPE_JS_DECODE",
-		10: "TEXT_TRANSFORMATION_TYPE_MD5",
-		11: "TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN",
-		12: "TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS",
-		13: "TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT",
-		14: "TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE",
-		15: "TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE",
-		16: "TEXT_TRANSFORMATION_TYPE_CSS_DECODE",
-		17: "TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS",
-		18: "TEXT_TRANSFORMATION_TYPE_LOWERCASE",
-		19: "TEXT_TRANSFORMATION_TYPE_CMD_LINE",
-		20: "TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS",
+		2:  "TEXT_TRANSFORMATION_TYPE_TRIM_LEFT",
+		3:  "TEXT_TRANSFORMATION_TYPE_HEX_DECODE",
+		4:  "TEXT_TRANSFORMATION_TYPE_CMD_LINE_WIN",
+		5:  "TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH",
+		6:  "TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE",
+		7:  "TEXT_TRANSFORMATION_TYPE_NONE",
+		8:  "TEXT_TRANSFORMATION_TYPE_BASE64_DECODE",
+		9:  "TEXT_TRANSFORMATION_TYPE_TRIM_RIGHT",
+		10: "TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI",
+		11: "TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE",
+		12: "TEXT_TRANSFORMATION_TYPE_JS_DECODE",
+		13: "TEXT_TRANSFORMATION_TYPE_SHA256",
+		14: "TEXT_TRANSFORMATION_TYPE_CMD_LINE_UNIX",
+		15: "TEXT_TRANSFORMATION_TYPE_TRIM",
+		16: "TEXT_TRANSFORMATION_TYPE_MD5",
+		17: "TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN",
+		18: "TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS",
+		19: "TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT",
+		20: "TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE",
+		21: "TEXT_TRANSFORMATION_TYPE_REMOVE_WHITESPACE",
+		22: "TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE",
+		23: "TEXT_TRANSFORMATION_TYPE_REMOVE_COMMENTS_CHAR",
+		24: "TEXT_TRANSFORMATION_TYPE_CSS_DECODE",
+		25: "TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS",
+		26: "TEXT_TRANSFORMATION_TYPE_JS_DECODE_EXT",
+		27: "TEXT_TRANSFORMATION_TYPE_LOWERCASE",
+		28: "TEXT_TRANSFORMATION_TYPE_CMD_LINE",
+		29: "TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS",
+		30: "TEXT_TRANSFORMATION_TYPE_UPPERCASE",
 	}
 	TextTransformationType_value = map[string]int32{
 		"TEXT_TRANSFORMATION_TYPE_SQL_HEX_DECODE":       0,
 		"TEXT_TRANSFORMATION_TYPE_URL_DECODE":           1,
-		"TEXT_TRANSFORMATION_TYPE_HEX_DECODE":           2,
-		"TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH":       3,
-		"TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE": 4,
-		"TEXT_TRANSFORMATION_TYPE_NONE":                 5,
-		"TEXT_TRANSFORMATION_TYPE_BASE64_DECODE":        6,
-		"TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI":       7,
-		"TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE":   8,
-		"TEXT_TRANSFORMATION_TYPE_JS_DECODE":            9,
-		"TEXT_TRANSFORMATION_TYPE_MD5":                  10,
-		"TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN":   11,
-		"TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS":     12,
-		"TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT":    13,
-		"TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE":      14,
-		"TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE":    15,
-		"TEXT_TRANSFORMATION_TYPE_CSS_DECODE":           16,
-		"TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS":        17,
-		"TEXT_TRANSFORMATION_TYPE_LOWERCASE":            18,
-		"TEXT_TRANSFORMATION_TYPE_CMD_LINE":             19,
-		"TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS":         20,
+		"TEXT_TRANSFORMATION_TYPE_TRIM_LEFT":            2,
+		"TEXT_TRANSFORMATION_TYPE_HEX_DECODE":           3,
+		"TEXT_TRANSFORMATION_TYPE_CMD_LINE_WIN":         4,
+		"TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH":       5,
+		"TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE": 6,
+		"TEXT_TRANSFORMATION_TYPE_NONE":                 7,
+		"TEXT_TRANSFORMATION_TYPE_BASE64_DECODE":        8,
+		"TEXT_TRANSFORMATION_TYPE_TRIM_RIGHT":           9,
+		"TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI":       10,
+		"TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE":   11,
+		"TEXT_TRANSFORMATION_TYPE_JS_DECODE":            12,
+		"TEXT_TRANSFORMATION_TYPE_SHA256":               13,
+		"TEXT_TRANSFORMATION_TYPE_CMD_LINE_UNIX":        14,
+		"TEXT_TRANSFORMATION_TYPE_TRIM":                 15,
+		"TEXT_TRANSFORMATION_TYPE_MD5":                  16,
+		"TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN":   17,
+		"TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS":     18,
+		"TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT":    19,
+		"TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE":      20,
+		"TEXT_TRANSFORMATION_TYPE_REMOVE_WHITESPACE":    21,
+		"TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE":    22,
+		"TEXT_TRANSFORMATION_TYPE_REMOVE_COMMENTS_CHAR": 23,
+		"TEXT_TRANSFORMATION_TYPE_CSS_DECODE":           24,
+		"TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS":        25,
+		"TEXT_TRANSFORMATION_TYPE_JS_DECODE_EXT":        26,
+		"TEXT_TRANSFORMATION_TYPE_LOWERCASE":            27,
+		"TEXT_TRANSFORMATION_TYPE_CMD_LINE":             28,
+		"TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS":         29,
+		"TEXT_TRANSFORMATION_TYPE_UPPERCASE":            30,
 	}
 )
 
@@ -3201,11 +3295,11 @@ func (x TextTransformationType) String() string {
 }
 
 func (TextTransformationType) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[43].Descriptor()
+	return file_wafv2_proto_enumTypes[44].Descriptor()
 }
 
 func (TextTransformationType) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[43]
+	return &file_wafv2_proto_enumTypes[44]
 }
 
 func (x TextTransformationType) Number() protoreflect.EnumNumber {
@@ -3214,7 +3308,7 @@ func (x TextTransformationType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TextTransformationType.Descriptor instead.
 func (TextTransformationType) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{43}
+	return file_wafv2_proto_rawDescGZIP(), []int{44}
 }
 
 type TimeSeriesStatisticType int32
@@ -3247,11 +3341,11 @@ func (x TimeSeriesStatisticType) String() string {
 }
 
 func (TimeSeriesStatisticType) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[44].Descriptor()
+	return file_wafv2_proto_enumTypes[45].Descriptor()
 }
 
 func (TimeSeriesStatisticType) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[44]
+	return &file_wafv2_proto_enumTypes[45]
 }
 
 func (x TimeSeriesStatisticType) Number() protoreflect.EnumNumber {
@@ -3260,7 +3354,7 @@ func (x TimeSeriesStatisticType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use TimeSeriesStatisticType.Descriptor instead.
 func (TimeSeriesStatisticType) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{44}
+	return file_wafv2_proto_rawDescGZIP(), []int{45}
 }
 
 type UsageOfAction int32
@@ -3293,11 +3387,11 @@ func (x UsageOfAction) String() string {
 }
 
 func (UsageOfAction) Descriptor() protoreflect.EnumDescriptor {
-	return file_wafv2_proto_enumTypes[45].Descriptor()
+	return file_wafv2_proto_enumTypes[46].Descriptor()
 }
 
 func (UsageOfAction) Type() protoreflect.EnumType {
-	return &file_wafv2_proto_enumTypes[45]
+	return &file_wafv2_proto_enumTypes[46]
 }
 
 func (x UsageOfAction) Number() protoreflect.EnumNumber {
@@ -3306,13 +3400,13 @@ func (x UsageOfAction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use UsageOfAction.Descriptor instead.
 func (UsageOfAction) EnumDescriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{45}
+	return file_wafv2_proto_rawDescGZIP(), []int{46}
 }
 
 type APIKeySummary struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Apikey            string                 `protobuf:"bytes,274818239,opt,name=apikey,proto3" json:"apikey,omitempty"`
-	Creationtimestamp string                 `protobuf:"bytes,24480293,opt,name=creationtimestamp,proto3" json:"creationtimestamp,omitempty"`
+	Apikey            *string                `protobuf:"bytes,274818239,opt,name=apikey,proto3,oneof" json:"apikey,omitempty"`
+	Creationtimestamp *string                `protobuf:"bytes,24480293,opt,name=creationtimestamp,proto3,oneof" json:"creationtimestamp,omitempty"`
 	Tokendomains      []string               `protobuf:"bytes,11638560,rep,name=tokendomains,proto3" json:"tokendomains,omitempty"`
 	Version           *int32                 `protobuf:"varint,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields     protoimpl.UnknownFields
@@ -3350,15 +3444,15 @@ func (*APIKeySummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *APIKeySummary) GetApikey() string {
-	if x != nil {
-		return x.Apikey
+	if x != nil && x.Apikey != nil {
+		return *x.Apikey
 	}
 	return ""
 }
 
 func (x *APIKeySummary) GetCreationtimestamp() string {
-	if x != nil {
-		return x.Creationtimestamp
+	if x != nil && x.Creationtimestamp != nil {
+		return *x.Creationtimestamp
 	}
 	return ""
 }
@@ -3875,7 +3969,7 @@ func (x *AndStatement) GetStatements() []*Statement {
 
 type ApplicationAttribute struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Values        []string               `protobuf:"bytes,223158876,rep,name=values,proto3" json:"values,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -3912,8 +4006,8 @@ func (*ApplicationAttribute) Descriptor() ([]byte, []int) {
 }
 
 func (x *ApplicationAttribute) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -4302,13 +4396,14 @@ func (x *BotStatistics) GetRequestcount() int64 {
 }
 
 type ByteMatchStatement struct {
-	state                protoimpl.MessageState `protogen:"open.v1"`
-	Fieldtomatch         *FieldToMatch          `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
-	Positionalconstraint PositionalConstraint   `protobuf:"varint,260734525,opt,name=positionalconstraint,proto3,enum=wafv2.PositionalConstraint" json:"positionalconstraint,omitempty"`
-	Searchstring         []byte                 `protobuf:"bytes,318687365,opt,name=searchstring,proto3" json:"searchstring,omitempty"`
-	Texttransformations  []*TextTransformation  `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
+	Positionalconstraint        PositionalConstraint          `protobuf:"varint,260734525,opt,name=positionalconstraint,proto3,enum=wafv2.PositionalConstraint" json:"positionalconstraint,omitempty"`
+	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
+	Searchstring                []byte                        `protobuf:"bytes,318687365,opt,name=searchstring,proto3" json:"searchstring,omitempty"`
+	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *ByteMatchStatement) Reset() {
@@ -4353,6 +4448,13 @@ func (x *ByteMatchStatement) GetPositionalconstraint() PositionalConstraint {
 		return x.Positionalconstraint
 	}
 	return PositionalConstraint_POSITIONAL_CONSTRAINT_EXACTLY
+}
+
+func (x *ByteMatchStatement) GetPreparsetexttransformations() []*PreParseTextTransformation {
+	if x != nil {
+		return x.Preparsetexttransformations
+	}
+	return nil
 }
 
 func (x *ByteMatchStatement) GetSearchstring() []byte {
@@ -5135,7 +5237,7 @@ func (x *CreateAPIKeyRequest) GetTokendomains() []string {
 
 type CreateAPIKeyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Apikey        string                 `protobuf:"bytes,274818239,opt,name=apikey,proto3" json:"apikey,omitempty"`
+	Apikey        *string                `protobuf:"bytes,274818239,opt,name=apikey,proto3,oneof" json:"apikey,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -5171,8 +5273,8 @@ func (*CreateAPIKeyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateAPIKeyResponse) GetApikey() string {
-	if x != nil {
-		return x.Apikey
+	if x != nil && x.Apikey != nil {
+		return *x.Apikey
 	}
 	return ""
 }
@@ -5180,7 +5282,7 @@ func (x *CreateAPIKeyResponse) GetApikey() string {
 type CreateIPSetRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Addresses        []string               `protobuf:"bytes,375939972,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	Description      string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description      *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Ipaddressversion IPAddressVersion       `protobuf:"varint,313363841,opt,name=ipaddressversion,proto3,enum=wafv2.IPAddressVersion" json:"ipaddressversion,omitempty"`
 	Name             string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Scope            Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
@@ -5227,8 +5329,8 @@ func (x *CreateIPSetRequest) GetAddresses() []string {
 }
 
 func (x *CreateIPSetRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -5307,7 +5409,7 @@ func (x *CreateIPSetResponse) GetSummary() *IPSetSummary {
 
 type CreateRegexPatternSetRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Description           string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description           *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Name                  string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Regularexpressionlist []*Regex               `protobuf:"bytes,123612838,rep,name=regularexpressionlist,proto3" json:"regularexpressionlist,omitempty"`
 	Scope                 Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
@@ -5347,8 +5449,8 @@ func (*CreateRegexPatternSetRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *CreateRegexPatternSetRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -5429,7 +5531,7 @@ type CreateRuleGroupRequest struct {
 	state                protoimpl.MessageState         `protogen:"open.v1"`
 	Capacity             int64                          `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
 	Customresponsebodies map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Description          string                         `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Monetizationconfig   *MonetizationConfig            `protobuf:"bytes,528380847,opt,name=monetizationconfig,proto3" json:"monetizationconfig,omitempty"`
 	Name                 string                         `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Rules                []*Rule                        `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
@@ -5485,8 +5587,8 @@ func (x *CreateRuleGroupRequest) GetCustomresponsebodies() map[string]*CustomRes
 }
 
 func (x *CreateRuleGroupRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -5586,7 +5688,7 @@ type CreateWebACLRequest struct {
 	Customresponsebodies         map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Dataprotectionconfig         *DataProtectionConfig          `protobuf:"bytes,464792245,opt,name=dataprotectionconfig,proto3" json:"dataprotectionconfig,omitempty"`
 	Defaultaction                *DefaultAction                 `protobuf:"bytes,322663861,opt,name=defaultaction,proto3" json:"defaultaction,omitempty"`
-	Description                  string                         `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description                  *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Monetizationconfig           *MonetizationConfig            `protobuf:"bytes,528380847,opt,name=monetizationconfig,proto3" json:"monetizationconfig,omitempty"`
 	Name                         string                         `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Onsourceddosprotectionconfig *OnSourceDDoSProtectionConfig  `protobuf:"bytes,105229063,opt,name=onsourceddosprotectionconfig,proto3" json:"onsourceddosprotectionconfig,omitempty"`
@@ -5679,8 +5781,8 @@ func (x *CreateWebACLRequest) GetDefaultaction() *DefaultAction {
 }
 
 func (x *CreateWebACLRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -5927,7 +6029,7 @@ func (x *CustomRequestHandling) GetInsertheaders() []*CustomHTTPHeader {
 
 type CustomResponse struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Customresponsebodykey string                 `protobuf:"bytes,77361257,opt,name=customresponsebodykey,proto3" json:"customresponsebodykey,omitempty"`
+	Customresponsebodykey *string                `protobuf:"bytes,77361257,opt,name=customresponsebodykey,proto3,oneof" json:"customresponsebodykey,omitempty"`
 	Responsecode          int32                  `protobuf:"varint,447553700,opt,name=responsecode,proto3" json:"responsecode,omitempty"`
 	Responseheaders       []*CustomHTTPHeader    `protobuf:"bytes,171647029,rep,name=responseheaders,proto3" json:"responseheaders,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -5965,8 +6067,8 @@ func (*CustomResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *CustomResponse) GetCustomresponsebodykey() string {
-	if x != nil {
-		return x.Customresponsebodykey
+	if x != nil && x.Customresponsebodykey != nil {
+		return *x.Customresponsebodykey
 	}
 	return ""
 }
@@ -6039,13 +6141,13 @@ func (x *CustomResponseBody) GetContenttype() ResponseContentType {
 
 type DataPointEntry struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Category            string                 `protobuf:"bytes,263447954,opt,name=category,proto3" json:"category,omitempty"`
-	Date                string                 `protobuf:"bytes,458388346,opt,name=date,proto3" json:"date,omitempty"`
-	Groupbyvalue        string                 `protobuf:"bytes,232052215,opt,name=groupbyvalue,proto3" json:"groupbyvalue,omitempty"`
-	Intent              string                 `protobuf:"bytes,158359916,opt,name=intent,proto3" json:"intent,omitempty"`
+	Category            *string                `protobuf:"bytes,263447954,opt,name=category,proto3,oneof" json:"category,omitempty"`
+	Date                *string                `protobuf:"bytes,458388346,opt,name=date,proto3,oneof" json:"date,omitempty"`
+	Groupbyvalue        *string                `protobuf:"bytes,232052215,opt,name=groupbyvalue,proto3,oneof" json:"groupbyvalue,omitempty"`
+	Intent              *string                `protobuf:"bytes,158359916,opt,name=intent,proto3,oneof" json:"intent,omitempty"`
 	Monetizeservedcount *int64                 `protobuf:"varint,221393899,opt,name=monetizeservedcount,proto3,oneof" json:"monetizeservedcount,omitempty"`
 	Settledcount        *int64                 `protobuf:"varint,164622674,opt,name=settledcount,proto3,oneof" json:"settledcount,omitempty"`
-	Totalamount         string                 `protobuf:"bytes,45332786,opt,name=totalamount,proto3" json:"totalamount,omitempty"`
+	Totalamount         *string                `protobuf:"bytes,45332786,opt,name=totalamount,proto3,oneof" json:"totalamount,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -6081,29 +6183,29 @@ func (*DataPointEntry) Descriptor() ([]byte, []int) {
 }
 
 func (x *DataPointEntry) GetCategory() string {
-	if x != nil {
-		return x.Category
+	if x != nil && x.Category != nil {
+		return *x.Category
 	}
 	return ""
 }
 
 func (x *DataPointEntry) GetDate() string {
-	if x != nil {
-		return x.Date
+	if x != nil && x.Date != nil {
+		return *x.Date
 	}
 	return ""
 }
 
 func (x *DataPointEntry) GetGroupbyvalue() string {
-	if x != nil {
-		return x.Groupbyvalue
+	if x != nil && x.Groupbyvalue != nil {
+		return *x.Groupbyvalue
 	}
 	return ""
 }
 
 func (x *DataPointEntry) GetIntent() string {
-	if x != nil {
-		return x.Intent
+	if x != nil && x.Intent != nil {
+		return *x.Intent
 	}
 	return ""
 }
@@ -6123,8 +6225,8 @@ func (x *DataPointEntry) GetSettledcount() int64 {
 }
 
 func (x *DataPointEntry) GetTotalamount() string {
-	if x != nil {
-		return x.Totalamount
+	if x != nil && x.Totalamount != nil {
+		return *x.Totalamount
 	}
 	return ""
 }
@@ -6435,7 +6537,7 @@ func (x *DeleteFirewallManagerRuleGroupsRequest) GetWebacllocktoken() string {
 
 type DeleteFirewallManagerRuleGroupsResponse struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Nextwebacllocktoken string                 `protobuf:"bytes,89595355,opt,name=nextwebacllocktoken,proto3" json:"nextwebacllocktoken,omitempty"`
+	Nextwebacllocktoken *string                `protobuf:"bytes,89595355,opt,name=nextwebacllocktoken,proto3,oneof" json:"nextwebacllocktoken,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -6471,8 +6573,8 @@ func (*DeleteFirewallManagerRuleGroupsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *DeleteFirewallManagerRuleGroupsResponse) GetNextwebacllocktoken() string {
-	if x != nil {
-		return x.Nextwebacllocktoken
+	if x != nil && x.Nextwebacllocktoken != nil {
+		return *x.Nextwebacllocktoken
 	}
 	return ""
 }
@@ -7258,7 +7360,7 @@ type DescribeManagedRuleGroupRequest struct {
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Vendorname    string                 `protobuf:"bytes,159329689,opt,name=vendorname,proto3" json:"vendorname,omitempty"`
-	Versionname   string                 `protobuf:"bytes,227348949,opt,name=versionname,proto3" json:"versionname,omitempty"`
+	Versionname   *string                `protobuf:"bytes,227348949,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -7315,8 +7417,8 @@ func (x *DescribeManagedRuleGroupRequest) GetVendorname() string {
 }
 
 func (x *DescribeManagedRuleGroupRequest) GetVersionname() string {
-	if x != nil {
-		return x.Versionname
+	if x != nil && x.Versionname != nil {
+		return *x.Versionname
 	}
 	return ""
 }
@@ -7326,10 +7428,10 @@ type DescribeManagedRuleGroupResponse struct {
 	Availablelabels []*LabelSummary        `protobuf:"bytes,51059984,rep,name=availablelabels,proto3" json:"availablelabels,omitempty"`
 	Capacity        *int64                 `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
 	Consumedlabels  []*LabelSummary        `protobuf:"bytes,43813949,rep,name=consumedlabels,proto3" json:"consumedlabels,omitempty"`
-	Labelnamespace  string                 `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3" json:"labelnamespace,omitempty"`
+	Labelnamespace  *string                `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3,oneof" json:"labelnamespace,omitempty"`
 	Rules           []*RuleSummary         `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
-	Snstopicarn     string                 `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
-	Versionname     string                 `protobuf:"bytes,227348949,opt,name=versionname,proto3" json:"versionname,omitempty"`
+	Snstopicarn     *string                `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
+	Versionname     *string                `protobuf:"bytes,227348949,opt,name=versionname,proto3,oneof" json:"versionname,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -7386,8 +7488,8 @@ func (x *DescribeManagedRuleGroupResponse) GetConsumedlabels() []*LabelSummary {
 }
 
 func (x *DescribeManagedRuleGroupResponse) GetLabelnamespace() string {
-	if x != nil {
-		return x.Labelnamespace
+	if x != nil && x.Labelnamespace != nil {
+		return *x.Labelnamespace
 	}
 	return ""
 }
@@ -7400,23 +7502,23 @@ func (x *DescribeManagedRuleGroupResponse) GetRules() []*RuleSummary {
 }
 
 func (x *DescribeManagedRuleGroupResponse) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
 
 func (x *DescribeManagedRuleGroupResponse) GetVersionname() string {
-	if x != nil {
-		return x.Versionname
+	if x != nil && x.Versionname != nil {
+		return *x.Versionname
 	}
 	return ""
 }
 
 type DisallowedFeature struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Feature             string                 `protobuf:"bytes,512819934,opt,name=feature,proto3" json:"feature,omitempty"`
-	Requiredpricingplan string                 `protobuf:"bytes,501231534,opt,name=requiredpricingplan,proto3" json:"requiredpricingplan,omitempty"`
+	Feature             *string                `protobuf:"bytes,512819934,opt,name=feature,proto3,oneof" json:"feature,omitempty"`
+	Requiredpricingplan *string                `protobuf:"bytes,501231534,opt,name=requiredpricingplan,proto3,oneof" json:"requiredpricingplan,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -7452,15 +7554,15 @@ func (*DisallowedFeature) Descriptor() ([]byte, []int) {
 }
 
 func (x *DisallowedFeature) GetFeature() string {
-	if x != nil {
-		return x.Feature
+	if x != nil && x.Feature != nil {
+		return *x.Feature
 	}
 	return ""
 }
 
 func (x *DisallowedFeature) GetRequiredpricingplan() string {
-	if x != nil {
-		return x.Requiredpricingplan
+	if x != nil && x.Requiredpricingplan != nil {
+		return *x.Requiredpricingplan
 	}
 	return ""
 }
@@ -7895,9 +7997,9 @@ func (x *Filter) GetRequirement() FilterRequirement {
 
 type FilterSource struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Botcategory     string                 `protobuf:"bytes,117673751,opt,name=botcategory,proto3" json:"botcategory,omitempty"`
-	Botname         string                 `protobuf:"bytes,88172446,opt,name=botname,proto3" json:"botname,omitempty"`
-	Botorganization string                 `protobuf:"bytes,397082802,opt,name=botorganization,proto3" json:"botorganization,omitempty"`
+	Botcategory     *string                `protobuf:"bytes,117673751,opt,name=botcategory,proto3,oneof" json:"botcategory,omitempty"`
+	Botname         *string                `protobuf:"bytes,88172446,opt,name=botname,proto3,oneof" json:"botname,omitempty"`
+	Botorganization *string                `protobuf:"bytes,397082802,opt,name=botorganization,proto3,oneof" json:"botorganization,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -7933,22 +8035,22 @@ func (*FilterSource) Descriptor() ([]byte, []int) {
 }
 
 func (x *FilterSource) GetBotcategory() string {
-	if x != nil {
-		return x.Botcategory
+	if x != nil && x.Botcategory != nil {
+		return *x.Botcategory
 	}
 	return ""
 }
 
 func (x *FilterSource) GetBotname() string {
-	if x != nil {
-		return x.Botname
+	if x != nil && x.Botname != nil {
+		return *x.Botname
 	}
 	return ""
 }
 
 func (x *FilterSource) GetBotorganization() string {
-	if x != nil {
-		return x.Botorganization
+	if x != nil && x.Botorganization != nil {
+		return *x.Botorganization
 	}
 	return ""
 }
@@ -8187,7 +8289,7 @@ func (x *GenerateMobileSdkReleaseUrlRequest) GetReleaseversion() string {
 
 type GenerateMobileSdkReleaseUrlResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Url           string                 `protobuf:"bytes,354018239,opt,name=url,proto3" json:"url,omitempty"`
+	Url           *string                `protobuf:"bytes,354018239,opt,name=url,proto3,oneof" json:"url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8223,8 +8325,8 @@ func (*GenerateMobileSdkReleaseUrlResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GenerateMobileSdkReleaseUrlResponse) GetUrl() string {
-	if x != nil {
-		return x.Url
+	if x != nil && x.Url != nil {
+		return *x.Url
 	}
 	return ""
 }
@@ -8335,7 +8437,7 @@ func (x *GetDecryptedAPIKeyRequest) GetScope() Scope {
 
 type GetDecryptedAPIKeyResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Creationtimestamp string                 `protobuf:"bytes,24480293,opt,name=creationtimestamp,proto3" json:"creationtimestamp,omitempty"`
+	Creationtimestamp *string                `protobuf:"bytes,24480293,opt,name=creationtimestamp,proto3,oneof" json:"creationtimestamp,omitempty"`
 	Tokendomains      []string               `protobuf:"bytes,11638560,rep,name=tokendomains,proto3" json:"tokendomains,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -8372,8 +8474,8 @@ func (*GetDecryptedAPIKeyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetDecryptedAPIKeyResponse) GetCreationtimestamp() string {
-	if x != nil {
-		return x.Creationtimestamp
+	if x != nil && x.Creationtimestamp != nil {
+		return *x.Creationtimestamp
 	}
 	return ""
 }
@@ -8448,7 +8550,7 @@ func (x *GetIPSetRequest) GetScope() Scope {
 type GetIPSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ipset         *IPSet                 `protobuf:"bytes,436412565,opt,name=ipset,proto3" json:"ipset,omitempty"`
-	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
+	Locktoken     *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8491,8 +8593,8 @@ func (x *GetIPSetResponse) GetIpset() *IPSet {
 }
 
 func (x *GetIPSetResponse) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
@@ -8663,7 +8765,7 @@ func (x *GetManagedRuleSetRequest) GetScope() Scope {
 
 type GetManagedRuleSetResponse struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Locktoken      string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
+	Locktoken      *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
 	Managedruleset *ManagedRuleSet        `protobuf:"bytes,151429153,opt,name=managedruleset,proto3" json:"managedruleset,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -8700,8 +8802,8 @@ func (*GetManagedRuleSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetManagedRuleSetResponse) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
@@ -8855,7 +8957,7 @@ func (x *GetPermissionPolicyRequest) GetResourcearn() string {
 
 type GetPermissionPolicyResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Policy        string                 `protobuf:"bytes,471611296,opt,name=policy,proto3" json:"policy,omitempty"`
+	Policy        *string                `protobuf:"bytes,471611296,opt,name=policy,proto3,oneof" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -8891,15 +8993,15 @@ func (*GetPermissionPolicyResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetPermissionPolicyResponse) GetPolicy() string {
-	if x != nil {
-		return x.Policy
+	if x != nil && x.Policy != nil {
+		return *x.Policy
 	}
 	return ""
 }
 
 type GetRateBasedStatementManagedKeysRequest struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Rulegrouprulename string                 `protobuf:"bytes,20574264,opt,name=rulegrouprulename,proto3" json:"rulegrouprulename,omitempty"`
+	Rulegrouprulename *string                `protobuf:"bytes,20574264,opt,name=rulegrouprulename,proto3,oneof" json:"rulegrouprulename,omitempty"`
 	Rulename          string                 `protobuf:"bytes,214688793,opt,name=rulename,proto3" json:"rulename,omitempty"`
 	Scope             Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Webaclid          string                 `protobuf:"bytes,161274579,opt,name=webaclid,proto3" json:"webaclid,omitempty"`
@@ -8939,8 +9041,8 @@ func (*GetRateBasedStatementManagedKeysRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRateBasedStatementManagedKeysRequest) GetRulegrouprulename() string {
-	if x != nil {
-		return x.Rulegrouprulename
+	if x != nil && x.Rulegrouprulename != nil {
+		return *x.Rulegrouprulename
 	}
 	return ""
 }
@@ -9087,7 +9189,7 @@ func (x *GetRegexPatternSetRequest) GetScope() Scope {
 
 type GetRegexPatternSetResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Locktoken       string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
+	Locktoken       *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
 	Regexpatternset *RegexPatternSet       `protobuf:"bytes,9374915,opt,name=regexpatternset,proto3" json:"regexpatternset,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
@@ -9124,8 +9226,8 @@ func (*GetRegexPatternSetResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRegexPatternSetResponse) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
@@ -9143,7 +9245,7 @@ type GetRevenueStatisticsRequest struct {
 	Filters       []*MonetizationFilter  `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Groupby       GroupByType            `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType" json:"groupby,omitempty"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Sortby        RankingSortBy          `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.RankingSortBy" json:"sortby,omitempty"`
 	Sortorder     SortOrder              `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=wafv2.SortOrder" json:"sortorder,omitempty"`
@@ -9212,8 +9314,8 @@ func (x *GetRevenueStatisticsRequest) GetLimit() int32 {
 }
 
 func (x *GetRevenueStatisticsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -9255,7 +9357,7 @@ func (x *GetRevenueStatisticsRequest) GetTimewindow() *TimeWindow {
 
 type GetRevenueStatisticsResponse struct {
 	state                 protoimpl.MessageState   `protogen:"open.v1"`
-	Nextmarker            string                   `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker            *string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Revenuepathstatistics []*RevenuePathStatistics `protobuf:"bytes,38598240,rep,name=revenuepathstatistics,proto3" json:"revenuepathstatistics,omitempty"`
 	Sourcestatistics      []*SourceStatistics      `protobuf:"bytes,2732036,rep,name=sourcestatistics,proto3" json:"sourcestatistics,omitempty"`
 	unknownFields         protoimpl.UnknownFields
@@ -9293,8 +9395,8 @@ func (*GetRevenueStatisticsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRevenueStatisticsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -9432,7 +9534,7 @@ type GetRevenueStatisticsTimeSeriesRequest struct {
 	Groupby       GroupByType             `protobuf:"varint,125823402,opt,name=groupby,proto3,enum=wafv2.GroupByType" json:"groupby,omitempty"`
 	Interval      IntervalType            `protobuf:"varint,463550873,opt,name=interval,proto3,enum=wafv2.IntervalType" json:"interval,omitempty"`
 	Limit         *int32                  `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                   `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Statistictype TimeSeriesStatisticType `protobuf:"varint,76638614,opt,name=statistictype,proto3,enum=wafv2.TimeSeriesStatisticType" json:"statistictype,omitempty"`
 	Timewindow    *TimeWindow             `protobuf:"bytes,140543513,opt,name=timewindow,proto3" json:"timewindow,omitempty"`
@@ -9506,8 +9608,8 @@ func (x *GetRevenueStatisticsTimeSeriesRequest) GetLimit() int32 {
 }
 
 func (x *GetRevenueStatisticsTimeSeriesRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -9536,7 +9638,7 @@ func (x *GetRevenueStatisticsTimeSeriesRequest) GetTimewindow() *TimeWindow {
 type GetRevenueStatisticsTimeSeriesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Datapoints    []*DataPointEntry      `protobuf:"bytes,261595367,rep,name=datapoints,proto3" json:"datapoints,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -9579,17 +9681,17 @@ func (x *GetRevenueStatisticsTimeSeriesResponse) GetDatapoints() []*DataPointEnt
 }
 
 func (x *GetRevenueStatisticsTimeSeriesResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
 
 type GetRuleGroupRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9626,22 +9728,22 @@ func (*GetRuleGroupRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRuleGroupRequest) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetRuleGroupRequest) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *GetRuleGroupRequest) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -9655,7 +9757,7 @@ func (x *GetRuleGroupRequest) GetScope() Scope {
 
 type GetRuleGroupResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
+	Locktoken     *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
 	Rulegroup     *RuleGroup             `protobuf:"bytes,267398571,opt,name=rulegroup,proto3" json:"rulegroup,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -9692,8 +9794,8 @@ func (*GetRuleGroupResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetRuleGroupResponse) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
@@ -9843,15 +9945,15 @@ func (x *GetSampledRequestsResponse) GetTimewindow() *TimeWindow {
 
 type GetTopPathStatisticsByTrafficRequest struct {
 	state                         protoimpl.MessageState `protogen:"open.v1"`
-	Botcategory                   string                 `protobuf:"bytes,117673751,opt,name=botcategory,proto3" json:"botcategory,omitempty"`
-	Botname                       string                 `protobuf:"bytes,88172446,opt,name=botname,proto3" json:"botname,omitempty"`
-	Botorganization               string                 `protobuf:"bytes,397082802,opt,name=botorganization,proto3" json:"botorganization,omitempty"`
+	Botcategory                   *string                `protobuf:"bytes,117673751,opt,name=botcategory,proto3,oneof" json:"botcategory,omitempty"`
+	Botname                       *string                `protobuf:"bytes,88172446,opt,name=botname,proto3,oneof" json:"botname,omitempty"`
+	Botorganization               *string                `protobuf:"bytes,397082802,opt,name=botorganization,proto3,oneof" json:"botorganization,omitempty"`
 	Limit                         int32                  `protobuf:"varint,412502741,opt,name=limit,proto3" json:"limit,omitempty"`
-	Nextmarker                    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker                    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Numberoftoptrafficbotsperpath int32                  `protobuf:"varint,302037370,opt,name=numberoftoptrafficbotsperpath,proto3" json:"numberoftoptrafficbotsperpath,omitempty"`
 	Scope                         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Timewindow                    *TimeWindow            `protobuf:"bytes,140543513,opt,name=timewindow,proto3" json:"timewindow,omitempty"`
-	Uripathprefix                 string                 `protobuf:"bytes,222177395,opt,name=uripathprefix,proto3" json:"uripathprefix,omitempty"`
+	Uripathprefix                 *string                `protobuf:"bytes,222177395,opt,name=uripathprefix,proto3,oneof" json:"uripathprefix,omitempty"`
 	Webaclarn                     string                 `protobuf:"bytes,526110243,opt,name=webaclarn,proto3" json:"webaclarn,omitempty"`
 	unknownFields                 protoimpl.UnknownFields
 	sizeCache                     protoimpl.SizeCache
@@ -9888,22 +9990,22 @@ func (*GetTopPathStatisticsByTrafficRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetTopPathStatisticsByTrafficRequest) GetBotcategory() string {
-	if x != nil {
-		return x.Botcategory
+	if x != nil && x.Botcategory != nil {
+		return *x.Botcategory
 	}
 	return ""
 }
 
 func (x *GetTopPathStatisticsByTrafficRequest) GetBotname() string {
-	if x != nil {
-		return x.Botname
+	if x != nil && x.Botname != nil {
+		return *x.Botname
 	}
 	return ""
 }
 
 func (x *GetTopPathStatisticsByTrafficRequest) GetBotorganization() string {
-	if x != nil {
-		return x.Botorganization
+	if x != nil && x.Botorganization != nil {
+		return *x.Botorganization
 	}
 	return ""
 }
@@ -9916,8 +10018,8 @@ func (x *GetTopPathStatisticsByTrafficRequest) GetLimit() int32 {
 }
 
 func (x *GetTopPathStatisticsByTrafficRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -9944,8 +10046,8 @@ func (x *GetTopPathStatisticsByTrafficRequest) GetTimewindow() *TimeWindow {
 }
 
 func (x *GetTopPathStatisticsByTrafficRequest) GetUripathprefix() string {
-	if x != nil {
-		return x.Uripathprefix
+	if x != nil && x.Uripathprefix != nil {
+		return *x.Uripathprefix
 	}
 	return ""
 }
@@ -9959,7 +10061,7 @@ func (x *GetTopPathStatisticsByTrafficRequest) GetWebaclarn() string {
 
 type GetTopPathStatisticsByTrafficResponse struct {
 	state             protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker        string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker        *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Pathstatistics    []*PathStatistics      `protobuf:"bytes,322056386,rep,name=pathstatistics,proto3" json:"pathstatistics,omitempty"`
 	Topcategories     []*PathStatistics      `protobuf:"bytes,469322721,rep,name=topcategories,proto3" json:"topcategories,omitempty"`
 	Totalrequestcount int64                  `protobuf:"varint,525689458,opt,name=totalrequestcount,proto3" json:"totalrequestcount,omitempty"`
@@ -9998,8 +10100,8 @@ func (*GetTopPathStatisticsByTrafficResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetTopPathStatisticsByTrafficResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -10115,9 +10217,9 @@ func (x *GetWebACLForResourceResponse) GetWebacl() *WebACL {
 
 type GetWebACLRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -10154,22 +10256,22 @@ func (*GetWebACLRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetWebACLRequest) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *GetWebACLRequest) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *GetWebACLRequest) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -10183,8 +10285,8 @@ func (x *GetWebACLRequest) GetScope() Scope {
 
 type GetWebACLResponse struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
-	Applicationintegrationurl string                 `protobuf:"bytes,182743751,opt,name=applicationintegrationurl,proto3" json:"applicationintegrationurl,omitempty"`
-	Locktoken                 string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
+	Applicationintegrationurl *string                `protobuf:"bytes,182743751,opt,name=applicationintegrationurl,proto3,oneof" json:"applicationintegrationurl,omitempty"`
+	Locktoken                 *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
 	Webacl                    *WebACL                `protobuf:"bytes,343373504,opt,name=webacl,proto3" json:"webacl,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
@@ -10221,15 +10323,15 @@ func (*GetWebACLResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *GetWebACLResponse) GetApplicationintegrationurl() string {
-	if x != nil {
-		return x.Applicationintegrationurl
+	if x != nil && x.Applicationintegrationurl != nil {
+		return *x.Applicationintegrationurl
 	}
 	return ""
 }
 
 func (x *GetWebACLResponse) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
@@ -10243,8 +10345,8 @@ func (x *GetWebACLResponse) GetWebacl() *WebACL {
 
 type HTTPHeader struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Value         string                 `protobuf:"bytes,289929579,opt,name=value,proto3" json:"value,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Value         *string                `protobuf:"bytes,289929579,opt,name=value,proto3,oneof" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10280,27 +10382,27 @@ func (*HTTPHeader) Descriptor() ([]byte, []int) {
 }
 
 func (x *HTTPHeader) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *HTTPHeader) GetValue() string {
-	if x != nil {
-		return x.Value
+	if x != nil && x.Value != nil {
+		return *x.Value
 	}
 	return ""
 }
 
 type HTTPRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Clientip      string                 `protobuf:"bytes,247557856,opt,name=clientip,proto3" json:"clientip,omitempty"`
-	Country       string                 `protobuf:"bytes,83164786,opt,name=country,proto3" json:"country,omitempty"`
-	Httpversion   string                 `protobuf:"bytes,12814936,opt,name=httpversion,proto3" json:"httpversion,omitempty"`
+	Clientip      *string                `protobuf:"bytes,247557856,opt,name=clientip,proto3,oneof" json:"clientip,omitempty"`
+	Country       *string                `protobuf:"bytes,83164786,opt,name=country,proto3,oneof" json:"country,omitempty"`
+	Httpversion   *string                `protobuf:"bytes,12814936,opt,name=httpversion,proto3,oneof" json:"httpversion,omitempty"`
 	Headers       []*HTTPHeader          `protobuf:"bytes,323967370,rep,name=headers,proto3" json:"headers,omitempty"`
-	Method        string                 `protobuf:"bytes,413321041,opt,name=method,proto3" json:"method,omitempty"`
-	Uri           string                 `protobuf:"bytes,443116318,opt,name=uri,proto3" json:"uri,omitempty"`
+	Method        *string                `protobuf:"bytes,413321041,opt,name=method,proto3,oneof" json:"method,omitempty"`
+	Uri           *string                `protobuf:"bytes,443116318,opt,name=uri,proto3,oneof" json:"uri,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10336,22 +10438,22 @@ func (*HTTPRequest) Descriptor() ([]byte, []int) {
 }
 
 func (x *HTTPRequest) GetClientip() string {
-	if x != nil {
-		return x.Clientip
+	if x != nil && x.Clientip != nil {
+		return *x.Clientip
 	}
 	return ""
 }
 
 func (x *HTTPRequest) GetCountry() string {
-	if x != nil {
-		return x.Country
+	if x != nil && x.Country != nil {
+		return *x.Country
 	}
 	return ""
 }
 
 func (x *HTTPRequest) GetHttpversion() string {
-	if x != nil {
-		return x.Httpversion
+	if x != nil && x.Httpversion != nil {
+		return *x.Httpversion
 	}
 	return ""
 }
@@ -10364,15 +10466,15 @@ func (x *HTTPRequest) GetHeaders() []*HTTPHeader {
 }
 
 func (x *HTTPRequest) GetMethod() string {
-	if x != nil {
-		return x.Method
+	if x != nil && x.Method != nil {
+		return *x.Method
 	}
 	return ""
 }
 
 func (x *HTTPRequest) GetUri() string {
-	if x != nil {
-		return x.Uri
+	if x != nil && x.Uri != nil {
+		return *x.Uri
 	}
 	return ""
 }
@@ -10545,7 +10647,7 @@ type IPSet struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Arn              string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
 	Addresses        []string               `protobuf:"bytes,375939972,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	Description      string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description      *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Ipaddressversion IPAddressVersion       `protobuf:"varint,313363841,opt,name=ipaddressversion,proto3,enum=wafv2.IPAddressVersion" json:"ipaddressversion,omitempty"`
 	Id               string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Name             string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
@@ -10598,8 +10700,8 @@ func (x *IPSet) GetAddresses() []string {
 }
 
 func (x *IPSet) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -10739,11 +10841,11 @@ func (x *IPSetReferenceStatement) GetIpsetforwardedipconfig() *IPSetForwardedIPC
 
 type IPSetSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Locktoken     *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -10779,36 +10881,36 @@ func (*IPSetSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *IPSetSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *IPSetSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *IPSetSummary) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *IPSetSummary) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
 
 func (x *IPSetSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -11207,7 +11309,7 @@ func (x *LabelNameCondition) GetLabelname() string {
 
 type LabelSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11243,8 +11345,8 @@ func (*LabelSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *LabelSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -11252,7 +11354,7 @@ func (x *LabelSummary) GetName() string {
 type ListAPIKeysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11296,8 +11398,8 @@ func (x *ListAPIKeysRequest) GetLimit() int32 {
 }
 
 func (x *ListAPIKeysRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11312,8 +11414,8 @@ func (x *ListAPIKeysRequest) GetScope() Scope {
 type ListAPIKeysResponse struct {
 	state                     protoimpl.MessageState `protogen:"open.v1"`
 	Apikeysummaries           []*APIKeySummary       `protobuf:"bytes,137828491,rep,name=apikeysummaries,proto3" json:"apikeysummaries,omitempty"`
-	Applicationintegrationurl string                 `protobuf:"bytes,182743751,opt,name=applicationintegrationurl,proto3" json:"applicationintegrationurl,omitempty"`
-	Nextmarker                string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Applicationintegrationurl *string                `protobuf:"bytes,182743751,opt,name=applicationintegrationurl,proto3,oneof" json:"applicationintegrationurl,omitempty"`
+	Nextmarker                *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields             protoimpl.UnknownFields
 	sizeCache                 protoimpl.SizeCache
 }
@@ -11356,15 +11458,15 @@ func (x *ListAPIKeysResponse) GetApikeysummaries() []*APIKeySummary {
 }
 
 func (x *ListAPIKeysResponse) GetApplicationintegrationurl() string {
-	if x != nil {
-		return x.Applicationintegrationurl
+	if x != nil && x.Applicationintegrationurl != nil {
+		return *x.Applicationintegrationurl
 	}
 	return ""
 }
 
 func (x *ListAPIKeysResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11373,7 +11475,7 @@ type ListAvailableManagedRuleGroupVersionsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Vendorname    string                 `protobuf:"bytes,159329689,opt,name=vendorname,proto3" json:"vendorname,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -11425,8 +11527,8 @@ func (x *ListAvailableManagedRuleGroupVersionsRequest) GetName() string {
 }
 
 func (x *ListAvailableManagedRuleGroupVersionsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11447,8 +11549,8 @@ func (x *ListAvailableManagedRuleGroupVersionsRequest) GetVendorname() string {
 
 type ListAvailableManagedRuleGroupVersionsResponse struct {
 	state                 protoimpl.MessageState     `protogen:"open.v1"`
-	Currentdefaultversion string                     `protobuf:"bytes,329624010,opt,name=currentdefaultversion,proto3" json:"currentdefaultversion,omitempty"`
-	Nextmarker            string                     `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Currentdefaultversion *string                    `protobuf:"bytes,329624010,opt,name=currentdefaultversion,proto3,oneof" json:"currentdefaultversion,omitempty"`
+	Nextmarker            *string                    `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Versions              []*ManagedRuleGroupVersion `protobuf:"bytes,252099085,rep,name=versions,proto3" json:"versions,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -11485,15 +11587,15 @@ func (*ListAvailableManagedRuleGroupVersionsResponse) Descriptor() ([]byte, []in
 }
 
 func (x *ListAvailableManagedRuleGroupVersionsResponse) GetCurrentdefaultversion() string {
-	if x != nil {
-		return x.Currentdefaultversion
+	if x != nil && x.Currentdefaultversion != nil {
+		return *x.Currentdefaultversion
 	}
 	return ""
 }
 
 func (x *ListAvailableManagedRuleGroupVersionsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11508,7 +11610,7 @@ func (x *ListAvailableManagedRuleGroupVersionsResponse) GetVersions() []*Managed
 type ListAvailableManagedRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11552,8 +11654,8 @@ func (x *ListAvailableManagedRuleGroupsRequest) GetLimit() int32 {
 }
 
 func (x *ListAvailableManagedRuleGroupsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11568,7 +11670,7 @@ func (x *ListAvailableManagedRuleGroupsRequest) GetScope() Scope {
 type ListAvailableManagedRuleGroupsResponse struct {
 	state             protoimpl.MessageState     `protogen:"open.v1"`
 	Managedrulegroups []*ManagedRuleGroupSummary `protobuf:"bytes,46574561,rep,name=managedrulegroups,proto3" json:"managedrulegroups,omitempty"`
-	Nextmarker        string                     `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker        *string                    `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -11611,8 +11713,8 @@ func (x *ListAvailableManagedRuleGroupsResponse) GetManagedrulegroups() []*Manag
 }
 
 func (x *ListAvailableManagedRuleGroupsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11620,7 +11722,7 @@ func (x *ListAvailableManagedRuleGroupsResponse) GetNextmarker() string {
 type ListIPSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11664,8 +11766,8 @@ func (x *ListIPSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListIPSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11680,7 +11782,7 @@ func (x *ListIPSetsRequest) GetScope() Scope {
 type ListIPSetsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Ipsets        []*IPSetSummary        `protobuf:"bytes,434949030,rep,name=ipsets,proto3" json:"ipsets,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -11723,8 +11825,8 @@ func (x *ListIPSetsResponse) GetIpsets() []*IPSetSummary {
 }
 
 func (x *ListIPSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11733,7 +11835,7 @@ type ListLoggingConfigurationsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
 	Logscope      LogScope               `protobuf:"varint,188235840,opt,name=logscope,proto3,enum=wafv2.LogScope" json:"logscope,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11784,8 +11886,8 @@ func (x *ListLoggingConfigurationsRequest) GetLogscope() LogScope {
 }
 
 func (x *ListLoggingConfigurationsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11800,7 +11902,7 @@ func (x *ListLoggingConfigurationsRequest) GetScope() Scope {
 type ListLoggingConfigurationsResponse struct {
 	state                 protoimpl.MessageState  `protogen:"open.v1"`
 	Loggingconfigurations []*LoggingConfiguration `protobuf:"bytes,387361734,rep,name=loggingconfigurations,proto3" json:"loggingconfigurations,omitempty"`
-	Nextmarker            string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker            *string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -11843,8 +11945,8 @@ func (x *ListLoggingConfigurationsResponse) GetLoggingconfigurations() []*Loggin
 }
 
 func (x *ListLoggingConfigurationsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11852,7 +11954,7 @@ func (x *ListLoggingConfigurationsResponse) GetNextmarker() string {
 type ListManagedRuleSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -11896,8 +11998,8 @@ func (x *ListManagedRuleSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListManagedRuleSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11912,7 +12014,7 @@ func (x *ListManagedRuleSetsRequest) GetScope() Scope {
 type ListManagedRuleSetsResponse struct {
 	state           protoimpl.MessageState   `protogen:"open.v1"`
 	Managedrulesets []*ManagedRuleSetSummary `protobuf:"bytes,141451946,rep,name=managedrulesets,proto3" json:"managedrulesets,omitempty"`
-	Nextmarker      string                   `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker      *string                  `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -11955,8 +12057,8 @@ func (x *ListManagedRuleSetsResponse) GetManagedrulesets() []*ManagedRuleSetSumm
 }
 
 func (x *ListManagedRuleSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -11964,7 +12066,7 @@ func (x *ListManagedRuleSetsResponse) GetNextmarker() string {
 type ListMobileSdkReleasesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Platform      Platform               `protobuf:"varint,468905683,opt,name=platform,proto3,enum=wafv2.Platform" json:"platform,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12008,8 +12110,8 @@ func (x *ListMobileSdkReleasesRequest) GetLimit() int32 {
 }
 
 func (x *ListMobileSdkReleasesRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12023,7 +12125,7 @@ func (x *ListMobileSdkReleasesRequest) GetPlatform() Platform {
 
 type ListMobileSdkReleasesResponse struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker       string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker       *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Releasesummaries []*ReleaseSummary      `protobuf:"bytes,494914987,rep,name=releasesummaries,proto3" json:"releasesummaries,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -12060,8 +12162,8 @@ func (*ListMobileSdkReleasesResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListMobileSdkReleasesResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12076,7 +12178,7 @@ func (x *ListMobileSdkReleasesResponse) GetReleasesummaries() []*ReleaseSummary 
 type ListRegexPatternSetsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12120,8 +12222,8 @@ func (x *ListRegexPatternSetsRequest) GetLimit() int32 {
 }
 
 func (x *ListRegexPatternSetsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12135,7 +12237,7 @@ func (x *ListRegexPatternSetsRequest) GetScope() Scope {
 
 type ListRegexPatternSetsResponse struct {
 	state            protoimpl.MessageState    `protogen:"open.v1"`
-	Nextmarker       string                    `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker       *string                   `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Regexpatternsets []*RegexPatternSetSummary `protobuf:"bytes,305199780,rep,name=regexpatternsets,proto3" json:"regexpatternsets,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
@@ -12172,8 +12274,8 @@ func (*ListRegexPatternSetsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRegexPatternSetsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12284,7 +12386,7 @@ func (x *ListResourcesForWebACLResponse) GetResourcearns() []string {
 type ListRuleGroupsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12328,8 +12430,8 @@ func (x *ListRuleGroupsRequest) GetLimit() int32 {
 }
 
 func (x *ListRuleGroupsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12343,7 +12445,7 @@ func (x *ListRuleGroupsRequest) GetScope() Scope {
 
 type ListRuleGroupsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Rulegroups    []*RuleGroupSummary    `protobuf:"bytes,270019740,rep,name=rulegroups,proto3" json:"rulegroups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12380,8 +12482,8 @@ func (*ListRuleGroupsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListRuleGroupsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12398,7 +12500,7 @@ type ListSettlementRecordsRequest struct {
 	Currency      Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
 	Filters       []*MonetizationFilter  `protobuf:"bytes,188393197,rep,name=filters,proto3" json:"filters,omitempty"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Sortby        SettlementSortBy       `protobuf:"varint,186052369,opt,name=sortby,proto3,enum=wafv2.SettlementSortBy" json:"sortby,omitempty"`
 	Sortorder     SortOrder              `protobuf:"varint,274231684,opt,name=sortorder,proto3,enum=wafv2.SortOrder" json:"sortorder,omitempty"`
@@ -12459,8 +12561,8 @@ func (x *ListSettlementRecordsRequest) GetLimit() int32 {
 }
 
 func (x *ListSettlementRecordsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12495,7 +12597,7 @@ func (x *ListSettlementRecordsRequest) GetTimewindow() *TimeWindow {
 
 type ListSettlementRecordsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Settlements   []*SettlementRecord    `protobuf:"bytes,284636764,rep,name=settlements,proto3" json:"settlements,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12532,8 +12634,8 @@ func (*ListSettlementRecordsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListSettlementRecordsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12548,7 +12650,7 @@ func (x *ListSettlementRecordsResponse) GetSettlements() []*SettlementRecord {
 type ListTagsForResourceRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12592,8 +12694,8 @@ func (x *ListTagsForResourceRequest) GetLimit() int32 {
 }
 
 func (x *ListTagsForResourceRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12607,7 +12709,7 @@ func (x *ListTagsForResourceRequest) GetResourcearn() string {
 
 type ListTagsForResourceResponse struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker         string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker         *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Taginfoforresource *TagInfoForResource    `protobuf:"bytes,8132955,opt,name=taginfoforresource,proto3" json:"taginfoforresource,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -12644,8 +12746,8 @@ func (*ListTagsForResourceResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListTagsForResourceResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12660,7 +12762,7 @@ func (x *ListTagsForResourceResponse) GetTaginfoforresource() *TagInfoForResourc
 type ListWebACLsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Limit         *int32                 `protobuf:"varint,412502741,opt,name=limit,proto3,oneof" json:"limit,omitempty"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Scope         Scope                  `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12704,8 +12806,8 @@ func (x *ListWebACLsRequest) GetLimit() int32 {
 }
 
 func (x *ListWebACLsRequest) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12719,7 +12821,7 @@ func (x *ListWebACLsRequest) GetScope() Scope {
 
 type ListWebACLsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextmarker    string                 `protobuf:"bytes,531333283,opt,name=nextmarker,proto3" json:"nextmarker,omitempty"`
+	Nextmarker    *string                `protobuf:"bytes,531333283,opt,name=nextmarker,proto3,oneof" json:"nextmarker,omitempty"`
 	Webacls       []*WebACLSummary       `protobuf:"bytes,68158245,rep,name=webacls,proto3" json:"webacls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -12756,8 +12858,8 @@ func (*ListWebACLsResponse) Descriptor() ([]byte, []int) {
 }
 
 func (x *ListWebACLsResponse) GetNextmarker() string {
-	if x != nil {
-		return x.Nextmarker
+	if x != nil && x.Nextmarker != nil {
+		return *x.Nextmarker
 	}
 	return ""
 }
@@ -12917,13 +13019,13 @@ type ManagedProductDescriptor struct {
 	state                    protoimpl.MessageState `protogen:"open.v1"`
 	Isadvancedmanagedruleset *bool                  `protobuf:"varint,288313871,opt,name=isadvancedmanagedruleset,proto3,oneof" json:"isadvancedmanagedruleset,omitempty"`
 	Isversioningsupported    *bool                  `protobuf:"varint,195956662,opt,name=isversioningsupported,proto3,oneof" json:"isversioningsupported,omitempty"`
-	Managedrulesetname       string                 `protobuf:"bytes,161099140,opt,name=managedrulesetname,proto3" json:"managedrulesetname,omitempty"`
-	Productdescription       string                 `protobuf:"bytes,78087559,opt,name=productdescription,proto3" json:"productdescription,omitempty"`
-	Productid                string                 `protobuf:"bytes,53264354,opt,name=productid,proto3" json:"productid,omitempty"`
-	Productlink              string                 `protobuf:"bytes,191063997,opt,name=productlink,proto3" json:"productlink,omitempty"`
-	Producttitle             string                 `protobuf:"bytes,452337643,opt,name=producttitle,proto3" json:"producttitle,omitempty"`
-	Snstopicarn              string                 `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3" json:"snstopicarn,omitempty"`
-	Vendorname               string                 `protobuf:"bytes,159329689,opt,name=vendorname,proto3" json:"vendorname,omitempty"`
+	Managedrulesetname       *string                `protobuf:"bytes,161099140,opt,name=managedrulesetname,proto3,oneof" json:"managedrulesetname,omitempty"`
+	Productdescription       *string                `protobuf:"bytes,78087559,opt,name=productdescription,proto3,oneof" json:"productdescription,omitempty"`
+	Productid                *string                `protobuf:"bytes,53264354,opt,name=productid,proto3,oneof" json:"productid,omitempty"`
+	Productlink              *string                `protobuf:"bytes,191063997,opt,name=productlink,proto3,oneof" json:"productlink,omitempty"`
+	Producttitle             *string                `protobuf:"bytes,452337643,opt,name=producttitle,proto3,oneof" json:"producttitle,omitempty"`
+	Snstopicarn              *string                `protobuf:"bytes,374815596,opt,name=snstopicarn,proto3,oneof" json:"snstopicarn,omitempty"`
+	Vendorname               *string                `protobuf:"bytes,159329689,opt,name=vendorname,proto3,oneof" json:"vendorname,omitempty"`
 	unknownFields            protoimpl.UnknownFields
 	sizeCache                protoimpl.SizeCache
 }
@@ -12973,50 +13075,50 @@ func (x *ManagedProductDescriptor) GetIsversioningsupported() bool {
 }
 
 func (x *ManagedProductDescriptor) GetManagedrulesetname() string {
-	if x != nil {
-		return x.Managedrulesetname
+	if x != nil && x.Managedrulesetname != nil {
+		return *x.Managedrulesetname
 	}
 	return ""
 }
 
 func (x *ManagedProductDescriptor) GetProductdescription() string {
-	if x != nil {
-		return x.Productdescription
+	if x != nil && x.Productdescription != nil {
+		return *x.Productdescription
 	}
 	return ""
 }
 
 func (x *ManagedProductDescriptor) GetProductid() string {
-	if x != nil {
-		return x.Productid
+	if x != nil && x.Productid != nil {
+		return *x.Productid
 	}
 	return ""
 }
 
 func (x *ManagedProductDescriptor) GetProductlink() string {
-	if x != nil {
-		return x.Productlink
+	if x != nil && x.Productlink != nil {
+		return *x.Productlink
 	}
 	return ""
 }
 
 func (x *ManagedProductDescriptor) GetProducttitle() string {
-	if x != nil {
-		return x.Producttitle
+	if x != nil && x.Producttitle != nil {
+		return *x.Producttitle
 	}
 	return ""
 }
 
 func (x *ManagedProductDescriptor) GetSnstopicarn() string {
-	if x != nil {
-		return x.Snstopicarn
+	if x != nil && x.Snstopicarn != nil {
+		return *x.Snstopicarn
 	}
 	return ""
 }
 
 func (x *ManagedProductDescriptor) GetVendorname() string {
-	if x != nil {
-		return x.Vendorname
+	if x != nil && x.Vendorname != nil {
+		return *x.Vendorname
 	}
 	return ""
 }
@@ -13027,7 +13129,7 @@ type ManagedRuleGroupConfig struct {
 	Awsmanagedrulesatpruleset        *AWSManagedRulesATPRuleSet        `protobuf:"bytes,263010970,opt,name=awsmanagedrulesatpruleset,proto3" json:"awsmanagedrulesatpruleset,omitempty"`
 	Awsmanagedrulesantiddosruleset   *AWSManagedRulesAntiDDoSRuleSet   `protobuf:"bytes,517768335,opt,name=awsmanagedrulesantiddosruleset,proto3" json:"awsmanagedrulesantiddosruleset,omitempty"`
 	Awsmanagedrulesbotcontrolruleset *AWSManagedRulesBotControlRuleSet `protobuf:"bytes,283828283,opt,name=awsmanagedrulesbotcontrolruleset,proto3" json:"awsmanagedrulesbotcontrolruleset,omitempty"`
-	Loginpath                        string                            `protobuf:"bytes,128281874,opt,name=loginpath,proto3" json:"loginpath,omitempty"`
+	Loginpath                        *string                           `protobuf:"bytes,128281874,opt,name=loginpath,proto3,oneof" json:"loginpath,omitempty"`
 	Passwordfield                    *PasswordField                    `protobuf:"bytes,318147221,opt,name=passwordfield,proto3" json:"passwordfield,omitempty"`
 	Payloadtype                      PayloadType                       `protobuf:"varint,510845422,opt,name=payloadtype,proto3,enum=wafv2.PayloadType" json:"payloadtype,omitempty"`
 	Usernamefield                    *UsernameField                    `protobuf:"bytes,125830068,opt,name=usernamefield,proto3" json:"usernamefield,omitempty"`
@@ -13094,8 +13196,8 @@ func (x *ManagedRuleGroupConfig) GetAwsmanagedrulesbotcontrolruleset() *AWSManag
 }
 
 func (x *ManagedRuleGroupConfig) GetLoginpath() string {
-	if x != nil {
-		return x.Loginpath
+	if x != nil && x.Loginpath != nil {
+		return *x.Loginpath
 	}
 	return ""
 }
@@ -13129,7 +13231,7 @@ type ManagedRuleGroupStatement struct {
 	Ruleactionoverrides     []*RuleActionOverride     `protobuf:"bytes,354236935,rep,name=ruleactionoverrides,proto3" json:"ruleactionoverrides,omitempty"`
 	Scopedownstatement      *Statement                `protobuf:"bytes,116108605,opt,name=scopedownstatement,proto3" json:"scopedownstatement,omitempty"`
 	Vendorname              string                    `protobuf:"bytes,159329689,opt,name=vendorname,proto3" json:"vendorname,omitempty"`
-	Version                 string                    `protobuf:"bytes,500028728,opt,name=version,proto3" json:"version,omitempty"`
+	Version                 *string                   `protobuf:"bytes,500028728,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -13207,17 +13309,17 @@ func (x *ManagedRuleGroupStatement) GetVendorname() string {
 }
 
 func (x *ManagedRuleGroupStatement) GetVersion() string {
-	if x != nil {
-		return x.Version
+	if x != nil && x.Version != nil {
+		return *x.Version
 	}
 	return ""
 }
 
 type ManagedRuleGroupSummary struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Description         string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Vendorname          string                 `protobuf:"bytes,159329689,opt,name=vendorname,proto3" json:"vendorname,omitempty"`
+	Description         *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Name                *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
+	Vendorname          *string                `protobuf:"bytes,159329689,opt,name=vendorname,proto3,oneof" json:"vendorname,omitempty"`
 	Versioningsupported *bool                  `protobuf:"varint,166873158,opt,name=versioningsupported,proto3,oneof" json:"versioningsupported,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
@@ -13254,22 +13356,22 @@ func (*ManagedRuleGroupSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManagedRuleGroupSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *ManagedRuleGroupSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 func (x *ManagedRuleGroupSummary) GetVendorname() string {
-	if x != nil {
-		return x.Vendorname
+	if x != nil && x.Vendorname != nil {
+		return *x.Vendorname
 	}
 	return ""
 }
@@ -13283,8 +13385,8 @@ func (x *ManagedRuleGroupSummary) GetVersioningsupported() bool {
 
 type ManagedRuleGroupVersion struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
-	Lastupdatetimestamp string                 `protobuf:"bytes,118818825,opt,name=lastupdatetimestamp,proto3" json:"lastupdatetimestamp,omitempty"`
-	Name                string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Lastupdatetimestamp *string                `protobuf:"bytes,118818825,opt,name=lastupdatetimestamp,proto3,oneof" json:"lastupdatetimestamp,omitempty"`
+	Name                *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -13320,15 +13422,15 @@ func (*ManagedRuleGroupVersion) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManagedRuleGroupVersion) GetLastupdatetimestamp() string {
-	if x != nil {
-		return x.Lastupdatetimestamp
+	if x != nil && x.Lastupdatetimestamp != nil {
+		return *x.Lastupdatetimestamp
 	}
 	return ""
 }
 
 func (x *ManagedRuleGroupVersion) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -13336,12 +13438,12 @@ func (x *ManagedRuleGroupVersion) GetName() string {
 type ManagedRuleSet struct {
 	state              protoimpl.MessageState            `protogen:"open.v1"`
 	Arn                string                            `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description        string                            `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description        *string                           `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id                 string                            `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Labelnamespace     string                            `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3" json:"labelnamespace,omitempty"`
+	Labelnamespace     *string                           `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3,oneof" json:"labelnamespace,omitempty"`
 	Name               string                            `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Publishedversions  map[string]*ManagedRuleSetVersion `protobuf:"bytes,168260833,rep,name=publishedversions,proto3" json:"publishedversions,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Recommendedversion string                            `protobuf:"bytes,83103137,opt,name=recommendedversion,proto3" json:"recommendedversion,omitempty"`
+	Recommendedversion *string                           `protobuf:"bytes,83103137,opt,name=recommendedversion,proto3,oneof" json:"recommendedversion,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -13384,8 +13486,8 @@ func (x *ManagedRuleSet) GetArn() string {
 }
 
 func (x *ManagedRuleSet) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -13398,8 +13500,8 @@ func (x *ManagedRuleSet) GetId() string {
 }
 
 func (x *ManagedRuleSet) GetLabelnamespace() string {
-	if x != nil {
-		return x.Labelnamespace
+	if x != nil && x.Labelnamespace != nil {
+		return *x.Labelnamespace
 	}
 	return ""
 }
@@ -13419,20 +13521,20 @@ func (x *ManagedRuleSet) GetPublishedversions() map[string]*ManagedRuleSetVersio
 }
 
 func (x *ManagedRuleSet) GetRecommendedversion() string {
-	if x != nil {
-		return x.Recommendedversion
+	if x != nil && x.Recommendedversion != nil {
+		return *x.Recommendedversion
 	}
 	return ""
 }
 
 type ManagedRuleSetSummary struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Arn            string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description    string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Id             string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Labelnamespace string                 `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3" json:"labelnamespace,omitempty"`
-	Locktoken      string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
-	Name           string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn            *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Description    *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id             *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Labelnamespace *string                `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3,oneof" json:"labelnamespace,omitempty"`
+	Locktoken      *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
+	Name           *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -13468,55 +13570,55 @@ func (*ManagedRuleSetSummary) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManagedRuleSetSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *ManagedRuleSetSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *ManagedRuleSetSummary) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *ManagedRuleSetSummary) GetLabelnamespace() string {
-	if x != nil {
-		return x.Labelnamespace
+	if x != nil && x.Labelnamespace != nil {
+		return *x.Labelnamespace
 	}
 	return ""
 }
 
 func (x *ManagedRuleSetSummary) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
 
 func (x *ManagedRuleSetSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type ManagedRuleSetVersion struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Associatedrulegrouparn string                 `protobuf:"bytes,416522796,opt,name=associatedrulegrouparn,proto3" json:"associatedrulegrouparn,omitempty"`
+	Associatedrulegrouparn *string                `protobuf:"bytes,416522796,opt,name=associatedrulegrouparn,proto3,oneof" json:"associatedrulegrouparn,omitempty"`
 	Capacity               *int64                 `protobuf:"varint,107253930,opt,name=capacity,proto3,oneof" json:"capacity,omitempty"`
-	Expirytimestamp        string                 `protobuf:"bytes,460460551,opt,name=expirytimestamp,proto3" json:"expirytimestamp,omitempty"`
+	Expirytimestamp        *string                `protobuf:"bytes,460460551,opt,name=expirytimestamp,proto3,oneof" json:"expirytimestamp,omitempty"`
 	Forecastedlifetime     *int32                 `protobuf:"varint,149179979,opt,name=forecastedlifetime,proto3,oneof" json:"forecastedlifetime,omitempty"`
-	Lastupdatetimestamp    string                 `protobuf:"bytes,118818825,opt,name=lastupdatetimestamp,proto3" json:"lastupdatetimestamp,omitempty"`
-	Publishtimestamp       string                 `protobuf:"bytes,477892057,opt,name=publishtimestamp,proto3" json:"publishtimestamp,omitempty"`
+	Lastupdatetimestamp    *string                `protobuf:"bytes,118818825,opt,name=lastupdatetimestamp,proto3,oneof" json:"lastupdatetimestamp,omitempty"`
+	Publishtimestamp       *string                `protobuf:"bytes,477892057,opt,name=publishtimestamp,proto3,oneof" json:"publishtimestamp,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -13552,8 +13654,8 @@ func (*ManagedRuleSetVersion) Descriptor() ([]byte, []int) {
 }
 
 func (x *ManagedRuleSetVersion) GetAssociatedrulegrouparn() string {
-	if x != nil {
-		return x.Associatedrulegrouparn
+	if x != nil && x.Associatedrulegrouparn != nil {
+		return *x.Associatedrulegrouparn
 	}
 	return ""
 }
@@ -13566,8 +13668,8 @@ func (x *ManagedRuleSetVersion) GetCapacity() int64 {
 }
 
 func (x *ManagedRuleSetVersion) GetExpirytimestamp() string {
-	if x != nil {
-		return x.Expirytimestamp
+	if x != nil && x.Expirytimestamp != nil {
+		return *x.Expirytimestamp
 	}
 	return ""
 }
@@ -13580,15 +13682,15 @@ func (x *ManagedRuleSetVersion) GetForecastedlifetime() int32 {
 }
 
 func (x *ManagedRuleSetVersion) GetLastupdatetimestamp() string {
-	if x != nil {
-		return x.Lastupdatetimestamp
+	if x != nil && x.Lastupdatetimestamp != nil {
+		return *x.Lastupdatetimestamp
 	}
 	return ""
 }
 
 func (x *ManagedRuleSetVersion) GetPublishtimestamp() string {
-	if x != nil {
-		return x.Publishtimestamp
+	if x != nil && x.Publishtimestamp != nil {
+		return *x.Publishtimestamp
 	}
 	return ""
 }
@@ -13631,10 +13733,10 @@ func (*Method) Descriptor() ([]byte, []int) {
 
 type MobileSdkRelease struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Releasenotes   string                 `protobuf:"bytes,98800172,opt,name=releasenotes,proto3" json:"releasenotes,omitempty"`
-	Releaseversion string                 `protobuf:"bytes,8739171,opt,name=releaseversion,proto3" json:"releaseversion,omitempty"`
+	Releasenotes   *string                `protobuf:"bytes,98800172,opt,name=releasenotes,proto3,oneof" json:"releasenotes,omitempty"`
+	Releaseversion *string                `protobuf:"bytes,8739171,opt,name=releaseversion,proto3,oneof" json:"releaseversion,omitempty"`
 	Tags           []*Tag                 `protobuf:"bytes,381526209,rep,name=tags,proto3" json:"tags,omitempty"`
-	Timestamp      string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Timestamp      *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -13670,15 +13772,15 @@ func (*MobileSdkRelease) Descriptor() ([]byte, []int) {
 }
 
 func (x *MobileSdkRelease) GetReleasenotes() string {
-	if x != nil {
-		return x.Releasenotes
+	if x != nil && x.Releasenotes != nil {
+		return *x.Releasenotes
 	}
 	return ""
 }
 
 func (x *MobileSdkRelease) GetReleaseversion() string {
-	if x != nil {
-		return x.Releaseversion
+	if x != nil && x.Releaseversion != nil {
+		return *x.Releaseversion
 	}
 	return ""
 }
@@ -13691,8 +13793,8 @@ func (x *MobileSdkRelease) GetTags() []*Tag {
 }
 
 func (x *MobileSdkRelease) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
@@ -13803,7 +13905,7 @@ func (x *MonetizationFilter) GetValues() []string {
 
 type MonetizeAction struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Pricemultiplier string                 `protobuf:"bytes,510698862,opt,name=pricemultiplier,proto3" json:"pricemultiplier,omitempty"`
+	Pricemultiplier *string                `protobuf:"bytes,510698862,opt,name=pricemultiplier,proto3,oneof" json:"pricemultiplier,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -13839,8 +13941,8 @@ func (*MonetizeAction) Descriptor() ([]byte, []int) {
 }
 
 func (x *MonetizeAction) GetPricemultiplier() string {
-	if x != nil {
-		return x.Pricemultiplier
+	if x != nil && x.Pricemultiplier != nil {
+		return *x.Pricemultiplier
 	}
 	return ""
 }
@@ -14289,6 +14391,58 @@ func (x *PhoneNumberField) GetIdentifier() string {
 	return ""
 }
 
+type PreParseTextTransformation struct {
+	state         protoimpl.MessageState         `protogen:"open.v1"`
+	Priority      int32                          `protobuf:"varint,109944618,opt,name=priority,proto3" json:"priority,omitempty"`
+	Type          PreParseTextTransformationType `protobuf:"varint,290836590,opt,name=type,proto3,enum=wafv2.PreParseTextTransformationType" json:"type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PreParseTextTransformation) Reset() {
+	*x = PreParseTextTransformation{}
+	mi := &file_wafv2_proto_msgTypes[191]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PreParseTextTransformation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PreParseTextTransformation) ProtoMessage() {}
+
+func (x *PreParseTextTransformation) ProtoReflect() protoreflect.Message {
+	mi := &file_wafv2_proto_msgTypes[191]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PreParseTextTransformation.ProtoReflect.Descriptor instead.
+func (*PreParseTextTransformation) Descriptor() ([]byte, []int) {
+	return file_wafv2_proto_rawDescGZIP(), []int{191}
+}
+
+func (x *PreParseTextTransformation) GetPriority() int32 {
+	if x != nil {
+		return x.Priority
+	}
+	return 0
+}
+
+func (x *PreParseTextTransformation) GetType() PreParseTextTransformationType {
+	if x != nil {
+		return x.Type
+	}
+	return PreParseTextTransformationType_PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE
+}
+
 type Price struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Amount        string                 `protobuf:"bytes,72127338,opt,name=amount,proto3" json:"amount,omitempty"`
@@ -14299,7 +14453,7 @@ type Price struct {
 
 func (x *Price) Reset() {
 	*x = Price{}
-	mi := &file_wafv2_proto_msgTypes[191]
+	mi := &file_wafv2_proto_msgTypes[192]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14311,7 +14465,7 @@ func (x *Price) String() string {
 func (*Price) ProtoMessage() {}
 
 func (x *Price) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[191]
+	mi := &file_wafv2_proto_msgTypes[192]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14324,7 +14478,7 @@ func (x *Price) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Price.ProtoReflect.Descriptor instead.
 func (*Price) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{191}
+	return file_wafv2_proto_rawDescGZIP(), []int{192}
 }
 
 func (x *Price) GetAmount() string {
@@ -14350,7 +14504,7 @@ type PutLoggingConfigurationRequest struct {
 
 func (x *PutLoggingConfigurationRequest) Reset() {
 	*x = PutLoggingConfigurationRequest{}
-	mi := &file_wafv2_proto_msgTypes[192]
+	mi := &file_wafv2_proto_msgTypes[193]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14362,7 +14516,7 @@ func (x *PutLoggingConfigurationRequest) String() string {
 func (*PutLoggingConfigurationRequest) ProtoMessage() {}
 
 func (x *PutLoggingConfigurationRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[192]
+	mi := &file_wafv2_proto_msgTypes[193]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14375,7 +14529,7 @@ func (x *PutLoggingConfigurationRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutLoggingConfigurationRequest.ProtoReflect.Descriptor instead.
 func (*PutLoggingConfigurationRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{192}
+	return file_wafv2_proto_rawDescGZIP(), []int{193}
 }
 
 func (x *PutLoggingConfigurationRequest) GetLoggingconfiguration() *LoggingConfiguration {
@@ -14394,7 +14548,7 @@ type PutLoggingConfigurationResponse struct {
 
 func (x *PutLoggingConfigurationResponse) Reset() {
 	*x = PutLoggingConfigurationResponse{}
-	mi := &file_wafv2_proto_msgTypes[193]
+	mi := &file_wafv2_proto_msgTypes[194]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14406,7 +14560,7 @@ func (x *PutLoggingConfigurationResponse) String() string {
 func (*PutLoggingConfigurationResponse) ProtoMessage() {}
 
 func (x *PutLoggingConfigurationResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[193]
+	mi := &file_wafv2_proto_msgTypes[194]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14419,7 +14573,7 @@ func (x *PutLoggingConfigurationResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutLoggingConfigurationResponse.ProtoReflect.Descriptor instead.
 func (*PutLoggingConfigurationResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{193}
+	return file_wafv2_proto_rawDescGZIP(), []int{194}
 }
 
 func (x *PutLoggingConfigurationResponse) GetLoggingconfiguration() *LoggingConfiguration {
@@ -14434,7 +14588,7 @@ type PutManagedRuleSetVersionsRequest struct {
 	Id                 string                       `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Locktoken          string                       `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
 	Name               string                       `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
-	Recommendedversion string                       `protobuf:"bytes,83103137,opt,name=recommendedversion,proto3" json:"recommendedversion,omitempty"`
+	Recommendedversion *string                      `protobuf:"bytes,83103137,opt,name=recommendedversion,proto3,oneof" json:"recommendedversion,omitempty"`
 	Scope              Scope                        `protobuf:"varint,65430924,opt,name=scope,proto3,enum=wafv2.Scope" json:"scope,omitempty"`
 	Versionstopublish  map[string]*VersionToPublish `protobuf:"bytes,54645961,rep,name=versionstopublish,proto3" json:"versionstopublish,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields      protoimpl.UnknownFields
@@ -14443,7 +14597,7 @@ type PutManagedRuleSetVersionsRequest struct {
 
 func (x *PutManagedRuleSetVersionsRequest) Reset() {
 	*x = PutManagedRuleSetVersionsRequest{}
-	mi := &file_wafv2_proto_msgTypes[194]
+	mi := &file_wafv2_proto_msgTypes[195]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14455,7 +14609,7 @@ func (x *PutManagedRuleSetVersionsRequest) String() string {
 func (*PutManagedRuleSetVersionsRequest) ProtoMessage() {}
 
 func (x *PutManagedRuleSetVersionsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[194]
+	mi := &file_wafv2_proto_msgTypes[195]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14468,7 +14622,7 @@ func (x *PutManagedRuleSetVersionsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutManagedRuleSetVersionsRequest.ProtoReflect.Descriptor instead.
 func (*PutManagedRuleSetVersionsRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{194}
+	return file_wafv2_proto_rawDescGZIP(), []int{195}
 }
 
 func (x *PutManagedRuleSetVersionsRequest) GetId() string {
@@ -14493,8 +14647,8 @@ func (x *PutManagedRuleSetVersionsRequest) GetName() string {
 }
 
 func (x *PutManagedRuleSetVersionsRequest) GetRecommendedversion() string {
-	if x != nil {
-		return x.Recommendedversion
+	if x != nil && x.Recommendedversion != nil {
+		return *x.Recommendedversion
 	}
 	return ""
 }
@@ -14515,14 +14669,14 @@ func (x *PutManagedRuleSetVersionsRequest) GetVersionstopublish() map[string]*Ve
 
 type PutManagedRuleSetVersionsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextlocktoken string                 `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3" json:"nextlocktoken,omitempty"`
+	Nextlocktoken *string                `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3,oneof" json:"nextlocktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PutManagedRuleSetVersionsResponse) Reset() {
 	*x = PutManagedRuleSetVersionsResponse{}
-	mi := &file_wafv2_proto_msgTypes[195]
+	mi := &file_wafv2_proto_msgTypes[196]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14534,7 +14688,7 @@ func (x *PutManagedRuleSetVersionsResponse) String() string {
 func (*PutManagedRuleSetVersionsResponse) ProtoMessage() {}
 
 func (x *PutManagedRuleSetVersionsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[195]
+	mi := &file_wafv2_proto_msgTypes[196]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14547,12 +14701,12 @@ func (x *PutManagedRuleSetVersionsResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use PutManagedRuleSetVersionsResponse.ProtoReflect.Descriptor instead.
 func (*PutManagedRuleSetVersionsResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{195}
+	return file_wafv2_proto_rawDescGZIP(), []int{196}
 }
 
 func (x *PutManagedRuleSetVersionsResponse) GetNextlocktoken() string {
-	if x != nil {
-		return x.Nextlocktoken
+	if x != nil && x.Nextlocktoken != nil {
+		return *x.Nextlocktoken
 	}
 	return ""
 }
@@ -14567,7 +14721,7 @@ type PutPermissionPolicyRequest struct {
 
 func (x *PutPermissionPolicyRequest) Reset() {
 	*x = PutPermissionPolicyRequest{}
-	mi := &file_wafv2_proto_msgTypes[196]
+	mi := &file_wafv2_proto_msgTypes[197]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14579,7 +14733,7 @@ func (x *PutPermissionPolicyRequest) String() string {
 func (*PutPermissionPolicyRequest) ProtoMessage() {}
 
 func (x *PutPermissionPolicyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[196]
+	mi := &file_wafv2_proto_msgTypes[197]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14592,7 +14746,7 @@ func (x *PutPermissionPolicyRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutPermissionPolicyRequest.ProtoReflect.Descriptor instead.
 func (*PutPermissionPolicyRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{196}
+	return file_wafv2_proto_rawDescGZIP(), []int{197}
 }
 
 func (x *PutPermissionPolicyRequest) GetPolicy() string {
@@ -14617,7 +14771,7 @@ type PutPermissionPolicyResponse struct {
 
 func (x *PutPermissionPolicyResponse) Reset() {
 	*x = PutPermissionPolicyResponse{}
-	mi := &file_wafv2_proto_msgTypes[197]
+	mi := &file_wafv2_proto_msgTypes[198]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14629,7 +14783,7 @@ func (x *PutPermissionPolicyResponse) String() string {
 func (*PutPermissionPolicyResponse) ProtoMessage() {}
 
 func (x *PutPermissionPolicyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[197]
+	mi := &file_wafv2_proto_msgTypes[198]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14642,7 +14796,7 @@ func (x *PutPermissionPolicyResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutPermissionPolicyResponse.ProtoReflect.Descriptor instead.
 func (*PutPermissionPolicyResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{197}
+	return file_wafv2_proto_rawDescGZIP(), []int{198}
 }
 
 type QueryString struct {
@@ -14653,7 +14807,7 @@ type QueryString struct {
 
 func (x *QueryString) Reset() {
 	*x = QueryString{}
-	mi := &file_wafv2_proto_msgTypes[198]
+	mi := &file_wafv2_proto_msgTypes[199]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14665,7 +14819,7 @@ func (x *QueryString) String() string {
 func (*QueryString) ProtoMessage() {}
 
 func (x *QueryString) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[198]
+	mi := &file_wafv2_proto_msgTypes[199]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14678,7 +14832,7 @@ func (x *QueryString) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use QueryString.ProtoReflect.Descriptor instead.
 func (*QueryString) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{198}
+	return file_wafv2_proto_rawDescGZIP(), []int{199}
 }
 
 type RateBasedStatement struct {
@@ -14695,7 +14849,7 @@ type RateBasedStatement struct {
 
 func (x *RateBasedStatement) Reset() {
 	*x = RateBasedStatement{}
-	mi := &file_wafv2_proto_msgTypes[199]
+	mi := &file_wafv2_proto_msgTypes[200]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14707,7 +14861,7 @@ func (x *RateBasedStatement) String() string {
 func (*RateBasedStatement) ProtoMessage() {}
 
 func (x *RateBasedStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[199]
+	mi := &file_wafv2_proto_msgTypes[200]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14720,7 +14874,7 @@ func (x *RateBasedStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateBasedStatement.ProtoReflect.Descriptor instead.
 func (*RateBasedStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{199}
+	return file_wafv2_proto_rawDescGZIP(), []int{200}
 }
 
 func (x *RateBasedStatement) GetAggregatekeytype() RateBasedStatementAggregateKeyType {
@@ -14785,7 +14939,7 @@ type RateBasedStatementCustomKey struct {
 
 func (x *RateBasedStatementCustomKey) Reset() {
 	*x = RateBasedStatementCustomKey{}
-	mi := &file_wafv2_proto_msgTypes[200]
+	mi := &file_wafv2_proto_msgTypes[201]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14797,7 +14951,7 @@ func (x *RateBasedStatementCustomKey) String() string {
 func (*RateBasedStatementCustomKey) ProtoMessage() {}
 
 func (x *RateBasedStatementCustomKey) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[200]
+	mi := &file_wafv2_proto_msgTypes[201]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14810,7 +14964,7 @@ func (x *RateBasedStatementCustomKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateBasedStatementCustomKey.ProtoReflect.Descriptor instead.
 func (*RateBasedStatementCustomKey) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{200}
+	return file_wafv2_proto_rawDescGZIP(), []int{201}
 }
 
 func (x *RateBasedStatementCustomKey) GetAsn() *RateLimitAsn {
@@ -14907,7 +15061,7 @@ type RateBasedStatementManagedKeysIPSet struct {
 
 func (x *RateBasedStatementManagedKeysIPSet) Reset() {
 	*x = RateBasedStatementManagedKeysIPSet{}
-	mi := &file_wafv2_proto_msgTypes[201]
+	mi := &file_wafv2_proto_msgTypes[202]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14919,7 +15073,7 @@ func (x *RateBasedStatementManagedKeysIPSet) String() string {
 func (*RateBasedStatementManagedKeysIPSet) ProtoMessage() {}
 
 func (x *RateBasedStatementManagedKeysIPSet) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[201]
+	mi := &file_wafv2_proto_msgTypes[202]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14932,7 +15086,7 @@ func (x *RateBasedStatementManagedKeysIPSet) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use RateBasedStatementManagedKeysIPSet.ProtoReflect.Descriptor instead.
 func (*RateBasedStatementManagedKeysIPSet) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{201}
+	return file_wafv2_proto_rawDescGZIP(), []int{202}
 }
 
 func (x *RateBasedStatementManagedKeysIPSet) GetAddresses() []string {
@@ -14957,7 +15111,7 @@ type RateLimitAsn struct {
 
 func (x *RateLimitAsn) Reset() {
 	*x = RateLimitAsn{}
-	mi := &file_wafv2_proto_msgTypes[202]
+	mi := &file_wafv2_proto_msgTypes[203]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -14969,7 +15123,7 @@ func (x *RateLimitAsn) String() string {
 func (*RateLimitAsn) ProtoMessage() {}
 
 func (x *RateLimitAsn) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[202]
+	mi := &file_wafv2_proto_msgTypes[203]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -14982,7 +15136,7 @@ func (x *RateLimitAsn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitAsn.ProtoReflect.Descriptor instead.
 func (*RateLimitAsn) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{202}
+	return file_wafv2_proto_rawDescGZIP(), []int{203}
 }
 
 type RateLimitCookie struct {
@@ -14995,7 +15149,7 @@ type RateLimitCookie struct {
 
 func (x *RateLimitCookie) Reset() {
 	*x = RateLimitCookie{}
-	mi := &file_wafv2_proto_msgTypes[203]
+	mi := &file_wafv2_proto_msgTypes[204]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15007,7 +15161,7 @@ func (x *RateLimitCookie) String() string {
 func (*RateLimitCookie) ProtoMessage() {}
 
 func (x *RateLimitCookie) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[203]
+	mi := &file_wafv2_proto_msgTypes[204]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15020,7 +15174,7 @@ func (x *RateLimitCookie) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitCookie.ProtoReflect.Descriptor instead.
 func (*RateLimitCookie) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{203}
+	return file_wafv2_proto_rawDescGZIP(), []int{204}
 }
 
 func (x *RateLimitCookie) GetName() string {
@@ -15045,7 +15199,7 @@ type RateLimitForwardedIP struct {
 
 func (x *RateLimitForwardedIP) Reset() {
 	*x = RateLimitForwardedIP{}
-	mi := &file_wafv2_proto_msgTypes[204]
+	mi := &file_wafv2_proto_msgTypes[205]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15057,7 +15211,7 @@ func (x *RateLimitForwardedIP) String() string {
 func (*RateLimitForwardedIP) ProtoMessage() {}
 
 func (x *RateLimitForwardedIP) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[204]
+	mi := &file_wafv2_proto_msgTypes[205]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15070,7 +15224,7 @@ func (x *RateLimitForwardedIP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitForwardedIP.ProtoReflect.Descriptor instead.
 func (*RateLimitForwardedIP) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{204}
+	return file_wafv2_proto_rawDescGZIP(), []int{205}
 }
 
 type RateLimitHTTPMethod struct {
@@ -15081,7 +15235,7 @@ type RateLimitHTTPMethod struct {
 
 func (x *RateLimitHTTPMethod) Reset() {
 	*x = RateLimitHTTPMethod{}
-	mi := &file_wafv2_proto_msgTypes[205]
+	mi := &file_wafv2_proto_msgTypes[206]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15093,7 +15247,7 @@ func (x *RateLimitHTTPMethod) String() string {
 func (*RateLimitHTTPMethod) ProtoMessage() {}
 
 func (x *RateLimitHTTPMethod) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[205]
+	mi := &file_wafv2_proto_msgTypes[206]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15106,7 +15260,7 @@ func (x *RateLimitHTTPMethod) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitHTTPMethod.ProtoReflect.Descriptor instead.
 func (*RateLimitHTTPMethod) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{205}
+	return file_wafv2_proto_rawDescGZIP(), []int{206}
 }
 
 type RateLimitHeader struct {
@@ -15119,7 +15273,7 @@ type RateLimitHeader struct {
 
 func (x *RateLimitHeader) Reset() {
 	*x = RateLimitHeader{}
-	mi := &file_wafv2_proto_msgTypes[206]
+	mi := &file_wafv2_proto_msgTypes[207]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15131,7 +15285,7 @@ func (x *RateLimitHeader) String() string {
 func (*RateLimitHeader) ProtoMessage() {}
 
 func (x *RateLimitHeader) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[206]
+	mi := &file_wafv2_proto_msgTypes[207]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15144,7 +15298,7 @@ func (x *RateLimitHeader) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitHeader.ProtoReflect.Descriptor instead.
 func (*RateLimitHeader) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{206}
+	return file_wafv2_proto_rawDescGZIP(), []int{207}
 }
 
 func (x *RateLimitHeader) GetName() string {
@@ -15169,7 +15323,7 @@ type RateLimitIP struct {
 
 func (x *RateLimitIP) Reset() {
 	*x = RateLimitIP{}
-	mi := &file_wafv2_proto_msgTypes[207]
+	mi := &file_wafv2_proto_msgTypes[208]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15181,7 +15335,7 @@ func (x *RateLimitIP) String() string {
 func (*RateLimitIP) ProtoMessage() {}
 
 func (x *RateLimitIP) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[207]
+	mi := &file_wafv2_proto_msgTypes[208]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15194,7 +15348,7 @@ func (x *RateLimitIP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitIP.ProtoReflect.Descriptor instead.
 func (*RateLimitIP) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{207}
+	return file_wafv2_proto_rawDescGZIP(), []int{208}
 }
 
 type RateLimitJA3Fingerprint struct {
@@ -15206,7 +15360,7 @@ type RateLimitJA3Fingerprint struct {
 
 func (x *RateLimitJA3Fingerprint) Reset() {
 	*x = RateLimitJA3Fingerprint{}
-	mi := &file_wafv2_proto_msgTypes[208]
+	mi := &file_wafv2_proto_msgTypes[209]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15218,7 +15372,7 @@ func (x *RateLimitJA3Fingerprint) String() string {
 func (*RateLimitJA3Fingerprint) ProtoMessage() {}
 
 func (x *RateLimitJA3Fingerprint) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[208]
+	mi := &file_wafv2_proto_msgTypes[209]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15231,7 +15385,7 @@ func (x *RateLimitJA3Fingerprint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitJA3Fingerprint.ProtoReflect.Descriptor instead.
 func (*RateLimitJA3Fingerprint) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{208}
+	return file_wafv2_proto_rawDescGZIP(), []int{209}
 }
 
 func (x *RateLimitJA3Fingerprint) GetFallbackbehavior() FallbackBehavior {
@@ -15250,7 +15404,7 @@ type RateLimitJA4Fingerprint struct {
 
 func (x *RateLimitJA4Fingerprint) Reset() {
 	*x = RateLimitJA4Fingerprint{}
-	mi := &file_wafv2_proto_msgTypes[209]
+	mi := &file_wafv2_proto_msgTypes[210]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15262,7 +15416,7 @@ func (x *RateLimitJA4Fingerprint) String() string {
 func (*RateLimitJA4Fingerprint) ProtoMessage() {}
 
 func (x *RateLimitJA4Fingerprint) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[209]
+	mi := &file_wafv2_proto_msgTypes[210]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15275,7 +15429,7 @@ func (x *RateLimitJA4Fingerprint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitJA4Fingerprint.ProtoReflect.Descriptor instead.
 func (*RateLimitJA4Fingerprint) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{209}
+	return file_wafv2_proto_rawDescGZIP(), []int{210}
 }
 
 func (x *RateLimitJA4Fingerprint) GetFallbackbehavior() FallbackBehavior {
@@ -15294,7 +15448,7 @@ type RateLimitLabelNamespace struct {
 
 func (x *RateLimitLabelNamespace) Reset() {
 	*x = RateLimitLabelNamespace{}
-	mi := &file_wafv2_proto_msgTypes[210]
+	mi := &file_wafv2_proto_msgTypes[211]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15306,7 +15460,7 @@ func (x *RateLimitLabelNamespace) String() string {
 func (*RateLimitLabelNamespace) ProtoMessage() {}
 
 func (x *RateLimitLabelNamespace) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[210]
+	mi := &file_wafv2_proto_msgTypes[211]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15319,7 +15473,7 @@ func (x *RateLimitLabelNamespace) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitLabelNamespace.ProtoReflect.Descriptor instead.
 func (*RateLimitLabelNamespace) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{210}
+	return file_wafv2_proto_rawDescGZIP(), []int{211}
 }
 
 func (x *RateLimitLabelNamespace) GetNamespace() string {
@@ -15339,7 +15493,7 @@ type RateLimitQueryArgument struct {
 
 func (x *RateLimitQueryArgument) Reset() {
 	*x = RateLimitQueryArgument{}
-	mi := &file_wafv2_proto_msgTypes[211]
+	mi := &file_wafv2_proto_msgTypes[212]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15351,7 +15505,7 @@ func (x *RateLimitQueryArgument) String() string {
 func (*RateLimitQueryArgument) ProtoMessage() {}
 
 func (x *RateLimitQueryArgument) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[211]
+	mi := &file_wafv2_proto_msgTypes[212]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15364,7 +15518,7 @@ func (x *RateLimitQueryArgument) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitQueryArgument.ProtoReflect.Descriptor instead.
 func (*RateLimitQueryArgument) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{211}
+	return file_wafv2_proto_rawDescGZIP(), []int{212}
 }
 
 func (x *RateLimitQueryArgument) GetName() string {
@@ -15390,7 +15544,7 @@ type RateLimitQueryString struct {
 
 func (x *RateLimitQueryString) Reset() {
 	*x = RateLimitQueryString{}
-	mi := &file_wafv2_proto_msgTypes[212]
+	mi := &file_wafv2_proto_msgTypes[213]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15402,7 +15556,7 @@ func (x *RateLimitQueryString) String() string {
 func (*RateLimitQueryString) ProtoMessage() {}
 
 func (x *RateLimitQueryString) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[212]
+	mi := &file_wafv2_proto_msgTypes[213]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15415,7 +15569,7 @@ func (x *RateLimitQueryString) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitQueryString.ProtoReflect.Descriptor instead.
 func (*RateLimitQueryString) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{212}
+	return file_wafv2_proto_rawDescGZIP(), []int{213}
 }
 
 func (x *RateLimitQueryString) GetTexttransformations() []*TextTransformation {
@@ -15434,7 +15588,7 @@ type RateLimitUriPath struct {
 
 func (x *RateLimitUriPath) Reset() {
 	*x = RateLimitUriPath{}
-	mi := &file_wafv2_proto_msgTypes[213]
+	mi := &file_wafv2_proto_msgTypes[214]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15446,7 +15600,7 @@ func (x *RateLimitUriPath) String() string {
 func (*RateLimitUriPath) ProtoMessage() {}
 
 func (x *RateLimitUriPath) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[213]
+	mi := &file_wafv2_proto_msgTypes[214]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15459,7 +15613,7 @@ func (x *RateLimitUriPath) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RateLimitUriPath.ProtoReflect.Descriptor instead.
 func (*RateLimitUriPath) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{213}
+	return file_wafv2_proto_rawDescGZIP(), []int{214}
 }
 
 func (x *RateLimitUriPath) GetTexttransformations() []*TextTransformation {
@@ -15471,14 +15625,14 @@ func (x *RateLimitUriPath) GetTexttransformations() []*TextTransformation {
 
 type Regex struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Regexstring   string                 `protobuf:"bytes,138533058,opt,name=regexstring,proto3" json:"regexstring,omitempty"`
+	Regexstring   *string                `protobuf:"bytes,138533058,opt,name=regexstring,proto3,oneof" json:"regexstring,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Regex) Reset() {
 	*x = Regex{}
-	mi := &file_wafv2_proto_msgTypes[214]
+	mi := &file_wafv2_proto_msgTypes[215]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15490,7 +15644,7 @@ func (x *Regex) String() string {
 func (*Regex) ProtoMessage() {}
 
 func (x *Regex) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[214]
+	mi := &file_wafv2_proto_msgTypes[215]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15503,28 +15657,29 @@ func (x *Regex) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Regex.ProtoReflect.Descriptor instead.
 func (*Regex) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{214}
+	return file_wafv2_proto_rawDescGZIP(), []int{215}
 }
 
 func (x *Regex) GetRegexstring() string {
-	if x != nil {
-		return x.Regexstring
+	if x != nil && x.Regexstring != nil {
+		return *x.Regexstring
 	}
 	return ""
 }
 
 type RegexMatchStatement struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Fieldtomatch        *FieldToMatch          `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
-	Regexstring         string                 `protobuf:"bytes,138533058,opt,name=regexstring,proto3" json:"regexstring,omitempty"`
-	Texttransformations []*TextTransformation  `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
+	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
+	Regexstring                 string                        `protobuf:"bytes,138533058,opt,name=regexstring,proto3" json:"regexstring,omitempty"`
+	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *RegexMatchStatement) Reset() {
 	*x = RegexMatchStatement{}
-	mi := &file_wafv2_proto_msgTypes[215]
+	mi := &file_wafv2_proto_msgTypes[216]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15536,7 +15691,7 @@ func (x *RegexMatchStatement) String() string {
 func (*RegexMatchStatement) ProtoMessage() {}
 
 func (x *RegexMatchStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[215]
+	mi := &file_wafv2_proto_msgTypes[216]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15549,12 +15704,19 @@ func (x *RegexMatchStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegexMatchStatement.ProtoReflect.Descriptor instead.
 func (*RegexMatchStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{215}
+	return file_wafv2_proto_rawDescGZIP(), []int{216}
 }
 
 func (x *RegexMatchStatement) GetFieldtomatch() *FieldToMatch {
 	if x != nil {
 		return x.Fieldtomatch
+	}
+	return nil
+}
+
+func (x *RegexMatchStatement) GetPreparsetexttransformations() []*PreParseTextTransformation {
+	if x != nil {
+		return x.Preparsetexttransformations
 	}
 	return nil
 }
@@ -15575,10 +15737,10 @@ func (x *RegexMatchStatement) GetTexttransformations() []*TextTransformation {
 
 type RegexPatternSet struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Arn                   string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description           string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Id                    string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Name                  string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn                   *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Description           *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id                    *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Name                  *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	Regularexpressionlist []*Regex               `protobuf:"bytes,123612838,rep,name=regularexpressionlist,proto3" json:"regularexpressionlist,omitempty"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
@@ -15586,7 +15748,7 @@ type RegexPatternSet struct {
 
 func (x *RegexPatternSet) Reset() {
 	*x = RegexPatternSet{}
-	mi := &file_wafv2_proto_msgTypes[216]
+	mi := &file_wafv2_proto_msgTypes[217]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15598,7 +15760,7 @@ func (x *RegexPatternSet) String() string {
 func (*RegexPatternSet) ProtoMessage() {}
 
 func (x *RegexPatternSet) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[216]
+	mi := &file_wafv2_proto_msgTypes[217]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15611,33 +15773,33 @@ func (x *RegexPatternSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegexPatternSet.ProtoReflect.Descriptor instead.
 func (*RegexPatternSet) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{216}
+	return file_wafv2_proto_rawDescGZIP(), []int{217}
 }
 
 func (x *RegexPatternSet) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *RegexPatternSet) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *RegexPatternSet) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *RegexPatternSet) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -15650,17 +15812,18 @@ func (x *RegexPatternSet) GetRegularexpressionlist() []*Regex {
 }
 
 type RegexPatternSetReferenceStatement struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Arn                 string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Fieldtomatch        *FieldToMatch          `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
-	Texttransformations []*TextTransformation  `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Arn                         string                        `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
+	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
+	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
+	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *RegexPatternSetReferenceStatement) Reset() {
 	*x = RegexPatternSetReferenceStatement{}
-	mi := &file_wafv2_proto_msgTypes[217]
+	mi := &file_wafv2_proto_msgTypes[218]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15672,7 +15835,7 @@ func (x *RegexPatternSetReferenceStatement) String() string {
 func (*RegexPatternSetReferenceStatement) ProtoMessage() {}
 
 func (x *RegexPatternSetReferenceStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[217]
+	mi := &file_wafv2_proto_msgTypes[218]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15685,7 +15848,7 @@ func (x *RegexPatternSetReferenceStatement) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use RegexPatternSetReferenceStatement.ProtoReflect.Descriptor instead.
 func (*RegexPatternSetReferenceStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{217}
+	return file_wafv2_proto_rawDescGZIP(), []int{218}
 }
 
 func (x *RegexPatternSetReferenceStatement) GetArn() string {
@@ -15702,6 +15865,13 @@ func (x *RegexPatternSetReferenceStatement) GetFieldtomatch() *FieldToMatch {
 	return nil
 }
 
+func (x *RegexPatternSetReferenceStatement) GetPreparsetexttransformations() []*PreParseTextTransformation {
+	if x != nil {
+		return x.Preparsetexttransformations
+	}
+	return nil
+}
+
 func (x *RegexPatternSetReferenceStatement) GetTexttransformations() []*TextTransformation {
 	if x != nil {
 		return x.Texttransformations
@@ -15711,18 +15881,18 @@ func (x *RegexPatternSetReferenceStatement) GetTexttransformations() []*TextTran
 
 type RegexPatternSetSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Locktoken     *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RegexPatternSetSummary) Reset() {
 	*x = RegexPatternSetSummary{}
-	mi := &file_wafv2_proto_msgTypes[218]
+	mi := &file_wafv2_proto_msgTypes[219]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15734,7 +15904,7 @@ func (x *RegexPatternSetSummary) String() string {
 func (*RegexPatternSetSummary) ProtoMessage() {}
 
 func (x *RegexPatternSetSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[218]
+	mi := &file_wafv2_proto_msgTypes[219]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15747,55 +15917,55 @@ func (x *RegexPatternSetSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegexPatternSetSummary.ProtoReflect.Descriptor instead.
 func (*RegexPatternSetSummary) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{218}
+	return file_wafv2_proto_rawDescGZIP(), []int{219}
 }
 
 func (x *RegexPatternSetSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *RegexPatternSetSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *RegexPatternSetSummary) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *RegexPatternSetSummary) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
 
 func (x *RegexPatternSetSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type ReleaseSummary struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	Releaseversion string                 `protobuf:"bytes,8739171,opt,name=releaseversion,proto3" json:"releaseversion,omitempty"`
-	Timestamp      string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Releaseversion *string                `protobuf:"bytes,8739171,opt,name=releaseversion,proto3,oneof" json:"releaseversion,omitempty"`
+	Timestamp      *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ReleaseSummary) Reset() {
 	*x = ReleaseSummary{}
-	mi := &file_wafv2_proto_msgTypes[219]
+	mi := &file_wafv2_proto_msgTypes[220]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15807,7 +15977,7 @@ func (x *ReleaseSummary) String() string {
 func (*ReleaseSummary) ProtoMessage() {}
 
 func (x *ReleaseSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[219]
+	mi := &file_wafv2_proto_msgTypes[220]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15820,19 +15990,19 @@ func (x *ReleaseSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseSummary.ProtoReflect.Descriptor instead.
 func (*ReleaseSummary) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{219}
+	return file_wafv2_proto_rawDescGZIP(), []int{220}
 }
 
 func (x *ReleaseSummary) GetReleaseversion() string {
-	if x != nil {
-		return x.Releaseversion
+	if x != nil && x.Releaseversion != nil {
+		return *x.Releaseversion
 	}
 	return ""
 }
 
 func (x *ReleaseSummary) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
@@ -15846,7 +16016,7 @@ type RequestBodyAssociatedResourceTypeConfig struct {
 
 func (x *RequestBodyAssociatedResourceTypeConfig) Reset() {
 	*x = RequestBodyAssociatedResourceTypeConfig{}
-	mi := &file_wafv2_proto_msgTypes[220]
+	mi := &file_wafv2_proto_msgTypes[221]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15858,7 +16028,7 @@ func (x *RequestBodyAssociatedResourceTypeConfig) String() string {
 func (*RequestBodyAssociatedResourceTypeConfig) ProtoMessage() {}
 
 func (x *RequestBodyAssociatedResourceTypeConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[220]
+	mi := &file_wafv2_proto_msgTypes[221]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15871,7 +16041,7 @@ func (x *RequestBodyAssociatedResourceTypeConfig) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use RequestBodyAssociatedResourceTypeConfig.ProtoReflect.Descriptor instead.
 func (*RequestBodyAssociatedResourceTypeConfig) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{220}
+	return file_wafv2_proto_rawDescGZIP(), []int{221}
 }
 
 func (x *RequestBodyAssociatedResourceTypeConfig) GetDefaultsizeinspectionlimit() SizeInspectionLimit {
@@ -15892,7 +16062,7 @@ type RequestInspection struct {
 
 func (x *RequestInspection) Reset() {
 	*x = RequestInspection{}
-	mi := &file_wafv2_proto_msgTypes[221]
+	mi := &file_wafv2_proto_msgTypes[222]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15904,7 +16074,7 @@ func (x *RequestInspection) String() string {
 func (*RequestInspection) ProtoMessage() {}
 
 func (x *RequestInspection) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[221]
+	mi := &file_wafv2_proto_msgTypes[222]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15917,7 +16087,7 @@ func (x *RequestInspection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestInspection.ProtoReflect.Descriptor instead.
 func (*RequestInspection) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{221}
+	return file_wafv2_proto_rawDescGZIP(), []int{222}
 }
 
 func (x *RequestInspection) GetPasswordfield() *PasswordField {
@@ -15955,7 +16125,7 @@ type RequestInspectionACFP struct {
 
 func (x *RequestInspectionACFP) Reset() {
 	*x = RequestInspectionACFP{}
-	mi := &file_wafv2_proto_msgTypes[222]
+	mi := &file_wafv2_proto_msgTypes[223]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -15967,7 +16137,7 @@ func (x *RequestInspectionACFP) String() string {
 func (*RequestInspectionACFP) ProtoMessage() {}
 
 func (x *RequestInspectionACFP) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[222]
+	mi := &file_wafv2_proto_msgTypes[223]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -15980,7 +16150,7 @@ func (x *RequestInspectionACFP) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RequestInspectionACFP.ProtoReflect.Descriptor instead.
 func (*RequestInspectionACFP) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{222}
+	return file_wafv2_proto_rawDescGZIP(), []int{223}
 }
 
 func (x *RequestInspectionACFP) GetAddressfields() []*AddressField {
@@ -16037,7 +16207,7 @@ type ResponseInspection struct {
 
 func (x *ResponseInspection) Reset() {
 	*x = ResponseInspection{}
-	mi := &file_wafv2_proto_msgTypes[223]
+	mi := &file_wafv2_proto_msgTypes[224]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16049,7 +16219,7 @@ func (x *ResponseInspection) String() string {
 func (*ResponseInspection) ProtoMessage() {}
 
 func (x *ResponseInspection) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[223]
+	mi := &file_wafv2_proto_msgTypes[224]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16062,7 +16232,7 @@ func (x *ResponseInspection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseInspection.ProtoReflect.Descriptor instead.
 func (*ResponseInspection) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{223}
+	return file_wafv2_proto_rawDescGZIP(), []int{224}
 }
 
 func (x *ResponseInspection) GetBodycontains() *ResponseInspectionBodyContains {
@@ -16103,7 +16273,7 @@ type ResponseInspectionBodyContains struct {
 
 func (x *ResponseInspectionBodyContains) Reset() {
 	*x = ResponseInspectionBodyContains{}
-	mi := &file_wafv2_proto_msgTypes[224]
+	mi := &file_wafv2_proto_msgTypes[225]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16115,7 +16285,7 @@ func (x *ResponseInspectionBodyContains) String() string {
 func (*ResponseInspectionBodyContains) ProtoMessage() {}
 
 func (x *ResponseInspectionBodyContains) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[224]
+	mi := &file_wafv2_proto_msgTypes[225]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16128,7 +16298,7 @@ func (x *ResponseInspectionBodyContains) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseInspectionBodyContains.ProtoReflect.Descriptor instead.
 func (*ResponseInspectionBodyContains) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{224}
+	return file_wafv2_proto_rawDescGZIP(), []int{225}
 }
 
 func (x *ResponseInspectionBodyContains) GetFailurestrings() []string {
@@ -16156,7 +16326,7 @@ type ResponseInspectionHeader struct {
 
 func (x *ResponseInspectionHeader) Reset() {
 	*x = ResponseInspectionHeader{}
-	mi := &file_wafv2_proto_msgTypes[225]
+	mi := &file_wafv2_proto_msgTypes[226]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16168,7 +16338,7 @@ func (x *ResponseInspectionHeader) String() string {
 func (*ResponseInspectionHeader) ProtoMessage() {}
 
 func (x *ResponseInspectionHeader) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[225]
+	mi := &file_wafv2_proto_msgTypes[226]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16181,7 +16351,7 @@ func (x *ResponseInspectionHeader) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseInspectionHeader.ProtoReflect.Descriptor instead.
 func (*ResponseInspectionHeader) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{225}
+	return file_wafv2_proto_rawDescGZIP(), []int{226}
 }
 
 func (x *ResponseInspectionHeader) GetFailurevalues() []string {
@@ -16216,7 +16386,7 @@ type ResponseInspectionJson struct {
 
 func (x *ResponseInspectionJson) Reset() {
 	*x = ResponseInspectionJson{}
-	mi := &file_wafv2_proto_msgTypes[226]
+	mi := &file_wafv2_proto_msgTypes[227]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16228,7 +16398,7 @@ func (x *ResponseInspectionJson) String() string {
 func (*ResponseInspectionJson) ProtoMessage() {}
 
 func (x *ResponseInspectionJson) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[226]
+	mi := &file_wafv2_proto_msgTypes[227]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16241,7 +16411,7 @@ func (x *ResponseInspectionJson) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseInspectionJson.ProtoReflect.Descriptor instead.
 func (*ResponseInspectionJson) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{226}
+	return file_wafv2_proto_rawDescGZIP(), []int{227}
 }
 
 func (x *ResponseInspectionJson) GetFailurevalues() []string {
@@ -16275,7 +16445,7 @@ type ResponseInspectionStatusCode struct {
 
 func (x *ResponseInspectionStatusCode) Reset() {
 	*x = ResponseInspectionStatusCode{}
-	mi := &file_wafv2_proto_msgTypes[227]
+	mi := &file_wafv2_proto_msgTypes[228]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16287,7 +16457,7 @@ func (x *ResponseInspectionStatusCode) String() string {
 func (*ResponseInspectionStatusCode) ProtoMessage() {}
 
 func (x *ResponseInspectionStatusCode) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[227]
+	mi := &file_wafv2_proto_msgTypes[228]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16300,7 +16470,7 @@ func (x *ResponseInspectionStatusCode) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseInspectionStatusCode.ProtoReflect.Descriptor instead.
 func (*ResponseInspectionStatusCode) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{227}
+	return file_wafv2_proto_rawDescGZIP(), []int{228}
 }
 
 func (x *ResponseInspectionStatusCode) GetFailurecodes() []int32 {
@@ -16320,18 +16490,18 @@ func (x *ResponseInspectionStatusCode) GetSuccesscodes() []int32 {
 type RevenueBreakdown struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Currency            Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
-	Totalamount         string                 `protobuf:"bytes,45332786,opt,name=totalamount,proto3" json:"totalamount,omitempty"`
+	Totalamount         *string                `protobuf:"bytes,45332786,opt,name=totalamount,proto3,oneof" json:"totalamount,omitempty"`
 	Totalmonetizeserved *int64                 `protobuf:"varint,410017796,opt,name=totalmonetizeserved,proto3,oneof" json:"totalmonetizeserved,omitempty"`
 	Totalsettled        *int64                 `protobuf:"varint,72471795,opt,name=totalsettled,proto3,oneof" json:"totalsettled,omitempty"`
-	Unverifiedamount    string                 `protobuf:"bytes,256171183,opt,name=unverifiedamount,proto3" json:"unverifiedamount,omitempty"`
-	Verifiedamount      string                 `protobuf:"bytes,118239818,opt,name=verifiedamount,proto3" json:"verifiedamount,omitempty"`
+	Unverifiedamount    *string                `protobuf:"bytes,256171183,opt,name=unverifiedamount,proto3,oneof" json:"unverifiedamount,omitempty"`
+	Verifiedamount      *string                `protobuf:"bytes,118239818,opt,name=verifiedamount,proto3,oneof" json:"verifiedamount,omitempty"`
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
 
 func (x *RevenueBreakdown) Reset() {
 	*x = RevenueBreakdown{}
-	mi := &file_wafv2_proto_msgTypes[228]
+	mi := &file_wafv2_proto_msgTypes[229]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16343,7 +16513,7 @@ func (x *RevenueBreakdown) String() string {
 func (*RevenueBreakdown) ProtoMessage() {}
 
 func (x *RevenueBreakdown) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[228]
+	mi := &file_wafv2_proto_msgTypes[229]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16356,7 +16526,7 @@ func (x *RevenueBreakdown) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevenueBreakdown.ProtoReflect.Descriptor instead.
 func (*RevenueBreakdown) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{228}
+	return file_wafv2_proto_rawDescGZIP(), []int{229}
 }
 
 func (x *RevenueBreakdown) GetCurrency() Currency {
@@ -16367,8 +16537,8 @@ func (x *RevenueBreakdown) GetCurrency() Currency {
 }
 
 func (x *RevenueBreakdown) GetTotalamount() string {
-	if x != nil {
-		return x.Totalamount
+	if x != nil && x.Totalamount != nil {
+		return *x.Totalamount
 	}
 	return ""
 }
@@ -16388,15 +16558,15 @@ func (x *RevenueBreakdown) GetTotalsettled() int64 {
 }
 
 func (x *RevenueBreakdown) GetUnverifiedamount() string {
-	if x != nil {
-		return x.Unverifiedamount
+	if x != nil && x.Unverifiedamount != nil {
+		return *x.Unverifiedamount
 	}
 	return ""
 }
 
 func (x *RevenueBreakdown) GetVerifiedamount() string {
-	if x != nil {
-		return x.Verifiedamount
+	if x != nil && x.Verifiedamount != nil {
+		return *x.Verifiedamount
 	}
 	return ""
 }
@@ -16413,7 +16583,7 @@ type RevenuePathStatistics struct {
 
 func (x *RevenuePathStatistics) Reset() {
 	*x = RevenuePathStatistics{}
-	mi := &file_wafv2_proto_msgTypes[229]
+	mi := &file_wafv2_proto_msgTypes[230]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16425,7 +16595,7 @@ func (x *RevenuePathStatistics) String() string {
 func (*RevenuePathStatistics) ProtoMessage() {}
 
 func (x *RevenuePathStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[229]
+	mi := &file_wafv2_proto_msgTypes[230]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16438,7 +16608,7 @@ func (x *RevenuePathStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RevenuePathStatistics.ProtoReflect.Descriptor instead.
 func (*RevenuePathStatistics) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{229}
+	return file_wafv2_proto_rawDescGZIP(), []int{230}
 }
 
 func (x *RevenuePathStatistics) GetAmount() string {
@@ -16486,7 +16656,7 @@ type Rule struct {
 
 func (x *Rule) Reset() {
 	*x = Rule{}
-	mi := &file_wafv2_proto_msgTypes[230]
+	mi := &file_wafv2_proto_msgTypes[231]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16498,7 +16668,7 @@ func (x *Rule) String() string {
 func (*Rule) ProtoMessage() {}
 
 func (x *Rule) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[230]
+	mi := &file_wafv2_proto_msgTypes[231]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16511,7 +16681,7 @@ func (x *Rule) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Rule.ProtoReflect.Descriptor instead.
 func (*Rule) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{230}
+	return file_wafv2_proto_rawDescGZIP(), []int{231}
 }
 
 func (x *Rule) GetAction() *RuleAction {
@@ -16591,7 +16761,7 @@ type RuleAction struct {
 
 func (x *RuleAction) Reset() {
 	*x = RuleAction{}
-	mi := &file_wafv2_proto_msgTypes[231]
+	mi := &file_wafv2_proto_msgTypes[232]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16603,7 +16773,7 @@ func (x *RuleAction) String() string {
 func (*RuleAction) ProtoMessage() {}
 
 func (x *RuleAction) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[231]
+	mi := &file_wafv2_proto_msgTypes[232]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16616,7 +16786,7 @@ func (x *RuleAction) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuleAction.ProtoReflect.Descriptor instead.
 func (*RuleAction) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{231}
+	return file_wafv2_proto_rawDescGZIP(), []int{232}
 }
 
 func (x *RuleAction) GetAllow() *AllowAction {
@@ -16671,7 +16841,7 @@ type RuleActionOverride struct {
 
 func (x *RuleActionOverride) Reset() {
 	*x = RuleActionOverride{}
-	mi := &file_wafv2_proto_msgTypes[232]
+	mi := &file_wafv2_proto_msgTypes[233]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16683,7 +16853,7 @@ func (x *RuleActionOverride) String() string {
 func (*RuleActionOverride) ProtoMessage() {}
 
 func (x *RuleActionOverride) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[232]
+	mi := &file_wafv2_proto_msgTypes[233]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16696,7 +16866,7 @@ func (x *RuleActionOverride) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuleActionOverride.ProtoReflect.Descriptor instead.
 func (*RuleActionOverride) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{232}
+	return file_wafv2_proto_rawDescGZIP(), []int{233}
 }
 
 func (x *RuleActionOverride) GetActiontouse() *RuleAction {
@@ -16720,9 +16890,9 @@ type RuleGroup struct {
 	Capacity             int64                          `protobuf:"varint,107253930,opt,name=capacity,proto3" json:"capacity,omitempty"`
 	Consumedlabels       []*LabelSummary                `protobuf:"bytes,43813949,rep,name=consumedlabels,proto3" json:"consumedlabels,omitempty"`
 	Customresponsebodies map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Description          string                         `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id                   string                         `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Labelnamespace       string                         `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3" json:"labelnamespace,omitempty"`
+	Labelnamespace       *string                        `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3,oneof" json:"labelnamespace,omitempty"`
 	Monetizationconfig   *MonetizationConfig            `protobuf:"bytes,528380847,opt,name=monetizationconfig,proto3" json:"monetizationconfig,omitempty"`
 	Name                 string                         `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
 	Rules                []*Rule                        `protobuf:"bytes,42675585,rep,name=rules,proto3" json:"rules,omitempty"`
@@ -16733,7 +16903,7 @@ type RuleGroup struct {
 
 func (x *RuleGroup) Reset() {
 	*x = RuleGroup{}
-	mi := &file_wafv2_proto_msgTypes[233]
+	mi := &file_wafv2_proto_msgTypes[234]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16745,7 +16915,7 @@ func (x *RuleGroup) String() string {
 func (*RuleGroup) ProtoMessage() {}
 
 func (x *RuleGroup) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[233]
+	mi := &file_wafv2_proto_msgTypes[234]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16758,7 +16928,7 @@ func (x *RuleGroup) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuleGroup.ProtoReflect.Descriptor instead.
 func (*RuleGroup) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{233}
+	return file_wafv2_proto_rawDescGZIP(), []int{234}
 }
 
 func (x *RuleGroup) GetArn() string {
@@ -16797,8 +16967,8 @@ func (x *RuleGroup) GetCustomresponsebodies() map[string]*CustomResponseBody {
 }
 
 func (x *RuleGroup) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -16811,8 +16981,8 @@ func (x *RuleGroup) GetId() string {
 }
 
 func (x *RuleGroup) GetLabelnamespace() string {
-	if x != nil {
-		return x.Labelnamespace
+	if x != nil && x.Labelnamespace != nil {
+		return *x.Labelnamespace
 	}
 	return ""
 }
@@ -16856,7 +17026,7 @@ type RuleGroupReferenceStatement struct {
 
 func (x *RuleGroupReferenceStatement) Reset() {
 	*x = RuleGroupReferenceStatement{}
-	mi := &file_wafv2_proto_msgTypes[234]
+	mi := &file_wafv2_proto_msgTypes[235]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16868,7 +17038,7 @@ func (x *RuleGroupReferenceStatement) String() string {
 func (*RuleGroupReferenceStatement) ProtoMessage() {}
 
 func (x *RuleGroupReferenceStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[234]
+	mi := &file_wafv2_proto_msgTypes[235]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16881,7 +17051,7 @@ func (x *RuleGroupReferenceStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuleGroupReferenceStatement.ProtoReflect.Descriptor instead.
 func (*RuleGroupReferenceStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{234}
+	return file_wafv2_proto_rawDescGZIP(), []int{235}
 }
 
 func (x *RuleGroupReferenceStatement) GetArn() string {
@@ -16907,18 +17077,18 @@ func (x *RuleGroupReferenceStatement) GetRuleactionoverrides() []*RuleActionOver
 
 type RuleGroupSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Locktoken     *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RuleGroupSummary) Reset() {
 	*x = RuleGroupSummary{}
-	mi := &file_wafv2_proto_msgTypes[235]
+	mi := &file_wafv2_proto_msgTypes[236]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -16930,7 +17100,7 @@ func (x *RuleGroupSummary) String() string {
 func (*RuleGroupSummary) ProtoMessage() {}
 
 func (x *RuleGroupSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[235]
+	mi := &file_wafv2_proto_msgTypes[236]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -16943,40 +17113,40 @@ func (x *RuleGroupSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuleGroupSummary.ProtoReflect.Descriptor instead.
 func (*RuleGroupSummary) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{235}
+	return file_wafv2_proto_rawDescGZIP(), []int{236}
 }
 
 func (x *RuleGroupSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *RuleGroupSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *RuleGroupSummary) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *RuleGroupSummary) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
 
 func (x *RuleGroupSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
@@ -16984,14 +17154,14 @@ func (x *RuleGroupSummary) GetName() string {
 type RuleSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Action        *RuleAction            `protobuf:"bytes,175614240,opt,name=action,proto3" json:"action,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *RuleSummary) Reset() {
 	*x = RuleSummary{}
-	mi := &file_wafv2_proto_msgTypes[236]
+	mi := &file_wafv2_proto_msgTypes[237]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17003,7 +17173,7 @@ func (x *RuleSummary) String() string {
 func (*RuleSummary) ProtoMessage() {}
 
 func (x *RuleSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[236]
+	mi := &file_wafv2_proto_msgTypes[237]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17016,7 +17186,7 @@ func (x *RuleSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RuleSummary.ProtoReflect.Descriptor instead.
 func (*RuleSummary) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{236}
+	return file_wafv2_proto_rawDescGZIP(), []int{237}
 }
 
 func (x *RuleSummary) GetAction() *RuleAction {
@@ -17027,24 +17197,24 @@ func (x *RuleSummary) GetAction() *RuleAction {
 }
 
 func (x *RuleSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type SampledHTTPRequest struct {
 	state                   protoimpl.MessageState `protogen:"open.v1"`
-	Action                  string                 `protobuf:"bytes,175614240,opt,name=action,proto3" json:"action,omitempty"`
+	Action                  *string                `protobuf:"bytes,175614240,opt,name=action,proto3,oneof" json:"action,omitempty"`
 	Captcharesponse         *CaptchaResponse       `protobuf:"bytes,484053583,opt,name=captcharesponse,proto3" json:"captcharesponse,omitempty"`
 	Challengeresponse       *ChallengeResponse     `protobuf:"bytes,268501730,opt,name=challengeresponse,proto3" json:"challengeresponse,omitempty"`
 	Labels                  []*Label               `protobuf:"bytes,178416811,rep,name=labels,proto3" json:"labels,omitempty"`
-	Overriddenaction        string                 `protobuf:"bytes,35244204,opt,name=overriddenaction,proto3" json:"overriddenaction,omitempty"`
+	Overriddenaction        *string                `protobuf:"bytes,35244204,opt,name=overriddenaction,proto3,oneof" json:"overriddenaction,omitempty"`
 	Request                 *HTTPRequest           `protobuf:"bytes,38093139,opt,name=request,proto3" json:"request,omitempty"`
 	Requestheadersinserted  []*HTTPHeader          `protobuf:"bytes,367751765,rep,name=requestheadersinserted,proto3" json:"requestheadersinserted,omitempty"`
 	Responsecodesent        *int32                 `protobuf:"varint,108347942,opt,name=responsecodesent,proto3,oneof" json:"responsecodesent,omitempty"`
-	Rulenamewithinrulegroup string                 `protobuf:"bytes,317544521,opt,name=rulenamewithinrulegroup,proto3" json:"rulenamewithinrulegroup,omitempty"`
-	Timestamp               string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Rulenamewithinrulegroup *string                `protobuf:"bytes,317544521,opt,name=rulenamewithinrulegroup,proto3,oneof" json:"rulenamewithinrulegroup,omitempty"`
+	Timestamp               *string                `protobuf:"bytes,162390468,opt,name=timestamp,proto3,oneof" json:"timestamp,omitempty"`
 	Weight                  int64                  `protobuf:"varint,422581466,opt,name=weight,proto3" json:"weight,omitempty"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
@@ -17052,7 +17222,7 @@ type SampledHTTPRequest struct {
 
 func (x *SampledHTTPRequest) Reset() {
 	*x = SampledHTTPRequest{}
-	mi := &file_wafv2_proto_msgTypes[237]
+	mi := &file_wafv2_proto_msgTypes[238]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17064,7 +17234,7 @@ func (x *SampledHTTPRequest) String() string {
 func (*SampledHTTPRequest) ProtoMessage() {}
 
 func (x *SampledHTTPRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[237]
+	mi := &file_wafv2_proto_msgTypes[238]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17077,12 +17247,12 @@ func (x *SampledHTTPRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SampledHTTPRequest.ProtoReflect.Descriptor instead.
 func (*SampledHTTPRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{237}
+	return file_wafv2_proto_rawDescGZIP(), []int{238}
 }
 
 func (x *SampledHTTPRequest) GetAction() string {
-	if x != nil {
-		return x.Action
+	if x != nil && x.Action != nil {
+		return *x.Action
 	}
 	return ""
 }
@@ -17109,8 +17279,8 @@ func (x *SampledHTTPRequest) GetLabels() []*Label {
 }
 
 func (x *SampledHTTPRequest) GetOverriddenaction() string {
-	if x != nil {
-		return x.Overriddenaction
+	if x != nil && x.Overriddenaction != nil {
+		return *x.Overriddenaction
 	}
 	return ""
 }
@@ -17137,15 +17307,15 @@ func (x *SampledHTTPRequest) GetResponsecodesent() int32 {
 }
 
 func (x *SampledHTTPRequest) GetRulenamewithinrulegroup() string {
-	if x != nil {
-		return x.Rulenamewithinrulegroup
+	if x != nil && x.Rulenamewithinrulegroup != nil {
+		return *x.Rulenamewithinrulegroup
 	}
 	return ""
 }
 
 func (x *SampledHTTPRequest) GetTimestamp() string {
-	if x != nil {
-		return x.Timestamp
+	if x != nil && x.Timestamp != nil {
+		return *x.Timestamp
 	}
 	return ""
 }
@@ -17160,29 +17330,29 @@ func (x *SampledHTTPRequest) GetWeight() int64 {
 type SettlementRecord struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Amount           string                 `protobuf:"bytes,72127338,opt,name=amount,proto3" json:"amount,omitempty"`
-	Contentpath      string                 `protobuf:"bytes,524626210,opt,name=contentpath,proto3" json:"contentpath,omitempty"`
+	Contentpath      *string                `protobuf:"bytes,524626210,opt,name=contentpath,proto3,oneof" json:"contentpath,omitempty"`
 	Currency         Currency               `protobuf:"varint,342827607,opt,name=currency,proto3,enum=wafv2.Currency" json:"currency,omitempty"`
-	Intent           string                 `protobuf:"bytes,158359916,opt,name=intent,proto3" json:"intent,omitempty"`
-	Network          string                 `protobuf:"bytes,158641510,opt,name=network,proto3" json:"network,omitempty"`
-	Organization     string                 `protobuf:"bytes,426894091,opt,name=organization,proto3" json:"organization,omitempty"`
-	Payeraddress     string                 `protobuf:"bytes,44160939,opt,name=payeraddress,proto3" json:"payeraddress,omitempty"`
-	Requestid        string                 `protobuf:"bytes,396701568,opt,name=requestid,proto3" json:"requestid,omitempty"`
-	Requesttimestamp string                 `protobuf:"bytes,276028395,opt,name=requesttimestamp,proto3" json:"requesttimestamp,omitempty"`
-	Sourcecategory   string                 `protobuf:"bytes,18388337,opt,name=sourcecategory,proto3" json:"sourcecategory,omitempty"`
-	Sourcename       string                 `protobuf:"bytes,497856572,opt,name=sourcename,proto3" json:"sourcename,omitempty"`
+	Intent           *string                `protobuf:"bytes,158359916,opt,name=intent,proto3,oneof" json:"intent,omitempty"`
+	Network          *string                `protobuf:"bytes,158641510,opt,name=network,proto3,oneof" json:"network,omitempty"`
+	Organization     *string                `protobuf:"bytes,426894091,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
+	Payeraddress     *string                `protobuf:"bytes,44160939,opt,name=payeraddress,proto3,oneof" json:"payeraddress,omitempty"`
+	Requestid        *string                `protobuf:"bytes,396701568,opt,name=requestid,proto3,oneof" json:"requestid,omitempty"`
+	Requesttimestamp *string                `protobuf:"bytes,276028395,opt,name=requesttimestamp,proto3,oneof" json:"requesttimestamp,omitempty"`
+	Sourcecategory   *string                `protobuf:"bytes,18388337,opt,name=sourcecategory,proto3,oneof" json:"sourcecategory,omitempty"`
+	Sourcename       *string                `protobuf:"bytes,497856572,opt,name=sourcename,proto3,oneof" json:"sourcename,omitempty"`
 	Status           SettlementStatus       `protobuf:"varint,6222352,opt,name=status,proto3,enum=wafv2.SettlementStatus" json:"status,omitempty"`
 	Timestamp        string                 `protobuf:"bytes,162390468,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Transactionid    string                 `protobuf:"bytes,390910639,opt,name=transactionid,proto3" json:"transactionid,omitempty"`
+	Transactionid    *string                `protobuf:"bytes,390910639,opt,name=transactionid,proto3,oneof" json:"transactionid,omitempty"`
 	Verified         *bool                  `protobuf:"varint,144122342,opt,name=verified,proto3,oneof" json:"verified,omitempty"`
-	Walletaddress    string                 `protobuf:"bytes,230208029,opt,name=walletaddress,proto3" json:"walletaddress,omitempty"`
-	Webaclarn        string                 `protobuf:"bytes,526110243,opt,name=webaclarn,proto3" json:"webaclarn,omitempty"`
+	Walletaddress    *string                `protobuf:"bytes,230208029,opt,name=walletaddress,proto3,oneof" json:"walletaddress,omitempty"`
+	Webaclarn        *string                `protobuf:"bytes,526110243,opt,name=webaclarn,proto3,oneof" json:"webaclarn,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
 func (x *SettlementRecord) Reset() {
 	*x = SettlementRecord{}
-	mi := &file_wafv2_proto_msgTypes[238]
+	mi := &file_wafv2_proto_msgTypes[239]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17194,7 +17364,7 @@ func (x *SettlementRecord) String() string {
 func (*SettlementRecord) ProtoMessage() {}
 
 func (x *SettlementRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[238]
+	mi := &file_wafv2_proto_msgTypes[239]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17207,7 +17377,7 @@ func (x *SettlementRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SettlementRecord.ProtoReflect.Descriptor instead.
 func (*SettlementRecord) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{238}
+	return file_wafv2_proto_rawDescGZIP(), []int{239}
 }
 
 func (x *SettlementRecord) GetAmount() string {
@@ -17218,8 +17388,8 @@ func (x *SettlementRecord) GetAmount() string {
 }
 
 func (x *SettlementRecord) GetContentpath() string {
-	if x != nil {
-		return x.Contentpath
+	if x != nil && x.Contentpath != nil {
+		return *x.Contentpath
 	}
 	return ""
 }
@@ -17232,57 +17402,57 @@ func (x *SettlementRecord) GetCurrency() Currency {
 }
 
 func (x *SettlementRecord) GetIntent() string {
-	if x != nil {
-		return x.Intent
+	if x != nil && x.Intent != nil {
+		return *x.Intent
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetNetwork() string {
-	if x != nil {
-		return x.Network
+	if x != nil && x.Network != nil {
+		return *x.Network
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetOrganization() string {
-	if x != nil {
-		return x.Organization
+	if x != nil && x.Organization != nil {
+		return *x.Organization
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetPayeraddress() string {
-	if x != nil {
-		return x.Payeraddress
+	if x != nil && x.Payeraddress != nil {
+		return *x.Payeraddress
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetRequestid() string {
-	if x != nil {
-		return x.Requestid
+	if x != nil && x.Requestid != nil {
+		return *x.Requestid
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetRequesttimestamp() string {
-	if x != nil {
-		return x.Requesttimestamp
+	if x != nil && x.Requesttimestamp != nil {
+		return *x.Requesttimestamp
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetSourcecategory() string {
-	if x != nil {
-		return x.Sourcecategory
+	if x != nil && x.Sourcecategory != nil {
+		return *x.Sourcecategory
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetSourcename() string {
-	if x != nil {
-		return x.Sourcename
+	if x != nil && x.Sourcename != nil {
+		return *x.Sourcename
 	}
 	return ""
 }
@@ -17302,8 +17472,8 @@ func (x *SettlementRecord) GetTimestamp() string {
 }
 
 func (x *SettlementRecord) GetTransactionid() string {
-	if x != nil {
-		return x.Transactionid
+	if x != nil && x.Transactionid != nil {
+		return *x.Transactionid
 	}
 	return ""
 }
@@ -17316,15 +17486,15 @@ func (x *SettlementRecord) GetVerified() bool {
 }
 
 func (x *SettlementRecord) GetWalletaddress() string {
-	if x != nil {
-		return x.Walletaddress
+	if x != nil && x.Walletaddress != nil {
+		return *x.Walletaddress
 	}
 	return ""
 }
 
 func (x *SettlementRecord) GetWebaclarn() string {
-	if x != nil {
-		return x.Webaclarn
+	if x != nil && x.Webaclarn != nil {
+		return *x.Webaclarn
 	}
 	return ""
 }
@@ -17338,7 +17508,7 @@ type SingleHeader struct {
 
 func (x *SingleHeader) Reset() {
 	*x = SingleHeader{}
-	mi := &file_wafv2_proto_msgTypes[239]
+	mi := &file_wafv2_proto_msgTypes[240]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17350,7 +17520,7 @@ func (x *SingleHeader) String() string {
 func (*SingleHeader) ProtoMessage() {}
 
 func (x *SingleHeader) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[239]
+	mi := &file_wafv2_proto_msgTypes[240]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17363,7 +17533,7 @@ func (x *SingleHeader) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SingleHeader.ProtoReflect.Descriptor instead.
 func (*SingleHeader) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{239}
+	return file_wafv2_proto_rawDescGZIP(), []int{240}
 }
 
 func (x *SingleHeader) GetName() string {
@@ -17382,7 +17552,7 @@ type SingleQueryArgument struct {
 
 func (x *SingleQueryArgument) Reset() {
 	*x = SingleQueryArgument{}
-	mi := &file_wafv2_proto_msgTypes[240]
+	mi := &file_wafv2_proto_msgTypes[241]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17394,7 +17564,7 @@ func (x *SingleQueryArgument) String() string {
 func (*SingleQueryArgument) ProtoMessage() {}
 
 func (x *SingleQueryArgument) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[240]
+	mi := &file_wafv2_proto_msgTypes[241]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17407,7 +17577,7 @@ func (x *SingleQueryArgument) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SingleQueryArgument.ProtoReflect.Descriptor instead.
 func (*SingleQueryArgument) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{240}
+	return file_wafv2_proto_rawDescGZIP(), []int{241}
 }
 
 func (x *SingleQueryArgument) GetName() string {
@@ -17418,18 +17588,19 @@ func (x *SingleQueryArgument) GetName() string {
 }
 
 type SizeConstraintStatement struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Comparisonoperator  ComparisonOperator     `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=wafv2.ComparisonOperator" json:"comparisonoperator,omitempty"`
-	Fieldtomatch        *FieldToMatch          `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
-	Size                int64                  `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
-	Texttransformations []*TextTransformation  `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Comparisonoperator          ComparisonOperator            `protobuf:"varint,7059861,opt,name=comparisonoperator,proto3,enum=wafv2.ComparisonOperator" json:"comparisonoperator,omitempty"`
+	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
+	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
+	Size                        int64                         `protobuf:"varint,105352829,opt,name=size,proto3" json:"size,omitempty"`
+	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *SizeConstraintStatement) Reset() {
 	*x = SizeConstraintStatement{}
-	mi := &file_wafv2_proto_msgTypes[241]
+	mi := &file_wafv2_proto_msgTypes[242]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17441,7 +17612,7 @@ func (x *SizeConstraintStatement) String() string {
 func (*SizeConstraintStatement) ProtoMessage() {}
 
 func (x *SizeConstraintStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[241]
+	mi := &file_wafv2_proto_msgTypes[242]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17454,7 +17625,7 @@ func (x *SizeConstraintStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SizeConstraintStatement.ProtoReflect.Descriptor instead.
 func (*SizeConstraintStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{241}
+	return file_wafv2_proto_rawDescGZIP(), []int{242}
 }
 
 func (x *SizeConstraintStatement) GetComparisonoperator() ComparisonOperator {
@@ -17467,6 +17638,13 @@ func (x *SizeConstraintStatement) GetComparisonoperator() ComparisonOperator {
 func (x *SizeConstraintStatement) GetFieldtomatch() *FieldToMatch {
 	if x != nil {
 		return x.Fieldtomatch
+	}
+	return nil
+}
+
+func (x *SizeConstraintStatement) GetPreparsetexttransformations() []*PreParseTextTransformation {
+	if x != nil {
+		return x.Preparsetexttransformations
 	}
 	return nil
 }
@@ -17488,12 +17666,12 @@ func (x *SizeConstraintStatement) GetTexttransformations() []*TextTransformation
 type SourceStatistics struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
 	Amount         string                 `protobuf:"bytes,72127338,opt,name=amount,proto3" json:"amount,omitempty"`
-	Groupbyvalue   string                 `protobuf:"bytes,232052215,opt,name=groupbyvalue,proto3" json:"groupbyvalue,omitempty"`
-	Intent         string                 `protobuf:"bytes,158359916,opt,name=intent,proto3" json:"intent,omitempty"`
-	Organization   string                 `protobuf:"bytes,426894091,opt,name=organization,proto3" json:"organization,omitempty"`
+	Groupbyvalue   *string                `protobuf:"bytes,232052215,opt,name=groupbyvalue,proto3,oneof" json:"groupbyvalue,omitempty"`
+	Intent         *string                `protobuf:"bytes,158359916,opt,name=intent,proto3,oneof" json:"intent,omitempty"`
+	Organization   *string                `protobuf:"bytes,426894091,opt,name=organization,proto3,oneof" json:"organization,omitempty"`
 	Percentage     float64                `protobuf:"fixed64,341153238,opt,name=percentage,proto3" json:"percentage,omitempty"`
 	Requestcount   int64                  `protobuf:"varint,288519674,opt,name=requestcount,proto3" json:"requestcount,omitempty"`
-	Sourcecategory string                 `protobuf:"bytes,18388337,opt,name=sourcecategory,proto3" json:"sourcecategory,omitempty"`
+	Sourcecategory *string                `protobuf:"bytes,18388337,opt,name=sourcecategory,proto3,oneof" json:"sourcecategory,omitempty"`
 	Sourcename     string                 `protobuf:"bytes,497856572,opt,name=sourcename,proto3" json:"sourcename,omitempty"`
 	Verified       *bool                  `protobuf:"varint,144122342,opt,name=verified,proto3,oneof" json:"verified,omitempty"`
 	unknownFields  protoimpl.UnknownFields
@@ -17502,7 +17680,7 @@ type SourceStatistics struct {
 
 func (x *SourceStatistics) Reset() {
 	*x = SourceStatistics{}
-	mi := &file_wafv2_proto_msgTypes[242]
+	mi := &file_wafv2_proto_msgTypes[243]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17514,7 +17692,7 @@ func (x *SourceStatistics) String() string {
 func (*SourceStatistics) ProtoMessage() {}
 
 func (x *SourceStatistics) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[242]
+	mi := &file_wafv2_proto_msgTypes[243]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17527,7 +17705,7 @@ func (x *SourceStatistics) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SourceStatistics.ProtoReflect.Descriptor instead.
 func (*SourceStatistics) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{242}
+	return file_wafv2_proto_rawDescGZIP(), []int{243}
 }
 
 func (x *SourceStatistics) GetAmount() string {
@@ -17538,22 +17716,22 @@ func (x *SourceStatistics) GetAmount() string {
 }
 
 func (x *SourceStatistics) GetGroupbyvalue() string {
-	if x != nil {
-		return x.Groupbyvalue
+	if x != nil && x.Groupbyvalue != nil {
+		return *x.Groupbyvalue
 	}
 	return ""
 }
 
 func (x *SourceStatistics) GetIntent() string {
-	if x != nil {
-		return x.Intent
+	if x != nil && x.Intent != nil {
+		return *x.Intent
 	}
 	return ""
 }
 
 func (x *SourceStatistics) GetOrganization() string {
-	if x != nil {
-		return x.Organization
+	if x != nil && x.Organization != nil {
+		return *x.Organization
 	}
 	return ""
 }
@@ -17573,8 +17751,8 @@ func (x *SourceStatistics) GetRequestcount() int64 {
 }
 
 func (x *SourceStatistics) GetSourcecategory() string {
-	if x != nil {
-		return x.Sourcecategory
+	if x != nil && x.Sourcecategory != nil {
+		return *x.Sourcecategory
 	}
 	return ""
 }
@@ -17594,17 +17772,18 @@ func (x *SourceStatistics) GetVerified() bool {
 }
 
 type SqliMatchStatement struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Fieldtomatch        *FieldToMatch          `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
-	Sensitivitylevel    SensitivityLevel       `protobuf:"varint,12020595,opt,name=sensitivitylevel,proto3,enum=wafv2.SensitivityLevel" json:"sensitivitylevel,omitempty"`
-	Texttransformations []*TextTransformation  `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
+	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
+	Sensitivitylevel            SensitivityLevel              `protobuf:"varint,12020595,opt,name=sensitivitylevel,proto3,enum=wafv2.SensitivityLevel" json:"sensitivitylevel,omitempty"`
+	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *SqliMatchStatement) Reset() {
 	*x = SqliMatchStatement{}
-	mi := &file_wafv2_proto_msgTypes[243]
+	mi := &file_wafv2_proto_msgTypes[244]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17616,7 +17795,7 @@ func (x *SqliMatchStatement) String() string {
 func (*SqliMatchStatement) ProtoMessage() {}
 
 func (x *SqliMatchStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[243]
+	mi := &file_wafv2_proto_msgTypes[244]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17629,12 +17808,19 @@ func (x *SqliMatchStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SqliMatchStatement.ProtoReflect.Descriptor instead.
 func (*SqliMatchStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{243}
+	return file_wafv2_proto_rawDescGZIP(), []int{244}
 }
 
 func (x *SqliMatchStatement) GetFieldtomatch() *FieldToMatch {
 	if x != nil {
 		return x.Fieldtomatch
+	}
+	return nil
+}
+
+func (x *SqliMatchStatement) GetPreparsetexttransformations() []*PreParseTextTransformation {
+	if x != nil {
+		return x.Preparsetexttransformations
 	}
 	return nil
 }
@@ -17677,7 +17863,7 @@ type Statement struct {
 
 func (x *Statement) Reset() {
 	*x = Statement{}
-	mi := &file_wafv2_proto_msgTypes[244]
+	mi := &file_wafv2_proto_msgTypes[245]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17689,7 +17875,7 @@ func (x *Statement) String() string {
 func (*Statement) ProtoMessage() {}
 
 func (x *Statement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[244]
+	mi := &file_wafv2_proto_msgTypes[245]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17702,7 +17888,7 @@ func (x *Statement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Statement.ProtoReflect.Descriptor instead.
 func (*Statement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{244}
+	return file_wafv2_proto_rawDescGZIP(), []int{245}
 }
 
 func (x *Statement) GetAndstatement() *AndStatement {
@@ -17827,7 +18013,7 @@ type Tag struct {
 
 func (x *Tag) Reset() {
 	*x = Tag{}
-	mi := &file_wafv2_proto_msgTypes[245]
+	mi := &file_wafv2_proto_msgTypes[246]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17839,7 +18025,7 @@ func (x *Tag) String() string {
 func (*Tag) ProtoMessage() {}
 
 func (x *Tag) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[245]
+	mi := &file_wafv2_proto_msgTypes[246]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17852,7 +18038,7 @@ func (x *Tag) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Tag.ProtoReflect.Descriptor instead.
 func (*Tag) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{245}
+	return file_wafv2_proto_rawDescGZIP(), []int{246}
 }
 
 func (x *Tag) GetKey() string {
@@ -17871,7 +18057,7 @@ func (x *Tag) GetValue() string {
 
 type TagInfoForResource struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Resourcearn   string                 `protobuf:"bytes,369516653,opt,name=resourcearn,proto3" json:"resourcearn,omitempty"`
+	Resourcearn   *string                `protobuf:"bytes,369516653,opt,name=resourcearn,proto3,oneof" json:"resourcearn,omitempty"`
 	Taglist       []*Tag                 `protobuf:"bytes,429416860,rep,name=taglist,proto3" json:"taglist,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -17879,7 +18065,7 @@ type TagInfoForResource struct {
 
 func (x *TagInfoForResource) Reset() {
 	*x = TagInfoForResource{}
-	mi := &file_wafv2_proto_msgTypes[246]
+	mi := &file_wafv2_proto_msgTypes[247]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17891,7 +18077,7 @@ func (x *TagInfoForResource) String() string {
 func (*TagInfoForResource) ProtoMessage() {}
 
 func (x *TagInfoForResource) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[246]
+	mi := &file_wafv2_proto_msgTypes[247]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17904,12 +18090,12 @@ func (x *TagInfoForResource) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagInfoForResource.ProtoReflect.Descriptor instead.
 func (*TagInfoForResource) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{246}
+	return file_wafv2_proto_rawDescGZIP(), []int{247}
 }
 
 func (x *TagInfoForResource) GetResourcearn() string {
-	if x != nil {
-		return x.Resourcearn
+	if x != nil && x.Resourcearn != nil {
+		return *x.Resourcearn
 	}
 	return ""
 }
@@ -17931,7 +18117,7 @@ type TagResourceRequest struct {
 
 func (x *TagResourceRequest) Reset() {
 	*x = TagResourceRequest{}
-	mi := &file_wafv2_proto_msgTypes[247]
+	mi := &file_wafv2_proto_msgTypes[248]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17943,7 +18129,7 @@ func (x *TagResourceRequest) String() string {
 func (*TagResourceRequest) ProtoMessage() {}
 
 func (x *TagResourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[247]
+	mi := &file_wafv2_proto_msgTypes[248]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -17956,7 +18142,7 @@ func (x *TagResourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagResourceRequest.ProtoReflect.Descriptor instead.
 func (*TagResourceRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{247}
+	return file_wafv2_proto_rawDescGZIP(), []int{248}
 }
 
 func (x *TagResourceRequest) GetResourcearn() string {
@@ -17981,7 +18167,7 @@ type TagResourceResponse struct {
 
 func (x *TagResourceResponse) Reset() {
 	*x = TagResourceResponse{}
-	mi := &file_wafv2_proto_msgTypes[248]
+	mi := &file_wafv2_proto_msgTypes[249]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -17993,7 +18179,7 @@ func (x *TagResourceResponse) String() string {
 func (*TagResourceResponse) ProtoMessage() {}
 
 func (x *TagResourceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[248]
+	mi := &file_wafv2_proto_msgTypes[249]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18006,7 +18192,7 @@ func (x *TagResourceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TagResourceResponse.ProtoReflect.Descriptor instead.
 func (*TagResourceResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{248}
+	return file_wafv2_proto_rawDescGZIP(), []int{249}
 }
 
 type TextTransformation struct {
@@ -18019,7 +18205,7 @@ type TextTransformation struct {
 
 func (x *TextTransformation) Reset() {
 	*x = TextTransformation{}
-	mi := &file_wafv2_proto_msgTypes[249]
+	mi := &file_wafv2_proto_msgTypes[250]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18031,7 +18217,7 @@ func (x *TextTransformation) String() string {
 func (*TextTransformation) ProtoMessage() {}
 
 func (x *TextTransformation) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[249]
+	mi := &file_wafv2_proto_msgTypes[250]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18044,7 +18230,7 @@ func (x *TextTransformation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TextTransformation.ProtoReflect.Descriptor instead.
 func (*TextTransformation) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{249}
+	return file_wafv2_proto_rawDescGZIP(), []int{250}
 }
 
 func (x *TextTransformation) GetPriority() int32 {
@@ -18071,7 +18257,7 @@ type TimeWindow struct {
 
 func (x *TimeWindow) Reset() {
 	*x = TimeWindow{}
-	mi := &file_wafv2_proto_msgTypes[250]
+	mi := &file_wafv2_proto_msgTypes[251]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18083,7 +18269,7 @@ func (x *TimeWindow) String() string {
 func (*TimeWindow) ProtoMessage() {}
 
 func (x *TimeWindow) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[250]
+	mi := &file_wafv2_proto_msgTypes[251]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18096,7 +18282,7 @@ func (x *TimeWindow) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeWindow.ProtoReflect.Descriptor instead.
 func (*TimeWindow) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{250}
+	return file_wafv2_proto_rawDescGZIP(), []int{251}
 }
 
 func (x *TimeWindow) GetEndtime() string {
@@ -18123,7 +18309,7 @@ type UntagResourceRequest struct {
 
 func (x *UntagResourceRequest) Reset() {
 	*x = UntagResourceRequest{}
-	mi := &file_wafv2_proto_msgTypes[251]
+	mi := &file_wafv2_proto_msgTypes[252]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18135,7 +18321,7 @@ func (x *UntagResourceRequest) String() string {
 func (*UntagResourceRequest) ProtoMessage() {}
 
 func (x *UntagResourceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[251]
+	mi := &file_wafv2_proto_msgTypes[252]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18148,7 +18334,7 @@ func (x *UntagResourceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UntagResourceRequest.ProtoReflect.Descriptor instead.
 func (*UntagResourceRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{251}
+	return file_wafv2_proto_rawDescGZIP(), []int{252}
 }
 
 func (x *UntagResourceRequest) GetResourcearn() string {
@@ -18173,7 +18359,7 @@ type UntagResourceResponse struct {
 
 func (x *UntagResourceResponse) Reset() {
 	*x = UntagResourceResponse{}
-	mi := &file_wafv2_proto_msgTypes[252]
+	mi := &file_wafv2_proto_msgTypes[253]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18185,7 +18371,7 @@ func (x *UntagResourceResponse) String() string {
 func (*UntagResourceResponse) ProtoMessage() {}
 
 func (x *UntagResourceResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[252]
+	mi := &file_wafv2_proto_msgTypes[253]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18198,13 +18384,13 @@ func (x *UntagResourceResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UntagResourceResponse.ProtoReflect.Descriptor instead.
 func (*UntagResourceResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{252}
+	return file_wafv2_proto_rawDescGZIP(), []int{253}
 }
 
 type UpdateIPSetRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Addresses     []string               `protobuf:"bytes,375939972,rep,name=addresses,proto3" json:"addresses,omitempty"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
 	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
@@ -18215,7 +18401,7 @@ type UpdateIPSetRequest struct {
 
 func (x *UpdateIPSetRequest) Reset() {
 	*x = UpdateIPSetRequest{}
-	mi := &file_wafv2_proto_msgTypes[253]
+	mi := &file_wafv2_proto_msgTypes[254]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18227,7 +18413,7 @@ func (x *UpdateIPSetRequest) String() string {
 func (*UpdateIPSetRequest) ProtoMessage() {}
 
 func (x *UpdateIPSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[253]
+	mi := &file_wafv2_proto_msgTypes[254]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18240,7 +18426,7 @@ func (x *UpdateIPSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIPSetRequest.ProtoReflect.Descriptor instead.
 func (*UpdateIPSetRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{253}
+	return file_wafv2_proto_rawDescGZIP(), []int{254}
 }
 
 func (x *UpdateIPSetRequest) GetAddresses() []string {
@@ -18251,8 +18437,8 @@ func (x *UpdateIPSetRequest) GetAddresses() []string {
 }
 
 func (x *UpdateIPSetRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -18287,14 +18473,14 @@ func (x *UpdateIPSetRequest) GetScope() Scope {
 
 type UpdateIPSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextlocktoken string                 `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3" json:"nextlocktoken,omitempty"`
+	Nextlocktoken *string                `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3,oneof" json:"nextlocktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateIPSetResponse) Reset() {
 	*x = UpdateIPSetResponse{}
-	mi := &file_wafv2_proto_msgTypes[254]
+	mi := &file_wafv2_proto_msgTypes[255]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18306,7 +18492,7 @@ func (x *UpdateIPSetResponse) String() string {
 func (*UpdateIPSetResponse) ProtoMessage() {}
 
 func (x *UpdateIPSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[254]
+	mi := &file_wafv2_proto_msgTypes[255]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18319,12 +18505,12 @@ func (x *UpdateIPSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateIPSetResponse.ProtoReflect.Descriptor instead.
 func (*UpdateIPSetResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{254}
+	return file_wafv2_proto_rawDescGZIP(), []int{255}
 }
 
 func (x *UpdateIPSetResponse) GetNextlocktoken() string {
-	if x != nil {
-		return x.Nextlocktoken
+	if x != nil && x.Nextlocktoken != nil {
+		return *x.Nextlocktoken
 	}
 	return ""
 }
@@ -18343,7 +18529,7 @@ type UpdateManagedRuleSetVersionExpiryDateRequest struct {
 
 func (x *UpdateManagedRuleSetVersionExpiryDateRequest) Reset() {
 	*x = UpdateManagedRuleSetVersionExpiryDateRequest{}
-	mi := &file_wafv2_proto_msgTypes[255]
+	mi := &file_wafv2_proto_msgTypes[256]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18355,7 +18541,7 @@ func (x *UpdateManagedRuleSetVersionExpiryDateRequest) String() string {
 func (*UpdateManagedRuleSetVersionExpiryDateRequest) ProtoMessage() {}
 
 func (x *UpdateManagedRuleSetVersionExpiryDateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[255]
+	mi := &file_wafv2_proto_msgTypes[256]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18368,7 +18554,7 @@ func (x *UpdateManagedRuleSetVersionExpiryDateRequest) ProtoReflect() protorefle
 
 // Deprecated: Use UpdateManagedRuleSetVersionExpiryDateRequest.ProtoReflect.Descriptor instead.
 func (*UpdateManagedRuleSetVersionExpiryDateRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{255}
+	return file_wafv2_proto_rawDescGZIP(), []int{256}
 }
 
 func (x *UpdateManagedRuleSetVersionExpiryDateRequest) GetExpirytimestamp() string {
@@ -18415,16 +18601,16 @@ func (x *UpdateManagedRuleSetVersionExpiryDateRequest) GetVersiontoexpire() stri
 
 type UpdateManagedRuleSetVersionExpiryDateResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
-	Expiringversion string                 `protobuf:"bytes,282072504,opt,name=expiringversion,proto3" json:"expiringversion,omitempty"`
-	Expirytimestamp string                 `protobuf:"bytes,460460551,opt,name=expirytimestamp,proto3" json:"expirytimestamp,omitempty"`
-	Nextlocktoken   string                 `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3" json:"nextlocktoken,omitempty"`
+	Expiringversion *string                `protobuf:"bytes,282072504,opt,name=expiringversion,proto3,oneof" json:"expiringversion,omitempty"`
+	Expirytimestamp *string                `protobuf:"bytes,460460551,opt,name=expirytimestamp,proto3,oneof" json:"expirytimestamp,omitempty"`
+	Nextlocktoken   *string                `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3,oneof" json:"nextlocktoken,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
 
 func (x *UpdateManagedRuleSetVersionExpiryDateResponse) Reset() {
 	*x = UpdateManagedRuleSetVersionExpiryDateResponse{}
-	mi := &file_wafv2_proto_msgTypes[256]
+	mi := &file_wafv2_proto_msgTypes[257]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18436,7 +18622,7 @@ func (x *UpdateManagedRuleSetVersionExpiryDateResponse) String() string {
 func (*UpdateManagedRuleSetVersionExpiryDateResponse) ProtoMessage() {}
 
 func (x *UpdateManagedRuleSetVersionExpiryDateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[256]
+	mi := &file_wafv2_proto_msgTypes[257]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18449,33 +18635,33 @@ func (x *UpdateManagedRuleSetVersionExpiryDateResponse) ProtoReflect() protorefl
 
 // Deprecated: Use UpdateManagedRuleSetVersionExpiryDateResponse.ProtoReflect.Descriptor instead.
 func (*UpdateManagedRuleSetVersionExpiryDateResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{256}
+	return file_wafv2_proto_rawDescGZIP(), []int{257}
 }
 
 func (x *UpdateManagedRuleSetVersionExpiryDateResponse) GetExpiringversion() string {
-	if x != nil {
-		return x.Expiringversion
+	if x != nil && x.Expiringversion != nil {
+		return *x.Expiringversion
 	}
 	return ""
 }
 
 func (x *UpdateManagedRuleSetVersionExpiryDateResponse) GetExpirytimestamp() string {
-	if x != nil {
-		return x.Expirytimestamp
+	if x != nil && x.Expirytimestamp != nil {
+		return *x.Expirytimestamp
 	}
 	return ""
 }
 
 func (x *UpdateManagedRuleSetVersionExpiryDateResponse) GetNextlocktoken() string {
-	if x != nil {
-		return x.Nextlocktoken
+	if x != nil && x.Nextlocktoken != nil {
+		return *x.Nextlocktoken
 	}
 	return ""
 }
 
 type UpdateRegexPatternSetRequest struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
-	Description           string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description           *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id                    string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Locktoken             string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
 	Name                  string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
@@ -18487,7 +18673,7 @@ type UpdateRegexPatternSetRequest struct {
 
 func (x *UpdateRegexPatternSetRequest) Reset() {
 	*x = UpdateRegexPatternSetRequest{}
-	mi := &file_wafv2_proto_msgTypes[257]
+	mi := &file_wafv2_proto_msgTypes[258]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18499,7 +18685,7 @@ func (x *UpdateRegexPatternSetRequest) String() string {
 func (*UpdateRegexPatternSetRequest) ProtoMessage() {}
 
 func (x *UpdateRegexPatternSetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[257]
+	mi := &file_wafv2_proto_msgTypes[258]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18512,12 +18698,12 @@ func (x *UpdateRegexPatternSetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRegexPatternSetRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRegexPatternSetRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{257}
+	return file_wafv2_proto_rawDescGZIP(), []int{258}
 }
 
 func (x *UpdateRegexPatternSetRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -18559,14 +18745,14 @@ func (x *UpdateRegexPatternSetRequest) GetScope() Scope {
 
 type UpdateRegexPatternSetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextlocktoken string                 `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3" json:"nextlocktoken,omitempty"`
+	Nextlocktoken *string                `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3,oneof" json:"nextlocktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateRegexPatternSetResponse) Reset() {
 	*x = UpdateRegexPatternSetResponse{}
-	mi := &file_wafv2_proto_msgTypes[258]
+	mi := &file_wafv2_proto_msgTypes[259]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18578,7 +18764,7 @@ func (x *UpdateRegexPatternSetResponse) String() string {
 func (*UpdateRegexPatternSetResponse) ProtoMessage() {}
 
 func (x *UpdateRegexPatternSetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[258]
+	mi := &file_wafv2_proto_msgTypes[259]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18591,12 +18777,12 @@ func (x *UpdateRegexPatternSetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRegexPatternSetResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRegexPatternSetResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{258}
+	return file_wafv2_proto_rawDescGZIP(), []int{259}
 }
 
 func (x *UpdateRegexPatternSetResponse) GetNextlocktoken() string {
-	if x != nil {
-		return x.Nextlocktoken
+	if x != nil && x.Nextlocktoken != nil {
+		return *x.Nextlocktoken
 	}
 	return ""
 }
@@ -18604,7 +18790,7 @@ func (x *UpdateRegexPatternSetResponse) GetNextlocktoken() string {
 type UpdateRuleGroupRequest struct {
 	state                protoimpl.MessageState         `protogen:"open.v1"`
 	Customresponsebodies map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Description          string                         `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description          *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id                   string                         `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Locktoken            string                         `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
 	Monetizationconfig   *MonetizationConfig            `protobuf:"bytes,528380847,opt,name=monetizationconfig,proto3" json:"monetizationconfig,omitempty"`
@@ -18618,7 +18804,7 @@ type UpdateRuleGroupRequest struct {
 
 func (x *UpdateRuleGroupRequest) Reset() {
 	*x = UpdateRuleGroupRequest{}
-	mi := &file_wafv2_proto_msgTypes[259]
+	mi := &file_wafv2_proto_msgTypes[260]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18630,7 +18816,7 @@ func (x *UpdateRuleGroupRequest) String() string {
 func (*UpdateRuleGroupRequest) ProtoMessage() {}
 
 func (x *UpdateRuleGroupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[259]
+	mi := &file_wafv2_proto_msgTypes[260]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18643,7 +18829,7 @@ func (x *UpdateRuleGroupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRuleGroupRequest.ProtoReflect.Descriptor instead.
 func (*UpdateRuleGroupRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{259}
+	return file_wafv2_proto_rawDescGZIP(), []int{260}
 }
 
 func (x *UpdateRuleGroupRequest) GetCustomresponsebodies() map[string]*CustomResponseBody {
@@ -18654,8 +18840,8 @@ func (x *UpdateRuleGroupRequest) GetCustomresponsebodies() map[string]*CustomRes
 }
 
 func (x *UpdateRuleGroupRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -18711,14 +18897,14 @@ func (x *UpdateRuleGroupRequest) GetVisibilityconfig() *VisibilityConfig {
 
 type UpdateRuleGroupResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextlocktoken string                 `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3" json:"nextlocktoken,omitempty"`
+	Nextlocktoken *string                `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3,oneof" json:"nextlocktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateRuleGroupResponse) Reset() {
 	*x = UpdateRuleGroupResponse{}
-	mi := &file_wafv2_proto_msgTypes[260]
+	mi := &file_wafv2_proto_msgTypes[261]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18730,7 +18916,7 @@ func (x *UpdateRuleGroupResponse) String() string {
 func (*UpdateRuleGroupResponse) ProtoMessage() {}
 
 func (x *UpdateRuleGroupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[260]
+	mi := &file_wafv2_proto_msgTypes[261]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18743,12 +18929,12 @@ func (x *UpdateRuleGroupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateRuleGroupResponse.ProtoReflect.Descriptor instead.
 func (*UpdateRuleGroupResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{260}
+	return file_wafv2_proto_rawDescGZIP(), []int{261}
 }
 
 func (x *UpdateRuleGroupResponse) GetNextlocktoken() string {
-	if x != nil {
-		return x.Nextlocktoken
+	if x != nil && x.Nextlocktoken != nil {
+		return *x.Nextlocktoken
 	}
 	return ""
 }
@@ -18762,7 +18948,7 @@ type UpdateWebACLRequest struct {
 	Customresponsebodies         map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Dataprotectionconfig         *DataProtectionConfig          `protobuf:"bytes,464792245,opt,name=dataprotectionconfig,proto3" json:"dataprotectionconfig,omitempty"`
 	Defaultaction                *DefaultAction                 `protobuf:"bytes,322663861,opt,name=defaultaction,proto3" json:"defaultaction,omitempty"`
-	Description                  string                         `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description                  *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id                           string                         `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
 	Locktoken                    string                         `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
 	Monetizationconfig           *MonetizationConfig            `protobuf:"bytes,528380847,opt,name=monetizationconfig,proto3" json:"monetizationconfig,omitempty"`
@@ -18778,7 +18964,7 @@ type UpdateWebACLRequest struct {
 
 func (x *UpdateWebACLRequest) Reset() {
 	*x = UpdateWebACLRequest{}
-	mi := &file_wafv2_proto_msgTypes[261]
+	mi := &file_wafv2_proto_msgTypes[262]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18790,7 +18976,7 @@ func (x *UpdateWebACLRequest) String() string {
 func (*UpdateWebACLRequest) ProtoMessage() {}
 
 func (x *UpdateWebACLRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[261]
+	mi := &file_wafv2_proto_msgTypes[262]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18803,7 +18989,7 @@ func (x *UpdateWebACLRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWebACLRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWebACLRequest) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{261}
+	return file_wafv2_proto_rawDescGZIP(), []int{262}
 }
 
 func (x *UpdateWebACLRequest) GetApplicationconfig() *ApplicationConfig {
@@ -18856,8 +19042,8 @@ func (x *UpdateWebACLRequest) GetDefaultaction() *DefaultAction {
 }
 
 func (x *UpdateWebACLRequest) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -18927,14 +19113,14 @@ func (x *UpdateWebACLRequest) GetVisibilityconfig() *VisibilityConfig {
 
 type UpdateWebACLResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nextlocktoken string                 `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3" json:"nextlocktoken,omitempty"`
+	Nextlocktoken *string                `protobuf:"bytes,473728437,opt,name=nextlocktoken,proto3,oneof" json:"nextlocktoken,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateWebACLResponse) Reset() {
 	*x = UpdateWebACLResponse{}
-	mi := &file_wafv2_proto_msgTypes[262]
+	mi := &file_wafv2_proto_msgTypes[263]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18946,7 +19132,7 @@ func (x *UpdateWebACLResponse) String() string {
 func (*UpdateWebACLResponse) ProtoMessage() {}
 
 func (x *UpdateWebACLResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[262]
+	mi := &file_wafv2_proto_msgTypes[263]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -18959,12 +19145,12 @@ func (x *UpdateWebACLResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWebACLResponse.ProtoReflect.Descriptor instead.
 func (*UpdateWebACLResponse) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{262}
+	return file_wafv2_proto_rawDescGZIP(), []int{263}
 }
 
 func (x *UpdateWebACLResponse) GetNextlocktoken() string {
-	if x != nil {
-		return x.Nextlocktoken
+	if x != nil && x.Nextlocktoken != nil {
+		return *x.Nextlocktoken
 	}
 	return ""
 }
@@ -18978,7 +19164,7 @@ type UriFragment struct {
 
 func (x *UriFragment) Reset() {
 	*x = UriFragment{}
-	mi := &file_wafv2_proto_msgTypes[263]
+	mi := &file_wafv2_proto_msgTypes[264]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -18990,7 +19176,7 @@ func (x *UriFragment) String() string {
 func (*UriFragment) ProtoMessage() {}
 
 func (x *UriFragment) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[263]
+	mi := &file_wafv2_proto_msgTypes[264]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19003,7 +19189,7 @@ func (x *UriFragment) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UriFragment.ProtoReflect.Descriptor instead.
 func (*UriFragment) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{263}
+	return file_wafv2_proto_rawDescGZIP(), []int{264}
 }
 
 func (x *UriFragment) GetFallbackbehavior() FallbackBehavior {
@@ -19021,7 +19207,7 @@ type UriPath struct {
 
 func (x *UriPath) Reset() {
 	*x = UriPath{}
-	mi := &file_wafv2_proto_msgTypes[264]
+	mi := &file_wafv2_proto_msgTypes[265]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19033,7 +19219,7 @@ func (x *UriPath) String() string {
 func (*UriPath) ProtoMessage() {}
 
 func (x *UriPath) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[264]
+	mi := &file_wafv2_proto_msgTypes[265]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19046,7 +19232,7 @@ func (x *UriPath) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UriPath.ProtoReflect.Descriptor instead.
 func (*UriPath) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{264}
+	return file_wafv2_proto_rawDescGZIP(), []int{265}
 }
 
 type UsernameField struct {
@@ -19058,7 +19244,7 @@ type UsernameField struct {
 
 func (x *UsernameField) Reset() {
 	*x = UsernameField{}
-	mi := &file_wafv2_proto_msgTypes[265]
+	mi := &file_wafv2_proto_msgTypes[266]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19070,7 +19256,7 @@ func (x *UsernameField) String() string {
 func (*UsernameField) ProtoMessage() {}
 
 func (x *UsernameField) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[265]
+	mi := &file_wafv2_proto_msgTypes[266]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19083,7 +19269,7 @@ func (x *UsernameField) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UsernameField.ProtoReflect.Descriptor instead.
 func (*UsernameField) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{265}
+	return file_wafv2_proto_rawDescGZIP(), []int{266}
 }
 
 func (x *UsernameField) GetIdentifier() string {
@@ -19095,7 +19281,7 @@ func (x *UsernameField) GetIdentifier() string {
 
 type VersionToPublish struct {
 	state                  protoimpl.MessageState `protogen:"open.v1"`
-	Associatedrulegrouparn string                 `protobuf:"bytes,416522796,opt,name=associatedrulegrouparn,proto3" json:"associatedrulegrouparn,omitempty"`
+	Associatedrulegrouparn *string                `protobuf:"bytes,416522796,opt,name=associatedrulegrouparn,proto3,oneof" json:"associatedrulegrouparn,omitempty"`
 	Forecastedlifetime     *int32                 `protobuf:"varint,149179979,opt,name=forecastedlifetime,proto3,oneof" json:"forecastedlifetime,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -19103,7 +19289,7 @@ type VersionToPublish struct {
 
 func (x *VersionToPublish) Reset() {
 	*x = VersionToPublish{}
-	mi := &file_wafv2_proto_msgTypes[266]
+	mi := &file_wafv2_proto_msgTypes[267]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19115,7 +19301,7 @@ func (x *VersionToPublish) String() string {
 func (*VersionToPublish) ProtoMessage() {}
 
 func (x *VersionToPublish) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[266]
+	mi := &file_wafv2_proto_msgTypes[267]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19128,12 +19314,12 @@ func (x *VersionToPublish) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VersionToPublish.ProtoReflect.Descriptor instead.
 func (*VersionToPublish) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{266}
+	return file_wafv2_proto_rawDescGZIP(), []int{267}
 }
 
 func (x *VersionToPublish) GetAssociatedrulegrouparn() string {
-	if x != nil {
-		return x.Associatedrulegrouparn
+	if x != nil && x.Associatedrulegrouparn != nil {
+		return *x.Associatedrulegrouparn
 	}
 	return ""
 }
@@ -19156,7 +19342,7 @@ type VisibilityConfig struct {
 
 func (x *VisibilityConfig) Reset() {
 	*x = VisibilityConfig{}
-	mi := &file_wafv2_proto_msgTypes[267]
+	mi := &file_wafv2_proto_msgTypes[268]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19168,7 +19354,7 @@ func (x *VisibilityConfig) String() string {
 func (*VisibilityConfig) ProtoMessage() {}
 
 func (x *VisibilityConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[267]
+	mi := &file_wafv2_proto_msgTypes[268]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19181,7 +19367,7 @@ func (x *VisibilityConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use VisibilityConfig.ProtoReflect.Descriptor instead.
 func (*VisibilityConfig) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{267}
+	return file_wafv2_proto_rawDescGZIP(), []int{268}
 }
 
 func (x *VisibilityConfig) GetCloudwatchmetricsenabled() bool {
@@ -19207,14 +19393,14 @@ func (x *VisibilityConfig) GetSampledrequestsenabled() bool {
 
 type WAFAssociatedItemException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFAssociatedItemException) Reset() {
 	*x = WAFAssociatedItemException{}
-	mi := &file_wafv2_proto_msgTypes[268]
+	mi := &file_wafv2_proto_msgTypes[269]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19226,7 +19412,7 @@ func (x *WAFAssociatedItemException) String() string {
 func (*WAFAssociatedItemException) ProtoMessage() {}
 
 func (x *WAFAssociatedItemException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[268]
+	mi := &file_wafv2_proto_msgTypes[269]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19239,26 +19425,26 @@ func (x *WAFAssociatedItemException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFAssociatedItemException.ProtoReflect.Descriptor instead.
 func (*WAFAssociatedItemException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{268}
+	return file_wafv2_proto_rawDescGZIP(), []int{269}
 }
 
 func (x *WAFAssociatedItemException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFConfigurationWarningException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFConfigurationWarningException) Reset() {
 	*x = WAFConfigurationWarningException{}
-	mi := &file_wafv2_proto_msgTypes[269]
+	mi := &file_wafv2_proto_msgTypes[270]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19270,7 +19456,7 @@ func (x *WAFConfigurationWarningException) String() string {
 func (*WAFConfigurationWarningException) ProtoMessage() {}
 
 func (x *WAFConfigurationWarningException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[269]
+	mi := &file_wafv2_proto_msgTypes[270]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19283,26 +19469,26 @@ func (x *WAFConfigurationWarningException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFConfigurationWarningException.ProtoReflect.Descriptor instead.
 func (*WAFConfigurationWarningException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{269}
+	return file_wafv2_proto_rawDescGZIP(), []int{270}
 }
 
 func (x *WAFConfigurationWarningException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFDuplicateItemException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFDuplicateItemException) Reset() {
 	*x = WAFDuplicateItemException{}
-	mi := &file_wafv2_proto_msgTypes[270]
+	mi := &file_wafv2_proto_msgTypes[271]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19314,7 +19500,7 @@ func (x *WAFDuplicateItemException) String() string {
 func (*WAFDuplicateItemException) ProtoMessage() {}
 
 func (x *WAFDuplicateItemException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[270]
+	mi := &file_wafv2_proto_msgTypes[271]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19327,26 +19513,26 @@ func (x *WAFDuplicateItemException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFDuplicateItemException.ProtoReflect.Descriptor instead.
 func (*WAFDuplicateItemException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{270}
+	return file_wafv2_proto_rawDescGZIP(), []int{271}
 }
 
 func (x *WAFDuplicateItemException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFExpiredManagedRuleGroupVersionException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFExpiredManagedRuleGroupVersionException) Reset() {
 	*x = WAFExpiredManagedRuleGroupVersionException{}
-	mi := &file_wafv2_proto_msgTypes[271]
+	mi := &file_wafv2_proto_msgTypes[272]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19358,7 +19544,7 @@ func (x *WAFExpiredManagedRuleGroupVersionException) String() string {
 func (*WAFExpiredManagedRuleGroupVersionException) ProtoMessage() {}
 
 func (x *WAFExpiredManagedRuleGroupVersionException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[271]
+	mi := &file_wafv2_proto_msgTypes[272]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19371,12 +19557,12 @@ func (x *WAFExpiredManagedRuleGroupVersionException) ProtoReflect() protoreflect
 
 // Deprecated: Use WAFExpiredManagedRuleGroupVersionException.ProtoReflect.Descriptor instead.
 func (*WAFExpiredManagedRuleGroupVersionException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{271}
+	return file_wafv2_proto_rawDescGZIP(), []int{272}
 }
 
 func (x *WAFExpiredManagedRuleGroupVersionException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -19384,14 +19570,14 @@ func (x *WAFExpiredManagedRuleGroupVersionException) GetMessage() string {
 type WAFFeatureNotIncludedInPricingPlanException struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	Disallowedfeatures []*DisallowedFeature   `protobuf:"bytes,445316575,rep,name=disallowedfeatures,proto3" json:"disallowedfeatures,omitempty"`
-	Message            string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message            *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
 
 func (x *WAFFeatureNotIncludedInPricingPlanException) Reset() {
 	*x = WAFFeatureNotIncludedInPricingPlanException{}
-	mi := &file_wafv2_proto_msgTypes[272]
+	mi := &file_wafv2_proto_msgTypes[273]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19403,7 +19589,7 @@ func (x *WAFFeatureNotIncludedInPricingPlanException) String() string {
 func (*WAFFeatureNotIncludedInPricingPlanException) ProtoMessage() {}
 
 func (x *WAFFeatureNotIncludedInPricingPlanException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[272]
+	mi := &file_wafv2_proto_msgTypes[273]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19416,7 +19602,7 @@ func (x *WAFFeatureNotIncludedInPricingPlanException) ProtoReflect() protoreflec
 
 // Deprecated: Use WAFFeatureNotIncludedInPricingPlanException.ProtoReflect.Descriptor instead.
 func (*WAFFeatureNotIncludedInPricingPlanException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{272}
+	return file_wafv2_proto_rawDescGZIP(), []int{273}
 }
 
 func (x *WAFFeatureNotIncludedInPricingPlanException) GetDisallowedfeatures() []*DisallowedFeature {
@@ -19427,22 +19613,22 @@ func (x *WAFFeatureNotIncludedInPricingPlanException) GetDisallowedfeatures() []
 }
 
 func (x *WAFFeatureNotIncludedInPricingPlanException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFInternalErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFInternalErrorException) Reset() {
 	*x = WAFInternalErrorException{}
-	mi := &file_wafv2_proto_msgTypes[273]
+	mi := &file_wafv2_proto_msgTypes[274]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19454,7 +19640,7 @@ func (x *WAFInternalErrorException) String() string {
 func (*WAFInternalErrorException) ProtoMessage() {}
 
 func (x *WAFInternalErrorException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[273]
+	mi := &file_wafv2_proto_msgTypes[274]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19467,26 +19653,26 @@ func (x *WAFInternalErrorException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFInternalErrorException.ProtoReflect.Descriptor instead.
 func (*WAFInternalErrorException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{273}
+	return file_wafv2_proto_rawDescGZIP(), []int{274}
 }
 
 func (x *WAFInternalErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFInvalidOperationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFInvalidOperationException) Reset() {
 	*x = WAFInvalidOperationException{}
-	mi := &file_wafv2_proto_msgTypes[274]
+	mi := &file_wafv2_proto_msgTypes[275]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19498,7 +19684,7 @@ func (x *WAFInvalidOperationException) String() string {
 func (*WAFInvalidOperationException) ProtoMessage() {}
 
 func (x *WAFInvalidOperationException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[274]
+	mi := &file_wafv2_proto_msgTypes[275]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19511,12 +19697,12 @@ func (x *WAFInvalidOperationException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFInvalidOperationException.ProtoReflect.Descriptor instead.
 func (*WAFInvalidOperationException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{274}
+	return file_wafv2_proto_rawDescGZIP(), []int{275}
 }
 
 func (x *WAFInvalidOperationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -19524,16 +19710,16 @@ func (x *WAFInvalidOperationException) GetMessage() string {
 type WAFInvalidParameterException struct {
 	state         protoimpl.MessageState  `protogen:"open.v1"`
 	Field         ParameterExceptionField `protobuf:"varint,263732488,opt,name=field,proto3,enum=wafv2.ParameterExceptionField" json:"field,omitempty"`
-	Parameter     string                  `protobuf:"bytes,407419825,opt,name=parameter,proto3" json:"parameter,omitempty"`
-	Reason        string                  `protobuf:"bytes,20005178,opt,name=reason,proto3" json:"reason,omitempty"`
-	Message       string                  `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Parameter     *string                 `protobuf:"bytes,407419825,opt,name=parameter,proto3,oneof" json:"parameter,omitempty"`
+	Reason        *string                 `protobuf:"bytes,20005178,opt,name=reason,proto3,oneof" json:"reason,omitempty"`
+	Message       *string                 `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFInvalidParameterException) Reset() {
 	*x = WAFInvalidParameterException{}
-	mi := &file_wafv2_proto_msgTypes[275]
+	mi := &file_wafv2_proto_msgTypes[276]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19545,7 +19731,7 @@ func (x *WAFInvalidParameterException) String() string {
 func (*WAFInvalidParameterException) ProtoMessage() {}
 
 func (x *WAFInvalidParameterException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[275]
+	mi := &file_wafv2_proto_msgTypes[276]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19558,7 +19744,7 @@ func (x *WAFInvalidParameterException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFInvalidParameterException.ProtoReflect.Descriptor instead.
 func (*WAFInvalidParameterException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{275}
+	return file_wafv2_proto_rawDescGZIP(), []int{276}
 }
 
 func (x *WAFInvalidParameterException) GetField() ParameterExceptionField {
@@ -19569,36 +19755,36 @@ func (x *WAFInvalidParameterException) GetField() ParameterExceptionField {
 }
 
 func (x *WAFInvalidParameterException) GetParameter() string {
-	if x != nil {
-		return x.Parameter
+	if x != nil && x.Parameter != nil {
+		return *x.Parameter
 	}
 	return ""
 }
 
 func (x *WAFInvalidParameterException) GetReason() string {
-	if x != nil {
-		return x.Reason
+	if x != nil && x.Reason != nil {
+		return *x.Reason
 	}
 	return ""
 }
 
 func (x *WAFInvalidParameterException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFInvalidPermissionPolicyException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFInvalidPermissionPolicyException) Reset() {
 	*x = WAFInvalidPermissionPolicyException{}
-	mi := &file_wafv2_proto_msgTypes[276]
+	mi := &file_wafv2_proto_msgTypes[277]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19610,7 +19796,7 @@ func (x *WAFInvalidPermissionPolicyException) String() string {
 func (*WAFInvalidPermissionPolicyException) ProtoMessage() {}
 
 func (x *WAFInvalidPermissionPolicyException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[276]
+	mi := &file_wafv2_proto_msgTypes[277]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19623,26 +19809,26 @@ func (x *WAFInvalidPermissionPolicyException) ProtoReflect() protoreflect.Messag
 
 // Deprecated: Use WAFInvalidPermissionPolicyException.ProtoReflect.Descriptor instead.
 func (*WAFInvalidPermissionPolicyException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{276}
+	return file_wafv2_proto_rawDescGZIP(), []int{277}
 }
 
 func (x *WAFInvalidPermissionPolicyException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFInvalidResourceException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFInvalidResourceException) Reset() {
 	*x = WAFInvalidResourceException{}
-	mi := &file_wafv2_proto_msgTypes[277]
+	mi := &file_wafv2_proto_msgTypes[278]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19654,7 +19840,7 @@ func (x *WAFInvalidResourceException) String() string {
 func (*WAFInvalidResourceException) ProtoMessage() {}
 
 func (x *WAFInvalidResourceException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[277]
+	mi := &file_wafv2_proto_msgTypes[278]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19667,27 +19853,27 @@ func (x *WAFInvalidResourceException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFInvalidResourceException.ProtoReflect.Descriptor instead.
 func (*WAFInvalidResourceException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{277}
+	return file_wafv2_proto_rawDescGZIP(), []int{278}
 }
 
 func (x *WAFInvalidResourceException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFLimitsExceededException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
-	Sourcetype    string                 `protobuf:"bytes,195731217,opt,name=sourcetype,proto3" json:"sourcetype,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
+	Sourcetype    *string                `protobuf:"bytes,195731217,opt,name=sourcetype,proto3,oneof" json:"sourcetype,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFLimitsExceededException) Reset() {
 	*x = WAFLimitsExceededException{}
-	mi := &file_wafv2_proto_msgTypes[278]
+	mi := &file_wafv2_proto_msgTypes[279]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19699,7 +19885,7 @@ func (x *WAFLimitsExceededException) String() string {
 func (*WAFLimitsExceededException) ProtoMessage() {}
 
 func (x *WAFLimitsExceededException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[278]
+	mi := &file_wafv2_proto_msgTypes[279]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19712,33 +19898,33 @@ func (x *WAFLimitsExceededException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFLimitsExceededException.ProtoReflect.Descriptor instead.
 func (*WAFLimitsExceededException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{278}
+	return file_wafv2_proto_rawDescGZIP(), []int{279}
 }
 
 func (x *WAFLimitsExceededException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 func (x *WAFLimitsExceededException) GetSourcetype() string {
-	if x != nil {
-		return x.Sourcetype
+	if x != nil && x.Sourcetype != nil {
+		return *x.Sourcetype
 	}
 	return ""
 }
 
 type WAFLogDestinationPermissionIssueException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFLogDestinationPermissionIssueException) Reset() {
 	*x = WAFLogDestinationPermissionIssueException{}
-	mi := &file_wafv2_proto_msgTypes[279]
+	mi := &file_wafv2_proto_msgTypes[280]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19750,7 +19936,7 @@ func (x *WAFLogDestinationPermissionIssueException) String() string {
 func (*WAFLogDestinationPermissionIssueException) ProtoMessage() {}
 
 func (x *WAFLogDestinationPermissionIssueException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[279]
+	mi := &file_wafv2_proto_msgTypes[280]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19763,26 +19949,26 @@ func (x *WAFLogDestinationPermissionIssueException) ProtoReflect() protoreflect.
 
 // Deprecated: Use WAFLogDestinationPermissionIssueException.ProtoReflect.Descriptor instead.
 func (*WAFLogDestinationPermissionIssueException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{279}
+	return file_wafv2_proto_rawDescGZIP(), []int{280}
 }
 
 func (x *WAFLogDestinationPermissionIssueException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFNonexistentItemException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFNonexistentItemException) Reset() {
 	*x = WAFNonexistentItemException{}
-	mi := &file_wafv2_proto_msgTypes[280]
+	mi := &file_wafv2_proto_msgTypes[281]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19794,7 +19980,7 @@ func (x *WAFNonexistentItemException) String() string {
 func (*WAFNonexistentItemException) ProtoMessage() {}
 
 func (x *WAFNonexistentItemException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[280]
+	mi := &file_wafv2_proto_msgTypes[281]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19807,26 +19993,26 @@ func (x *WAFNonexistentItemException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFNonexistentItemException.ProtoReflect.Descriptor instead.
 func (*WAFNonexistentItemException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{280}
+	return file_wafv2_proto_rawDescGZIP(), []int{281}
 }
 
 func (x *WAFNonexistentItemException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFOptimisticLockException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFOptimisticLockException) Reset() {
 	*x = WAFOptimisticLockException{}
-	mi := &file_wafv2_proto_msgTypes[281]
+	mi := &file_wafv2_proto_msgTypes[282]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19838,7 +20024,7 @@ func (x *WAFOptimisticLockException) String() string {
 func (*WAFOptimisticLockException) ProtoMessage() {}
 
 func (x *WAFOptimisticLockException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[281]
+	mi := &file_wafv2_proto_msgTypes[282]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19851,26 +20037,26 @@ func (x *WAFOptimisticLockException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFOptimisticLockException.ProtoReflect.Descriptor instead.
 func (*WAFOptimisticLockException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{281}
+	return file_wafv2_proto_rawDescGZIP(), []int{282}
 }
 
 func (x *WAFOptimisticLockException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFServiceLinkedRoleErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,82970853,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,82970853,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFServiceLinkedRoleErrorException) Reset() {
 	*x = WAFServiceLinkedRoleErrorException{}
-	mi := &file_wafv2_proto_msgTypes[282]
+	mi := &file_wafv2_proto_msgTypes[283]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19882,7 +20068,7 @@ func (x *WAFServiceLinkedRoleErrorException) String() string {
 func (*WAFServiceLinkedRoleErrorException) ProtoMessage() {}
 
 func (x *WAFServiceLinkedRoleErrorException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[282]
+	mi := &file_wafv2_proto_msgTypes[283]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19895,26 +20081,26 @@ func (x *WAFServiceLinkedRoleErrorException) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use WAFServiceLinkedRoleErrorException.ProtoReflect.Descriptor instead.
 func (*WAFServiceLinkedRoleErrorException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{282}
+	return file_wafv2_proto_rawDescGZIP(), []int{283}
 }
 
 func (x *WAFServiceLinkedRoleErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFSubscriptionNotFoundException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFSubscriptionNotFoundException) Reset() {
 	*x = WAFSubscriptionNotFoundException{}
-	mi := &file_wafv2_proto_msgTypes[283]
+	mi := &file_wafv2_proto_msgTypes[284]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19926,7 +20112,7 @@ func (x *WAFSubscriptionNotFoundException) String() string {
 func (*WAFSubscriptionNotFoundException) ProtoMessage() {}
 
 func (x *WAFSubscriptionNotFoundException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[283]
+	mi := &file_wafv2_proto_msgTypes[284]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19939,26 +20125,26 @@ func (x *WAFSubscriptionNotFoundException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFSubscriptionNotFoundException.ProtoReflect.Descriptor instead.
 func (*WAFSubscriptionNotFoundException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{283}
+	return file_wafv2_proto_rawDescGZIP(), []int{284}
 }
 
 func (x *WAFSubscriptionNotFoundException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFTagOperationException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFTagOperationException) Reset() {
 	*x = WAFTagOperationException{}
-	mi := &file_wafv2_proto_msgTypes[284]
+	mi := &file_wafv2_proto_msgTypes[285]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -19970,7 +20156,7 @@ func (x *WAFTagOperationException) String() string {
 func (*WAFTagOperationException) ProtoMessage() {}
 
 func (x *WAFTagOperationException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[284]
+	mi := &file_wafv2_proto_msgTypes[285]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -19983,26 +20169,26 @@ func (x *WAFTagOperationException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFTagOperationException.ProtoReflect.Descriptor instead.
 func (*WAFTagOperationException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{284}
+	return file_wafv2_proto_rawDescGZIP(), []int{285}
 }
 
 func (x *WAFTagOperationException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFTagOperationInternalErrorException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFTagOperationInternalErrorException) Reset() {
 	*x = WAFTagOperationInternalErrorException{}
-	mi := &file_wafv2_proto_msgTypes[285]
+	mi := &file_wafv2_proto_msgTypes[286]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20014,7 +20200,7 @@ func (x *WAFTagOperationInternalErrorException) String() string {
 func (*WAFTagOperationInternalErrorException) ProtoMessage() {}
 
 func (x *WAFTagOperationInternalErrorException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[285]
+	mi := &file_wafv2_proto_msgTypes[286]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20027,26 +20213,26 @@ func (x *WAFTagOperationInternalErrorException) ProtoReflect() protoreflect.Mess
 
 // Deprecated: Use WAFTagOperationInternalErrorException.ProtoReflect.Descriptor instead.
 func (*WAFTagOperationInternalErrorException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{285}
+	return file_wafv2_proto_rawDescGZIP(), []int{286}
 }
 
 func (x *WAFTagOperationInternalErrorException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFUnavailableEntityException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFUnavailableEntityException) Reset() {
 	*x = WAFUnavailableEntityException{}
-	mi := &file_wafv2_proto_msgTypes[286]
+	mi := &file_wafv2_proto_msgTypes[287]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20058,7 +20244,7 @@ func (x *WAFUnavailableEntityException) String() string {
 func (*WAFUnavailableEntityException) ProtoMessage() {}
 
 func (x *WAFUnavailableEntityException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[286]
+	mi := &file_wafv2_proto_msgTypes[287]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20071,26 +20257,26 @@ func (x *WAFUnavailableEntityException) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WAFUnavailableEntityException.ProtoReflect.Descriptor instead.
 func (*WAFUnavailableEntityException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{286}
+	return file_wafv2_proto_rawDescGZIP(), []int{287}
 }
 
 func (x *WAFUnavailableEntityException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
 
 type WAFUnsupportedAggregateKeyTypeException struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Message       string                 `protobuf:"bytes,235854213,opt,name=message,proto3" json:"message,omitempty"`
+	Message       *string                `protobuf:"bytes,235854213,opt,name=message,proto3,oneof" json:"message,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WAFUnsupportedAggregateKeyTypeException) Reset() {
 	*x = WAFUnsupportedAggregateKeyTypeException{}
-	mi := &file_wafv2_proto_msgTypes[287]
+	mi := &file_wafv2_proto_msgTypes[288]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20102,7 +20288,7 @@ func (x *WAFUnsupportedAggregateKeyTypeException) String() string {
 func (*WAFUnsupportedAggregateKeyTypeException) ProtoMessage() {}
 
 func (x *WAFUnsupportedAggregateKeyTypeException) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[287]
+	mi := &file_wafv2_proto_msgTypes[288]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20115,12 +20301,12 @@ func (x *WAFUnsupportedAggregateKeyTypeException) ProtoReflect() protoreflect.Me
 
 // Deprecated: Use WAFUnsupportedAggregateKeyTypeException.ProtoReflect.Descriptor instead.
 func (*WAFUnsupportedAggregateKeyTypeException) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{287}
+	return file_wafv2_proto_rawDescGZIP(), []int{288}
 }
 
 func (x *WAFUnsupportedAggregateKeyTypeException) GetMessage() string {
-	if x != nil {
-		return x.Message
+	if x != nil && x.Message != nil {
+		return *x.Message
 	}
 	return ""
 }
@@ -20136,9 +20322,9 @@ type WebACL struct {
 	Customresponsebodies                 map[string]*CustomResponseBody `protobuf:"bytes,42731774,rep,name=customresponsebodies,proto3" json:"customresponsebodies,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	Dataprotectionconfig                 *DataProtectionConfig          `protobuf:"bytes,464792245,opt,name=dataprotectionconfig,proto3" json:"dataprotectionconfig,omitempty"`
 	Defaultaction                        *DefaultAction                 `protobuf:"bytes,322663861,opt,name=defaultaction,proto3" json:"defaultaction,omitempty"`
-	Description                          string                         `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
+	Description                          *string                        `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	Id                                   string                         `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Labelnamespace                       string                         `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3" json:"labelnamespace,omitempty"`
+	Labelnamespace                       *string                        `protobuf:"bytes,39797417,opt,name=labelnamespace,proto3,oneof" json:"labelnamespace,omitempty"`
 	Managedbyfirewallmanager             *bool                          `protobuf:"varint,415792743,opt,name=managedbyfirewallmanager,proto3,oneof" json:"managedbyfirewallmanager,omitempty"`
 	Monetizationconfig                   *MonetizationConfig            `protobuf:"bytes,528380847,opt,name=monetizationconfig,proto3" json:"monetizationconfig,omitempty"`
 	Name                                 string                         `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
@@ -20155,7 +20341,7 @@ type WebACL struct {
 
 func (x *WebACL) Reset() {
 	*x = WebACL{}
-	mi := &file_wafv2_proto_msgTypes[288]
+	mi := &file_wafv2_proto_msgTypes[289]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20167,7 +20353,7 @@ func (x *WebACL) String() string {
 func (*WebACL) ProtoMessage() {}
 
 func (x *WebACL) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[288]
+	mi := &file_wafv2_proto_msgTypes[289]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20180,7 +20366,7 @@ func (x *WebACL) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebACL.ProtoReflect.Descriptor instead.
 func (*WebACL) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{288}
+	return file_wafv2_proto_rawDescGZIP(), []int{289}
 }
 
 func (x *WebACL) GetArn() string {
@@ -20247,8 +20433,8 @@ func (x *WebACL) GetDefaultaction() *DefaultAction {
 }
 
 func (x *WebACL) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
@@ -20261,8 +20447,8 @@ func (x *WebACL) GetId() string {
 }
 
 func (x *WebACL) GetLabelnamespace() string {
-	if x != nil {
-		return x.Labelnamespace
+	if x != nil && x.Labelnamespace != nil {
+		return *x.Labelnamespace
 	}
 	return ""
 }
@@ -20339,18 +20525,18 @@ func (x *WebACL) GetVisibilityconfig() *VisibilityConfig {
 
 type WebACLSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Arn           string                 `protobuf:"bytes,397135389,opt,name=arn,proto3" json:"arn,omitempty"`
-	Description   string                 `protobuf:"bytes,115243530,opt,name=description,proto3" json:"description,omitempty"`
-	Id            string                 `protobuf:"bytes,384350465,opt,name=id,proto3" json:"id,omitempty"`
-	Locktoken     string                 `protobuf:"bytes,47056792,opt,name=locktoken,proto3" json:"locktoken,omitempty"`
-	Name          string                 `protobuf:"bytes,266367751,opt,name=name,proto3" json:"name,omitempty"`
+	Arn           *string                `protobuf:"bytes,397135389,opt,name=arn,proto3,oneof" json:"arn,omitempty"`
+	Description   *string                `protobuf:"bytes,115243530,opt,name=description,proto3,oneof" json:"description,omitempty"`
+	Id            *string                `protobuf:"bytes,384350465,opt,name=id,proto3,oneof" json:"id,omitempty"`
+	Locktoken     *string                `protobuf:"bytes,47056792,opt,name=locktoken,proto3,oneof" json:"locktoken,omitempty"`
+	Name          *string                `protobuf:"bytes,266367751,opt,name=name,proto3,oneof" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *WebACLSummary) Reset() {
 	*x = WebACLSummary{}
-	mi := &file_wafv2_proto_msgTypes[289]
+	mi := &file_wafv2_proto_msgTypes[290]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20362,7 +20548,7 @@ func (x *WebACLSummary) String() string {
 func (*WebACLSummary) ProtoMessage() {}
 
 func (x *WebACLSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[289]
+	mi := &file_wafv2_proto_msgTypes[290]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20375,55 +20561,56 @@ func (x *WebACLSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WebACLSummary.ProtoReflect.Descriptor instead.
 func (*WebACLSummary) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{289}
+	return file_wafv2_proto_rawDescGZIP(), []int{290}
 }
 
 func (x *WebACLSummary) GetArn() string {
-	if x != nil {
-		return x.Arn
+	if x != nil && x.Arn != nil {
+		return *x.Arn
 	}
 	return ""
 }
 
 func (x *WebACLSummary) GetDescription() string {
-	if x != nil {
-		return x.Description
+	if x != nil && x.Description != nil {
+		return *x.Description
 	}
 	return ""
 }
 
 func (x *WebACLSummary) GetId() string {
-	if x != nil {
-		return x.Id
+	if x != nil && x.Id != nil {
+		return *x.Id
 	}
 	return ""
 }
 
 func (x *WebACLSummary) GetLocktoken() string {
-	if x != nil {
-		return x.Locktoken
+	if x != nil && x.Locktoken != nil {
+		return *x.Locktoken
 	}
 	return ""
 }
 
 func (x *WebACLSummary) GetName() string {
-	if x != nil {
-		return x.Name
+	if x != nil && x.Name != nil {
+		return *x.Name
 	}
 	return ""
 }
 
 type XssMatchStatement struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Fieldtomatch        *FieldToMatch          `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
-	Texttransformations []*TextTransformation  `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                       protoimpl.MessageState        `protogen:"open.v1"`
+	Fieldtomatch                *FieldToMatch                 `protobuf:"bytes,338348372,opt,name=fieldtomatch,proto3" json:"fieldtomatch,omitempty"`
+	Preparsetexttransformations []*PreParseTextTransformation `protobuf:"bytes,68274401,rep,name=preparsetexttransformations,proto3" json:"preparsetexttransformations,omitempty"`
+	Texttransformations         []*TextTransformation         `protobuf:"bytes,261837309,rep,name=texttransformations,proto3" json:"texttransformations,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *XssMatchStatement) Reset() {
 	*x = XssMatchStatement{}
-	mi := &file_wafv2_proto_msgTypes[290]
+	mi := &file_wafv2_proto_msgTypes[291]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -20435,7 +20622,7 @@ func (x *XssMatchStatement) String() string {
 func (*XssMatchStatement) ProtoMessage() {}
 
 func (x *XssMatchStatement) ProtoReflect() protoreflect.Message {
-	mi := &file_wafv2_proto_msgTypes[290]
+	mi := &file_wafv2_proto_msgTypes[291]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -20448,12 +20635,19 @@ func (x *XssMatchStatement) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use XssMatchStatement.ProtoReflect.Descriptor instead.
 func (*XssMatchStatement) Descriptor() ([]byte, []int) {
-	return file_wafv2_proto_rawDescGZIP(), []int{290}
+	return file_wafv2_proto_rawDescGZIP(), []int{291}
 }
 
 func (x *XssMatchStatement) GetFieldtomatch() *FieldToMatch {
 	if x != nil {
 		return x.Fieldtomatch
+	}
+	return nil
+}
+
+func (x *XssMatchStatement) GetPreparsetexttransformations() []*PreParseTextTransformation {
+	if x != nil {
+		return x.Preparsetexttransformations
 	}
 	return nil
 }
@@ -20469,12 +20663,14 @@ var File_wafv2_proto protoreflect.FileDescriptor
 
 const file_wafv2_proto_rawDesc = "" +
 	"\n" +
-	"\vwafv2.proto\x12\x05wafv2\x1a\fcommon.proto\x1a\taws.proto\"\xb2\x01\n" +
-	"\rAPIKeySummary\x12\x1a\n" +
-	"\x06apikey\x18\xbfɅ\x83\x01 \x01(\tR\x06apikey\x12/\n" +
-	"\x11creationtimestamp\x18\xa5\x94\xd6\v \x01(\tR\x11creationtimestamp\x12%\n" +
+	"\vwafv2.proto\x12\x05wafv2\x1a\fcommon.proto\x1a\taws.proto\"\xdd\x01\n" +
+	"\rAPIKeySummary\x12\x1f\n" +
+	"\x06apikey\x18\xbfɅ\x83\x01 \x01(\tH\x00R\x06apikey\x88\x01\x01\x124\n" +
+	"\x11creationtimestamp\x18\xa5\x94\xd6\v \x01(\tH\x01R\x11creationtimestamp\x88\x01\x01\x12%\n" +
 	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\x12!\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x05H\x00R\aversion\x88\x01\x01B\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\x05H\x02R\aversion\x88\x01\x01B\t\n" +
+	"\a_apikeyB\x14\n" +
+	"\x12_creationtimestampB\n" +
 	"\n" +
 	"\b_version\"\xe5\x02\n" +
 	"\x1aAWSManagedRulesACFPRuleSet\x12&\n" +
@@ -20510,10 +20706,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\fAndStatement\x124\n" +
 	"\n" +
 	"statements\x18\xa0\xd4\xee\xe8\x01 \x03(\v2\x10.wafv2.StatementR\n" +
-	"statements\"H\n" +
-	"\x14ApplicationAttribute\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\"S\n" +
+	"statements\"V\n" +
+	"\x14ApplicationAttribute\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12\x19\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06valuesB\a\n" +
+	"\x05_name\"S\n" +
 	"\x11ApplicationConfig\x12>\n" +
 	"\n" +
 	"attributes\x18\xb5\xa9\xfbc \x03(\v2\x1b.wafv2.ApplicationAttributeR\n" +
@@ -20539,10 +20736,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"percentage\x18֢֫\x01 \x01(\x01R\n" +
 	"percentage\x12&\n" +
-	"\frequestcount\x18\xfa\xebɉ\x01 \x01(\x03R\frequestcount\"\x9d\x02\n" +
+	"\frequestcount\x18\xfa\xebɉ\x01 \x01(\x03R\frequestcount\"\x85\x03\n" +
 	"\x12ByteMatchStatement\x12;\n" +
 	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12R\n" +
-	"\x14positionalconstraint\x18\xbd\xfc\xa9| \x01(\x0e2\x1b.wafv2.PositionalConstraintR\x14positionalconstraint\x12&\n" +
+	"\x14positionalconstraint\x18\xbd\xfc\xa9| \x01(\x0e2\x1b.wafv2.PositionalConstraintR\x14positionalconstraint\x12f\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12&\n" +
 	"\fsearchstring\x18\x85\x91\xfb\x97\x01 \x01(\fR\fsearchstring\x12N\n" +
 	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"f\n" +
 	"\rCaptchaAction\x12U\n" +
@@ -20595,34 +20793,37 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x15customrequesthandling\x18\xbf\x8c\x8a\a \x01(\v2\x1c.wafv2.CustomRequestHandlingR\x15customrequesthandling\"c\n" +
 	"\x13CreateAPIKeyRequest\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12%\n" +
-	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\"2\n" +
-	"\x14CreateAPIKeyResponse\x12\x1a\n" +
-	"\x06apikey\x18\xbfɅ\x83\x01 \x01(\tR\x06apikey\"\x86\x02\n" +
+	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\"B\n" +
+	"\x14CreateAPIKeyResponse\x12\x1f\n" +
+	"\x06apikey\x18\xbfɅ\x83\x01 \x01(\tH\x00R\x06apikey\x88\x01\x01B\t\n" +
+	"\a_apikey\"\x9b\x02\n" +
 	"\x12CreateIPSetRequest\x12 \n" +
-	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12G\n" +
+	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12G\n" +
 	"\x10ipaddressversion\x18\x81\x9b\xb6\x95\x01 \x01(\x0e2\x17.wafv2.IPAddressVersionR\x10ipaddressversion\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
-	".wafv2.TagR\x04tags\"G\n" +
+	".wafv2.TagR\x04tagsB\x0e\n" +
+	"\f_description\"G\n" +
 	"\x13CreateIPSetResponse\x120\n" +
 	"\asummary\x18\xb4\xeb\xba\n" +
-	" \x01(\v2\x13.wafv2.IPSetSummaryR\asummary\"\xec\x01\n" +
-	"\x1cCreateRegexPatternSetRequest\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x15\n" +
+	" \x01(\v2\x13.wafv2.IPSetSummaryR\asummary\"\x81\x02\n" +
+	"\x1cCreateRegexPatternSetRequest\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12E\n" +
 	"\x15regularexpressionlist\x18\xa6\xdd\xf8: \x03(\v2\f.wafv2.RegexR\x15regularexpressionlist\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
-	".wafv2.TagR\x04tags\"[\n" +
+	".wafv2.TagR\x04tagsB\x0e\n" +
+	"\f_description\"[\n" +
 	"\x1dCreateRegexPatternSetResponse\x12:\n" +
 	"\asummary\x18\xb4\xeb\xba\n" +
-	" \x01(\v2\x1d.wafv2.RegexPatternSetSummaryR\asummary\"\xd0\x04\n" +
+	" \x01(\v2\x1d.wafv2.RegexPatternSetSummaryR\asummary\"\xe5\x04\n" +
 	"\x16CreateRuleGroupRequest\x12\x1d\n" +
 	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03R\bcapacity\x12n\n" +
-	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v27.wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntryR\x14customresponsebodies\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12M\n" +
+	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v27.wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntryR\x14customresponsebodies\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12$\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\v.wafv2.RuleR\x05rules\x12%\n" +
@@ -20632,10 +20833,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01\"O\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"O\n" +
 	"\x17CreateRuleGroupResponse\x124\n" +
 	"\asummary\x18\xb4\xeb\xba\n" +
-	" \x01(\v2\x17.wafv2.RuleGroupSummaryR\asummary\"\xef\b\n" +
+	" \x01(\v2\x17.wafv2.RuleGroupSummaryR\asummary\"\x84\t\n" +
 	"\x13CreateWebACLRequest\x12J\n" +
 	"\x11applicationconfig\x18\xc8\xd5\xfa\xee\x01 \x01(\v2\x18.wafv2.ApplicationConfigR\x11applicationconfig\x12J\n" +
 	"\x11associationconfig\x18\xab\xfc\x8e\xc8\x01 \x01(\v2\x18.wafv2.AssociationConfigR\x11associationconfig\x12=\n" +
@@ -20643,8 +20845,8 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x0fchallengeconfig\x18\xa9\x95\xae\x17 \x01(\v2\x16.wafv2.ChallengeConfigR\x0fchallengeconfig\x12k\n" +
 	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v24.wafv2.CreateWebACLRequest.CustomresponsebodiesEntryR\x14customresponsebodies\x12S\n" +
 	"\x14dataprotectionconfig\x18\xb5\xd5\xd0\xdd\x01 \x01(\v2\x1b.wafv2.DataProtectionConfigR\x14dataprotectionconfig\x12>\n" +
-	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x14.wafv2.DefaultActionR\rdefaultaction\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12M\n" +
+	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x14.wafv2.DefaultActionR\rdefaultaction\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12j\n" +
 	"\x1consourceddosprotectionconfig\x18\x87֖2 \x01(\v2#.wafv2.OnSourceDDoSProtectionConfigR\x1consourceddosprotectionconfig\x12$\n" +
@@ -20656,7 +20858,8 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01\"I\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"I\n" +
 	"\x14CreateWebACLResponse\x121\n" +
 	"\asummary\x18\xb4\xeb\xba\n" +
 	" \x01(\v2\x14.wafv2.WebACLSummaryR\asummary\"R\n" +
@@ -20666,24 +20869,30 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
 	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"Y\n" +
 	"\x15CustomRequestHandling\x12@\n" +
-	"\rinsertheaders\x18\xfb\x8a\xecL \x03(\v2\x17.wafv2.CustomHTTPHeaderR\rinsertheaders\"\xb7\x01\n" +
-	"\x0eCustomResponse\x127\n" +
-	"\x15customresponsebodykey\x18\xe9\xe0\xf1$ \x01(\tR\x15customresponsebodykey\x12&\n" +
+	"\rinsertheaders\x18\xfb\x8a\xecL \x03(\v2\x17.wafv2.CustomHTTPHeaderR\rinsertheaders\"\xd6\x01\n" +
+	"\x0eCustomResponse\x12<\n" +
+	"\x15customresponsebodykey\x18\xe9\xe0\xf1$ \x01(\tH\x00R\x15customresponsebodykey\x88\x01\x01\x12&\n" +
 	"\fresponsecode\x18\xa4\xc1\xb4\xd5\x01 \x01(\x05R\fresponsecode\x12D\n" +
-	"\x0fresponseheaders\x18\xb5\xc0\xecQ \x03(\v2\x17.wafv2.CustomHTTPHeaderR\x0fresponseheaders\"s\n" +
+	"\x0fresponseheaders\x18\xb5\xc0\xecQ \x03(\v2\x17.wafv2.CustomHTTPHeaderR\x0fresponseheadersB\x18\n" +
+	"\x16_customresponsebodykey\"s\n" +
 	"\x12CustomResponseBody\x12\x1b\n" +
 	"\acontent\x18㾞\v \x01(\tR\acontent\x12@\n" +
-	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\x0e2\x1a.wafv2.ResponseContentTypeR\vcontenttype\"\xbd\x02\n" +
-	"\x0eDataPointEntry\x12\x1d\n" +
-	"\bcategory\x18\x92\xcb\xcf} \x01(\tR\bcategory\x12\x16\n" +
-	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tR\x04date\x12%\n" +
-	"\fgroupbyvalue\x18\xf7\xab\xd3n \x01(\tR\fgroupbyvalue\x12\x19\n" +
-	"\x06intent\x18\xec\xc2\xc1K \x01(\tR\x06intent\x128\n" +
-	"\x13monetizeservedcount\x18\xeb\xe7\xc8i \x01(\x03H\x00R\x13monetizeservedcount\x88\x01\x01\x12*\n" +
-	"\fsettledcount\x18\xd2\xe2\xbfN \x01(\x03H\x01R\fsettledcount\x88\x01\x01\x12#\n" +
-	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tR\vtotalamountB\x16\n" +
+	"\vcontenttype\x18\x93\xd5\xe8\x9e\x01 \x01(\x0e2\x1a.wafv2.ResponseContentTypeR\vcontenttype\"\x98\x03\n" +
+	"\x0eDataPointEntry\x12\"\n" +
+	"\bcategory\x18\x92\xcb\xcf} \x01(\tH\x00R\bcategory\x88\x01\x01\x12\x1b\n" +
+	"\x04date\x18\xfa\xe6\xc9\xda\x01 \x01(\tH\x01R\x04date\x88\x01\x01\x12*\n" +
+	"\fgroupbyvalue\x18\xf7\xab\xd3n \x01(\tH\x02R\fgroupbyvalue\x88\x01\x01\x12\x1e\n" +
+	"\x06intent\x18\xec\xc2\xc1K \x01(\tH\x03R\x06intent\x88\x01\x01\x128\n" +
+	"\x13monetizeservedcount\x18\xeb\xe7\xc8i \x01(\x03H\x04R\x13monetizeservedcount\x88\x01\x01\x12*\n" +
+	"\fsettledcount\x18\xd2\xe2\xbfN \x01(\x03H\x05R\fsettledcount\x88\x01\x01\x12(\n" +
+	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tH\x06R\vtotalamount\x88\x01\x01B\v\n" +
+	"\t_categoryB\a\n" +
+	"\x05_dateB\x0f\n" +
+	"\r_groupbyvalueB\t\n" +
+	"\a_intentB\x16\n" +
 	"\x14_monetizeservedcountB\x0f\n" +
-	"\r_settledcount\"\xb5\x02\n" +
+	"\r_settledcountB\x0e\n" +
+	"\f_totalamount\"\xb5\x02\n" +
 	"\x0eDataProtection\x126\n" +
 	"\x06action\x18\xa0\xd2\xdeS \x01(\x0e2\x1b.wafv2.DataProtectionActionR\x06action\x12@\n" +
 	"\x17excluderatebaseddetails\x18ݨ\xb9y \x01(\bH\x00R\x17excluderatebaseddetails\x88\x01\x01\x12A\n" +
@@ -20702,9 +20911,10 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x14DeleteAPIKeyResponse\"v\n" +
 	"&DeleteFirewallManagerRuleGroupsRequest\x12\x1f\n" +
 	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarn\x12+\n" +
-	"\x0fwebacllocktoken\x18Ά\xbfm \x01(\tR\x0fwebacllocktoken\"^\n" +
-	"'DeleteFirewallManagerRuleGroupsResponse\x123\n" +
-	"\x13nextwebacllocktoken\x18ۻ\xdc* \x01(\tR\x13nextwebacllocktoken\"\x87\x01\n" +
+	"\x0fwebacllocktoken\x18Ά\xbfm \x01(\tR\x0fwebacllocktoken\"{\n" +
+	"'DeleteFirewallManagerRuleGroupsResponse\x128\n" +
+	"\x13nextwebacllocktoken\x18ۻ\xdc* \x01(\tH\x00R\x13nextwebacllocktoken\x88\x01\x01B\x16\n" +
+	"\x14_nextwebacllocktoken\"\x87\x01\n" +
 	"\x12DeleteIPSetRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
@@ -20747,26 +20957,33 @@ const file_wafv2_proto_rawDesc = "" +
 	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
 	"vendorname\"w\n" +
 	"'DescribeManagedProductsByVendorResponse\x12L\n" +
-	"\x0fmanagedproducts\x18\xfb\xbd\x81u \x03(\v2\x1f.wafv2.ManagedProductDescriptorR\x0fmanagedproducts\"\xa7\x01\n" +
+	"\x0fmanagedproducts\x18\xfb\xbd\x81u \x03(\v2\x1f.wafv2.ManagedProductDescriptorR\x0fmanagedproducts\"\xbc\x01\n" +
 	"\x1fDescribeManagedRuleGroupRequest\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12!\n" +
 	"\n" +
 	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
-	"vendorname\x12#\n" +
-	"\vversionname\x18գ\xb4l \x01(\tR\vversionname\"\xf8\x02\n" +
+	"vendorname\x12(\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\x00R\vversionname\x88\x01\x01B\x0e\n" +
+	"\f_versionname\"\xba\x03\n" +
 	" DescribeManagedRuleGroupResponse\x12@\n" +
 	"\x0favailablelabels\x18\x90\xba\xac\x18 \x03(\v2\x13.wafv2.LabelSummaryR\x0favailablelabels\x12\"\n" +
 	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01\x12>\n" +
-	"\x0econsumedlabels\x18\xbd\x98\xf2\x14 \x03(\v2\x13.wafv2.LabelSummaryR\x0econsumedlabels\x12)\n" +
-	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12+\n" +
-	"\x05rules\x18\x81۬\x14 \x03(\v2\x12.wafv2.RuleSummaryR\x05rules\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tR\vsnstopicarn\x12#\n" +
-	"\vversionname\x18գ\xb4l \x01(\tR\vversionnameB\v\n" +
-	"\t_capacity\"g\n" +
-	"\x11DisallowedFeature\x12\x1c\n" +
-	"\afeature\x18ޅ\xc4\xf4\x01 \x01(\tR\afeature\x124\n" +
-	"\x13requiredpricingplan\x18\xae߀\xef\x01 \x01(\tR\x13requiredpricingplan\"A\n" +
+	"\x0econsumedlabels\x18\xbd\x98\xf2\x14 \x03(\v2\x13.wafv2.LabelSummaryR\x0econsumedlabels\x12.\n" +
+	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tH\x01R\x0elabelnamespace\x88\x01\x01\x12+\n" +
+	"\x05rules\x18\x81۬\x14 \x03(\v2\x12.wafv2.RuleSummaryR\x05rules\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tH\x02R\vsnstopicarn\x88\x01\x01\x12(\n" +
+	"\vversionname\x18գ\xb4l \x01(\tH\x03R\vversionname\x88\x01\x01B\v\n" +
+	"\t_capacityB\x11\n" +
+	"\x0f_labelnamespaceB\x0e\n" +
+	"\f_snstopicarnB\x0e\n" +
+	"\f_versionname\"\x95\x01\n" +
+	"\x11DisallowedFeature\x12!\n" +
+	"\afeature\x18ޅ\xc4\xf4\x01 \x01(\tH\x00R\afeature\x88\x01\x01\x129\n" +
+	"\x13requiredpricingplan\x18\xae߀\xef\x01 \x01(\tH\x01R\x13requiredpricingplan\x88\x01\x01B\n" +
+	"\n" +
+	"\b_featureB\x16\n" +
+	"\x14_requiredpricingplan\"A\n" +
 	"\x19DisassociateWebACLRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x1c\n" +
 	"\x1aDisassociateWebACLResponse\"/\n" +
@@ -20800,11 +21017,15 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"conditions\x18\xd8ͮ\x8e\x01 \x03(\v2\x10.wafv2.ConditionR\n" +
 	"conditions\x12=\n" +
-	"\vrequirement\x18ɥ\x82f \x01(\x0e2\x18.wafv2.FilterRequirementR\vrequirement\"~\n" +
-	"\fFilterSource\x12#\n" +
-	"\vbotcategory\x18\x97\x9e\x8e8 \x01(\tR\vbotcategory\x12\x1b\n" +
-	"\abotname\x18\x9eυ* \x01(\tR\abotname\x12,\n" +
-	"\x0fbotorganization\x18\xb2\x81\xac\xbd\x01 \x01(\tR\x0fbotorganization\"\xbc\x02\n" +
+	"\vrequirement\x18ɥ\x82f \x01(\x0e2\x18.wafv2.FilterRequirementR\vrequirement\"\xbd\x01\n" +
+	"\fFilterSource\x12(\n" +
+	"\vbotcategory\x18\x97\x9e\x8e8 \x01(\tH\x00R\vbotcategory\x88\x01\x01\x12 \n" +
+	"\abotname\x18\x9eυ* \x01(\tH\x01R\abotname\x88\x01\x01\x121\n" +
+	"\x0fbotorganization\x18\xb2\x81\xac\xbd\x01 \x01(\tH\x02R\x0fbotorganization\x88\x01\x01B\x0e\n" +
+	"\f_botcategoryB\n" +
+	"\n" +
+	"\b_botnameB\x12\n" +
+	"\x10_botorganization\"\xbc\x02\n" +
 	"\x18FirewallManagerRuleGroup\x12^\n" +
 	"\x18firewallmanagerstatement\x18\xbe\xc1\xbdR \x01(\v2\x1f.wafv2.FirewallManagerStatementR\x18firewallmanagerstatement\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12A\n" +
@@ -20821,25 +21042,29 @@ const file_wafv2_proto_rawDesc = "" +
 	"headername\"\x80\x01\n" +
 	"\"GenerateMobileSdkReleaseUrlRequest\x12/\n" +
 	"\bplatform\x18\xd3\xdd\xcb\xdf\x01 \x01(\x0e2\x0f.wafv2.PlatformR\bplatform\x12)\n" +
-	"\x0ereleaseversion\x18㲕\x04 \x01(\tR\x0ereleaseversion\";\n" +
-	"#GenerateMobileSdkReleaseUrlResponse\x12\x14\n" +
-	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tR\x03url\"\x9a\x01\n" +
+	"\x0ereleaseversion\x18㲕\x04 \x01(\tR\x0ereleaseversion\"H\n" +
+	"#GenerateMobileSdkReleaseUrlResponse\x12\x19\n" +
+	"\x03url\x18\xbf\xc7\xe7\xa8\x01 \x01(\tH\x00R\x03url\x88\x01\x01B\x06\n" +
+	"\x04_url\"\x9a\x01\n" +
 	"\x11GeoMatchStatement\x12:\n" +
 	"\fcountrycodes\x18\U000bbc5f\x01 \x03(\x0e2\x12.wafv2.CountryCodeR\fcountrycodes\x12I\n" +
 	"\x11forwardedipconfig\x18\x8d\xe5\xf3{ \x01(\v2\x18.wafv2.ForwardedIPConfigR\x11forwardedipconfig\"^\n" +
 	"\x19GetDecryptedAPIKeyRequest\x12\x1a\n" +
 	"\x06apikey\x18\xbfɅ\x83\x01 \x01(\tR\x06apikey\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"t\n" +
-	"\x1aGetDecryptedAPIKeyResponse\x12/\n" +
-	"\x11creationtimestamp\x18\xa5\x94\xd6\v \x01(\tR\x11creationtimestamp\x12%\n" +
-	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\"c\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x8f\x01\n" +
+	"\x1aGetDecryptedAPIKeyResponse\x124\n" +
+	"\x11creationtimestamp\x18\xa5\x94\xd6\v \x01(\tH\x00R\x11creationtimestamp\x88\x01\x01\x12%\n" +
+	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomainsB\x14\n" +
+	"\x12_creationtimestamp\"c\n" +
 	"\x0fGetIPSetRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"[\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"n\n" +
 	"\x10GetIPSetResponse\x12&\n" +
-	"\x05ipset\x18\x95\xc1\x8c\xd0\x01 \x01(\v2\f.wafv2.IPSetR\x05ipset\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\"\xa3\x01\n" +
+	"\x05ipset\x18\x95\xc1\x8c\xd0\x01 \x01(\v2\f.wafv2.IPSetR\x05ipset\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01B\f\n" +
+	"\n" +
+	"_locktoken\"\xa3\x01\n" +
 	"\x1eGetLoggingConfigurationRequest\x12.\n" +
 	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12+\n" +
 	"\alogtype\x18\xba\x85\xd37 \x01(\x0e2\x0e.wafv2.LogTypeR\alogtype\x12$\n" +
@@ -20849,45 +21074,51 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x18GetManagedRuleSetRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"~\n" +
-	"\x19GetManagedRuleSetResponse\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12@\n" +
-	"\x0emanagedruleset\x18\xa1\xc0\x9aH \x01(\v2\x15.wafv2.ManagedRuleSetR\x0emanagedruleset\"x\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x91\x01\n" +
+	"\x19GetManagedRuleSetResponse\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01\x12@\n" +
+	"\x0emanagedruleset\x18\xa1\xc0\x9aH \x01(\v2\x15.wafv2.ManagedRuleSetR\x0emanagedrulesetB\f\n" +
+	"\n" +
+	"_locktoken\"x\n" +
 	"\x1aGetMobileSdkReleaseRequest\x12/\n" +
 	"\bplatform\x18\xd3\xdd\xcb\xdf\x01 \x01(\x0e2\x0f.wafv2.PlatformR\bplatform\x12)\n" +
 	"\x0ereleaseversion\x18㲕\x04 \x01(\tR\x0ereleaseversion\"f\n" +
 	"\x1bGetMobileSdkReleaseResponse\x12G\n" +
 	"\x10mobilesdkrelease\x18\xabޮ\xf8\x01 \x01(\v2\x17.wafv2.MobileSdkReleaseR\x10mobilesdkrelease\"B\n" +
 	"\x1aGetPermissionPolicyRequest\x12$\n" +
-	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"9\n" +
-	"\x1bGetPermissionPolicyResponse\x12\x1a\n" +
-	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\"\xe2\x01\n" +
-	"'GetRateBasedStatementManagedKeysRequest\x12/\n" +
-	"\x11rulegrouprulename\x18\xb8\xe0\xe7\t \x01(\tR\x11rulegrouprulename\x12\x1d\n" +
+	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"I\n" +
+	"\x1bGetPermissionPolicyResponse\x12\x1f\n" +
+	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tH\x00R\x06policy\x88\x01\x01B\t\n" +
+	"\a_policy\"\xfd\x01\n" +
+	"'GetRateBasedStatementManagedKeysRequest\x124\n" +
+	"\x11rulegrouprulename\x18\xb8\xe0\xe7\t \x01(\tH\x00R\x11rulegrouprulename\x88\x01\x01\x12\x1d\n" +
 	"\brulename\x18\x99ȯf \x01(\tR\brulename\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12\x1d\n" +
 	"\bwebaclid\x18ӵ\xf3L \x01(\tR\bwebaclid\x12!\n" +
 	"\n" +
 	"webaclname\x18\x9d\xa5\xca| \x01(\tR\n" +
-	"webaclname\"\xda\x01\n" +
+	"webaclnameB\x14\n" +
+	"\x12_rulegrouprulename\"\xda\x01\n" +
 	"(GetRateBasedStatementManagedKeysResponse\x12V\n" +
 	"\x0fmanagedkeysipv4\x18\xfa\x91\xcfQ \x01(\v2).wafv2.RateBasedStatementManagedKeysIPSetR\x0fmanagedkeysipv4\x12V\n" +
 	"\x0fmanagedkeysipv6\x18ԋ\xcfA \x01(\v2).wafv2.RateBasedStatementManagedKeysIPSetR\x0fmanagedkeysipv6\"m\n" +
 	"\x19GetRegexPatternSetRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x82\x01\n" +
-	"\x1aGetRegexPatternSetResponse\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12C\n" +
-	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x16.wafv2.RegexPatternSetR\x0fregexpatternset\"\x8c\x04\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\x95\x01\n" +
+	"\x1aGetRegexPatternSetResponse\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01\x12C\n" +
+	"\x0fregexpatternset\x18Ù\xbc\x04 \x01(\v2\x16.wafv2.RegexPatternSetR\x0fregexpatternsetB\f\n" +
+	"\n" +
+	"_locktoken\"\xa0\x04\n" +
 	"\x1bGetRevenueStatisticsRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12/\n" +
 	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12/\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x14.wafv2.RankingSortByR\x06sortby\x122\n" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderR\tsortorder\x12D\n" +
@@ -20895,13 +21126,15 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindowB\b\n" +
-	"\x06_limit\"\xe1\x01\n" +
-	"\x1cGetRevenueStatisticsResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xf5\x01\n" +
+	"\x1cGetRevenueStatisticsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12U\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12U\n" +
 	"\x15revenuepathstatistics\x18\xe0\xec\xb3\x12 \x03(\v2\x1c.wafv2.RevenuePathStatisticsR\x15revenuepathstatistics\x12F\n" +
-	"\x10sourcestatistics\x18\x84\xe0\xa6\x01 \x03(\v2\x17.wafv2.SourceStatisticsR\x10sourcestatistics\"\xea\x01\n" +
+	"\x10sourcestatistics\x18\x84\xe0\xa6\x01 \x03(\v2\x17.wafv2.SourceStatisticsR\x10sourcestatisticsB\r\n" +
+	"\v_nextmarker\"\xea\x01\n" +
 	"\"GetRevenueStatisticsSummaryRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12%\n" +
@@ -20910,37 +21143,44 @@ const file_wafv2_proto_rawDesc = "" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindow\"m\n" +
 	"#GetRevenueStatisticsSummaryResponse\x12F\n" +
-	"\x10revenuebreakdown\x18\xb7ʕ\f \x01(\v2\x17.wafv2.RevenueBreakdownR\x10revenuebreakdown\"\xe9\x03\n" +
+	"\x10revenuebreakdown\x18\xb7ʕ\f \x01(\v2\x17.wafv2.RevenueBreakdownR\x10revenuebreakdown\"\xfd\x03\n" +
 	"%GetRevenueStatisticsTimeSeriesRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12/\n" +
 	"\agroupby\x18\xaa\xd3\xff; \x01(\x0e2\x12.wafv2.GroupByTypeR\agroupby\x123\n" +
 	"\binterval\x18\x99\xf3\x84\xdd\x01 \x01(\x0e2\x13.wafv2.IntervalTypeR\binterval\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12G\n" +
 	"\rstatistictype\x18\x96\xd3\xc5$ \x01(\x0e2\x1e.wafv2.TimeSeriesStatisticTypeR\rstatistictype\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindowB\b\n" +
-	"\x06_limit\"\x86\x01\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x9a\x01\n" +
 	"&GetRevenueStatisticsTimeSeriesResponse\x128\n" +
 	"\n" +
 	"datapoints\x18\xe7\xc1\xde| \x03(\v2\x15.wafv2.DataPointEntryR\n" +
-	"datapoints\x12\"\n" +
+	"datapoints\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"}\n" +
-	"\x13GetRuleGroupRequest\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"j\n" +
-	"\x14GetRuleGroupResponse\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x121\n" +
-	"\trulegroup\x18\xab\xdb\xc0\x7f \x01(\v2\x10.wafv2.RuleGroupR\trulegroup\"\xe5\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"\xa4\x01\n" +
+	"\x13GetRuleGroupRequest\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12%\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\x06\n" +
+	"\x04_arnB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_name\"}\n" +
+	"\x14GetRuleGroupResponse\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x00R\tlocktoken\x88\x01\x01\x121\n" +
+	"\trulegroup\x18\xab\xdb\xc0\x7f \x01(\v2\x10.wafv2.RuleGroupR\trulegroupB\f\n" +
+	"\n" +
+	"_locktoken\"\xe5\x01\n" +
 	"\x19GetSampledRequestsRequest\x12\x1e\n" +
 	"\bmaxitems\x18\x94\xd6\xda\xf1\x01 \x01(\x03R\bmaxitems\x12)\n" +
 	"\x0erulemetricname\x18\x9d\x94\xbbC \x01(\tR\x0erulemetricname\x12%\n" +
@@ -20955,53 +21195,74 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindowB\x11\n" +
-	"\x0f_populationsize\"\xc6\x03\n" +
-	"$GetTopPathStatisticsByTrafficRequest\x12#\n" +
-	"\vbotcategory\x18\x97\x9e\x8e8 \x01(\tR\vbotcategory\x12\x1b\n" +
-	"\abotname\x18\x9eυ* \x01(\tR\abotname\x12,\n" +
-	"\x0fbotorganization\x18\xb2\x81\xac\xbd\x01 \x01(\tR\x0fbotorganization\x12\x18\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12\"\n" +
+	"\x0f_populationsize\"\xb0\x04\n" +
+	"$GetTopPathStatisticsByTrafficRequest\x12(\n" +
+	"\vbotcategory\x18\x97\x9e\x8e8 \x01(\tH\x00R\vbotcategory\x88\x01\x01\x12 \n" +
+	"\abotname\x18\x9eυ* \x01(\tH\x01R\abotname\x88\x01\x01\x121\n" +
+	"\x0fbotorganization\x18\xb2\x81\xac\xbd\x01 \x01(\tH\x02R\x0fbotorganization\x88\x01\x01\x12\x18\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05R\x05limit\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12H\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x03R\n" +
+	"nextmarker\x88\x01\x01\x12H\n" +
 	"\x1dnumberoftoptrafficbotsperpath\x18\xfa\xf2\x82\x90\x01 \x01(\x05R\x1dnumberoftoptrafficbotsperpath\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
-	"timewindow\x12'\n" +
-	"\ruripathprefix\x18\xf3\xd0\xf8i \x01(\tR\ruripathprefix\x12 \n" +
-	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tR\twebaclarn\"\x81\x02\n" +
-	"%GetTopPathStatisticsByTrafficResponse\x12\"\n" +
+	"timewindow\x12,\n" +
+	"\ruripathprefix\x18\xf3\xd0\xf8i \x01(\tH\x04R\ruripathprefix\x88\x01\x01\x12 \n" +
+	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tR\twebaclarnB\x0e\n" +
+	"\f_botcategoryB\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12A\n" +
+	"\b_botnameB\x12\n" +
+	"\x10_botorganizationB\r\n" +
+	"\v_nextmarkerB\x10\n" +
+	"\x0e_uripathprefix\"\x95\x02\n" +
+	"%GetTopPathStatisticsByTrafficResponse\x12'\n" +
+	"\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12A\n" +
 	"\x0epathstatistics\x18\xc2\xe1ș\x01 \x03(\v2\x15.wafv2.PathStatisticsR\x0epathstatistics\x12?\n" +
 	"\rtopcategories\x18\xe1\x97\xe5\xdf\x01 \x03(\v2\x15.wafv2.PathStatisticsR\rtopcategories\x120\n" +
-	"\x11totalrequestcount\x18\xf2\xc4\xd5\xfa\x01 \x01(\x03R\x11totalrequestcount\"C\n" +
+	"\x11totalrequestcount\x18\xf2\xc4\xd5\xfa\x01 \x01(\x03R\x11totalrequestcountB\r\n" +
+	"\v_nextmarker\"C\n" +
 	"\x1bGetWebACLForResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"I\n" +
 	"\x1cGetWebACLForResourceResponse\x12)\n" +
-	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\r.wafv2.WebACLR\x06webacl\"z\n" +
-	"\x10GetWebACLRequest\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"\xa0\x01\n" +
-	"\x11GetWebACLResponse\x12?\n" +
-	"\x19applicationintegrationurl\x18\xc7\xe5\x91W \x01(\tR\x19applicationintegrationurl\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12)\n" +
-	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\r.wafv2.WebACLR\x06webacl\"=\n" +
+	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\r.wafv2.WebACLR\x06webacl\"\xa1\x01\n" +
+	"\x10GetWebACLRequest\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x01R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x02R\x04name\x88\x01\x01\x12%\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\x06\n" +
+	"\x04_arnB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_name\"\xd6\x01\n" +
+	"\x11GetWebACLResponse\x12D\n" +
+	"\x19applicationintegrationurl\x18\xc7\xe5\x91W \x01(\tH\x00R\x19applicationintegrationurl\x88\x01\x01\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x01R\tlocktoken\x88\x01\x01\x12)\n" +
+	"\x06webacl\x18\xc0\xedݣ\x01 \x01(\v2\r.wafv2.WebACLR\x06webaclB\x1c\n" +
+	"\x1a_applicationintegrationurlB\f\n" +
 	"\n" +
-	"HTTPHeader\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"\xd1\x01\n" +
-	"\vHTTPRequest\x12\x1d\n" +
-	"\bclientip\x18\xe0݅v \x01(\tR\bclientip\x12\x1b\n" +
-	"\acountry\x18\xf2\xfc\xd3' \x01(\tR\acountry\x12#\n" +
-	"\vhttpversion\x18ؔ\x8e\x06 \x01(\tR\vhttpversion\x12/\n" +
-	"\aheaders\x18\x8a\xb3\xbd\x9a\x01 \x03(\v2\x11.wafv2.HTTPHeaderR\aheaders\x12\x1a\n" +
-	"\x06method\x18ю\x8b\xc5\x01 \x01(\tR\x06method\x12\x14\n" +
-	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tR\x03uri\"\x90\x01\n" +
+	"_locktoken\"Z\n" +
+	"\n" +
+	"HTTPHeader\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1d\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tH\x01R\x05value\x88\x01\x01B\a\n" +
+	"\x05_nameB\b\n" +
+	"\x06_value\"\xa6\x02\n" +
+	"\vHTTPRequest\x12\"\n" +
+	"\bclientip\x18\xe0݅v \x01(\tH\x00R\bclientip\x88\x01\x01\x12 \n" +
+	"\acountry\x18\xf2\xfc\xd3' \x01(\tH\x01R\acountry\x88\x01\x01\x12(\n" +
+	"\vhttpversion\x18ؔ\x8e\x06 \x01(\tH\x02R\vhttpversion\x88\x01\x01\x12/\n" +
+	"\aheaders\x18\x8a\xb3\xbd\x9a\x01 \x03(\v2\x11.wafv2.HTTPHeaderR\aheaders\x12\x1f\n" +
+	"\x06method\x18ю\x8b\xc5\x01 \x01(\tH\x03R\x06method\x88\x01\x01\x12\x19\n" +
+	"\x03uri\x18\x9e֥\xd3\x01 \x01(\tH\x04R\x03uri\x88\x01\x01B\v\n" +
+	"\t_clientipB\n" +
+	"\n" +
+	"\b_countryB\x0e\n" +
+	"\f_httpversionB\t\n" +
+	"\a_methodB\x06\n" +
+	"\x04_uri\"\x90\x01\n" +
 	"\x12HeaderMatchPattern\x12 \n" +
 	"\x03all\x18\xe5ƿ\xad\x01 \x01(\v2\n" +
 	".wafv2.AllR\x03all\x12+\n" +
@@ -21014,14 +21275,15 @@ const file_wafv2_proto_rawDesc = "" +
 	"\n" +
 	"matchscope\x18\x93\xe0\xf4\x81\x01 \x01(\x0e2\x14.wafv2.MapMatchScopeR\n" +
 	"matchscope\x12F\n" +
-	"\x10oversizehandling\x18\x9c\xe4\xbaB \x01(\x0e2\x17.wafv2.OversizeHandlingR\x10oversizehandling\"\xd8\x01\n" +
+	"\x10oversizehandling\x18\x9c\xe4\xbaB \x01(\x0e2\x17.wafv2.OversizeHandlingR\x10oversizehandling\"\xed\x01\n" +
 	"\x05IPSet\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12 \n" +
-	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12G\n" +
+	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12G\n" +
 	"\x10ipaddressversion\x18\x81\x9b\xb6\x95\x01 \x01(\x0e2\x17.wafv2.IPAddressVersionR\x10ipaddressversion\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xbf\x01\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04nameB\x0e\n" +
+	"\f_description\"\xbf\x01\n" +
 	"\x16IPSetForwardedIPConfig\x12G\n" +
 	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorR\x10fallbackbehavior\x12!\n" +
 	"\n" +
@@ -21030,13 +21292,19 @@ const file_wafv2_proto_rawDesc = "" +
 	"\bposition\x18\xab\xe8\xfc\x13 \x01(\x0e2\x1a.wafv2.ForwardedIPPositionR\bposition\"\x89\x01\n" +
 	"\x17IPSetReferenceStatement\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12X\n" +
-	"\x16ipsetforwardedipconfig\x18\xf4\xbd\x84u \x01(\v2\x1d.wafv2.IPSetForwardedIPConfigR\x16ipsetforwardedipconfig\"\x95\x01\n" +
-	"\fIPSetSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\">\n" +
+	"\x16ipsetforwardedipconfig\x18\xf4\xbd\x84u \x01(\v2\x1d.wafv2.IPSetForwardedIPConfigR\x16ipsetforwardedipconfig\"\xe4\x01\n" +
+	"\fIPSetSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x03R\tlocktoken\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\f\n" +
+	"\n" +
+	"_locktokenB\a\n" +
+	"\x05_name\">\n" +
 	"\x14ImmunityTimeProperty\x12&\n" +
 	"\fimmunitytime\x18\x87\xa1\xe1\x8b\x01 \x01(\x03R\fimmunitytime\"Y\n" +
 	"\x0eJA3Fingerprint\x12G\n" +
@@ -21060,174 +21328,201 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12/\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\x16.wafv2.LabelMatchScopeR\x05scope\"5\n" +
 	"\x12LabelNameCondition\x12\x1f\n" +
-	"\tlabelname\x18\xbf\xcf\xe9q \x01(\tR\tlabelname\"%\n" +
-	"\fLabelSummary\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x88\x01\n" +
+	"\tlabelname\x18\xbf\xcf\xe9q \x01(\tR\tlabelname\"3\n" +
+	"\fLabelSummary\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"\x9c\x01\n" +
 	"\x12ListAPIKeysRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"\xbd\x01\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xf4\x01\n" +
 	"\x13ListAPIKeysResponse\x12A\n" +
-	"\x0fapikeysummaries\x18\x8b\xb1\xdcA \x03(\v2\x14.wafv2.APIKeySummaryR\x0fapikeysummaries\x12?\n" +
-	"\x19applicationintegrationurl\x18\xc7\xe5\x91W \x01(\tR\x19applicationintegrationurl\x12\"\n" +
+	"\x0fapikeysummaries\x18\x8b\xb1\xdcA \x03(\v2\x14.wafv2.APIKeySummaryR\x0fapikeysummaries\x12D\n" +
+	"\x19applicationintegrationurl\x18\xc7\xe5\x91W \x01(\tH\x00R\x19applicationintegrationurl\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xdc\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01B\x1c\n" +
+	"\x1a_applicationintegrationurlB\r\n" +
+	"\v_nextmarker\"\xf0\x01\n" +
 	",ListAvailableManagedRuleGroupVersionsRequest\x12\x1d\n" +
 	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\"\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12!\n" +
 	"\n" +
 	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
 	"vendornameB\b\n" +
-	"\x06_limit\"\xcc\x01\n" +
-	"-ListAvailableManagedRuleGroupVersionsResponse\x128\n" +
-	"\x15currentdefaultversion\x18\xcaӖ\x9d\x01 \x01(\tR\x15currentdefaultversion\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xff\x01\n" +
+	"-ListAvailableManagedRuleGroupVersionsResponse\x12=\n" +
+	"\x15currentdefaultversion\x18\xcaӖ\x9d\x01 \x01(\tH\x00R\x15currentdefaultversion\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12=\n" +
-	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x1e.wafv2.ManagedRuleGroupVersionR\bversions\"\x9b\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12=\n" +
+	"\bversions\x18\x8d\xf4\x9ax \x03(\v2\x1e.wafv2.ManagedRuleGroupVersionR\bversionsB\x18\n" +
+	"\x16_currentdefaultversionB\r\n" +
+	"\v_nextmarker\"\xaf\x01\n" +
 	"%ListAvailableManagedRuleGroupsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"\x9d\x01\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xb1\x01\n" +
 	"&ListAvailableManagedRuleGroupsResponse\x12O\n" +
-	"\x11managedrulegroups\x18\xe1ך\x16 \x03(\v2\x1e.wafv2.ManagedRuleGroupSummaryR\x11managedrulegroups\x12\"\n" +
+	"\x11managedrulegroups\x18\xe1ך\x16 \x03(\v2\x1e.wafv2.ManagedRuleGroupSummaryR\x11managedrulegroups\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x87\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"\x9b\x01\n" +
 	"\x11ListIPSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"i\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"}\n" +
 	"\x12ListIPSetsResponse\x12/\n" +
-	"\x06ipsets\x18\xa6\x97\xb3\xcf\x01 \x03(\v2\x13.wafv2.IPSetSummaryR\x06ipsets\x12\"\n" +
+	"\x06ipsets\x18\xa6\x97\xb3\xcf\x01 \x03(\v2\x13.wafv2.IPSetSummaryR\x06ipsets\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\xc6\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"\xda\x01\n" +
 	" ListLoggingConfigurationsRequest\x12\x1d\n" +
 	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12.\n" +
-	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12\"\n" +
+	"\blogscope\x18\xc0\x80\xe1Y \x01(\x0e2\x0f.wafv2.LogScopeR\blogscope\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"\x9e\x01\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xb2\x01\n" +
 	"!ListLoggingConfigurationsResponse\x12U\n" +
-	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x1b.wafv2.LoggingConfigurationR\x15loggingconfigurations\x12\"\n" +
+	"\x15loggingconfigurations\x18\xc6\xd7ڸ\x01 \x03(\v2\x1b.wafv2.LoggingConfigurationR\x15loggingconfigurations\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x90\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"\xa4\x01\n" +
 	"\x1aListManagedRuleSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"\x8c\x01\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xa0\x01\n" +
 	"\x1bListManagedRuleSetsResponse\x12I\n" +
-	"\x0fmanagedrulesets\x18\xaaŹC \x03(\v2\x1c.wafv2.ManagedRuleSetSummaryR\x0fmanagedrulesets\x12\"\n" +
+	"\x0fmanagedrulesets\x18\xaaŹC \x03(\v2\x1c.wafv2.ManagedRuleSetSummaryR\x0fmanagedrulesets\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\"\x9c\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01B\r\n" +
+	"\v_nextmarker\"\xb0\x01\n" +
 	"\x1cListMobileSdkReleasesRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12/\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12/\n" +
 	"\bplatform\x18\xd3\xdd\xcb\xdf\x01 \x01(\x0e2\x0f.wafv2.PlatformR\bplatformB\b\n" +
-	"\x06_limit\"\x8a\x01\n" +
-	"\x1dListMobileSdkReleasesResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x9e\x01\n" +
+	"\x1dListMobileSdkReleasesResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12E\n" +
-	"\x10releasesummaries\x18\xab\x9b\xff\xeb\x01 \x03(\v2\x15.wafv2.ReleaseSummaryR\x10releasesummaries\"\x91\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12E\n" +
+	"\x10releasesummaries\x18\xab\x9b\xff\xeb\x01 \x03(\v2\x15.wafv2.ReleaseSummaryR\x10releasesummariesB\r\n" +
+	"\v_nextmarker\"\xa5\x01\n" +
 	"\x1bListRegexPatternSetsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"\x91\x01\n" +
-	"\x1cListRegexPatternSetsResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xa5\x01\n" +
+	"\x1cListRegexPatternSetsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12M\n" +
-	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1d.wafv2.RegexPatternSetSummaryR\x10regexpatternsets\"}\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12M\n" +
+	"\x10regexpatternsets\x18\xa4\xf5Ñ\x01 \x03(\v2\x1d.wafv2.RegexPatternSetSummaryR\x10regexpatternsetsB\r\n" +
+	"\v_nextmarker\"}\n" +
 	"\x1dListResourcesForWebACLRequest\x12;\n" +
 	"\fresourcetype\x18\u07be؏\x01 \x01(\x0e2\x13.wafv2.ResourceTypeR\fresourcetype\x12\x1f\n" +
 	"\twebaclarn\x18\xa3\xe7\xab' \x01(\tR\twebaclarn\"G\n" +
 	"\x1eListResourcesForWebACLResponse\x12%\n" +
-	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\"\x8b\x01\n" +
+	"\fresourcearns\x18\x8e\x93\x97j \x03(\tR\fresourcearns\"\x9f\x01\n" +
 	"\x15ListRuleGroupsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"y\n" +
-	"\x16ListRuleGroupsResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x8d\x01\n" +
+	"\x16ListRuleGroupsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12;\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12;\n" +
 	"\n" +
 	"rulegroups\x18\x9c\xd9\xe0\x80\x01 \x03(\v2\x17.wafv2.RuleGroupSummaryR\n" +
-	"rulegroups\"\x99\x03\n" +
+	"rulegroupsB\r\n" +
+	"\v_nextmarker\"\xad\x03\n" +
 	"\x1cListSettlementRecordsRequest\x12/\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x126\n" +
 	"\afilters\x18\xed\xcd\xeaY \x03(\v2\x19.wafv2.MonetizationFilterR\afilters\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x122\n" +
 	"\x06sortby\x18\x91\xde\xdbX \x01(\x0e2\x17.wafv2.SettlementSortByR\x06sortby\x122\n" +
 	"\tsortorder\x18\x84\xe3\xe1\x82\x01 \x01(\x0e2\x10.wafv2.SortOrderR\tsortorder\x124\n" +
 	"\n" +
 	"timewindow\x18\x99\x8c\x82C \x01(\v2\x11.wafv2.TimeWindowR\n" +
 	"timewindowB\b\n" +
-	"\x06_limit\"\x82\x01\n" +
-	"\x1dListSettlementRecordsResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x96\x01\n" +
+	"\x1dListSettlementRecordsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12=\n" +
-	"\vsettlements\x18\xdc\xec܇\x01 \x03(\v2\x17.wafv2.SettlementRecordR\vsettlements\"\x8f\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12=\n" +
+	"\vsettlements\x18\xdc\xec܇\x01 \x03(\v2\x17.wafv2.SettlementRecordR\vsettlementsB\r\n" +
+	"\v_nextmarker\"\xa3\x01\n" +
 	"\x1aListTagsForResourceRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12$\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearnB\b\n" +
-	"\x06_limit\"\x8f\x01\n" +
-	"\x1bListTagsForResourceResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\xa3\x01\n" +
+	"\x1bListTagsForResourceResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12L\n" +
-	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x19.wafv2.TagInfoForResourceR\x12taginfoforresource\"\x88\x01\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x12L\n" +
+	"\x12taginfoforresource\x18۲\xf0\x03 \x01(\v2\x19.wafv2.TagInfoForResourceR\x12taginfoforresourceB\r\n" +
+	"\v_nextmarker\"\x9c\x01\n" +
 	"\x12ListWebACLsRequest\x12\x1d\n" +
-	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12\"\n" +
+	"\x05limit\x18Օ\xd9\xc4\x01 \x01(\x05H\x00R\x05limit\x88\x01\x01\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x12%\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x01R\n" +
+	"nextmarker\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\b\n" +
-	"\x06_limit\"l\n" +
-	"\x13ListWebACLsResponse\x12\"\n" +
+	"\x06_limitB\r\n" +
+	"\v_nextmarker\"\x80\x01\n" +
+	"\x13ListWebACLsResponse\x12'\n" +
 	"\n" +
-	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tR\n" +
-	"nextmarker\x121\n" +
-	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x14.wafv2.WebACLSummaryR\awebacls\"\xb3\x03\n" +
+	"nextmarker\x18\xa3\x81\xae\xfd\x01 \x01(\tH\x00R\n" +
+	"nextmarker\x88\x01\x01\x121\n" +
+	"\awebacls\x18\xa5\x86\xc0  \x03(\v2\x14.wafv2.WebACLSummaryR\awebaclsB\r\n" +
+	"\v_nextmarker\"\xb3\x03\n" +
 	"\x14LoggingConfiguration\x127\n" +
 	"\x15logdestinationconfigs\x18\xbf\x87\xc3\n" +
 	" \x03(\tR\x15logdestinationconfigs\x12.\n" +
@@ -21240,30 +21535,40 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x19_managedbyfirewallmanager\"\x80\x01\n" +
 	"\rLoggingFilter\x12C\n" +
 	"\x0fdefaultbehavior\x18\x89\xa7\xa5\x8c\x01 \x01(\x0e2\x15.wafv2.FilterBehaviorR\x0fdefaultbehavior\x12*\n" +
-	"\afilters\x18\xed\xcd\xeaY \x03(\v2\r.wafv2.FilterR\afilters\"\xf1\x03\n" +
+	"\afilters\x18\xed\xcd\xeaY \x03(\v2\r.wafv2.FilterR\afilters\"\x90\x05\n" +
 	"\x18ManagedProductDescriptor\x12C\n" +
 	"\x18isadvancedmanagedruleset\x18\x8f\xa4\xbd\x89\x01 \x01(\bH\x00R\x18isadvancedmanagedruleset\x88\x01\x01\x12<\n" +
-	"\x15isversioningsupported\x18\xb6\x9f\xb8] \x01(\bH\x01R\x15isversioningsupported\x88\x01\x01\x121\n" +
-	"\x12managedrulesetname\x18\x84\xdb\xe8L \x01(\tR\x12managedrulesetname\x121\n" +
-	"\x12productdescription\x18\x87\x8b\x9e% \x01(\tR\x12productdescription\x12\x1f\n" +
-	"\tproductid\x18\xe2\xff\xb2\x19 \x01(\tR\tproductid\x12#\n" +
-	"\vproductlink\x18\xbdύ[ \x01(\tR\vproductlink\x12&\n" +
-	"\fproducttitle\x18\xeb\xbf\xd8\xd7\x01 \x01(\tR\fproducttitle\x12$\n" +
-	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tR\vsnstopicarn\x12!\n" +
+	"\x15isversioningsupported\x18\xb6\x9f\xb8] \x01(\bH\x01R\x15isversioningsupported\x88\x01\x01\x126\n" +
+	"\x12managedrulesetname\x18\x84\xdb\xe8L \x01(\tH\x02R\x12managedrulesetname\x88\x01\x01\x126\n" +
+	"\x12productdescription\x18\x87\x8b\x9e% \x01(\tH\x03R\x12productdescription\x88\x01\x01\x12$\n" +
+	"\tproductid\x18\xe2\xff\xb2\x19 \x01(\tH\x04R\tproductid\x88\x01\x01\x12(\n" +
+	"\vproductlink\x18\xbdύ[ \x01(\tH\x05R\vproductlink\x88\x01\x01\x12+\n" +
+	"\fproducttitle\x18\xeb\xbf\xd8\xd7\x01 \x01(\tH\x06R\fproducttitle\x88\x01\x01\x12)\n" +
+	"\vsnstopicarn\x18\xec\xf6ܲ\x01 \x01(\tH\aR\vsnstopicarn\x88\x01\x01\x12&\n" +
 	"\n" +
-	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
-	"vendornameB\x1b\n" +
+	"vendorname\x18\x99\xdb\xfcK \x01(\tH\bR\n" +
+	"vendorname\x88\x01\x01B\x1b\n" +
 	"\x19_isadvancedmanagedrulesetB\x18\n" +
-	"\x16_isversioningsupported\"\xa8\x05\n" +
+	"\x16_isversioningsupportedB\x15\n" +
+	"\x13_managedrulesetnameB\x15\n" +
+	"\x13_productdescriptionB\f\n" +
+	"\n" +
+	"_productidB\x0e\n" +
+	"\f_productlinkB\x0f\n" +
+	"\r_producttitleB\x0e\n" +
+	"\f_snstopicarnB\r\n" +
+	"\v_vendorname\"\xbb\x05\n" +
 	"\x16ManagedRuleGroupConfig\x12e\n" +
 	"\x1aawsmanagedrulesacfpruleset\x18\xd7\xfd\x84\xaa\x01 \x01(\v2!.wafv2.AWSManagedRulesACFPRuleSetR\x1aawsmanagedrulesacfpruleset\x12a\n" +
 	"\x19awsmanagedrulesatpruleset\x18\x9a\xf5\xb4} \x01(\v2 .wafv2.AWSManagedRulesATPRuleSetR\x19awsmanagedrulesatpruleset\x12q\n" +
 	"\x1eawsmanagedrulesantiddosruleset\x18\x8f\x89\xf2\xf6\x01 \x01(\v2%.wafv2.AWSManagedRulesAntiDDoSRuleSetR\x1eawsmanagedrulesantiddosruleset\x12w\n" +
-	" awsmanagedrulesbotcontrolruleset\x18\xbb\xc0\xab\x87\x01 \x01(\v2'.wafv2.AWSManagedRulesBotControlRuleSetR awsmanagedrulesbotcontrolruleset\x12\x1f\n" +
-	"\tloginpath\x18\x92ڕ= \x01(\tR\tloginpath\x12>\n" +
+	" awsmanagedrulesbotcontrolruleset\x18\xbb\xc0\xab\x87\x01 \x01(\v2'.wafv2.AWSManagedRulesBotControlRuleSetR awsmanagedrulesbotcontrolruleset\x12$\n" +
+	"\tloginpath\x18\x92ڕ= \x01(\tH\x00R\tloginpath\x88\x01\x01\x12>\n" +
 	"\rpasswordfield\x18\x95\x95ڗ\x01 \x01(\v2\x14.wafv2.PasswordFieldR\rpasswordfield\x128\n" +
 	"\vpayloadtype\x18\xee\xc3\xcb\xf3\x01 \x01(\x0e2\x12.wafv2.PayloadTypeR\vpayloadtype\x12=\n" +
-	"\rusernamefield\x18\xb4\x87\x80< \x01(\v2\x14.wafv2.UsernameFieldR\rusernamefield\"\xa3\x03\n" +
+	"\rusernamefield\x18\xb4\x87\x80< \x01(\v2\x14.wafv2.UsernameFieldR\rusernamefieldB\f\n" +
+	"\n" +
+	"_loginpath\"\xb4\x03\n" +
 	"\x19ManagedRuleGroupStatement\x12<\n" +
 	"\rexcludedrules\x18\xef\x9e\xfa= \x03(\v2\x13.wafv2.ExcludedRuleR\rexcludedrules\x12Z\n" +
 	"\x17managedrulegroupconfigs\x18\xa7\xa3\xf6i \x03(\v2\x1d.wafv2.ManagedRuleGroupConfigR\x17managedrulegroupconfigs\x12\x15\n" +
@@ -21272,61 +21577,87 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x12scopedownstatement\x18\xbdڮ7 \x01(\v2\x10.wafv2.StatementR\x12scopedownstatement\x12!\n" +
 	"\n" +
 	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
-	"vendorname\x12\x1c\n" +
-	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tR\aversion\"\xca\x01\n" +
-	"\x17ManagedRuleGroupSummary\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12!\n" +
+	"vendorname\x12!\n" +
+	"\aversion\x18\xb8\xaa\xb7\xee\x01 \x01(\tH\x00R\aversion\x88\x01\x01B\n" +
 	"\n" +
-	"vendorname\x18\x99\xdb\xfcK \x01(\tR\n" +
-	"vendorname\x128\n" +
-	"\x13versioningsupported\x18Ɛ\xc9O \x01(\bH\x00R\x13versioningsupported\x88\x01\x01B\x16\n" +
-	"\x14_versioningsupported\"e\n" +
-	"\x17ManagedRuleGroupVersion\x123\n" +
-	"\x13lastupdatetimestamp\x18\x89\x90\xd48 \x01(\tR\x13lastupdatetimestamp\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x97\x03\n" +
+	"\b_version\"\x81\x02\n" +
+	"\x17ManagedRuleGroupSummary\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01\x12&\n" +
+	"\n" +
+	"vendorname\x18\x99\xdb\xfcK \x01(\tH\x02R\n" +
+	"vendorname\x88\x01\x01\x128\n" +
+	"\x13versioningsupported\x18Ɛ\xc9O \x01(\bH\x03R\x13versioningsupported\x88\x01\x01B\x0e\n" +
+	"\f_descriptionB\a\n" +
+	"\x05_nameB\r\n" +
+	"\v_vendornameB\x16\n" +
+	"\x14_versioningsupported\"\x90\x01\n" +
+	"\x17ManagedRuleGroupVersion\x128\n" +
+	"\x13lastupdatetimestamp\x18\x89\x90\xd48 \x01(\tH\x00R\x13lastupdatetimestamp\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x01R\x04name\x88\x01\x01B\x16\n" +
+	"\x14_lastupdatetimestampB\a\n" +
+	"\x05_name\"\xe0\x03\n" +
 	"\x0eManagedRuleSet\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12)\n" +
-	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12\x15\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12.\n" +
+	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tH\x01R\x0elabelnamespace\x88\x01\x01\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12]\n" +
-	"\x11publishedversions\x18\xe1\xe9\x9dP \x03(\v2,.wafv2.ManagedRuleSet.PublishedversionsEntryR\x11publishedversions\x121\n" +
-	"\x12recommendedversion\x18\xa1\x9b\xd0' \x01(\tR\x12recommendedversion\x1ab\n" +
+	"\x11publishedversions\x18\xe1\xe9\x9dP \x03(\v2,.wafv2.ManagedRuleSet.PublishedversionsEntryR\x11publishedversions\x126\n" +
+	"\x12recommendedversion\x18\xa1\x9b\xd0' \x01(\tH\x02R\x12recommendedversion\x88\x01\x01\x1ab\n" +
 	"\x16PublishedversionsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x122\n" +
-	"\x05value\x18\x02 \x01(\v2\x1c.wafv2.ManagedRuleSetVersionR\x05value:\x028\x01\"\xc9\x01\n" +
-	"\x15ManagedRuleSetSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12)\n" +
-	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xe6\x02\n" +
-	"\x15ManagedRuleSetVersion\x12:\n" +
-	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tR\x16associatedrulegrouparn\x12\"\n" +
-	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x00R\bcapacity\x88\x01\x01\x12,\n" +
-	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tR\x0fexpirytimestamp\x126\n" +
-	"\x12forecastedlifetime\x18˜\x91G \x01(\x05H\x01R\x12forecastedlifetime\x88\x01\x01\x123\n" +
-	"\x13lastupdatetimestamp\x18\x89\x90\xd48 \x01(\tR\x13lastupdatetimestamp\x12.\n" +
-	"\x10publishtimestamp\x18ٛ\xf0\xe3\x01 \x01(\tR\x10publishtimestampB\v\n" +
-	"\t_capacityB\x15\n" +
-	"\x13_forecastedlifetime\"\b\n" +
-	"\x06Method\"\xa9\x01\n" +
-	"\x10MobileSdkRelease\x12%\n" +
-	"\freleasenotes\x18\xac\xa4\x8e/ \x01(\tR\freleasenotes\x12)\n" +
-	"\x0ereleaseversion\x18㲕\x04 \x01(\tR\x0ereleaseversion\x12\"\n" +
+	"\x05value\x18\x02 \x01(\v2\x1c.wafv2.ManagedRuleSetVersionR\x05value:\x028\x01B\x0e\n" +
+	"\f_descriptionB\x11\n" +
+	"\x0f_labelnamespaceB\x15\n" +
+	"\x13_recommendedversion\"\xb0\x02\n" +
+	"\x15ManagedRuleSetSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12.\n" +
+	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tH\x03R\x0elabelnamespace\x88\x01\x01\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x04R\tlocktoken\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x05R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\x11\n" +
+	"\x0f_labelnamespaceB\f\n" +
+	"\n" +
+	"_locktokenB\a\n" +
+	"\x05_name\"\xd6\x03\n" +
+	"\x15ManagedRuleSetVersion\x12?\n" +
+	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tH\x00R\x16associatedrulegrouparn\x88\x01\x01\x12\"\n" +
+	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03H\x01R\bcapacity\x88\x01\x01\x121\n" +
+	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tH\x02R\x0fexpirytimestamp\x88\x01\x01\x126\n" +
+	"\x12forecastedlifetime\x18˜\x91G \x01(\x05H\x03R\x12forecastedlifetime\x88\x01\x01\x128\n" +
+	"\x13lastupdatetimestamp\x18\x89\x90\xd48 \x01(\tH\x04R\x13lastupdatetimestamp\x88\x01\x01\x123\n" +
+	"\x10publishtimestamp\x18ٛ\xf0\xe3\x01 \x01(\tH\x05R\x10publishtimestamp\x88\x01\x01B\x19\n" +
+	"\x17_associatedrulegrouparnB\v\n" +
+	"\t_capacityB\x12\n" +
+	"\x10_expirytimestampB\x15\n" +
+	"\x13_forecastedlifetimeB\x16\n" +
+	"\x14_lastupdatetimestampB\x13\n" +
+	"\x11_publishtimestamp\"\b\n" +
+	"\x06Method\"\xea\x01\n" +
+	"\x10MobileSdkRelease\x12*\n" +
+	"\freleasenotes\x18\xac\xa4\x8e/ \x01(\tH\x00R\freleasenotes\x88\x01\x01\x12.\n" +
+	"\x0ereleaseversion\x18㲕\x04 \x01(\tH\x01R\x0ereleaseversion\x88\x01\x01\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
-	".wafv2.TagR\x04tags\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\"\x8d\x01\n" +
+	".wafv2.TagR\x04tags\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x02R\ttimestamp\x88\x01\x01B\x0f\n" +
+	"\r_releasenotesB\x11\n" +
+	"\x0f_releaseversionB\f\n" +
+	"\n" +
+	"_timestamp\"\x8d\x01\n" +
 	"\x12MonetizationConfig\x12;\n" +
 	"\fcryptoconfig\x18\xff\xb3\xcb\xf3\x01 \x01(\v2\x13.wafv2.CryptoConfigR\fcryptoconfig\x12:\n" +
 	"\fcurrencymode\x18\xfe\x97\xf57 \x01(\x0e2\x13.wafv2.CurrencyModeR\fcurrencymode\"F\n" +
 	"\x12MonetizationFilter\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12\x19\n" +
-	"\x06values\x18\xdcĴj \x03(\tR\x06values\">\n" +
-	"\x0eMonetizeAction\x12,\n" +
-	"\x0fpricemultiplier\x18\xee\xca\xc2\xf3\x01 \x01(\tR\x0fpricemultiplier\"\f\n" +
+	"\x06values\x18\xdcĴj \x03(\tR\x06values\"W\n" +
+	"\x0eMonetizeAction\x121\n" +
+	"\x0fpricemultiplier\x18\xee\xca\xc2\xf3\x01 \x01(\tH\x00R\x0fpricemultiplier\x88\x01\x01B\x12\n" +
+	"\x10_pricemultiplier\"\f\n" +
 	"\n" +
 	"NoneAction\"A\n" +
 	"\fNotStatement\x121\n" +
@@ -21359,26 +21690,31 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x10PhoneNumberField\x12!\n" +
 	"\n" +
 	"identifier\x18ߠ\xfb\x13 \x01(\tR\n" +
-	"identifier\"Y\n" +
+	"identifier\"z\n" +
+	"\x1aPreParseTextTransformation\x12\x1d\n" +
+	"\bpriority\x18\xaa\xbe\xb64 \x01(\x05R\bpriority\x12=\n" +
+	"\x04type\x18\xee\xa0\u05ca\x01 \x01(\x0e2%.wafv2.PreParseTextTransformationTypeR\x04type\"Y\n" +
 	"\x05Price\x12\x19\n" +
 	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x125\n" +
 	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x15.wafv2.CryptoCurrencyR\bcurrency\"u\n" +
 	"\x1ePutLoggingConfigurationRequest\x12S\n" +
 	"\x14loggingconfiguration\x18\xb5\xa8\x99\xab\x01 \x01(\v2\x1b.wafv2.LoggingConfigurationR\x14loggingconfiguration\"v\n" +
 	"\x1fPutLoggingConfigurationResponse\x12S\n" +
-	"\x14loggingconfiguration\x18\xb5\xa8\x99\xab\x01 \x01(\v2\x1b.wafv2.LoggingConfigurationR\x14loggingconfiguration\"\x98\x03\n" +
+	"\x14loggingconfiguration\x18\xb5\xa8\x99\xab\x01 \x01(\v2\x1b.wafv2.LoggingConfigurationR\x14loggingconfiguration\"\xb4\x03\n" +
 	" PutManagedRuleSetVersionsRequest\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x121\n" +
-	"\x12recommendedversion\x18\xa1\x9b\xd0' \x01(\tR\x12recommendedversion\x12%\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x126\n" +
+	"\x12recommendedversion\x18\xa1\x9b\xd0' \x01(\tH\x00R\x12recommendedversion\x88\x01\x01\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12o\n" +
 	"\x11versionstopublish\x18ɩ\x87\x1a \x03(\v2>.wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntryR\x11versionstopublish\x1a]\n" +
 	"\x16VersionstopublishEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12-\n" +
-	"\x05value\x18\x02 \x01(\v2\x17.wafv2.VersionToPublishR\x05value:\x028\x01\"M\n" +
-	"!PutManagedRuleSetVersionsResponse\x12(\n" +
-	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tR\rnextlocktoken\"^\n" +
+	"\x05value\x18\x02 \x01(\v2\x17.wafv2.VersionToPublishR\x05value:\x028\x01B\x15\n" +
+	"\x13_recommendedversion\"d\n" +
+	"!PutManagedRuleSetVersionsResponse\x12-\n" +
+	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x00R\rnextlocktoken\x88\x01\x01B\x10\n" +
+	"\x0e_nextlocktoken\"^\n" +
 	"\x1aPutPermissionPolicyRequest\x12\x1a\n" +
 	"\x06policy\x18\xa0\xef\xf0\xe0\x01 \x01(\tR\x06policy\x12$\n" +
 	"\vresourcearn\x18\xad\xf8٭\x01 \x01(\tR\vresourcearn\"\x1d\n" +
@@ -21434,32 +21770,48 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x14RateLimitQueryString\x12N\n" +
 	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"b\n" +
 	"\x10RateLimitUriPath\x12N\n" +
-	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\",\n" +
-	"\x05Regex\x12#\n" +
-	"\vregexstring\x18±\x87B \x01(\tR\vregexstring\"\xc7\x01\n" +
+	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"A\n" +
+	"\x05Regex\x12(\n" +
+	"\vregexstring\x18±\x87B \x01(\tH\x00R\vregexstring\x88\x01\x01B\x0e\n" +
+	"\f_regexstring\"\xaf\x02\n" +
 	"\x13RegexMatchStatement\x12;\n" +
-	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12#\n" +
+	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12f\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12#\n" +
 	"\vregexstring\x18±\x87B \x01(\tR\vregexstring\x12N\n" +
-	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xbe\x01\n" +
-	"\x0fRegexPatternSet\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12E\n" +
-	"\x15regularexpressionlist\x18\xa6\xdd\xf8: \x03(\v2\f.wafv2.RegexR\x15regularexpressionlist\"\xc6\x01\n" +
+	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xfa\x01\n" +
+	"\x0fRegexPatternSet\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x03R\x04name\x88\x01\x01\x12E\n" +
+	"\x15regularexpressionlist\x18\xa6\xdd\xf8: \x03(\v2\f.wafv2.RegexR\x15regularexpressionlistB\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\a\n" +
+	"\x05_name\"\xae\x02\n" +
 	"!RegexPatternSetReferenceStatement\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12;\n" +
-	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12N\n" +
-	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\x9f\x01\n" +
-	"\x16RegexPatternSetSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\\\n" +
-	"\x0eReleaseSummary\x12)\n" +
-	"\x0ereleaseversion\x18㲕\x04 \x01(\tR\x0ereleaseversion\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\"\x89\x01\n" +
+	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12f\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12N\n" +
+	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xee\x01\n" +
+	"\x16RegexPatternSetSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x03R\tlocktoken\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\f\n" +
+	"\n" +
+	"_locktokenB\a\n" +
+	"\x05_name\"\x87\x01\n" +
+	"\x0eReleaseSummary\x12.\n" +
+	"\x0ereleaseversion\x18㲕\x04 \x01(\tH\x00R\x0ereleaseversion\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x01R\ttimestamp\x88\x01\x01B\x11\n" +
+	"\x0f_releaseversionB\f\n" +
+	"\n" +
+	"_timestamp\"\x89\x01\n" +
 	"'RequestBodyAssociatedResourceTypeConfig\x12^\n" +
 	"\x1adefaultsizeinspectionlimit\x18ɲ\x91\xa4\x01 \x01(\x0e2\x1a.wafv2.SizeInspectionLimitR\x1adefaultsizeinspectionlimit\"\xcc\x01\n" +
 	"\x11RequestInspection\x12>\n" +
@@ -21497,16 +21849,19 @@ const file_wafv2_proto_rawDesc = "" +
 	"\rsuccessvalues\x18\xb7\xc9\xc1\xad\x01 \x03(\tR\rsuccessvalues\"m\n" +
 	"\x1cResponseInspectionStatusCode\x12&\n" +
 	"\ffailurecodes\x18\x92\xe8\xf6\xed\x01 \x03(\x05R\ffailurecodes\x12%\n" +
-	"\fsuccesscodes\x18\xa3\xe8\xdb: \x03(\x05R\fsuccesscodes\"\xd2\x02\n" +
+	"\fsuccesscodes\x18\xa3\xe8\xdb: \x03(\x05R\fsuccesscodes\"\x99\x03\n" +
 	"\x10RevenueBreakdown\x12/\n" +
-	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12#\n" +
-	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tR\vtotalamount\x129\n" +
-	"\x13totalmonetizeserved\x18\x84\xc0\xc1\xc3\x01 \x01(\x03H\x00R\x13totalmonetizeserved\x88\x01\x01\x12*\n" +
-	"\ftotalsettled\x18\xf3\xa9\xc7\" \x01(\x03H\x01R\ftotalsettled\x88\x01\x01\x12-\n" +
-	"\x10unverifiedamount\x18\xaf\xb9\x93z \x01(\tR\x10unverifiedamount\x12)\n" +
-	"\x0everifiedamount\x18\xca\xe4\xb08 \x01(\tR\x0everifiedamountB\x16\n" +
+	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12(\n" +
+	"\vtotalamount\x18\xb2\xf2\xce\x15 \x01(\tH\x00R\vtotalamount\x88\x01\x01\x129\n" +
+	"\x13totalmonetizeserved\x18\x84\xc0\xc1\xc3\x01 \x01(\x03H\x01R\x13totalmonetizeserved\x88\x01\x01\x12*\n" +
+	"\ftotalsettled\x18\xf3\xa9\xc7\" \x01(\x03H\x02R\ftotalsettled\x88\x01\x01\x122\n" +
+	"\x10unverifiedamount\x18\xaf\xb9\x93z \x01(\tH\x03R\x10unverifiedamount\x88\x01\x01\x12.\n" +
+	"\x0everifiedamount\x18\xca\xe4\xb08 \x01(\tH\x04R\x0everifiedamount\x88\x01\x01B\x0e\n" +
+	"\f_totalamountB\x16\n" +
 	"\x14_totalmonetizeservedB\x0f\n" +
-	"\r_totalsettled\"\x95\x01\n" +
+	"\r_totalsettledB\x13\n" +
+	"\x11_unverifiedamountB\x11\n" +
+	"\x0f_verifiedamount\"\x95\x01\n" +
 	"\x15RevenuePathStatistics\x12\x19\n" +
 	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12\x15\n" +
 	"\x04path\x18\xd7ț[ \x01(\tR\x04path\x12\"\n" +
@@ -21536,96 +21891,132 @@ const file_wafv2_proto_rawDesc = "" +
 	"\bmonetize\x18\xabĘ\x1c \x01(\v2\x15.wafv2.MonetizeActionR\bmonetize\"d\n" +
 	"\x12RuleActionOverride\x127\n" +
 	"\vactiontouse\x18ޓ\xc0\xe0\x01 \x01(\v2\x11.wafv2.RuleActionR\vactiontouse\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xc2\x05\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xef\x05\n" +
 	"\tRuleGroup\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12@\n" +
 	"\x0favailablelabels\x18\x90\xba\xac\x18 \x03(\v2\x13.wafv2.LabelSummaryR\x0favailablelabels\x12\x1d\n" +
 	"\bcapacity\x18\xaa\xa1\x923 \x01(\x03R\bcapacity\x12>\n" +
 	"\x0econsumedlabels\x18\xbd\x98\xf2\x14 \x03(\v2\x13.wafv2.LabelSummaryR\x0econsumedlabels\x12a\n" +
-	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v2*.wafv2.RuleGroup.CustomresponsebodiesEntryR\x14customresponsebodies\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12)\n" +
-	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12M\n" +
+	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v2*.wafv2.RuleGroup.CustomresponsebodiesEntryR\x14customresponsebodies\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12.\n" +
+	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tH\x01R\x0elabelnamespace\x88\x01\x01\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12$\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\v.wafv2.RuleR\x05rules\x12G\n" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01\"\xc2\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\x0e\n" +
+	"\f_descriptionB\x11\n" +
+	"\x0f_labelnamespace\"\xc2\x01\n" +
 	"\x1bRuleGroupReferenceStatement\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12<\n" +
 	"\rexcludedrules\x18\xef\x9e\xfa= \x03(\v2\x13.wafv2.ExcludedRuleR\rexcludedrules\x12O\n" +
-	"\x13ruleactionoverrides\x18\x87\xf4\xf4\xa8\x01 \x03(\v2\x19.wafv2.RuleActionOverrideR\x13ruleactionoverrides\"\x99\x01\n" +
-	"\x10RuleGroupSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"R\n" +
+	"\x13ruleactionoverrides\x18\x87\xf4\xf4\xa8\x01 \x03(\v2\x19.wafv2.RuleActionOverrideR\x13ruleactionoverrides\"\xe8\x01\n" +
+	"\x10RuleGroupSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x03R\tlocktoken\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\f\n" +
+	"\n" +
+	"_locktokenB\a\n" +
+	"\x05_name\"`\n" +
 	"\vRuleSummary\x12,\n" +
-	"\x06action\x18\xa0\xd2\xdeS \x01(\v2\x11.wafv2.RuleActionR\x06action\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xdd\x04\n" +
-	"\x12SampledHTTPRequest\x12\x19\n" +
-	"\x06action\x18\xa0\xd2\xdeS \x01(\tR\x06action\x12D\n" +
+	"\x06action\x18\xa0\xd2\xdeS \x01(\v2\x11.wafv2.RuleActionR\x06action\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x00R\x04name\x88\x01\x01B\a\n" +
+	"\x05_name\"\xbb\x05\n" +
+	"\x12SampledHTTPRequest\x12\x1e\n" +
+	"\x06action\x18\xa0\xd2\xdeS \x01(\tH\x00R\x06action\x88\x01\x01\x12D\n" +
 	"\x0fcaptcharesponse\x18Ϥ\xe8\xe6\x01 \x01(\v2\x16.wafv2.CaptchaResponseR\x0fcaptcharesponse\x12J\n" +
 	"\x11challengeresponse\x18⅄\x80\x01 \x01(\v2\x18.wafv2.ChallengeResponseR\x11challengeresponse\x12'\n" +
-	"\x06labels\x18\xabىU \x03(\v2\f.wafv2.LabelR\x06labels\x12-\n" +
-	"\x10overriddenaction\x18\xac\x91\xe7\x10 \x01(\tR\x10overriddenaction\x12/\n" +
+	"\x06labels\x18\xabىU \x03(\v2\f.wafv2.LabelR\x06labels\x122\n" +
+	"\x10overriddenaction\x18\xac\x91\xe7\x10 \x01(\tH\x01R\x10overriddenaction\x88\x01\x01\x12/\n" +
 	"\arequest\x18ӂ\x95\x12 \x01(\v2\x12.wafv2.HTTPRequestR\arequest\x12M\n" +
 	"\x16requestheadersinserted\x18\xd5䭯\x01 \x03(\v2\x11.wafv2.HTTPHeaderR\x16requestheadersinserted\x122\n" +
-	"\x10responsecodesent\x18\xa6\x84\xd53 \x01(\x05H\x00R\x10responsecodesent\x88\x01\x01\x12<\n" +
-	"\x17rulenamewithinrulegroup\x18ɰ\xb5\x97\x01 \x01(\tR\x17rulenamewithinrulegroup\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12\x1a\n" +
-	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weightB\x13\n" +
-	"\x11_responsecodesent\"\xa7\x05\n" +
-	"\x10SettlementRecord\x12\x19\n" +
-	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12$\n" +
-	"\vcontentpath\x18\xa2Ҕ\xfa\x01 \x01(\tR\vcontentpath\x12/\n" +
-	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12\x19\n" +
-	"\x06intent\x18\xec\xc2\xc1K \x01(\tR\x06intent\x12\x1b\n" +
-	"\anetwork\x18\xe6\xda\xd2K \x01(\tR\anetwork\x12&\n" +
-	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tR\forganization\x12%\n" +
-	"\fpayeraddress\x18\xab\xaf\x87\x15 \x01(\tR\fpayeraddress\x12 \n" +
-	"\trequestid\x18\x80ߔ\xbd\x01 \x01(\tR\trequestid\x12.\n" +
-	"\x10requesttimestamp\x18\xeb\xb7σ\x01 \x01(\tR\x10requesttimestamp\x12)\n" +
-	"\x0esourcecategory\x18\xf1\xaa\xe2\b \x01(\tR\x0esourcecategory\x12\"\n" +
+	"\x10responsecodesent\x18\xa6\x84\xd53 \x01(\x05H\x02R\x10responsecodesent\x88\x01\x01\x12A\n" +
+	"\x17rulenamewithinrulegroup\x18ɰ\xb5\x97\x01 \x01(\tH\x03R\x17rulenamewithinrulegroup\x88\x01\x01\x12$\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tH\x04R\ttimestamp\x88\x01\x01\x12\x1a\n" +
+	"\x06weight\x18ک\xc0\xc9\x01 \x01(\x03R\x06weightB\t\n" +
+	"\a_actionB\x13\n" +
+	"\x11_overriddenactionB\x13\n" +
+	"\x11_responsecodesentB\x1a\n" +
+	"\x18_rulenamewithinrulegroupB\f\n" +
 	"\n" +
-	"sourcename\x18\xbc\xe0\xb2\xed\x01 \x01(\tR\n" +
-	"sourcename\x122\n" +
+	"_timestamp\"\xa3\a\n" +
+	"\x10SettlementRecord\x12\x19\n" +
+	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12)\n" +
+	"\vcontentpath\x18\xa2Ҕ\xfa\x01 \x01(\tH\x00R\vcontentpath\x88\x01\x01\x12/\n" +
+	"\bcurrency\x18\xd7ļ\xa3\x01 \x01(\x0e2\x0f.wafv2.CurrencyR\bcurrency\x12\x1e\n" +
+	"\x06intent\x18\xec\xc2\xc1K \x01(\tH\x01R\x06intent\x88\x01\x01\x12 \n" +
+	"\anetwork\x18\xe6\xda\xd2K \x01(\tH\x02R\anetwork\x88\x01\x01\x12+\n" +
+	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tH\x03R\forganization\x88\x01\x01\x12*\n" +
+	"\fpayeraddress\x18\xab\xaf\x87\x15 \x01(\tH\x04R\fpayeraddress\x88\x01\x01\x12%\n" +
+	"\trequestid\x18\x80ߔ\xbd\x01 \x01(\tH\x05R\trequestid\x88\x01\x01\x123\n" +
+	"\x10requesttimestamp\x18\xeb\xb7σ\x01 \x01(\tH\x06R\x10requesttimestamp\x88\x01\x01\x12.\n" +
+	"\x0esourcecategory\x18\xf1\xaa\xe2\b \x01(\tH\aR\x0esourcecategory\x88\x01\x01\x12'\n" +
+	"\n" +
+	"sourcename\x18\xbc\xe0\xb2\xed\x01 \x01(\tH\bR\n" +
+	"sourcename\x88\x01\x01\x122\n" +
 	"\x06status\x18\x90\xe4\xfb\x02 \x01(\x0e2\x17.wafv2.SettlementStatusR\x06status\x12\x1f\n" +
-	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12(\n" +
-	"\rtransactionid\x18\xaf\xa5\xb3\xba\x01 \x01(\tR\rtransactionid\x12\"\n" +
-	"\bverified\x18\xe6\xc3\xdcD \x01(\bH\x00R\bverified\x88\x01\x01\x12'\n" +
-	"\rwalletaddress\x18\x9d\xe4\xe2m \x01(\tR\rwalletaddress\x12 \n" +
-	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tR\twebaclarnB\v\n" +
-	"\t_verified\"%\n" +
+	"\ttimestamp\x18\xc4÷M \x01(\tR\ttimestamp\x12-\n" +
+	"\rtransactionid\x18\xaf\xa5\xb3\xba\x01 \x01(\tH\tR\rtransactionid\x88\x01\x01\x12\"\n" +
+	"\bverified\x18\xe6\xc3\xdcD \x01(\bH\n" +
+	"R\bverified\x88\x01\x01\x12,\n" +
+	"\rwalletaddress\x18\x9d\xe4\xe2m \x01(\tH\vR\rwalletaddress\x88\x01\x01\x12%\n" +
+	"\twebaclarn\x18\xa3\x9c\xef\xfa\x01 \x01(\tH\fR\twebaclarn\x88\x01\x01B\x0e\n" +
+	"\f_contentpathB\t\n" +
+	"\a_intentB\n" +
+	"\n" +
+	"\b_networkB\x0f\n" +
+	"\r_organizationB\x0f\n" +
+	"\r_payeraddressB\f\n" +
+	"\n" +
+	"_requestidB\x13\n" +
+	"\x11_requesttimestampB\x11\n" +
+	"\x0f_sourcecategoryB\r\n" +
+	"\v_sourcenameB\x10\n" +
+	"\x0e_transactionidB\v\n" +
+	"\t_verifiedB\x10\n" +
+	"\x0e_walletaddressB\f\n" +
+	"\n" +
+	"_webaclarn\"%\n" +
 	"\fSingleHeader\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\",\n" +
 	"\x13SingleQueryArgument\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\x8b\x02\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xf3\x02\n" +
 	"\x17SizeConstraintStatement\x12L\n" +
 	"\x12comparisonoperator\x18\x95\xf3\xae\x03 \x01(\x0e2\x19.wafv2.ComparisonOperatorR\x12comparisonoperator\x12;\n" +
-	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12\x15\n" +
+	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12f\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12\x15\n" +
 	"\x04size\x18\xfd\x9c\x9e2 \x01(\x03R\x04size\x12N\n" +
-	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xe3\x02\n" +
+	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xb7\x03\n" +
 	"\x10SourceStatistics\x12\x19\n" +
-	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12%\n" +
-	"\fgroupbyvalue\x18\xf7\xab\xd3n \x01(\tR\fgroupbyvalue\x12\x19\n" +
-	"\x06intent\x18\xec\xc2\xc1K \x01(\tR\x06intent\x12&\n" +
-	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tR\forganization\x12\"\n" +
+	"\x06amount\x18ꦲ\" \x01(\tR\x06amount\x12*\n" +
+	"\fgroupbyvalue\x18\xf7\xab\xd3n \x01(\tH\x00R\fgroupbyvalue\x88\x01\x01\x12\x1e\n" +
+	"\x06intent\x18\xec\xc2\xc1K \x01(\tH\x01R\x06intent\x88\x01\x01\x12+\n" +
+	"\forganization\x18\x8b\xc6\xc7\xcb\x01 \x01(\tH\x02R\forganization\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"percentage\x18֢֫\x01 \x01(\x01R\n" +
 	"percentage\x12&\n" +
-	"\frequestcount\x18\xfa\xebɉ\x01 \x01(\x03R\frequestcount\x12)\n" +
-	"\x0esourcecategory\x18\xf1\xaa\xe2\b \x01(\tR\x0esourcecategory\x12\"\n" +
+	"\frequestcount\x18\xfa\xebɉ\x01 \x01(\x03R\frequestcount\x12.\n" +
+	"\x0esourcecategory\x18\xf1\xaa\xe2\b \x01(\tH\x03R\x0esourcecategory\x88\x01\x01\x12\"\n" +
 	"\n" +
 	"sourcename\x18\xbc\xe0\xb2\xed\x01 \x01(\tR\n" +
 	"sourcename\x12\"\n" +
-	"\bverified\x18\xe6\xc3\xdcD \x01(\bH\x00R\bverified\x88\x01\x01B\v\n" +
-	"\t_verified\"\xe9\x01\n" +
+	"\bverified\x18\xe6\xc3\xdcD \x01(\bH\x04R\bverified\x88\x01\x01B\x0f\n" +
+	"\r_groupbyvalueB\t\n" +
+	"\a_intentB\x0f\n" +
+	"\r_organizationB\x11\n" +
+	"\x0f_sourcecategoryB\v\n" +
+	"\t_verified\"\xd1\x02\n" +
 	"\x12SqliMatchStatement\x12;\n" +
-	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12F\n" +
+	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12f\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12F\n" +
 	"\x10sensitivitylevel\x18\xf3\xd6\xdd\x05 \x01(\x0e2\x17.wafv2.SensitivityLevelR\x10sensitivitylevel\x12N\n" +
 	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations\"\xb5\n" +
 	"\n" +
@@ -21648,11 +22039,12 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x11xssmatchstatement\x18\x88\xf3ݶ\x01 \x01(\v2\x18.wafv2.XssMatchStatementR\x11xssmatchstatement\"4\n" +
 	"\x03Tag\x12\x13\n" +
 	"\x03key\x18\x8d\x92\xebh \x01(\tR\x03key\x12\x18\n" +
-	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"d\n" +
-	"\x12TagInfoForResource\x12$\n" +
-	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12(\n" +
+	"\x05value\x18\xeb\xf2\x9f\x8a\x01 \x01(\tR\x05value\"y\n" +
+	"\x12TagInfoForResource\x12)\n" +
+	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tH\x00R\vresourcearn\x88\x01\x01\x12(\n" +
 	"\ataglist\x18\x9c\xc3\xe1\xcc\x01 \x03(\v2\n" +
-	".wafv2.TagR\ataglist\"^\n" +
+	".wafv2.TagR\ataglistB\x0e\n" +
+	"\f_resourcearn\"^\n" +
 	"\x12TagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\"\n" +
 	"\x04tags\x18\xc1\xc1\xf6\xb5\x01 \x03(\v2\n" +
@@ -21668,39 +22060,46 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x14UntagResourceRequest\x12$\n" +
 	"\vresourcearn\x18\xed\xc0\x99\xb0\x01 \x01(\tR\vresourcearn\x12\x1c\n" +
 	"\atagkeys\x18\xfc\xc3\xf3\x98\x01 \x03(\tR\atagkeys\"\x17\n" +
-	"\x15UntagResourceResponse\"\xce\x01\n" +
+	"\x15UntagResourceResponse\"\xe3\x01\n" +
 	"\x12UpdateIPSetRequest\x12 \n" +
-	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
+	"\taddresses\x18\x84ǡ\xb3\x01 \x03(\tR\taddresses\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"?\n" +
-	"\x13UpdateIPSetResponse\x12(\n" +
-	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tR\rnextlocktoken\"\xfd\x01\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\x0e\n" +
+	"\f_description\"V\n" +
+	"\x13UpdateIPSetResponse\x12-\n" +
+	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x00R\rnextlocktoken\x88\x01\x01B\x10\n" +
+	"\x0e_nextlocktoken\"\xfd\x01\n" +
 	",UpdateManagedRuleSetVersionExpiryDateRequest\x12,\n" +
 	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tR\x0fexpirytimestamp\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12%\n" +
 	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\x12,\n" +
-	"\x0fversiontoexpire\x18\xb6\x9a\x90\x82\x01 \x01(\tR\x0fversiontoexpire\"\xb5\x01\n" +
-	"-UpdateManagedRuleSetVersionExpiryDateResponse\x12,\n" +
-	"\x0fexpiringversion\x18\xb8\xab\xc0\x86\x01 \x01(\tR\x0fexpiringversion\x12,\n" +
-	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tR\x0fexpirytimestamp\x12(\n" +
-	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tR\rnextlocktoken\"\xfd\x01\n" +
-	"\x1cUpdateRegexPatternSetRequest\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
+	"\x0fversiontoexpire\x18\xb6\x9a\x90\x82\x01 \x01(\tR\x0fversiontoexpire\"\xfe\x01\n" +
+	"-UpdateManagedRuleSetVersionExpiryDateResponse\x121\n" +
+	"\x0fexpiringversion\x18\xb8\xab\xc0\x86\x01 \x01(\tH\x00R\x0fexpiringversion\x88\x01\x01\x121\n" +
+	"\x0fexpirytimestamp\x18\x87\xa4\xc8\xdb\x01 \x01(\tH\x01R\x0fexpirytimestamp\x88\x01\x01\x12-\n" +
+	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x02R\rnextlocktoken\x88\x01\x01B\x12\n" +
+	"\x10_expiringversionB\x12\n" +
+	"\x10_expirytimestampB\x10\n" +
+	"\x0e_nextlocktoken\"\x92\x02\n" +
+	"\x1cUpdateRegexPatternSetRequest\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12E\n" +
 	"\x15regularexpressionlist\x18\xa6\xdd\xf8: \x03(\v2\f.wafv2.RegexR\x15regularexpressionlist\x12%\n" +
-	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scope\"I\n" +
-	"\x1dUpdateRegexPatternSetResponse\x12(\n" +
-	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tR\rnextlocktoken\"\xc2\x04\n" +
+	"\x05scope\x18\x8c˙\x1f \x01(\x0e2\f.wafv2.ScopeR\x05scopeB\x0e\n" +
+	"\f_description\"`\n" +
+	"\x1dUpdateRegexPatternSetResponse\x12-\n" +
+	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x00R\rnextlocktoken\x88\x01\x01B\x10\n" +
+	"\x0e_nextlocktoken\"\xd7\x04\n" +
 	"\x16UpdateRuleGroupRequest\x12n\n" +
-	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v27.wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntryR\x14customresponsebodies\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
+	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v27.wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntryR\x14customresponsebodies\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
@@ -21710,9 +22109,11 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01\"C\n" +
-	"\x17UpdateRuleGroupResponse\x12(\n" +
-	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tR\rnextlocktoken\"\x80\t\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"Z\n" +
+	"\x17UpdateRuleGroupResponse\x12-\n" +
+	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x00R\rnextlocktoken\x88\x01\x01B\x10\n" +
+	"\x0e_nextlocktoken\"\x95\t\n" +
 	"\x13UpdateWebACLRequest\x12J\n" +
 	"\x11applicationconfig\x18\xc8\xd5\xfa\xee\x01 \x01(\v2\x18.wafv2.ApplicationConfigR\x11applicationconfig\x12J\n" +
 	"\x11associationconfig\x18\xab\xfc\x8e\xc8\x01 \x01(\v2\x18.wafv2.AssociationConfigR\x11associationconfig\x12=\n" +
@@ -21720,8 +22121,8 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x0fchallengeconfig\x18\xa9\x95\xae\x17 \x01(\v2\x16.wafv2.ChallengeConfigR\x0fchallengeconfig\x12k\n" +
 	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v24.wafv2.UpdateWebACLRequest.CustomresponsebodiesEntryR\x14customresponsebodies\x12S\n" +
 	"\x14dataprotectionconfig\x18\xb5\xd5\xd0\xdd\x01 \x01(\v2\x1b.wafv2.DataProtectionConfigR\x14dataprotectionconfig\x12>\n" +
-	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x14.wafv2.DefaultActionR\rdefaultaction\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
+	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x14.wafv2.DefaultActionR\rdefaultaction\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x00R\vdescription\x88\x01\x01\x12\x12\n" +
 	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
@@ -21733,19 +22134,22 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
-	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01\"@\n" +
-	"\x14UpdateWebACLResponse\x12(\n" +
-	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tR\rnextlocktoken\"V\n" +
+	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\x0e\n" +
+	"\f_description\"W\n" +
+	"\x14UpdateWebACLResponse\x12-\n" +
+	"\rnextlocktoken\x18\xb5\x8b\xf2\xe1\x01 \x01(\tH\x00R\rnextlocktoken\x88\x01\x01B\x10\n" +
+	"\x0e_nextlocktoken\"V\n" +
 	"\vUriFragment\x12G\n" +
 	"\x10fallbackbehavior\x18\xee\xba\xee\xd1\x01 \x01(\x0e2\x17.wafv2.FallbackBehaviorR\x10fallbackbehavior\"\t\n" +
 	"\aUriPath\"2\n" +
 	"\rUsernameField\x12!\n" +
 	"\n" +
 	"identifier\x18ߠ\xfb\x13 \x01(\tR\n" +
-	"identifier\"\x9d\x01\n" +
-	"\x10VersionToPublish\x12:\n" +
-	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tR\x16associatedrulegrouparn\x126\n" +
-	"\x12forecastedlifetime\x18˜\x91G \x01(\x05H\x00R\x12forecastedlifetime\x88\x01\x01B\x15\n" +
+	"identifier\"\xbd\x01\n" +
+	"\x10VersionToPublish\x12?\n" +
+	"\x16associatedrulegrouparn\x18\xac\xc4\xce\xc6\x01 \x01(\tH\x00R\x16associatedrulegrouparn\x88\x01\x01\x126\n" +
+	"\x12forecastedlifetime\x18˜\x91G \x01(\x05H\x01R\x12forecastedlifetime\x88\x01\x01B\x19\n" +
+	"\x17_associatedrulegrouparnB\x15\n" +
 	"\x13_forecastedlifetime\"\xf3\x01\n" +
 	"\x10VisibilityConfig\x12C\n" +
 	"\x18cloudwatchmetricsenabled\x18\xfc\xd8Ǹ\x01 \x01(\bH\x00R\x18cloudwatchmetricsenabled\x88\x01\x01\x12!\n" +
@@ -21754,54 +22158,98 @@ const file_wafv2_proto_rawDesc = "" +
 	"metricname\x12?\n" +
 	"\x16sampledrequestsenabled\x18\x8d\xeb˻\x01 \x01(\bH\x01R\x16sampledrequestsenabled\x88\x01\x01B\x1b\n" +
 	"\x19_cloudwatchmetricsenabledB\x19\n" +
-	"\x17_sampledrequestsenabled\"9\n" +
-	"\x1aWAFAssociatedItemException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"?\n" +
-	" WAFConfigurationWarningException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19WAFDuplicateItemException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"I\n" +
-	"*WAFExpiredManagedRuleGroupVersionException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\x98\x01\n" +
-	"+WAFFeatureNotIncludedInPricingPlanException\x12L\n" +
-	"\x12disallowedfeatures\x18\xdf\xfb\xab\xd4\x01 \x03(\v2\x18.wafv2.DisallowedFeatureR\x12disallowedfeatures\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"8\n" +
-	"\x19WAFInternalErrorException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\";\n" +
-	"\x1cWAFInvalidOperationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xb1\x01\n" +
-	"\x1cWAFInvalidParameterException\x127\n" +
-	"\x05field\x18\x88\xfa\xe0} \x01(\x0e2\x1e.wafv2.ParameterExceptionFieldR\x05field\x12 \n" +
-	"\tparameter\x18\xb1\xf7\xa2\xc2\x01 \x01(\tR\tparameter\x12\x19\n" +
-	"\x06reason\x18\xba\x82\xc5\t \x01(\tR\x06reason\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"B\n" +
-	"#WAFInvalidPermissionPolicyException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\":\n" +
-	"\x1bWAFInvalidResourceException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\\\n" +
-	"\x1aWAFLimitsExceededException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\x12!\n" +
+	"\x17_sampledrequestsenabled\"J\n" +
+	"\x1aWAFAssociatedItemException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
 	"\n" +
-	"sourcetype\x18\x91\xbe\xaa] \x01(\tR\n" +
-	"sourcetype\"H\n" +
-	")WAFLogDestinationPermissionIssueException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\":\n" +
-	"\x1bWAFNonexistentItemException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"9\n" +
-	"\x1aWAFOptimisticLockException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"A\n" +
-	"\"WAFServiceLinkedRoleErrorException\x12\x1b\n" +
-	"\amessage\x18\xe5\x91\xc8' \x01(\tR\amessage\"?\n" +
-	" WAFSubscriptionNotFoundException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"7\n" +
-	"\x18WAFTagOperationException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"D\n" +
-	"%WAFTagOperationInternalErrorException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"<\n" +
-	"\x1dWAFUnavailableEntityException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"F\n" +
-	"'WAFUnsupportedAggregateKeyTypeException\x12\x1b\n" +
-	"\amessage\x18\x85\xb3\xbbp \x01(\tR\amessage\"\xd0\f\n" +
+	"\b_message\"P\n" +
+	" WAFConfigurationWarningException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19WAFDuplicateItemException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"Z\n" +
+	"*WAFExpiredManagedRuleGroupVersionException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xa9\x01\n" +
+	"+WAFFeatureNotIncludedInPricingPlanException\x12L\n" +
+	"\x12disallowedfeatures\x18\xdf\xfb\xab\xd4\x01 \x03(\v2\x18.wafv2.DisallowedFeatureR\x12disallowedfeatures\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"I\n" +
+	"\x19WAFInternalErrorException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"L\n" +
+	"\x1cWAFInvalidOperationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xe5\x01\n" +
+	"\x1cWAFInvalidParameterException\x127\n" +
+	"\x05field\x18\x88\xfa\xe0} \x01(\x0e2\x1e.wafv2.ParameterExceptionFieldR\x05field\x12%\n" +
+	"\tparameter\x18\xb1\xf7\xa2\xc2\x01 \x01(\tH\x00R\tparameter\x88\x01\x01\x12\x1e\n" +
+	"\x06reason\x18\xba\x82\xc5\t \x01(\tH\x01R\x06reason\x88\x01\x01\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x02R\amessage\x88\x01\x01B\f\n" +
+	"\n" +
+	"_parameterB\t\n" +
+	"\a_reasonB\n" +
+	"\n" +
+	"\b_message\"S\n" +
+	"#WAFInvalidPermissionPolicyException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bWAFInvalidResourceException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\x81\x01\n" +
+	"\x1aWAFLimitsExceededException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01\x12&\n" +
+	"\n" +
+	"sourcetype\x18\x91\xbe\xaa] \x01(\tH\x01R\n" +
+	"sourcetype\x88\x01\x01B\n" +
+	"\n" +
+	"\b_messageB\r\n" +
+	"\v_sourcetype\"Y\n" +
+	")WAFLogDestinationPermissionIssueException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"K\n" +
+	"\x1bWAFNonexistentItemException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"J\n" +
+	"\x1aWAFOptimisticLockException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"R\n" +
+	"\"WAFServiceLinkedRoleErrorException\x12 \n" +
+	"\amessage\x18\xe5\x91\xc8' \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"P\n" +
+	" WAFSubscriptionNotFoundException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"H\n" +
+	"\x18WAFTagOperationException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"U\n" +
+	"%WAFTagOperationInternalErrorException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"M\n" +
+	"\x1dWAFUnavailableEntityException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"W\n" +
+	"'WAFUnsupportedAggregateKeyTypeException\x12 \n" +
+	"\amessage\x18\x85\xb3\xbbp \x01(\tH\x00R\amessage\x88\x01\x01B\n" +
+	"\n" +
+	"\b_message\"\xfd\f\n" +
 	"\x06WebACL\x12\x14\n" +
 	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12J\n" +
 	"\x11applicationconfig\x18\xc8\xd5\xfa\xee\x01 \x01(\v2\x18.wafv2.ApplicationConfigR\x11applicationconfig\x12J\n" +
@@ -21811,34 +22259,43 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x0fchallengeconfig\x18\xa9\x95\xae\x17 \x01(\v2\x16.wafv2.ChallengeConfigR\x0fchallengeconfig\x12^\n" +
 	"\x14customresponsebodies\x18\xfe\x91\xb0\x14 \x03(\v2'.wafv2.WebACL.CustomresponsebodiesEntryR\x14customresponsebodies\x12S\n" +
 	"\x14dataprotectionconfig\x18\xb5\xd5\xd0\xdd\x01 \x01(\v2\x1b.wafv2.DataProtectionConfigR\x14dataprotectionconfig\x12>\n" +
-	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x14.wafv2.DefaultActionR\rdefaultaction\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12)\n" +
-	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tR\x0elabelnamespace\x12C\n" +
-	"\x18managedbyfirewallmanager\x18\xe7\xfc\xa1\xc6\x01 \x01(\bH\x01R\x18managedbyfirewallmanager\x88\x01\x01\x12M\n" +
+	"\rdefaultaction\x18\xb5\xeb\xed\x99\x01 \x01(\v2\x14.wafv2.DefaultActionR\rdefaultaction\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x12\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12.\n" +
+	"\x0elabelnamespace\x18\xa9\x85\xfd\x12 \x01(\tH\x02R\x0elabelnamespace\x88\x01\x01\x12C\n" +
+	"\x18managedbyfirewallmanager\x18\xe7\xfc\xa1\xc6\x01 \x01(\bH\x03R\x18managedbyfirewallmanager\x88\x01\x01\x12M\n" +
 	"\x12monetizationconfig\x18\xaf\xe7\xf9\xfb\x01 \x01(\v2\x19.wafv2.MonetizationConfigR\x12monetizationconfig\x12\x15\n" +
 	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\x12j\n" +
 	"\x1consourceddosprotectionconfig\x18\x87֖2 \x01(\v2#.wafv2.OnSourceDDoSProtectionConfigR\x1consourceddosprotectionconfig\x12w\n" +
 	"$postprocessfirewallmanagerrulegroups\x18ƽ\xfa\xeb\x01 \x03(\v2\x1f.wafv2.FirewallManagerRuleGroupR$postprocessfirewallmanagerrulegroups\x12u\n" +
 	"#preprocessfirewallmanagerrulegroups\x18\xed\xf6\x89\x9e\x01 \x03(\v2\x1f.wafv2.FirewallManagerRuleGroupR#preprocessfirewallmanagerrulegroups\x12K\n" +
-	"\x1cretrofittedbyfirewallmanager\x18ց\x88\x85\x01 \x01(\bH\x02R\x1cretrofittedbyfirewallmanager\x88\x01\x01\x12$\n" +
+	"\x1cretrofittedbyfirewallmanager\x18ց\x88\x85\x01 \x01(\bH\x04R\x1cretrofittedbyfirewallmanager\x88\x01\x01\x12$\n" +
 	"\x05rules\x18\x81۬\x14 \x03(\v2\v.wafv2.RuleR\x05rules\x12%\n" +
 	"\ftokendomains\x18\xa0\xae\xc6\x05 \x03(\tR\ftokendomains\x12G\n" +
 	"\x10visibilityconfig\x18\xa8\xb0\x8f\xf2\x01 \x01(\v2\x17.wafv2.VisibilityConfigR\x10visibilityconfig\x1ab\n" +
 	"\x19CustomresponsebodiesEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12/\n" +
 	"\x05value\x18\x02 \x01(\v2\x19.wafv2.CustomResponseBodyR\x05value:\x028\x01B\v\n" +
-	"\t_capacityB\x1b\n" +
+	"\t_capacityB\x0e\n" +
+	"\f_descriptionB\x11\n" +
+	"\x0f_labelnamespaceB\x1b\n" +
 	"\x19_managedbyfirewallmanagerB\x1f\n" +
-	"\x1d_retrofittedbyfirewallmanager\"\x96\x01\n" +
-	"\rWebACLSummary\x12\x14\n" +
-	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tR\x03arn\x12#\n" +
-	"\vdescription\x18\x8a\xf4\xf96 \x01(\tR\vdescription\x12\x12\n" +
-	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tR\x02id\x12\x1f\n" +
-	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tR\tlocktoken\x12\x15\n" +
-	"\x04name\x18\x87\xe6\x81\x7f \x01(\tR\x04name\"\xa0\x01\n" +
+	"\x1d_retrofittedbyfirewallmanager\"\xe5\x01\n" +
+	"\rWebACLSummary\x12\x19\n" +
+	"\x03arn\x18\x9d\x9c\xaf\xbd\x01 \x01(\tH\x00R\x03arn\x88\x01\x01\x12(\n" +
+	"\vdescription\x18\x8a\xf4\xf96 \x01(\tH\x01R\vdescription\x88\x01\x01\x12\x17\n" +
+	"\x02id\x18\x81\xf2\xa2\xb7\x01 \x01(\tH\x02R\x02id\x88\x01\x01\x12$\n" +
+	"\tlocktoken\x18\x98\x8f\xb8\x16 \x01(\tH\x03R\tlocktoken\x88\x01\x01\x12\x1a\n" +
+	"\x04name\x18\x87\xe6\x81\x7f \x01(\tH\x04R\x04name\x88\x01\x01B\x06\n" +
+	"\x04_arnB\x0e\n" +
+	"\f_descriptionB\x05\n" +
+	"\x03_idB\f\n" +
+	"\n" +
+	"_locktokenB\a\n" +
+	"\x05_name\"\x88\x02\n" +
 	"\x11XssMatchStatement\x12;\n" +
-	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12N\n" +
+	"\ffieldtomatch\x18Ԓ\xab\xa1\x01 \x01(\v2\x13.wafv2.FieldToMatchR\ffieldtomatch\x12f\n" +
+	"\x1bpreparsetexttransformations\x18\xe1\x91\xc7  \x03(\v2!.wafv2.PreParseTextTransformationR\x1bpreparsetexttransformations\x12N\n" +
 	"\x13texttransformations\x18\xfd\xa3\xed| \x03(\v2\x19.wafv2.TextTransformationR\x13texttransformations*\xca\x01\n" +
 	"\vActionValue\x12\x1a\n" +
 	"\x16ACTION_VALUE_CHALLENGE\x10\x00\x12\x16\n" +
@@ -21847,13 +22304,14 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x12ACTION_VALUE_ALLOW\x10\x03\x12\x19\n" +
 	"\x15ACTION_VALUE_MONETIZE\x10\x04\x12\"\n" +
 	"\x1eACTION_VALUE_EXCLUDED_AS_COUNT\x10\x05\x12\x18\n" +
-	"\x14ACTION_VALUE_CAPTCHA\x10\x06*\x83\x02\n" +
+	"\x14ACTION_VALUE_CAPTCHA\x10\x06*\xb3\x02\n" +
 	"\x16AssociatedResourceType\x12.\n" +
 	"*ASSOCIATED_RESOURCE_TYPE_COGNITO_USER_POOL\x10\x00\x125\n" +
-	"1ASSOCIATED_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE\x10\x01\x12'\n" +
-	"#ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT\x10\x02\x12(\n" +
-	"$ASSOCIATED_RESOURCE_TYPE_API_GATEWAY\x10\x03\x12/\n" +
-	"+ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE\x10\x04*\x90\x01\n" +
+	"1ASSOCIATED_RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE\x10\x01\x12.\n" +
+	"*ASSOCIATED_RESOURCE_TYPE_AGENTCORE_GATEWAY\x10\x02\x12'\n" +
+	"#ASSOCIATED_RESOURCE_TYPE_CLOUDFRONT\x10\x03\x12(\n" +
+	"$ASSOCIATED_RESOURCE_TYPE_API_GATEWAY\x10\x04\x12/\n" +
+	"+ASSOCIATED_RESOURCE_TYPE_APP_RUNNER_SERVICE\x10\x05*\x90\x01\n" +
 	"\x0fBlockchainChain\x12\"\n" +
 	"\x1eBLOCKCHAIN_CHAIN_SOLANA_DEVNET\x10\x00\x12\x1b\n" +
 	"\x17BLOCKCHAIN_CHAIN_SOLANA\x10\x01\x12!\n" +
@@ -22196,7 +22654,7 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x10OversizeHandling\x12\x1b\n" +
 	"\x17OVERSIZE_HANDLING_MATCH\x10\x00\x12\x1e\n" +
 	"\x1aOVERSIZE_HANDLING_CONTINUE\x10\x01\x12\x1e\n" +
-	"\x1aOVERSIZE_HANDLING_NO_MATCH\x10\x02*\xa0\x1d\n" +
+	"\x1aOVERSIZE_HANDLING_NO_MATCH\x10\x02*\xdd\x1d\n" +
 	"\x17ParameterExceptionField\x122\n" +
 	".PARAMETER_EXCEPTION_FIELD_COOKIE_MATCH_PATTERN\x10\x00\x120\n" +
 	",PARAMETER_EXCEPTION_FIELD_IP_ADDRESS_VERSION\x10\x01\x12+\n" +
@@ -22209,72 +22667,73 @@ const file_wafv2_proto_rawDesc = "" +
 	"-PARAMETER_EXCEPTION_FIELD_ASSOCIABLE_RESOURCE\x10\b\x12+\n" +
 	"'PARAMETER_EXCEPTION_FIELD_SINGLE_HEADER\x10\t\x12,\n" +
 	"(PARAMETER_EXCEPTION_FIELD_WALLET_ADDRESS\x10\n" +
-	"\x12>\n" +
-	":PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION\x10\v\x128\n" +
-	"4PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG\x10\f\x12+\n" +
-	"'PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE\x10\r\x12(\n" +
-	"$PARAMETER_EXCEPTION_FIELD_IP_ADDRESS\x10\x0e\x12)\n" +
-	"%PARAMETER_EXCEPTION_FIELD_METRIC_NAME\x10\x0f\x12.\n" +
-	"*PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION\x10\x10\x12-\n" +
-	")PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION\x10\x11\x12%\n" +
-	"!PARAMETER_EXCEPTION_FIELD_WEB_ACL\x10\x12\x121\n" +
-	"-PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION\x10\x13\x120\n" +
-	",PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN\x10\x14\x12<\n" +
-	"8PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR\x10\x15\x12*\n" +
-	"&PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE\x10\x16\x12.\n" +
-	"*PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG\x10\x17\x122\n" +
-	".PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN\x10\x18\x12)\n" +
-	"%PARAMETER_EXCEPTION_FIELD_HEADER_NAME\x10\x19\x12+\n" +
-	"'PARAMETER_EXCEPTION_FIELD_AND_STATEMENT\x10\x1a\x12.\n" +
-	"*PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET\x10\x1b\x121\n" +
-	"-PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG\x10\x1c\x12-\n" +
-	")PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE\x10\x1d\x12*\n" +
-	"&PARAMETER_EXCEPTION_FIELD_OR_STATEMENT\x10\x1e\x123\n" +
-	"/PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE\x10\x1f\x122\n" +
-	".PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT\x10 \x12,\n" +
-	"(PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER\x10!\x122\n" +
-	".PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT\x10\"\x12'\n" +
-	"#PARAMETER_EXCEPTION_FIELD_STATEMENT\x10#\x128\n" +
-	"4PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT\x10$\x12/\n" +
-	"+PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR\x10%\x123\n" +
-	"/PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT\x10&\x128\n" +
-	"4PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT\x10'\x12-\n" +
-	")PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK\x10(\x12\"\n" +
-	"\x1ePARAMETER_EXCEPTION_FIELD_RULE\x10)\x121\n" +
-	"-PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT\x10*\x12.\n" +
-	"*PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE\x10+\x127\n" +
-	"3PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG\x10,\x12(\n" +
-	"$PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN\x10-\x12?\n" +
-	";PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT\x10.\x12\"\n" +
-	"\x1ePARAMETER_EXCEPTION_FIELD_TAGS\x10/\x127\n" +
-	"3PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT\x100\x121\n" +
-	"-PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT\x101\x12-\n" +
-	")PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE\x102\x123\n" +
-	"/PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT\x103\x12>\n" +
-	":PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION\x104\x126\n" +
-	"2PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE\x105\x128\n" +
-	"4PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT\x106\x122\n" +
-	".PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY\x107\x12)\n" +
-	"%PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE\x108\x12&\n" +
-	"\"PARAMETER_EXCEPTION_FIELD_POSITION\x109\x12/\n" +
-	"+PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING\x10:\x12-\n" +
-	")PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION\x10;\x12$\n" +
-	" PARAMETER_EXCEPTION_FIELD_IP_SET\x10<\x12/\n" +
-	"+PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET\x10=\x12(\n" +
-	"$PARAMETER_EXCEPTION_FIELD_RULE_GROUP\x10>\x12+\n" +
-	"'PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE\x10?\x12*\n" +
-	"&PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT\x10@\x12*\n" +
-	"&PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN\x10A\x12,\n" +
-	"(PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION\x10B\x122\n" +
-	".PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT\x10C\x125\n" +
-	"1PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING\x10D\x12&\n" +
-	"\"PARAMETER_EXCEPTION_FIELD_TAG_KEYS\x10E\x12,\n" +
-	"(PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH\x10F\x12)\n" +
-	"%PARAMETER_EXCEPTION_FIELD_RULE_ACTION\x10G\x12)\n" +
-	"%PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS\x10H\x12*\n" +
-	"&PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT\x10I\x12*\n" +
-	"&PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN\x10J\x12<\n" +
-	"8PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT\x10K*C\n" +
+	"\x12;\n" +
+	"7PARAMETER_EXCEPTION_FIELD_PRE_PARSE_TEXT_TRANSFORMATION\x10\v\x12>\n" +
+	":PARAMETER_EXCEPTION_FIELD_ACP_RULE_SET_RESPONSE_INSPECTION\x10\f\x128\n" +
+	"4PARAMETER_EXCEPTION_FIELD_IP_SET_FORWARDED_IP_CONFIG\x10\r\x12+\n" +
+	"'PARAMETER_EXCEPTION_FIELD_EXCLUDED_RULE\x10\x0e\x12(\n" +
+	"$PARAMETER_EXCEPTION_FIELD_IP_ADDRESS\x10\x0f\x12)\n" +
+	"%PARAMETER_EXCEPTION_FIELD_METRIC_NAME\x10\x10\x12.\n" +
+	"*PARAMETER_EXCEPTION_FIELD_FILTER_CONDITION\x10\x11\x12-\n" +
+	")PARAMETER_EXCEPTION_FIELD_OVERRIDE_ACTION\x10\x12\x12%\n" +
+	"!PARAMETER_EXCEPTION_FIELD_WEB_ACL\x10\x13\x121\n" +
+	"-PARAMETER_EXCEPTION_FIELD_TEXT_TRANSFORMATION\x10\x14\x120\n" +
+	",PARAMETER_EXCEPTION_FIELD_JSON_MATCH_PATTERN\x10\x15\x12<\n" +
+	"8PARAMETER_EXCEPTION_FIELD_BODY_PARSING_FALLBACK_BEHAVIOR\x10\x16\x12*\n" +
+	"&PARAMETER_EXCEPTION_FIELD_PAYLOAD_TYPE\x10\x17\x12.\n" +
+	"*PARAMETER_EXCEPTION_FIELD_CHALLENGE_CONFIG\x10\x18\x122\n" +
+	".PARAMETER_EXCEPTION_FIELD_HEADER_MATCH_PATTERN\x10\x19\x12)\n" +
+	"%PARAMETER_EXCEPTION_FIELD_HEADER_NAME\x10\x1a\x12+\n" +
+	"'PARAMETER_EXCEPTION_FIELD_AND_STATEMENT\x10\x1b\x12.\n" +
+	"*PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET\x10\x1c\x121\n" +
+	"-PARAMETER_EXCEPTION_FIELD_MONETIZATION_CONFIG\x10\x1d\x12-\n" +
+	")PARAMETER_EXCEPTION_FIELD_MAP_MATCH_SCOPE\x10\x1e\x12*\n" +
+	"&PARAMETER_EXCEPTION_FIELD_OR_STATEMENT\x10\x1f\x123\n" +
+	"/PARAMETER_EXCEPTION_FIELD_RESPONSE_CONTENT_TYPE\x10 \x122\n" +
+	".PARAMETER_EXCEPTION_FIELD_RATE_BASED_STATEMENT\x10!\x12,\n" +
+	"(PARAMETER_EXCEPTION_FIELD_LOGGING_FILTER\x10\"\x122\n" +
+	".PARAMETER_EXCEPTION_FIELD_SQLI_MATCH_STATEMENT\x10#\x12'\n" +
+	"#PARAMETER_EXCEPTION_FIELD_STATEMENT\x10$\x128\n" +
+	"4PARAMETER_EXCEPTION_FIELD_IP_SET_REFERENCE_STATEMENT\x10%\x12/\n" +
+	"+PARAMETER_EXCEPTION_FIELD_FALLBACK_BEHAVIOR\x10&\x123\n" +
+	"/PARAMETER_EXCEPTION_FIELD_LABEL_MATCH_STATEMENT\x10'\x128\n" +
+	"4PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_SET_STATEMENT\x10(\x12-\n" +
+	")PARAMETER_EXCEPTION_FIELD_PAYMENT_NETWORK\x10)\x12\"\n" +
+	"\x1ePARAMETER_EXCEPTION_FIELD_RULE\x10*\x121\n" +
+	"-PARAMETER_EXCEPTION_FIELD_XSS_MATCH_STATEMENT\x10+\x12.\n" +
+	"*PARAMETER_EXCEPTION_FIELD_JSON_MATCH_SCOPE\x10,\x127\n" +
+	"3PARAMETER_EXCEPTION_FIELD_MANAGED_RULE_GROUP_CONFIG\x10-\x12(\n" +
+	"$PARAMETER_EXCEPTION_FIELD_SCOPE_DOWN\x10.\x12?\n" +
+	";PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_REFERENCE_STATEMENT\x10/\x12\"\n" +
+	"\x1ePARAMETER_EXCEPTION_FIELD_TAGS\x100\x127\n" +
+	"3PARAMETER_EXCEPTION_FIELD_SIZE_CONSTRAINT_STATEMENT\x101\x121\n" +
+	"-PARAMETER_EXCEPTION_FIELD_GEO_MATCH_STATEMENT\x102\x12-\n" +
+	")PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE\x103\x123\n" +
+	"/PARAMETER_EXCEPTION_FIELD_SINGLE_QUERY_ARGUMENT\x104\x12>\n" +
+	":PARAMETER_EXCEPTION_FIELD_ATP_RULE_SET_RESPONSE_INSPECTION\x105\x126\n" +
+	"2PARAMETER_EXCEPTION_FIELD_ASSOCIATED_RESOURCE_TYPE\x106\x128\n" +
+	"4PARAMETER_EXCEPTION_FIELD_FIREWALL_MANAGER_STATEMENT\x107\x122\n" +
+	".PARAMETER_EXCEPTION_FIELD_CUSTOM_RESPONSE_BODY\x108\x12)\n" +
+	"%PARAMETER_EXCEPTION_FIELD_SCOPE_VALUE\x109\x12&\n" +
+	"\"PARAMETER_EXCEPTION_FIELD_POSITION\x10:\x12/\n" +
+	"+PARAMETER_EXCEPTION_FIELD_OVERSIZE_HANDLING\x10;\x12-\n" +
+	")PARAMETER_EXCEPTION_FIELD_LOG_DESTINATION\x10<\x12$\n" +
+	" PARAMETER_EXCEPTION_FIELD_IP_SET\x10=\x12/\n" +
+	"+PARAMETER_EXCEPTION_FIELD_REGEX_PATTERN_SET\x10>\x12(\n" +
+	"$PARAMETER_EXCEPTION_FIELD_RULE_GROUP\x10?\x12+\n" +
+	"'PARAMETER_EXCEPTION_FIELD_RESOURCE_TYPE\x10@\x12*\n" +
+	"&PARAMETER_EXCEPTION_FIELD_PRICE_AMOUNT\x10A\x12*\n" +
+	"&PARAMETER_EXCEPTION_FIELD_RESOURCE_ARN\x10B\x12,\n" +
+	"(PARAMETER_EXCEPTION_FIELD_DEFAULT_ACTION\x10C\x122\n" +
+	".PARAMETER_EXCEPTION_FIELD_BYTE_MATCH_STATEMENT\x10D\x125\n" +
+	"1PARAMETER_EXCEPTION_FIELD_CUSTOM_REQUEST_HANDLING\x10E\x12&\n" +
+	"\"PARAMETER_EXCEPTION_FIELD_TAG_KEYS\x10F\x12,\n" +
+	"(PARAMETER_EXCEPTION_FIELD_FIELD_TO_MATCH\x10G\x12)\n" +
+	"%PARAMETER_EXCEPTION_FIELD_RULE_ACTION\x10H\x12)\n" +
+	"%PARAMETER_EXCEPTION_FIELD_CUSTOM_KEYS\x10I\x12*\n" +
+	"&PARAMETER_EXCEPTION_FIELD_ENTITY_LIMIT\x10J\x12*\n" +
+	"&PARAMETER_EXCEPTION_FIELD_TOKEN_DOMAIN\x10K\x12<\n" +
+	"8PARAMETER_EXCEPTION_FIELD_RULE_GROUP_REFERENCE_STATEMENT\x10L*C\n" +
 	"\vPayloadType\x12\x15\n" +
 	"\x11PAYLOAD_TYPE_JSON\x10\x00\x12\x1d\n" +
 	"\x19PAYLOAD_TYPE_FORM_ENCODED\x10\x01*2\n" +
@@ -22286,7 +22745,13 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x1ePOSITIONAL_CONSTRAINT_CONTAINS\x10\x01\x12%\n" +
 	"!POSITIONAL_CONSTRAINT_STARTS_WITH\x10\x02\x12#\n" +
 	"\x1fPOSITIONAL_CONSTRAINT_ENDS_WITH\x10\x03\x12'\n" +
-	"#POSITIONAL_CONSTRAINT_CONTAINS_WORD\x10\x04*f\n" +
+	"#POSITIONAL_CONSTRAINT_CONTAINS_WORD\x10\x04*\xd0\x02\n" +
+	"\x1ePreParseTextTransformationType\x121\n" +
+	"-PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE\x10\x00\x12I\n" +
+	"EPRE_PARSE_TEXT_TRANSFORMATION_TYPE_REPLACE_SEMICOLONS_WITH_AMPERSANDS\x10\x01\x12+\n" +
+	"'PRE_PARSE_TEXT_TRANSFORMATION_TYPE_NONE\x10\x02\x125\n" +
+	"1PRE_PARSE_TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI\x10\x03\x12L\n" +
+	"HPRE_PARSE_TEXT_TRANSFORMATION_TYPE_COMBINE_DUPLICATE_QUERY_ARGS_BY_COMMA\x10\x04*f\n" +
 	"\rRankingSortBy\x12\x1b\n" +
 	"\x17RANKING_SORT_BY_REVENUE\x10\x00\x12\x1e\n" +
 	"\x1aRANKING_SORT_BY_PERCENTAGE\x10\x01\x12\x18\n" +
@@ -22298,15 +22763,16 @@ const file_wafv2_proto_rawDesc = "" +
 	"0RATE_BASED_STATEMENT_AGGREGATE_KEY_TYPE_CONSTANT\x10\x00\x12.\n" +
 	"*RATE_BASED_STATEMENT_AGGREGATE_KEY_TYPE_IP\x10\x01\x128\n" +
 	"4RATE_BASED_STATEMENT_AGGREGATE_KEY_TYPE_FORWARDED_IP\x10\x02\x127\n" +
-	"3RATE_BASED_STATEMENT_AGGREGATE_KEY_TYPE_CUSTOM_KEYS\x10\x03*\x88\x02\n" +
+	"3RATE_BASED_STATEMENT_AGGREGATE_KEY_TYPE_CUSTOM_KEYS\x10\x03*\xad\x02\n" +
 	"\fResourceType\x12*\n" +
 	"&RESOURCE_TYPE_VERIFIED_ACCESS_INSTANCE\x10\x00\x12$\n" +
-	" RESOURCE_TYPE_COGNITIO_USER_POOL\x10\x01\x12+\n" +
-	"'RESOURCE_TYPE_APPLICATION_LOAD_BALANCER\x10\x02\x12\x19\n" +
-	"\x15RESOURCE_TYPE_APPSYNC\x10\x03\x12\x19\n" +
-	"\x15RESOURCE_TYPE_AMPLIFY\x10\x04\x12\x1d\n" +
-	"\x19RESOURCE_TYPE_API_GATEWAY\x10\x05\x12$\n" +
-	" RESOURCE_TYPE_APP_RUNNER_SERVICE\x10\x06*\x8c\x01\n" +
+	" RESOURCE_TYPE_COGNITIO_USER_POOL\x10\x01\x12#\n" +
+	"\x1fRESOURCE_TYPE_AGENTCORE_GATEWAY\x10\x02\x12+\n" +
+	"'RESOURCE_TYPE_APPLICATION_LOAD_BALANCER\x10\x03\x12\x19\n" +
+	"\x15RESOURCE_TYPE_APPSYNC\x10\x04\x12\x19\n" +
+	"\x15RESOURCE_TYPE_AMPLIFY\x10\x05\x12\x1d\n" +
+	"\x19RESOURCE_TYPE_API_GATEWAY\x10\x06\x12$\n" +
+	" RESOURCE_TYPE_APP_RUNNER_SERVICE\x10\a*\x8c\x01\n" +
 	"\x13ResponseContentType\x12*\n" +
 	"&RESPONSE_CONTENT_TYPE_APPLICATION_JSON\x10\x00\x12$\n" +
 	" RESPONSE_CONTENT_TYPE_TEXT_PLAIN\x10\x01\x12#\n" +
@@ -22340,30 +22806,41 @@ const file_wafv2_proto_rawDesc = "" +
 	"\x1bSIZE_INSPECTION_LIMIT_KB_32\x10\x03*4\n" +
 	"\tSortOrder\x12\x13\n" +
 	"\x0fSORT_ORDER_DESC\x10\x00\x12\x12\n" +
-	"\x0eSORT_ORDER_ASC\x10\x01*\xab\a\n" +
+	"\x0eSORT_ORDER_ASC\x10\x01*\xd2\n" +
+	"\n" +
 	"\x16TextTransformationType\x12+\n" +
 	"'TEXT_TRANSFORMATION_TYPE_SQL_HEX_DECODE\x10\x00\x12'\n" +
-	"#TEXT_TRANSFORMATION_TYPE_URL_DECODE\x10\x01\x12'\n" +
-	"#TEXT_TRANSFORMATION_TYPE_HEX_DECODE\x10\x02\x12+\n" +
-	"'TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH\x10\x03\x121\n" +
-	"-TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE\x10\x04\x12!\n" +
-	"\x1dTEXT_TRANSFORMATION_TYPE_NONE\x10\x05\x12*\n" +
-	"&TEXT_TRANSFORMATION_TYPE_BASE64_DECODE\x10\x06\x12+\n" +
-	"'TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI\x10\a\x12/\n" +
-	"+TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE\x10\b\x12&\n" +
-	"\"TEXT_TRANSFORMATION_TYPE_JS_DECODE\x10\t\x12 \n" +
-	"\x1cTEXT_TRANSFORMATION_TYPE_MD5\x10\n" +
+	"#TEXT_TRANSFORMATION_TYPE_URL_DECODE\x10\x01\x12&\n" +
+	"\"TEXT_TRANSFORMATION_TYPE_TRIM_LEFT\x10\x02\x12'\n" +
+	"#TEXT_TRANSFORMATION_TYPE_HEX_DECODE\x10\x03\x12)\n" +
+	"%TEXT_TRANSFORMATION_TYPE_CMD_LINE_WIN\x10\x04\x12+\n" +
+	"'TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH\x10\x05\x121\n" +
+	"-TEXT_TRANSFORMATION_TYPE_COMPRESS_WHITE_SPACE\x10\x06\x12!\n" +
+	"\x1dTEXT_TRANSFORMATION_TYPE_NONE\x10\a\x12*\n" +
+	"&TEXT_TRANSFORMATION_TYPE_BASE64_DECODE\x10\b\x12'\n" +
+	"#TEXT_TRANSFORMATION_TYPE_TRIM_RIGHT\x10\t\x12+\n" +
+	"'TEXT_TRANSFORMATION_TYPE_URL_DECODE_UNI\x10\n" +
 	"\x12/\n" +
-	"+TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN\x10\v\x12-\n" +
-	")TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS\x10\f\x12.\n" +
-	"*TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT\x10\r\x12,\n" +
-	"(TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE\x10\x0e\x12.\n" +
-	"*TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE\x10\x0f\x12'\n" +
-	"#TEXT_TRANSFORMATION_TYPE_CSS_DECODE\x10\x10\x12*\n" +
-	"&TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS\x10\x11\x12&\n" +
-	"\"TEXT_TRANSFORMATION_TYPE_LOWERCASE\x10\x12\x12%\n" +
-	"!TEXT_TRANSFORMATION_TYPE_CMD_LINE\x10\x13\x12)\n" +
-	"%TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS\x10\x14*x\n" +
+	"+TEXT_TRANSFORMATION_TYPE_HTML_ENTITY_DECODE\x10\v\x12&\n" +
+	"\"TEXT_TRANSFORMATION_TYPE_JS_DECODE\x10\f\x12#\n" +
+	"\x1fTEXT_TRANSFORMATION_TYPE_SHA256\x10\r\x12*\n" +
+	"&TEXT_TRANSFORMATION_TYPE_CMD_LINE_UNIX\x10\x0e\x12!\n" +
+	"\x1dTEXT_TRANSFORMATION_TYPE_TRIM\x10\x0f\x12 \n" +
+	"\x1cTEXT_TRANSFORMATION_TYPE_MD5\x10\x10\x12/\n" +
+	"+TEXT_TRANSFORMATION_TYPE_NORMALIZE_PATH_WIN\x10\x11\x12-\n" +
+	")TEXT_TRANSFORMATION_TYPE_REPLACE_COMMENTS\x10\x12\x12.\n" +
+	"*TEXT_TRANSFORMATION_TYPE_BASE64_DECODE_EXT\x10\x13\x12,\n" +
+	"(TEXT_TRANSFORMATION_TYPE_UTF8_TO_UNICODE\x10\x14\x12.\n" +
+	"*TEXT_TRANSFORMATION_TYPE_REMOVE_WHITESPACE\x10\x15\x12.\n" +
+	"*TEXT_TRANSFORMATION_TYPE_ESCAPE_SEQ_DECODE\x10\x16\x121\n" +
+	"-TEXT_TRANSFORMATION_TYPE_REMOVE_COMMENTS_CHAR\x10\x17\x12'\n" +
+	"#TEXT_TRANSFORMATION_TYPE_CSS_DECODE\x10\x18\x12*\n" +
+	"&TEXT_TRANSFORMATION_TYPE_REPLACE_NULLS\x10\x19\x12*\n" +
+	"&TEXT_TRANSFORMATION_TYPE_JS_DECODE_EXT\x10\x1a\x12&\n" +
+	"\"TEXT_TRANSFORMATION_TYPE_LOWERCASE\x10\x1b\x12%\n" +
+	"!TEXT_TRANSFORMATION_TYPE_CMD_LINE\x10\x1c\x12)\n" +
+	"%TEXT_TRANSFORMATION_TYPE_REMOVE_NULLS\x10\x1d\x12&\n" +
+	"\"TEXT_TRANSFORMATION_TYPE_UPPERCASE\x10\x1e*x\n" +
 	"\x17TimeSeriesStatisticType\x12-\n" +
 	")TIME_SERIES_STATISTIC_TYPE_DATE_HISTOGRAM\x10\x00\x12.\n" +
 	"*TIME_SERIES_STATISTIC_TYPE_PAYMENT_TRAFFIC\x10\x01*J\n" +
@@ -22444,8 +22921,8 @@ func file_wafv2_proto_rawDescGZIP() []byte {
 	return file_wafv2_proto_rawDescData
 }
 
-var file_wafv2_proto_enumTypes = make([]protoimpl.EnumInfo, 46)
-var file_wafv2_proto_msgTypes = make([]protoimpl.MessageInfo, 300)
+var file_wafv2_proto_enumTypes = make([]protoimpl.EnumInfo, 47)
+var file_wafv2_proto_msgTypes = make([]protoimpl.MessageInfo, 301)
 var file_wafv2_proto_goTypes = []any{
 	(ActionValue)(0),                                      // 0: wafv2.ActionValue
 	(AssociatedResourceType)(0),                           // 1: wafv2.AssociatedResourceType
@@ -22478,845 +22955,854 @@ var file_wafv2_proto_goTypes = []any{
 	(PayloadType)(0),                                      // 28: wafv2.PayloadType
 	(Platform)(0),                                         // 29: wafv2.Platform
 	(PositionalConstraint)(0),                             // 30: wafv2.PositionalConstraint
-	(RankingSortBy)(0),                                    // 31: wafv2.RankingSortBy
-	(RankingStatisticType)(0),                             // 32: wafv2.RankingStatisticType
-	(RateBasedStatementAggregateKeyType)(0),               // 33: wafv2.RateBasedStatementAggregateKeyType
-	(ResourceType)(0),                                     // 34: wafv2.ResourceType
-	(ResponseContentType)(0),                              // 35: wafv2.ResponseContentType
-	(Scope)(0),                                            // 36: wafv2.Scope
-	(SensitivityLevel)(0),                                 // 37: wafv2.SensitivityLevel
-	(SensitivityToAct)(0),                                 // 38: wafv2.SensitivityToAct
-	(SettlementSortBy)(0),                                 // 39: wafv2.SettlementSortBy
-	(SettlementStatus)(0),                                 // 40: wafv2.SettlementStatus
-	(SizeInspectionLimit)(0),                              // 41: wafv2.SizeInspectionLimit
-	(SortOrder)(0),                                        // 42: wafv2.SortOrder
-	(TextTransformationType)(0),                           // 43: wafv2.TextTransformationType
-	(TimeSeriesStatisticType)(0),                          // 44: wafv2.TimeSeriesStatisticType
-	(UsageOfAction)(0),                                    // 45: wafv2.UsageOfAction
-	(*APIKeySummary)(nil),                                 // 46: wafv2.APIKeySummary
-	(*AWSManagedRulesACFPRuleSet)(nil),                    // 47: wafv2.AWSManagedRulesACFPRuleSet
-	(*AWSManagedRulesATPRuleSet)(nil),                     // 48: wafv2.AWSManagedRulesATPRuleSet
-	(*AWSManagedRulesAntiDDoSRuleSet)(nil),                // 49: wafv2.AWSManagedRulesAntiDDoSRuleSet
-	(*AWSManagedRulesBotControlRuleSet)(nil),              // 50: wafv2.AWSManagedRulesBotControlRuleSet
-	(*ActionCondition)(nil),                               // 51: wafv2.ActionCondition
-	(*AddressField)(nil),                                  // 52: wafv2.AddressField
-	(*All)(nil),                                           // 53: wafv2.All
-	(*AllQueryArguments)(nil),                             // 54: wafv2.AllQueryArguments
-	(*AllowAction)(nil),                                   // 55: wafv2.AllowAction
-	(*AndStatement)(nil),                                  // 56: wafv2.AndStatement
-	(*ApplicationAttribute)(nil),                          // 57: wafv2.ApplicationAttribute
-	(*ApplicationConfig)(nil),                             // 58: wafv2.ApplicationConfig
-	(*AsnMatchStatement)(nil),                             // 59: wafv2.AsnMatchStatement
-	(*AssociateWebACLRequest)(nil),                        // 60: wafv2.AssociateWebACLRequest
-	(*AssociateWebACLResponse)(nil),                       // 61: wafv2.AssociateWebACLResponse
-	(*AssociationConfig)(nil),                             // 62: wafv2.AssociationConfig
-	(*BlockAction)(nil),                                   // 63: wafv2.BlockAction
-	(*Body)(nil),                                          // 64: wafv2.Body
-	(*BotStatistics)(nil),                                 // 65: wafv2.BotStatistics
-	(*ByteMatchStatement)(nil),                            // 66: wafv2.ByteMatchStatement
-	(*CaptchaAction)(nil),                                 // 67: wafv2.CaptchaAction
-	(*CaptchaConfig)(nil),                                 // 68: wafv2.CaptchaConfig
-	(*CaptchaResponse)(nil),                               // 69: wafv2.CaptchaResponse
-	(*ChallengeAction)(nil),                               // 70: wafv2.ChallengeAction
-	(*ChallengeConfig)(nil),                               // 71: wafv2.ChallengeConfig
-	(*ChallengeResponse)(nil),                             // 72: wafv2.ChallengeResponse
-	(*CheckCapacityRequest)(nil),                          // 73: wafv2.CheckCapacityRequest
-	(*CheckCapacityResponse)(nil),                         // 74: wafv2.CheckCapacityResponse
-	(*ClientSideAction)(nil),                              // 75: wafv2.ClientSideAction
-	(*ClientSideActionConfig)(nil),                        // 76: wafv2.ClientSideActionConfig
-	(*Condition)(nil),                                     // 77: wafv2.Condition
-	(*CookieMatchPattern)(nil),                            // 78: wafv2.CookieMatchPattern
-	(*Cookies)(nil),                                       // 79: wafv2.Cookies
-	(*CountAction)(nil),                                   // 80: wafv2.CountAction
-	(*CreateAPIKeyRequest)(nil),                           // 81: wafv2.CreateAPIKeyRequest
-	(*CreateAPIKeyResponse)(nil),                          // 82: wafv2.CreateAPIKeyResponse
-	(*CreateIPSetRequest)(nil),                            // 83: wafv2.CreateIPSetRequest
-	(*CreateIPSetResponse)(nil),                           // 84: wafv2.CreateIPSetResponse
-	(*CreateRegexPatternSetRequest)(nil),                  // 85: wafv2.CreateRegexPatternSetRequest
-	(*CreateRegexPatternSetResponse)(nil),                 // 86: wafv2.CreateRegexPatternSetResponse
-	(*CreateRuleGroupRequest)(nil),                        // 87: wafv2.CreateRuleGroupRequest
-	(*CreateRuleGroupResponse)(nil),                       // 88: wafv2.CreateRuleGroupResponse
-	(*CreateWebACLRequest)(nil),                           // 89: wafv2.CreateWebACLRequest
-	(*CreateWebACLResponse)(nil),                          // 90: wafv2.CreateWebACLResponse
-	(*CryptoConfig)(nil),                                  // 91: wafv2.CryptoConfig
-	(*CustomHTTPHeader)(nil),                              // 92: wafv2.CustomHTTPHeader
-	(*CustomRequestHandling)(nil),                         // 93: wafv2.CustomRequestHandling
-	(*CustomResponse)(nil),                                // 94: wafv2.CustomResponse
-	(*CustomResponseBody)(nil),                            // 95: wafv2.CustomResponseBody
-	(*DataPointEntry)(nil),                                // 96: wafv2.DataPointEntry
-	(*DataProtection)(nil),                                // 97: wafv2.DataProtection
-	(*DataProtectionConfig)(nil),                          // 98: wafv2.DataProtectionConfig
-	(*DefaultAction)(nil),                                 // 99: wafv2.DefaultAction
-	(*DeleteAPIKeyRequest)(nil),                           // 100: wafv2.DeleteAPIKeyRequest
-	(*DeleteAPIKeyResponse)(nil),                          // 101: wafv2.DeleteAPIKeyResponse
-	(*DeleteFirewallManagerRuleGroupsRequest)(nil),        // 102: wafv2.DeleteFirewallManagerRuleGroupsRequest
-	(*DeleteFirewallManagerRuleGroupsResponse)(nil),       // 103: wafv2.DeleteFirewallManagerRuleGroupsResponse
-	(*DeleteIPSetRequest)(nil),                            // 104: wafv2.DeleteIPSetRequest
-	(*DeleteIPSetResponse)(nil),                           // 105: wafv2.DeleteIPSetResponse
-	(*DeleteLoggingConfigurationRequest)(nil),             // 106: wafv2.DeleteLoggingConfigurationRequest
-	(*DeleteLoggingConfigurationResponse)(nil),            // 107: wafv2.DeleteLoggingConfigurationResponse
-	(*DeletePermissionPolicyRequest)(nil),                 // 108: wafv2.DeletePermissionPolicyRequest
-	(*DeletePermissionPolicyResponse)(nil),                // 109: wafv2.DeletePermissionPolicyResponse
-	(*DeleteRegexPatternSetRequest)(nil),                  // 110: wafv2.DeleteRegexPatternSetRequest
-	(*DeleteRegexPatternSetResponse)(nil),                 // 111: wafv2.DeleteRegexPatternSetResponse
-	(*DeleteRuleGroupRequest)(nil),                        // 112: wafv2.DeleteRuleGroupRequest
-	(*DeleteRuleGroupResponse)(nil),                       // 113: wafv2.DeleteRuleGroupResponse
-	(*DeleteWebACLRequest)(nil),                           // 114: wafv2.DeleteWebACLRequest
-	(*DeleteWebACLResponse)(nil),                          // 115: wafv2.DeleteWebACLResponse
-	(*DescribeAllManagedProductsRequest)(nil),             // 116: wafv2.DescribeAllManagedProductsRequest
-	(*DescribeAllManagedProductsResponse)(nil),            // 117: wafv2.DescribeAllManagedProductsResponse
-	(*DescribeManagedProductsByVendorRequest)(nil),        // 118: wafv2.DescribeManagedProductsByVendorRequest
-	(*DescribeManagedProductsByVendorResponse)(nil),       // 119: wafv2.DescribeManagedProductsByVendorResponse
-	(*DescribeManagedRuleGroupRequest)(nil),               // 120: wafv2.DescribeManagedRuleGroupRequest
-	(*DescribeManagedRuleGroupResponse)(nil),              // 121: wafv2.DescribeManagedRuleGroupResponse
-	(*DisallowedFeature)(nil),                             // 122: wafv2.DisallowedFeature
-	(*DisassociateWebACLRequest)(nil),                     // 123: wafv2.DisassociateWebACLRequest
-	(*DisassociateWebACLResponse)(nil),                    // 124: wafv2.DisassociateWebACLResponse
-	(*EmailField)(nil),                                    // 125: wafv2.EmailField
-	(*ExcludedRule)(nil),                                  // 126: wafv2.ExcludedRule
-	(*FieldToMatch)(nil),                                  // 127: wafv2.FieldToMatch
-	(*FieldToProtect)(nil),                                // 128: wafv2.FieldToProtect
-	(*Filter)(nil),                                        // 129: wafv2.Filter
-	(*FilterSource)(nil),                                  // 130: wafv2.FilterSource
-	(*FirewallManagerRuleGroup)(nil),                      // 131: wafv2.FirewallManagerRuleGroup
-	(*FirewallManagerStatement)(nil),                      // 132: wafv2.FirewallManagerStatement
-	(*ForwardedIPConfig)(nil),                             // 133: wafv2.ForwardedIPConfig
-	(*GenerateMobileSdkReleaseUrlRequest)(nil),            // 134: wafv2.GenerateMobileSdkReleaseUrlRequest
-	(*GenerateMobileSdkReleaseUrlResponse)(nil),           // 135: wafv2.GenerateMobileSdkReleaseUrlResponse
-	(*GeoMatchStatement)(nil),                             // 136: wafv2.GeoMatchStatement
-	(*GetDecryptedAPIKeyRequest)(nil),                     // 137: wafv2.GetDecryptedAPIKeyRequest
-	(*GetDecryptedAPIKeyResponse)(nil),                    // 138: wafv2.GetDecryptedAPIKeyResponse
-	(*GetIPSetRequest)(nil),                               // 139: wafv2.GetIPSetRequest
-	(*GetIPSetResponse)(nil),                              // 140: wafv2.GetIPSetResponse
-	(*GetLoggingConfigurationRequest)(nil),                // 141: wafv2.GetLoggingConfigurationRequest
-	(*GetLoggingConfigurationResponse)(nil),               // 142: wafv2.GetLoggingConfigurationResponse
-	(*GetManagedRuleSetRequest)(nil),                      // 143: wafv2.GetManagedRuleSetRequest
-	(*GetManagedRuleSetResponse)(nil),                     // 144: wafv2.GetManagedRuleSetResponse
-	(*GetMobileSdkReleaseRequest)(nil),                    // 145: wafv2.GetMobileSdkReleaseRequest
-	(*GetMobileSdkReleaseResponse)(nil),                   // 146: wafv2.GetMobileSdkReleaseResponse
-	(*GetPermissionPolicyRequest)(nil),                    // 147: wafv2.GetPermissionPolicyRequest
-	(*GetPermissionPolicyResponse)(nil),                   // 148: wafv2.GetPermissionPolicyResponse
-	(*GetRateBasedStatementManagedKeysRequest)(nil),       // 149: wafv2.GetRateBasedStatementManagedKeysRequest
-	(*GetRateBasedStatementManagedKeysResponse)(nil),      // 150: wafv2.GetRateBasedStatementManagedKeysResponse
-	(*GetRegexPatternSetRequest)(nil),                     // 151: wafv2.GetRegexPatternSetRequest
-	(*GetRegexPatternSetResponse)(nil),                    // 152: wafv2.GetRegexPatternSetResponse
-	(*GetRevenueStatisticsRequest)(nil),                   // 153: wafv2.GetRevenueStatisticsRequest
-	(*GetRevenueStatisticsResponse)(nil),                  // 154: wafv2.GetRevenueStatisticsResponse
-	(*GetRevenueStatisticsSummaryRequest)(nil),            // 155: wafv2.GetRevenueStatisticsSummaryRequest
-	(*GetRevenueStatisticsSummaryResponse)(nil),           // 156: wafv2.GetRevenueStatisticsSummaryResponse
-	(*GetRevenueStatisticsTimeSeriesRequest)(nil),         // 157: wafv2.GetRevenueStatisticsTimeSeriesRequest
-	(*GetRevenueStatisticsTimeSeriesResponse)(nil),        // 158: wafv2.GetRevenueStatisticsTimeSeriesResponse
-	(*GetRuleGroupRequest)(nil),                           // 159: wafv2.GetRuleGroupRequest
-	(*GetRuleGroupResponse)(nil),                          // 160: wafv2.GetRuleGroupResponse
-	(*GetSampledRequestsRequest)(nil),                     // 161: wafv2.GetSampledRequestsRequest
-	(*GetSampledRequestsResponse)(nil),                    // 162: wafv2.GetSampledRequestsResponse
-	(*GetTopPathStatisticsByTrafficRequest)(nil),          // 163: wafv2.GetTopPathStatisticsByTrafficRequest
-	(*GetTopPathStatisticsByTrafficResponse)(nil),         // 164: wafv2.GetTopPathStatisticsByTrafficResponse
-	(*GetWebACLForResourceRequest)(nil),                   // 165: wafv2.GetWebACLForResourceRequest
-	(*GetWebACLForResourceResponse)(nil),                  // 166: wafv2.GetWebACLForResourceResponse
-	(*GetWebACLRequest)(nil),                              // 167: wafv2.GetWebACLRequest
-	(*GetWebACLResponse)(nil),                             // 168: wafv2.GetWebACLResponse
-	(*HTTPHeader)(nil),                                    // 169: wafv2.HTTPHeader
-	(*HTTPRequest)(nil),                                   // 170: wafv2.HTTPRequest
-	(*HeaderMatchPattern)(nil),                            // 171: wafv2.HeaderMatchPattern
-	(*HeaderOrder)(nil),                                   // 172: wafv2.HeaderOrder
-	(*Headers)(nil),                                       // 173: wafv2.Headers
-	(*IPSet)(nil),                                         // 174: wafv2.IPSet
-	(*IPSetForwardedIPConfig)(nil),                        // 175: wafv2.IPSetForwardedIPConfig
-	(*IPSetReferenceStatement)(nil),                       // 176: wafv2.IPSetReferenceStatement
-	(*IPSetSummary)(nil),                                  // 177: wafv2.IPSetSummary
-	(*ImmunityTimeProperty)(nil),                          // 178: wafv2.ImmunityTimeProperty
-	(*JA3Fingerprint)(nil),                                // 179: wafv2.JA3Fingerprint
-	(*JA4Fingerprint)(nil),                                // 180: wafv2.JA4Fingerprint
-	(*JsonBody)(nil),                                      // 181: wafv2.JsonBody
-	(*JsonMatchPattern)(nil),                              // 182: wafv2.JsonMatchPattern
-	(*Label)(nil),                                         // 183: wafv2.Label
-	(*LabelMatchStatement)(nil),                           // 184: wafv2.LabelMatchStatement
-	(*LabelNameCondition)(nil),                            // 185: wafv2.LabelNameCondition
-	(*LabelSummary)(nil),                                  // 186: wafv2.LabelSummary
-	(*ListAPIKeysRequest)(nil),                            // 187: wafv2.ListAPIKeysRequest
-	(*ListAPIKeysResponse)(nil),                           // 188: wafv2.ListAPIKeysResponse
-	(*ListAvailableManagedRuleGroupVersionsRequest)(nil),  // 189: wafv2.ListAvailableManagedRuleGroupVersionsRequest
-	(*ListAvailableManagedRuleGroupVersionsResponse)(nil), // 190: wafv2.ListAvailableManagedRuleGroupVersionsResponse
-	(*ListAvailableManagedRuleGroupsRequest)(nil),         // 191: wafv2.ListAvailableManagedRuleGroupsRequest
-	(*ListAvailableManagedRuleGroupsResponse)(nil),        // 192: wafv2.ListAvailableManagedRuleGroupsResponse
-	(*ListIPSetsRequest)(nil),                             // 193: wafv2.ListIPSetsRequest
-	(*ListIPSetsResponse)(nil),                            // 194: wafv2.ListIPSetsResponse
-	(*ListLoggingConfigurationsRequest)(nil),              // 195: wafv2.ListLoggingConfigurationsRequest
-	(*ListLoggingConfigurationsResponse)(nil),             // 196: wafv2.ListLoggingConfigurationsResponse
-	(*ListManagedRuleSetsRequest)(nil),                    // 197: wafv2.ListManagedRuleSetsRequest
-	(*ListManagedRuleSetsResponse)(nil),                   // 198: wafv2.ListManagedRuleSetsResponse
-	(*ListMobileSdkReleasesRequest)(nil),                  // 199: wafv2.ListMobileSdkReleasesRequest
-	(*ListMobileSdkReleasesResponse)(nil),                 // 200: wafv2.ListMobileSdkReleasesResponse
-	(*ListRegexPatternSetsRequest)(nil),                   // 201: wafv2.ListRegexPatternSetsRequest
-	(*ListRegexPatternSetsResponse)(nil),                  // 202: wafv2.ListRegexPatternSetsResponse
-	(*ListResourcesForWebACLRequest)(nil),                 // 203: wafv2.ListResourcesForWebACLRequest
-	(*ListResourcesForWebACLResponse)(nil),                // 204: wafv2.ListResourcesForWebACLResponse
-	(*ListRuleGroupsRequest)(nil),                         // 205: wafv2.ListRuleGroupsRequest
-	(*ListRuleGroupsResponse)(nil),                        // 206: wafv2.ListRuleGroupsResponse
-	(*ListSettlementRecordsRequest)(nil),                  // 207: wafv2.ListSettlementRecordsRequest
-	(*ListSettlementRecordsResponse)(nil),                 // 208: wafv2.ListSettlementRecordsResponse
-	(*ListTagsForResourceRequest)(nil),                    // 209: wafv2.ListTagsForResourceRequest
-	(*ListTagsForResourceResponse)(nil),                   // 210: wafv2.ListTagsForResourceResponse
-	(*ListWebACLsRequest)(nil),                            // 211: wafv2.ListWebACLsRequest
-	(*ListWebACLsResponse)(nil),                           // 212: wafv2.ListWebACLsResponse
-	(*LoggingConfiguration)(nil),                          // 213: wafv2.LoggingConfiguration
-	(*LoggingFilter)(nil),                                 // 214: wafv2.LoggingFilter
-	(*ManagedProductDescriptor)(nil),                      // 215: wafv2.ManagedProductDescriptor
-	(*ManagedRuleGroupConfig)(nil),                        // 216: wafv2.ManagedRuleGroupConfig
-	(*ManagedRuleGroupStatement)(nil),                     // 217: wafv2.ManagedRuleGroupStatement
-	(*ManagedRuleGroupSummary)(nil),                       // 218: wafv2.ManagedRuleGroupSummary
-	(*ManagedRuleGroupVersion)(nil),                       // 219: wafv2.ManagedRuleGroupVersion
-	(*ManagedRuleSet)(nil),                                // 220: wafv2.ManagedRuleSet
-	(*ManagedRuleSetSummary)(nil),                         // 221: wafv2.ManagedRuleSetSummary
-	(*ManagedRuleSetVersion)(nil),                         // 222: wafv2.ManagedRuleSetVersion
-	(*Method)(nil),                                        // 223: wafv2.Method
-	(*MobileSdkRelease)(nil),                              // 224: wafv2.MobileSdkRelease
-	(*MonetizationConfig)(nil),                            // 225: wafv2.MonetizationConfig
-	(*MonetizationFilter)(nil),                            // 226: wafv2.MonetizationFilter
-	(*MonetizeAction)(nil),                                // 227: wafv2.MonetizeAction
-	(*NoneAction)(nil),                                    // 228: wafv2.NoneAction
-	(*NotStatement)(nil),                                  // 229: wafv2.NotStatement
-	(*OnSourceDDoSProtectionConfig)(nil),                  // 230: wafv2.OnSourceDDoSProtectionConfig
-	(*OrStatement)(nil),                                   // 231: wafv2.OrStatement
-	(*OverrideAction)(nil),                                // 232: wafv2.OverrideAction
-	(*PasswordField)(nil),                                 // 233: wafv2.PasswordField
-	(*PathStatistics)(nil),                                // 234: wafv2.PathStatistics
-	(*PaymentNetwork)(nil),                                // 235: wafv2.PaymentNetwork
-	(*PhoneNumberField)(nil),                              // 236: wafv2.PhoneNumberField
-	(*Price)(nil),                                         // 237: wafv2.Price
-	(*PutLoggingConfigurationRequest)(nil),                // 238: wafv2.PutLoggingConfigurationRequest
-	(*PutLoggingConfigurationResponse)(nil),               // 239: wafv2.PutLoggingConfigurationResponse
-	(*PutManagedRuleSetVersionsRequest)(nil),              // 240: wafv2.PutManagedRuleSetVersionsRequest
-	(*PutManagedRuleSetVersionsResponse)(nil),             // 241: wafv2.PutManagedRuleSetVersionsResponse
-	(*PutPermissionPolicyRequest)(nil),                    // 242: wafv2.PutPermissionPolicyRequest
-	(*PutPermissionPolicyResponse)(nil),                   // 243: wafv2.PutPermissionPolicyResponse
-	(*QueryString)(nil),                                   // 244: wafv2.QueryString
-	(*RateBasedStatement)(nil),                            // 245: wafv2.RateBasedStatement
-	(*RateBasedStatementCustomKey)(nil),                   // 246: wafv2.RateBasedStatementCustomKey
-	(*RateBasedStatementManagedKeysIPSet)(nil),            // 247: wafv2.RateBasedStatementManagedKeysIPSet
-	(*RateLimitAsn)(nil),                                  // 248: wafv2.RateLimitAsn
-	(*RateLimitCookie)(nil),                               // 249: wafv2.RateLimitCookie
-	(*RateLimitForwardedIP)(nil),                          // 250: wafv2.RateLimitForwardedIP
-	(*RateLimitHTTPMethod)(nil),                           // 251: wafv2.RateLimitHTTPMethod
-	(*RateLimitHeader)(nil),                               // 252: wafv2.RateLimitHeader
-	(*RateLimitIP)(nil),                                   // 253: wafv2.RateLimitIP
-	(*RateLimitJA3Fingerprint)(nil),                       // 254: wafv2.RateLimitJA3Fingerprint
-	(*RateLimitJA4Fingerprint)(nil),                       // 255: wafv2.RateLimitJA4Fingerprint
-	(*RateLimitLabelNamespace)(nil),                       // 256: wafv2.RateLimitLabelNamespace
-	(*RateLimitQueryArgument)(nil),                        // 257: wafv2.RateLimitQueryArgument
-	(*RateLimitQueryString)(nil),                          // 258: wafv2.RateLimitQueryString
-	(*RateLimitUriPath)(nil),                              // 259: wafv2.RateLimitUriPath
-	(*Regex)(nil),                                         // 260: wafv2.Regex
-	(*RegexMatchStatement)(nil),                           // 261: wafv2.RegexMatchStatement
-	(*RegexPatternSet)(nil),                               // 262: wafv2.RegexPatternSet
-	(*RegexPatternSetReferenceStatement)(nil),             // 263: wafv2.RegexPatternSetReferenceStatement
-	(*RegexPatternSetSummary)(nil),                        // 264: wafv2.RegexPatternSetSummary
-	(*ReleaseSummary)(nil),                                // 265: wafv2.ReleaseSummary
-	(*RequestBodyAssociatedResourceTypeConfig)(nil),       // 266: wafv2.RequestBodyAssociatedResourceTypeConfig
-	(*RequestInspection)(nil),                             // 267: wafv2.RequestInspection
-	(*RequestInspectionACFP)(nil),                         // 268: wafv2.RequestInspectionACFP
-	(*ResponseInspection)(nil),                            // 269: wafv2.ResponseInspection
-	(*ResponseInspectionBodyContains)(nil),                // 270: wafv2.ResponseInspectionBodyContains
-	(*ResponseInspectionHeader)(nil),                      // 271: wafv2.ResponseInspectionHeader
-	(*ResponseInspectionJson)(nil),                        // 272: wafv2.ResponseInspectionJson
-	(*ResponseInspectionStatusCode)(nil),                  // 273: wafv2.ResponseInspectionStatusCode
-	(*RevenueBreakdown)(nil),                              // 274: wafv2.RevenueBreakdown
-	(*RevenuePathStatistics)(nil),                         // 275: wafv2.RevenuePathStatistics
-	(*Rule)(nil),                                          // 276: wafv2.Rule
-	(*RuleAction)(nil),                                    // 277: wafv2.RuleAction
-	(*RuleActionOverride)(nil),                            // 278: wafv2.RuleActionOverride
-	(*RuleGroup)(nil),                                     // 279: wafv2.RuleGroup
-	(*RuleGroupReferenceStatement)(nil),                   // 280: wafv2.RuleGroupReferenceStatement
-	(*RuleGroupSummary)(nil),                              // 281: wafv2.RuleGroupSummary
-	(*RuleSummary)(nil),                                   // 282: wafv2.RuleSummary
-	(*SampledHTTPRequest)(nil),                            // 283: wafv2.SampledHTTPRequest
-	(*SettlementRecord)(nil),                              // 284: wafv2.SettlementRecord
-	(*SingleHeader)(nil),                                  // 285: wafv2.SingleHeader
-	(*SingleQueryArgument)(nil),                           // 286: wafv2.SingleQueryArgument
-	(*SizeConstraintStatement)(nil),                       // 287: wafv2.SizeConstraintStatement
-	(*SourceStatistics)(nil),                              // 288: wafv2.SourceStatistics
-	(*SqliMatchStatement)(nil),                            // 289: wafv2.SqliMatchStatement
-	(*Statement)(nil),                                     // 290: wafv2.Statement
-	(*Tag)(nil),                                           // 291: wafv2.Tag
-	(*TagInfoForResource)(nil),                            // 292: wafv2.TagInfoForResource
-	(*TagResourceRequest)(nil),                            // 293: wafv2.TagResourceRequest
-	(*TagResourceResponse)(nil),                           // 294: wafv2.TagResourceResponse
-	(*TextTransformation)(nil),                            // 295: wafv2.TextTransformation
-	(*TimeWindow)(nil),                                    // 296: wafv2.TimeWindow
-	(*UntagResourceRequest)(nil),                          // 297: wafv2.UntagResourceRequest
-	(*UntagResourceResponse)(nil),                         // 298: wafv2.UntagResourceResponse
-	(*UpdateIPSetRequest)(nil),                            // 299: wafv2.UpdateIPSetRequest
-	(*UpdateIPSetResponse)(nil),                           // 300: wafv2.UpdateIPSetResponse
-	(*UpdateManagedRuleSetVersionExpiryDateRequest)(nil),  // 301: wafv2.UpdateManagedRuleSetVersionExpiryDateRequest
-	(*UpdateManagedRuleSetVersionExpiryDateResponse)(nil), // 302: wafv2.UpdateManagedRuleSetVersionExpiryDateResponse
-	(*UpdateRegexPatternSetRequest)(nil),                  // 303: wafv2.UpdateRegexPatternSetRequest
-	(*UpdateRegexPatternSetResponse)(nil),                 // 304: wafv2.UpdateRegexPatternSetResponse
-	(*UpdateRuleGroupRequest)(nil),                        // 305: wafv2.UpdateRuleGroupRequest
-	(*UpdateRuleGroupResponse)(nil),                       // 306: wafv2.UpdateRuleGroupResponse
-	(*UpdateWebACLRequest)(nil),                           // 307: wafv2.UpdateWebACLRequest
-	(*UpdateWebACLResponse)(nil),                          // 308: wafv2.UpdateWebACLResponse
-	(*UriFragment)(nil),                                   // 309: wafv2.UriFragment
-	(*UriPath)(nil),                                       // 310: wafv2.UriPath
-	(*UsernameField)(nil),                                 // 311: wafv2.UsernameField
-	(*VersionToPublish)(nil),                              // 312: wafv2.VersionToPublish
-	(*VisibilityConfig)(nil),                              // 313: wafv2.VisibilityConfig
-	(*WAFAssociatedItemException)(nil),                    // 314: wafv2.WAFAssociatedItemException
-	(*WAFConfigurationWarningException)(nil),              // 315: wafv2.WAFConfigurationWarningException
-	(*WAFDuplicateItemException)(nil),                     // 316: wafv2.WAFDuplicateItemException
-	(*WAFExpiredManagedRuleGroupVersionException)(nil),    // 317: wafv2.WAFExpiredManagedRuleGroupVersionException
-	(*WAFFeatureNotIncludedInPricingPlanException)(nil),   // 318: wafv2.WAFFeatureNotIncludedInPricingPlanException
-	(*WAFInternalErrorException)(nil),                     // 319: wafv2.WAFInternalErrorException
-	(*WAFInvalidOperationException)(nil),                  // 320: wafv2.WAFInvalidOperationException
-	(*WAFInvalidParameterException)(nil),                  // 321: wafv2.WAFInvalidParameterException
-	(*WAFInvalidPermissionPolicyException)(nil),           // 322: wafv2.WAFInvalidPermissionPolicyException
-	(*WAFInvalidResourceException)(nil),                   // 323: wafv2.WAFInvalidResourceException
-	(*WAFLimitsExceededException)(nil),                    // 324: wafv2.WAFLimitsExceededException
-	(*WAFLogDestinationPermissionIssueException)(nil),     // 325: wafv2.WAFLogDestinationPermissionIssueException
-	(*WAFNonexistentItemException)(nil),                   // 326: wafv2.WAFNonexistentItemException
-	(*WAFOptimisticLockException)(nil),                    // 327: wafv2.WAFOptimisticLockException
-	(*WAFServiceLinkedRoleErrorException)(nil),            // 328: wafv2.WAFServiceLinkedRoleErrorException
-	(*WAFSubscriptionNotFoundException)(nil),              // 329: wafv2.WAFSubscriptionNotFoundException
-	(*WAFTagOperationException)(nil),                      // 330: wafv2.WAFTagOperationException
-	(*WAFTagOperationInternalErrorException)(nil),         // 331: wafv2.WAFTagOperationInternalErrorException
-	(*WAFUnavailableEntityException)(nil),                 // 332: wafv2.WAFUnavailableEntityException
-	(*WAFUnsupportedAggregateKeyTypeException)(nil),       // 333: wafv2.WAFUnsupportedAggregateKeyTypeException
-	(*WebACL)(nil),                                        // 334: wafv2.WebACL
-	(*WebACLSummary)(nil),                                 // 335: wafv2.WebACLSummary
-	(*XssMatchStatement)(nil),                             // 336: wafv2.XssMatchStatement
-	nil,                                                   // 337: wafv2.AssociationConfig.RequestbodyEntry
-	nil,                                                   // 338: wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntry
-	nil,                                                   // 339: wafv2.CreateWebACLRequest.CustomresponsebodiesEntry
-	nil,                                                   // 340: wafv2.ManagedRuleSet.PublishedversionsEntry
-	nil,                                                   // 341: wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntry
-	nil,                                                   // 342: wafv2.RuleGroup.CustomresponsebodiesEntry
-	nil,                                                   // 343: wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntry
-	nil,                                                   // 344: wafv2.UpdateWebACLRequest.CustomresponsebodiesEntry
-	nil,                                                   // 345: wafv2.WebACL.CustomresponsebodiesEntry
+	(PreParseTextTransformationType)(0),                   // 31: wafv2.PreParseTextTransformationType
+	(RankingSortBy)(0),                                    // 32: wafv2.RankingSortBy
+	(RankingStatisticType)(0),                             // 33: wafv2.RankingStatisticType
+	(RateBasedStatementAggregateKeyType)(0),               // 34: wafv2.RateBasedStatementAggregateKeyType
+	(ResourceType)(0),                                     // 35: wafv2.ResourceType
+	(ResponseContentType)(0),                              // 36: wafv2.ResponseContentType
+	(Scope)(0),                                            // 37: wafv2.Scope
+	(SensitivityLevel)(0),                                 // 38: wafv2.SensitivityLevel
+	(SensitivityToAct)(0),                                 // 39: wafv2.SensitivityToAct
+	(SettlementSortBy)(0),                                 // 40: wafv2.SettlementSortBy
+	(SettlementStatus)(0),                                 // 41: wafv2.SettlementStatus
+	(SizeInspectionLimit)(0),                              // 42: wafv2.SizeInspectionLimit
+	(SortOrder)(0),                                        // 43: wafv2.SortOrder
+	(TextTransformationType)(0),                           // 44: wafv2.TextTransformationType
+	(TimeSeriesStatisticType)(0),                          // 45: wafv2.TimeSeriesStatisticType
+	(UsageOfAction)(0),                                    // 46: wafv2.UsageOfAction
+	(*APIKeySummary)(nil),                                 // 47: wafv2.APIKeySummary
+	(*AWSManagedRulesACFPRuleSet)(nil),                    // 48: wafv2.AWSManagedRulesACFPRuleSet
+	(*AWSManagedRulesATPRuleSet)(nil),                     // 49: wafv2.AWSManagedRulesATPRuleSet
+	(*AWSManagedRulesAntiDDoSRuleSet)(nil),                // 50: wafv2.AWSManagedRulesAntiDDoSRuleSet
+	(*AWSManagedRulesBotControlRuleSet)(nil),              // 51: wafv2.AWSManagedRulesBotControlRuleSet
+	(*ActionCondition)(nil),                               // 52: wafv2.ActionCondition
+	(*AddressField)(nil),                                  // 53: wafv2.AddressField
+	(*All)(nil),                                           // 54: wafv2.All
+	(*AllQueryArguments)(nil),                             // 55: wafv2.AllQueryArguments
+	(*AllowAction)(nil),                                   // 56: wafv2.AllowAction
+	(*AndStatement)(nil),                                  // 57: wafv2.AndStatement
+	(*ApplicationAttribute)(nil),                          // 58: wafv2.ApplicationAttribute
+	(*ApplicationConfig)(nil),                             // 59: wafv2.ApplicationConfig
+	(*AsnMatchStatement)(nil),                             // 60: wafv2.AsnMatchStatement
+	(*AssociateWebACLRequest)(nil),                        // 61: wafv2.AssociateWebACLRequest
+	(*AssociateWebACLResponse)(nil),                       // 62: wafv2.AssociateWebACLResponse
+	(*AssociationConfig)(nil),                             // 63: wafv2.AssociationConfig
+	(*BlockAction)(nil),                                   // 64: wafv2.BlockAction
+	(*Body)(nil),                                          // 65: wafv2.Body
+	(*BotStatistics)(nil),                                 // 66: wafv2.BotStatistics
+	(*ByteMatchStatement)(nil),                            // 67: wafv2.ByteMatchStatement
+	(*CaptchaAction)(nil),                                 // 68: wafv2.CaptchaAction
+	(*CaptchaConfig)(nil),                                 // 69: wafv2.CaptchaConfig
+	(*CaptchaResponse)(nil),                               // 70: wafv2.CaptchaResponse
+	(*ChallengeAction)(nil),                               // 71: wafv2.ChallengeAction
+	(*ChallengeConfig)(nil),                               // 72: wafv2.ChallengeConfig
+	(*ChallengeResponse)(nil),                             // 73: wafv2.ChallengeResponse
+	(*CheckCapacityRequest)(nil),                          // 74: wafv2.CheckCapacityRequest
+	(*CheckCapacityResponse)(nil),                         // 75: wafv2.CheckCapacityResponse
+	(*ClientSideAction)(nil),                              // 76: wafv2.ClientSideAction
+	(*ClientSideActionConfig)(nil),                        // 77: wafv2.ClientSideActionConfig
+	(*Condition)(nil),                                     // 78: wafv2.Condition
+	(*CookieMatchPattern)(nil),                            // 79: wafv2.CookieMatchPattern
+	(*Cookies)(nil),                                       // 80: wafv2.Cookies
+	(*CountAction)(nil),                                   // 81: wafv2.CountAction
+	(*CreateAPIKeyRequest)(nil),                           // 82: wafv2.CreateAPIKeyRequest
+	(*CreateAPIKeyResponse)(nil),                          // 83: wafv2.CreateAPIKeyResponse
+	(*CreateIPSetRequest)(nil),                            // 84: wafv2.CreateIPSetRequest
+	(*CreateIPSetResponse)(nil),                           // 85: wafv2.CreateIPSetResponse
+	(*CreateRegexPatternSetRequest)(nil),                  // 86: wafv2.CreateRegexPatternSetRequest
+	(*CreateRegexPatternSetResponse)(nil),                 // 87: wafv2.CreateRegexPatternSetResponse
+	(*CreateRuleGroupRequest)(nil),                        // 88: wafv2.CreateRuleGroupRequest
+	(*CreateRuleGroupResponse)(nil),                       // 89: wafv2.CreateRuleGroupResponse
+	(*CreateWebACLRequest)(nil),                           // 90: wafv2.CreateWebACLRequest
+	(*CreateWebACLResponse)(nil),                          // 91: wafv2.CreateWebACLResponse
+	(*CryptoConfig)(nil),                                  // 92: wafv2.CryptoConfig
+	(*CustomHTTPHeader)(nil),                              // 93: wafv2.CustomHTTPHeader
+	(*CustomRequestHandling)(nil),                         // 94: wafv2.CustomRequestHandling
+	(*CustomResponse)(nil),                                // 95: wafv2.CustomResponse
+	(*CustomResponseBody)(nil),                            // 96: wafv2.CustomResponseBody
+	(*DataPointEntry)(nil),                                // 97: wafv2.DataPointEntry
+	(*DataProtection)(nil),                                // 98: wafv2.DataProtection
+	(*DataProtectionConfig)(nil),                          // 99: wafv2.DataProtectionConfig
+	(*DefaultAction)(nil),                                 // 100: wafv2.DefaultAction
+	(*DeleteAPIKeyRequest)(nil),                           // 101: wafv2.DeleteAPIKeyRequest
+	(*DeleteAPIKeyResponse)(nil),                          // 102: wafv2.DeleteAPIKeyResponse
+	(*DeleteFirewallManagerRuleGroupsRequest)(nil),        // 103: wafv2.DeleteFirewallManagerRuleGroupsRequest
+	(*DeleteFirewallManagerRuleGroupsResponse)(nil),       // 104: wafv2.DeleteFirewallManagerRuleGroupsResponse
+	(*DeleteIPSetRequest)(nil),                            // 105: wafv2.DeleteIPSetRequest
+	(*DeleteIPSetResponse)(nil),                           // 106: wafv2.DeleteIPSetResponse
+	(*DeleteLoggingConfigurationRequest)(nil),             // 107: wafv2.DeleteLoggingConfigurationRequest
+	(*DeleteLoggingConfigurationResponse)(nil),            // 108: wafv2.DeleteLoggingConfigurationResponse
+	(*DeletePermissionPolicyRequest)(nil),                 // 109: wafv2.DeletePermissionPolicyRequest
+	(*DeletePermissionPolicyResponse)(nil),                // 110: wafv2.DeletePermissionPolicyResponse
+	(*DeleteRegexPatternSetRequest)(nil),                  // 111: wafv2.DeleteRegexPatternSetRequest
+	(*DeleteRegexPatternSetResponse)(nil),                 // 112: wafv2.DeleteRegexPatternSetResponse
+	(*DeleteRuleGroupRequest)(nil),                        // 113: wafv2.DeleteRuleGroupRequest
+	(*DeleteRuleGroupResponse)(nil),                       // 114: wafv2.DeleteRuleGroupResponse
+	(*DeleteWebACLRequest)(nil),                           // 115: wafv2.DeleteWebACLRequest
+	(*DeleteWebACLResponse)(nil),                          // 116: wafv2.DeleteWebACLResponse
+	(*DescribeAllManagedProductsRequest)(nil),             // 117: wafv2.DescribeAllManagedProductsRequest
+	(*DescribeAllManagedProductsResponse)(nil),            // 118: wafv2.DescribeAllManagedProductsResponse
+	(*DescribeManagedProductsByVendorRequest)(nil),        // 119: wafv2.DescribeManagedProductsByVendorRequest
+	(*DescribeManagedProductsByVendorResponse)(nil),       // 120: wafv2.DescribeManagedProductsByVendorResponse
+	(*DescribeManagedRuleGroupRequest)(nil),               // 121: wafv2.DescribeManagedRuleGroupRequest
+	(*DescribeManagedRuleGroupResponse)(nil),              // 122: wafv2.DescribeManagedRuleGroupResponse
+	(*DisallowedFeature)(nil),                             // 123: wafv2.DisallowedFeature
+	(*DisassociateWebACLRequest)(nil),                     // 124: wafv2.DisassociateWebACLRequest
+	(*DisassociateWebACLResponse)(nil),                    // 125: wafv2.DisassociateWebACLResponse
+	(*EmailField)(nil),                                    // 126: wafv2.EmailField
+	(*ExcludedRule)(nil),                                  // 127: wafv2.ExcludedRule
+	(*FieldToMatch)(nil),                                  // 128: wafv2.FieldToMatch
+	(*FieldToProtect)(nil),                                // 129: wafv2.FieldToProtect
+	(*Filter)(nil),                                        // 130: wafv2.Filter
+	(*FilterSource)(nil),                                  // 131: wafv2.FilterSource
+	(*FirewallManagerRuleGroup)(nil),                      // 132: wafv2.FirewallManagerRuleGroup
+	(*FirewallManagerStatement)(nil),                      // 133: wafv2.FirewallManagerStatement
+	(*ForwardedIPConfig)(nil),                             // 134: wafv2.ForwardedIPConfig
+	(*GenerateMobileSdkReleaseUrlRequest)(nil),            // 135: wafv2.GenerateMobileSdkReleaseUrlRequest
+	(*GenerateMobileSdkReleaseUrlResponse)(nil),           // 136: wafv2.GenerateMobileSdkReleaseUrlResponse
+	(*GeoMatchStatement)(nil),                             // 137: wafv2.GeoMatchStatement
+	(*GetDecryptedAPIKeyRequest)(nil),                     // 138: wafv2.GetDecryptedAPIKeyRequest
+	(*GetDecryptedAPIKeyResponse)(nil),                    // 139: wafv2.GetDecryptedAPIKeyResponse
+	(*GetIPSetRequest)(nil),                               // 140: wafv2.GetIPSetRequest
+	(*GetIPSetResponse)(nil),                              // 141: wafv2.GetIPSetResponse
+	(*GetLoggingConfigurationRequest)(nil),                // 142: wafv2.GetLoggingConfigurationRequest
+	(*GetLoggingConfigurationResponse)(nil),               // 143: wafv2.GetLoggingConfigurationResponse
+	(*GetManagedRuleSetRequest)(nil),                      // 144: wafv2.GetManagedRuleSetRequest
+	(*GetManagedRuleSetResponse)(nil),                     // 145: wafv2.GetManagedRuleSetResponse
+	(*GetMobileSdkReleaseRequest)(nil),                    // 146: wafv2.GetMobileSdkReleaseRequest
+	(*GetMobileSdkReleaseResponse)(nil),                   // 147: wafv2.GetMobileSdkReleaseResponse
+	(*GetPermissionPolicyRequest)(nil),                    // 148: wafv2.GetPermissionPolicyRequest
+	(*GetPermissionPolicyResponse)(nil),                   // 149: wafv2.GetPermissionPolicyResponse
+	(*GetRateBasedStatementManagedKeysRequest)(nil),       // 150: wafv2.GetRateBasedStatementManagedKeysRequest
+	(*GetRateBasedStatementManagedKeysResponse)(nil),      // 151: wafv2.GetRateBasedStatementManagedKeysResponse
+	(*GetRegexPatternSetRequest)(nil),                     // 152: wafv2.GetRegexPatternSetRequest
+	(*GetRegexPatternSetResponse)(nil),                    // 153: wafv2.GetRegexPatternSetResponse
+	(*GetRevenueStatisticsRequest)(nil),                   // 154: wafv2.GetRevenueStatisticsRequest
+	(*GetRevenueStatisticsResponse)(nil),                  // 155: wafv2.GetRevenueStatisticsResponse
+	(*GetRevenueStatisticsSummaryRequest)(nil),            // 156: wafv2.GetRevenueStatisticsSummaryRequest
+	(*GetRevenueStatisticsSummaryResponse)(nil),           // 157: wafv2.GetRevenueStatisticsSummaryResponse
+	(*GetRevenueStatisticsTimeSeriesRequest)(nil),         // 158: wafv2.GetRevenueStatisticsTimeSeriesRequest
+	(*GetRevenueStatisticsTimeSeriesResponse)(nil),        // 159: wafv2.GetRevenueStatisticsTimeSeriesResponse
+	(*GetRuleGroupRequest)(nil),                           // 160: wafv2.GetRuleGroupRequest
+	(*GetRuleGroupResponse)(nil),                          // 161: wafv2.GetRuleGroupResponse
+	(*GetSampledRequestsRequest)(nil),                     // 162: wafv2.GetSampledRequestsRequest
+	(*GetSampledRequestsResponse)(nil),                    // 163: wafv2.GetSampledRequestsResponse
+	(*GetTopPathStatisticsByTrafficRequest)(nil),          // 164: wafv2.GetTopPathStatisticsByTrafficRequest
+	(*GetTopPathStatisticsByTrafficResponse)(nil),         // 165: wafv2.GetTopPathStatisticsByTrafficResponse
+	(*GetWebACLForResourceRequest)(nil),                   // 166: wafv2.GetWebACLForResourceRequest
+	(*GetWebACLForResourceResponse)(nil),                  // 167: wafv2.GetWebACLForResourceResponse
+	(*GetWebACLRequest)(nil),                              // 168: wafv2.GetWebACLRequest
+	(*GetWebACLResponse)(nil),                             // 169: wafv2.GetWebACLResponse
+	(*HTTPHeader)(nil),                                    // 170: wafv2.HTTPHeader
+	(*HTTPRequest)(nil),                                   // 171: wafv2.HTTPRequest
+	(*HeaderMatchPattern)(nil),                            // 172: wafv2.HeaderMatchPattern
+	(*HeaderOrder)(nil),                                   // 173: wafv2.HeaderOrder
+	(*Headers)(nil),                                       // 174: wafv2.Headers
+	(*IPSet)(nil),                                         // 175: wafv2.IPSet
+	(*IPSetForwardedIPConfig)(nil),                        // 176: wafv2.IPSetForwardedIPConfig
+	(*IPSetReferenceStatement)(nil),                       // 177: wafv2.IPSetReferenceStatement
+	(*IPSetSummary)(nil),                                  // 178: wafv2.IPSetSummary
+	(*ImmunityTimeProperty)(nil),                          // 179: wafv2.ImmunityTimeProperty
+	(*JA3Fingerprint)(nil),                                // 180: wafv2.JA3Fingerprint
+	(*JA4Fingerprint)(nil),                                // 181: wafv2.JA4Fingerprint
+	(*JsonBody)(nil),                                      // 182: wafv2.JsonBody
+	(*JsonMatchPattern)(nil),                              // 183: wafv2.JsonMatchPattern
+	(*Label)(nil),                                         // 184: wafv2.Label
+	(*LabelMatchStatement)(nil),                           // 185: wafv2.LabelMatchStatement
+	(*LabelNameCondition)(nil),                            // 186: wafv2.LabelNameCondition
+	(*LabelSummary)(nil),                                  // 187: wafv2.LabelSummary
+	(*ListAPIKeysRequest)(nil),                            // 188: wafv2.ListAPIKeysRequest
+	(*ListAPIKeysResponse)(nil),                           // 189: wafv2.ListAPIKeysResponse
+	(*ListAvailableManagedRuleGroupVersionsRequest)(nil),  // 190: wafv2.ListAvailableManagedRuleGroupVersionsRequest
+	(*ListAvailableManagedRuleGroupVersionsResponse)(nil), // 191: wafv2.ListAvailableManagedRuleGroupVersionsResponse
+	(*ListAvailableManagedRuleGroupsRequest)(nil),         // 192: wafv2.ListAvailableManagedRuleGroupsRequest
+	(*ListAvailableManagedRuleGroupsResponse)(nil),        // 193: wafv2.ListAvailableManagedRuleGroupsResponse
+	(*ListIPSetsRequest)(nil),                             // 194: wafv2.ListIPSetsRequest
+	(*ListIPSetsResponse)(nil),                            // 195: wafv2.ListIPSetsResponse
+	(*ListLoggingConfigurationsRequest)(nil),              // 196: wafv2.ListLoggingConfigurationsRequest
+	(*ListLoggingConfigurationsResponse)(nil),             // 197: wafv2.ListLoggingConfigurationsResponse
+	(*ListManagedRuleSetsRequest)(nil),                    // 198: wafv2.ListManagedRuleSetsRequest
+	(*ListManagedRuleSetsResponse)(nil),                   // 199: wafv2.ListManagedRuleSetsResponse
+	(*ListMobileSdkReleasesRequest)(nil),                  // 200: wafv2.ListMobileSdkReleasesRequest
+	(*ListMobileSdkReleasesResponse)(nil),                 // 201: wafv2.ListMobileSdkReleasesResponse
+	(*ListRegexPatternSetsRequest)(nil),                   // 202: wafv2.ListRegexPatternSetsRequest
+	(*ListRegexPatternSetsResponse)(nil),                  // 203: wafv2.ListRegexPatternSetsResponse
+	(*ListResourcesForWebACLRequest)(nil),                 // 204: wafv2.ListResourcesForWebACLRequest
+	(*ListResourcesForWebACLResponse)(nil),                // 205: wafv2.ListResourcesForWebACLResponse
+	(*ListRuleGroupsRequest)(nil),                         // 206: wafv2.ListRuleGroupsRequest
+	(*ListRuleGroupsResponse)(nil),                        // 207: wafv2.ListRuleGroupsResponse
+	(*ListSettlementRecordsRequest)(nil),                  // 208: wafv2.ListSettlementRecordsRequest
+	(*ListSettlementRecordsResponse)(nil),                 // 209: wafv2.ListSettlementRecordsResponse
+	(*ListTagsForResourceRequest)(nil),                    // 210: wafv2.ListTagsForResourceRequest
+	(*ListTagsForResourceResponse)(nil),                   // 211: wafv2.ListTagsForResourceResponse
+	(*ListWebACLsRequest)(nil),                            // 212: wafv2.ListWebACLsRequest
+	(*ListWebACLsResponse)(nil),                           // 213: wafv2.ListWebACLsResponse
+	(*LoggingConfiguration)(nil),                          // 214: wafv2.LoggingConfiguration
+	(*LoggingFilter)(nil),                                 // 215: wafv2.LoggingFilter
+	(*ManagedProductDescriptor)(nil),                      // 216: wafv2.ManagedProductDescriptor
+	(*ManagedRuleGroupConfig)(nil),                        // 217: wafv2.ManagedRuleGroupConfig
+	(*ManagedRuleGroupStatement)(nil),                     // 218: wafv2.ManagedRuleGroupStatement
+	(*ManagedRuleGroupSummary)(nil),                       // 219: wafv2.ManagedRuleGroupSummary
+	(*ManagedRuleGroupVersion)(nil),                       // 220: wafv2.ManagedRuleGroupVersion
+	(*ManagedRuleSet)(nil),                                // 221: wafv2.ManagedRuleSet
+	(*ManagedRuleSetSummary)(nil),                         // 222: wafv2.ManagedRuleSetSummary
+	(*ManagedRuleSetVersion)(nil),                         // 223: wafv2.ManagedRuleSetVersion
+	(*Method)(nil),                                        // 224: wafv2.Method
+	(*MobileSdkRelease)(nil),                              // 225: wafv2.MobileSdkRelease
+	(*MonetizationConfig)(nil),                            // 226: wafv2.MonetizationConfig
+	(*MonetizationFilter)(nil),                            // 227: wafv2.MonetizationFilter
+	(*MonetizeAction)(nil),                                // 228: wafv2.MonetizeAction
+	(*NoneAction)(nil),                                    // 229: wafv2.NoneAction
+	(*NotStatement)(nil),                                  // 230: wafv2.NotStatement
+	(*OnSourceDDoSProtectionConfig)(nil),                  // 231: wafv2.OnSourceDDoSProtectionConfig
+	(*OrStatement)(nil),                                   // 232: wafv2.OrStatement
+	(*OverrideAction)(nil),                                // 233: wafv2.OverrideAction
+	(*PasswordField)(nil),                                 // 234: wafv2.PasswordField
+	(*PathStatistics)(nil),                                // 235: wafv2.PathStatistics
+	(*PaymentNetwork)(nil),                                // 236: wafv2.PaymentNetwork
+	(*PhoneNumberField)(nil),                              // 237: wafv2.PhoneNumberField
+	(*PreParseTextTransformation)(nil),                    // 238: wafv2.PreParseTextTransformation
+	(*Price)(nil),                                         // 239: wafv2.Price
+	(*PutLoggingConfigurationRequest)(nil),                // 240: wafv2.PutLoggingConfigurationRequest
+	(*PutLoggingConfigurationResponse)(nil),               // 241: wafv2.PutLoggingConfigurationResponse
+	(*PutManagedRuleSetVersionsRequest)(nil),              // 242: wafv2.PutManagedRuleSetVersionsRequest
+	(*PutManagedRuleSetVersionsResponse)(nil),             // 243: wafv2.PutManagedRuleSetVersionsResponse
+	(*PutPermissionPolicyRequest)(nil),                    // 244: wafv2.PutPermissionPolicyRequest
+	(*PutPermissionPolicyResponse)(nil),                   // 245: wafv2.PutPermissionPolicyResponse
+	(*QueryString)(nil),                                   // 246: wafv2.QueryString
+	(*RateBasedStatement)(nil),                            // 247: wafv2.RateBasedStatement
+	(*RateBasedStatementCustomKey)(nil),                   // 248: wafv2.RateBasedStatementCustomKey
+	(*RateBasedStatementManagedKeysIPSet)(nil),            // 249: wafv2.RateBasedStatementManagedKeysIPSet
+	(*RateLimitAsn)(nil),                                  // 250: wafv2.RateLimitAsn
+	(*RateLimitCookie)(nil),                               // 251: wafv2.RateLimitCookie
+	(*RateLimitForwardedIP)(nil),                          // 252: wafv2.RateLimitForwardedIP
+	(*RateLimitHTTPMethod)(nil),                           // 253: wafv2.RateLimitHTTPMethod
+	(*RateLimitHeader)(nil),                               // 254: wafv2.RateLimitHeader
+	(*RateLimitIP)(nil),                                   // 255: wafv2.RateLimitIP
+	(*RateLimitJA3Fingerprint)(nil),                       // 256: wafv2.RateLimitJA3Fingerprint
+	(*RateLimitJA4Fingerprint)(nil),                       // 257: wafv2.RateLimitJA4Fingerprint
+	(*RateLimitLabelNamespace)(nil),                       // 258: wafv2.RateLimitLabelNamespace
+	(*RateLimitQueryArgument)(nil),                        // 259: wafv2.RateLimitQueryArgument
+	(*RateLimitQueryString)(nil),                          // 260: wafv2.RateLimitQueryString
+	(*RateLimitUriPath)(nil),                              // 261: wafv2.RateLimitUriPath
+	(*Regex)(nil),                                         // 262: wafv2.Regex
+	(*RegexMatchStatement)(nil),                           // 263: wafv2.RegexMatchStatement
+	(*RegexPatternSet)(nil),                               // 264: wafv2.RegexPatternSet
+	(*RegexPatternSetReferenceStatement)(nil),             // 265: wafv2.RegexPatternSetReferenceStatement
+	(*RegexPatternSetSummary)(nil),                        // 266: wafv2.RegexPatternSetSummary
+	(*ReleaseSummary)(nil),                                // 267: wafv2.ReleaseSummary
+	(*RequestBodyAssociatedResourceTypeConfig)(nil),       // 268: wafv2.RequestBodyAssociatedResourceTypeConfig
+	(*RequestInspection)(nil),                             // 269: wafv2.RequestInspection
+	(*RequestInspectionACFP)(nil),                         // 270: wafv2.RequestInspectionACFP
+	(*ResponseInspection)(nil),                            // 271: wafv2.ResponseInspection
+	(*ResponseInspectionBodyContains)(nil),                // 272: wafv2.ResponseInspectionBodyContains
+	(*ResponseInspectionHeader)(nil),                      // 273: wafv2.ResponseInspectionHeader
+	(*ResponseInspectionJson)(nil),                        // 274: wafv2.ResponseInspectionJson
+	(*ResponseInspectionStatusCode)(nil),                  // 275: wafv2.ResponseInspectionStatusCode
+	(*RevenueBreakdown)(nil),                              // 276: wafv2.RevenueBreakdown
+	(*RevenuePathStatistics)(nil),                         // 277: wafv2.RevenuePathStatistics
+	(*Rule)(nil),                                          // 278: wafv2.Rule
+	(*RuleAction)(nil),                                    // 279: wafv2.RuleAction
+	(*RuleActionOverride)(nil),                            // 280: wafv2.RuleActionOverride
+	(*RuleGroup)(nil),                                     // 281: wafv2.RuleGroup
+	(*RuleGroupReferenceStatement)(nil),                   // 282: wafv2.RuleGroupReferenceStatement
+	(*RuleGroupSummary)(nil),                              // 283: wafv2.RuleGroupSummary
+	(*RuleSummary)(nil),                                   // 284: wafv2.RuleSummary
+	(*SampledHTTPRequest)(nil),                            // 285: wafv2.SampledHTTPRequest
+	(*SettlementRecord)(nil),                              // 286: wafv2.SettlementRecord
+	(*SingleHeader)(nil),                                  // 287: wafv2.SingleHeader
+	(*SingleQueryArgument)(nil),                           // 288: wafv2.SingleQueryArgument
+	(*SizeConstraintStatement)(nil),                       // 289: wafv2.SizeConstraintStatement
+	(*SourceStatistics)(nil),                              // 290: wafv2.SourceStatistics
+	(*SqliMatchStatement)(nil),                            // 291: wafv2.SqliMatchStatement
+	(*Statement)(nil),                                     // 292: wafv2.Statement
+	(*Tag)(nil),                                           // 293: wafv2.Tag
+	(*TagInfoForResource)(nil),                            // 294: wafv2.TagInfoForResource
+	(*TagResourceRequest)(nil),                            // 295: wafv2.TagResourceRequest
+	(*TagResourceResponse)(nil),                           // 296: wafv2.TagResourceResponse
+	(*TextTransformation)(nil),                            // 297: wafv2.TextTransformation
+	(*TimeWindow)(nil),                                    // 298: wafv2.TimeWindow
+	(*UntagResourceRequest)(nil),                          // 299: wafv2.UntagResourceRequest
+	(*UntagResourceResponse)(nil),                         // 300: wafv2.UntagResourceResponse
+	(*UpdateIPSetRequest)(nil),                            // 301: wafv2.UpdateIPSetRequest
+	(*UpdateIPSetResponse)(nil),                           // 302: wafv2.UpdateIPSetResponse
+	(*UpdateManagedRuleSetVersionExpiryDateRequest)(nil),  // 303: wafv2.UpdateManagedRuleSetVersionExpiryDateRequest
+	(*UpdateManagedRuleSetVersionExpiryDateResponse)(nil), // 304: wafv2.UpdateManagedRuleSetVersionExpiryDateResponse
+	(*UpdateRegexPatternSetRequest)(nil),                  // 305: wafv2.UpdateRegexPatternSetRequest
+	(*UpdateRegexPatternSetResponse)(nil),                 // 306: wafv2.UpdateRegexPatternSetResponse
+	(*UpdateRuleGroupRequest)(nil),                        // 307: wafv2.UpdateRuleGroupRequest
+	(*UpdateRuleGroupResponse)(nil),                       // 308: wafv2.UpdateRuleGroupResponse
+	(*UpdateWebACLRequest)(nil),                           // 309: wafv2.UpdateWebACLRequest
+	(*UpdateWebACLResponse)(nil),                          // 310: wafv2.UpdateWebACLResponse
+	(*UriFragment)(nil),                                   // 311: wafv2.UriFragment
+	(*UriPath)(nil),                                       // 312: wafv2.UriPath
+	(*UsernameField)(nil),                                 // 313: wafv2.UsernameField
+	(*VersionToPublish)(nil),                              // 314: wafv2.VersionToPublish
+	(*VisibilityConfig)(nil),                              // 315: wafv2.VisibilityConfig
+	(*WAFAssociatedItemException)(nil),                    // 316: wafv2.WAFAssociatedItemException
+	(*WAFConfigurationWarningException)(nil),              // 317: wafv2.WAFConfigurationWarningException
+	(*WAFDuplicateItemException)(nil),                     // 318: wafv2.WAFDuplicateItemException
+	(*WAFExpiredManagedRuleGroupVersionException)(nil),    // 319: wafv2.WAFExpiredManagedRuleGroupVersionException
+	(*WAFFeatureNotIncludedInPricingPlanException)(nil),   // 320: wafv2.WAFFeatureNotIncludedInPricingPlanException
+	(*WAFInternalErrorException)(nil),                     // 321: wafv2.WAFInternalErrorException
+	(*WAFInvalidOperationException)(nil),                  // 322: wafv2.WAFInvalidOperationException
+	(*WAFInvalidParameterException)(nil),                  // 323: wafv2.WAFInvalidParameterException
+	(*WAFInvalidPermissionPolicyException)(nil),           // 324: wafv2.WAFInvalidPermissionPolicyException
+	(*WAFInvalidResourceException)(nil),                   // 325: wafv2.WAFInvalidResourceException
+	(*WAFLimitsExceededException)(nil),                    // 326: wafv2.WAFLimitsExceededException
+	(*WAFLogDestinationPermissionIssueException)(nil),     // 327: wafv2.WAFLogDestinationPermissionIssueException
+	(*WAFNonexistentItemException)(nil),                   // 328: wafv2.WAFNonexistentItemException
+	(*WAFOptimisticLockException)(nil),                    // 329: wafv2.WAFOptimisticLockException
+	(*WAFServiceLinkedRoleErrorException)(nil),            // 330: wafv2.WAFServiceLinkedRoleErrorException
+	(*WAFSubscriptionNotFoundException)(nil),              // 331: wafv2.WAFSubscriptionNotFoundException
+	(*WAFTagOperationException)(nil),                      // 332: wafv2.WAFTagOperationException
+	(*WAFTagOperationInternalErrorException)(nil),         // 333: wafv2.WAFTagOperationInternalErrorException
+	(*WAFUnavailableEntityException)(nil),                 // 334: wafv2.WAFUnavailableEntityException
+	(*WAFUnsupportedAggregateKeyTypeException)(nil),       // 335: wafv2.WAFUnsupportedAggregateKeyTypeException
+	(*WebACL)(nil),                                        // 336: wafv2.WebACL
+	(*WebACLSummary)(nil),                                 // 337: wafv2.WebACLSummary
+	(*XssMatchStatement)(nil),                             // 338: wafv2.XssMatchStatement
+	nil,                                                   // 339: wafv2.AssociationConfig.RequestbodyEntry
+	nil,                                                   // 340: wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntry
+	nil,                                                   // 341: wafv2.CreateWebACLRequest.CustomresponsebodiesEntry
+	nil,                                                   // 342: wafv2.ManagedRuleSet.PublishedversionsEntry
+	nil,                                                   // 343: wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntry
+	nil,                                                   // 344: wafv2.RuleGroup.CustomresponsebodiesEntry
+	nil,                                                   // 345: wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntry
+	nil,                                                   // 346: wafv2.UpdateWebACLRequest.CustomresponsebodiesEntry
+	nil,                                                   // 347: wafv2.WebACL.CustomresponsebodiesEntry
 }
 var file_wafv2_proto_depIdxs = []int32{
-	268, // 0: wafv2.AWSManagedRulesACFPRuleSet.requestinspection:type_name -> wafv2.RequestInspectionACFP
-	269, // 1: wafv2.AWSManagedRulesACFPRuleSet.responseinspection:type_name -> wafv2.ResponseInspection
-	267, // 2: wafv2.AWSManagedRulesATPRuleSet.requestinspection:type_name -> wafv2.RequestInspection
-	269, // 3: wafv2.AWSManagedRulesATPRuleSet.responseinspection:type_name -> wafv2.ResponseInspection
-	76,  // 4: wafv2.AWSManagedRulesAntiDDoSRuleSet.clientsideactionconfig:type_name -> wafv2.ClientSideActionConfig
-	38,  // 5: wafv2.AWSManagedRulesAntiDDoSRuleSet.sensitivitytoblock:type_name -> wafv2.SensitivityToAct
+	270, // 0: wafv2.AWSManagedRulesACFPRuleSet.requestinspection:type_name -> wafv2.RequestInspectionACFP
+	271, // 1: wafv2.AWSManagedRulesACFPRuleSet.responseinspection:type_name -> wafv2.ResponseInspection
+	269, // 2: wafv2.AWSManagedRulesATPRuleSet.requestinspection:type_name -> wafv2.RequestInspection
+	271, // 3: wafv2.AWSManagedRulesATPRuleSet.responseinspection:type_name -> wafv2.ResponseInspection
+	77,  // 4: wafv2.AWSManagedRulesAntiDDoSRuleSet.clientsideactionconfig:type_name -> wafv2.ClientSideActionConfig
+	39,  // 5: wafv2.AWSManagedRulesAntiDDoSRuleSet.sensitivitytoblock:type_name -> wafv2.SensitivityToAct
 	18,  // 6: wafv2.AWSManagedRulesBotControlRuleSet.inspectionlevel:type_name -> wafv2.InspectionLevel
 	0,   // 7: wafv2.ActionCondition.action:type_name -> wafv2.ActionValue
-	93,  // 8: wafv2.AllowAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
-	290, // 9: wafv2.AndStatement.statements:type_name -> wafv2.Statement
-	57,  // 10: wafv2.ApplicationConfig.attributes:type_name -> wafv2.ApplicationAttribute
-	133, // 11: wafv2.AsnMatchStatement.forwardedipconfig:type_name -> wafv2.ForwardedIPConfig
-	337, // 12: wafv2.AssociationConfig.requestbody:type_name -> wafv2.AssociationConfig.RequestbodyEntry
-	94,  // 13: wafv2.BlockAction.customresponse:type_name -> wafv2.CustomResponse
+	94,  // 8: wafv2.AllowAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
+	292, // 9: wafv2.AndStatement.statements:type_name -> wafv2.Statement
+	58,  // 10: wafv2.ApplicationConfig.attributes:type_name -> wafv2.ApplicationAttribute
+	134, // 11: wafv2.AsnMatchStatement.forwardedipconfig:type_name -> wafv2.ForwardedIPConfig
+	339, // 12: wafv2.AssociationConfig.requestbody:type_name -> wafv2.AssociationConfig.RequestbodyEntry
+	95,  // 13: wafv2.BlockAction.customresponse:type_name -> wafv2.CustomResponse
 	26,  // 14: wafv2.Body.oversizehandling:type_name -> wafv2.OversizeHandling
-	127, // 15: wafv2.ByteMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
+	128, // 15: wafv2.ByteMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
 	30,  // 16: wafv2.ByteMatchStatement.positionalconstraint:type_name -> wafv2.PositionalConstraint
-	295, // 17: wafv2.ByteMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
-	93,  // 18: wafv2.CaptchaAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
-	178, // 19: wafv2.CaptchaConfig.immunitytimeproperty:type_name -> wafv2.ImmunityTimeProperty
-	10,  // 20: wafv2.CaptchaResponse.failurereason:type_name -> wafv2.FailureReason
-	93,  // 21: wafv2.ChallengeAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
-	178, // 22: wafv2.ChallengeConfig.immunitytimeproperty:type_name -> wafv2.ImmunityTimeProperty
-	10,  // 23: wafv2.ChallengeResponse.failurereason:type_name -> wafv2.FailureReason
-	276, // 24: wafv2.CheckCapacityRequest.rules:type_name -> wafv2.Rule
-	36,  // 25: wafv2.CheckCapacityRequest.scope:type_name -> wafv2.Scope
-	260, // 26: wafv2.ClientSideAction.exempturiregularexpressions:type_name -> wafv2.Regex
-	38,  // 27: wafv2.ClientSideAction.sensitivity:type_name -> wafv2.SensitivityToAct
-	45,  // 28: wafv2.ClientSideAction.usageofaction:type_name -> wafv2.UsageOfAction
-	75,  // 29: wafv2.ClientSideActionConfig.challenge:type_name -> wafv2.ClientSideAction
-	51,  // 30: wafv2.Condition.actioncondition:type_name -> wafv2.ActionCondition
-	185, // 31: wafv2.Condition.labelnamecondition:type_name -> wafv2.LabelNameCondition
-	53,  // 32: wafv2.CookieMatchPattern.all:type_name -> wafv2.All
-	78,  // 33: wafv2.Cookies.matchpattern:type_name -> wafv2.CookieMatchPattern
-	25,  // 34: wafv2.Cookies.matchscope:type_name -> wafv2.MapMatchScope
-	26,  // 35: wafv2.Cookies.oversizehandling:type_name -> wafv2.OversizeHandling
-	93,  // 36: wafv2.CountAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
-	36,  // 37: wafv2.CreateAPIKeyRequest.scope:type_name -> wafv2.Scope
-	17,  // 38: wafv2.CreateIPSetRequest.ipaddressversion:type_name -> wafv2.IPAddressVersion
-	36,  // 39: wafv2.CreateIPSetRequest.scope:type_name -> wafv2.Scope
-	291, // 40: wafv2.CreateIPSetRequest.tags:type_name -> wafv2.Tag
-	177, // 41: wafv2.CreateIPSetResponse.summary:type_name -> wafv2.IPSetSummary
-	260, // 42: wafv2.CreateRegexPatternSetRequest.regularexpressionlist:type_name -> wafv2.Regex
-	36,  // 43: wafv2.CreateRegexPatternSetRequest.scope:type_name -> wafv2.Scope
-	291, // 44: wafv2.CreateRegexPatternSetRequest.tags:type_name -> wafv2.Tag
-	264, // 45: wafv2.CreateRegexPatternSetResponse.summary:type_name -> wafv2.RegexPatternSetSummary
-	338, // 46: wafv2.CreateRuleGroupRequest.customresponsebodies:type_name -> wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntry
-	225, // 47: wafv2.CreateRuleGroupRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
-	276, // 48: wafv2.CreateRuleGroupRequest.rules:type_name -> wafv2.Rule
-	36,  // 49: wafv2.CreateRuleGroupRequest.scope:type_name -> wafv2.Scope
-	291, // 50: wafv2.CreateRuleGroupRequest.tags:type_name -> wafv2.Tag
-	313, // 51: wafv2.CreateRuleGroupRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	281, // 52: wafv2.CreateRuleGroupResponse.summary:type_name -> wafv2.RuleGroupSummary
-	58,  // 53: wafv2.CreateWebACLRequest.applicationconfig:type_name -> wafv2.ApplicationConfig
-	62,  // 54: wafv2.CreateWebACLRequest.associationconfig:type_name -> wafv2.AssociationConfig
-	68,  // 55: wafv2.CreateWebACLRequest.captchaconfig:type_name -> wafv2.CaptchaConfig
-	71,  // 56: wafv2.CreateWebACLRequest.challengeconfig:type_name -> wafv2.ChallengeConfig
-	339, // 57: wafv2.CreateWebACLRequest.customresponsebodies:type_name -> wafv2.CreateWebACLRequest.CustomresponsebodiesEntry
-	98,  // 58: wafv2.CreateWebACLRequest.dataprotectionconfig:type_name -> wafv2.DataProtectionConfig
-	99,  // 59: wafv2.CreateWebACLRequest.defaultaction:type_name -> wafv2.DefaultAction
-	225, // 60: wafv2.CreateWebACLRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
-	230, // 61: wafv2.CreateWebACLRequest.onsourceddosprotectionconfig:type_name -> wafv2.OnSourceDDoSProtectionConfig
-	276, // 62: wafv2.CreateWebACLRequest.rules:type_name -> wafv2.Rule
-	36,  // 63: wafv2.CreateWebACLRequest.scope:type_name -> wafv2.Scope
-	291, // 64: wafv2.CreateWebACLRequest.tags:type_name -> wafv2.Tag
-	313, // 65: wafv2.CreateWebACLRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	335, // 66: wafv2.CreateWebACLResponse.summary:type_name -> wafv2.WebACLSummary
-	235, // 67: wafv2.CryptoConfig.paymentnetworks:type_name -> wafv2.PaymentNetwork
-	92,  // 68: wafv2.CustomRequestHandling.insertheaders:type_name -> wafv2.CustomHTTPHeader
-	92,  // 69: wafv2.CustomResponse.responseheaders:type_name -> wafv2.CustomHTTPHeader
-	35,  // 70: wafv2.CustomResponseBody.contenttype:type_name -> wafv2.ResponseContentType
-	9,   // 71: wafv2.DataProtection.action:type_name -> wafv2.DataProtectionAction
-	128, // 72: wafv2.DataProtection.field:type_name -> wafv2.FieldToProtect
-	97,  // 73: wafv2.DataProtectionConfig.dataprotections:type_name -> wafv2.DataProtection
-	55,  // 74: wafv2.DefaultAction.allow:type_name -> wafv2.AllowAction
-	63,  // 75: wafv2.DefaultAction.block:type_name -> wafv2.BlockAction
-	36,  // 76: wafv2.DeleteAPIKeyRequest.scope:type_name -> wafv2.Scope
-	36,  // 77: wafv2.DeleteIPSetRequest.scope:type_name -> wafv2.Scope
-	22,  // 78: wafv2.DeleteLoggingConfigurationRequest.logscope:type_name -> wafv2.LogScope
-	23,  // 79: wafv2.DeleteLoggingConfigurationRequest.logtype:type_name -> wafv2.LogType
-	36,  // 80: wafv2.DeleteRegexPatternSetRequest.scope:type_name -> wafv2.Scope
-	36,  // 81: wafv2.DeleteRuleGroupRequest.scope:type_name -> wafv2.Scope
-	36,  // 82: wafv2.DeleteWebACLRequest.scope:type_name -> wafv2.Scope
-	36,  // 83: wafv2.DescribeAllManagedProductsRequest.scope:type_name -> wafv2.Scope
-	215, // 84: wafv2.DescribeAllManagedProductsResponse.managedproducts:type_name -> wafv2.ManagedProductDescriptor
-	36,  // 85: wafv2.DescribeManagedProductsByVendorRequest.scope:type_name -> wafv2.Scope
-	215, // 86: wafv2.DescribeManagedProductsByVendorResponse.managedproducts:type_name -> wafv2.ManagedProductDescriptor
-	36,  // 87: wafv2.DescribeManagedRuleGroupRequest.scope:type_name -> wafv2.Scope
-	186, // 88: wafv2.DescribeManagedRuleGroupResponse.availablelabels:type_name -> wafv2.LabelSummary
-	186, // 89: wafv2.DescribeManagedRuleGroupResponse.consumedlabels:type_name -> wafv2.LabelSummary
-	282, // 90: wafv2.DescribeManagedRuleGroupResponse.rules:type_name -> wafv2.RuleSummary
-	54,  // 91: wafv2.FieldToMatch.allqueryarguments:type_name -> wafv2.AllQueryArguments
-	64,  // 92: wafv2.FieldToMatch.body:type_name -> wafv2.Body
-	79,  // 93: wafv2.FieldToMatch.cookies:type_name -> wafv2.Cookies
-	172, // 94: wafv2.FieldToMatch.headerorder:type_name -> wafv2.HeaderOrder
-	173, // 95: wafv2.FieldToMatch.headers:type_name -> wafv2.Headers
-	179, // 96: wafv2.FieldToMatch.ja3fingerprint:type_name -> wafv2.JA3Fingerprint
-	180, // 97: wafv2.FieldToMatch.ja4fingerprint:type_name -> wafv2.JA4Fingerprint
-	181, // 98: wafv2.FieldToMatch.jsonbody:type_name -> wafv2.JsonBody
-	223, // 99: wafv2.FieldToMatch.method:type_name -> wafv2.Method
-	244, // 100: wafv2.FieldToMatch.querystring:type_name -> wafv2.QueryString
-	285, // 101: wafv2.FieldToMatch.singleheader:type_name -> wafv2.SingleHeader
-	286, // 102: wafv2.FieldToMatch.singlequeryargument:type_name -> wafv2.SingleQueryArgument
-	309, // 103: wafv2.FieldToMatch.urifragment:type_name -> wafv2.UriFragment
-	310, // 104: wafv2.FieldToMatch.uripath:type_name -> wafv2.UriPath
-	12,  // 105: wafv2.FieldToProtect.fieldtype:type_name -> wafv2.FieldToProtectType
-	13,  // 106: wafv2.Filter.behavior:type_name -> wafv2.FilterBehavior
-	77,  // 107: wafv2.Filter.conditions:type_name -> wafv2.Condition
-	14,  // 108: wafv2.Filter.requirement:type_name -> wafv2.FilterRequirement
-	132, // 109: wafv2.FirewallManagerRuleGroup.firewallmanagerstatement:type_name -> wafv2.FirewallManagerStatement
-	232, // 110: wafv2.FirewallManagerRuleGroup.overrideaction:type_name -> wafv2.OverrideAction
-	313, // 111: wafv2.FirewallManagerRuleGroup.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	217, // 112: wafv2.FirewallManagerStatement.managedrulegroupstatement:type_name -> wafv2.ManagedRuleGroupStatement
-	280, // 113: wafv2.FirewallManagerStatement.rulegroupreferencestatement:type_name -> wafv2.RuleGroupReferenceStatement
-	11,  // 114: wafv2.ForwardedIPConfig.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	29,  // 115: wafv2.GenerateMobileSdkReleaseUrlRequest.platform:type_name -> wafv2.Platform
-	5,   // 116: wafv2.GeoMatchStatement.countrycodes:type_name -> wafv2.CountryCode
-	133, // 117: wafv2.GeoMatchStatement.forwardedipconfig:type_name -> wafv2.ForwardedIPConfig
-	36,  // 118: wafv2.GetDecryptedAPIKeyRequest.scope:type_name -> wafv2.Scope
-	36,  // 119: wafv2.GetIPSetRequest.scope:type_name -> wafv2.Scope
-	174, // 120: wafv2.GetIPSetResponse.ipset:type_name -> wafv2.IPSet
-	22,  // 121: wafv2.GetLoggingConfigurationRequest.logscope:type_name -> wafv2.LogScope
-	23,  // 122: wafv2.GetLoggingConfigurationRequest.logtype:type_name -> wafv2.LogType
-	213, // 123: wafv2.GetLoggingConfigurationResponse.loggingconfiguration:type_name -> wafv2.LoggingConfiguration
-	36,  // 124: wafv2.GetManagedRuleSetRequest.scope:type_name -> wafv2.Scope
-	220, // 125: wafv2.GetManagedRuleSetResponse.managedruleset:type_name -> wafv2.ManagedRuleSet
-	29,  // 126: wafv2.GetMobileSdkReleaseRequest.platform:type_name -> wafv2.Platform
-	224, // 127: wafv2.GetMobileSdkReleaseResponse.mobilesdkrelease:type_name -> wafv2.MobileSdkRelease
-	36,  // 128: wafv2.GetRateBasedStatementManagedKeysRequest.scope:type_name -> wafv2.Scope
-	247, // 129: wafv2.GetRateBasedStatementManagedKeysResponse.managedkeysipv4:type_name -> wafv2.RateBasedStatementManagedKeysIPSet
-	247, // 130: wafv2.GetRateBasedStatementManagedKeysResponse.managedkeysipv6:type_name -> wafv2.RateBasedStatementManagedKeysIPSet
-	36,  // 131: wafv2.GetRegexPatternSetRequest.scope:type_name -> wafv2.Scope
-	262, // 132: wafv2.GetRegexPatternSetResponse.regexpatternset:type_name -> wafv2.RegexPatternSet
-	7,   // 133: wafv2.GetRevenueStatisticsRequest.currency:type_name -> wafv2.Currency
-	226, // 134: wafv2.GetRevenueStatisticsRequest.filters:type_name -> wafv2.MonetizationFilter
-	16,  // 135: wafv2.GetRevenueStatisticsRequest.groupby:type_name -> wafv2.GroupByType
-	36,  // 136: wafv2.GetRevenueStatisticsRequest.scope:type_name -> wafv2.Scope
-	31,  // 137: wafv2.GetRevenueStatisticsRequest.sortby:type_name -> wafv2.RankingSortBy
-	42,  // 138: wafv2.GetRevenueStatisticsRequest.sortorder:type_name -> wafv2.SortOrder
-	32,  // 139: wafv2.GetRevenueStatisticsRequest.statistictype:type_name -> wafv2.RankingStatisticType
-	296, // 140: wafv2.GetRevenueStatisticsRequest.timewindow:type_name -> wafv2.TimeWindow
-	275, // 141: wafv2.GetRevenueStatisticsResponse.revenuepathstatistics:type_name -> wafv2.RevenuePathStatistics
-	288, // 142: wafv2.GetRevenueStatisticsResponse.sourcestatistics:type_name -> wafv2.SourceStatistics
-	7,   // 143: wafv2.GetRevenueStatisticsSummaryRequest.currency:type_name -> wafv2.Currency
-	226, // 144: wafv2.GetRevenueStatisticsSummaryRequest.filters:type_name -> wafv2.MonetizationFilter
-	36,  // 145: wafv2.GetRevenueStatisticsSummaryRequest.scope:type_name -> wafv2.Scope
-	296, // 146: wafv2.GetRevenueStatisticsSummaryRequest.timewindow:type_name -> wafv2.TimeWindow
-	274, // 147: wafv2.GetRevenueStatisticsSummaryResponse.revenuebreakdown:type_name -> wafv2.RevenueBreakdown
-	7,   // 148: wafv2.GetRevenueStatisticsTimeSeriesRequest.currency:type_name -> wafv2.Currency
-	226, // 149: wafv2.GetRevenueStatisticsTimeSeriesRequest.filters:type_name -> wafv2.MonetizationFilter
-	16,  // 150: wafv2.GetRevenueStatisticsTimeSeriesRequest.groupby:type_name -> wafv2.GroupByType
-	19,  // 151: wafv2.GetRevenueStatisticsTimeSeriesRequest.interval:type_name -> wafv2.IntervalType
-	36,  // 152: wafv2.GetRevenueStatisticsTimeSeriesRequest.scope:type_name -> wafv2.Scope
-	44,  // 153: wafv2.GetRevenueStatisticsTimeSeriesRequest.statistictype:type_name -> wafv2.TimeSeriesStatisticType
-	296, // 154: wafv2.GetRevenueStatisticsTimeSeriesRequest.timewindow:type_name -> wafv2.TimeWindow
-	96,  // 155: wafv2.GetRevenueStatisticsTimeSeriesResponse.datapoints:type_name -> wafv2.DataPointEntry
-	36,  // 156: wafv2.GetRuleGroupRequest.scope:type_name -> wafv2.Scope
-	279, // 157: wafv2.GetRuleGroupResponse.rulegroup:type_name -> wafv2.RuleGroup
-	36,  // 158: wafv2.GetSampledRequestsRequest.scope:type_name -> wafv2.Scope
-	296, // 159: wafv2.GetSampledRequestsRequest.timewindow:type_name -> wafv2.TimeWindow
-	283, // 160: wafv2.GetSampledRequestsResponse.sampledrequests:type_name -> wafv2.SampledHTTPRequest
-	296, // 161: wafv2.GetSampledRequestsResponse.timewindow:type_name -> wafv2.TimeWindow
-	36,  // 162: wafv2.GetTopPathStatisticsByTrafficRequest.scope:type_name -> wafv2.Scope
-	296, // 163: wafv2.GetTopPathStatisticsByTrafficRequest.timewindow:type_name -> wafv2.TimeWindow
-	234, // 164: wafv2.GetTopPathStatisticsByTrafficResponse.pathstatistics:type_name -> wafv2.PathStatistics
-	234, // 165: wafv2.GetTopPathStatisticsByTrafficResponse.topcategories:type_name -> wafv2.PathStatistics
-	334, // 166: wafv2.GetWebACLForResourceResponse.webacl:type_name -> wafv2.WebACL
-	36,  // 167: wafv2.GetWebACLRequest.scope:type_name -> wafv2.Scope
-	334, // 168: wafv2.GetWebACLResponse.webacl:type_name -> wafv2.WebACL
-	169, // 169: wafv2.HTTPRequest.headers:type_name -> wafv2.HTTPHeader
-	53,  // 170: wafv2.HeaderMatchPattern.all:type_name -> wafv2.All
-	26,  // 171: wafv2.HeaderOrder.oversizehandling:type_name -> wafv2.OversizeHandling
-	171, // 172: wafv2.Headers.matchpattern:type_name -> wafv2.HeaderMatchPattern
-	25,  // 173: wafv2.Headers.matchscope:type_name -> wafv2.MapMatchScope
-	26,  // 174: wafv2.Headers.oversizehandling:type_name -> wafv2.OversizeHandling
-	17,  // 175: wafv2.IPSet.ipaddressversion:type_name -> wafv2.IPAddressVersion
-	11,  // 176: wafv2.IPSetForwardedIPConfig.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	15,  // 177: wafv2.IPSetForwardedIPConfig.position:type_name -> wafv2.ForwardedIPPosition
-	175, // 178: wafv2.IPSetReferenceStatement.ipsetforwardedipconfig:type_name -> wafv2.IPSetForwardedIPConfig
-	11,  // 179: wafv2.JA3Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	11,  // 180: wafv2.JA4Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	3,   // 181: wafv2.JsonBody.invalidfallbackbehavior:type_name -> wafv2.BodyParsingFallbackBehavior
-	182, // 182: wafv2.JsonBody.matchpattern:type_name -> wafv2.JsonMatchPattern
-	20,  // 183: wafv2.JsonBody.matchscope:type_name -> wafv2.JsonMatchScope
-	26,  // 184: wafv2.JsonBody.oversizehandling:type_name -> wafv2.OversizeHandling
-	53,  // 185: wafv2.JsonMatchPattern.all:type_name -> wafv2.All
-	21,  // 186: wafv2.LabelMatchStatement.scope:type_name -> wafv2.LabelMatchScope
-	36,  // 187: wafv2.ListAPIKeysRequest.scope:type_name -> wafv2.Scope
-	46,  // 188: wafv2.ListAPIKeysResponse.apikeysummaries:type_name -> wafv2.APIKeySummary
-	36,  // 189: wafv2.ListAvailableManagedRuleGroupVersionsRequest.scope:type_name -> wafv2.Scope
-	219, // 190: wafv2.ListAvailableManagedRuleGroupVersionsResponse.versions:type_name -> wafv2.ManagedRuleGroupVersion
-	36,  // 191: wafv2.ListAvailableManagedRuleGroupsRequest.scope:type_name -> wafv2.Scope
-	218, // 192: wafv2.ListAvailableManagedRuleGroupsResponse.managedrulegroups:type_name -> wafv2.ManagedRuleGroupSummary
-	36,  // 193: wafv2.ListIPSetsRequest.scope:type_name -> wafv2.Scope
-	177, // 194: wafv2.ListIPSetsResponse.ipsets:type_name -> wafv2.IPSetSummary
-	22,  // 195: wafv2.ListLoggingConfigurationsRequest.logscope:type_name -> wafv2.LogScope
-	36,  // 196: wafv2.ListLoggingConfigurationsRequest.scope:type_name -> wafv2.Scope
-	213, // 197: wafv2.ListLoggingConfigurationsResponse.loggingconfigurations:type_name -> wafv2.LoggingConfiguration
-	36,  // 198: wafv2.ListManagedRuleSetsRequest.scope:type_name -> wafv2.Scope
-	221, // 199: wafv2.ListManagedRuleSetsResponse.managedrulesets:type_name -> wafv2.ManagedRuleSetSummary
-	29,  // 200: wafv2.ListMobileSdkReleasesRequest.platform:type_name -> wafv2.Platform
-	265, // 201: wafv2.ListMobileSdkReleasesResponse.releasesummaries:type_name -> wafv2.ReleaseSummary
-	36,  // 202: wafv2.ListRegexPatternSetsRequest.scope:type_name -> wafv2.Scope
-	264, // 203: wafv2.ListRegexPatternSetsResponse.regexpatternsets:type_name -> wafv2.RegexPatternSetSummary
-	34,  // 204: wafv2.ListResourcesForWebACLRequest.resourcetype:type_name -> wafv2.ResourceType
-	36,  // 205: wafv2.ListRuleGroupsRequest.scope:type_name -> wafv2.Scope
-	281, // 206: wafv2.ListRuleGroupsResponse.rulegroups:type_name -> wafv2.RuleGroupSummary
-	7,   // 207: wafv2.ListSettlementRecordsRequest.currency:type_name -> wafv2.Currency
-	226, // 208: wafv2.ListSettlementRecordsRequest.filters:type_name -> wafv2.MonetizationFilter
-	36,  // 209: wafv2.ListSettlementRecordsRequest.scope:type_name -> wafv2.Scope
-	39,  // 210: wafv2.ListSettlementRecordsRequest.sortby:type_name -> wafv2.SettlementSortBy
-	42,  // 211: wafv2.ListSettlementRecordsRequest.sortorder:type_name -> wafv2.SortOrder
-	296, // 212: wafv2.ListSettlementRecordsRequest.timewindow:type_name -> wafv2.TimeWindow
-	284, // 213: wafv2.ListSettlementRecordsResponse.settlements:type_name -> wafv2.SettlementRecord
-	292, // 214: wafv2.ListTagsForResourceResponse.taginfoforresource:type_name -> wafv2.TagInfoForResource
-	36,  // 215: wafv2.ListWebACLsRequest.scope:type_name -> wafv2.Scope
-	335, // 216: wafv2.ListWebACLsResponse.webacls:type_name -> wafv2.WebACLSummary
-	22,  // 217: wafv2.LoggingConfiguration.logscope:type_name -> wafv2.LogScope
-	23,  // 218: wafv2.LoggingConfiguration.logtype:type_name -> wafv2.LogType
-	214, // 219: wafv2.LoggingConfiguration.loggingfilter:type_name -> wafv2.LoggingFilter
-	127, // 220: wafv2.LoggingConfiguration.redactedfields:type_name -> wafv2.FieldToMatch
-	13,  // 221: wafv2.LoggingFilter.defaultbehavior:type_name -> wafv2.FilterBehavior
-	129, // 222: wafv2.LoggingFilter.filters:type_name -> wafv2.Filter
-	47,  // 223: wafv2.ManagedRuleGroupConfig.awsmanagedrulesacfpruleset:type_name -> wafv2.AWSManagedRulesACFPRuleSet
-	48,  // 224: wafv2.ManagedRuleGroupConfig.awsmanagedrulesatpruleset:type_name -> wafv2.AWSManagedRulesATPRuleSet
-	49,  // 225: wafv2.ManagedRuleGroupConfig.awsmanagedrulesantiddosruleset:type_name -> wafv2.AWSManagedRulesAntiDDoSRuleSet
-	50,  // 226: wafv2.ManagedRuleGroupConfig.awsmanagedrulesbotcontrolruleset:type_name -> wafv2.AWSManagedRulesBotControlRuleSet
-	233, // 227: wafv2.ManagedRuleGroupConfig.passwordfield:type_name -> wafv2.PasswordField
-	28,  // 228: wafv2.ManagedRuleGroupConfig.payloadtype:type_name -> wafv2.PayloadType
-	311, // 229: wafv2.ManagedRuleGroupConfig.usernamefield:type_name -> wafv2.UsernameField
-	126, // 230: wafv2.ManagedRuleGroupStatement.excludedrules:type_name -> wafv2.ExcludedRule
-	216, // 231: wafv2.ManagedRuleGroupStatement.managedrulegroupconfigs:type_name -> wafv2.ManagedRuleGroupConfig
-	278, // 232: wafv2.ManagedRuleGroupStatement.ruleactionoverrides:type_name -> wafv2.RuleActionOverride
-	290, // 233: wafv2.ManagedRuleGroupStatement.scopedownstatement:type_name -> wafv2.Statement
-	340, // 234: wafv2.ManagedRuleSet.publishedversions:type_name -> wafv2.ManagedRuleSet.PublishedversionsEntry
-	291, // 235: wafv2.MobileSdkRelease.tags:type_name -> wafv2.Tag
-	91,  // 236: wafv2.MonetizationConfig.cryptoconfig:type_name -> wafv2.CryptoConfig
-	8,   // 237: wafv2.MonetizationConfig.currencymode:type_name -> wafv2.CurrencyMode
-	290, // 238: wafv2.NotStatement.statement:type_name -> wafv2.Statement
-	24,  // 239: wafv2.OnSourceDDoSProtectionConfig.alblowreputationmode:type_name -> wafv2.LowReputationMode
-	290, // 240: wafv2.OrStatement.statements:type_name -> wafv2.Statement
-	80,  // 241: wafv2.OverrideAction.count:type_name -> wafv2.CountAction
-	228, // 242: wafv2.OverrideAction.none:type_name -> wafv2.NoneAction
-	130, // 243: wafv2.PathStatistics.source:type_name -> wafv2.FilterSource
-	65,  // 244: wafv2.PathStatistics.topbots:type_name -> wafv2.BotStatistics
-	2,   // 245: wafv2.PaymentNetwork.chain:type_name -> wafv2.BlockchainChain
-	237, // 246: wafv2.PaymentNetwork.prices:type_name -> wafv2.Price
-	6,   // 247: wafv2.Price.currency:type_name -> wafv2.CryptoCurrency
-	213, // 248: wafv2.PutLoggingConfigurationRequest.loggingconfiguration:type_name -> wafv2.LoggingConfiguration
-	213, // 249: wafv2.PutLoggingConfigurationResponse.loggingconfiguration:type_name -> wafv2.LoggingConfiguration
-	36,  // 250: wafv2.PutManagedRuleSetVersionsRequest.scope:type_name -> wafv2.Scope
-	341, // 251: wafv2.PutManagedRuleSetVersionsRequest.versionstopublish:type_name -> wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntry
-	33,  // 252: wafv2.RateBasedStatement.aggregatekeytype:type_name -> wafv2.RateBasedStatementAggregateKeyType
-	246, // 253: wafv2.RateBasedStatement.customkeys:type_name -> wafv2.RateBasedStatementCustomKey
-	133, // 254: wafv2.RateBasedStatement.forwardedipconfig:type_name -> wafv2.ForwardedIPConfig
-	290, // 255: wafv2.RateBasedStatement.scopedownstatement:type_name -> wafv2.Statement
-	248, // 256: wafv2.RateBasedStatementCustomKey.asn:type_name -> wafv2.RateLimitAsn
-	249, // 257: wafv2.RateBasedStatementCustomKey.cookie:type_name -> wafv2.RateLimitCookie
-	250, // 258: wafv2.RateBasedStatementCustomKey.forwardedip:type_name -> wafv2.RateLimitForwardedIP
-	251, // 259: wafv2.RateBasedStatementCustomKey.httpmethod:type_name -> wafv2.RateLimitHTTPMethod
-	252, // 260: wafv2.RateBasedStatementCustomKey.header:type_name -> wafv2.RateLimitHeader
-	253, // 261: wafv2.RateBasedStatementCustomKey.ip:type_name -> wafv2.RateLimitIP
-	254, // 262: wafv2.RateBasedStatementCustomKey.ja3fingerprint:type_name -> wafv2.RateLimitJA3Fingerprint
-	255, // 263: wafv2.RateBasedStatementCustomKey.ja4fingerprint:type_name -> wafv2.RateLimitJA4Fingerprint
-	256, // 264: wafv2.RateBasedStatementCustomKey.labelnamespace:type_name -> wafv2.RateLimitLabelNamespace
-	257, // 265: wafv2.RateBasedStatementCustomKey.queryargument:type_name -> wafv2.RateLimitQueryArgument
-	258, // 266: wafv2.RateBasedStatementCustomKey.querystring:type_name -> wafv2.RateLimitQueryString
-	259, // 267: wafv2.RateBasedStatementCustomKey.uripath:type_name -> wafv2.RateLimitUriPath
-	17,  // 268: wafv2.RateBasedStatementManagedKeysIPSet.ipaddressversion:type_name -> wafv2.IPAddressVersion
-	295, // 269: wafv2.RateLimitCookie.texttransformations:type_name -> wafv2.TextTransformation
-	295, // 270: wafv2.RateLimitHeader.texttransformations:type_name -> wafv2.TextTransformation
-	11,  // 271: wafv2.RateLimitJA3Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	11,  // 272: wafv2.RateLimitJA4Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	295, // 273: wafv2.RateLimitQueryArgument.texttransformations:type_name -> wafv2.TextTransformation
-	295, // 274: wafv2.RateLimitQueryString.texttransformations:type_name -> wafv2.TextTransformation
-	295, // 275: wafv2.RateLimitUriPath.texttransformations:type_name -> wafv2.TextTransformation
-	127, // 276: wafv2.RegexMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
-	295, // 277: wafv2.RegexMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
-	260, // 278: wafv2.RegexPatternSet.regularexpressionlist:type_name -> wafv2.Regex
-	127, // 279: wafv2.RegexPatternSetReferenceStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
-	295, // 280: wafv2.RegexPatternSetReferenceStatement.texttransformations:type_name -> wafv2.TextTransformation
-	41,  // 281: wafv2.RequestBodyAssociatedResourceTypeConfig.defaultsizeinspectionlimit:type_name -> wafv2.SizeInspectionLimit
-	233, // 282: wafv2.RequestInspection.passwordfield:type_name -> wafv2.PasswordField
-	28,  // 283: wafv2.RequestInspection.payloadtype:type_name -> wafv2.PayloadType
-	311, // 284: wafv2.RequestInspection.usernamefield:type_name -> wafv2.UsernameField
-	52,  // 285: wafv2.RequestInspectionACFP.addressfields:type_name -> wafv2.AddressField
-	125, // 286: wafv2.RequestInspectionACFP.emailfield:type_name -> wafv2.EmailField
-	233, // 287: wafv2.RequestInspectionACFP.passwordfield:type_name -> wafv2.PasswordField
-	28,  // 288: wafv2.RequestInspectionACFP.payloadtype:type_name -> wafv2.PayloadType
-	236, // 289: wafv2.RequestInspectionACFP.phonenumberfields:type_name -> wafv2.PhoneNumberField
-	311, // 290: wafv2.RequestInspectionACFP.usernamefield:type_name -> wafv2.UsernameField
-	270, // 291: wafv2.ResponseInspection.bodycontains:type_name -> wafv2.ResponseInspectionBodyContains
-	271, // 292: wafv2.ResponseInspection.header:type_name -> wafv2.ResponseInspectionHeader
-	272, // 293: wafv2.ResponseInspection.json:type_name -> wafv2.ResponseInspectionJson
-	273, // 294: wafv2.ResponseInspection.statuscode:type_name -> wafv2.ResponseInspectionStatusCode
-	7,   // 295: wafv2.RevenueBreakdown.currency:type_name -> wafv2.Currency
-	277, // 296: wafv2.Rule.action:type_name -> wafv2.RuleAction
-	68,  // 297: wafv2.Rule.captchaconfig:type_name -> wafv2.CaptchaConfig
-	71,  // 298: wafv2.Rule.challengeconfig:type_name -> wafv2.ChallengeConfig
-	232, // 299: wafv2.Rule.overrideaction:type_name -> wafv2.OverrideAction
-	183, // 300: wafv2.Rule.rulelabels:type_name -> wafv2.Label
-	290, // 301: wafv2.Rule.statement:type_name -> wafv2.Statement
-	313, // 302: wafv2.Rule.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	55,  // 303: wafv2.RuleAction.allow:type_name -> wafv2.AllowAction
-	63,  // 304: wafv2.RuleAction.block:type_name -> wafv2.BlockAction
-	67,  // 305: wafv2.RuleAction.captcha:type_name -> wafv2.CaptchaAction
-	70,  // 306: wafv2.RuleAction.challenge:type_name -> wafv2.ChallengeAction
-	80,  // 307: wafv2.RuleAction.count:type_name -> wafv2.CountAction
-	227, // 308: wafv2.RuleAction.monetize:type_name -> wafv2.MonetizeAction
-	277, // 309: wafv2.RuleActionOverride.actiontouse:type_name -> wafv2.RuleAction
-	186, // 310: wafv2.RuleGroup.availablelabels:type_name -> wafv2.LabelSummary
-	186, // 311: wafv2.RuleGroup.consumedlabels:type_name -> wafv2.LabelSummary
-	342, // 312: wafv2.RuleGroup.customresponsebodies:type_name -> wafv2.RuleGroup.CustomresponsebodiesEntry
-	225, // 313: wafv2.RuleGroup.monetizationconfig:type_name -> wafv2.MonetizationConfig
-	276, // 314: wafv2.RuleGroup.rules:type_name -> wafv2.Rule
-	313, // 315: wafv2.RuleGroup.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	126, // 316: wafv2.RuleGroupReferenceStatement.excludedrules:type_name -> wafv2.ExcludedRule
-	278, // 317: wafv2.RuleGroupReferenceStatement.ruleactionoverrides:type_name -> wafv2.RuleActionOverride
-	277, // 318: wafv2.RuleSummary.action:type_name -> wafv2.RuleAction
-	69,  // 319: wafv2.SampledHTTPRequest.captcharesponse:type_name -> wafv2.CaptchaResponse
-	72,  // 320: wafv2.SampledHTTPRequest.challengeresponse:type_name -> wafv2.ChallengeResponse
-	183, // 321: wafv2.SampledHTTPRequest.labels:type_name -> wafv2.Label
-	170, // 322: wafv2.SampledHTTPRequest.request:type_name -> wafv2.HTTPRequest
-	169, // 323: wafv2.SampledHTTPRequest.requestheadersinserted:type_name -> wafv2.HTTPHeader
-	7,   // 324: wafv2.SettlementRecord.currency:type_name -> wafv2.Currency
-	40,  // 325: wafv2.SettlementRecord.status:type_name -> wafv2.SettlementStatus
-	4,   // 326: wafv2.SizeConstraintStatement.comparisonoperator:type_name -> wafv2.ComparisonOperator
-	127, // 327: wafv2.SizeConstraintStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
-	295, // 328: wafv2.SizeConstraintStatement.texttransformations:type_name -> wafv2.TextTransformation
-	127, // 329: wafv2.SqliMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
-	37,  // 330: wafv2.SqliMatchStatement.sensitivitylevel:type_name -> wafv2.SensitivityLevel
-	295, // 331: wafv2.SqliMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
-	56,  // 332: wafv2.Statement.andstatement:type_name -> wafv2.AndStatement
-	59,  // 333: wafv2.Statement.asnmatchstatement:type_name -> wafv2.AsnMatchStatement
-	66,  // 334: wafv2.Statement.bytematchstatement:type_name -> wafv2.ByteMatchStatement
-	136, // 335: wafv2.Statement.geomatchstatement:type_name -> wafv2.GeoMatchStatement
-	176, // 336: wafv2.Statement.ipsetreferencestatement:type_name -> wafv2.IPSetReferenceStatement
-	184, // 337: wafv2.Statement.labelmatchstatement:type_name -> wafv2.LabelMatchStatement
-	217, // 338: wafv2.Statement.managedrulegroupstatement:type_name -> wafv2.ManagedRuleGroupStatement
-	229, // 339: wafv2.Statement.notstatement:type_name -> wafv2.NotStatement
-	231, // 340: wafv2.Statement.orstatement:type_name -> wafv2.OrStatement
-	245, // 341: wafv2.Statement.ratebasedstatement:type_name -> wafv2.RateBasedStatement
-	261, // 342: wafv2.Statement.regexmatchstatement:type_name -> wafv2.RegexMatchStatement
-	263, // 343: wafv2.Statement.regexpatternsetreferencestatement:type_name -> wafv2.RegexPatternSetReferenceStatement
-	280, // 344: wafv2.Statement.rulegroupreferencestatement:type_name -> wafv2.RuleGroupReferenceStatement
-	287, // 345: wafv2.Statement.sizeconstraintstatement:type_name -> wafv2.SizeConstraintStatement
-	289, // 346: wafv2.Statement.sqlimatchstatement:type_name -> wafv2.SqliMatchStatement
-	336, // 347: wafv2.Statement.xssmatchstatement:type_name -> wafv2.XssMatchStatement
-	291, // 348: wafv2.TagInfoForResource.taglist:type_name -> wafv2.Tag
-	291, // 349: wafv2.TagResourceRequest.tags:type_name -> wafv2.Tag
-	43,  // 350: wafv2.TextTransformation.type:type_name -> wafv2.TextTransformationType
-	36,  // 351: wafv2.UpdateIPSetRequest.scope:type_name -> wafv2.Scope
-	36,  // 352: wafv2.UpdateManagedRuleSetVersionExpiryDateRequest.scope:type_name -> wafv2.Scope
-	260, // 353: wafv2.UpdateRegexPatternSetRequest.regularexpressionlist:type_name -> wafv2.Regex
-	36,  // 354: wafv2.UpdateRegexPatternSetRequest.scope:type_name -> wafv2.Scope
-	343, // 355: wafv2.UpdateRuleGroupRequest.customresponsebodies:type_name -> wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntry
-	225, // 356: wafv2.UpdateRuleGroupRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
-	276, // 357: wafv2.UpdateRuleGroupRequest.rules:type_name -> wafv2.Rule
-	36,  // 358: wafv2.UpdateRuleGroupRequest.scope:type_name -> wafv2.Scope
-	313, // 359: wafv2.UpdateRuleGroupRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	58,  // 360: wafv2.UpdateWebACLRequest.applicationconfig:type_name -> wafv2.ApplicationConfig
-	62,  // 361: wafv2.UpdateWebACLRequest.associationconfig:type_name -> wafv2.AssociationConfig
-	68,  // 362: wafv2.UpdateWebACLRequest.captchaconfig:type_name -> wafv2.CaptchaConfig
-	71,  // 363: wafv2.UpdateWebACLRequest.challengeconfig:type_name -> wafv2.ChallengeConfig
-	344, // 364: wafv2.UpdateWebACLRequest.customresponsebodies:type_name -> wafv2.UpdateWebACLRequest.CustomresponsebodiesEntry
-	98,  // 365: wafv2.UpdateWebACLRequest.dataprotectionconfig:type_name -> wafv2.DataProtectionConfig
-	99,  // 366: wafv2.UpdateWebACLRequest.defaultaction:type_name -> wafv2.DefaultAction
-	225, // 367: wafv2.UpdateWebACLRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
-	230, // 368: wafv2.UpdateWebACLRequest.onsourceddosprotectionconfig:type_name -> wafv2.OnSourceDDoSProtectionConfig
-	276, // 369: wafv2.UpdateWebACLRequest.rules:type_name -> wafv2.Rule
-	36,  // 370: wafv2.UpdateWebACLRequest.scope:type_name -> wafv2.Scope
-	313, // 371: wafv2.UpdateWebACLRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	11,  // 372: wafv2.UriFragment.fallbackbehavior:type_name -> wafv2.FallbackBehavior
-	122, // 373: wafv2.WAFFeatureNotIncludedInPricingPlanException.disallowedfeatures:type_name -> wafv2.DisallowedFeature
-	27,  // 374: wafv2.WAFInvalidParameterException.field:type_name -> wafv2.ParameterExceptionField
-	58,  // 375: wafv2.WebACL.applicationconfig:type_name -> wafv2.ApplicationConfig
-	62,  // 376: wafv2.WebACL.associationconfig:type_name -> wafv2.AssociationConfig
-	68,  // 377: wafv2.WebACL.captchaconfig:type_name -> wafv2.CaptchaConfig
-	71,  // 378: wafv2.WebACL.challengeconfig:type_name -> wafv2.ChallengeConfig
-	345, // 379: wafv2.WebACL.customresponsebodies:type_name -> wafv2.WebACL.CustomresponsebodiesEntry
-	98,  // 380: wafv2.WebACL.dataprotectionconfig:type_name -> wafv2.DataProtectionConfig
-	99,  // 381: wafv2.WebACL.defaultaction:type_name -> wafv2.DefaultAction
-	225, // 382: wafv2.WebACL.monetizationconfig:type_name -> wafv2.MonetizationConfig
-	230, // 383: wafv2.WebACL.onsourceddosprotectionconfig:type_name -> wafv2.OnSourceDDoSProtectionConfig
-	131, // 384: wafv2.WebACL.postprocessfirewallmanagerrulegroups:type_name -> wafv2.FirewallManagerRuleGroup
-	131, // 385: wafv2.WebACL.preprocessfirewallmanagerrulegroups:type_name -> wafv2.FirewallManagerRuleGroup
-	276, // 386: wafv2.WebACL.rules:type_name -> wafv2.Rule
-	313, // 387: wafv2.WebACL.visibilityconfig:type_name -> wafv2.VisibilityConfig
-	127, // 388: wafv2.XssMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
-	295, // 389: wafv2.XssMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
-	266, // 390: wafv2.AssociationConfig.RequestbodyEntry.value:type_name -> wafv2.RequestBodyAssociatedResourceTypeConfig
-	95,  // 391: wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
-	95,  // 392: wafv2.CreateWebACLRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
-	222, // 393: wafv2.ManagedRuleSet.PublishedversionsEntry.value:type_name -> wafv2.ManagedRuleSetVersion
-	312, // 394: wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntry.value:type_name -> wafv2.VersionToPublish
-	95,  // 395: wafv2.RuleGroup.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
-	95,  // 396: wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
-	95,  // 397: wafv2.UpdateWebACLRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
-	95,  // 398: wafv2.WebACL.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
-	60,  // 399: wafv2.WAFV2Service.AssociateWebACL:input_type -> wafv2.AssociateWebACLRequest
-	73,  // 400: wafv2.WAFV2Service.CheckCapacity:input_type -> wafv2.CheckCapacityRequest
-	81,  // 401: wafv2.WAFV2Service.CreateAPIKey:input_type -> wafv2.CreateAPIKeyRequest
-	83,  // 402: wafv2.WAFV2Service.CreateIPSet:input_type -> wafv2.CreateIPSetRequest
-	85,  // 403: wafv2.WAFV2Service.CreateRegexPatternSet:input_type -> wafv2.CreateRegexPatternSetRequest
-	87,  // 404: wafv2.WAFV2Service.CreateRuleGroup:input_type -> wafv2.CreateRuleGroupRequest
-	89,  // 405: wafv2.WAFV2Service.CreateWebACL:input_type -> wafv2.CreateWebACLRequest
-	100, // 406: wafv2.WAFV2Service.DeleteAPIKey:input_type -> wafv2.DeleteAPIKeyRequest
-	102, // 407: wafv2.WAFV2Service.DeleteFirewallManagerRuleGroups:input_type -> wafv2.DeleteFirewallManagerRuleGroupsRequest
-	104, // 408: wafv2.WAFV2Service.DeleteIPSet:input_type -> wafv2.DeleteIPSetRequest
-	106, // 409: wafv2.WAFV2Service.DeleteLoggingConfiguration:input_type -> wafv2.DeleteLoggingConfigurationRequest
-	108, // 410: wafv2.WAFV2Service.DeletePermissionPolicy:input_type -> wafv2.DeletePermissionPolicyRequest
-	110, // 411: wafv2.WAFV2Service.DeleteRegexPatternSet:input_type -> wafv2.DeleteRegexPatternSetRequest
-	112, // 412: wafv2.WAFV2Service.DeleteRuleGroup:input_type -> wafv2.DeleteRuleGroupRequest
-	114, // 413: wafv2.WAFV2Service.DeleteWebACL:input_type -> wafv2.DeleteWebACLRequest
-	116, // 414: wafv2.WAFV2Service.DescribeAllManagedProducts:input_type -> wafv2.DescribeAllManagedProductsRequest
-	118, // 415: wafv2.WAFV2Service.DescribeManagedProductsByVendor:input_type -> wafv2.DescribeManagedProductsByVendorRequest
-	120, // 416: wafv2.WAFV2Service.DescribeManagedRuleGroup:input_type -> wafv2.DescribeManagedRuleGroupRequest
-	123, // 417: wafv2.WAFV2Service.DisassociateWebACL:input_type -> wafv2.DisassociateWebACLRequest
-	134, // 418: wafv2.WAFV2Service.GenerateMobileSdkReleaseUrl:input_type -> wafv2.GenerateMobileSdkReleaseUrlRequest
-	137, // 419: wafv2.WAFV2Service.GetDecryptedAPIKey:input_type -> wafv2.GetDecryptedAPIKeyRequest
-	139, // 420: wafv2.WAFV2Service.GetIPSet:input_type -> wafv2.GetIPSetRequest
-	141, // 421: wafv2.WAFV2Service.GetLoggingConfiguration:input_type -> wafv2.GetLoggingConfigurationRequest
-	143, // 422: wafv2.WAFV2Service.GetManagedRuleSet:input_type -> wafv2.GetManagedRuleSetRequest
-	145, // 423: wafv2.WAFV2Service.GetMobileSdkRelease:input_type -> wafv2.GetMobileSdkReleaseRequest
-	147, // 424: wafv2.WAFV2Service.GetPermissionPolicy:input_type -> wafv2.GetPermissionPolicyRequest
-	149, // 425: wafv2.WAFV2Service.GetRateBasedStatementManagedKeys:input_type -> wafv2.GetRateBasedStatementManagedKeysRequest
-	151, // 426: wafv2.WAFV2Service.GetRegexPatternSet:input_type -> wafv2.GetRegexPatternSetRequest
-	153, // 427: wafv2.WAFV2Service.GetRevenueStatistics:input_type -> wafv2.GetRevenueStatisticsRequest
-	155, // 428: wafv2.WAFV2Service.GetRevenueStatisticsSummary:input_type -> wafv2.GetRevenueStatisticsSummaryRequest
-	157, // 429: wafv2.WAFV2Service.GetRevenueStatisticsTimeSeries:input_type -> wafv2.GetRevenueStatisticsTimeSeriesRequest
-	159, // 430: wafv2.WAFV2Service.GetRuleGroup:input_type -> wafv2.GetRuleGroupRequest
-	161, // 431: wafv2.WAFV2Service.GetSampledRequests:input_type -> wafv2.GetSampledRequestsRequest
-	163, // 432: wafv2.WAFV2Service.GetTopPathStatisticsByTraffic:input_type -> wafv2.GetTopPathStatisticsByTrafficRequest
-	167, // 433: wafv2.WAFV2Service.GetWebACL:input_type -> wafv2.GetWebACLRequest
-	165, // 434: wafv2.WAFV2Service.GetWebACLForResource:input_type -> wafv2.GetWebACLForResourceRequest
-	187, // 435: wafv2.WAFV2Service.ListAPIKeys:input_type -> wafv2.ListAPIKeysRequest
-	191, // 436: wafv2.WAFV2Service.ListAvailableManagedRuleGroups:input_type -> wafv2.ListAvailableManagedRuleGroupsRequest
-	189, // 437: wafv2.WAFV2Service.ListAvailableManagedRuleGroupVersions:input_type -> wafv2.ListAvailableManagedRuleGroupVersionsRequest
-	193, // 438: wafv2.WAFV2Service.ListIPSets:input_type -> wafv2.ListIPSetsRequest
-	195, // 439: wafv2.WAFV2Service.ListLoggingConfigurations:input_type -> wafv2.ListLoggingConfigurationsRequest
-	197, // 440: wafv2.WAFV2Service.ListManagedRuleSets:input_type -> wafv2.ListManagedRuleSetsRequest
-	199, // 441: wafv2.WAFV2Service.ListMobileSdkReleases:input_type -> wafv2.ListMobileSdkReleasesRequest
-	201, // 442: wafv2.WAFV2Service.ListRegexPatternSets:input_type -> wafv2.ListRegexPatternSetsRequest
-	203, // 443: wafv2.WAFV2Service.ListResourcesForWebACL:input_type -> wafv2.ListResourcesForWebACLRequest
-	205, // 444: wafv2.WAFV2Service.ListRuleGroups:input_type -> wafv2.ListRuleGroupsRequest
-	207, // 445: wafv2.WAFV2Service.ListSettlementRecords:input_type -> wafv2.ListSettlementRecordsRequest
-	209, // 446: wafv2.WAFV2Service.ListTagsForResource:input_type -> wafv2.ListTagsForResourceRequest
-	211, // 447: wafv2.WAFV2Service.ListWebACLs:input_type -> wafv2.ListWebACLsRequest
-	238, // 448: wafv2.WAFV2Service.PutLoggingConfiguration:input_type -> wafv2.PutLoggingConfigurationRequest
-	240, // 449: wafv2.WAFV2Service.PutManagedRuleSetVersions:input_type -> wafv2.PutManagedRuleSetVersionsRequest
-	242, // 450: wafv2.WAFV2Service.PutPermissionPolicy:input_type -> wafv2.PutPermissionPolicyRequest
-	293, // 451: wafv2.WAFV2Service.TagResource:input_type -> wafv2.TagResourceRequest
-	297, // 452: wafv2.WAFV2Service.UntagResource:input_type -> wafv2.UntagResourceRequest
-	299, // 453: wafv2.WAFV2Service.UpdateIPSet:input_type -> wafv2.UpdateIPSetRequest
-	301, // 454: wafv2.WAFV2Service.UpdateManagedRuleSetVersionExpiryDate:input_type -> wafv2.UpdateManagedRuleSetVersionExpiryDateRequest
-	303, // 455: wafv2.WAFV2Service.UpdateRegexPatternSet:input_type -> wafv2.UpdateRegexPatternSetRequest
-	305, // 456: wafv2.WAFV2Service.UpdateRuleGroup:input_type -> wafv2.UpdateRuleGroupRequest
-	307, // 457: wafv2.WAFV2Service.UpdateWebACL:input_type -> wafv2.UpdateWebACLRequest
-	61,  // 458: wafv2.WAFV2Service.AssociateWebACL:output_type -> wafv2.AssociateWebACLResponse
-	74,  // 459: wafv2.WAFV2Service.CheckCapacity:output_type -> wafv2.CheckCapacityResponse
-	82,  // 460: wafv2.WAFV2Service.CreateAPIKey:output_type -> wafv2.CreateAPIKeyResponse
-	84,  // 461: wafv2.WAFV2Service.CreateIPSet:output_type -> wafv2.CreateIPSetResponse
-	86,  // 462: wafv2.WAFV2Service.CreateRegexPatternSet:output_type -> wafv2.CreateRegexPatternSetResponse
-	88,  // 463: wafv2.WAFV2Service.CreateRuleGroup:output_type -> wafv2.CreateRuleGroupResponse
-	90,  // 464: wafv2.WAFV2Service.CreateWebACL:output_type -> wafv2.CreateWebACLResponse
-	101, // 465: wafv2.WAFV2Service.DeleteAPIKey:output_type -> wafv2.DeleteAPIKeyResponse
-	103, // 466: wafv2.WAFV2Service.DeleteFirewallManagerRuleGroups:output_type -> wafv2.DeleteFirewallManagerRuleGroupsResponse
-	105, // 467: wafv2.WAFV2Service.DeleteIPSet:output_type -> wafv2.DeleteIPSetResponse
-	107, // 468: wafv2.WAFV2Service.DeleteLoggingConfiguration:output_type -> wafv2.DeleteLoggingConfigurationResponse
-	109, // 469: wafv2.WAFV2Service.DeletePermissionPolicy:output_type -> wafv2.DeletePermissionPolicyResponse
-	111, // 470: wafv2.WAFV2Service.DeleteRegexPatternSet:output_type -> wafv2.DeleteRegexPatternSetResponse
-	113, // 471: wafv2.WAFV2Service.DeleteRuleGroup:output_type -> wafv2.DeleteRuleGroupResponse
-	115, // 472: wafv2.WAFV2Service.DeleteWebACL:output_type -> wafv2.DeleteWebACLResponse
-	117, // 473: wafv2.WAFV2Service.DescribeAllManagedProducts:output_type -> wafv2.DescribeAllManagedProductsResponse
-	119, // 474: wafv2.WAFV2Service.DescribeManagedProductsByVendor:output_type -> wafv2.DescribeManagedProductsByVendorResponse
-	121, // 475: wafv2.WAFV2Service.DescribeManagedRuleGroup:output_type -> wafv2.DescribeManagedRuleGroupResponse
-	124, // 476: wafv2.WAFV2Service.DisassociateWebACL:output_type -> wafv2.DisassociateWebACLResponse
-	135, // 477: wafv2.WAFV2Service.GenerateMobileSdkReleaseUrl:output_type -> wafv2.GenerateMobileSdkReleaseUrlResponse
-	138, // 478: wafv2.WAFV2Service.GetDecryptedAPIKey:output_type -> wafv2.GetDecryptedAPIKeyResponse
-	140, // 479: wafv2.WAFV2Service.GetIPSet:output_type -> wafv2.GetIPSetResponse
-	142, // 480: wafv2.WAFV2Service.GetLoggingConfiguration:output_type -> wafv2.GetLoggingConfigurationResponse
-	144, // 481: wafv2.WAFV2Service.GetManagedRuleSet:output_type -> wafv2.GetManagedRuleSetResponse
-	146, // 482: wafv2.WAFV2Service.GetMobileSdkRelease:output_type -> wafv2.GetMobileSdkReleaseResponse
-	148, // 483: wafv2.WAFV2Service.GetPermissionPolicy:output_type -> wafv2.GetPermissionPolicyResponse
-	150, // 484: wafv2.WAFV2Service.GetRateBasedStatementManagedKeys:output_type -> wafv2.GetRateBasedStatementManagedKeysResponse
-	152, // 485: wafv2.WAFV2Service.GetRegexPatternSet:output_type -> wafv2.GetRegexPatternSetResponse
-	154, // 486: wafv2.WAFV2Service.GetRevenueStatistics:output_type -> wafv2.GetRevenueStatisticsResponse
-	156, // 487: wafv2.WAFV2Service.GetRevenueStatisticsSummary:output_type -> wafv2.GetRevenueStatisticsSummaryResponse
-	158, // 488: wafv2.WAFV2Service.GetRevenueStatisticsTimeSeries:output_type -> wafv2.GetRevenueStatisticsTimeSeriesResponse
-	160, // 489: wafv2.WAFV2Service.GetRuleGroup:output_type -> wafv2.GetRuleGroupResponse
-	162, // 490: wafv2.WAFV2Service.GetSampledRequests:output_type -> wafv2.GetSampledRequestsResponse
-	164, // 491: wafv2.WAFV2Service.GetTopPathStatisticsByTraffic:output_type -> wafv2.GetTopPathStatisticsByTrafficResponse
-	168, // 492: wafv2.WAFV2Service.GetWebACL:output_type -> wafv2.GetWebACLResponse
-	166, // 493: wafv2.WAFV2Service.GetWebACLForResource:output_type -> wafv2.GetWebACLForResourceResponse
-	188, // 494: wafv2.WAFV2Service.ListAPIKeys:output_type -> wafv2.ListAPIKeysResponse
-	192, // 495: wafv2.WAFV2Service.ListAvailableManagedRuleGroups:output_type -> wafv2.ListAvailableManagedRuleGroupsResponse
-	190, // 496: wafv2.WAFV2Service.ListAvailableManagedRuleGroupVersions:output_type -> wafv2.ListAvailableManagedRuleGroupVersionsResponse
-	194, // 497: wafv2.WAFV2Service.ListIPSets:output_type -> wafv2.ListIPSetsResponse
-	196, // 498: wafv2.WAFV2Service.ListLoggingConfigurations:output_type -> wafv2.ListLoggingConfigurationsResponse
-	198, // 499: wafv2.WAFV2Service.ListManagedRuleSets:output_type -> wafv2.ListManagedRuleSetsResponse
-	200, // 500: wafv2.WAFV2Service.ListMobileSdkReleases:output_type -> wafv2.ListMobileSdkReleasesResponse
-	202, // 501: wafv2.WAFV2Service.ListRegexPatternSets:output_type -> wafv2.ListRegexPatternSetsResponse
-	204, // 502: wafv2.WAFV2Service.ListResourcesForWebACL:output_type -> wafv2.ListResourcesForWebACLResponse
-	206, // 503: wafv2.WAFV2Service.ListRuleGroups:output_type -> wafv2.ListRuleGroupsResponse
-	208, // 504: wafv2.WAFV2Service.ListSettlementRecords:output_type -> wafv2.ListSettlementRecordsResponse
-	210, // 505: wafv2.WAFV2Service.ListTagsForResource:output_type -> wafv2.ListTagsForResourceResponse
-	212, // 506: wafv2.WAFV2Service.ListWebACLs:output_type -> wafv2.ListWebACLsResponse
-	239, // 507: wafv2.WAFV2Service.PutLoggingConfiguration:output_type -> wafv2.PutLoggingConfigurationResponse
-	241, // 508: wafv2.WAFV2Service.PutManagedRuleSetVersions:output_type -> wafv2.PutManagedRuleSetVersionsResponse
-	243, // 509: wafv2.WAFV2Service.PutPermissionPolicy:output_type -> wafv2.PutPermissionPolicyResponse
-	294, // 510: wafv2.WAFV2Service.TagResource:output_type -> wafv2.TagResourceResponse
-	298, // 511: wafv2.WAFV2Service.UntagResource:output_type -> wafv2.UntagResourceResponse
-	300, // 512: wafv2.WAFV2Service.UpdateIPSet:output_type -> wafv2.UpdateIPSetResponse
-	302, // 513: wafv2.WAFV2Service.UpdateManagedRuleSetVersionExpiryDate:output_type -> wafv2.UpdateManagedRuleSetVersionExpiryDateResponse
-	304, // 514: wafv2.WAFV2Service.UpdateRegexPatternSet:output_type -> wafv2.UpdateRegexPatternSetResponse
-	306, // 515: wafv2.WAFV2Service.UpdateRuleGroup:output_type -> wafv2.UpdateRuleGroupResponse
-	308, // 516: wafv2.WAFV2Service.UpdateWebACL:output_type -> wafv2.UpdateWebACLResponse
-	458, // [458:517] is the sub-list for method output_type
-	399, // [399:458] is the sub-list for method input_type
-	399, // [399:399] is the sub-list for extension type_name
-	399, // [399:399] is the sub-list for extension extendee
-	0,   // [0:399] is the sub-list for field type_name
+	238, // 17: wafv2.ByteMatchStatement.preparsetexttransformations:type_name -> wafv2.PreParseTextTransformation
+	297, // 18: wafv2.ByteMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
+	94,  // 19: wafv2.CaptchaAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
+	179, // 20: wafv2.CaptchaConfig.immunitytimeproperty:type_name -> wafv2.ImmunityTimeProperty
+	10,  // 21: wafv2.CaptchaResponse.failurereason:type_name -> wafv2.FailureReason
+	94,  // 22: wafv2.ChallengeAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
+	179, // 23: wafv2.ChallengeConfig.immunitytimeproperty:type_name -> wafv2.ImmunityTimeProperty
+	10,  // 24: wafv2.ChallengeResponse.failurereason:type_name -> wafv2.FailureReason
+	278, // 25: wafv2.CheckCapacityRequest.rules:type_name -> wafv2.Rule
+	37,  // 26: wafv2.CheckCapacityRequest.scope:type_name -> wafv2.Scope
+	262, // 27: wafv2.ClientSideAction.exempturiregularexpressions:type_name -> wafv2.Regex
+	39,  // 28: wafv2.ClientSideAction.sensitivity:type_name -> wafv2.SensitivityToAct
+	46,  // 29: wafv2.ClientSideAction.usageofaction:type_name -> wafv2.UsageOfAction
+	76,  // 30: wafv2.ClientSideActionConfig.challenge:type_name -> wafv2.ClientSideAction
+	52,  // 31: wafv2.Condition.actioncondition:type_name -> wafv2.ActionCondition
+	186, // 32: wafv2.Condition.labelnamecondition:type_name -> wafv2.LabelNameCondition
+	54,  // 33: wafv2.CookieMatchPattern.all:type_name -> wafv2.All
+	79,  // 34: wafv2.Cookies.matchpattern:type_name -> wafv2.CookieMatchPattern
+	25,  // 35: wafv2.Cookies.matchscope:type_name -> wafv2.MapMatchScope
+	26,  // 36: wafv2.Cookies.oversizehandling:type_name -> wafv2.OversizeHandling
+	94,  // 37: wafv2.CountAction.customrequesthandling:type_name -> wafv2.CustomRequestHandling
+	37,  // 38: wafv2.CreateAPIKeyRequest.scope:type_name -> wafv2.Scope
+	17,  // 39: wafv2.CreateIPSetRequest.ipaddressversion:type_name -> wafv2.IPAddressVersion
+	37,  // 40: wafv2.CreateIPSetRequest.scope:type_name -> wafv2.Scope
+	293, // 41: wafv2.CreateIPSetRequest.tags:type_name -> wafv2.Tag
+	178, // 42: wafv2.CreateIPSetResponse.summary:type_name -> wafv2.IPSetSummary
+	262, // 43: wafv2.CreateRegexPatternSetRequest.regularexpressionlist:type_name -> wafv2.Regex
+	37,  // 44: wafv2.CreateRegexPatternSetRequest.scope:type_name -> wafv2.Scope
+	293, // 45: wafv2.CreateRegexPatternSetRequest.tags:type_name -> wafv2.Tag
+	266, // 46: wafv2.CreateRegexPatternSetResponse.summary:type_name -> wafv2.RegexPatternSetSummary
+	340, // 47: wafv2.CreateRuleGroupRequest.customresponsebodies:type_name -> wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntry
+	226, // 48: wafv2.CreateRuleGroupRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
+	278, // 49: wafv2.CreateRuleGroupRequest.rules:type_name -> wafv2.Rule
+	37,  // 50: wafv2.CreateRuleGroupRequest.scope:type_name -> wafv2.Scope
+	293, // 51: wafv2.CreateRuleGroupRequest.tags:type_name -> wafv2.Tag
+	315, // 52: wafv2.CreateRuleGroupRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	283, // 53: wafv2.CreateRuleGroupResponse.summary:type_name -> wafv2.RuleGroupSummary
+	59,  // 54: wafv2.CreateWebACLRequest.applicationconfig:type_name -> wafv2.ApplicationConfig
+	63,  // 55: wafv2.CreateWebACLRequest.associationconfig:type_name -> wafv2.AssociationConfig
+	69,  // 56: wafv2.CreateWebACLRequest.captchaconfig:type_name -> wafv2.CaptchaConfig
+	72,  // 57: wafv2.CreateWebACLRequest.challengeconfig:type_name -> wafv2.ChallengeConfig
+	341, // 58: wafv2.CreateWebACLRequest.customresponsebodies:type_name -> wafv2.CreateWebACLRequest.CustomresponsebodiesEntry
+	99,  // 59: wafv2.CreateWebACLRequest.dataprotectionconfig:type_name -> wafv2.DataProtectionConfig
+	100, // 60: wafv2.CreateWebACLRequest.defaultaction:type_name -> wafv2.DefaultAction
+	226, // 61: wafv2.CreateWebACLRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
+	231, // 62: wafv2.CreateWebACLRequest.onsourceddosprotectionconfig:type_name -> wafv2.OnSourceDDoSProtectionConfig
+	278, // 63: wafv2.CreateWebACLRequest.rules:type_name -> wafv2.Rule
+	37,  // 64: wafv2.CreateWebACLRequest.scope:type_name -> wafv2.Scope
+	293, // 65: wafv2.CreateWebACLRequest.tags:type_name -> wafv2.Tag
+	315, // 66: wafv2.CreateWebACLRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	337, // 67: wafv2.CreateWebACLResponse.summary:type_name -> wafv2.WebACLSummary
+	236, // 68: wafv2.CryptoConfig.paymentnetworks:type_name -> wafv2.PaymentNetwork
+	93,  // 69: wafv2.CustomRequestHandling.insertheaders:type_name -> wafv2.CustomHTTPHeader
+	93,  // 70: wafv2.CustomResponse.responseheaders:type_name -> wafv2.CustomHTTPHeader
+	36,  // 71: wafv2.CustomResponseBody.contenttype:type_name -> wafv2.ResponseContentType
+	9,   // 72: wafv2.DataProtection.action:type_name -> wafv2.DataProtectionAction
+	129, // 73: wafv2.DataProtection.field:type_name -> wafv2.FieldToProtect
+	98,  // 74: wafv2.DataProtectionConfig.dataprotections:type_name -> wafv2.DataProtection
+	56,  // 75: wafv2.DefaultAction.allow:type_name -> wafv2.AllowAction
+	64,  // 76: wafv2.DefaultAction.block:type_name -> wafv2.BlockAction
+	37,  // 77: wafv2.DeleteAPIKeyRequest.scope:type_name -> wafv2.Scope
+	37,  // 78: wafv2.DeleteIPSetRequest.scope:type_name -> wafv2.Scope
+	22,  // 79: wafv2.DeleteLoggingConfigurationRequest.logscope:type_name -> wafv2.LogScope
+	23,  // 80: wafv2.DeleteLoggingConfigurationRequest.logtype:type_name -> wafv2.LogType
+	37,  // 81: wafv2.DeleteRegexPatternSetRequest.scope:type_name -> wafv2.Scope
+	37,  // 82: wafv2.DeleteRuleGroupRequest.scope:type_name -> wafv2.Scope
+	37,  // 83: wafv2.DeleteWebACLRequest.scope:type_name -> wafv2.Scope
+	37,  // 84: wafv2.DescribeAllManagedProductsRequest.scope:type_name -> wafv2.Scope
+	216, // 85: wafv2.DescribeAllManagedProductsResponse.managedproducts:type_name -> wafv2.ManagedProductDescriptor
+	37,  // 86: wafv2.DescribeManagedProductsByVendorRequest.scope:type_name -> wafv2.Scope
+	216, // 87: wafv2.DescribeManagedProductsByVendorResponse.managedproducts:type_name -> wafv2.ManagedProductDescriptor
+	37,  // 88: wafv2.DescribeManagedRuleGroupRequest.scope:type_name -> wafv2.Scope
+	187, // 89: wafv2.DescribeManagedRuleGroupResponse.availablelabels:type_name -> wafv2.LabelSummary
+	187, // 90: wafv2.DescribeManagedRuleGroupResponse.consumedlabels:type_name -> wafv2.LabelSummary
+	284, // 91: wafv2.DescribeManagedRuleGroupResponse.rules:type_name -> wafv2.RuleSummary
+	55,  // 92: wafv2.FieldToMatch.allqueryarguments:type_name -> wafv2.AllQueryArguments
+	65,  // 93: wafv2.FieldToMatch.body:type_name -> wafv2.Body
+	80,  // 94: wafv2.FieldToMatch.cookies:type_name -> wafv2.Cookies
+	173, // 95: wafv2.FieldToMatch.headerorder:type_name -> wafv2.HeaderOrder
+	174, // 96: wafv2.FieldToMatch.headers:type_name -> wafv2.Headers
+	180, // 97: wafv2.FieldToMatch.ja3fingerprint:type_name -> wafv2.JA3Fingerprint
+	181, // 98: wafv2.FieldToMatch.ja4fingerprint:type_name -> wafv2.JA4Fingerprint
+	182, // 99: wafv2.FieldToMatch.jsonbody:type_name -> wafv2.JsonBody
+	224, // 100: wafv2.FieldToMatch.method:type_name -> wafv2.Method
+	246, // 101: wafv2.FieldToMatch.querystring:type_name -> wafv2.QueryString
+	287, // 102: wafv2.FieldToMatch.singleheader:type_name -> wafv2.SingleHeader
+	288, // 103: wafv2.FieldToMatch.singlequeryargument:type_name -> wafv2.SingleQueryArgument
+	311, // 104: wafv2.FieldToMatch.urifragment:type_name -> wafv2.UriFragment
+	312, // 105: wafv2.FieldToMatch.uripath:type_name -> wafv2.UriPath
+	12,  // 106: wafv2.FieldToProtect.fieldtype:type_name -> wafv2.FieldToProtectType
+	13,  // 107: wafv2.Filter.behavior:type_name -> wafv2.FilterBehavior
+	78,  // 108: wafv2.Filter.conditions:type_name -> wafv2.Condition
+	14,  // 109: wafv2.Filter.requirement:type_name -> wafv2.FilterRequirement
+	133, // 110: wafv2.FirewallManagerRuleGroup.firewallmanagerstatement:type_name -> wafv2.FirewallManagerStatement
+	233, // 111: wafv2.FirewallManagerRuleGroup.overrideaction:type_name -> wafv2.OverrideAction
+	315, // 112: wafv2.FirewallManagerRuleGroup.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	218, // 113: wafv2.FirewallManagerStatement.managedrulegroupstatement:type_name -> wafv2.ManagedRuleGroupStatement
+	282, // 114: wafv2.FirewallManagerStatement.rulegroupreferencestatement:type_name -> wafv2.RuleGroupReferenceStatement
+	11,  // 115: wafv2.ForwardedIPConfig.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	29,  // 116: wafv2.GenerateMobileSdkReleaseUrlRequest.platform:type_name -> wafv2.Platform
+	5,   // 117: wafv2.GeoMatchStatement.countrycodes:type_name -> wafv2.CountryCode
+	134, // 118: wafv2.GeoMatchStatement.forwardedipconfig:type_name -> wafv2.ForwardedIPConfig
+	37,  // 119: wafv2.GetDecryptedAPIKeyRequest.scope:type_name -> wafv2.Scope
+	37,  // 120: wafv2.GetIPSetRequest.scope:type_name -> wafv2.Scope
+	175, // 121: wafv2.GetIPSetResponse.ipset:type_name -> wafv2.IPSet
+	22,  // 122: wafv2.GetLoggingConfigurationRequest.logscope:type_name -> wafv2.LogScope
+	23,  // 123: wafv2.GetLoggingConfigurationRequest.logtype:type_name -> wafv2.LogType
+	214, // 124: wafv2.GetLoggingConfigurationResponse.loggingconfiguration:type_name -> wafv2.LoggingConfiguration
+	37,  // 125: wafv2.GetManagedRuleSetRequest.scope:type_name -> wafv2.Scope
+	221, // 126: wafv2.GetManagedRuleSetResponse.managedruleset:type_name -> wafv2.ManagedRuleSet
+	29,  // 127: wafv2.GetMobileSdkReleaseRequest.platform:type_name -> wafv2.Platform
+	225, // 128: wafv2.GetMobileSdkReleaseResponse.mobilesdkrelease:type_name -> wafv2.MobileSdkRelease
+	37,  // 129: wafv2.GetRateBasedStatementManagedKeysRequest.scope:type_name -> wafv2.Scope
+	249, // 130: wafv2.GetRateBasedStatementManagedKeysResponse.managedkeysipv4:type_name -> wafv2.RateBasedStatementManagedKeysIPSet
+	249, // 131: wafv2.GetRateBasedStatementManagedKeysResponse.managedkeysipv6:type_name -> wafv2.RateBasedStatementManagedKeysIPSet
+	37,  // 132: wafv2.GetRegexPatternSetRequest.scope:type_name -> wafv2.Scope
+	264, // 133: wafv2.GetRegexPatternSetResponse.regexpatternset:type_name -> wafv2.RegexPatternSet
+	7,   // 134: wafv2.GetRevenueStatisticsRequest.currency:type_name -> wafv2.Currency
+	227, // 135: wafv2.GetRevenueStatisticsRequest.filters:type_name -> wafv2.MonetizationFilter
+	16,  // 136: wafv2.GetRevenueStatisticsRequest.groupby:type_name -> wafv2.GroupByType
+	37,  // 137: wafv2.GetRevenueStatisticsRequest.scope:type_name -> wafv2.Scope
+	32,  // 138: wafv2.GetRevenueStatisticsRequest.sortby:type_name -> wafv2.RankingSortBy
+	43,  // 139: wafv2.GetRevenueStatisticsRequest.sortorder:type_name -> wafv2.SortOrder
+	33,  // 140: wafv2.GetRevenueStatisticsRequest.statistictype:type_name -> wafv2.RankingStatisticType
+	298, // 141: wafv2.GetRevenueStatisticsRequest.timewindow:type_name -> wafv2.TimeWindow
+	277, // 142: wafv2.GetRevenueStatisticsResponse.revenuepathstatistics:type_name -> wafv2.RevenuePathStatistics
+	290, // 143: wafv2.GetRevenueStatisticsResponse.sourcestatistics:type_name -> wafv2.SourceStatistics
+	7,   // 144: wafv2.GetRevenueStatisticsSummaryRequest.currency:type_name -> wafv2.Currency
+	227, // 145: wafv2.GetRevenueStatisticsSummaryRequest.filters:type_name -> wafv2.MonetizationFilter
+	37,  // 146: wafv2.GetRevenueStatisticsSummaryRequest.scope:type_name -> wafv2.Scope
+	298, // 147: wafv2.GetRevenueStatisticsSummaryRequest.timewindow:type_name -> wafv2.TimeWindow
+	276, // 148: wafv2.GetRevenueStatisticsSummaryResponse.revenuebreakdown:type_name -> wafv2.RevenueBreakdown
+	7,   // 149: wafv2.GetRevenueStatisticsTimeSeriesRequest.currency:type_name -> wafv2.Currency
+	227, // 150: wafv2.GetRevenueStatisticsTimeSeriesRequest.filters:type_name -> wafv2.MonetizationFilter
+	16,  // 151: wafv2.GetRevenueStatisticsTimeSeriesRequest.groupby:type_name -> wafv2.GroupByType
+	19,  // 152: wafv2.GetRevenueStatisticsTimeSeriesRequest.interval:type_name -> wafv2.IntervalType
+	37,  // 153: wafv2.GetRevenueStatisticsTimeSeriesRequest.scope:type_name -> wafv2.Scope
+	45,  // 154: wafv2.GetRevenueStatisticsTimeSeriesRequest.statistictype:type_name -> wafv2.TimeSeriesStatisticType
+	298, // 155: wafv2.GetRevenueStatisticsTimeSeriesRequest.timewindow:type_name -> wafv2.TimeWindow
+	97,  // 156: wafv2.GetRevenueStatisticsTimeSeriesResponse.datapoints:type_name -> wafv2.DataPointEntry
+	37,  // 157: wafv2.GetRuleGroupRequest.scope:type_name -> wafv2.Scope
+	281, // 158: wafv2.GetRuleGroupResponse.rulegroup:type_name -> wafv2.RuleGroup
+	37,  // 159: wafv2.GetSampledRequestsRequest.scope:type_name -> wafv2.Scope
+	298, // 160: wafv2.GetSampledRequestsRequest.timewindow:type_name -> wafv2.TimeWindow
+	285, // 161: wafv2.GetSampledRequestsResponse.sampledrequests:type_name -> wafv2.SampledHTTPRequest
+	298, // 162: wafv2.GetSampledRequestsResponse.timewindow:type_name -> wafv2.TimeWindow
+	37,  // 163: wafv2.GetTopPathStatisticsByTrafficRequest.scope:type_name -> wafv2.Scope
+	298, // 164: wafv2.GetTopPathStatisticsByTrafficRequest.timewindow:type_name -> wafv2.TimeWindow
+	235, // 165: wafv2.GetTopPathStatisticsByTrafficResponse.pathstatistics:type_name -> wafv2.PathStatistics
+	235, // 166: wafv2.GetTopPathStatisticsByTrafficResponse.topcategories:type_name -> wafv2.PathStatistics
+	336, // 167: wafv2.GetWebACLForResourceResponse.webacl:type_name -> wafv2.WebACL
+	37,  // 168: wafv2.GetWebACLRequest.scope:type_name -> wafv2.Scope
+	336, // 169: wafv2.GetWebACLResponse.webacl:type_name -> wafv2.WebACL
+	170, // 170: wafv2.HTTPRequest.headers:type_name -> wafv2.HTTPHeader
+	54,  // 171: wafv2.HeaderMatchPattern.all:type_name -> wafv2.All
+	26,  // 172: wafv2.HeaderOrder.oversizehandling:type_name -> wafv2.OversizeHandling
+	172, // 173: wafv2.Headers.matchpattern:type_name -> wafv2.HeaderMatchPattern
+	25,  // 174: wafv2.Headers.matchscope:type_name -> wafv2.MapMatchScope
+	26,  // 175: wafv2.Headers.oversizehandling:type_name -> wafv2.OversizeHandling
+	17,  // 176: wafv2.IPSet.ipaddressversion:type_name -> wafv2.IPAddressVersion
+	11,  // 177: wafv2.IPSetForwardedIPConfig.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	15,  // 178: wafv2.IPSetForwardedIPConfig.position:type_name -> wafv2.ForwardedIPPosition
+	176, // 179: wafv2.IPSetReferenceStatement.ipsetforwardedipconfig:type_name -> wafv2.IPSetForwardedIPConfig
+	11,  // 180: wafv2.JA3Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	11,  // 181: wafv2.JA4Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	3,   // 182: wafv2.JsonBody.invalidfallbackbehavior:type_name -> wafv2.BodyParsingFallbackBehavior
+	183, // 183: wafv2.JsonBody.matchpattern:type_name -> wafv2.JsonMatchPattern
+	20,  // 184: wafv2.JsonBody.matchscope:type_name -> wafv2.JsonMatchScope
+	26,  // 185: wafv2.JsonBody.oversizehandling:type_name -> wafv2.OversizeHandling
+	54,  // 186: wafv2.JsonMatchPattern.all:type_name -> wafv2.All
+	21,  // 187: wafv2.LabelMatchStatement.scope:type_name -> wafv2.LabelMatchScope
+	37,  // 188: wafv2.ListAPIKeysRequest.scope:type_name -> wafv2.Scope
+	47,  // 189: wafv2.ListAPIKeysResponse.apikeysummaries:type_name -> wafv2.APIKeySummary
+	37,  // 190: wafv2.ListAvailableManagedRuleGroupVersionsRequest.scope:type_name -> wafv2.Scope
+	220, // 191: wafv2.ListAvailableManagedRuleGroupVersionsResponse.versions:type_name -> wafv2.ManagedRuleGroupVersion
+	37,  // 192: wafv2.ListAvailableManagedRuleGroupsRequest.scope:type_name -> wafv2.Scope
+	219, // 193: wafv2.ListAvailableManagedRuleGroupsResponse.managedrulegroups:type_name -> wafv2.ManagedRuleGroupSummary
+	37,  // 194: wafv2.ListIPSetsRequest.scope:type_name -> wafv2.Scope
+	178, // 195: wafv2.ListIPSetsResponse.ipsets:type_name -> wafv2.IPSetSummary
+	22,  // 196: wafv2.ListLoggingConfigurationsRequest.logscope:type_name -> wafv2.LogScope
+	37,  // 197: wafv2.ListLoggingConfigurationsRequest.scope:type_name -> wafv2.Scope
+	214, // 198: wafv2.ListLoggingConfigurationsResponse.loggingconfigurations:type_name -> wafv2.LoggingConfiguration
+	37,  // 199: wafv2.ListManagedRuleSetsRequest.scope:type_name -> wafv2.Scope
+	222, // 200: wafv2.ListManagedRuleSetsResponse.managedrulesets:type_name -> wafv2.ManagedRuleSetSummary
+	29,  // 201: wafv2.ListMobileSdkReleasesRequest.platform:type_name -> wafv2.Platform
+	267, // 202: wafv2.ListMobileSdkReleasesResponse.releasesummaries:type_name -> wafv2.ReleaseSummary
+	37,  // 203: wafv2.ListRegexPatternSetsRequest.scope:type_name -> wafv2.Scope
+	266, // 204: wafv2.ListRegexPatternSetsResponse.regexpatternsets:type_name -> wafv2.RegexPatternSetSummary
+	35,  // 205: wafv2.ListResourcesForWebACLRequest.resourcetype:type_name -> wafv2.ResourceType
+	37,  // 206: wafv2.ListRuleGroupsRequest.scope:type_name -> wafv2.Scope
+	283, // 207: wafv2.ListRuleGroupsResponse.rulegroups:type_name -> wafv2.RuleGroupSummary
+	7,   // 208: wafv2.ListSettlementRecordsRequest.currency:type_name -> wafv2.Currency
+	227, // 209: wafv2.ListSettlementRecordsRequest.filters:type_name -> wafv2.MonetizationFilter
+	37,  // 210: wafv2.ListSettlementRecordsRequest.scope:type_name -> wafv2.Scope
+	40,  // 211: wafv2.ListSettlementRecordsRequest.sortby:type_name -> wafv2.SettlementSortBy
+	43,  // 212: wafv2.ListSettlementRecordsRequest.sortorder:type_name -> wafv2.SortOrder
+	298, // 213: wafv2.ListSettlementRecordsRequest.timewindow:type_name -> wafv2.TimeWindow
+	286, // 214: wafv2.ListSettlementRecordsResponse.settlements:type_name -> wafv2.SettlementRecord
+	294, // 215: wafv2.ListTagsForResourceResponse.taginfoforresource:type_name -> wafv2.TagInfoForResource
+	37,  // 216: wafv2.ListWebACLsRequest.scope:type_name -> wafv2.Scope
+	337, // 217: wafv2.ListWebACLsResponse.webacls:type_name -> wafv2.WebACLSummary
+	22,  // 218: wafv2.LoggingConfiguration.logscope:type_name -> wafv2.LogScope
+	23,  // 219: wafv2.LoggingConfiguration.logtype:type_name -> wafv2.LogType
+	215, // 220: wafv2.LoggingConfiguration.loggingfilter:type_name -> wafv2.LoggingFilter
+	128, // 221: wafv2.LoggingConfiguration.redactedfields:type_name -> wafv2.FieldToMatch
+	13,  // 222: wafv2.LoggingFilter.defaultbehavior:type_name -> wafv2.FilterBehavior
+	130, // 223: wafv2.LoggingFilter.filters:type_name -> wafv2.Filter
+	48,  // 224: wafv2.ManagedRuleGroupConfig.awsmanagedrulesacfpruleset:type_name -> wafv2.AWSManagedRulesACFPRuleSet
+	49,  // 225: wafv2.ManagedRuleGroupConfig.awsmanagedrulesatpruleset:type_name -> wafv2.AWSManagedRulesATPRuleSet
+	50,  // 226: wafv2.ManagedRuleGroupConfig.awsmanagedrulesantiddosruleset:type_name -> wafv2.AWSManagedRulesAntiDDoSRuleSet
+	51,  // 227: wafv2.ManagedRuleGroupConfig.awsmanagedrulesbotcontrolruleset:type_name -> wafv2.AWSManagedRulesBotControlRuleSet
+	234, // 228: wafv2.ManagedRuleGroupConfig.passwordfield:type_name -> wafv2.PasswordField
+	28,  // 229: wafv2.ManagedRuleGroupConfig.payloadtype:type_name -> wafv2.PayloadType
+	313, // 230: wafv2.ManagedRuleGroupConfig.usernamefield:type_name -> wafv2.UsernameField
+	127, // 231: wafv2.ManagedRuleGroupStatement.excludedrules:type_name -> wafv2.ExcludedRule
+	217, // 232: wafv2.ManagedRuleGroupStatement.managedrulegroupconfigs:type_name -> wafv2.ManagedRuleGroupConfig
+	280, // 233: wafv2.ManagedRuleGroupStatement.ruleactionoverrides:type_name -> wafv2.RuleActionOverride
+	292, // 234: wafv2.ManagedRuleGroupStatement.scopedownstatement:type_name -> wafv2.Statement
+	342, // 235: wafv2.ManagedRuleSet.publishedversions:type_name -> wafv2.ManagedRuleSet.PublishedversionsEntry
+	293, // 236: wafv2.MobileSdkRelease.tags:type_name -> wafv2.Tag
+	92,  // 237: wafv2.MonetizationConfig.cryptoconfig:type_name -> wafv2.CryptoConfig
+	8,   // 238: wafv2.MonetizationConfig.currencymode:type_name -> wafv2.CurrencyMode
+	292, // 239: wafv2.NotStatement.statement:type_name -> wafv2.Statement
+	24,  // 240: wafv2.OnSourceDDoSProtectionConfig.alblowreputationmode:type_name -> wafv2.LowReputationMode
+	292, // 241: wafv2.OrStatement.statements:type_name -> wafv2.Statement
+	81,  // 242: wafv2.OverrideAction.count:type_name -> wafv2.CountAction
+	229, // 243: wafv2.OverrideAction.none:type_name -> wafv2.NoneAction
+	131, // 244: wafv2.PathStatistics.source:type_name -> wafv2.FilterSource
+	66,  // 245: wafv2.PathStatistics.topbots:type_name -> wafv2.BotStatistics
+	2,   // 246: wafv2.PaymentNetwork.chain:type_name -> wafv2.BlockchainChain
+	239, // 247: wafv2.PaymentNetwork.prices:type_name -> wafv2.Price
+	31,  // 248: wafv2.PreParseTextTransformation.type:type_name -> wafv2.PreParseTextTransformationType
+	6,   // 249: wafv2.Price.currency:type_name -> wafv2.CryptoCurrency
+	214, // 250: wafv2.PutLoggingConfigurationRequest.loggingconfiguration:type_name -> wafv2.LoggingConfiguration
+	214, // 251: wafv2.PutLoggingConfigurationResponse.loggingconfiguration:type_name -> wafv2.LoggingConfiguration
+	37,  // 252: wafv2.PutManagedRuleSetVersionsRequest.scope:type_name -> wafv2.Scope
+	343, // 253: wafv2.PutManagedRuleSetVersionsRequest.versionstopublish:type_name -> wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntry
+	34,  // 254: wafv2.RateBasedStatement.aggregatekeytype:type_name -> wafv2.RateBasedStatementAggregateKeyType
+	248, // 255: wafv2.RateBasedStatement.customkeys:type_name -> wafv2.RateBasedStatementCustomKey
+	134, // 256: wafv2.RateBasedStatement.forwardedipconfig:type_name -> wafv2.ForwardedIPConfig
+	292, // 257: wafv2.RateBasedStatement.scopedownstatement:type_name -> wafv2.Statement
+	250, // 258: wafv2.RateBasedStatementCustomKey.asn:type_name -> wafv2.RateLimitAsn
+	251, // 259: wafv2.RateBasedStatementCustomKey.cookie:type_name -> wafv2.RateLimitCookie
+	252, // 260: wafv2.RateBasedStatementCustomKey.forwardedip:type_name -> wafv2.RateLimitForwardedIP
+	253, // 261: wafv2.RateBasedStatementCustomKey.httpmethod:type_name -> wafv2.RateLimitHTTPMethod
+	254, // 262: wafv2.RateBasedStatementCustomKey.header:type_name -> wafv2.RateLimitHeader
+	255, // 263: wafv2.RateBasedStatementCustomKey.ip:type_name -> wafv2.RateLimitIP
+	256, // 264: wafv2.RateBasedStatementCustomKey.ja3fingerprint:type_name -> wafv2.RateLimitJA3Fingerprint
+	257, // 265: wafv2.RateBasedStatementCustomKey.ja4fingerprint:type_name -> wafv2.RateLimitJA4Fingerprint
+	258, // 266: wafv2.RateBasedStatementCustomKey.labelnamespace:type_name -> wafv2.RateLimitLabelNamespace
+	259, // 267: wafv2.RateBasedStatementCustomKey.queryargument:type_name -> wafv2.RateLimitQueryArgument
+	260, // 268: wafv2.RateBasedStatementCustomKey.querystring:type_name -> wafv2.RateLimitQueryString
+	261, // 269: wafv2.RateBasedStatementCustomKey.uripath:type_name -> wafv2.RateLimitUriPath
+	17,  // 270: wafv2.RateBasedStatementManagedKeysIPSet.ipaddressversion:type_name -> wafv2.IPAddressVersion
+	297, // 271: wafv2.RateLimitCookie.texttransformations:type_name -> wafv2.TextTransformation
+	297, // 272: wafv2.RateLimitHeader.texttransformations:type_name -> wafv2.TextTransformation
+	11,  // 273: wafv2.RateLimitJA3Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	11,  // 274: wafv2.RateLimitJA4Fingerprint.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	297, // 275: wafv2.RateLimitQueryArgument.texttransformations:type_name -> wafv2.TextTransformation
+	297, // 276: wafv2.RateLimitQueryString.texttransformations:type_name -> wafv2.TextTransformation
+	297, // 277: wafv2.RateLimitUriPath.texttransformations:type_name -> wafv2.TextTransformation
+	128, // 278: wafv2.RegexMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
+	238, // 279: wafv2.RegexMatchStatement.preparsetexttransformations:type_name -> wafv2.PreParseTextTransformation
+	297, // 280: wafv2.RegexMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
+	262, // 281: wafv2.RegexPatternSet.regularexpressionlist:type_name -> wafv2.Regex
+	128, // 282: wafv2.RegexPatternSetReferenceStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
+	238, // 283: wafv2.RegexPatternSetReferenceStatement.preparsetexttransformations:type_name -> wafv2.PreParseTextTransformation
+	297, // 284: wafv2.RegexPatternSetReferenceStatement.texttransformations:type_name -> wafv2.TextTransformation
+	42,  // 285: wafv2.RequestBodyAssociatedResourceTypeConfig.defaultsizeinspectionlimit:type_name -> wafv2.SizeInspectionLimit
+	234, // 286: wafv2.RequestInspection.passwordfield:type_name -> wafv2.PasswordField
+	28,  // 287: wafv2.RequestInspection.payloadtype:type_name -> wafv2.PayloadType
+	313, // 288: wafv2.RequestInspection.usernamefield:type_name -> wafv2.UsernameField
+	53,  // 289: wafv2.RequestInspectionACFP.addressfields:type_name -> wafv2.AddressField
+	126, // 290: wafv2.RequestInspectionACFP.emailfield:type_name -> wafv2.EmailField
+	234, // 291: wafv2.RequestInspectionACFP.passwordfield:type_name -> wafv2.PasswordField
+	28,  // 292: wafv2.RequestInspectionACFP.payloadtype:type_name -> wafv2.PayloadType
+	237, // 293: wafv2.RequestInspectionACFP.phonenumberfields:type_name -> wafv2.PhoneNumberField
+	313, // 294: wafv2.RequestInspectionACFP.usernamefield:type_name -> wafv2.UsernameField
+	272, // 295: wafv2.ResponseInspection.bodycontains:type_name -> wafv2.ResponseInspectionBodyContains
+	273, // 296: wafv2.ResponseInspection.header:type_name -> wafv2.ResponseInspectionHeader
+	274, // 297: wafv2.ResponseInspection.json:type_name -> wafv2.ResponseInspectionJson
+	275, // 298: wafv2.ResponseInspection.statuscode:type_name -> wafv2.ResponseInspectionStatusCode
+	7,   // 299: wafv2.RevenueBreakdown.currency:type_name -> wafv2.Currency
+	279, // 300: wafv2.Rule.action:type_name -> wafv2.RuleAction
+	69,  // 301: wafv2.Rule.captchaconfig:type_name -> wafv2.CaptchaConfig
+	72,  // 302: wafv2.Rule.challengeconfig:type_name -> wafv2.ChallengeConfig
+	233, // 303: wafv2.Rule.overrideaction:type_name -> wafv2.OverrideAction
+	184, // 304: wafv2.Rule.rulelabels:type_name -> wafv2.Label
+	292, // 305: wafv2.Rule.statement:type_name -> wafv2.Statement
+	315, // 306: wafv2.Rule.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	56,  // 307: wafv2.RuleAction.allow:type_name -> wafv2.AllowAction
+	64,  // 308: wafv2.RuleAction.block:type_name -> wafv2.BlockAction
+	68,  // 309: wafv2.RuleAction.captcha:type_name -> wafv2.CaptchaAction
+	71,  // 310: wafv2.RuleAction.challenge:type_name -> wafv2.ChallengeAction
+	81,  // 311: wafv2.RuleAction.count:type_name -> wafv2.CountAction
+	228, // 312: wafv2.RuleAction.monetize:type_name -> wafv2.MonetizeAction
+	279, // 313: wafv2.RuleActionOverride.actiontouse:type_name -> wafv2.RuleAction
+	187, // 314: wafv2.RuleGroup.availablelabels:type_name -> wafv2.LabelSummary
+	187, // 315: wafv2.RuleGroup.consumedlabels:type_name -> wafv2.LabelSummary
+	344, // 316: wafv2.RuleGroup.customresponsebodies:type_name -> wafv2.RuleGroup.CustomresponsebodiesEntry
+	226, // 317: wafv2.RuleGroup.monetizationconfig:type_name -> wafv2.MonetizationConfig
+	278, // 318: wafv2.RuleGroup.rules:type_name -> wafv2.Rule
+	315, // 319: wafv2.RuleGroup.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	127, // 320: wafv2.RuleGroupReferenceStatement.excludedrules:type_name -> wafv2.ExcludedRule
+	280, // 321: wafv2.RuleGroupReferenceStatement.ruleactionoverrides:type_name -> wafv2.RuleActionOverride
+	279, // 322: wafv2.RuleSummary.action:type_name -> wafv2.RuleAction
+	70,  // 323: wafv2.SampledHTTPRequest.captcharesponse:type_name -> wafv2.CaptchaResponse
+	73,  // 324: wafv2.SampledHTTPRequest.challengeresponse:type_name -> wafv2.ChallengeResponse
+	184, // 325: wafv2.SampledHTTPRequest.labels:type_name -> wafv2.Label
+	171, // 326: wafv2.SampledHTTPRequest.request:type_name -> wafv2.HTTPRequest
+	170, // 327: wafv2.SampledHTTPRequest.requestheadersinserted:type_name -> wafv2.HTTPHeader
+	7,   // 328: wafv2.SettlementRecord.currency:type_name -> wafv2.Currency
+	41,  // 329: wafv2.SettlementRecord.status:type_name -> wafv2.SettlementStatus
+	4,   // 330: wafv2.SizeConstraintStatement.comparisonoperator:type_name -> wafv2.ComparisonOperator
+	128, // 331: wafv2.SizeConstraintStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
+	238, // 332: wafv2.SizeConstraintStatement.preparsetexttransformations:type_name -> wafv2.PreParseTextTransformation
+	297, // 333: wafv2.SizeConstraintStatement.texttransformations:type_name -> wafv2.TextTransformation
+	128, // 334: wafv2.SqliMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
+	238, // 335: wafv2.SqliMatchStatement.preparsetexttransformations:type_name -> wafv2.PreParseTextTransformation
+	38,  // 336: wafv2.SqliMatchStatement.sensitivitylevel:type_name -> wafv2.SensitivityLevel
+	297, // 337: wafv2.SqliMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
+	57,  // 338: wafv2.Statement.andstatement:type_name -> wafv2.AndStatement
+	60,  // 339: wafv2.Statement.asnmatchstatement:type_name -> wafv2.AsnMatchStatement
+	67,  // 340: wafv2.Statement.bytematchstatement:type_name -> wafv2.ByteMatchStatement
+	137, // 341: wafv2.Statement.geomatchstatement:type_name -> wafv2.GeoMatchStatement
+	177, // 342: wafv2.Statement.ipsetreferencestatement:type_name -> wafv2.IPSetReferenceStatement
+	185, // 343: wafv2.Statement.labelmatchstatement:type_name -> wafv2.LabelMatchStatement
+	218, // 344: wafv2.Statement.managedrulegroupstatement:type_name -> wafv2.ManagedRuleGroupStatement
+	230, // 345: wafv2.Statement.notstatement:type_name -> wafv2.NotStatement
+	232, // 346: wafv2.Statement.orstatement:type_name -> wafv2.OrStatement
+	247, // 347: wafv2.Statement.ratebasedstatement:type_name -> wafv2.RateBasedStatement
+	263, // 348: wafv2.Statement.regexmatchstatement:type_name -> wafv2.RegexMatchStatement
+	265, // 349: wafv2.Statement.regexpatternsetreferencestatement:type_name -> wafv2.RegexPatternSetReferenceStatement
+	282, // 350: wafv2.Statement.rulegroupreferencestatement:type_name -> wafv2.RuleGroupReferenceStatement
+	289, // 351: wafv2.Statement.sizeconstraintstatement:type_name -> wafv2.SizeConstraintStatement
+	291, // 352: wafv2.Statement.sqlimatchstatement:type_name -> wafv2.SqliMatchStatement
+	338, // 353: wafv2.Statement.xssmatchstatement:type_name -> wafv2.XssMatchStatement
+	293, // 354: wafv2.TagInfoForResource.taglist:type_name -> wafv2.Tag
+	293, // 355: wafv2.TagResourceRequest.tags:type_name -> wafv2.Tag
+	44,  // 356: wafv2.TextTransformation.type:type_name -> wafv2.TextTransformationType
+	37,  // 357: wafv2.UpdateIPSetRequest.scope:type_name -> wafv2.Scope
+	37,  // 358: wafv2.UpdateManagedRuleSetVersionExpiryDateRequest.scope:type_name -> wafv2.Scope
+	262, // 359: wafv2.UpdateRegexPatternSetRequest.regularexpressionlist:type_name -> wafv2.Regex
+	37,  // 360: wafv2.UpdateRegexPatternSetRequest.scope:type_name -> wafv2.Scope
+	345, // 361: wafv2.UpdateRuleGroupRequest.customresponsebodies:type_name -> wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntry
+	226, // 362: wafv2.UpdateRuleGroupRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
+	278, // 363: wafv2.UpdateRuleGroupRequest.rules:type_name -> wafv2.Rule
+	37,  // 364: wafv2.UpdateRuleGroupRequest.scope:type_name -> wafv2.Scope
+	315, // 365: wafv2.UpdateRuleGroupRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	59,  // 366: wafv2.UpdateWebACLRequest.applicationconfig:type_name -> wafv2.ApplicationConfig
+	63,  // 367: wafv2.UpdateWebACLRequest.associationconfig:type_name -> wafv2.AssociationConfig
+	69,  // 368: wafv2.UpdateWebACLRequest.captchaconfig:type_name -> wafv2.CaptchaConfig
+	72,  // 369: wafv2.UpdateWebACLRequest.challengeconfig:type_name -> wafv2.ChallengeConfig
+	346, // 370: wafv2.UpdateWebACLRequest.customresponsebodies:type_name -> wafv2.UpdateWebACLRequest.CustomresponsebodiesEntry
+	99,  // 371: wafv2.UpdateWebACLRequest.dataprotectionconfig:type_name -> wafv2.DataProtectionConfig
+	100, // 372: wafv2.UpdateWebACLRequest.defaultaction:type_name -> wafv2.DefaultAction
+	226, // 373: wafv2.UpdateWebACLRequest.monetizationconfig:type_name -> wafv2.MonetizationConfig
+	231, // 374: wafv2.UpdateWebACLRequest.onsourceddosprotectionconfig:type_name -> wafv2.OnSourceDDoSProtectionConfig
+	278, // 375: wafv2.UpdateWebACLRequest.rules:type_name -> wafv2.Rule
+	37,  // 376: wafv2.UpdateWebACLRequest.scope:type_name -> wafv2.Scope
+	315, // 377: wafv2.UpdateWebACLRequest.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	11,  // 378: wafv2.UriFragment.fallbackbehavior:type_name -> wafv2.FallbackBehavior
+	123, // 379: wafv2.WAFFeatureNotIncludedInPricingPlanException.disallowedfeatures:type_name -> wafv2.DisallowedFeature
+	27,  // 380: wafv2.WAFInvalidParameterException.field:type_name -> wafv2.ParameterExceptionField
+	59,  // 381: wafv2.WebACL.applicationconfig:type_name -> wafv2.ApplicationConfig
+	63,  // 382: wafv2.WebACL.associationconfig:type_name -> wafv2.AssociationConfig
+	69,  // 383: wafv2.WebACL.captchaconfig:type_name -> wafv2.CaptchaConfig
+	72,  // 384: wafv2.WebACL.challengeconfig:type_name -> wafv2.ChallengeConfig
+	347, // 385: wafv2.WebACL.customresponsebodies:type_name -> wafv2.WebACL.CustomresponsebodiesEntry
+	99,  // 386: wafv2.WebACL.dataprotectionconfig:type_name -> wafv2.DataProtectionConfig
+	100, // 387: wafv2.WebACL.defaultaction:type_name -> wafv2.DefaultAction
+	226, // 388: wafv2.WebACL.monetizationconfig:type_name -> wafv2.MonetizationConfig
+	231, // 389: wafv2.WebACL.onsourceddosprotectionconfig:type_name -> wafv2.OnSourceDDoSProtectionConfig
+	132, // 390: wafv2.WebACL.postprocessfirewallmanagerrulegroups:type_name -> wafv2.FirewallManagerRuleGroup
+	132, // 391: wafv2.WebACL.preprocessfirewallmanagerrulegroups:type_name -> wafv2.FirewallManagerRuleGroup
+	278, // 392: wafv2.WebACL.rules:type_name -> wafv2.Rule
+	315, // 393: wafv2.WebACL.visibilityconfig:type_name -> wafv2.VisibilityConfig
+	128, // 394: wafv2.XssMatchStatement.fieldtomatch:type_name -> wafv2.FieldToMatch
+	238, // 395: wafv2.XssMatchStatement.preparsetexttransformations:type_name -> wafv2.PreParseTextTransformation
+	297, // 396: wafv2.XssMatchStatement.texttransformations:type_name -> wafv2.TextTransformation
+	268, // 397: wafv2.AssociationConfig.RequestbodyEntry.value:type_name -> wafv2.RequestBodyAssociatedResourceTypeConfig
+	96,  // 398: wafv2.CreateRuleGroupRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
+	96,  // 399: wafv2.CreateWebACLRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
+	223, // 400: wafv2.ManagedRuleSet.PublishedversionsEntry.value:type_name -> wafv2.ManagedRuleSetVersion
+	314, // 401: wafv2.PutManagedRuleSetVersionsRequest.VersionstopublishEntry.value:type_name -> wafv2.VersionToPublish
+	96,  // 402: wafv2.RuleGroup.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
+	96,  // 403: wafv2.UpdateRuleGroupRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
+	96,  // 404: wafv2.UpdateWebACLRequest.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
+	96,  // 405: wafv2.WebACL.CustomresponsebodiesEntry.value:type_name -> wafv2.CustomResponseBody
+	61,  // 406: wafv2.WAFV2Service.AssociateWebACL:input_type -> wafv2.AssociateWebACLRequest
+	74,  // 407: wafv2.WAFV2Service.CheckCapacity:input_type -> wafv2.CheckCapacityRequest
+	82,  // 408: wafv2.WAFV2Service.CreateAPIKey:input_type -> wafv2.CreateAPIKeyRequest
+	84,  // 409: wafv2.WAFV2Service.CreateIPSet:input_type -> wafv2.CreateIPSetRequest
+	86,  // 410: wafv2.WAFV2Service.CreateRegexPatternSet:input_type -> wafv2.CreateRegexPatternSetRequest
+	88,  // 411: wafv2.WAFV2Service.CreateRuleGroup:input_type -> wafv2.CreateRuleGroupRequest
+	90,  // 412: wafv2.WAFV2Service.CreateWebACL:input_type -> wafv2.CreateWebACLRequest
+	101, // 413: wafv2.WAFV2Service.DeleteAPIKey:input_type -> wafv2.DeleteAPIKeyRequest
+	103, // 414: wafv2.WAFV2Service.DeleteFirewallManagerRuleGroups:input_type -> wafv2.DeleteFirewallManagerRuleGroupsRequest
+	105, // 415: wafv2.WAFV2Service.DeleteIPSet:input_type -> wafv2.DeleteIPSetRequest
+	107, // 416: wafv2.WAFV2Service.DeleteLoggingConfiguration:input_type -> wafv2.DeleteLoggingConfigurationRequest
+	109, // 417: wafv2.WAFV2Service.DeletePermissionPolicy:input_type -> wafv2.DeletePermissionPolicyRequest
+	111, // 418: wafv2.WAFV2Service.DeleteRegexPatternSet:input_type -> wafv2.DeleteRegexPatternSetRequest
+	113, // 419: wafv2.WAFV2Service.DeleteRuleGroup:input_type -> wafv2.DeleteRuleGroupRequest
+	115, // 420: wafv2.WAFV2Service.DeleteWebACL:input_type -> wafv2.DeleteWebACLRequest
+	117, // 421: wafv2.WAFV2Service.DescribeAllManagedProducts:input_type -> wafv2.DescribeAllManagedProductsRequest
+	119, // 422: wafv2.WAFV2Service.DescribeManagedProductsByVendor:input_type -> wafv2.DescribeManagedProductsByVendorRequest
+	121, // 423: wafv2.WAFV2Service.DescribeManagedRuleGroup:input_type -> wafv2.DescribeManagedRuleGroupRequest
+	124, // 424: wafv2.WAFV2Service.DisassociateWebACL:input_type -> wafv2.DisassociateWebACLRequest
+	135, // 425: wafv2.WAFV2Service.GenerateMobileSdkReleaseUrl:input_type -> wafv2.GenerateMobileSdkReleaseUrlRequest
+	138, // 426: wafv2.WAFV2Service.GetDecryptedAPIKey:input_type -> wafv2.GetDecryptedAPIKeyRequest
+	140, // 427: wafv2.WAFV2Service.GetIPSet:input_type -> wafv2.GetIPSetRequest
+	142, // 428: wafv2.WAFV2Service.GetLoggingConfiguration:input_type -> wafv2.GetLoggingConfigurationRequest
+	144, // 429: wafv2.WAFV2Service.GetManagedRuleSet:input_type -> wafv2.GetManagedRuleSetRequest
+	146, // 430: wafv2.WAFV2Service.GetMobileSdkRelease:input_type -> wafv2.GetMobileSdkReleaseRequest
+	148, // 431: wafv2.WAFV2Service.GetPermissionPolicy:input_type -> wafv2.GetPermissionPolicyRequest
+	150, // 432: wafv2.WAFV2Service.GetRateBasedStatementManagedKeys:input_type -> wafv2.GetRateBasedStatementManagedKeysRequest
+	152, // 433: wafv2.WAFV2Service.GetRegexPatternSet:input_type -> wafv2.GetRegexPatternSetRequest
+	154, // 434: wafv2.WAFV2Service.GetRevenueStatistics:input_type -> wafv2.GetRevenueStatisticsRequest
+	156, // 435: wafv2.WAFV2Service.GetRevenueStatisticsSummary:input_type -> wafv2.GetRevenueStatisticsSummaryRequest
+	158, // 436: wafv2.WAFV2Service.GetRevenueStatisticsTimeSeries:input_type -> wafv2.GetRevenueStatisticsTimeSeriesRequest
+	160, // 437: wafv2.WAFV2Service.GetRuleGroup:input_type -> wafv2.GetRuleGroupRequest
+	162, // 438: wafv2.WAFV2Service.GetSampledRequests:input_type -> wafv2.GetSampledRequestsRequest
+	164, // 439: wafv2.WAFV2Service.GetTopPathStatisticsByTraffic:input_type -> wafv2.GetTopPathStatisticsByTrafficRequest
+	168, // 440: wafv2.WAFV2Service.GetWebACL:input_type -> wafv2.GetWebACLRequest
+	166, // 441: wafv2.WAFV2Service.GetWebACLForResource:input_type -> wafv2.GetWebACLForResourceRequest
+	188, // 442: wafv2.WAFV2Service.ListAPIKeys:input_type -> wafv2.ListAPIKeysRequest
+	192, // 443: wafv2.WAFV2Service.ListAvailableManagedRuleGroups:input_type -> wafv2.ListAvailableManagedRuleGroupsRequest
+	190, // 444: wafv2.WAFV2Service.ListAvailableManagedRuleGroupVersions:input_type -> wafv2.ListAvailableManagedRuleGroupVersionsRequest
+	194, // 445: wafv2.WAFV2Service.ListIPSets:input_type -> wafv2.ListIPSetsRequest
+	196, // 446: wafv2.WAFV2Service.ListLoggingConfigurations:input_type -> wafv2.ListLoggingConfigurationsRequest
+	198, // 447: wafv2.WAFV2Service.ListManagedRuleSets:input_type -> wafv2.ListManagedRuleSetsRequest
+	200, // 448: wafv2.WAFV2Service.ListMobileSdkReleases:input_type -> wafv2.ListMobileSdkReleasesRequest
+	202, // 449: wafv2.WAFV2Service.ListRegexPatternSets:input_type -> wafv2.ListRegexPatternSetsRequest
+	204, // 450: wafv2.WAFV2Service.ListResourcesForWebACL:input_type -> wafv2.ListResourcesForWebACLRequest
+	206, // 451: wafv2.WAFV2Service.ListRuleGroups:input_type -> wafv2.ListRuleGroupsRequest
+	208, // 452: wafv2.WAFV2Service.ListSettlementRecords:input_type -> wafv2.ListSettlementRecordsRequest
+	210, // 453: wafv2.WAFV2Service.ListTagsForResource:input_type -> wafv2.ListTagsForResourceRequest
+	212, // 454: wafv2.WAFV2Service.ListWebACLs:input_type -> wafv2.ListWebACLsRequest
+	240, // 455: wafv2.WAFV2Service.PutLoggingConfiguration:input_type -> wafv2.PutLoggingConfigurationRequest
+	242, // 456: wafv2.WAFV2Service.PutManagedRuleSetVersions:input_type -> wafv2.PutManagedRuleSetVersionsRequest
+	244, // 457: wafv2.WAFV2Service.PutPermissionPolicy:input_type -> wafv2.PutPermissionPolicyRequest
+	295, // 458: wafv2.WAFV2Service.TagResource:input_type -> wafv2.TagResourceRequest
+	299, // 459: wafv2.WAFV2Service.UntagResource:input_type -> wafv2.UntagResourceRequest
+	301, // 460: wafv2.WAFV2Service.UpdateIPSet:input_type -> wafv2.UpdateIPSetRequest
+	303, // 461: wafv2.WAFV2Service.UpdateManagedRuleSetVersionExpiryDate:input_type -> wafv2.UpdateManagedRuleSetVersionExpiryDateRequest
+	305, // 462: wafv2.WAFV2Service.UpdateRegexPatternSet:input_type -> wafv2.UpdateRegexPatternSetRequest
+	307, // 463: wafv2.WAFV2Service.UpdateRuleGroup:input_type -> wafv2.UpdateRuleGroupRequest
+	309, // 464: wafv2.WAFV2Service.UpdateWebACL:input_type -> wafv2.UpdateWebACLRequest
+	62,  // 465: wafv2.WAFV2Service.AssociateWebACL:output_type -> wafv2.AssociateWebACLResponse
+	75,  // 466: wafv2.WAFV2Service.CheckCapacity:output_type -> wafv2.CheckCapacityResponse
+	83,  // 467: wafv2.WAFV2Service.CreateAPIKey:output_type -> wafv2.CreateAPIKeyResponse
+	85,  // 468: wafv2.WAFV2Service.CreateIPSet:output_type -> wafv2.CreateIPSetResponse
+	87,  // 469: wafv2.WAFV2Service.CreateRegexPatternSet:output_type -> wafv2.CreateRegexPatternSetResponse
+	89,  // 470: wafv2.WAFV2Service.CreateRuleGroup:output_type -> wafv2.CreateRuleGroupResponse
+	91,  // 471: wafv2.WAFV2Service.CreateWebACL:output_type -> wafv2.CreateWebACLResponse
+	102, // 472: wafv2.WAFV2Service.DeleteAPIKey:output_type -> wafv2.DeleteAPIKeyResponse
+	104, // 473: wafv2.WAFV2Service.DeleteFirewallManagerRuleGroups:output_type -> wafv2.DeleteFirewallManagerRuleGroupsResponse
+	106, // 474: wafv2.WAFV2Service.DeleteIPSet:output_type -> wafv2.DeleteIPSetResponse
+	108, // 475: wafv2.WAFV2Service.DeleteLoggingConfiguration:output_type -> wafv2.DeleteLoggingConfigurationResponse
+	110, // 476: wafv2.WAFV2Service.DeletePermissionPolicy:output_type -> wafv2.DeletePermissionPolicyResponse
+	112, // 477: wafv2.WAFV2Service.DeleteRegexPatternSet:output_type -> wafv2.DeleteRegexPatternSetResponse
+	114, // 478: wafv2.WAFV2Service.DeleteRuleGroup:output_type -> wafv2.DeleteRuleGroupResponse
+	116, // 479: wafv2.WAFV2Service.DeleteWebACL:output_type -> wafv2.DeleteWebACLResponse
+	118, // 480: wafv2.WAFV2Service.DescribeAllManagedProducts:output_type -> wafv2.DescribeAllManagedProductsResponse
+	120, // 481: wafv2.WAFV2Service.DescribeManagedProductsByVendor:output_type -> wafv2.DescribeManagedProductsByVendorResponse
+	122, // 482: wafv2.WAFV2Service.DescribeManagedRuleGroup:output_type -> wafv2.DescribeManagedRuleGroupResponse
+	125, // 483: wafv2.WAFV2Service.DisassociateWebACL:output_type -> wafv2.DisassociateWebACLResponse
+	136, // 484: wafv2.WAFV2Service.GenerateMobileSdkReleaseUrl:output_type -> wafv2.GenerateMobileSdkReleaseUrlResponse
+	139, // 485: wafv2.WAFV2Service.GetDecryptedAPIKey:output_type -> wafv2.GetDecryptedAPIKeyResponse
+	141, // 486: wafv2.WAFV2Service.GetIPSet:output_type -> wafv2.GetIPSetResponse
+	143, // 487: wafv2.WAFV2Service.GetLoggingConfiguration:output_type -> wafv2.GetLoggingConfigurationResponse
+	145, // 488: wafv2.WAFV2Service.GetManagedRuleSet:output_type -> wafv2.GetManagedRuleSetResponse
+	147, // 489: wafv2.WAFV2Service.GetMobileSdkRelease:output_type -> wafv2.GetMobileSdkReleaseResponse
+	149, // 490: wafv2.WAFV2Service.GetPermissionPolicy:output_type -> wafv2.GetPermissionPolicyResponse
+	151, // 491: wafv2.WAFV2Service.GetRateBasedStatementManagedKeys:output_type -> wafv2.GetRateBasedStatementManagedKeysResponse
+	153, // 492: wafv2.WAFV2Service.GetRegexPatternSet:output_type -> wafv2.GetRegexPatternSetResponse
+	155, // 493: wafv2.WAFV2Service.GetRevenueStatistics:output_type -> wafv2.GetRevenueStatisticsResponse
+	157, // 494: wafv2.WAFV2Service.GetRevenueStatisticsSummary:output_type -> wafv2.GetRevenueStatisticsSummaryResponse
+	159, // 495: wafv2.WAFV2Service.GetRevenueStatisticsTimeSeries:output_type -> wafv2.GetRevenueStatisticsTimeSeriesResponse
+	161, // 496: wafv2.WAFV2Service.GetRuleGroup:output_type -> wafv2.GetRuleGroupResponse
+	163, // 497: wafv2.WAFV2Service.GetSampledRequests:output_type -> wafv2.GetSampledRequestsResponse
+	165, // 498: wafv2.WAFV2Service.GetTopPathStatisticsByTraffic:output_type -> wafv2.GetTopPathStatisticsByTrafficResponse
+	169, // 499: wafv2.WAFV2Service.GetWebACL:output_type -> wafv2.GetWebACLResponse
+	167, // 500: wafv2.WAFV2Service.GetWebACLForResource:output_type -> wafv2.GetWebACLForResourceResponse
+	189, // 501: wafv2.WAFV2Service.ListAPIKeys:output_type -> wafv2.ListAPIKeysResponse
+	193, // 502: wafv2.WAFV2Service.ListAvailableManagedRuleGroups:output_type -> wafv2.ListAvailableManagedRuleGroupsResponse
+	191, // 503: wafv2.WAFV2Service.ListAvailableManagedRuleGroupVersions:output_type -> wafv2.ListAvailableManagedRuleGroupVersionsResponse
+	195, // 504: wafv2.WAFV2Service.ListIPSets:output_type -> wafv2.ListIPSetsResponse
+	197, // 505: wafv2.WAFV2Service.ListLoggingConfigurations:output_type -> wafv2.ListLoggingConfigurationsResponse
+	199, // 506: wafv2.WAFV2Service.ListManagedRuleSets:output_type -> wafv2.ListManagedRuleSetsResponse
+	201, // 507: wafv2.WAFV2Service.ListMobileSdkReleases:output_type -> wafv2.ListMobileSdkReleasesResponse
+	203, // 508: wafv2.WAFV2Service.ListRegexPatternSets:output_type -> wafv2.ListRegexPatternSetsResponse
+	205, // 509: wafv2.WAFV2Service.ListResourcesForWebACL:output_type -> wafv2.ListResourcesForWebACLResponse
+	207, // 510: wafv2.WAFV2Service.ListRuleGroups:output_type -> wafv2.ListRuleGroupsResponse
+	209, // 511: wafv2.WAFV2Service.ListSettlementRecords:output_type -> wafv2.ListSettlementRecordsResponse
+	211, // 512: wafv2.WAFV2Service.ListTagsForResource:output_type -> wafv2.ListTagsForResourceResponse
+	213, // 513: wafv2.WAFV2Service.ListWebACLs:output_type -> wafv2.ListWebACLsResponse
+	241, // 514: wafv2.WAFV2Service.PutLoggingConfiguration:output_type -> wafv2.PutLoggingConfigurationResponse
+	243, // 515: wafv2.WAFV2Service.PutManagedRuleSetVersions:output_type -> wafv2.PutManagedRuleSetVersionsResponse
+	245, // 516: wafv2.WAFV2Service.PutPermissionPolicy:output_type -> wafv2.PutPermissionPolicyResponse
+	296, // 517: wafv2.WAFV2Service.TagResource:output_type -> wafv2.TagResourceResponse
+	300, // 518: wafv2.WAFV2Service.UntagResource:output_type -> wafv2.UntagResourceResponse
+	302, // 519: wafv2.WAFV2Service.UpdateIPSet:output_type -> wafv2.UpdateIPSetResponse
+	304, // 520: wafv2.WAFV2Service.UpdateManagedRuleSetVersionExpiryDate:output_type -> wafv2.UpdateManagedRuleSetVersionExpiryDateResponse
+	306, // 521: wafv2.WAFV2Service.UpdateRegexPatternSet:output_type -> wafv2.UpdateRegexPatternSetResponse
+	308, // 522: wafv2.WAFV2Service.UpdateRuleGroup:output_type -> wafv2.UpdateRuleGroupResponse
+	310, // 523: wafv2.WAFV2Service.UpdateWebACL:output_type -> wafv2.UpdateWebACLResponse
+	465, // [465:524] is the sub-list for method output_type
+	406, // [406:465] is the sub-list for method input_type
+	406, // [406:406] is the sub-list for extension type_name
+	406, // [406:406] is the sub-list for extension extendee
+	0,   // [0:406] is the sub-list for field type_name
 }
 
 func init() { file_wafv2_proto_init() }
@@ -23328,46 +23814,136 @@ func file_wafv2_proto_init() {
 	file_wafv2_proto_msgTypes[1].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[2].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[4].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[11].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[23].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[26].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[28].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[36].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[37].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[39].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[41].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[43].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[48].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[50].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[51].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[57].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[74].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[75].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[76].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[84].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[89].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[92].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[94].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[98].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[102].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[103].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[106].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[107].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[108].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[111].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[112].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[113].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[114].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[116].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[117].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[118].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[121].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[122].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[123].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[124].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[128].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[131].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[140].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[141].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[142].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[143].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[144].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[145].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[146].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[147].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[148].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[149].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[150].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[151].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[152].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[153].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[154].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[155].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[156].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[159].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[160].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[161].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[162].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[163].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[164].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[165].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[166].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[167].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[169].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[170].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[171].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[172].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[173].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[174].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[175].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[176].OneofWrappers = []any{}
-	file_wafv2_proto_msgTypes[199].OneofWrappers = []any{}
-	file_wafv2_proto_msgTypes[228].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[178].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[181].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[195].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[196].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[200].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[215].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[217].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[219].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[220].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[229].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[234].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[236].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[237].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[238].OneofWrappers = []any{}
-	file_wafv2_proto_msgTypes[242].OneofWrappers = []any{}
-	file_wafv2_proto_msgTypes[266].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[239].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[243].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[247].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[254].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[255].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[257].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[258].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[259].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[260].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[261].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[262].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[263].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[267].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[268].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[269].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[270].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[271].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[272].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[273].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[274].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[275].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[276].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[277].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[278].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[279].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[280].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[281].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[282].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[283].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[284].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[285].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[286].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[287].OneofWrappers = []any{}
 	file_wafv2_proto_msgTypes[288].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[289].OneofWrappers = []any{}
+	file_wafv2_proto_msgTypes[290].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_wafv2_proto_rawDesc), len(file_wafv2_proto_rawDesc)),
-			NumEnums:      46,
-			NumMessages:   300,
+			NumEnums:      47,
+			NumMessages:   301,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

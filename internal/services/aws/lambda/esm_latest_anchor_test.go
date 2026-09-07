@@ -86,6 +86,21 @@ func (b *memBucket) ScanPrefix(prefix []byte) storage.Iterator {
 	return &memIterator{bucket: b, keys: keys}
 }
 
+// ScanPrefixReverse walks the matching keys in descending order, starting at
+// the largest key strictly less than before when before is non-nil.
+func (b *memBucket) ScanPrefixReverse(prefix, before []byte) storage.Iterator {
+	var keys []string
+	_ = b.ForEach(func(k, v []byte) error {
+		ks := string(k)
+		if strings.HasPrefix(ks, string(prefix)) && (before == nil || ks < string(before)) {
+			keys = append(keys, ks)
+		}
+		return nil
+	})
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+	return &memIterator{bucket: b, keys: keys}
+}
+
 func (b *memBucket) ScanRange(start, end []byte) storage.Iterator {
 	var keys []string
 	_ = b.ForEach(func(k, v []byte) error {
