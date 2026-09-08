@@ -55,6 +55,14 @@ var CleanupInterval = 10 * time.Minute
 // Overridden to 2s in TEST_MODE.
 var PendingRequeueInterval = 30 * time.Second
 
+// PendingRequeueRetryInterval is the shortened wait between requeue scans
+// used while a backlog is known to exist: either a publish-time enqueue
+// drop has signalled the loop, or a scan stopped early because the async
+// channel was full. Waiting the full PendingRequeueInterval in those states
+// would stretch momentary channel saturation into a full-period visibility
+// delay for every entry dropped at publish time.
+var PendingRequeueRetryInterval = 250 * time.Millisecond
+
 func init() {
 	if os.Getenv("TEST_MODE") == "true" {
 		CleanupInterval = 30 * time.Second
@@ -210,6 +218,9 @@ type EventBus struct {
 	nextSubID               atomic.Int64
 	asyncCh                 chan *OutboxEntry
 	directCh                chan *directDispatch
+	// requeueKick is the coalescing signal from publish-time enqueue drops:
+	// capacity one, so a burst of drops schedules one early requeue scan.
+	requeueKick chan struct{}
 	// requeueCursor is where the last requeuePending walk stopped. It is
 	// written and read only by the requeuePendingLoop goroutine, so it
 	// needs no lock; it lets the next tick resume behind the entries
@@ -228,6 +239,7 @@ func NewEventBus(opts ...BusOption) *EventBus {
 		stopCh:        make(chan struct{}),
 		asyncCh:       make(chan *OutboxEntry, 1024),
 		directCh:      make(chan *directDispatch, 1024),
+		requeueKick:   make(chan struct{}, 1),
 		policyFuncs:   make(map[string]ResourcePolicyFunc),
 	}
 	for _, opt := range opts {

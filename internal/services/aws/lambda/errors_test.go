@@ -31,12 +31,6 @@ func TestLambdaErrors(t *testing.T) {
 		assert.Equal(t, "InvalidParameterValueException: The value for the parameter is invalid.", ErrInvalidParameterValue.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrInvalidParameterValue.GetHTTPStatusCode())
 
-		assert.Equal(t, "InvalidParameterValueException: The runtime parameter is invalid.", ErrInvalidRuntime.Error())
-		assert.Equal(t, http.StatusBadRequest, ErrInvalidRuntime.GetHTTPStatusCode())
-
-		assert.Equal(t, "CodeVerificationFailedException: The code signature failed the signature verification check.", ErrCodeVerificationFailed.Error())
-		assert.Equal(t, http.StatusBadRequest, ErrCodeVerificationFailed.GetHTTPStatusCode())
-
 		assert.Equal(t, "CodeStorageExceededException: The total code size for the account exceeds the maximum allowed limit.", ErrCodeStorageExceeded.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrCodeStorageExceeded.GetHTTPStatusCode())
 
@@ -63,47 +57,5 @@ func TestLambdaErrors(t *testing.T) {
 		err := NewResourceConflict("function is already being updated")
 		assert.Equal(t, "ResourceConflictException: function is already being updated", err.Error())
 		assert.Equal(t, http.StatusConflict, err.GetHTTPStatusCode())
-	})
-}
-
-func TestIsLambdaError(t *testing.T) {
-	t.Run("returns true for LambdaError", func(t *testing.T) {
-		err := NewLambdaError("TestCode", "Test message", 400)
-		assert.True(t, IsLambdaError(err))
-	})
-
-	t.Run("returns false for non-LambdaError", func(t *testing.T) {
-		err := &testError{msg: "test"}
-		assert.False(t, IsLambdaError(err))
-	})
-}
-
-type testError struct {
-	msg string
-}
-
-func (e *testError) Error() string {
-	return e.msg
-}
-
-func TestGetLambdaError(t *testing.T) {
-	t.Run("returns LambdaError when passed LambdaError", func(t *testing.T) {
-		err := NewLambdaError("TestCode", "Test message", 400)
-		result := GetLambdaError(err)
-		assert.Equal(t, "TestCode: Test message", result.Error())
-	})
-
-	t.Run("returns ErrServiceException for non-LambdaError", func(t *testing.T) {
-		err := &testError{msg: "test"}
-		result := GetLambdaError(err)
-		assert.Equal(t, ErrServiceException, result)
-	})
-}
-
-func TestAWSResponse(t *testing.T) {
-	t.Run("creates response with status and body", func(t *testing.T) {
-		resp := AWSResponse(200, map[string]string{"message": "success"})
-		assert.Equal(t, 200, resp.StatusCode)
-		assert.Equal(t, map[string]string{"message": "success"}, resp.Body)
 	})
 }

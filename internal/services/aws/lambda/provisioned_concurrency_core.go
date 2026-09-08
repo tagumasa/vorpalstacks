@@ -1,6 +1,8 @@
 package lambda
 
 import (
+	"errors"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -47,14 +49,17 @@ func (s *LambdaService) putProvisionedConcurrencyCore(reqCtx *request.RequestCon
 	}
 
 	if err := stores.Functions.SetProvisionedConcurrency(in.FunctionName, in.Qualifier, in.ProvisionedConcurrentExecutions); err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err
 	}
 
-	// Pre-warm the function container for the resolved qualifier.  This
-	// eliminates cold-start latency on the first invocation.
+	// Pre-warm the function container for the resolved qualifier. Once the
+	// warm environment exists, the configuration flips to READY reporting
+	// the warm capacity that actually exists — one pre-warmed container
+	// serves the qualifier's invocations regardless of the requested
+	// count, so readiness reports one, not the requested number.
 	if s.dockerClient != nil {
 		go func() {
 			defer func() {
@@ -77,7 +82,12 @@ func (s *LambdaService) putProvisionedConcurrencyCore(reqCtx *request.RequestCon
 			if alias != nil {
 				ver = resolveAliasTargetVersion(fn, alias)
 			}
-			_, _ = s.ensureFunctionContainer(fn, ver, stores.Functions, in.Region)
+			if containerID, err := s.ensureFunctionContainer(fn, ver, stores.Functions, in.Region); err == nil && containerID != "" {
+				if err := stores.Functions.MarkProvisionedConcurrencyReady(in.FunctionName, in.Qualifier, 1); err != nil {
+					logs.Warn("Failed to mark provisioned concurrency ready after pre-warm",
+						logs.String("function", in.FunctionName), logs.String("qualifier", in.Qualifier), logs.Err(err))
+				}
+			}
 		}()
 	}
 
@@ -100,7 +110,7 @@ func (s *LambdaService) getProvisionedConcurrencyCore(stores *lambdaStore, funct
 	}
 	config, err := stores.Functions.GetProvisionedConcurrency(functionName, qualifier)
 	if err != nil {
-		if err == lambdastore.ErrProvisionedConcurrencyNotFound {
+		if errors.Is(err, lambdastore.ErrProvisionedConcurrencyNotFound) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err
@@ -119,7 +129,7 @@ func (s *LambdaService) deleteProvisionedConcurrencyCore(stores *lambdaStore, fu
 		return NewInvalidParameter("Qualifier", "Qualifier is required")
 	}
 	if err := stores.Functions.DeleteProvisionedConcurrency(functionName, qualifier); err != nil {
-		if err == lambdastore.ErrProvisionedConcurrencyNotFound {
+		if errors.Is(err, lambdastore.ErrProvisionedConcurrencyNotFound) {
 			return ErrResourceNotFound
 		}
 		return err

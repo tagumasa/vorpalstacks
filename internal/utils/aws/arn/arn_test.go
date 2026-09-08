@@ -1110,3 +1110,26 @@ func TestParseCertificateID(t *testing.T) {
 		}
 	}
 }
+
+// TestParseLayerVersion pins the layer-version segment of a layer ARN:
+// the name and the version are separate segments, and an unversioned ARN
+// yields 0.
+func TestParseLayerVersion(t *testing.T) {
+	builder := NewARNBuilder("123456789012", "us-east-1").Lambda()
+	cases := []struct {
+		name string
+		arn  string
+		want int64
+	}{
+		{"versioned layer arn", "arn:aws:lambda:us-east-1:123456789012:layer:blank-python-lib:3", 3},
+		{"version one", "arn:aws:lambda:us-east-1:123456789012:layer:lib:1", 1},
+		{"unversioned layer arn", "arn:aws:lambda:us-east-1:123456789012:layer:lib", 0},
+		{"non numeric version", "arn:aws:lambda:us-east-1:123456789012:layer:lib:v2", 0},
+		{"not a layer arn", "arn:aws:lambda:us-east-1:123456789012:function:fn", 0},
+	}
+	for _, c := range cases {
+		if got := builder.ParseLayerVersion(c.arn); got != c.want {
+			t.Errorf("%s: ParseLayerVersion(%q) = %d, want %d", c.name, c.arn, got, c.want)
+		}
+	}
+}

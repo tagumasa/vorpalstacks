@@ -2,10 +2,8 @@ package lambda
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -55,6 +53,37 @@ func (s *LambdaService) publishLayerVersionCore(ctx context.Context, reqCtx *req
 		return nil, nil, err
 	}
 	layers := stores.Layers
+
+	version := &lambdastore.LayerVersion{
+		Description: in.Description,
+		LicenseInfo: in.LicenseInfo,
+	}
+
+	// Decode the archive once and reuse it for hash/size computation and
+	// persistence. It happens before any record is written: the version's
+	// size and hash ride on the record through the atomic publish, and a
+	// content error must leave nothing behind (no layer shell either).
+	decodedZipFile, decodeErr := s.resolveCodeContent(ctx, in.Region, "Content", in.Content)
+	if decodeErr != nil {
+		return nil, nil, decodeErr
+	}
+	version.CodeSize = int64(len(decodedZipFile))
+	version.CodeSha256 = lambdastore.GenerateCodeHash(decodedZipFile)
+
+	for _, c := range in.CompatibleRuntimes {
+		canonical, ok := lambdastore.CanonicalRuntime(c)
+		if !ok {
+			return nil, nil, NewInvalidParameter("CompatibleRuntimes",
+				fmt.Sprintf("Runtime '%s' is not supported", c))
+		}
+		version.CompatibleRuntimes = append(version.CompatibleRuntimes, canonical)
+	}
+
+	version.CompatibleArchitectures = append(version.CompatibleArchitectures, in.CompatibleArchitectures...)
+
+	// A layer shell created by this very request is removed again when
+	// the publish fails, matching single-operation AWS semantics.
+	layerCreatedHere := false
 	layer, err := layers.Get(in.LayerName)
 	if err != nil {
 		layer = &lambdastore.Layer{
@@ -63,7 +92,12 @@ func (s *LambdaService) publishLayerVersionCore(ctx context.Context, reqCtx *req
 		}
 		layer, err = layers.Create(layer)
 		if err != nil {
-			if err == lambdastore.ErrResourceConflict {
+			if errors.Is(err, lambdastore.ErrLayerAlreadyExists) {
+				// A concurrent first publish created the shell between
+				// the Get and this Create; re-read it and continue.
+				// PublishLayerVersion defines no conflict error — every
+				// same-name publish creates a new version — so the loser
+				// of the shell race must proceed, not fail.
 				layer, err = layers.Get(in.LayerName)
 				if err != nil {
 					return nil, nil, err
@@ -71,66 +105,59 @@ func (s *LambdaService) publishLayerVersionCore(ctx context.Context, reqCtx *req
 			} else {
 				return nil, nil, err
 			}
+		} else {
+			layerCreatedHere = true
 		}
 	}
 
-	version := &lambdastore.LayerVersion{
-		Description: in.Description,
-		LicenseInfo: in.LicenseInfo,
+	// rollbackVersion removes the just-published version and, when this
+	// request created the layer shell, that shell too.
+	rollbackVersion := func(versionNumber int64) {
+		s.rollbackCreatedRecord(fmt.Sprintf("layer version %d of %s", versionNumber, in.LayerName), func() error {
+			if err := layers.DeleteVersion(in.LayerName, versionNumber); err != nil {
+				return err
+			}
+			s.removeLayerVersionCodeDir(in.LayerName, versionNumber, in.Region)
+			return nil
+		})
+		if layerCreatedHere {
+			s.rollbackCreatedRecord("layer "+in.LayerName, func() error {
+				return layers.Delete(in.LayerName)
+			})
+		}
 	}
 
-	for _, c := range in.CompatibleRuntimes {
-		if !ValidateRuntime(c) {
-			return nil, nil, NewInvalidParameter("CompatibleRuntimes",
-				fmt.Sprintf("Runtime '%s' is not supported", c))
-		}
-		version.CompatibleRuntimes = append(version.CompatibleRuntimes, lambdastore.Runtime(c))
-	}
-
-	version.CompatibleArchitectures = append(version.CompatibleArchitectures, in.CompatibleArchitectures...)
-
-	// Decode ZipFile once and reuse for hash/size computation and persistence.
-	var decodedZipFile []byte
-	if zipFileStr, ok := in.Content["ZipFile"].(string); ok && zipFileStr != "" {
-		decodedZipFile, err = base64.StdEncoding.DecodeString(zipFileStr)
-		if err != nil {
-			return nil, nil, fmt.Errorf("invalid ZipFile encoding: %w", err)
-		}
-		version.CodeSize = int64(len(decodedZipFile))
-		version.CodeSha256 = lambdastore.GenerateCodeHash(decodedZipFile)
-	} else if s3Bucket, ok := in.Content["S3Bucket"].(string); ok && s3Bucket != "" {
-		s3Key, _ := in.Content["S3Key"].(string)
-		if s3Key == "" {
-			return nil, nil, NewInvalidParameter("Content.S3Key", "S3Key is required when S3Bucket is specified")
-		}
-		s3Version, _ := in.Content["S3ObjectVersion"].(string)
-		decodedZipFile, err = s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, in.Region)
-		if err != nil {
-			return nil, nil, NewInvalidParameter("Content", err.Error())
-		}
-		version.CodeSize = int64(len(decodedZipFile))
-		version.CodeSha256 = lambdastore.GenerateCodeHash(decodedZipFile)
-	}
-
-	created, err := layers.PublishVersion(layer, version)
+	created, err := layers.PublishVersionAtomically(in.LayerName, func(*lambdastore.Layer) (*lambdastore.LayerVersion, error) {
+		return version, nil
+	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if decodedZipFile != nil {
-		codePath, storeErr := s.storeLayerCode(in.LayerName, created.Version, decodedZipFile, in.Region)
-		if storeErr != nil {
-			return nil, nil, fmt.Errorf("failed to persist layer code: %w", storeErr)
-		}
-		created.CodeLocation = codePath
-		// Persist the updated CodeLocation so it survives server restarts.
-		// created points into layer.Versions, so this call writes the
-		// CodeLocation to PebbleDB alongside the rest of the layer.
-		if err := layers.Update(layer); err != nil {
-			return nil, nil, fmt.Errorf("failed to persist layer code location: %w", err)
-		}
+	codePath, storeErr := s.storeLayerCode(in.LayerName, created.Version, decodedZipFile, in.Region)
+	if storeErr != nil {
+		// The version record exists but its archive does not — the
+		// failed publish rolls the version back.
+		rollbackVersion(created.Version)
+		return nil, nil, fmt.Errorf("failed to persist layer code: %w", storeErr)
+	}
+	// Persist the updated CodeLocation so it survives server restarts,
+	// re-reading the layer under the store lock so the write-back can
+	// never drop a concurrently published version.
+	publishedNum := created.Version
+	created, err = layers.UpdateVersionAtomically(in.LayerName, created.Version, func(v *lambdastore.LayerVersion) error {
+		v.CodeLocation = codePath
+		return nil
+	})
+	if err != nil {
+		rollbackVersion(publishedNum)
+		return nil, nil, fmt.Errorf("failed to persist layer code location: %w", err)
 	}
 
+	layer, err = layers.Get(in.LayerName)
+	if err != nil {
+		return nil, nil, err
+	}
 	return layer, created, nil
 }
 
@@ -153,6 +180,10 @@ func (s *LambdaService) deleteLayerVersionCore(reqCtx *request.RequestContext, l
 		}
 		return err
 	}
+	// The authoritative store delete succeeded; the version's on-disk
+	// archive goes with it, and the layer root when the last version
+	// went with it.
+	s.removeLayerVersionCodeDir(layerName, versionNumber, reqCtx.GetRegion())
 	return nil
 }
 
@@ -230,9 +261,8 @@ func (s *LambdaService) getLayerVersionByArnCore(stores *lambdaStore, layerVersi
 	}
 
 	layerArn := ""
-	parts := strings.SplitN(layerVersionArn, ":", 7)
-	if len(parts) >= 6 {
-		layerName := parts[5]
+	layerName := lambdastore.NewARNBuilder(s.accountID, s.region).ParseLayerNameFromArn(layerVersionArn)
+	if layerName != "" {
 		if layer, err := stores.Layers.Get(layerName); err == nil {
 			layerArn = layer.LayerArn
 		}
@@ -264,10 +294,6 @@ func (s *LambdaService) addLayerVersionPermissionCore(reqCtx *request.RequestCon
 	if err != nil {
 		return nil, err
 	}
-	layer, err := stores.Layers.Get(in.LayerName)
-	if err != nil {
-		return nil, NewResourceNotFound("LayerVersion", in.LayerName)
-	}
 
 	policy := &lambdastore.LayerPolicy{
 		Id:        in.StatementId,
@@ -279,7 +305,7 @@ func (s *LambdaService) addLayerVersionPermissionCore(reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	if err := stores.Layers.AddPolicy(layer, in.VersionNumber, policy); err != nil {
+	if err := stores.Layers.AddPolicy(in.LayerName, in.VersionNumber, policy); err != nil {
 		if errors.Is(err, lambdastore.ErrLayerNotFound) || errors.Is(err, lambdastore.ErrLayerVersionNotFound) {
 			return nil, NewResourceNotFound("LayerVersion", in.LayerName)
 		}
@@ -324,7 +350,7 @@ func (s *LambdaService) removeLayerVersionPermissionCore(reqCtx *request.Request
 		if errors.Is(err, lambdastore.ErrPolicyNotFound) {
 			return NewResourceNotFound("Statement", statementId)
 		}
-		return err
+		return mapStoreError(err)
 	}
 	return nil
 }

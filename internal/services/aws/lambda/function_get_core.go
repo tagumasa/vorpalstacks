@@ -1,6 +1,7 @@
 package lambda
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -28,7 +29,9 @@ type GetFunctionInput struct {
 
 // validateAndGetFunction resolves the FunctionName wire reference and
 // fetches the function, failing with ResourceNotFound when it does not
-// exist.
+// exist. It enforces the strict FunctionName bound (bare name 1-64,
+// no dots); callers whose member the Smithy model types as
+// NamespacedFunctionName must use validateAndGetFunctionNamespaced.
 func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, error) {
 	functionName := request.GetStringParam(params, "FunctionName")
 	if functionName == "" {
@@ -39,7 +42,30 @@ func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, para
 	if err := validateFunctionName(functionName); err != nil {
 		return nil, err
 	}
+	return s.getFunctionByName(ctx, functionName)
+}
 
+// validateAndGetFunctionNamespaced is validateAndGetFunction for
+// operations whose FunctionName member the Smithy model types as
+// NamespacedFunctionName: the raw reference is validated against the
+// namespaced pattern (dotted names and the 256-character bound are
+// accepted; malformed ARN segments are rejected) before resolution.
+func (s *LambdaService) validateAndGetFunctionNamespaced(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, error) {
+	functionNameRaw := request.GetStringParam(params, "FunctionName")
+	if functionNameRaw == "" {
+		return nil, NewInvalidParameter("FunctionName", "Function name is required")
+	}
+
+	if err := validateNamespacedFunctionName(functionNameRaw); err != nil {
+		return nil, err
+	}
+	functionName, _ := resolveNamespacedFunctionRef(functionNameRaw)
+	return s.getFunctionByName(ctx, functionName)
+}
+
+// getFunctionByName fetches a function by its bare name, mapping the
+// store's not-found error onto the API's ResourceNotFound shape.
+func (s *LambdaService) getFunctionByName(ctx *request.RequestContext, functionName string) (*lambdastore.Function, error) {
 	store, err := s.store(ctx)
 	if err != nil {
 		return nil, err
@@ -56,17 +82,20 @@ func (s *LambdaService) validateAndGetFunction(ctx *request.RequestContext, para
 // version or alias. The returned effective qualifier is the merged one
 // (an explicit Qualifier parameter wins over one embedded in the
 // function reference), so invoke operations can build the qualifier-aware
-// invoked ARN the handler context reports.
+// invoked ARN the handler context reports. The reference is validated
+// against the NamespacedFunctionName pattern — every caller of this
+// resolver (Invoke, InvokeAsync, InvokeWithResponseStream) is typed by
+// that shape in the Smithy model.
 func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.RequestContext, params map[string]interface{}) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, string, error) {
 	functionNameRaw := request.GetStringParam(params, "FunctionName")
 	if functionNameRaw == "" {
 		return nil, nil, nil, "", NewInvalidParameter("FunctionName", "Function name is required")
 	}
 
-	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
-	if err := validateFunctionName(functionName); err != nil {
+	if err := validateNamespacedFunctionName(functionNameRaw); err != nil {
 		return nil, nil, nil, "", err
 	}
+	functionName, embeddedQualifier := resolveNamespacedFunctionRef(functionNameRaw)
 
 	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
 	store, err := s.store(ctx)
@@ -86,10 +115,10 @@ func (s *LambdaService) validateAndGetFunctionWithQualifier(ctx *request.Request
 func (s *LambdaService) resolveQualifier(store *lambdastore.FunctionStore, functionName, qualifier string) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
 	function, version, alias, err := store.ResolveQualifier(functionName, qualifier)
 	if err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return nil, nil, nil, ErrResourceNotFound
 		}
-		if err == lambdastore.ErrVersionNotFound {
+		if errors.Is(err, lambdastore.ErrVersionNotFound) {
 			return nil, nil, nil, NewLambdaError("ResourceNotFoundException",
 				fmt.Sprintf("Qualifier '%s' not found for function '%s'.", qualifier, functionName),
 				http.StatusNotFound)
@@ -104,20 +133,9 @@ func (s *LambdaService) resolveQualifier(store *lambdastore.FunctionStore, funct
 // the admin gRPC handler. The raw function name or ARN is resolved and
 // validated internally so that all callers share a single validation path.
 func (s *LambdaService) getFunctionCore(stores *lambdaStore, in *GetFunctionInput) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, map[string]string, error) {
-	functionName, embeddedQualifier := resolveFunctionRef(in.FunctionName)
-	if err := validateFunctionName(functionName); err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	function, version, alias, err := s.resolveQualifier(stores.Functions, functionName, mergeQualifier(in.Qualifier, embeddedQualifier))
+	function, version, alias, err := s.getFunctionConfigurationCore(stores, in)
 	if err != nil {
 		return nil, nil, nil, nil, err
-	}
-	// An alias qualifier addresses the published version it points to;
-	// Get operations always report the alias's primary version (weighted
-	// routing affects invocation only).
-	if alias != nil {
-		version = findVersion(function, alias.FunctionVersion)
 	}
 
 	tags, err := stores.Functions.TagStore.List(function.FunctionName)
@@ -133,12 +151,14 @@ func (s *LambdaService) getFunctionCore(stores *lambdaStore, in *GetFunctionInpu
 
 // getFunctionConfigurationCore retrieves a function configuration (optionally
 // by qualifier). It is the single entry point shared by the HTTP API handler
-// and the admin gRPC handler.
+// and the admin gRPC handler. GetFunction and GetFunctionConfiguration are
+// NamespacedFunctionName-typed in the Smithy model, so the raw reference is
+// validated against that pattern rather than the stricter create-time bound.
 func (s *LambdaService) getFunctionConfigurationCore(stores *lambdaStore, in *GetFunctionInput) (*lambdastore.Function, *lambdastore.Version, *lambdastore.Alias, error) {
-	functionName, embeddedQualifier := resolveFunctionRef(in.FunctionName)
-	if err := validateFunctionName(functionName); err != nil {
+	if err := validateNamespacedFunctionName(in.FunctionName); err != nil {
 		return nil, nil, nil, err
 	}
+	functionName, embeddedQualifier := resolveNamespacedFunctionRef(in.FunctionName)
 
 	function, version, alias, err := s.resolveQualifier(stores.Functions, functionName, mergeQualifier(in.Qualifier, embeddedQualifier))
 	if err != nil {

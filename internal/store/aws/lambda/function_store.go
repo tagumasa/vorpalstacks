@@ -2,7 +2,6 @@
 package lambda
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"sync"
@@ -19,7 +18,6 @@ type FunctionStore struct {
 	*common.BaseStore
 	TagStore   *common.TagStore
 	arnBuilder *ARNBuilder
-	accountId  string
 	region     string
 	mu         sync.Mutex
 }
@@ -31,7 +29,6 @@ func NewFunctionStore(store storage.BasicStorage, accountId, region string) *Fun
 		BaseStore:  common.NewBaseStore(bucket, "lambda-functions"),
 		TagStore:   common.NewTagStoreWithRegion(store, "lambda", region),
 		arnBuilder: NewARNBuilder(accountId, region),
-		accountId:  accountId,
 		region:     region,
 	}
 }
@@ -54,19 +51,18 @@ func (s *FunctionStore) Create(function *Function) (*Function, error) {
 	function.RevisionId = uuid.New().String()
 
 	if function.Timeout == 0 {
-		function.Timeout = 3
+		function.Timeout = DefaultFunctionTimeoutSeconds
 	}
 	if function.MemorySize == 0 {
-		function.MemorySize = 128
+		function.MemorySize = DefaultFunctionMemorySizeMB
 	}
 	if function.EphemeralStorage == nil {
-		function.EphemeralStorage = &EphemeralStorage{Size: 512}
+		// The documented CreateFunction default for EphemeralStorage.Size
+		// equals the modelled minimum.
+		function.EphemeralStorage = &EphemeralStorage{Size: MinEphemeralStorageSizeMB}
 	}
 	if function.PackageType == "" {
 		function.PackageType = "Zip"
-	}
-	if function.CurrentVersion == "" {
-		function.CurrentVersion = "$LATEST"
 	}
 
 	if function.CodeSize > 0 && function.CodeSha256 == "" {
@@ -85,6 +81,9 @@ func (s *FunctionStore) Create(function *Function) (*Function, error) {
 func (s *FunctionStore) Get(functionName string) (*Function, error) {
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, ErrFunctionNotFound
 	}
 	function.rebuildIndexes()
@@ -122,14 +121,6 @@ func (s *FunctionStore) GetByArn(arn string) (*Function, error) {
 	return s.Get(functionName)
 }
 
-// Update updates an existing Lambda function in the store.
-// Returns an error if the function does not exist.
-func (s *FunctionStore) Update(function *Function) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.updateInternal(function)
-}
-
 // UpdateAtomically performs an atomic read-modify-write operation on a function.
 // The modifier function is called while holding the lock, preventing race conditions.
 // Returns the updated function or an error.
@@ -157,6 +148,9 @@ func (s *FunctionStore) UpdateAtomically(functionName string, modifier func(*Fun
 func (s *FunctionStore) getInternal(functionName string) (*Function, error) {
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, ErrFunctionNotFound
 	}
 	function.rebuildIndexes()
@@ -173,6 +167,16 @@ func (s *FunctionStore) updateInternal(function *Function) error {
 	function.LastUpdateStatus = LastUpdateStatusSuccessful
 	function.RevisionId = uuid.New().String()
 
+	return s.Put(function.FunctionName, function)
+}
+
+// persistPolicyMutation writes a function record whose only change is
+// resource-policy state. Unlike updateInternal it does not rotate the
+// function's RevisionId, LastModified, or LastUpdateStatus: the policy
+// carries its own PolicyRevisionId and is versioned independently of the
+// function configuration, so a policy write must not invalidate a
+// client-held function revision.
+func (s *FunctionStore) persistPolicyMutation(function *Function) error {
 	return s.Put(function.FunctionName, function)
 }
 
@@ -202,29 +206,26 @@ func (s *FunctionStore) ListAllFunctions() ([]*Function, error) {
 	return common.ListMatching[Function](s.BaseStore, "", nil)
 }
 
-// ListByPrefix returns a list of Lambda functions filtered by name prefix.
-func (s *FunctionStore) ListByPrefix(prefix string) ([]*Function, error) {
-	var functions []*Function
-	err := s.ScanPrefix("", func(key string, value []byte) error {
-		var fn Function
-		if err := json.Unmarshal(value, &fn); err != nil {
-			return err
-		}
-		if prefix == "" || (len(fn.FunctionName) >= len(prefix) && fn.FunctionName[:len(prefix)] == prefix) {
-			functions = append(functions, &fn)
-		}
-		return nil
-	})
-	return functions, err
-}
-
-// PublishVersion publishes a new version of a Lambda function.
-// Returns the published version or an error if the function does not exist.
-func (s *FunctionStore) PublishVersion(function *Function, description string) (*Version, error) {
+// PublishVersionAtomically publishes a new version of a Lambda function,
+// re-reading the function record under the store lock so the version
+// numbering and the append observe every concurrent publish or
+// configuration update — a caller-loaded snapshot can never overwrite a
+// concurrent mutation. A non-empty revisionId is the modelled
+// optimistic-locking precondition, checked against the live record inside
+// the lock. Returns the published version or an error if the function
+// does not exist.
+func (s *FunctionStore) PublishVersionAtomically(functionName, description, revisionId string) (*Version, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	function.rebuildIndexes()
+	function, err := s.getInternal(functionName)
+	if err != nil {
+		return nil, err
+	}
+
+	if revisionId != "" && function.RevisionId != revisionId {
+		return nil, ErrRevisionMismatch
+	}
 
 	versionNum := "1"
 	if function.latestVersionNum > 0 || len(function.Versions) > 0 {
@@ -245,7 +246,7 @@ func (s *FunctionStore) PublishVersion(function *Function, description string) (
 		Timeout:                  function.Timeout,
 		MemorySize:               function.MemorySize,
 		EphemeralStorage:         deepCopyEphemeralStorage(function.EphemeralStorage),
-		Architectures:            deepCopyArchitectures(function.Architectures),
+		Architectures:            deepCopyStrings(function.Architectures),
 		KMSKeyArn:                function.KMSKeyArn,
 		RevisionId:               uuid.New().String(),
 		State:                    StateActive,
@@ -268,7 +269,6 @@ func (s *FunctionStore) PublishVersion(function *Function, description string) (
 	}
 
 	function.Versions = append(function.Versions, *version)
-	function.CurrentVersion = versionNum
 
 	if function.versionsByNum == nil {
 		function.versionsByNum = make(map[string]*Version)
@@ -308,6 +308,9 @@ func (s *FunctionStore) DeleteVersion(functionName, version string) error {
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
@@ -327,40 +330,6 @@ func (s *FunctionStore) DeleteVersion(functionName, version string) error {
 	}
 
 	return ErrVersionNotFound
-}
-
-// CreateAlias creates a new alias for a Lambda function.
-// Returns the created alias or an error if it already exists.
-func (s *FunctionStore) CreateAlias(function *Function, alias *Alias) (*Alias, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	function.rebuildIndexes()
-
-	if _, exists := function.aliasesByName[alias.Name]; exists {
-		return nil, ErrAliasAlreadyExists
-	}
-
-	alias.AliasArn = s.arnBuilder.FunctionAliasArn(function.FunctionName, alias.Name)
-	alias.FunctionName = function.FunctionName
-	alias.RevisionId = uuid.New().String()
-
-	if alias.FunctionVersion == "" {
-		alias.FunctionVersion = "$LATEST"
-	}
-
-	function.Aliases = append(function.Aliases, *alias)
-
-	if function.aliasesByName == nil {
-		function.aliasesByName = make(map[string]*Alias)
-	}
-	function.aliasesByName[alias.Name] = &function.Aliases[len(function.Aliases)-1]
-
-	if err := s.updateInternal(function); err != nil {
-		return nil, err
-	}
-
-	return alias, nil
 }
 
 // GetAlias retrieves an alias for a Lambda function by name.
@@ -422,9 +391,11 @@ func (s *FunctionStore) CreateAliasAtomically(functionName string, creator func(
 	return alias, nil
 }
 
-// UpdateAliasAtomically updates an alias atomically (race-free).
-// The modifier function is called while holding the lock.
-func (s *FunctionStore) UpdateAliasAtomically(functionName, aliasName string, modifier func(*Function, *Alias) error) (*Alias, error) {
+// UpdateAliasAtomically updates an alias atomically (race-free). A
+// non-empty expectedRevision is the modelled optimistic-locking
+// precondition, checked against the alias's current revision inside the
+// lock. The modifier function is called while holding the lock.
+func (s *FunctionStore) UpdateAliasAtomically(functionName, aliasName, expectedRevision string, modifier func(*Function, *Alias) error) (*Alias, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -438,6 +409,10 @@ func (s *FunctionStore) UpdateAliasAtomically(functionName, aliasName string, mo
 	existing, ok := function.aliasesByName[aliasName]
 	if !ok {
 		return nil, ErrAliasNotFound
+	}
+
+	if expectedRevision != "" && existing.RevisionId != expectedRevision {
+		return nil, ErrRevisionMismatch
 	}
 
 	if err := modifier(function, existing); err != nil {
@@ -468,6 +443,9 @@ func (s *FunctionStore) DeleteAlias(functionName, aliasName string) error {
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
@@ -511,7 +489,8 @@ func (s *FunctionStore) AddPolicyAtomically(functionName string, policy *Functio
 		policy.Id = uuid.New().String()
 	}
 	function.Policies = append(function.Policies, *policy)
-	return s.updateInternal(function)
+	function.PolicyRevisionId = uuid.New().String()
+	return s.persistPolicyMutation(function)
 }
 
 // RemovePolicy removes a resource-based policy from a Lambda function.
@@ -521,17 +500,82 @@ func (s *FunctionStore) RemovePolicy(functionName, statementId string) error {
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
 	for i, p := range function.Policies {
 		if p.Id == statementId {
 			function.Policies = append(function.Policies[:i], function.Policies[i+1:]...)
-			return s.updateInternal(&function)
+			function.PolicyRevisionId = uuid.New().String()
+			return s.persistPolicyMutation(&function)
 		}
 	}
 
 	return ErrPolicyNotFound
+}
+
+// SetResourcePolicy replaces a function's entire resource-based policy and
+// returns the new policy revision. The whole-document replacement and the
+// revision precondition check happen inside the lock, mirroring
+// AddPolicyAtomically's TOCTOU protection: two concurrent Puts cannot both
+// pass an unchanged-revision check. An empty expectedRevision performs the
+// replacement unconditionally; a non-empty one that does not match the
+// current policy revision fails with ErrPolicyRevisionMismatch without
+// touching the stored policy. Statements without a Sid receive a generated
+// statement ID so RemovePermission can address them.
+func (s *FunctionStore) SetResourcePolicy(functionName, expectedRevision string, policies []FunctionPolicy) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	function, err := s.getInternal(functionName)
+	if err != nil {
+		return "", err
+	}
+
+	if expectedRevision != "" && function.PolicyRevisionId != expectedRevision {
+		return "", ErrPolicyRevisionMismatch
+	}
+
+	for i := range policies {
+		if policies[i].Id == "" {
+			policies[i].Id = uuid.New().String()
+		}
+	}
+	function.Policies = policies
+	function.PolicyRevisionId = uuid.New().String()
+	if err := s.persistPolicyMutation(function); err != nil {
+		return "", err
+	}
+	return function.PolicyRevisionId, nil
+}
+
+// DeleteResourcePolicy removes a function's entire resource-based policy.
+// The operation is idempotent: a function that carries no statements has
+// nothing to delete, so repeated deletes are no-ops. A function whose
+// statements exist fails the revision precondition before the clear.
+func (s *FunctionStore) DeleteResourcePolicy(functionName, expectedRevision string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	function, err := s.getInternal(functionName)
+	if err != nil {
+		return err
+	}
+
+	if len(function.Policies) == 0 {
+		return nil
+	}
+
+	if expectedRevision != "" && function.PolicyRevisionId != expectedRevision {
+		return ErrPolicyRevisionMismatch
+	}
+
+	function.Policies = nil
+	function.PolicyRevisionId = uuid.New().String()
+	return s.persistPolicyMutation(function)
 }
 
 // GetPolicy retrieves the resource-based policy for a Lambda function.
@@ -550,6 +594,9 @@ func (s *FunctionStore) SetReservedConcurrency(functionName string, concurrency 
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 	function.ReservedConcurrency = concurrency
@@ -565,18 +612,43 @@ func (s *FunctionStore) GetReservedConcurrency(functionName string) (*int64, err
 	return function.ReservedConcurrency, nil
 }
 
-// SetContainerInfo sets the container information for a Lambda function.
+// SetContainerInfo records the running container on the $LATEST function
+// record. The write is a narrow in-lock mutation that does not rotate the
+// function's RevisionId or LastModified: container placement is internal
+// execution state, not function configuration.
 func (s *FunctionStore) SetContainerInfo(functionName, containerID, containerImageID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	var function Function
-	if err := s.BaseStore.Get(functionName, &function); err != nil {
-		return ErrFunctionNotFound
+	function, err := s.getInternal(functionName)
+	if err != nil {
+		return err
 	}
 	function.ContainerID = containerID
 	function.ContainerImageID = containerImageID
-	return s.updateInternal(&function)
+	return s.Put(functionName, function)
+}
+
+// SetVersionContainerInfo records the running container on a published
+// version record with the same narrow non-rotating write as
+// SetContainerInfo; both container fields carry the same ID by
+// construction.
+func (s *FunctionStore) SetVersionContainerInfo(functionName, version, containerID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	function, err := s.getInternal(functionName)
+	if err != nil {
+		return err
+	}
+	for i := range function.Versions {
+		if function.Versions[i].Version == version {
+			function.Versions[i].ContainerID = containerID
+			function.Versions[i].ContainerImageID = containerID
+			return s.Put(functionName, function)
+		}
+	}
+	return ErrVersionNotFound
 }
 
 // SetFunctionUrlConfig sets the function URL configuration for a Lambda function.
@@ -586,6 +658,9 @@ func (s *FunctionStore) SetFunctionUrlConfig(functionName string, config *Functi
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 	now := time.Now().UTC()
@@ -621,6 +696,9 @@ func (s *FunctionStore) DeleteFunctionUrlConfig(functionName string) error {
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 	function.UrlConfig = nil
@@ -651,12 +729,18 @@ func (s *FunctionStore) ResolveQualifier(functionName, qualifier string) (*Funct
 }
 
 // SetProvisionedConcurrency sets the provisioned concurrency for a Lambda function qualifier.
+// The configuration starts as IN_PROGRESS with zero allocated and available
+// capacity; the requested capacity is reported as allocated only when the
+// pre-warmed environment exists (MarkProvisionedConcurrencyReady).
 func (s *FunctionStore) SetProvisionedConcurrency(functionName, qualifier string, concurrentExecutions int32) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
@@ -664,10 +748,10 @@ func (s *FunctionStore) SetProvisionedConcurrency(functionName, qualifier string
 	found := false
 	for i, pc := range function.ProvisionedConcurrency {
 		if pc.Qualifier == qualifier {
-			function.ProvisionedConcurrency[i].AllocatedProvisionedConcurrentExecutions = concurrentExecutions
-			function.ProvisionedConcurrency[i].AvailableProvisionedConcurrentExecutions = concurrentExecutions
+			function.ProvisionedConcurrency[i].AllocatedProvisionedConcurrentExecutions = 0
+			function.ProvisionedConcurrency[i].AvailableProvisionedConcurrentExecutions = 0
 			function.ProvisionedConcurrency[i].RequestedProvisionedConcurrentExecutions = concurrentExecutions
-			function.ProvisionedConcurrency[i].Status = "READY"
+			function.ProvisionedConcurrency[i].Status = "IN_PROGRESS"
 			function.ProvisionedConcurrency[i].LastModified = now
 			found = true
 			break
@@ -679,15 +763,43 @@ func (s *FunctionStore) SetProvisionedConcurrency(functionName, qualifier string
 			FunctionName:                             functionName,
 			FunctionArn:                              s.arnBuilder.FunctionArn(functionName),
 			Qualifier:                                qualifier,
-			AllocatedProvisionedConcurrentExecutions: concurrentExecutions,
-			AvailableProvisionedConcurrentExecutions: concurrentExecutions,
+			AllocatedProvisionedConcurrentExecutions: 0,
+			AvailableProvisionedConcurrentExecutions: 0,
 			RequestedProvisionedConcurrentExecutions: concurrentExecutions,
-			Status:                                   "READY",
+			Status:                                   "IN_PROGRESS",
 			LastModified:                             now,
 		})
 	}
 
 	return s.updateInternal(&function)
+}
+
+// MarkProvisionedConcurrencyReady reports the qualifier's provisioned
+// concurrency as READY with the given warm-capacity count — the number of
+// pre-warmed execution environments that actually exist.
+func (s *FunctionStore) MarkProvisionedConcurrencyReady(functionName, qualifier string, allocated int32) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var function Function
+	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
+		return ErrFunctionNotFound
+	}
+
+	for i, pc := range function.ProvisionedConcurrency {
+		if pc.Qualifier == qualifier {
+			function.ProvisionedConcurrency[i].AllocatedProvisionedConcurrentExecutions = allocated
+			function.ProvisionedConcurrency[i].AvailableProvisionedConcurrentExecutions = allocated
+			function.ProvisionedConcurrency[i].Status = "READY"
+			function.ProvisionedConcurrency[i].LastModified = time.Now().UTC()
+			return s.updateInternal(&function)
+		}
+	}
+
+	return ErrProvisionedConcurrencyNotFound
 }
 
 // GetProvisionedConcurrency retrieves the provisioned concurrency configuration for a Lambda function qualifier.
@@ -713,6 +825,9 @@ func (s *FunctionStore) DeleteProvisionedConcurrency(functionName, qualifier str
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
@@ -746,6 +861,9 @@ func (s *FunctionStore) SetEventInvokeConfig(functionName, qualifier string, con
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
@@ -793,6 +911,9 @@ func (s *FunctionStore) DeleteEventInvokeConfig(functionName, qualifier string) 
 
 	var function Function
 	if err := s.BaseStore.Get(functionName, &function); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrFunctionNotFound
 	}
 
@@ -817,117 +938,4 @@ func (s *FunctionStore) ListEventInvokeConfigs(functionName string) ([]EventInvo
 	}
 
 	return function.EventInvokeConfigs, nil
-}
-
-func deepCopyVpcConfig(src *VpcConfig) *VpcConfig {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	if src.SecurityGroupIds != nil {
-		dst.SecurityGroupIds = make([]string, len(src.SecurityGroupIds))
-		copy(dst.SecurityGroupIds, src.SecurityGroupIds)
-	}
-	if src.SubnetIds != nil {
-		dst.SubnetIds = make([]string, len(src.SubnetIds))
-		copy(dst.SubnetIds, src.SubnetIds)
-	}
-	return &dst
-}
-
-func deepCopyEnvironment(src *Environment) *Environment {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	if src.Variables != nil {
-		dst.Variables = make(map[string]string, len(src.Variables))
-		for k, v := range src.Variables {
-			dst.Variables[k] = v
-		}
-	}
-	return &dst
-}
-
-func deepCopyDeadLetterConfig(src *DeadLetterConfig) *DeadLetterConfig {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	return &dst
-}
-
-func deepCopyTracingConfig(src *TracingConfig) *TracingConfig {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	return &dst
-}
-
-func deepCopySnapStart(src *SnapStart) *SnapStart {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	return &dst
-}
-
-func deepCopyEphemeralStorage(src *EphemeralStorage) *EphemeralStorage {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	return &dst
-}
-
-func deepCopyLayers(src []LayerReference) []LayerReference {
-	if src == nil {
-		return nil
-	}
-	dst := make([]LayerReference, len(src))
-	copy(dst, src)
-	return dst
-}
-
-func deepCopyArchitectures(src []string) []string {
-	if src == nil {
-		return nil
-	}
-	dst := make([]string, len(src))
-	copy(dst, src)
-	return dst
-}
-
-func deepCopyLoggingConfig(src *LoggingConfig) *LoggingConfig {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	return &dst
-}
-
-func deepCopyImageConfig(src *ImageConfig) *ImageConfig {
-	if src == nil {
-		return nil
-	}
-	dst := *src
-	if src.EntryPoint != nil {
-		dst.EntryPoint = make([]string, len(src.EntryPoint))
-		copy(dst.EntryPoint, src.EntryPoint)
-	}
-	if src.Command != nil {
-		dst.Command = make([]string, len(src.Command))
-		copy(dst.Command, src.Command)
-	}
-	return &dst
-}
-
-func deepCopyFileSystemConfigs(src []FileSystemConfig) []FileSystemConfig {
-	if src == nil {
-		return nil
-	}
-	dst := make([]FileSystemConfig, len(src))
-	copy(dst, src)
-	return dst
 }

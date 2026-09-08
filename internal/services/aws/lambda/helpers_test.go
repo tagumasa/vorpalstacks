@@ -45,6 +45,46 @@ func TestResolveFunctionRef(t *testing.T) {
 	})
 }
 
+func TestResolveNamespacedFunctionRef(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		wantName string
+		wantQual string
+	}{
+		{"dotted bare name", "my.function", "my.function", ""},
+		{"dotted name with alias suffix", "my.function:prod", "my.function", "prod"},
+		{"full ARN", "arn:aws:lambda:us-west-2:123456789012:function:my.function", "my.function", ""},
+		{"full ARN with published qualifier", "arn:aws:lambda:us-west-2:123456789012:function:fn:$LATEST.PUBLISHED", "fn", "$LATEST.PUBLISHED"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			name, qualifier := resolveNamespacedFunctionRef(tc.input)
+			assert.Equal(t, tc.wantName, name)
+			assert.Equal(t, tc.wantQual, qualifier)
+		})
+	}
+
+	// The NamespacedFunctionName @length(1,256) bound admits references
+	// the strict FunctionName bound rejects: a reference between 141 and
+	// 256 characters resolves under the namespaced resolver while the
+	// strict one refuses it.
+	t.Run("reference between the strict and namespaced bounds", func(t *testing.T) {
+		ref := "arn:aws:lambda:us-west-2:123456789012:function:" + strings.Repeat("a", 100)
+		strictName, _ := resolveFunctionRef(ref)
+		assert.Equal(t, "", strictName)
+		name, _ := resolveNamespacedFunctionRef(ref)
+		assert.Equal(t, strings.Repeat("a", 100), name)
+	})
+
+	t.Run("reference exceeding the namespaced bound", func(t *testing.T) {
+		ref := "arn:aws:lambda:us-west-2:123456789012:function:" + strings.Repeat("a", 220)
+		name, _ := resolveNamespacedFunctionRef(ref)
+		assert.Equal(t, "", name)
+	})
+}
+
 func TestMergeQualifier(t *testing.T) {
 	assert.Equal(t, "prod", mergeQualifier("prod", "5"), "explicit parameter wins")
 	assert.Equal(t, "5", mergeQualifier("", "5"), "embedded qualifier used when parameter absent")

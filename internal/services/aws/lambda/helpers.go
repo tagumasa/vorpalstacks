@@ -18,6 +18,25 @@ import (
 // name inside any form is separately capped at 64 by validateFunctionName.
 const maxFunctionRefLength = 140
 
+// maxFunctionNameLength is the create-time bare-name cap: "The name of
+// the Lambda function... up to 64 characters" (AWS API reference,
+// CreateFunction FunctionName). The model's @length(1,140) admits any
+// reference form; this cap binds the bare name a created function can
+// carry, and every reference form must resolve against it.
+const maxFunctionNameLength = 64
+
+// maxAliasNameLength is the Alias shape's @length(1,128) maximum from the
+// Smithy model.
+const maxAliasNameLength = 128
+
+// maxNamespacedFunctionRefLength is the NamespacedFunctionName
+// @length(1,256) maximum from the Smithy model. Members typed by that
+// shape admit references up to 256 characters; the bare name inside any
+// form still has to resolve against functions created under the
+// 64-character create-time bound, so a longer reference resolves to a
+// name no function carries (not found) rather than being rejected.
+const maxNamespacedFunctionRefLength = 256
+
 // resolveFunctionRef parses every FunctionName form the API accepts into
 // the bare function name and a qualifier embedded in the reference:
 //   - "my-function"                                  (name only)
@@ -32,10 +51,23 @@ const maxFunctionRefLength = 140
 // separates the embedded qualifier. An explicit Qualifier request parameter
 // takes precedence over the embedded one (see mergeQualifier).
 func resolveFunctionRef(nameOrArn string) (name, qualifier string) {
+	return resolveFunctionRefWithin(nameOrArn, maxFunctionRefLength)
+}
+
+// resolveNamespacedFunctionRef is resolveFunctionRef for members the
+// Smithy model types as NamespacedFunctionName: identical forms with the
+// wider 256-character raw-input bound, so a long but pattern-valid
+// reference resolves (and typically misses) instead of being rejected as
+// over-long.
+func resolveNamespacedFunctionRef(nameOrArn string) (name, qualifier string) {
+	return resolveFunctionRefWithin(nameOrArn, maxNamespacedFunctionRefLength)
+}
+
+func resolveFunctionRefWithin(nameOrArn string, maxLen int) (name, qualifier string) {
 	if nameOrArn == "" {
 		return "", ""
 	}
-	if len(nameOrArn) > maxFunctionRefLength {
+	if len(nameOrArn) > maxLen {
 		return "", ""
 	}
 	if strings.HasPrefix(nameOrArn, "arn:") {
@@ -168,6 +200,31 @@ func parseVpcConfig(params map[string]interface{}) *lambdastore.VpcConfig {
 	return vpcConfig
 }
 
+// parseFileSystemConfigs converts the FileSystemConfigs wire member into
+// store values. Presence is preserved: an entry without S3FilesConfig keeps
+// a nil pointer, and an empty input list stays empty (an update-provided
+// empty list clears the configuration).
+func parseFileSystemConfigs(fscs []interface{}) []lambdastore.FileSystemConfig {
+	var configs []lambdastore.FileSystemConfig
+	for _, fsc := range fscs {
+		m, ok := fsc.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		config := lambdastore.FileSystemConfig{
+			Arn:            request.GetStringParam(m, "Arn"),
+			LocalMountPath: request.GetStringParam(m, "LocalMountPath"),
+		}
+		if s3m := request.GetMapParam(m, "S3FilesConfig"); s3m != nil {
+			config.S3FilesConfig = &lambdastore.S3FilesConfig{
+				DirectS3Read: request.GetStringParam(s3m, "DirectS3Read"),
+			}
+		}
+		configs = append(configs, config)
+	}
+	return configs
+}
+
 // resolveVpcConfig uses the EC2 invoker to derive the VPC ID from the first
 // subnet. AWS Lambda derives the VPC from the subnets automatically.
 // Returns an error if the subnet lookup fails so callers can reject the
@@ -296,275 +353,4 @@ func parseImageConfig(m map[string]interface{}) *lambdastore.ImageConfig {
 		return nil
 	}
 	return ic
-}
-
-func deepCopyFunction(fn *lambdastore.Function) *lambdastore.Function {
-	if fn == nil {
-		return nil
-	}
-
-	result := &lambdastore.Function{
-		FunctionName:               fn.FunctionName,
-		FunctionArn:                fn.FunctionArn,
-		Runtime:                    fn.Runtime,
-		Role:                       fn.Role,
-		Handler:                    fn.Handler,
-		CodeSize:                   fn.CodeSize,
-		CodeSha256:                 fn.CodeSha256,
-		CodeLocation:               fn.CodeLocation,
-		ImageUri:                   fn.ImageUri,
-		SourceCodeHash:             fn.SourceCodeHash,
-		Description:                fn.Description,
-		Timeout:                    fn.Timeout,
-		MemorySize:                 fn.MemorySize,
-		Publish:                    fn.Publish,
-		KMSKeyArn:                  fn.KMSKeyArn,
-		RevisionId:                 fn.RevisionId,
-		State:                      fn.State,
-		StateReason:                fn.StateReason,
-		StateReasonCode:            fn.StateReasonCode,
-		LastUpdateStatus:           fn.LastUpdateStatus,
-		LastUpdateReason:           fn.LastUpdateReason,
-		LastUpdateStatusReason:     fn.LastUpdateStatusReason,
-		LastUpdateStatusReasonCode: fn.LastUpdateStatusReasonCode,
-		LastModified:               fn.LastModified,
-		LastModifiedUser:           fn.LastModifiedUser,
-		PackageType:                fn.PackageType,
-		SigningProfileVersionArn:   fn.SigningProfileVersionArn,
-		SigningJobArn:              fn.SigningJobArn,
-		CodeSigningConfigArn:       fn.CodeSigningConfigArn,
-		CurrentVersion:             fn.CurrentVersion,
-		ReservedConcurrency:        fn.ReservedConcurrency,
-		ContainerID:                fn.ContainerID,
-		ContainerImageID:           fn.ContainerImageID,
-	}
-
-	if fn.EphemeralStorage != nil {
-		result.EphemeralStorage = &lambdastore.EphemeralStorage{Size: fn.EphemeralStorage.Size}
-	}
-
-	if len(fn.Architectures) > 0 {
-		result.Architectures = make([]string, len(fn.Architectures))
-		copy(result.Architectures, fn.Architectures)
-	}
-
-	if fn.VpcConfig != nil {
-		result.VpcConfig = &lambdastore.VpcConfig{
-			VpcId:                   fn.VpcConfig.VpcId,
-			Ipv6AllowedForDualStack: fn.VpcConfig.Ipv6AllowedForDualStack,
-		}
-		if len(fn.VpcConfig.SubnetIds) > 0 {
-			result.VpcConfig.SubnetIds = make([]string, len(fn.VpcConfig.SubnetIds))
-			copy(result.VpcConfig.SubnetIds, fn.VpcConfig.SubnetIds)
-		}
-		if len(fn.VpcConfig.SecurityGroupIds) > 0 {
-			result.VpcConfig.SecurityGroupIds = make([]string, len(fn.VpcConfig.SecurityGroupIds))
-			copy(result.VpcConfig.SecurityGroupIds, fn.VpcConfig.SecurityGroupIds)
-		}
-	}
-
-	if fn.Environment != nil {
-		result.Environment = &lambdastore.Environment{}
-		if fn.Environment.Variables != nil {
-			result.Environment.Variables = make(map[string]string, len(fn.Environment.Variables))
-			for k, v := range fn.Environment.Variables {
-				result.Environment.Variables[k] = v
-			}
-		}
-	}
-
-	if fn.DeadLetterConfig != nil {
-		result.DeadLetterConfig = &lambdastore.DeadLetterConfig{TargetArn: fn.DeadLetterConfig.TargetArn}
-	}
-
-	if fn.TracingConfig != nil {
-		result.TracingConfig = &lambdastore.TracingConfig{Mode: fn.TracingConfig.Mode}
-	}
-
-	if len(fn.Layers) > 0 {
-		result.Layers = make([]lambdastore.LayerReference, len(fn.Layers))
-		copy(result.Layers, fn.Layers)
-	}
-
-	if fn.SnapStart != nil {
-		result.SnapStart = &lambdastore.SnapStart{ApplyOn: fn.SnapStart.ApplyOn}
-	}
-
-	if fn.LoggingConfig != nil {
-		result.LoggingConfig = &lambdastore.LoggingConfig{
-			LogFormat:           fn.LoggingConfig.LogFormat,
-			ApplicationLogLevel: fn.LoggingConfig.ApplicationLogLevel,
-			SystemLogLevel:      fn.LoggingConfig.SystemLogLevel,
-			LogGroup:            fn.LoggingConfig.LogGroup,
-		}
-	}
-
-	if fn.ImageConfig != nil {
-		result.ImageConfig = &lambdastore.ImageConfig{
-			WorkingDirectory: fn.ImageConfig.WorkingDirectory,
-		}
-		if len(fn.ImageConfig.EntryPoint) > 0 {
-			result.ImageConfig.EntryPoint = make([]string, len(fn.ImageConfig.EntryPoint))
-			copy(result.ImageConfig.EntryPoint, fn.ImageConfig.EntryPoint)
-		}
-		if len(fn.ImageConfig.Command) > 0 {
-			result.ImageConfig.Command = make([]string, len(fn.ImageConfig.Command))
-			copy(result.ImageConfig.Command, fn.ImageConfig.Command)
-		}
-	}
-
-	if len(fn.FileSystemConfigs) > 0 {
-		result.FileSystemConfigs = make([]lambdastore.FileSystemConfig, len(fn.FileSystemConfigs))
-		copy(result.FileSystemConfigs, fn.FileSystemConfigs)
-	}
-
-	if fn.UrlConfig != nil {
-		result.UrlConfig = deepCopyFunctionUrlConfig(fn.UrlConfig)
-	}
-
-	if len(fn.Versions) > 0 {
-		result.Versions = make([]lambdastore.Version, len(fn.Versions))
-		for i, v := range fn.Versions {
-			result.Versions[i] = *deepCopyVersion(&v)
-		}
-	}
-
-	if len(fn.Aliases) > 0 {
-		result.Aliases = make([]lambdastore.Alias, len(fn.Aliases))
-		copy(result.Aliases, fn.Aliases)
-	}
-
-	if len(fn.Policies) > 0 {
-		result.Policies = make([]lambdastore.FunctionPolicy, len(fn.Policies))
-		copy(result.Policies, fn.Policies)
-	}
-
-	if len(fn.ProvisionedConcurrency) > 0 {
-		result.ProvisionedConcurrency = make([]lambdastore.ProvisionedConcurrencyConfig, len(fn.ProvisionedConcurrency))
-		copy(result.ProvisionedConcurrency, fn.ProvisionedConcurrency)
-	}
-
-	if len(fn.EventInvokeConfigs) > 0 {
-		result.EventInvokeConfigs = make([]lambdastore.EventInvokeConfig, len(fn.EventInvokeConfigs))
-		copy(result.EventInvokeConfigs, fn.EventInvokeConfigs)
-	}
-
-	return result
-}
-
-func deepCopyVersion(v *lambdastore.Version) *lambdastore.Version {
-	if v == nil {
-		return nil
-	}
-
-	result := &lambdastore.Version{
-		Version:                  v.Version,
-		FunctionArn:              v.FunctionArn,
-		Runtime:                  v.Runtime,
-		Role:                     v.Role,
-		Handler:                  v.Handler,
-		CodeSize:                 v.CodeSize,
-		CodeSha256:               v.CodeSha256,
-		CodeLocation:             v.CodeLocation,
-		ImageUri:                 v.ImageUri,
-		Description:              v.Description,
-		Timeout:                  v.Timeout,
-		MemorySize:               v.MemorySize,
-		KMSKeyArn:                v.KMSKeyArn,
-		RevisionId:               v.RevisionId,
-		State:                    v.State,
-		StateReason:              v.StateReason,
-		StateReasonCode:          v.StateReasonCode,
-		LastUpdateStatus:         v.LastUpdateStatus,
-		LastModified:             v.LastModified,
-		PackageType:              v.PackageType,
-		SigningProfileVersionArn: v.SigningProfileVersionArn,
-		SigningJobArn:            v.SigningJobArn,
-	}
-
-	if v.EphemeralStorage != nil {
-		result.EphemeralStorage = &lambdastore.EphemeralStorage{Size: v.EphemeralStorage.Size}
-	}
-
-	if len(v.Architectures) > 0 {
-		result.Architectures = make([]string, len(v.Architectures))
-		copy(result.Architectures, v.Architectures)
-	}
-
-	if v.VpcConfig != nil {
-		result.VpcConfig = &lambdastore.VpcConfig{
-			VpcId:                   v.VpcConfig.VpcId,
-			Ipv6AllowedForDualStack: v.VpcConfig.Ipv6AllowedForDualStack,
-		}
-		if len(v.VpcConfig.SubnetIds) > 0 {
-			result.VpcConfig.SubnetIds = make([]string, len(v.VpcConfig.SubnetIds))
-			copy(result.VpcConfig.SubnetIds, v.VpcConfig.SubnetIds)
-		}
-		if len(v.VpcConfig.SecurityGroupIds) > 0 {
-			result.VpcConfig.SecurityGroupIds = make([]string, len(v.VpcConfig.SecurityGroupIds))
-			copy(result.VpcConfig.SecurityGroupIds, v.VpcConfig.SecurityGroupIds)
-		}
-	}
-
-	if v.Environment != nil && v.Environment.Variables != nil {
-		result.Environment = &lambdastore.Environment{
-			Variables: make(map[string]string, len(v.Environment.Variables)),
-		}
-		for k, val := range v.Environment.Variables {
-			result.Environment.Variables[k] = val
-		}
-	}
-
-	if len(v.Layers) > 0 {
-		result.Layers = make([]lambdastore.LayerReference, len(v.Layers))
-		copy(result.Layers, v.Layers)
-	}
-
-	if v.LoggingConfig != nil {
-		result.LoggingConfig = &lambdastore.LoggingConfig{
-			LogFormat:           v.LoggingConfig.LogFormat,
-			ApplicationLogLevel: v.LoggingConfig.ApplicationLogLevel,
-			SystemLogLevel:      v.LoggingConfig.SystemLogLevel,
-			LogGroup:            v.LoggingConfig.LogGroup,
-		}
-	}
-
-	if v.ImageConfig != nil {
-		result.ImageConfig = &lambdastore.ImageConfig{
-			WorkingDirectory: v.ImageConfig.WorkingDirectory,
-		}
-		if len(v.ImageConfig.EntryPoint) > 0 {
-			result.ImageConfig.EntryPoint = make([]string, len(v.ImageConfig.EntryPoint))
-			copy(result.ImageConfig.EntryPoint, v.ImageConfig.EntryPoint)
-		}
-		if len(v.ImageConfig.Command) > 0 {
-			result.ImageConfig.Command = make([]string, len(v.ImageConfig.Command))
-			copy(result.ImageConfig.Command, v.ImageConfig.Command)
-		}
-	}
-
-	if len(v.FileSystemConfigs) > 0 {
-		result.FileSystemConfigs = make([]lambdastore.FileSystemConfig, len(v.FileSystemConfigs))
-		copy(result.FileSystemConfigs, v.FileSystemConfigs)
-	}
-
-	return result
-}
-
-func deepCopyFunctionUrlConfig(cfg *lambdastore.FunctionUrlConfig) *lambdastore.FunctionUrlConfig {
-	if cfg == nil {
-		return nil
-	}
-
-	result := &lambdastore.FunctionUrlConfig{
-		FunctionUrl:      cfg.FunctionUrl,
-		FunctionArn:      cfg.FunctionArn,
-		AuthType:         cfg.AuthType,
-		CreationTime:     cfg.CreationTime,
-		LastModifiedTime: cfg.LastModifiedTime,
-		Cors:             cfg.Cors,
-		InvokeMode:       cfg.InvokeMode,
-	}
-
-	return result
 }

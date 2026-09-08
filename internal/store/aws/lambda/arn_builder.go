@@ -47,11 +47,6 @@ func (b *ARNBuilder) EventSourceMappingArn(uuid string) string {
 	return b.builder.EventSourceMapping(uuid)
 }
 
-// CodeSigningConfigArn returns the ARN for a code signing configuration.
-func (b *ARNBuilder) CodeSigningConfigArn(configId string) string {
-	return b.builder.CodeSigningConfig(configId)
-}
-
 // ParseFunctionNameFromArn extracts the function name from a Lambda function ARN.
 func (b *ARNBuilder) ParseFunctionNameFromArn(arn string) string {
 	return b.builder.ParseFunctionName(arn)
@@ -65,14 +60,4 @@ func (b *ARNBuilder) ParseLayerNameFromArn(arn string) string {
 // ParseLayerVersionFromArn extracts the layer version from a Lambda layer ARN.
 func (b *ARNBuilder) ParseLayerVersionFromArn(arn string) int64 {
 	return b.builder.ParseLayerVersion(arn)
-}
-
-// AccountId returns the account ID used by the ARN builder.
-func (b *ARNBuilder) AccountId() string {
-	return b.builder.AccountId()
-}
-
-// Region returns the region used by the ARN builder.
-func (b *ARNBuilder) Region() string {
-	return b.builder.Region()
 }

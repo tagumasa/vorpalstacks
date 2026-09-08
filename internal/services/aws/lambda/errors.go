@@ -54,20 +54,6 @@ var (
 		http.StatusBadRequest,
 	)
 
-	// ErrInvalidRuntime is returned when the Lambda runtime is invalid.
-	ErrInvalidRuntime = NewLambdaError(
-		"InvalidParameterValueException",
-		"The runtime parameter is invalid.",
-		http.StatusBadRequest,
-	)
-
-	// ErrCodeVerificationFailed is returned when code signature verification fails.
-	ErrCodeVerificationFailed = NewLambdaError(
-		"CodeVerificationFailedException",
-		"The code signature failed the signature verification check.",
-		http.StatusBadRequest,
-	)
-
 	// ErrCodeStorageExceeded is returned when the total code size exceeds the account limit.
 	ErrCodeStorageExceeded = NewLambdaError(
 		"CodeStorageExceededException",
@@ -90,7 +76,7 @@ var (
 	)
 
 	// ErrRequestTooLarge is returned when the request payload exceeds the
-	// maximum allowed size (6 MB for synchronous invocation, 256 KB for
+	// maximum allowed size (6 MB for synchronous invocation, 1 MB for
 	// asynchronous invocation).
 	ErrRequestTooLarge = NewLambdaError(
 		"RequestTooLargeException",
@@ -121,11 +107,28 @@ func NewResourceConflict(message string) *LambdaError {
 	}
 }
 
-// IsLambdaError checks if the given error is a LambdaError.
-func IsLambdaError(err error) bool {
-	_, ok := err.(*LambdaError)
-	return ok
+// NewPolicyLengthExceeded creates a new LambdaError for a policy document
+// that exceeds the resource-policy size quota (HTTP 400 per the model's
+// PolicyLengthExceededException).
+func NewPolicyLengthExceeded(message string) *LambdaError {
+	return &LambdaError{
+		AWSError: awserrors.NewAWSError("PolicyLengthExceededException", message, http.StatusBadRequest),
+	}
 }
+
+// NewPreconditionFailed creates a new LambdaError for a failed revision
+// precondition (HTTP 412 per the model's PreconditionFailedException).
+func NewPreconditionFailed(message string) *LambdaError {
+	return &LambdaError{
+		AWSError: awserrors.NewAWSError("PreconditionFailedException", message, http.StatusPreconditionFailed),
+	}
+}
+
+// revisionMismatchMessage is the message the model defines for
+// PreconditionFailedException: every stale-RevisionId precondition on
+// function, version, alias, and resource-policy operations answers with
+// this exact wording.
+const revisionMismatchMessage = "The RevisionId provided does not match the latest RevisionId for the Lambda function or alias."
 
 // mapStoreError converts raw store-layer sentinel errors into the AWS error
 // contract of the Lambda API. Handlers that surface store errors must route
@@ -137,6 +140,10 @@ func mapStoreError(err error) error {
 		return nil
 	case errors.Is(err, lambdastore.ErrEventSourceAlreadyExists):
 		return NewResourceConflict("The event source mapping already exists for this event source and function.")
+	case errors.Is(err, lambdastore.ErrLayerAlreadyExists):
+		return NewResourceConflict("The layer already exists.")
+	case errors.Is(err, lambdastore.ErrRevisionMismatch):
+		return NewPreconditionFailed(revisionMismatchMessage)
 	case errors.Is(err, lambdastore.ErrResourceConflict):
 		return NewResourceConflict("The resource conflicts with the current state of the function.")
 	case errors.Is(err, lambdastore.ErrFunctionNotFound),
@@ -144,30 +151,9 @@ func mapStoreError(err error) error {
 		errors.Is(err, lambdastore.ErrLayerNotFound),
 		errors.Is(err, lambdastore.ErrLayerVersionNotFound),
 		errors.Is(err, lambdastore.ErrAliasNotFound),
+		errors.Is(err, lambdastore.ErrEventSourceNotFound),
 		errors.Is(err, lambdastore.ErrPolicyNotFound):
 		return ErrResourceNotFound
 	}
 	return err
-}
-
-// GetLambdaError extracts a LambdaError from the given error, returning ErrServiceException if not found.
-func GetLambdaError(err error) *LambdaError {
-	if lambdaErr, ok := err.(*LambdaError); ok {
-		return lambdaErr
-	}
-	return ErrServiceException
-}
-
-// Response represents a response from a Lambda function invocation.
-type Response struct {
-	StatusCode int
-	Body       interface{}
-}
-
-// AWSResponse creates a new Response with the specified status code and body.
-func AWSResponse(status int, body interface{}) *Response {
-	return &Response{
-		StatusCode: status,
-		Body:       body,
-	}
 }

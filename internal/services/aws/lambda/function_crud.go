@@ -3,9 +3,7 @@ package lambda
 
 import (
 	"context"
-	"os"
 
-	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	tagutil "vorpalstacks/internal/common/tags"
@@ -22,16 +20,6 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 	handler := request.GetStringParam(req.Parameters, "Handler")
 	packageType := request.GetStringParam(req.Parameters, "PackageType")
 
-	// IAM role validation (requires reqCtx — not transport-agnostic).
-	if role != "" {
-		validator := reqCtx.GetIAMValidator()
-		if os.Getenv("TEST_MODE") != "true" {
-			if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
-				return nil, err
-			}
-		}
-	}
-
 	// Code handling — fetch from S3, decode ZipFile, or accept ImageUri.
 	// Results are passed to createFunctionCore as pre-processed metadata.
 	codeMeta, imageUri, packageType, err := s.prepareCreateFunctionCodeCore(ctx, reqCtx.GetRegion(), functionName,
@@ -40,11 +28,15 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	// Parse optional configurations.
+	// Parse optional configurations. EphemeralStorage is parsed whenever
+	// the member is present — including one without a Size — so the Core's
+	// Size validation applies on both the create and update planes; the
+	// model marks Size required and its range floor rejects an absent Size
+	// exactly like an explicit zero.
 	var ephemeralStorage *lambdastore.EphemeralStorage
 	if ephemeralMap := request.GetMapParam(req.Parameters, "EphemeralStorage"); ephemeralMap != nil {
+		var sizeValue int32
 		if size, ok := ephemeralMap["Size"]; ok {
-			var sizeValue int32
 			switch v := size.(type) {
 			case int:
 				sizeValue = int32(v)
@@ -53,8 +45,8 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 			default:
 				return nil, NewInvalidParameter("EphemeralStorage.Size", "must be an integer")
 			}
-			ephemeralStorage = &lambdastore.EphemeralStorage{Size: sizeValue}
 		}
+		ephemeralStorage = &lambdastore.EphemeralStorage{Size: sizeValue}
 	}
 
 	var vpcConfig *lambdastore.VpcConfig
@@ -108,14 +100,7 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 
 	var fileSystemConfigs []lambdastore.FileSystemConfig
 	if fscs, ok := req.Parameters["FileSystemConfigs"].([]interface{}); ok {
-		for _, fsc := range fscs {
-			if m, ok := fsc.(map[string]interface{}); ok {
-				fileSystemConfigs = append(fileSystemConfigs, lambdastore.FileSystemConfig{
-					Arn:            request.GetStringParam(m, "Arn"),
-					LocalMountPath: request.GetStringParam(m, "LocalMountPath"),
-				})
-			}
-		}
+		fileSystemConfigs = parseFileSystemConfigs(fscs)
 	}
 
 	var layers []lambdastore.LayerReference
@@ -150,7 +135,7 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		return nil, err
 	}
 
-	created, published, err := s.createFunctionCore(store, &CreateFunctionInput{
+	created, published, err := s.createFunctionCore(ctx, store, &CreateFunctionInput{
 		FunctionName:         functionName,
 		Runtime:              runtime,
 		Role:                 role,
@@ -161,6 +146,7 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 		Publish:              request.GetBoolParam(req.Parameters, "Publish"),
 		CodeSigningConfigArn: request.GetStringParam(req.Parameters, "CodeSigningConfigArn"),
 		Region:               reqCtx.GetRegion(),
+		IAMValidator:         reqCtx.GetIAMValidator(),
 		CodeLocation:         codeMeta.CodeLocation,
 		CodeSize:             codeMeta.CodeSize,
 		CodeSha256:           codeMeta.CodeSha256,
@@ -195,10 +181,10 @@ func (s *LambdaService) CreateFunction(ctx context.Context, reqCtx *request.Requ
 // DeleteFunction deletes the specified Lambda function.
 func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
-	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
-	if err := validateFunctionName(functionName); err != nil {
+	if err := validateNamespacedFunctionName(functionNameRaw); err != nil {
 		return nil, err
 	}
+	functionName, embeddedQualifier := resolveNamespacedFunctionRef(functionNameRaw)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -208,6 +194,7 @@ func (s *LambdaService) DeleteFunction(ctx context.Context, reqCtx *request.Requ
 	if err := s.deleteFunctionCore(ctx, store, &DeleteFunctionInput{
 		FunctionName: functionName,
 		Qualifier:    mergeQualifier(request.GetStringParam(req.Parameters, "Qualifier"), embeddedQualifier),
+		Region:       reqCtx.GetRegion(),
 	}); err != nil {
 		return nil, err
 	}

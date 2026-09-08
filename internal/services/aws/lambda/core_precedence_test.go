@@ -40,6 +40,21 @@ func workingStorageReqCtx(t *testing.T) *request.RequestContext {
 	return request.NewRequestContext(context.Background(), mgr, "000000000000", "us-east-1")
 }
 
+// workingStorageService builds a service and a request context sharing one
+// storage manager: the service's store accessors resolve storage through the
+// manager injected on the service, so tests driving them must wire the same
+// manager into both.
+func workingStorageService(t *testing.T) (*LambdaService, *request.RequestContext) {
+	t.Helper()
+	svc := NewLambdaService(nil, "000000000000", "us-east-1", t.TempDir())
+	mgr, err := storage.NewRegionStorageManager(&storage.Config{Path: t.TempDir()})
+	if err != nil {
+		t.Fatalf("new region storage manager: %v", err)
+	}
+	svc.SetStorageManager(mgr)
+	return svc, request.NewRequestContext(context.Background(), mgr, "000000000000", "us-east-1")
+}
+
 func parsedRequest(params map[string]interface{}) *request.ParsedRequest {
 	if params == nil {
 		params = map[string]interface{}{}

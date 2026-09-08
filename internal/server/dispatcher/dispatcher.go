@@ -301,18 +301,9 @@ func classifiedToParsed(cr *classifier.ClassifiedRequest) *request.ParsedRequest
 		parsed.Parameters["graphIdentifier"] = graphID
 	}
 
-	lambdaHeaderMappings := map[string]string{
-		"X-Amz-Invocation-Type": "InvocationType",
-		"X-Amz-Log-Type":        "LogType",
-		"X-Amz-Client-Context":  "ClientContext",
-		"X-Amz-Function-Error":  "FunctionError",
-		"X-Amz-Qualifier":       "Qualifier",
-	}
-	for header, param := range lambdaHeaderMappings {
-		if _, exists := parsed.Parameters[param]; !exists {
-			if v := cr.Headers.Get(header); v != "" {
-				parsed.Parameters[param] = v
-			}
+	for header, param := range request.LambdaInvokeHeaderMappings {
+		if v := cr.Headers.Get(header); v != "" {
+			parsed.Parameters[param] = v
 		}
 	}
 

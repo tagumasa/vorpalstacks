@@ -9,60 +9,6 @@ import (
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
-func TestValidateRuntime(t *testing.T) {
-	t.Run("valid Node.js runtimes", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("nodejs24.x"))
-		assert.True(t, ValidateRuntime("nodejs22.x"))
-	})
-
-	t.Run("valid Python runtimes", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("python3.14"))
-		assert.True(t, ValidateRuntime("python3.13"))
-		assert.True(t, ValidateRuntime("python3.12"))
-		assert.True(t, ValidateRuntime("python3.11"))
-		assert.True(t, ValidateRuntime("python3.10"))
-	})
-
-	t.Run("valid Java runtimes", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("java25"))
-		assert.True(t, ValidateRuntime("java21"))
-		assert.True(t, ValidateRuntime("java17"))
-		assert.True(t, ValidateRuntime("java11"))
-		assert.True(t, ValidateRuntime("java17.al2023"))
-		assert.True(t, ValidateRuntime("java11.al2023"))
-		assert.True(t, ValidateRuntime("java8.al2023"))
-		assert.True(t, ValidateRuntime("java8.al2"))
-	})
-
-	t.Run("valid .NET runtimes", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("dotnet10"))
-		assert.True(t, ValidateRuntime("dotnet8"))
-	})
-
-	t.Run("valid Ruby runtimes", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("ruby4.0"))
-		assert.True(t, ValidateRuntime("ruby3.4"))
-		assert.True(t, ValidateRuntime("ruby3.3"))
-	})
-
-	t.Run("valid custom runtimes", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("provided.al2023"))
-		assert.True(t, ValidateRuntime("provided.al2"))
-	})
-
-	t.Run("case insensitive", func(t *testing.T) {
-		assert.True(t, ValidateRuntime("PYTHON3.12"))
-		assert.True(t, ValidateRuntime("NodeJS22.x"))
-	})
-
-	t.Run("invalid runtime", func(t *testing.T) {
-		assert.False(t, ValidateRuntime("python3.7"))
-		assert.False(t, ValidateRuntime("nodejs14.x"))
-		assert.False(t, ValidateRuntime("invalid"))
-		assert.False(t, ValidateRuntime(""))
-	})
-}
-
 func TestValidateHandler(t *testing.T) {
 	t.Run("valid Python handler", func(t *testing.T) {
 		err := ValidateHandler("python3.12", "myhandler.handle")
@@ -128,6 +74,97 @@ func TestValidateFunctionName(t *testing.T) {
 		assert.Error(t, validateFunctionName("my.function"))
 		assert.Error(t, validateFunctionName("my function"))
 	})
+}
+
+func TestValidateNamespacedFunctionName(t *testing.T) {
+	t.Run("pattern-valid references", func(t *testing.T) {
+		valid := []string{
+			"my-function",
+			"my.function",
+			"arn:aws:lambda:us-west-2:123456789012:function:my-function",
+			"arn:aws:lambda:us-west-2:123456789012:function:my-function:prod",
+			"arn:aws:lambda:us-west-2:123456789012:function:fn:$LATEST.PUBLISHED",
+			"123456789012:function:my-function",
+			"arn:aws-us-gov:lambda:us-gov-west-1:123456789012:function:fn",
+			strings.Repeat("a", 256),
+		}
+		for _, ref := range valid {
+			assert.NoError(t, validateNamespacedFunctionName(ref), "ref %q", ref)
+		}
+	})
+
+	t.Run("pattern-invalid references", func(t *testing.T) {
+		invalid := []string{
+			"",
+			strings.Repeat("a", 257),
+			"arn:aws:lambda:NOT_A_REGION:123456789012:function:fn",
+			"my function",
+			"arn:aws:sqs:us-east-1:123456789012:queue",
+		}
+		for _, ref := range invalid {
+			assert.Error(t, validateNamespacedFunctionName(ref), "ref %q", ref)
+		}
+	})
+}
+
+func TestValidateFileSystemConfigs(t *testing.T) {
+	const s3FilesAP = "arn:aws:s3files:us-east-1:123456789012:file-system/fs-0000000000000000000000000000000/access-point/fsap-0123456789abcdef0"
+	const efsAP = "arn:aws:elasticfilesystem:us-west-2:123456789012:access-point/fsap-0123456789abcdef0"
+
+	t.Run("accepts EFS entries and absent member", func(t *testing.T) {
+		assert.NoError(t, validateFileSystemConfigs(nil))
+		assert.NoError(t, validateFileSystemConfigs([]lambdastore.FileSystemConfig{
+			{Arn: efsAP, LocalMountPath: "/mnt/efs"},
+		}))
+	})
+
+	t.Run("accepts S3FilesConfig on an S3 Files access point", func(t *testing.T) {
+		assert.NoError(t, validateFileSystemConfigs([]lambdastore.FileSystemConfig{
+			{Arn: s3FilesAP, LocalMountPath: "/mnt/s3", S3FilesConfig: &lambdastore.S3FilesConfig{
+				DirectS3Read: lambdastore.DirectS3ReadEnabled,
+			}},
+		}))
+	})
+
+	t.Run("rejects unknown DirectS3Read values", func(t *testing.T) {
+		assert.Error(t, validateFileSystemConfigs([]lambdastore.FileSystemConfig{
+			{Arn: s3FilesAP, LocalMountPath: "/mnt/s3", S3FilesConfig: &lambdastore.S3FilesConfig{
+				DirectS3Read: "FAST",
+			}},
+		}))
+	})
+
+	t.Run("rejects S3FilesConfig on a non-S3-Files access point", func(t *testing.T) {
+		assert.Error(t, validateFileSystemConfigs([]lambdastore.FileSystemConfig{
+			{Arn: efsAP, LocalMountPath: "/mnt/efs", S3FilesConfig: &lambdastore.S3FilesConfig{
+				DirectS3Read: lambdastore.DirectS3ReadAuto,
+			}},
+		}))
+	})
+}
+
+func TestValidateTimeoutModelRange(t *testing.T) {
+	// CreateFunction model @range on Timeout: min 1, max 5400 seconds.
+	assert.NoError(t, validateTimeout(1))
+	assert.NoError(t, validateTimeout(5400))
+	assert.Error(t, validateTimeout(0), "timeout below the modelled minimum must be rejected")
+	assert.Error(t, validateTimeout(5401), "timeout above the modelled maximum must be rejected")
+}
+
+func TestValidateMemorySizeModelRange(t *testing.T) {
+	// CreateFunction model @range on MemorySize: min 128, max 32768 MB.
+	assert.NoError(t, validateMemorySize(128))
+	assert.NoError(t, validateMemorySize(32768))
+	assert.Error(t, validateMemorySize(127), "memory size below the modelled minimum must be rejected")
+	assert.Error(t, validateMemorySize(32769), "memory size above the modelled maximum must be rejected")
+}
+
+func TestValidateEphemeralStorageSizeModelRange(t *testing.T) {
+	// CreateFunction model @range on EphemeralStorageSize: min 512, max 32768 MB.
+	assert.NoError(t, validateEphemeralStorageSize(512))
+	assert.NoError(t, validateEphemeralStorageSize(32768))
+	assert.Error(t, validateEphemeralStorageSize(511), "ephemeral storage below the modelled minimum must be rejected")
+	assert.Error(t, validateEphemeralStorageSize(32769), "ephemeral storage above the modelled maximum must be rejected")
 }
 
 func TestValidateAuthType(t *testing.T) {
@@ -253,5 +290,79 @@ func TestValidateEnvironmentVariableKeys(t *testing.T) {
 	reserved := &lambdastore.Environment{Variables: map[string]string{"AWS_LAMBDA_x": "v"}}
 	if err := validateEnvironmentVariables(reserved); err == nil {
 		t.Fatal("reserved AWS_LAMBDA_ prefix must be rejected")
+	}
+}
+
+// TestValidateLoggingConfigModelEnums pins the modelled LoggingConfig member
+// constraints: the LogFormat enum (JSON, Text), the ApplicationLogLevel
+// enum (TRACE..FATAL), the SystemLogLevel enum (DEBUG..WARN), and the
+// LogGroup length and pattern traits.
+func TestValidateLoggingConfigModelEnums(t *testing.T) {
+	valid := []*lambdastore.LoggingConfig{
+		nil,
+		{},
+		{LogFormat: "JSON"},
+		{LogFormat: "Text", ApplicationLogLevel: "TRACE", SystemLogLevel: "WARN"},
+		{ApplicationLogLevel: "FATAL"},
+		{SystemLogLevel: "DEBUG"},
+		{LogGroup: "/aws/lambda/my-function"},
+	}
+	for _, lc := range valid {
+		if err := validateLoggingConfig(lc); err != nil {
+			t.Fatalf("logging config %+v should be valid, got %v", lc, err)
+		}
+	}
+
+	invalid := []*lambdastore.LoggingConfig{
+		{LogFormat: "Banana"},
+		{ApplicationLogLevel: "NOTICE"},
+		{SystemLogLevel: "TRACE"},
+		{SystemLogLevel: "ERROR"},
+		{LogGroup: "has space"},
+		{LogGroup: "a:b"},
+		{LogGroup: strings.Repeat("a", 513)},
+	}
+	for _, lc := range invalid {
+		if err := validateLoggingConfig(lc); err == nil {
+			t.Fatalf("logging config %+v should be rejected", lc)
+		}
+	}
+}
+
+// TestValidateImageConfigModelLengths pins the modelled ImageConfig member
+// constraints: EntryPoint and Command carry at most 1500 entries each and
+// WorkingDirectory is at most 1000 characters.
+func TestValidateImageConfigModelLengths(t *testing.T) {
+	entries := func(n int) []string {
+		list := make([]string, n)
+		for i := range list {
+			list[i] = "entry"
+		}
+		return list
+	}
+
+	valid := []*lambdastore.ImageConfig{
+		nil,
+		{},
+		{EntryPoint: []string{"/bin/app"}},
+		{Command: entries(1500)},
+		{WorkingDirectory: "/var/task"},
+		{WorkingDirectory: strings.Repeat("d", 1000)},
+	}
+	for _, ic := range valid {
+		if err := validateImageConfig(ic); err != nil {
+			t.Fatalf("image config %+v should be valid, got %v", ic, err)
+		}
+	}
+
+	invalid := []*lambdastore.ImageConfig{
+		{EntryPoint: entries(1501)},
+		{Command: entries(1501)},
+		{WorkingDirectory: strings.Repeat("d", 1001)},
+	}
+	for _, ic := range invalid {
+		if err := validateImageConfig(ic); err == nil {
+			t.Fatalf("image config should be rejected: %+v", ic)
+		}
 	}
 }

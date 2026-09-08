@@ -59,7 +59,7 @@ func (m *eventstreamMessage) encode(w io.Writer) error {
 //	[n] string_value (UTF-8)
 func encodeHeaders(headers map[string]string) []byte {
 	// Pre-allocate a reasonable size: average ~40 bytes per header.
-	var buf []byte
+	buf := make([]byte, 0, 40*len(headers))
 	for k, v := range headers {
 		buf = append(buf, byte(len(k)))
 		buf = append(buf, k...)

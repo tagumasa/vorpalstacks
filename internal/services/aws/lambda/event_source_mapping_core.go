@@ -85,7 +85,11 @@ type EventSourceMappingUpdateInput struct {
 	HasBisectBatchOnFunctionError bool
 	BisectBatchOnFunctionError    bool
 
-	FunctionArn              string
+	// FunctionNameRaw is the optional FunctionName member of the update
+	// request — any reference form Create accepts (name, name:qualifier,
+	// full or partial ARN) — which repoints the mapping at another
+	// function or qualifier.
+	FunctionNameRaw          string
 	DestinationConfigRaw     map[string]interface{}
 	FilterCriteriaRaw        map[string]interface{}
 	KMSKeyArn                string
@@ -98,10 +102,10 @@ func (s *LambdaService) createEventSourceMappingCore(reqCtx *request.RequestCont
 	if in.FunctionNameRaw == "" {
 		return nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
-	functionName, embeddedQualifier := resolveFunctionRef(in.FunctionNameRaw)
-	if err := validateFunctionName(functionName); err != nil {
+	if err := validateNamespacedFunctionName(in.FunctionNameRaw); err != nil {
 		return nil, err
 	}
+	functionName, embeddedQualifier := resolveNamespacedFunctionRef(in.FunctionNameRaw)
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -153,7 +157,14 @@ func (s *LambdaService) createEventSourceMappingCore(reqCtx *request.RequestCont
 		return nil, err
 	}
 	var startingPositionTimestamp time.Time
-	if ts, ok := in.StartingPositionTimestampRaw.(float64); ok {
+	if in.HasStartingPositionTimestamp {
+		// The SDK serialises timestamps as epoch floats; any other shape
+		// is malformed on the wire and rejected rather than silently
+		// zeroed into an AT_TIMESTAMP mapping.
+		ts, ok := in.StartingPositionTimestampRaw.(float64)
+		if !ok {
+			return nil, NewInvalidParameter("StartingPositionTimestamp", "StartingPositionTimestamp must be a timestamp")
+		}
 		startingPositionTimestamp = time.Unix(int64(ts), 0).UTC()
 	}
 
@@ -227,7 +238,11 @@ func (s *LambdaService) createEventSourceMappingCore(reqCtx *request.RequestCont
 		mapping.BisectBatchOnFunctionError = in.BisectBatchOnFunctionError
 	}
 	if in.DestinationConfigRaw != nil {
-		mapping.DestinationConfig = parseDestinationConfig(in.DestinationConfigRaw)
+		destConfig := parseDestinationConfig(in.DestinationConfigRaw)
+		if err := validateESMDestinationConfig(destConfig); err != nil {
+			return nil, err
+		}
+		mapping.DestinationConfig = destConfig
 	}
 	if in.FilterCriteriaRaw != nil {
 		mapping.FilterCriteria = parseFilterCriteria(in.FilterCriteriaRaw)
@@ -302,14 +317,17 @@ func (s *LambdaService) getEventSourceMappingCore(reqCtx *request.RequestContext
 	}
 	mapping, err := stores.EventSources.Get(uuid)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err)
 	}
 
 	return mapping, nil
 }
 
 // updateEventSourceMappingCore applies the requested member updates to an
-// existing event source mapping.
+// existing event source mapping. The read-modify-write runs inside the
+// store lock, so a poll-cycle state write can never be clobbered by the
+// update, and a FunctionName reference resolves with Create's rules
+// before the mapping is repointed.
 func (s *LambdaService) updateEventSourceMappingCore(reqCtx *request.RequestContext, in *EventSourceMappingUpdateInput) (*lambdastore.EventSourceMapping, error) {
 	if in.UUID == "" {
 		return nil, NewInvalidParameter("UUID", "UUID is required")
@@ -319,87 +337,113 @@ func (s *LambdaService) updateEventSourceMappingCore(reqCtx *request.RequestCont
 	if err != nil {
 		return nil, err
 	}
-	mapping, err := stores.EventSources.Get(in.UUID)
-	if err != nil {
-		return nil, ErrResourceNotFound
+	if _, err := stores.EventSources.Get(in.UUID); err != nil {
+		return nil, mapStoreError(err)
 	}
 
-	if in.BatchSize > 0 {
-		if err := validateESMBatchSizeForSource(in.BatchSize, mapping.EventSourceArn); err != nil {
+	// A FunctionName reference, when provided, resolves exactly like
+	// Create's so a typo'd name cannot silently break polling and the
+	// function-name filter of the list API.
+	var newFunctionName, newFunctionArn string
+	if in.FunctionNameRaw != "" {
+		if err := validateNamespacedFunctionName(in.FunctionNameRaw); err != nil {
 			return nil, err
 		}
-		mapping.BatchSize = in.BatchSize
-	}
-	if in.HasEnabled {
-		if in.Enabled {
-			mapping.State = "Enabled"
-		} else {
-			mapping.State = "Disabled"
-		}
-	}
-	if in.HasMaximumBatchingWindowInSeconds {
-		if err := validateESMBatchingWindow(in.MaximumBatchingWindowInSeconds); err != nil {
-			return nil, err
-		}
-		mapping.MaximumBatchingWindowInSeconds = in.MaximumBatchingWindowInSeconds
-	}
-	if in.HasParallelizationFactor {
-		if err := validateESMParallelFactor(in.ParallelizationFactor); err != nil {
-			return nil, err
-		}
-		mapping.ParallelizationFactor = in.ParallelizationFactor
-	}
-	// The batch-size/window pairing is validated on the merged mapping when
-	// the request sets either member, so a stored explicitly-set BatchSize
-	// above 10 also constrains a window-lowering update. The rule binds the
-	// setter: requests that set neither member leave defaults alone.
-	if in.HasBatchSize || in.HasMaximumBatchingWindowInSeconds {
-		if err := validateESMBatchWindowPair(mapping.BatchSize, mapping.MaximumBatchingWindowInSeconds); err != nil {
-			return nil, err
-		}
-	}
-	if in.HasMaximumRecordAgeInSeconds {
-		if err := validateESMMaxRecordAge(in.MaximumRecordAgeInSeconds); err != nil {
-			return nil, err
-		}
-		mapping.MaximumRecordAgeInSeconds = in.MaximumRecordAgeInSeconds
-	}
-	if in.HasMaximumRetryAttempts {
-		if err := validateESMMaxRetry(in.MaximumRetryAttempts); err != nil {
-			return nil, err
-		}
-		mapping.MaximumRetryAttempts = in.MaximumRetryAttempts
-	}
-	if in.HasTumblingWindowInSeconds {
-		if err := validateESMTumblingWindow(in.TumblingWindowInSeconds); err != nil {
-			return nil, err
-		}
-		mapping.TumblingWindowInSeconds = in.TumblingWindowInSeconds
-	}
-	if in.HasBisectBatchOnFunctionError {
-		mapping.BisectBatchOnFunctionError = in.BisectBatchOnFunctionError
-	}
-	if in.FunctionArn != "" {
-		mapping.FunctionArn = in.FunctionArn
-	}
-	if in.DestinationConfigRaw != nil {
-		mapping.DestinationConfig = parseDestinationConfig(in.DestinationConfigRaw)
-	}
-	if in.FilterCriteriaRaw != nil {
-		mapping.FilterCriteria = parseFilterCriteria(in.FilterCriteriaRaw)
-	}
-	if in.KMSKeyArn != "" {
-		mapping.KMSKeyArn = in.KMSKeyArn
-	}
-	if in.FunctionResponseTypesRaw != nil {
-		parsed, err := parseFunctionResponseTypes(in.FunctionResponseTypesRaw)
+		name, qualifier := resolveNamespacedFunctionRef(in.FunctionNameRaw)
+		function, _, _, err := s.resolveQualifier(stores.Functions, name, qualifier)
 		if err != nil {
 			return nil, err
 		}
-		mapping.FunctionResponseTypes = parsed
+		newFunctionName = function.FunctionName
+		newFunctionArn = function.FunctionArn
+		if qualifier != "" && qualifier != "$LATEST" {
+			newFunctionArn = function.FunctionArn + ":" + qualifier
+		}
 	}
 
-	if err := stores.EventSources.Update(mapping); err != nil {
+	mapping, err := stores.EventSources.UpdateAtomically(in.UUID, func(m *lambdastore.EventSourceMapping) error {
+		if in.HasBatchSize {
+			if err := validateESMBatchSizeForSource(in.BatchSize, m.EventSourceArn); err != nil {
+				return err
+			}
+			m.BatchSize = in.BatchSize
+		}
+		if in.HasEnabled {
+			if in.Enabled {
+				m.State = "Enabled"
+			} else {
+				m.State = "Disabled"
+			}
+		}
+		if in.HasMaximumBatchingWindowInSeconds {
+			if err := validateESMBatchingWindow(in.MaximumBatchingWindowInSeconds); err != nil {
+				return err
+			}
+			m.MaximumBatchingWindowInSeconds = in.MaximumBatchingWindowInSeconds
+		}
+		if in.HasParallelizationFactor {
+			if err := validateESMParallelFactor(in.ParallelizationFactor); err != nil {
+				return err
+			}
+			m.ParallelizationFactor = in.ParallelizationFactor
+		}
+		// The batch-size/window pairing is validated on the merged mapping when
+		// the request sets either member, so a stored explicitly-set BatchSize
+		// above 10 also constrains a window-lowering update. The rule binds the
+		// setter: requests that set neither member leave defaults alone.
+		if in.HasBatchSize || in.HasMaximumBatchingWindowInSeconds {
+			if err := validateESMBatchWindowPair(m.BatchSize, m.MaximumBatchingWindowInSeconds); err != nil {
+				return err
+			}
+		}
+		if in.HasMaximumRecordAgeInSeconds {
+			if err := validateESMMaxRecordAge(in.MaximumRecordAgeInSeconds); err != nil {
+				return err
+			}
+			m.MaximumRecordAgeInSeconds = in.MaximumRecordAgeInSeconds
+		}
+		if in.HasMaximumRetryAttempts {
+			if err := validateESMMaxRetry(in.MaximumRetryAttempts); err != nil {
+				return err
+			}
+			m.MaximumRetryAttempts = in.MaximumRetryAttempts
+		}
+		if in.HasTumblingWindowInSeconds {
+			if err := validateESMTumblingWindow(in.TumblingWindowInSeconds); err != nil {
+				return err
+			}
+			m.TumblingWindowInSeconds = in.TumblingWindowInSeconds
+		}
+		if in.HasBisectBatchOnFunctionError {
+			m.BisectBatchOnFunctionError = in.BisectBatchOnFunctionError
+		}
+		if newFunctionArn != "" {
+			m.FunctionName = newFunctionName
+			m.FunctionArn = newFunctionArn
+		}
+		if in.DestinationConfigRaw != nil {
+			destConfig := parseDestinationConfig(in.DestinationConfigRaw)
+			if err := validateESMDestinationConfig(destConfig); err != nil {
+				return err
+			}
+			m.DestinationConfig = destConfig
+		}
+		if in.FilterCriteriaRaw != nil {
+			m.FilterCriteria = parseFilterCriteria(in.FilterCriteriaRaw)
+		}
+		if in.KMSKeyArn != "" {
+			m.KMSKeyArn = in.KMSKeyArn
+		}
+		if in.FunctionResponseTypesRaw != nil {
+			parsed, err := parseFunctionResponseTypes(in.FunctionResponseTypesRaw)
+			if err != nil {
+				return err
+			}
+			m.FunctionResponseTypes = parsed
+		}
+		return nil
+	})
+	if err != nil {
 		return nil, mapStoreError(err)
 	}
 

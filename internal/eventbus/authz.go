@@ -355,19 +355,25 @@ type LambdaPolicyLookupFunc func(ctx context.Context, functionARN string) (entri
 
 // LambdaPolicyEntry represents a single statement from a Lambda
 // function's resource-based policy as stored in the Lambda function
-// metadata.
+// metadata. Effect carries the statement's effect ("Allow" or "Deny");
+// the matching fields are populated only for Allow statements whose
+// members reduced to a single string.
 type LambdaPolicyEntry struct {
-	Statement string
+	Effect    string
 	Principal string
 	Action    string
 	Resource  string
-	Condition map[string]interface{}
 }
 
 // LambdaResourcePolicyFn creates a ResourcePolicyFunc that retrieves and
 // converts a Lambda function's resource-based policy into a
-// BusPolicyDocument. Each LambdaPolicyEntry becomes a statement with
-// Effect "Allow".
+// BusPolicyDocument. An Allow entry whose action and principal each
+// reduced to a single string becomes an Allow statement the matcher
+// evaluates; any other Allow entry (members the matcher cannot evaluate)
+// is skipped so it grants nothing — an empty principal would otherwise
+// match every principal. A Deny entry becomes a statement whose empty
+// patterns match everything, so it denies every delivery the matcher
+// would otherwise allow.
 func LambdaResourcePolicyFn(lookup LambdaPolicyLookupFunc) ResourcePolicyFunc {
 	return func(ctx context.Context, functionARN string) (*BusPolicyDocument, error) {
 		if lookup == nil {
@@ -382,6 +388,13 @@ func LambdaResourcePolicyFn(lookup LambdaPolicyLookupFunc) ResourcePolicyFunc {
 		}
 		doc := &BusPolicyDocument{Version: "2012-10-17"}
 		for _, entry := range entries {
+			if entry.Effect == "Deny" {
+				doc.Statement = append(doc.Statement, BusPolicyStatement{Effect: "Deny"})
+				continue
+			}
+			if entry.Action == "" || entry.Principal == "" {
+				continue
+			}
 			stmt := BusPolicyStatement{
 				Effect:    "Allow",
 				Principal: entry.Principal,

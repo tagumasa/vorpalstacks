@@ -801,14 +801,14 @@ func (ec *esmEngineContext) kinesisParallelizationFactorExactlyOnce() error {
 
 	// A checkpoint resume that re-includes its boundary record would
 	// deliver one record twice; the scan fails fast on any duplicate.
-	// Full log coverage is best-effort: CloudWatch Logs ingestion can
-	// lag a concurrent batch by tens of seconds (subscriber semaphore
-	// skip plus outbox requeue), which is tracked separately, while a
-	// genuine duplicate always shows up within seconds of the resume.
+	// Coverage is strict: every record must appear exactly once within
+	// the window, so a lost or still-lagged delivery fails the test
+	// instead of passing silently.
 	logGroupName := "/aws/lambda/" + fnName
+	counts := make(map[string]int)
 	scanDeadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(scanDeadline) {
-		counts := make(map[string]int)
+		counts = make(map[string]int)
 		var nextToken *string
 		for {
 			out, err := ec.tc.cwl.FilterLogEvents(ec.tc.ctx, &cloudwatchlogs.FilterLogEventsInput{
@@ -852,7 +852,13 @@ func (ec *esmEngineContext) kinesisParallelizationFactorExactlyOnce() error {
 		}
 		time.Sleep(250 * time.Millisecond)
 	}
-	return nil
+	missing := make([]string, 0, len(expected))
+	for _, want := range expected {
+		if counts[want] == 0 {
+			missing = append(missing, want)
+		}
+	}
+	return fmt.Errorf("timed out after 20s; undelivered records: %v", missing)
 }
 
 // batchSizeOverTenRequiresWindow exercises ESM_BatchSizeOverTen_RequiresWindow end to end.

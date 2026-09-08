@@ -106,10 +106,7 @@ func (p *esmPoller) purgeStaleBuffers(activeUUIDs map[string]struct{}) {
 // way — its cursor ends the consumed prefix, so the remaining chunks are
 // not invoked; they re-read from the partial checkpoint on the next cycle.
 func (p *esmPoller) flushStreamBuffer(ctx context.Context, mapping *lambdastore.EventSourceMapping, src streamSource, key, cpAdvanceTo string, items []streamBatchItem) batchOutcome {
-	batchSize := int(mapping.BatchSize)
-	if batchSize <= 0 {
-		batchSize = 100
-	}
+	batchSize := int(clampESMBatchSize(mapping.BatchSize, mapping.EventSourceArn))
 	var agg batchOutcome
 	for start := 0; start < len(items); start += batchSize {
 		end := start + batchSize

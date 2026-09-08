@@ -16,8 +16,22 @@ type AddPermissionInput struct {
 	FunctionUrlAuthType string
 	Principal           string
 	Action              string
-	Statement           string
 	Condition           map[string]interface{}
+}
+
+// qualifiedPolicyQualifier resolves a policy-scoping qualifier and
+// reports whether it qualifies the policy resource: a published version
+// or alias does, while $LATEST and the empty qualifier do not.
+// AddPermission and the resource-policy operations resolve qualifiers
+// identically, so they share this one path.
+func qualifiedPolicyQualifier(stores *lambdaStore, functionName, qualifier string) (bool, error) {
+	if qualifier == "" || qualifier == "$LATEST" {
+		return false, nil
+	}
+	if _, _, _, err := stores.Functions.ResolveQualifier(functionName, qualifier); err != nil {
+		return false, NewResourceNotFound("Qualifier", qualifier)
+	}
+	return true, nil
 }
 
 // addPermissionCore records a permission statement in a function's
@@ -40,18 +54,19 @@ func (s *LambdaService) addPermissionCore(stores *lambdaStore, function *lambdas
 	// A qualifier scopes the permission to a published version or alias
 	// and must resolve before the statement is recorded.
 	resource = function.FunctionArn
-	if in.Qualifier != "" && in.Qualifier != "$LATEST" {
-		if _, _, _, err := stores.Functions.ResolveQualifier(function.FunctionName, in.Qualifier); err != nil {
-			return "", "", NewResourceNotFound("Qualifier", in.Qualifier)
-		}
+	qualified, err := qualifiedPolicyQualifier(stores, function.FunctionName, in.Qualifier)
+	if err != nil {
+		return "", "", err
+	}
+	if qualified {
 		resource = function.FunctionArn + ":" + in.Qualifier
 	}
 
 	policy := &lambdastore.FunctionPolicy{
 		Id:        in.StatementId,
+		Effect:    "Allow",
 		Principal: in.Principal,
 		Action:    in.Action,
-		Statement: in.Statement,
 		Resource:  resource,
 		Condition: in.Condition,
 	}
@@ -97,14 +112,21 @@ func (s *LambdaService) removePermissionCore(stores *lambdaStore, function *lamb
 }
 
 // getPolicyCore retrieves a function's resource-based policy statements
-// together with the function's current RevisionId.
-func (s *LambdaService) getPolicyCore(stores *lambdaStore, functionName string) (policies []lambdastore.FunctionPolicy, revisionId string, err error) {
-	if functionName == "" {
+// together with the function's current RevisionId. The function reference
+// arrives in any namespaced form; the qualifier is irrelevant because the
+// policy attaches to the whole function.
+func (s *LambdaService) getPolicyCore(stores *lambdaStore, functionNameRaw string) (policies []lambdastore.FunctionPolicy, revisionId string, err error) {
+	if functionNameRaw == "" {
 		return nil, "", NewInvalidParameter("FunctionName", "Function name is required")
 	}
+	if err := validateNamespacedFunctionName(functionNameRaw); err != nil {
+		return nil, "", err
+	}
+	functionName, _ := resolveNamespacedFunctionRef(functionNameRaw)
+
 	policies, err = stores.Functions.GetPolicy(functionName)
 	if err != nil {
-		return nil, "", ErrResourceNotFound
+		return nil, "", mapStoreError(err)
 	}
 
 	if len(policies) == 0 {

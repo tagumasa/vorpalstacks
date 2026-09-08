@@ -58,7 +58,7 @@ func parsePermissionCondition(params map[string]interface{}) map[string]interfac
 // AddPermission adds a permission to a Lambda function's resource-based policy.
 // Allows another AWS service or principal to invoke the function.
 func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
+	function, err := s.validateAndGetFunctionNamespaced(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,6 @@ func (s *LambdaService) AddPermission(ctx context.Context, reqCtx *request.Reque
 		FunctionUrlAuthType: request.GetStringParam(req.Parameters, "FunctionUrlAuthType"),
 		Principal:           principal,
 		Action:              action,
-		Statement:           request.GetStringParam(req.Parameters, "Statement"),
 		Condition:           condition,
 	})
 	if err != nil {
@@ -116,7 +115,7 @@ func buildPrincipalField(principal string) interface{} {
 
 // RemovePermission removes a permission from a Lambda function's resource-based policy.
 func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
+	function, err := s.validateAndGetFunctionNamespaced(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -135,30 +134,20 @@ func (s *LambdaService) RemovePermission(ctx context.Context, reqCtx *request.Re
 
 // GetPolicy returns the resource-based policy for a Lambda function.
 func (s *LambdaService) GetPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	functionName := request.GetStringParam(req.Parameters, "FunctionName")
-	functionName = extractFunctionName(functionName)
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
 
-	policies, revisionId, err := s.getPolicyCore(store, functionName)
+	policies, revisionId, err := s.getPolicyCore(store, request.GetStringParam(req.Parameters, "FunctionName"))
 	if err != nil {
 		return nil, err
 	}
 
-	statements := make([]map[string]interface{}, 0)
-	for _, p := range policies {
-		statements = append(statements, buildPermissionStatement(p.Id, p.Principal, p.Action, p.Resource, p.Condition))
-	}
-
-	policyDoc := map[string]interface{}{
-		"Version":   "2012-10-17",
-		"Statement": statements,
-	}
-
-	policyJSON, err := json.Marshal(policyDoc)
+	// Statements that arrived via a PutResourcePolicy document are
+	// reproduced from their verbatim JSON; AddPermission statements are
+	// rendered from the structured fields.
+	policyJSON, err := renderResourcePolicyDocument(policies)
 	if err != nil {
 		return nil, err
 	}

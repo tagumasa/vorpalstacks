@@ -225,7 +225,8 @@ func (r *ActionRegistry) initDefaults() {
 		"Invoke", "InvokeAsync", "InvokeWithResponseStream",
 		"PublishVersion", "ListVersionsByFunction",
 		"CreateAlias", "DeleteAlias", "GetAlias", "UpdateAlias", "ListAliases",
-		"PublishLayerVersion", "DeleteLayerVersion", "GetLayerVersion", "ListLayers", "ListLayerVersions",
+		"PublishLayerVersion", "DeleteLayerVersion", "GetLayerVersion", "GetLayerVersionByArn", "ListLayers", "ListLayerVersions",
+		"AddLayerVersionPermission", "RemoveLayerVersionPermission", "GetLayerVersionPolicy",
 		"CreateEventSourceMapping", "DeleteEventSourceMapping", "GetEventSourceMapping", "UpdateEventSourceMapping", "ListEventSourceMappings",
 		// Note: AddPermission, RemovePermission, TagResource, UntagResource,
 		// and ListTags are NOT registered here because Lambda uses REST-JSON
@@ -233,11 +234,13 @@ func (r *ActionRegistry) initDefaults() {
 		// always routed via path lookup or signing service, never via
 		// ActionRegistry. Registering them would overwrite SNS's entries for
 		// the same action names, causing misrouting for SNS Query protocol
-		// requests (see classifier.serviceFromAction).
+		// requests (see classifier.serviceFromAction). The same exclusion
+		// covers PutResourcePolicy, GetResourcePolicy, and
+		// DeleteResourcePolicy: cloudtrail owns those action names below.
 		"GetPolicy",
 		"PutFunctionConcurrency", "GetFunctionConcurrency", "DeleteFunctionConcurrency",
 		"PutProvisionedConcurrencyConfig", "GetProvisionedConcurrencyConfig", "DeleteProvisionedConcurrencyConfig", "ListProvisionedConcurrencyConfigs",
-		"PutFunctionEventInvokeConfig", "GetFunctionEventInvokeConfig", "DeleteFunctionEventInvokeConfig", "ListFunctionEventInvokeConfigs",
+		"PutFunctionEventInvokeConfig", "GetFunctionEventInvokeConfig", "UpdateFunctionEventInvokeConfig", "DeleteFunctionEventInvokeConfig", "ListFunctionEventInvokeConfigs",
 		"CreateFunctionUrlConfig", "DeleteFunctionUrlConfig", "GetFunctionUrlConfig", "UpdateFunctionUrlConfig", "ListFunctionUrlConfigs",
 		"GetAccountSettings",
 	})

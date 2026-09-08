@@ -37,7 +37,7 @@ which are separate services in the SDK classification used by
 | IoT | 411 | 100% | ✅ Perfect |
 | Kinesis | 55 | 100% | ✅ Perfect |
 | KMS | 100 | 100% | ✅ Perfect |
-| Lambda | 127 | 100% | ✅ Perfect |
+| Lambda | 134 | 100% | ✅ Perfect |
 | Neptune | 103 | 100% | ✅ Perfect |
 | NeptuneData | 160 | 100% | ✅ Perfect |
 | NeptuneGraph | 49 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,513/3,513 tests passing (100%) — 3,430 SDK + 66 integration + 17 WebSocket** (confirmed 2026-09-07 on main; per-session deltas live in git history)
+**Overall: 3,520/3,520 tests passing (100%) — 3,437 SDK + 66 integration + 17 WebSocket** (confirmed 2026-09-08 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

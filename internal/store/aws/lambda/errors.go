@@ -28,6 +28,10 @@ var (
 	// does not exist.
 	ErrLayerNotFound = errors.New("layer not found")
 
+	// ErrLayerAlreadyExists is returned when a layer with the same name
+	// already exists.
+	ErrLayerAlreadyExists = errors.New("layer already exists")
+
 	// ErrLayerVersionNotFound is returned when the specified layer version
 	// does not exist.
 	ErrLayerVersionNotFound = errors.New("layer version not found")
@@ -39,17 +43,6 @@ var (
 	// ErrEventSourceAlreadyExists is returned when attempting to create an event
 	// source mapping that already exists for the given event source and function.
 	ErrEventSourceAlreadyExists = errors.New("event source mapping already exists for this event source and function")
-
-	// ErrInvalidParameterValue is returned when a parameter value is not valid.
-	ErrInvalidParameterValue = errors.New("invalid parameter value")
-
-	// ErrInvalidRuntime is returned when the specified runtime is not valid
-	// or not supported.
-	ErrInvalidRuntime = errors.New("invalid runtime")
-
-	// ErrCodeSigningNotFound is returned when the specified code signing
-	// configuration does not exist.
-	ErrCodeSigningNotFound = errors.New("code signing config not found")
 
 	// ErrProvisionedConcurrencyNotFound is returned when the specified
 	// provisioned concurrency configuration does not exist.
@@ -70,6 +63,16 @@ var (
 	// ErrPolicyAlreadyExists is returned when a resource policy with the
 	// same StatementId already exists on the function.
 	ErrPolicyAlreadyExists = errors.New("resource policy already exists")
+
+	// ErrPolicyRevisionMismatch is returned when the RevisionId supplied to
+	// a resource-policy operation does not match the function's current
+	// policy revision, failing the optimistic-locking precondition.
+	ErrPolicyRevisionMismatch = errors.New("resource policy revision mismatch")
+
+	// ErrRevisionMismatch is returned when the RevisionId supplied to a
+	// function, version, or alias operation does not match the record's
+	// current revision, failing the optimistic-locking precondition.
+	ErrRevisionMismatch = errors.New("revision mismatch")
 
 	// ErrResourceConflict is returned when the requested operation conflicts
 	// with the current state of the resource.

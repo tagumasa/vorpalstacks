@@ -122,8 +122,12 @@ func (b *EventBus) Publish(ctx context.Context, event Event) error {
 	case b.asyncCh <- entry:
 	default:
 		// The entry stays OutboxPending in the store; the requeue loop
-		// re-enqueues it on its next scan.
+		// re-enqueues it on its next scan. The kick shortens that wait
+		// from the full scan interval to the retry interval, so a burst
+		// that momentarily saturates the channel does not become a
+		// full-period visibility delay for this event.
 		b.logWarn("async channel full, entry remains pending for requeue scan", "event_id", entry.EventID)
+		b.notifyBacklog()
 	}
 
 	return nil

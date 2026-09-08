@@ -19,12 +19,14 @@ type AliasCreateInput struct {
 
 // AliasUpdateInput carries the wire members of an UpdateAlias request. The
 // HasDescription flag distinguishes an explicitly provided (possibly empty)
-// Description from an omitted member.
+// Description from an omitted member; RevisionId is the optional
+// optimistic-locking precondition.
 type AliasUpdateInput struct {
 	HasDescription  bool
 	Description     string
 	FunctionVersion string
 	RoutingConfig   *lambdastore.RoutingConfig
+	RevisionId      string
 }
 
 // validateRoutingConfig enforces the routing rules: each weight lies in
@@ -113,7 +115,7 @@ func (s *LambdaService) deleteAliasCore(stores *lambdaStore, functionName, alias
 		return NewInvalidParameter("Name", "Alias name is required")
 	}
 	if err := stores.Functions.DeleteAlias(functionName, aliasName); err != nil {
-		return NewResourceNotFound("Alias", aliasName)
+		return mapStoreError(err)
 	}
 	return nil
 }
@@ -128,7 +130,7 @@ func (s *LambdaService) getAliasCore(stores *lambdaStore, functionName, aliasNam
 	}
 	alias, err := stores.Functions.GetAlias(functionName, aliasName)
 	if err != nil {
-		return nil, NewResourceNotFound("Alias", aliasName)
+		return nil, mapStoreError(err)
 	}
 
 	return alias, nil
@@ -144,7 +146,10 @@ func (s *LambdaService) updateAliasCore(stores *lambdaStore, functionName, alias
 	if aliasName == "" {
 		return nil, NewInvalidParameter("Name", "Alias name is required")
 	}
-	alias, err := stores.Functions.UpdateAliasAtomically(functionName, aliasName, func(fn *lambdastore.Function, existing *lambdastore.Alias) error {
+	if err := validateAliasName(aliasName); err != nil {
+		return nil, err
+	}
+	alias, err := stores.Functions.UpdateAliasAtomically(functionName, aliasName, in.RevisionId, func(fn *lambdastore.Function, existing *lambdastore.Alias) error {
 		if in.FunctionVersion != "" && in.FunctionVersion != "$LATEST" {
 			versionExists := false
 			for _, v := range fn.Versions {
@@ -173,8 +178,11 @@ func (s *LambdaService) updateAliasCore(stores *lambdaStore, functionName, alias
 		return nil
 	})
 	if err != nil {
-		if err == lambdastore.ErrAliasNotFound {
+		if errors.Is(err, lambdastore.ErrAliasNotFound) {
 			return nil, NewResourceNotFound("Alias", aliasName)
+		}
+		if errors.Is(err, lambdastore.ErrRevisionMismatch) {
+			return nil, NewPreconditionFailed(revisionMismatchMessage)
 		}
 		return nil, err
 	}
@@ -190,7 +198,7 @@ func (s *LambdaService) listAliasesCore(stores *lambdaStore, functionName string
 	}
 	function, err := stores.Functions.Get(functionName)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		return nil, mapStoreError(err)
 	}
 
 	allAliases := make([]lambdastore.Alias, len(function.Aliases))

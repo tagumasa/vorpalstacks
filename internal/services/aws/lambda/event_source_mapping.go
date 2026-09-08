@@ -2,12 +2,10 @@ package lambda
 
 import (
 	"context"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
-	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -95,9 +93,9 @@ func (s *LambdaService) GetEventSourceMapping(ctx context.Context, reqCtx *reque
 // UpdateEventSourceMapping updates the specified event source mapping.
 func (s *LambdaService) UpdateEventSourceMapping(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	in := &EventSourceMappingUpdateInput{
-		UUID:        request.GetStringParam(req.Parameters, "UUID"),
-		FunctionArn: request.GetStringParam(req.Parameters, "FunctionArn"),
-		KMSKeyArn:   request.GetStringParam(req.Parameters, "KMSKeyArn"),
+		UUID:            request.GetStringParam(req.Parameters, "UUID"),
+		FunctionNameRaw: request.GetStringParam(req.Parameters, "FunctionName"),
+		KMSKeyArn:       request.GetStringParam(req.Parameters, "KMSKeyArn"),
 	}
 	if _, ok := req.Parameters["BatchSize"]; ok {
 		in.HasBatchSize = true
@@ -178,17 +176,10 @@ func (s *LambdaService) ListEventSourceMappings(ctx context.Context, reqCtx *req
 	return resp, nil
 }
 
-// eventSourceMappingArn derives the ESM ARN from the mapping's function
-// ARN region and account: arn:aws:lambda:<region>:<account>:event-source-mapping:<uuid>.
-func eventSourceMappingArn(m *lambdastore.EventSourceMapping) string {
-	_, _, region, accountID, _ := arnutil.SplitARN(m.FunctionArn)
-	return fmt.Sprintf("arn:aws:lambda:%s:%s:event-source-mapping:%s", region, accountID, m.UUID)
-}
-
 func (s *LambdaService) toEventSourceMapping(m *lambdastore.EventSourceMapping) map[string]interface{} {
 	result := map[string]interface{}{
 		"UUID":                           m.UUID,
-		"EventSourceMappingArn":          eventSourceMappingArn(m),
+		"EventSourceMappingArn":          m.EventSourceMappingArn,
 		"FunctionArn":                    m.FunctionArn,
 		"EventSourceArn":                 m.EventSourceArn,
 		"BatchSize":                      m.BatchSize,

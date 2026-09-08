@@ -448,13 +448,32 @@ func runLambdaFunctionTests(tc *lambdaTestContext) []TestResult {
 		if err != nil {
 			return fmt.Errorf("zip code: %v", err)
 		}
+		// A stale RevisionId fails the modelled optimistic-locking
+		// precondition with PreconditionFailedException (HTTP 412) on every
+		// function update path: code, configuration, and publish.
+		stale := "00000000-0000-0000-0000-000000000000"
 		_, err = tc.client.UpdateFunctionCode(tc.ctx, &lambda.UpdateFunctionCodeInput{
 			FunctionName: aws.String(functionName),
 			ZipFile:      revCode,
-			RevisionId:   aws.String("00000000-0000-0000-0000-000000000000"),
+			RevisionId:   aws.String(stale),
 		})
-		if err := expectAWSErrorCode(err, "ResourceConflictException"); err != nil {
-			return err
+		if err := expectAWSErrorCode(err, "PreconditionFailedException"); err != nil {
+			return fmt.Errorf("UpdateFunctionCode: %v", err)
+		}
+		_, err = tc.client.UpdateFunctionConfiguration(tc.ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(functionName),
+			Description:  aws.String("stale revision"),
+			RevisionId:   aws.String(stale),
+		})
+		if err := expectAWSErrorCode(err, "PreconditionFailedException"); err != nil {
+			return fmt.Errorf("UpdateFunctionConfiguration: %v", err)
+		}
+		_, err = tc.client.PublishVersion(tc.ctx, &lambda.PublishVersionInput{
+			FunctionName: aws.String(functionName),
+			RevisionId:   aws.String(stale),
+		})
+		if err := expectAWSErrorCode(err, "PreconditionFailedException"); err != nil {
+			return fmt.Errorf("PublishVersion: %v", err)
 		}
 		return nil
 	}))
@@ -1656,6 +1675,120 @@ done
 		_, err = tc.client.UpdateFunctionConfiguration(tc.ctx, &lambda.UpdateFunctionConfigurationInput{
 			FunctionName: aws.String(esFunc),
 			Timeout:      aws.Int32(-1),
+		})
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "FileSystemConfigs_S3FilesConfig", func() error {
+		s3AP := "arn:aws:s3files:us-east-1:123456789012:file-system/fs-0123456789abcdef0123456789abcdef0/access-point/fsap-0123456789abcdef0"
+		efsAP := "arn:aws:elasticfilesystem:us-east-2:123456789012:access-point/fsap-0123456789abcdef0"
+
+		s3Func, cleanupS3Fn, err := tc.setupFunction("S3Func", "exports.handler = async () => { return 1; };",
+			func(input *lambda.CreateFunctionInput) {
+				input.FileSystemConfigs = []types.FileSystemConfig{{
+					Arn:            aws.String(s3AP),
+					LocalMountPath: aws.String("/mnt/s3"),
+					S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadAuto},
+				}}
+			})
+		if err != nil {
+			return err
+		}
+		defer cleanupS3Fn()
+
+		created, err := tc.client.GetFunctionConfiguration(tc.ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(s3Func),
+		})
+		if err != nil {
+			return err
+		}
+		if len(created.FileSystemConfigs) != 1 {
+			return fmt.Errorf("FileSystemConfigs not echoed on create, got %v", created.FileSystemConfigs)
+		}
+		if got := created.FileSystemConfigs[0].S3FilesConfig; got == nil || got.DirectS3Read != types.DirectS3ReadAuto {
+			return fmt.Errorf("S3FilesConfig not echoed on create, got %v", created.FileSystemConfigs[0].S3FilesConfig)
+		}
+
+		if _, err := tc.client.UpdateFunctionConfiguration(tc.ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(s3Func),
+			FileSystemConfigs: []types.FileSystemConfig{{
+				Arn:            aws.String(s3AP),
+				LocalMountPath: aws.String("/mnt/s3"),
+				S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadEnabled},
+			}},
+		}); err != nil {
+			return fmt.Errorf("update config: %v", err)
+		}
+
+		updated, err := tc.client.GetFunctionConfiguration(tc.ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(s3Func),
+		})
+		if err != nil {
+			return err
+		}
+		if len(updated.FileSystemConfigs) != 1 {
+			return fmt.Errorf("FileSystemConfigs not echoed after update, got %v", updated.FileSystemConfigs)
+		}
+		if got := updated.FileSystemConfigs[0].S3FilesConfig; got == nil || got.DirectS3Read != types.DirectS3ReadEnabled {
+			return fmt.Errorf("S3FilesConfig not applied, got %v", updated.FileSystemConfigs[0].S3FilesConfig)
+		}
+
+		// An unknown DirectS3Read value is rejected rather than stored.
+		_, err = tc.client.UpdateFunctionConfiguration(tc.ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(s3Func),
+			FileSystemConfigs: []types.FileSystemConfig{{
+				Arn:            aws.String(s3AP),
+				LocalMountPath: aws.String("/mnt/s3"),
+				S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3Read("FAST")},
+			}},
+		})
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+
+		// S3FilesConfig is valid only on an S3 Files access point; on an
+		// EFS access point the operation returns InvalidParameter.
+		_, err = tc.client.UpdateFunctionConfiguration(tc.ctx, &lambda.UpdateFunctionConfigurationInput{
+			FunctionName: aws.String(s3Func),
+			FileSystemConfigs: []types.FileSystemConfig{{
+				Arn:            aws.String(efsAP),
+				LocalMountPath: aws.String("/mnt/efs"),
+				S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadAuto},
+			}},
+		})
+		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
+	results = append(results, tc.r.RunTest("lambda", "GetFunctionConfiguration_NamespacedFunctionName", func() error {
+		// Members typed NamespacedFunctionName in the Smithy model accept
+		// dotted names and references up to 256 characters: both resolve
+		// against the store and surface as not-found, not as validation
+		// errors.
+		_, err := tc.client.GetFunctionConfiguration(tc.ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String("no.such.dotted.function"),
+		})
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+
+		longRef := "arn:aws:lambda:us-east-1:123456789012:function:" + strings.Repeat("n", 100)
+		_, err = tc.client.GetFunctionConfiguration(tc.ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String(longRef),
+		})
+		if err := expectAWSErrorCode(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+
+		// A malformed region segment in an otherwise ARN-shaped reference
+		// fails the pattern and is rejected as a validation error.
+		_, err = tc.client.GetFunctionConfiguration(tc.ctx, &lambda.GetFunctionConfigurationInput{
+			FunctionName: aws.String("arn:aws:lambda:NOT_A_REGION:123456789012:function:fn"),
 		})
 		if err := expectAWSErrorCode(err, "InvalidParameterValueException"); err != nil {
 			return err

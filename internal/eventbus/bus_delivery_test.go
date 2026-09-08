@@ -451,6 +451,93 @@ drained:
 	}
 }
 
+// A publish whose outbox enqueue is dropped because the async channel is
+// full must be redelivered without waiting out a full PendingRequeueInterval:
+// the drop notifies the requeue loop, which re-arms at the short retry
+// interval while a backlog remains. The idle interval here is raised far
+// beyond the test budget, so a passing run proves the short path delivered
+// the dropped event, not the periodic scan.
+func TestDroppedPublishRequeuedWithinRetryInterval(t *testing.T) {
+	origInterval := PendingRequeueInterval
+	origRetry := PendingRequeueRetryInterval
+	PendingRequeueInterval = time.Minute
+	PendingRequeueRetryInterval = 50 * time.Millisecond
+	// Restore the intervals only after Shutdown has joined the requeue
+	// loop goroutine: it reads the variables whenever it arms its timer.
+	defer func() {
+		PendingRequeueInterval = origInterval
+		PendingRequeueRetryInterval = origRetry
+	}()
+
+	store := NewPebbleOutboxStore(newTestDB(t))
+	registry := NewEventRegistry()
+	registry.Register("test:event", func() Event { return &testEvent{} })
+	bus := NewEventBus(WithOutbox(store), WithEventRegistry(registry))
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = bus.Shutdown(ctx)
+	}()
+
+	var calls atomic.Int32
+	gate := make(chan struct{})
+	if _, err := bus.Subscribe(func(ctx context.Context, event Event) HandlerResult {
+		calls.Add(1)
+		<-gate
+		return HandlerResult{}
+	}, WithEventType("test:event")); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := bus.Start(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	// Park every async worker inside the handler so nothing drains the
+	// channel while the backlog is staged.
+	for i := 0; i < AsyncWorkerCount; i++ {
+		if err := bus.Publish(context.Background(), &testEvent{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	waitFor(t, 10*time.Second, func() bool { return calls.Load() == int32(AsyncWorkerCount) })
+
+	// Fill the channel with dummies: entries absent from the outbox fail
+	// the compare-and-set in processOutboxEntry and are dropped without
+	// side effects, so they occupy queue slots and nothing else.
+	for i := 0; i < cap(bus.asyncCh); i++ {
+		bus.asyncCh <- &OutboxEntry{
+			EventID:   fmt.Sprintf("dummy-%d", i),
+			EventType: "test:event",
+			Status:    OutboxPending,
+		}
+	}
+
+	// This publish must drop: the channel is full and no worker is free.
+	victim := &testEvent{}
+	if err := bus.Publish(context.Background(), victim); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, 5*time.Second, func() bool {
+		entry, err := store.Read(context.Background(), victim.EventID())
+		return err == nil && entry != nil && entry.Status == OutboxPending
+	})
+	if got := calls.Load(); got != int32(AsyncWorkerCount) {
+		t.Fatalf("victim must not run while the channel is saturated, handler calls = %d", got)
+	}
+
+	// Release the workers: the channel drains and the victim must be
+	// redelivered within the retry interval.
+	close(gate)
+	waitFor(t, 5*time.Second, func() bool {
+		entry, err := store.Read(context.Background(), victim.EventID())
+		return err == nil && entry != nil && entry.Status == OutboxDelivered
+	})
+	if got := calls.Load(); got != int32(AsyncWorkerCount)+1 {
+		t.Fatalf("expected the victim delivered exactly once, handler calls = %d", got)
+	}
+}
+
 // Repeated Start calls must not launch a second set of workers.
 func TestStartIsIdempotent(t *testing.T) {
 	bus := NewEventBus()

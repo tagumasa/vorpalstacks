@@ -2,11 +2,12 @@ package lambda
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/core/logs"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -36,6 +37,12 @@ type CreateFunctionInput struct {
 	// Region of the request; used to persist per-version code snapshots
 	// when Publish is requested.
 	Region string
+
+	// IAMValidator, when injected, checks that the execution role's trust
+	// policy allows the Lambda service principal. Both planes inject it
+	// (the HTTP API from the request context, the admin console from the
+	// service's role provider).
+	IAMValidator *iam.IAMValidator
 
 	// Code metadata — pre-processed by the caller (S3 fetch, base64
 	// decode, disk storage). Empty values are valid for the admin
@@ -67,6 +74,7 @@ type CreateFunctionInput struct {
 type DeleteFunctionInput struct {
 	FunctionName string
 	Qualifier    string
+	Region       string
 }
 
 // ListFunctionsInput carries pagination parameters for ListFunctions.
@@ -85,7 +93,7 @@ type ListFunctionsInput struct {
 // tags, and optionally publishes a version. The returned Version is
 // non-nil only when in.Publish requested an initial publish; callers use
 // it to answer with the published version's configuration.
-func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFunctionInput) (*lambdastore.Function, *lambdastore.Version, error) {
+func (s *LambdaService) createFunctionCore(ctx context.Context, stores *lambdaStore, in *CreateFunctionInput) (*lambdastore.Function, *lambdastore.Version, error) {
 	if in.FunctionName == "" {
 		return nil, nil, NewInvalidParameter("FunctionName", "Function name is required")
 	}
@@ -96,8 +104,12 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 	if in.Runtime == "" && in.PackageType != "Image" {
 		return nil, nil, NewInvalidParameter("Runtime", "Runtime is required for Zip package type")
 	}
-	if in.Runtime != "" && !ValidateRuntime(in.Runtime) {
-		return nil, nil, NewInvalidParameter("Runtime", "Runtime '"+in.Runtime+"' is not supported")
+	if in.Runtime != "" {
+		canonical, ok := lambdastore.CanonicalRuntime(in.Runtime)
+		if !ok {
+			return nil, nil, NewInvalidParameter("Runtime", "Runtime '"+in.Runtime+"' is not supported")
+		}
+		in.Runtime = string(canonical)
 	}
 
 	if in.Handler == "" && in.PackageType != "Image" {
@@ -111,6 +123,15 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 
 	if in.Role == "" {
 		return nil, nil, NewInvalidParameter("Role", "Role ARN is required")
+	}
+
+	// The execution role must be assumable by the Lambda service principal.
+	// TEST_MODE skips the trust-policy lookup so the regression suite can
+	// create functions without seeded IAM roles.
+	if in.Role != "" && in.IAMValidator != nil && os.Getenv("TEST_MODE") != "true" {
+		if err := in.IAMValidator.ValidateRoleForService(ctx, in.Role, iam.ServicePrincipalLambda); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	if err := validateCodeSigningConfigArn(in.CodeSigningConfigArn); err != nil {
@@ -130,6 +151,9 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 			return nil, nil, err
 		}
 	}
+	if err := validateFileSystemConfigs(in.FileSystemConfigs); err != nil {
+		return nil, nil, err
+	}
 
 	if in.SnapStart != nil {
 		if err := validateSnapStartApplyOn(in.SnapStart.ApplyOn); err != nil {
@@ -140,6 +164,12 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 		}
 	}
 	if err := validateEnvironmentVariables(in.Environment); err != nil {
+		return nil, nil, err
+	}
+	if err := validateLoggingConfig(in.LoggingConfig); err != nil {
+		return nil, nil, err
+	}
+	if err := validateImageConfig(in.ImageConfig); err != nil {
 		return nil, nil, err
 	}
 
@@ -198,6 +228,14 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 		function.PackageType = "Image"
 	}
 
+	// Reject input-ground tag failures before the record is written so
+	// the tag step cannot fail after Create.
+	if len(in.Tags) > 0 {
+		if err := stores.Functions.TagStore.ValidateTags(in.Tags); err != nil {
+			return nil, nil, NewInvalidParameter("Tags", err.Error())
+		}
+	}
+
 	created, err := stores.Functions.Create(function)
 	if err != nil {
 		if errors.Is(err, lambdastore.ErrFunctionAlreadyExists) {
@@ -208,19 +246,49 @@ func (s *LambdaService) createFunctionCore(stores *lambdaStore, in *CreateFuncti
 
 	if len(in.Tags) > 0 {
 		if err := stores.Functions.TagStore.Tag(in.FunctionName, in.Tags); err != nil {
+			// A store-ground failure after the record exists rolls the
+			// creation back — a failed CreateFunction must leave nothing
+			// behind.
+			s.rollbackCreatedRecord("function "+function.FunctionName, func() error {
+				return s.deleteFunctionAndCode(stores, function.FunctionName, in.Region)
+			})
 			return nil, nil, err
 		}
 	}
 
 	var published *lambdastore.Version
 	if in.Publish {
-		published, err = s.publishVersionWithCode(stores, created, "", in.Region)
+		published, err = s.publishVersionWithCode(stores, created, "", "", in.Region)
 		if err != nil {
+			s.rollbackCreatedRecord("function "+function.FunctionName, func() error {
+				return s.deleteFunctionAndCode(stores, function.FunctionName, in.Region)
+			})
 			return nil, nil, err
 		}
 	}
 
 	return created, published, nil
+}
+
+// deleteFunctionAndCode is the compensating delete for a failed create:
+// the record goes first, then the seeded code archives.
+func (s *LambdaService) deleteFunctionAndCode(stores *lambdaStore, functionName, region string) error {
+	if err := stores.Functions.Delete(functionName); err != nil {
+		return err
+	}
+	s.removeFunctionCodeDir(functionName, "", region)
+	return nil
+}
+
+// rollbackCreatedRecord removes a record whose creating request failed
+// after the store write, so a failed Create/Publish leaves no orphan.
+// The secondary error is logged rather than returned: the caller reports
+// the primary failure that triggered the rollback.
+func (s *LambdaService) rollbackCreatedRecord(what string, del func() error) {
+	if err := del(); err != nil {
+		logs.Warn("Failed to roll back partially created resource",
+			logs.String("resource", what), logs.Err(err))
+	}
 }
 
 // deleteFunctionCore is the single entry point for function deletion. It
@@ -243,6 +311,12 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 	}
 
 	if qualifier != "" {
+		// The authoritative delete runs first: it is what rejects an
+		// alias-referenced version, so a version that survives the
+		// request keeps its container and sandboxes untouched.
+		if err := stores.Functions.DeleteVersion(function.FunctionName, qualifier); err != nil {
+			return mapStoreError(err)
+		}
 		for _, v := range function.Versions {
 			if v.Version == qualifier && v.ContainerID != "" {
 				if rmErr := s.dockerClient.RemoveContainer(ctx, v.ContainerID, true); rmErr != nil {
@@ -254,7 +328,10 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 			}
 		}
 		s.sandboxes.drainVersion(function.FunctionArn, qualifier)
-		return mapStoreError(stores.Functions.DeleteVersion(function.FunctionName, qualifier))
+		// The authoritative store delete succeeded; the version's
+		// on-disk archive goes with it.
+		s.removeFunctionCodeDir(function.FunctionName, qualifier, in.Region)
+		return nil
 	}
 
 	mappings, err := stores.EventSources.ListByFunction(function.FunctionArn)
@@ -285,7 +362,14 @@ func (s *LambdaService) deleteFunctionCore(ctx context.Context, stores *lambdaSt
 	}
 
 	s.sandboxes.drainFunction(function.FunctionArn)
-	return mapStoreError(stores.Functions.Delete(function.FunctionName))
+	if err := stores.Functions.Delete(function.FunctionName); err != nil {
+		return mapStoreError(err)
+	}
+	// The authoritative store delete succeeded; the function's whole
+	// on-disk code root ($LATEST plus every published version) goes with
+	// it.
+	s.removeFunctionCodeDir(function.FunctionName, "", in.Region)
+	return nil
 }
 
 // listFunctionsCore returns a paginated list of functions. The caller
@@ -316,10 +400,11 @@ type functionCodeMetadata struct {
 
 // prepareCreateFunctionCodeCore resolves the wire Code map of a
 // CreateFunction request into persisted code metadata: an ImageUri member
-// switches the package type to Image; an S3 bucket reference fetches the
-// archive; a ZipFile member is decoded in place. Fetched and decoded
-// archives are persisted under the function's $LATEST code directory with
-// their hash recorded.
+// switches the package type to Image; otherwise the archive comes from the
+// ZipFile member or an S3 bucket reference (resolveCodeContent owns the
+// decode order and rejects a map naming neither). Decoded archives are
+// persisted under the function's $LATEST code directory with their hash
+// recorded.
 func (s *LambdaService) prepareCreateFunctionCodeCore(ctx context.Context, region, functionName string, codeMap map[string]interface{}, packageType string) (*functionCodeMetadata, string, string, error) {
 	if codeMap == nil {
 		return nil, "", "", NewInvalidParameter("Code", "Code is required")
@@ -333,28 +418,10 @@ func (s *LambdaService) prepareCreateFunctionCodeCore(ctx context.Context, regio
 		packageType = "Image"
 	}
 
-	if s3Bucket, ok := codeMap["S3Bucket"].(string); ok && s3Bucket != "" {
-		s3Key, _ := codeMap["S3Key"].(string)
-		if s3Key == "" {
-			return nil, "", "", NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
-		}
-		s3Version, _ := codeMap["S3ObjectVersion"].(string)
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, region)
-		if err != nil {
-			return nil, "", "", NewInvalidParameter("Code", err.Error())
-		}
-		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
+	if imageUri == "" {
+		zipFile, err := s.resolveCodeContent(ctx, region, "Code", codeMap)
 		if err != nil {
 			return nil, "", "", err
-		}
-		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
-		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
-	}
-
-	if zipFileStr, ok := codeMap["ZipFile"].(string); ok && zipFileStr != "" {
-		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
-		if err != nil {
-			return nil, "", "", NewInvalidParameter("Code.ZipFile", "Invalid base64 encoding: "+err.Error())
 		}
 		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
 		if err != nil {
@@ -410,8 +477,15 @@ func (s *LambdaService) getAccountSettingsCore(stores *lambdaStore) (map[string]
 // the published version stays executable after the $LATEST code changes or
 // all containers are recycled. Container image packages carry no zip
 // archive and skip the code persistence step. This mirrors how layer
-// versions persist their content at publish time.
-func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *lambdastore.Function, description, region string) (*lambdastore.Version, error) {
+// versions persist their content at publish time. A non-empty revisionId is
+// the modelled optimistic-locking precondition: publishing fails with
+// PreconditionFailedException unless it matches the function's current
+// revision.
+func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *lambdastore.Function, description, revisionId, region string) (*lambdastore.Version, error) {
+	if revisionId != "" && function.RevisionId != revisionId {
+		return nil, NewPreconditionFailed(revisionMismatchMessage)
+	}
+
 	var latestCode []byte
 	if function.PackageType != "Image" && function.ImageUri == "" {
 		var err error
@@ -423,13 +497,19 @@ func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *la
 		}
 	}
 
-	version, err := stores.Functions.PublishVersion(function, description)
+	version, err := stores.Functions.PublishVersionAtomically(function.FunctionName, description, revisionId)
 	if err != nil {
 		return nil, mapStoreError(err)
 	}
 
 	if latestCode != nil {
 		if _, _, err := s.storeCode(function.FunctionName, version.Version, latestCode, region); err != nil {
+			// The version record exists but its archive does not — the
+			// version would be permanently uninvocable, so the failed
+			// publish rolls the version back.
+			s.rollbackCreatedRecord(fmt.Sprintf("version %s of %s", version.Version, function.FunctionName), func() error {
+				return stores.Functions.DeleteVersion(function.FunctionName, version.Version)
+			})
 			return nil, NewLambdaError("ServiceException",
 				fmt.Sprintf("Failed to persist the code of version %s: %v", version.Version, err),
 				http.StatusInternalServerError)
@@ -437,26 +517,4 @@ func (s *LambdaService) publishVersionWithCode(stores *lambdaStore, function *la
 	}
 
 	return version, nil
-}
-
-// getOrCreateLambdaStore returns the full lambdaStore for the given region,
-// creating it if necessary. Used by the admin handler and core functions.
-func (s *LambdaService) getOrCreateLambdaStore(region string) *lambdaStore {
-	if cached, ok := s.storeCache.Load(region); ok {
-		if typed, ok := cached.(*lambdaStore); ok {
-			return typed
-		}
-	}
-	storage := s.getRegionalStorage(region)
-	newStore := &lambdaStore{
-		Functions:    lambdastore.NewFunctionStore(storage, s.accountID, region),
-		Layers:       lambdastore.NewLayerStore(storage, s.accountID, region),
-		EventSources: lambdastore.NewEventSourceStore(storage, s.accountID, region),
-	}
-	if actual, loaded := s.storeCache.LoadOrStore(region, newStore); loaded {
-		if typed, ok := actual.(*lambdaStore); ok {
-			return typed
-		}
-	}
-	return newStore
 }

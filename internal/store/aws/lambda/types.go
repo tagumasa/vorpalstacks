@@ -4,6 +4,7 @@ package lambda
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"strings"
 	"time"
 
 	types "vorpalstacks/internal/common/tags"
@@ -30,7 +31,6 @@ const (
 	RuntimeJava8Al2023    Runtime = "java8.al2023"
 	RuntimeJava8Al2       Runtime = "java8.al2"
 	RuntimeDotnet10       Runtime = "dotnet10"
-	RuntimeDotnet9        Runtime = "dotnet9"
 	RuntimeDotnet8        Runtime = "dotnet8"
 	RuntimeRuby40         Runtime = "ruby4.0"
 	RuntimeRuby34         Runtime = "ruby3.4"
@@ -49,6 +49,24 @@ const (
 	RuntimeGo1X      Runtime = "go1.x"
 )
 
+// CurrentRuntimes is the single source for the runtime identifiers
+// accepted for new functions and layer compatible-runtime declarations,
+// derived from the vendored Smithy model's Runtime enum: the
+// feature:public values of the currently-supported generation. The
+// deprecated constants above remain invocable for existing functions but
+// are not in this set; preview values the model gates behind non-public
+// feature tags (nodejs26.x, python3.15) are not part of the public enum
+// surface and are excluded.
+var CurrentRuntimes = []Runtime{
+	RuntimeNodejs24X, RuntimeNodejs22X,
+	RuntimePython314, RuntimePython313, RuntimePython312, RuntimePython311, RuntimePython310,
+	RuntimeJava25, RuntimeJava21, RuntimeJava17, RuntimeJava11,
+	RuntimeJava17Al2023, RuntimeJava11Al2023, RuntimeJava8Al2023, RuntimeJava8Al2,
+	RuntimeDotnet10, RuntimeDotnet8,
+	RuntimeRuby40, RuntimeRuby34, RuntimeRuby33,
+	RuntimeProvidedAl2023, RuntimeProvidedAl2,
+}
+
 // AWS defaults for asynchronous invocation configuration, applied when
 // PutFunctionEventInvokeConfig omits the corresponding member: "By default,
 // Lambda retries an asynchronous invocation twice if the function returns
@@ -66,6 +84,34 @@ const (
 	DefaultFunctionTimeoutSeconds = int32(3)
 	DefaultFunctionMemorySizeMB   = int32(128)
 )
+
+// Function configuration member ranges from the CreateFunction and
+// UpdateFunctionConfiguration model @range traits: EphemeralStorageSize
+// min 512 max 32768 MB, Timeout min 1 max 5400 seconds, MemorySize min
+// 128 max 32768 MB.
+const (
+	MinEphemeralStorageSizeMB = int32(512)
+	MaxEphemeralStorageSizeMB = int32(32768)
+	MinTimeoutSeconds         = int32(1)
+	MaxTimeoutSeconds         = int32(5400)
+	MinMemorySizeMB           = int32(128)
+	MaxMemorySizeMB           = int32(32768)
+)
+
+// DefaultLayerVersionListMaxItems is the ListLayerVersions documented
+// default page size, applied when the request omits MaxItems.
+const DefaultLayerVersionListMaxItems = 50
+
+// MaxResourcePolicyLength is the maximum length of a resource-based
+// policy document, from the ResourcePolicy shape @length trait
+// (min 1, max 20480 characters) shared by PutResourcePolicy and
+// GetResourcePolicy.
+const MaxResourcePolicyLength = 20480
+
+// MaxPolicyResourceArnLength is the maximum length of the ResourceArn
+// member of the resource-policy operations, from the PolicyResourceArn
+// shape @length trait (min 0, max 256 characters).
+const MaxPolicyResourceArnLength = 256
 
 // Sandbox pool bounds for image-package functions. The idle TTL follows the
 // AWS model of terminating an inactive execution environment after a period
@@ -109,6 +155,68 @@ const (
 const (
 	MinParallelizationFactor = int32(1)
 	MaxParallelizationFactor = int32(10)
+)
+
+// Event source mapping batch size range from the CreateEventSourceMapping
+// model: "Valid Range: Minimum value of 1. Maximum value of 10000." The
+// per-source defaults (100 for stream sources, 10 for queues) are
+// service-plane policy applied by defaultESMBatchSize in the service
+// package.
+const (
+	MinESMBatchSize = int32(1)
+	MaxESMBatchSize = int32(10000)
+)
+
+// Event source mapping member ranges from the 2015-03-31 model shapes:
+// MaximumBatchingWindowInSeconds @range(0, 300), MaximumRecordAgeInSeconds
+// @range(-1, 604800), MaximumRetryAttempts @range(-1, 10000), and
+// TumblingWindowInSeconds @range(0, 900).
+const (
+	MinESMBatchingWindowSeconds = int32(0)
+	MaxESMBatchingWindowSeconds = int32(300)
+	MinESMRecordAgeSeconds      = int32(-1)
+	MaxESMRecordAgeSeconds      = int32(604800)
+	MinESMRetryAttempts         = int32(-1)
+	MaxESMRetryAttempts         = int32(10000)
+	MinESMTumblingWindowSeconds = int32(0)
+	MaxESMTumblingWindowSeconds = int32(900)
+)
+
+// Function event invoke config member ranges from the 2015-03-31 model
+// shapes: MaximumEventAgeInSeconds @range(60, 21600) and
+// MaximumRetryAttempts @range(0, 2).
+const (
+	MinEventAgeSeconds          = int32(60)
+	MaxEventAgeSeconds          = int32(21600)
+	MinEventInvokeRetryAttempts = int32(0)
+	MaxEventInvokeRetryAttempts = int32(2)
+)
+
+// MaxStatementIdLength is the StatementId shape's @length(1, 100)
+// maximum from the 2015-03-31 model.
+const MaxStatementIdLength = 100
+
+// LoggingConfig member constraints from the 2015-03-31 model: the LogGroup
+// shape carries length 1-512 and the pattern below; the enum members
+// (LogFormat, ApplicationLogLevel, SystemLogLevel) are enforced by the
+// service-layer validators.
+const (
+	MaxLogGroupLength = 512
+	LogGroupPattern   = `^[\.\-_/#A-Za-z0-9]+$`
+)
+
+// ImageConfig member constraints from the 2015-03-31 model: EntryPoint and
+// Command target the StringList shape (length 0-1500) and WorkingDirectory
+// carries length 0-1000.
+const (
+	MaxImageConfigListLength       = 1500
+	MaxImageConfigWorkingDirectory = 1000
+)
+
+// Function URL CORS constraints from the 2015-03-31 model: the Cors.MaxAge
+// member targets the MaxAge shape whose @range is 0 to 86400 seconds.
+const (
+	MaxCorsMaxAgeSeconds = int32(86400)
 )
 
 // State represents the current state of a Lambda function.
@@ -181,10 +289,15 @@ type Function struct {
 	RuntimeVersionConfig       *RuntimeVersionConfig  `json:"runtime_version_config,omitempty"`
 	DurableConfig              map[string]interface{} `json:"durable_config,omitempty"`
 
-	Versions       []Version        `json:"versions,omitempty"`
-	Aliases        []Alias          `json:"aliases,omitempty"`
-	Policies       []FunctionPolicy `json:"policies,omitempty"`
-	CurrentVersion string           `json:"current_version"`
+	Versions []Version        `json:"versions,omitempty"`
+	Aliases  []Alias          `json:"aliases,omitempty"`
+	Policies []FunctionPolicy `json:"policies,omitempty"`
+	// PolicyRevisionId versions the resource-based policy independently of
+	// the function revision: it is regenerated whenever the policy changes
+	// (PutResourcePolicy, DeleteResourcePolicy, AddPermission,
+	// RemovePermission) and compared against the RevisionId member of the
+	// resource-policy operations.
+	PolicyRevisionId string `json:"policy_revision_id,omitempty"`
 
 	ReservedConcurrency    *int64                         `json:"reserved_concurrency,omitempty"`
 	ProvisionedConcurrency []ProvisionedConcurrencyConfig `json:"provisioned_concurrency,omitempty"`
@@ -317,11 +430,27 @@ type ImageConfig struct {
 	WorkingDirectory string   `json:"working_directory,omitempty"`
 }
 
-// FileSystemConfig describes an EFS file system mount configuration.
+// FileSystemConfig describes an EFS or S3 Files mount configuration.
 type FileSystemConfig struct {
-	Arn            string `json:"arn,omitempty"`
-	LocalMountPath string `json:"local_mount_path,omitempty"`
+	Arn            string         `json:"arn,omitempty"`
+	LocalMountPath string         `json:"local_mount_path,omitempty"`
+	S3FilesConfig  *S3FilesConfig `json:"s3_files_config,omitempty"`
 }
+
+// S3FilesConfig controls how a function accesses data on an Amazon S3
+// file system: direct bucket reads or reads through the file system.
+type S3FilesConfig struct {
+	DirectS3Read string `json:"direct_s3_read,omitempty"`
+}
+
+// DirectS3Read values (Smithy DirectS3Read enum): AUTO is the service
+// default, ENABLED enforces direct bucket reads, DISABLED routes reads
+// through the file system.
+const (
+	DirectS3ReadAuto     = "AUTO"
+	DirectS3ReadEnabled  = "ENABLED"
+	DirectS3ReadDisabled = "DISABLED"
+)
 
 // TenancyConfig configures the tenancy isolation mode for a function.
 type TenancyConfig struct {
@@ -357,13 +486,24 @@ type CorsConfig struct {
 }
 
 // FunctionPolicy represents a resource-based policy for a Lambda function.
+// A statement that arrived inside a PutResourcePolicy document also keeps
+// its verbatim JSON in Raw so policy renderings reproduce the statement as
+// submitted; statements added via AddPermission leave Raw empty and are
+// rendered from the structured fields. Effect records the statement's
+// effect ("Allow" or "Deny") so the eventbus dispatch authorisation can
+// tell them apart. The Principal, Action and Resource fields carry the
+// single-string form of those members for Allow-effect statements only:
+// the matcher never evaluates a Deny statement as a grant, and an Allow
+// statement whose members are not string-shaped cannot be evaluated by the
+// matcher at all and grants nothing (its verbatim JSON still renders).
 type FunctionPolicy struct {
 	Id        string                 `json:"id"`
-	Statement string                 `json:"statement"`
+	Effect    string                 `json:"effect,omitempty"`
 	Principal string                 `json:"principal"`
 	Action    string                 `json:"action"`
 	Resource  string                 `json:"resource"`
 	Condition map[string]interface{} `json:"condition,omitempty"`
+	Raw       string                 `json:"raw,omitempty"`
 }
 
 // Layer represents a Lambda layer configuration.
@@ -395,7 +535,6 @@ type LayerVersion struct {
 // LayerPolicy represents a policy attached to a Lambda layer version.
 type LayerPolicy struct {
 	Id        string `json:"id"`
-	Statement string `json:"statement"`
 	Principal string `json:"principal"`
 	Action    string `json:"action"`
 }
@@ -403,6 +542,7 @@ type LayerPolicy struct {
 // EventSourceMapping represents a mapping between an event source and a Lambda function.
 type EventSourceMapping struct {
 	UUID                           string                      `json:"uuid"`
+	EventSourceMappingArn          string                      `json:"event_source_mapping_arn,omitempty"`
 	BatchSize                      int32                       `json:"batch_size,omitempty"`
 	MaximumBatchingWindowInSeconds int32                       `json:"maximum_batching_window_in_seconds,omitempty"`
 	ParallelizationFactor          int32                       `json:"parallelization_factor,omitempty"`
@@ -479,26 +619,6 @@ type ProvisionedConcurrencyConfig struct {
 	LastModified                             time.Time `json:"last_modified"`
 }
 
-// CodeSigningConfig represents the code signing configuration for a Lambda function.
-type CodeSigningConfig struct {
-	CodeSigningConfigId  string               `json:"code_signing_config_id"`
-	CodeSigningConfigArn string               `json:"code_signing_config_arn"`
-	Description          string               `json:"description,omitempty"`
-	AllowedPublishers    *AllowedPublishers   `json:"allowed_publishers,omitempty"`
-	CodeSigningPolicies  *CodeSigningPolicies `json:"code_signing_policies,omitempty"`
-	LastModified         time.Time            `json:"last_modified"`
-}
-
-// AllowedPublishers represents the allowed publishers for code signing.
-type AllowedPublishers struct {
-	SigningProfileVersionArns []string `json:"signing_profile_version_arns,omitempty"`
-}
-
-// CodeSigningPolicies represents the code signing policies for a Lambda function.
-type CodeSigningPolicies struct {
-	UntrustedArtifactOnDeployment string `json:"untrusted_artifact_on_deployment,omitempty"`
-}
-
 // EventInvokeConfig represents the event invoke configuration for a Lambda function.
 type EventInvokeConfig struct {
 	FunctionName             string             `json:"function_name"`
@@ -516,13 +636,6 @@ type InvocationResult struct {
 	Payload         []byte `json:"payload,omitempty"`
 	FunctionError   string `json:"function_error,omitempty"`
 	LogResult       string `json:"log_result,omitempty"`
-}
-
-// FunctionListResult represents the result of listing Lambda functions.
-type FunctionListResult struct {
-	Functions   []*Function
-	NextMarker  string
-	IsTruncated bool
 }
 
 // RuntimeImageMapping maps Lambda runtimes to their default container images.
@@ -548,7 +661,6 @@ var RuntimeImageMapping = map[Runtime]string{
 	RuntimeJava8Al2023:    "public.ecr.aws/lambda/java:8.al2023",
 	RuntimeJava8Al2:       "public.ecr.aws/lambda/java:8.al2",
 	RuntimeDotnet10:       "public.ecr.aws/lambda/dotnet:10",
-	RuntimeDotnet9:        "public.ecr.aws/lambda/dotnet:9",
 	RuntimeDotnet8:        "public.ecr.aws/lambda/dotnet:8",
 	RuntimeDotnet6:        "public.ecr.aws/lambda/dotnet:6",
 	RuntimeRuby40:         "public.ecr.aws/lambda/ruby:4.0",
@@ -560,12 +672,28 @@ var RuntimeImageMapping = map[Runtime]string{
 	RuntimeGo1X:           "public.ecr.aws/lambda/provided:al2",
 }
 
-// GetImageForRuntime returns the default container image for a given Lambda runtime.
-func GetImageForRuntime(runtime Runtime) string {
-	if image, ok := RuntimeImageMapping[runtime]; ok {
-		return image
+// CanonicalRuntime normalises a runtime identifier to its canonical
+// lowercase form and reports whether it identifies a currently supported
+// runtime. The create, update and compatible-runtime paths persist the
+// returned form so a case-variant request can never store a string the
+// image lookup and the runtime-wrapper prefix checks would miss.
+func CanonicalRuntime(runtime string) (Runtime, bool) {
+	canonical := strings.ToLower(runtime)
+	for _, r := range CurrentRuntimes {
+		if string(r) == canonical {
+			return r, true
+		}
 	}
-	return "public.ecr.aws/lambda/provided:al2"
+	return "", false
+}
+
+// GetImageForRuntime returns the default container image for a runtime.
+// The boolean reports whether the runtime has a mapped image; callers
+// must treat a miss as an error rather than substituting a default, so
+// an unmapped runtime can never silently execute as provided:al2.
+func GetImageForRuntime(runtime Runtime) (string, bool) {
+	image, ok := RuntimeImageMapping[runtime]
+	return image, ok
 }
 
 // GenerateCodeHash generates a SHA-256 hash of the given data for code verification.

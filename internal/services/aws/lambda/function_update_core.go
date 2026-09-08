@@ -2,9 +2,10 @@ package lambda
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
+	"os"
 
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -58,6 +59,28 @@ type UpdateFunctionConfigurationInput struct {
 	SnapStart            *lambdastore.SnapStart
 	FileSystemConfigs    []lambdastore.FileSystemConfig
 	Layers               []lambdastore.LayerReference
+
+	// RevisionId is the optional optimistic-locking precondition: when
+	// set, the update fails with PreconditionFailedException unless it
+	// matches the function's current revision.
+	RevisionId string
+
+	// Has* flags distinguish an explicitly provided member (possibly with
+	// an empty or zero value) from an omitted one, mirroring
+	// AliasUpdateInput: an explicitly provided empty Description or a nil
+	// DeadLetterConfig clears the stored value, while an explicitly
+	// provided zero Timeout or MemorySize is range-rejected instead of
+	// being silently treated as unset.
+	HasDescription      bool
+	HasTimeout          bool
+	HasMemorySize       bool
+	HasDeadLetterConfig bool
+
+	// IAMValidator, when injected, checks that a new execution role's
+	// trust policy allows the Lambda service principal. Both planes inject
+	// it (the HTTP API from the request context, the admin console from
+	// the service's role provider).
+	IAMValidator *iam.IAMValidator
 }
 
 // ---------------------------------------------------------------------------
@@ -67,43 +90,35 @@ type UpdateFunctionConfigurationInput struct {
 // prepareFunctionCodeUpdateCore resolves the wire code members of an
 // UpdateFunctionCode request into persisted code metadata. UpdateFunctionCode
 // carries the code members at the top level of the request (only
-// CreateFunction nests them under Code); a ZipFile member is decoded in
-// place while an S3 bucket reference fetches the archive. Both are
-// persisted under the function's $LATEST code directory with their hash
+// CreateFunction nests them under Code); the handler flattens them into a
+// canonical code map. An ImageUri member switches to image metadata; a
+// ZipFile member is decoded in place while an S3 bucket reference fetches
+// the archive (resolveCodeContent owns the decode order). Decoded archives
+// are persisted under the function's $LATEST code directory with their hash
 // recorded.
-func (s *LambdaService) prepareFunctionCodeUpdateCore(ctx context.Context, region, functionName, zipFileStr, imageUri, s3Bucket, s3Key, s3Version string) (*functionCodeMetadata, error) {
-	if zipFileStr == "" && imageUri == "" && s3Bucket == "" {
+func (s *LambdaService) prepareFunctionCodeUpdateCore(ctx context.Context, region, functionName string, codeMap map[string]interface{}) (*functionCodeMetadata, error) {
+	meta := &functionCodeMetadata{}
+	if uri, ok := codeMap["ImageUri"].(string); ok && uri != "" {
+		// An image update carries no zip archive; the metadata stays empty.
+		return meta, nil
+	}
+
+	zipFileStr, hasZip := codeMap["ZipFile"].(string)
+	s3Bucket, hasBucket := codeMap["S3Bucket"].(string)
+	if (!hasZip || zipFileStr == "") && (!hasBucket || s3Bucket == "") {
 		return nil, NewInvalidParameter("Code", "Either ZipFile, ImageUri, or S3Bucket/S3Key must be provided")
 	}
 
-	meta := &functionCodeMetadata{}
-	if zipFileStr != "" {
-		zipFile, err := base64.StdEncoding.DecodeString(zipFileStr)
-		if err != nil {
-			return nil, NewInvalidParameter("ZipFile", "Invalid base64 encoding")
-		}
-		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
-		if err != nil {
-			return nil, err
-		}
-		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
-		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
-	} else if s3Bucket != "" {
-		if s3Key == "" {
-			return nil, NewInvalidParameter("Code.S3Key", "S3Key is required when S3Bucket is specified")
-		}
-		zipFile, err := s.fetchCodeFromS3(ctx, s3Bucket, s3Key, s3Version, region)
-		if err != nil {
-			return nil, NewInvalidParameter("Code", err.Error())
-		}
-		codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
-		if err != nil {
-			return nil, err
-		}
-		meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
-		meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
+	zipFile, err := s.resolveCodeContent(ctx, region, "Code", codeMap)
+	if err != nil {
+		return nil, err
 	}
-
+	codeLocation, codeSize, err := s.storeCode(functionName, "$LATEST", zipFile, region)
+	if err != nil {
+		return nil, err
+	}
+	meta.CodeLocation, meta.CodeSize = codeLocation, codeSize
+	meta.CodeSha256 = lambdastore.GenerateCodeHash(zipFile)
 	return meta, nil
 }
 
@@ -137,7 +152,7 @@ func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFu
 
 	function, err := stores.Functions.UpdateAtomically(functionName, func(fn *lambdastore.Function) error {
 		if in.RevisionId != "" && fn.RevisionId != in.RevisionId {
-			return NewResourceConflict("The RevisionId provided does not match the current revision of the function")
+			return NewPreconditionFailed(revisionMismatchMessage)
 		}
 		if in.CodeLocation != "" {
 			fn.CodeLocation = in.CodeLocation
@@ -170,7 +185,10 @@ func (s *LambdaService) updateFunctionCodeCore(stores *lambdaStore, in *UpdateFu
 
 	var published *lambdastore.Version
 	if in.Publish {
-		published, err = s.publishVersionWithCode(stores, function, "", in.Region)
+		// The RevisionId precondition ran inside UpdateAtomically against
+		// the pre-update revision; the update has since bumped it, so the
+		// publish step must not re-check it.
+		published, err = s.publishVersionWithCode(stores, function, "", "", in.Region)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -189,16 +207,31 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 	}
 	functionName := in.FunctionName
 
-	if in.Runtime != "" && !ValidateRuntime(in.Runtime) {
-		return nil, NewInvalidParameter("Runtime", "Runtime '"+in.Runtime+"' is not supported")
+	if in.Runtime != "" {
+		canonical, ok := lambdastore.CanonicalRuntime(in.Runtime)
+		if !ok {
+			return nil, NewInvalidParameter("Runtime", "Runtime '"+in.Runtime+"' is not supported")
+		}
+		in.Runtime = string(canonical)
 	}
 
-	if in.Timeout > 0 {
+	// A new execution role must be assumable by the Lambda service
+	// principal. TEST_MODE skips the trust-policy lookup so the regression
+	// suite can update functions without seeded IAM roles.
+	if in.Role != "" && in.IAMValidator != nil && os.Getenv("TEST_MODE") != "true" {
+		if err := in.IAMValidator.ValidateRoleForService(ctx, in.Role, iam.ServicePrincipalLambda); err != nil {
+			return nil, err
+		}
+	}
+
+	// A present member is validated as-is: negative or zero values are
+	// rejected instead of being silently ignored as "not provided".
+	if in.HasTimeout {
 		if err := validateTimeout(in.Timeout); err != nil {
 			return nil, err
 		}
 	}
-	if in.MemorySize > 0 {
+	if in.HasMemorySize {
 		if err := validateMemorySize(in.MemorySize); err != nil {
 			return nil, err
 		}
@@ -217,12 +250,21 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 			return nil, err
 		}
 	}
+	if err := validateFileSystemConfigs(in.FileSystemConfigs); err != nil {
+		return nil, err
+	}
 	if in.SnapStart != nil {
 		if err := validateSnapStartApplyOn(in.SnapStart.ApplyOn); err != nil {
 			return nil, err
 		}
 	}
 	if err := validateEnvironmentVariables(in.Environment); err != nil {
+		return nil, err
+	}
+	if err := validateLoggingConfig(in.LoggingConfig); err != nil {
+		return nil, err
+	}
+	if err := validateImageConfig(in.ImageConfig); err != nil {
 		return nil, err
 	}
 
@@ -235,6 +277,12 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 	var oldContainerID string
 
 	function, err := stores.Functions.UpdateAtomically(functionName, func(fn *lambdastore.Function) error {
+		// The RevisionId precondition runs where the update applies, so a
+		// concurrent revision bump between the handler's read and this
+		// write cannot slip through.
+		if in.RevisionId != "" && fn.RevisionId != in.RevisionId {
+			return NewPreconditionFailed(revisionMismatchMessage)
+		}
 		// SnapStart support depends on the effective runtime after this
 		// update, so the guard runs where the target state is known.
 		if in.SnapStart != nil {
@@ -255,14 +303,21 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 		if in.Handler != "" {
 			fn.Handler = in.Handler
 		}
-		if in.Description != "" {
+		// Presence-flag semantics (see the input struct): an explicitly
+		// provided empty Description or nil DeadLetterConfig clears the
+		// stored value, and an explicitly provided Timeout/MemorySize
+		// (already range-validated above) replaces the stored value.
+		if in.HasDescription {
 			fn.Description = in.Description
 		}
-		if in.Timeout > 0 {
+		if in.HasTimeout {
 			fn.Timeout = in.Timeout
 		}
-		if in.MemorySize > 0 {
+		if in.HasMemorySize {
 			fn.MemorySize = in.MemorySize
+		}
+		if in.HasDeadLetterConfig {
+			fn.DeadLetterConfig = in.DeadLetterConfig
 		}
 		if in.KMSKeyArn != "" {
 			fn.KMSKeyArn = in.KMSKeyArn
@@ -275,9 +330,6 @@ func (s *LambdaService) updateFunctionConfigurationCore(ctx context.Context, sto
 		}
 		if in.Environment != nil {
 			fn.Environment = in.Environment
-		}
-		if in.DeadLetterConfig != nil {
-			fn.DeadLetterConfig = in.DeadLetterConfig
 		}
 		if in.TracingConfig != nil {
 			fn.TracingConfig = in.TracingConfig

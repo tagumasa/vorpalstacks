@@ -8,48 +8,6 @@ import (
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-// FunctionCode contains the location of the function's deployment package.
-type FunctionCode struct {
-	ZipFile         []byte `json:"ZipFile,omitempty"`
-	S3Bucket        string `json:"S3Bucket,omitempty"`
-	S3Key           string `json:"S3Key,omitempty"`
-	S3ObjectVersion string `json:"S3ObjectVersion,omitempty"`
-	ImageUri        string `json:"ImageUri,omitempty"`
-	SourceCodeHash  string `json:"SourceCodeHash,omitempty"`
-}
-
-// VpcConfig configures the VPC settings for a Lambda function.
-type VpcConfig struct {
-	SubnetIds               []string `json:"SubnetIds,omitempty"`
-	SecurityGroupIds        []string `json:"SecurityGroupIds,omitempty"`
-	Ipv6AllowedForDualStack bool     `json:"Ipv6AllowedForDualStack,omitempty"`
-}
-
-// Environment defines the environment variables for a Lambda function.
-type Environment struct {
-	Variables map[string]string `json:"Variables,omitempty"`
-}
-
-// DeadLetterConfig defines the dead letter queue configuration for a Lambda function.
-type DeadLetterConfig struct {
-	TargetArn string `json:"TargetArn,omitempty"`
-}
-
-// TracingConfig defines the AWS X-Ray tracing configuration for a Lambda function.
-type TracingConfig struct {
-	Mode string `json:"Mode,omitempty"`
-}
-
-// EphemeralStorage defines the ephemeral storage configuration for a Lambda function.
-type EphemeralStorage struct {
-	Size int32 `json:"Size"`
-}
-
-// SnapStart defines the SnapStart configuration for a Lambda function.
-type SnapStart struct {
-	ApplyOn string `json:"ApplyOn,omitempty"`
-}
-
 // configFields holds the common fields shared between Function and Version
 // configurations, used to eliminate copy-paste in response building.
 type configFields struct {
@@ -319,6 +277,13 @@ func buildConfigMap(f configFields) map[string]interface{} {
 			}
 			if fsc.LocalMountPath != "" {
 				entry["LocalMountPath"] = fsc.LocalMountPath
+			}
+			if fsc.S3FilesConfig != nil {
+				s3 := map[string]interface{}{}
+				if fsc.S3FilesConfig.DirectS3Read != "" {
+					s3["DirectS3Read"] = fsc.S3FilesConfig.DirectS3Read
+				}
+				entry["S3FilesConfig"] = s3
 			}
 			fscs = append(fscs, entry)
 		}

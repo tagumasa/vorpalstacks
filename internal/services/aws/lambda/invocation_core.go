@@ -17,8 +17,15 @@ import (
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
 
-func (s *LambdaService) getRuntimeImage(runtime lambdastore.Runtime) string {
-	return lambdastore.GetImageForRuntime(runtime)
+// getRuntimeImage resolves the default container image for a runtime. An
+// unmapped runtime is an error, never a silent provided:al2 substitution —
+// executing the wrong runtime must fail loudly.
+func (s *LambdaService) getRuntimeImage(runtime lambdastore.Runtime) (string, error) {
+	image, ok := lambdastore.GetImageForRuntime(runtime)
+	if !ok {
+		return "", fmt.Errorf("no runtime image mapped for %q", runtime)
+	}
+	return image, nil
 }
 
 // invokeRequest is the single input of invokeFunction: every caller — the
@@ -88,7 +95,10 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 
 	execCfg := executionConfigFor(function, ver)
 
-	image := s.getRuntimeImage(execCfg.Runtime)
+	image, err := s.getRuntimeImage(execCfg.Runtime)
+	if err != nil {
+		return "", err
+	}
 	if execCfg.ImageUri != "" {
 		image = execCfg.ImageUri
 	}
@@ -137,47 +147,62 @@ func (s *LambdaService) ensureFunctionContainer(function *lambdastore.Function, 
 	}
 
 	if version == "$LATEST" {
-		originalContainerID := function.ContainerID
-		function.ContainerID = result.ID
-		function.ContainerImageID = result.ID
-		if err := store.Update(function); err != nil {
-			function.ContainerID = originalContainerID
-			function.ContainerImageID = originalContainerID
-			if rmErr := s.dockerClient.RemoveContainer(ctx, result.ID, true); rmErr != nil {
-				logs.Warn("Failed to remove container during rollback", logs.String("containerID", result.ID), logs.Err(rmErr))
-			}
-			return "", fmt.Errorf("failed to update function: %w", err)
-		}
-		// Clean up the previous container to prevent resource leaks when the
-		// function is updated or the old container has crashed.
-		if originalContainerID != "" && originalContainerID != result.ID {
-			if rmErr := s.dockerClient.RemoveContainer(ctx, originalContainerID, true); rmErr != nil {
-				logs.Warn("Failed to remove previous container", logs.String("containerID", originalContainerID), logs.Err(rmErr))
-			}
+		if err := s.persistContainerAssignment(ctx, store, function.FunctionName, "", result.ID); err != nil {
+			return "", err
 		}
 	} else if ver != nil {
-		originalVerContainerID := ver.ContainerID
-		ver.ContainerID = result.ID
-		ver.ContainerImageID = result.ID
-		if err := store.Update(function); err != nil {
-			ver.ContainerID = originalVerContainerID
-			ver.ContainerImageID = originalVerContainerID
-			if rmErr := s.dockerClient.RemoveContainer(ctx, result.ID, true); rmErr != nil {
-				logs.Warn("Failed to remove container during rollback", logs.String("containerID", result.ID), logs.Err(rmErr))
-			}
-			return "", fmt.Errorf("failed to update function version: %w", err)
-		}
-		// Clean up the previous version container to prevent resource leaks.
-		if originalVerContainerID != "" && originalVerContainerID != result.ID {
-			if rmErr := s.dockerClient.RemoveContainer(ctx, originalVerContainerID, true); rmErr != nil {
-				logs.Warn("Failed to remove previous version container", logs.String("containerID", originalVerContainerID), logs.Err(rmErr))
-			}
+		if err := s.persistContainerAssignment(ctx, store, function.FunctionName, ver.Version, result.ID); err != nil {
+			return "", err
 		}
 	}
 
 	s.containerIDs.Store(containerName, result.ID)
 
 	return result.ID, nil
+}
+
+// persistContainerAssignment records the freshly started container on the
+// target record — the $LATEST function record (version "") or a published
+// version record — through a narrow in-lock store mutation, so a
+// concurrent function update or publish between this container's start
+// and the record write can never be lost. A failed store write removes
+// the fresh container; a successful one retires the record's previous
+// container to prevent resource leaks when the function was updated or
+// the old container has crashed.
+func (s *LambdaService) persistContainerAssignment(
+	ctx context.Context,
+	store *lambdastore.FunctionStore,
+	functionName, version, newContainerID string,
+) error {
+	previousID := ""
+	if fn, err := store.Get(functionName); err == nil {
+		if version == "" {
+			previousID = fn.ContainerID
+		} else if v := findVersion(fn, version); v != nil {
+			previousID = v.ContainerID
+		}
+	}
+
+	var err error
+	failureLabel := "failed to update function"
+	if version == "" {
+		err = store.SetContainerInfo(functionName, newContainerID, newContainerID)
+	} else {
+		failureLabel = "failed to update function version"
+		err = store.SetVersionContainerInfo(functionName, version, newContainerID)
+	}
+	if err != nil {
+		if rmErr := s.dockerClient.RemoveContainer(ctx, newContainerID, true); rmErr != nil {
+			logs.Warn("Failed to remove container after store failure", logs.String("containerID", newContainerID), logs.Err(rmErr))
+		}
+		return fmt.Errorf("%s: %w", failureLabel, err)
+	}
+	if previousID != "" && previousID != newContainerID {
+		if rmErr := s.dockerClient.RemoveContainer(ctx, previousID, true); rmErr != nil {
+			logs.Warn("Failed to remove previous container", logs.String("containerID", previousID), logs.Err(rmErr))
+		}
+	}
+	return nil
 }
 
 // invokeAsyncWithRetry executes an asynchronous Lambda invocation with

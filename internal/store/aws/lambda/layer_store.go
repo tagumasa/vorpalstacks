@@ -2,7 +2,6 @@
 package lambda
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -17,8 +16,6 @@ import (
 type LayerStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
-	accountId  string
-	region     string
 	mu         sync.Mutex
 }
 
@@ -28,8 +25,6 @@ func NewLayerStore(store storage.BasicStorage, accountId, region string) *LayerS
 	return &LayerStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-layers"),
 		arnBuilder: NewARNBuilder(accountId, region),
-		accountId:  accountId,
-		region:     region,
 	}
 }
 
@@ -39,7 +34,7 @@ func (s *LayerStore) Create(layer *Layer) (*Layer, error) {
 	defer s.mu.Unlock()
 
 	if s.Exists(layer.LayerName) {
-		return nil, ErrResourceConflict
+		return nil, ErrLayerAlreadyExists
 	}
 
 	layer.LayerArn = s.arnBuilder.LayerArn(layer.LayerName)
@@ -56,6 +51,9 @@ func (s *LayerStore) Create(layer *Layer) (*Layer, error) {
 func (s *LayerStore) Get(layerName string) (*Layer, error) {
 	var layer Layer
 	if err := s.BaseStore.Get(layerName, &layer); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, ErrLayerNotFound
 	}
 	return &layer, nil
@@ -93,10 +91,29 @@ func (s *LayerStore) ListWithRuntimeFilter(runtime Runtime, opts common.ListOpti
 	})
 }
 
-// PublishVersion creates a new version of a Lambda layer.
-func (s *LayerStore) PublishVersion(layer *Layer, version *LayerVersion) (*LayerVersion, error) {
+// PublishVersionAtomically publishes a new version of a Lambda layer,
+// re-reading the layer record under the store lock so the version
+// numbering and the append observe every concurrent publish — a
+// caller-loaded snapshot can never overwrite a concurrent mutation. The
+// builder receives the live layer record and returns the version to
+// append; the store assigns the version number, ARN, created date and
+// revision ID.
+func (s *LayerStore) PublishVersionAtomically(layerName string, build func(*Layer) (*LayerVersion, error)) (*LayerVersion, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	var layer Layer
+	if err := s.BaseStore.Get(layerName, &layer); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
+		return nil, ErrLayerNotFound
+	}
+
+	version, err := build(&layer)
+	if err != nil {
+		return nil, err
+	}
 
 	versionNum := int64(0)
 	for _, v := range layer.Versions {
@@ -112,18 +129,49 @@ func (s *LayerStore) PublishVersion(layer *Layer, version *LayerVersion) (*Layer
 	versionCopy.CreatedDate = time.Now().UTC()
 	versionCopy.RevisionId = uuid.New().String()
 
-	if versionCopy.CodeSize > 0 && versionCopy.CodeSha256 == "" {
-		versionCopy.CodeSha256 = GenerateCodeHash([]byte(fmt.Sprintf("%s-%d-%d", layer.LayerName, versionCopy.Version, versionCopy.CodeSize)))
-	}
-
 	layer.Versions = append(layer.Versions, versionCopy)
 	layer.LatestMatchingVersion = versionCopy
 
-	if err := s.updateInternal(layer); err != nil {
+	if err := s.updateInternal(&layer); err != nil {
 		return nil, err
 	}
 
 	return versionCopy, nil
+}
+
+// UpdateVersionAtomically applies modifier to one version of the layer
+// under the store lock, so a write-back (for example the persisted code
+// location) can never drop a concurrently published version. The updated
+// version record is returned detached from the stored layer.
+func (s *LayerStore) UpdateVersionAtomically(layerName string, versionNumber int64, modifier func(*LayerVersion) error) (*LayerVersion, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	var layer Layer
+	if err := s.BaseStore.Get(layerName, &layer); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
+		return nil, ErrLayerNotFound
+	}
+
+	for i := range layer.Versions {
+		if layer.Versions[i].Version != versionNumber {
+			continue
+		}
+		if err := modifier(layer.Versions[i]); err != nil {
+			return nil, err
+		}
+		if layer.LatestMatchingVersion != nil && layer.LatestMatchingVersion.Version == versionNumber {
+			layer.LatestMatchingVersion = deepCopyLayerVersion(layer.Versions[i])
+		}
+		if err := s.updateInternal(&layer); err != nil {
+			return nil, err
+		}
+		return deepCopyLayerVersion(layer.Versions[i]), nil
+	}
+
+	return nil, ErrLayerVersionNotFound
 }
 
 // GetVersion retrieves a specific version of a Lambda layer.
@@ -179,6 +227,9 @@ func (s *LayerStore) DeleteVersion(layerName string, versionNumber int64) error 
 
 	var layer Layer
 	if err := s.BaseStore.Get(layerName, &layer); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrLayerNotFound
 	}
 
@@ -223,7 +274,7 @@ func (s *LayerStore) ListVersions(layerName string, opts common.ListOptions) (*c
 
 	maxItems := opts.MaxItems
 	if maxItems <= 0 {
-		maxItems = 50
+		maxItems = DefaultLayerVersionListMaxItems
 	}
 
 	endIdx := startIdx + maxItems
@@ -252,12 +303,22 @@ func (s *LayerStore) ListVersions(layerName string, opts common.ListOptions) (*c
 }
 
 // AddPolicy adds a permission policy to a specific version of a Lambda
-// layer. The statement id must not already exist on that version.
-func (s *LayerStore) AddPolicy(layer *Layer, versionNumber int64, policy *LayerPolicy) error {
+// layer. The statement id must not already exist on that version. The
+// layer record is re-read under the store lock so a concurrent publish
+// can never be lost to this mutation.
+func (s *LayerStore) AddPolicy(layerName string, versionNumber int64, policy *LayerPolicy) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	target := layerVersionByNumber(layer, versionNumber)
+	var layer Layer
+	if err := s.BaseStore.Get(layerName, &layer); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
+		return ErrLayerNotFound
+	}
+
+	target := layerVersionByNumber(&layer, versionNumber)
 	if target == nil {
 		return ErrLayerVersionNotFound
 	}
@@ -271,7 +332,7 @@ func (s *LayerStore) AddPolicy(layer *Layer, versionNumber int64, policy *LayerP
 		}
 	}
 	target.Policies = append(target.Policies, *policy)
-	return s.updateInternal(layer)
+	return s.updateInternal(&layer)
 }
 
 // RemovePolicy removes a permission policy from a specific version of a
@@ -282,6 +343,9 @@ func (s *LayerStore) RemovePolicy(layerName string, versionNumber int64, stateme
 
 	var layer Layer
 	if err := s.BaseStore.Get(layerName, &layer); err != nil {
+		if !common.IsNotFound(err) {
+			return err
+		}
 		return ErrLayerNotFound
 	}
 
@@ -324,27 +388,6 @@ func (s *LayerStore) updateInternal(layer *Layer) error {
 		return ErrLayerNotFound
 	}
 	return s.Put(layer.LayerName, layer)
-}
-
-// ListByCompatibleRuntime returns Lambda layers compatible with a specific runtime.
-func (s *LayerStore) ListByCompatibleRuntime(runtime Runtime) ([]*Layer, error) {
-	var layers []*Layer
-	err := s.ForEach(func(key string, value []byte) error {
-		var layer Layer
-		if err := json.Unmarshal(value, &layer); err != nil {
-			return err
-		}
-		if layer.LatestMatchingVersion != nil {
-			for _, r := range layer.LatestMatchingVersion.CompatibleRuntimes {
-				if r == runtime {
-					layers = append(layers, &layer)
-					break
-				}
-			}
-		}
-		return nil
-	})
-	return layers, err
 }
 
 func deepCopyLayerVersion(src *LayerVersion) *LayerVersion {

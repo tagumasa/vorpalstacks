@@ -320,6 +320,9 @@ func (a *App) initLambda(st *serviceState) error {
 	st.lambdaService = svclambda.NewLambdaService(st.dockerClient, st.accountID, st.region, a.cfg.DataPath)
 	st.lambdaService.SetStorageManager(a.server.StorageManager())
 	st.lambdaService.SetHostEndpoint(fmt.Sprintf("http://host.docker.internal:%d", a.cfg.Port))
+	if iamStore := a.server.IAMStore(); iamStore != nil {
+		st.lambdaService.SetRoleProvider(iamStore.Roles())
+	}
 	st.lambdaService.RegisterHandlers(a.server.Dispatcher())
 
 	a.addShutdown("lambda", func(ctx context.Context) error {

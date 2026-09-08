@@ -59,15 +59,15 @@ func (b *LambdaBuilder) ParseLayerName(arn string) string {
 }
 
 // ParseLayerVersion extracts the version number from a Lambda layer ARN.
+// The layer name and version are separate ARN segments
+// (arn:...:layer:NAME:VERSION), so the version is the segment after the
+// name; an unversioned ARN yields 0.
 func (b *LambdaBuilder) ParseLayerVersion(arn string) int64 {
 	parts := strings.Split(arn, ":")
 	for i, p := range parts {
-		if p == "layer" && i+1 < len(parts) {
-			subParts := strings.Split(parts[i+1], ":")
-			if len(subParts) > 1 {
-				if v, err := strconv.ParseInt(subParts[1], 10, 64); err == nil {
-					return v
-				}
+		if p == "layer" && i+2 < len(parts) {
+			if v, err := strconv.ParseInt(parts[i+2], 10, 64); err == nil {
+				return v
 			}
 		}
 	}

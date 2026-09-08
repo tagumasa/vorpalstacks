@@ -28,6 +28,7 @@ var lambdaRestPrefixes = []string{
 	"/2023-07-01/",
 	"/2024-01-01/",
 	"/2025-01-01/",
+	"/2026-07-09/",
 }
 
 // isLambdaRestPath reports whether the path matches a known Lambda REST API prefix.

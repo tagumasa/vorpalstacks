@@ -14,10 +14,10 @@ import (
 // operations.
 func resolveEventInvokeTarget(params map[string]interface{}) (string, string, error) {
 	functionNameRaw := request.GetStringParam(params, "FunctionName")
-	functionName, embeddedQualifier := resolveFunctionRef(functionNameRaw)
-	if err := validateFunctionName(functionName); err != nil {
+	if err := validateNamespacedFunctionName(functionNameRaw); err != nil {
 		return "", "", err
 	}
+	functionName, embeddedQualifier := resolveNamespacedFunctionRef(functionNameRaw)
 	qualifier := mergeQualifier(request.GetStringParam(params, "Qualifier"), embeddedQualifier)
 	if qualifier == "" {
 		qualifier = "$LATEST"
@@ -102,10 +102,10 @@ func (s *LambdaService) DeleteFunctionEventInvokeConfig(ctx context.Context, req
 // ListFunctionEventInvokeConfigs lists all configurations for asynchronous invocation of the specified Lambda function.
 func (s *LambdaService) ListFunctionEventInvokeConfigs(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	functionNameRaw := request.GetStringParam(req.Parameters, "FunctionName")
-	functionName := extractFunctionName(functionNameRaw)
-	if err := validateFunctionName(functionName); err != nil {
+	if err := validateNamespacedFunctionName(functionNameRaw); err != nil {
 		return nil, err
 	}
+	functionName, _ := resolveNamespacedFunctionRef(functionNameRaw)
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -157,12 +157,11 @@ func (s *LambdaService) toEventInvokeConfig(c *lambdastore.EventInvokeConfig) ma
 		"LastModified": float64(c.LastModified.Unix()),
 	}
 
-	if c.MaximumEventAgeInSeconds > 0 {
-		result["MaximumEventAgeInSeconds"] = c.MaximumEventAgeInSeconds
-	}
-	if c.MaximumRetryAttempts >= 0 {
-		result["MaximumRetryAttempts"] = c.MaximumRetryAttempts
-	}
+	// The write paths always populate both members — an explicit request
+	// value or the documented default — so both render unconditionally;
+	// the previous > 0 / >= 0 guards were always true.
+	result["MaximumEventAgeInSeconds"] = c.MaximumEventAgeInSeconds
+	result["MaximumRetryAttempts"] = c.MaximumRetryAttempts
 	if c.DestinationConfig != nil {
 		result["DestinationConfig"] = toDestinationConfig(c.DestinationConfig)
 	}

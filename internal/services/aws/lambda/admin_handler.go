@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"vorpalstacks/internal/common/defaults"
+	"vorpalstacks/internal/common/iam"
 
 	svcerrors "vorpalstacks/internal/common/errors"
 
@@ -72,6 +73,13 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
+	// The execution-role trust validation runs inside the Core; the admin
+	// plane builds the same validator the HTTP request context provides.
+	var iamValidator *iam.IAMValidator
+	if rp := h.service.RoleProvider(); rp != nil {
+		iamValidator = iam.NewIAMValidator(rp, h.service.AccountID())
+	}
+
 	in := &CreateFunctionInput{
 		FunctionName: req.Msg.Functionname,
 		Runtime:      protoToStoreRuntime(req.Msg.Runtime),
@@ -82,6 +90,8 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		MemorySize:   req.Msg.GetMemorysize(),
 		Timeout:      req.Msg.GetTimeout(),
 		Region:       defaults.GetRegionFromHeader(req.Header()),
+
+		IAMValidator: iamValidator,
 	}
 
 	if len(req.Msg.Tags) > 0 {
@@ -91,7 +101,7 @@ func (h *AdminHandler) CreateFunction(ctx context.Context, req *connect.Request[
 		}
 	}
 
-	created, _, err := h.service.createFunctionCore(stores, in)
+	created, _, err := h.service.createFunctionCore(ctx, stores, in)
 	if err != nil {
 		if lambdaErr, ok := err.(*LambdaError); ok {
 			return nil, svcerrors.AWSErrorToGRPC(lambdaErr.AWSError)
@@ -113,6 +123,7 @@ func (h *AdminHandler) DeleteFunction(ctx context.Context, req *connect.Request[
 
 	if err := h.service.deleteFunctionCore(ctx, stores, &DeleteFunctionInput{
 		FunctionName: req.Msg.Functionname,
+		Region:       defaults.GetRegionFromHeader(req.Header()),
 	}); err != nil {
 		if lambdaErr, ok := err.(*LambdaError); ok {
 			return nil, svcerrors.AWSErrorToGRPC(lambdaErr.AWSError)

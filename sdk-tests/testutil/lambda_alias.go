@@ -147,6 +147,19 @@ func runLambdaAliasTests(tc *lambdaTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.r.RunTest("lambda", "UpdateAlias_RevisionIdPrecondition", func() error {
+		_, err := tc.client.UpdateAlias(tc.ctx, &lambda.UpdateAliasInput{
+			FunctionName: aws.String(funcName),
+			Name:         aws.String("live"),
+			Description:  aws.String("stale revision"),
+			RevisionId:   aws.String("00000000-0000-0000-0000-000000000000"),
+		})
+		if err := expectAWSErrorCode(err, "PreconditionFailedException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	results = append(results, tc.r.RunTest("lambda", "DeleteAlias", func() error {
 		_, err := tc.client.DeleteAlias(tc.ctx, &lambda.DeleteAliasInput{
 			FunctionName: aws.String(funcName),

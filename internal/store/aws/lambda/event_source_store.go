@@ -9,6 +9,7 @@ import (
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/store/aws/common"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 
 	"github.com/google/uuid"
 )
@@ -17,15 +18,11 @@ import (
 type EventSourceStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
-	accountId  string
-	region     string
 	mu         sync.Mutex
 
-	indexByKey          map[string]string
-	indexByFunction     map[string][]string
-	indexPathByKey      map[string]string
-	indexPathByFunction map[string]string
-	indexOnce           sync.Once
+	indexByFunction map[string][]string
+	indexPathByKey  map[string]string
+	indexOnce       sync.Once
 }
 
 // NewEventSourceStore creates a new EventSourceStore.
@@ -34,17 +31,13 @@ func NewEventSourceStore(store storage.BasicStorage, accountId, region string) *
 	return &EventSourceStore{
 		BaseStore:  common.NewBaseStore(bucket, "lambda-event-sources"),
 		arnBuilder: NewARNBuilder(accountId, region),
-		accountId:  accountId,
-		region:     region,
 	}
 }
 
 func (s *EventSourceStore) ensureIndex() {
 	s.indexOnce.Do(func() {
-		s.indexByKey = make(map[string]string)
 		s.indexByFunction = make(map[string][]string)
 		s.indexPathByKey = make(map[string]string)
-		s.indexPathByFunction = make(map[string]string)
 
 		if err := s.ForEach(func(key string, value []byte) error {
 			var mapping EventSourceMapping
@@ -61,17 +54,14 @@ func (s *EventSourceStore) ensureIndex() {
 
 func (s *EventSourceStore) indexMapping(key string, mapping *EventSourceMapping) {
 	indexPath := mapping.EventSourceArn + "|" + mapping.FunctionArn
-	s.indexByKey[key] = indexPath
 	s.indexPathByKey[indexPath] = key
 
 	funcList := s.indexByFunction[mapping.FunctionArn]
 	s.indexByFunction[mapping.FunctionArn] = append(funcList, key)
-	s.indexPathByFunction[mapping.FunctionArn+"|"+key] = key
 }
 
 func (s *EventSourceStore) unindexMapping(key string, mapping *EventSourceMapping) {
 	indexPath := mapping.EventSourceArn + "|" + mapping.FunctionArn
-	delete(s.indexByKey, key)
 	delete(s.indexPathByKey, indexPath)
 
 	funcList := s.indexByFunction[mapping.FunctionArn]
@@ -81,7 +71,6 @@ func (s *EventSourceStore) unindexMapping(key string, mapping *EventSourceMappin
 			break
 		}
 	}
-	delete(s.indexPathByFunction, mapping.FunctionArn+"|"+key)
 }
 
 // Create creates a new event source mapping.
@@ -98,6 +87,14 @@ func (s *EventSourceStore) Create(mapping *EventSourceMapping) (*EventSourceMapp
 
 	if mapping.UUID == "" {
 		mapping.UUID = uuid.New().String()
+	}
+
+	// The mapping ARN is persistent state: the region and account come from
+	// the mapped function's ARN, and the ARN is stored so responses read a
+	// field instead of rebuilding it.
+	if mapping.EventSourceMappingArn == "" {
+		_, _, region, accountID, _ := arnutil.SplitARN(mapping.FunctionArn)
+		mapping.EventSourceMappingArn = NewARNBuilder(accountID, region).EventSourceMappingArn(mapping.UUID)
 	}
 
 	mapping.LastModified = time.Now().UTC()
@@ -135,16 +132,36 @@ func (s *EventSourceStore) FindByEventSourceAndFunction(eventSourceArn, function
 func (s *EventSourceStore) Get(uuid string) (*EventSourceMapping, error) {
 	var mapping EventSourceMapping
 	if err := s.BaseStore.Get(uuid, &mapping); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, ErrEventSourceNotFound
 	}
 	return &mapping, nil
 }
 
-// Update updates an event source mapping.
-func (s *EventSourceStore) Update(mapping *EventSourceMapping) error {
+// UpdateAtomically performs an atomic read-modify-write on a mapping: the
+// modifier runs while holding the lock, so a poll-cycle write (SetState,
+// SetProcessingResult) can never be overwritten by a stale snapshot the
+// caller loaded before building its update.
+func (s *EventSourceStore) UpdateAtomically(id string, modifier func(*EventSourceMapping) error) (*EventSourceMapping, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.updateInternal(mapping)
+
+	if !s.Exists(id) {
+		return nil, ErrEventSourceNotFound
+	}
+	mapping, err := s.Get(id)
+	if err != nil {
+		return nil, err
+	}
+	if err := modifier(mapping); err != nil {
+		return nil, err
+	}
+	if err := s.updateInternal(mapping); err != nil {
+		return nil, err
+	}
+	return mapping, nil
 }
 
 func (s *EventSourceStore) updateInternal(mapping *EventSourceMapping) error {

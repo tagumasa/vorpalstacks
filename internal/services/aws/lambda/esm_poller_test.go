@@ -769,3 +769,31 @@ func TestProcessStreamWindow_MissingStateDiscardsChunk(t *testing.T) {
 		t.Fatalf("read position must advance past the discarded chunk, got %q", win.readSeq)
 	}
 }
+
+// TestClampESMBatchSize pins the defensive default-and-cap every poller
+// path applies to the stored BatchSize. The SQS fallback is 10 — the
+// documented default for queue sources — not the stream default 100 the
+// pollers inlined before the single-source fix; the cap is the
+// CreateEventSourceMapping model range maximum.
+func TestClampESMBatchSize(t *testing.T) {
+	const (
+		sqsARN     = "arn:aws:sqs:us-east-1:000000000000:jobs"
+		kinesisARN = "arn:aws:kinesis:us-east-1:000000000000:stream/taps"
+		ddbARN     = "arn:aws:dynamodb:us-east-1:000000000000:table/events/stream/2026-01-01T00:00:00.000"
+	)
+	if got := clampESMBatchSize(0, sqsARN); got != 10 {
+		t.Fatalf("SQS fallback = %d, want the documented queue default 10", got)
+	}
+	if got := clampESMBatchSize(0, kinesisARN); got != 100 {
+		t.Fatalf("Kinesis fallback = %d, want the stream default 100", got)
+	}
+	if got := clampESMBatchSize(0, ddbARN); got != 100 {
+		t.Fatalf("DynamoDB fallback = %d, want the stream default 100", got)
+	}
+	if got := clampESMBatchSize(7, sqsARN); got != 7 {
+		t.Fatalf("positive stored batch size must pass through, got %d", got)
+	}
+	if got := clampESMBatchSize(20000, kinesisARN); got != 10000 {
+		t.Fatalf("oversized batch size must cap at the modelled maximum, got %d", got)
+	}
+}

@@ -371,6 +371,72 @@ func (e *ResourceExtractor) registerLambdaExtractors() {
 		e.Register("lambda", op, lambdaExtractor)
 	}
 
+	// The resource-policy operations address the resource by its complete
+	// ARN, which is the authorisation resource itself.
+	resourcePolicyExtractor := func(params map[string]interface{}, accountID, region string) string {
+		resourceArn, _ := params["ResourceArn"].(string)
+		if resourceArn == "" {
+			return "*"
+		}
+		return resourceArn
+	}
+	for _, op := range []string{"PutResourcePolicy", "GetResourcePolicy", "DeleteResourcePolicy"} {
+		e.Register("lambda", op, resourcePolicyExtractor)
+	}
+
+	// The function-scoped sub-resource operations all address the function
+	// by its FunctionName reference in any accepted form.
+	for _, op := range []string{
+		"InvokeWithResponseStream",
+		"PutFunctionConcurrency", "GetFunctionConcurrency", "DeleteFunctionConcurrency",
+		"PutProvisionedConcurrencyConfig", "GetProvisionedConcurrencyConfig", "DeleteProvisionedConcurrencyConfig", "ListProvisionedConcurrencyConfigs",
+		"PutFunctionEventInvokeConfig", "GetFunctionEventInvokeConfig", "UpdateFunctionEventInvokeConfig", "DeleteFunctionEventInvokeConfig", "ListFunctionEventInvokeConfigs",
+		"CreateFunctionUrlConfig", "DeleteFunctionUrlConfig", "GetFunctionUrlConfig", "UpdateFunctionUrlConfig", "ListFunctionUrlConfigs",
+	} {
+		e.Register("lambda", op, lambdaExtractor)
+	}
+
+	// Layer operations address the layer by name or by complete ARN.
+	layerExtractor := func(params map[string]interface{}, accountID, region string) string {
+		if arn, _ := params["Arn"].(string); arn != "" {
+			return arn
+		}
+		name, _ := params["LayerName"].(string)
+		if name == "" {
+			return "*"
+		}
+		return arnutil.NewARNBuilder(accountID, region).Build("lambda", "layer:"+name)
+	}
+	for _, op := range []string{
+		"PublishLayerVersion", "DeleteLayerVersion", "GetLayerVersion", "GetLayerVersionByArn",
+		"ListLayers", "ListLayerVersions",
+		"AddLayerVersionPermission", "RemoveLayerVersionPermission", "GetLayerVersionPolicy",
+	} {
+		e.Register("lambda", op, layerExtractor)
+	}
+
+	// The tags operations address the resource by its complete ARN.
+	for _, op := range []string{"TagResource", "UntagResource", "ListTags"} {
+		e.Register("lambda", op, func(params map[string]interface{}, accountID, region string) string {
+			arn, _ := params["Resource"].(string)
+			if arn == "" {
+				return "*"
+			}
+			return arn
+		})
+	}
+
+	// The per-mapping event source operations address the mapping by UUID.
+	for _, op := range []string{"GetEventSourceMapping", "UpdateEventSourceMapping", "DeleteEventSourceMapping"} {
+		e.Register("lambda", op, func(params map[string]interface{}, accountID, region string) string {
+			id, _ := params["UUID"].(string)
+			if id == "" {
+				return "*"
+			}
+			return arnutil.NewARNBuilder(accountID, region).Build("lambda", "event-source-mapping:"+id)
+		})
+	}
+
 	e.Register("lambda", "CreateFunction", func(params map[string]interface{}, accountID, region string) string {
 		functionName, _ := params["FunctionName"].(string)
 		if functionName == "" {

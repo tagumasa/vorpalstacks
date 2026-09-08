@@ -25,7 +25,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.34.1
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.45.1
 	github.com/aws/aws-sdk-go-v2/service/kms v1.54.1
-	github.com/aws/aws-sdk-go-v2/service/lambda v1.99.0
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.107.0
 	github.com/aws/aws-sdk-go-v2/service/neptune v1.47.1
 	github.com/aws/aws-sdk-go-v2/service/neptunedata v1.19.1
 	github.com/aws/aws-sdk-go-v2/service/neptunegraph v1.23.1
@@ -50,7 +50,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.18 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.2 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.2 // indirect

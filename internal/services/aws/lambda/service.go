@@ -11,7 +11,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -19,6 +18,7 @@ import (
 
 	"vorpalstacks/internal/client/mobyclient"
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
@@ -27,7 +27,6 @@ import (
 	storecommon "vorpalstacks/internal/store/aws/common"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
-	"vorpalstacks/internal/utils/naming"
 )
 
 // lambdaStore holds the stores for Lambda resources.
@@ -49,6 +48,7 @@ type LambdaService struct {
 	region         string
 	hostEndpoint   string
 	dataDir        string
+	roleProvider   iam.RolePolicyProvider
 	dataDirOnce    sync.Once
 	asyncWg        sync.WaitGroup
 	esmPoller      *esmPoller
@@ -69,17 +69,42 @@ type LambdaService struct {
 }
 
 func (s *LambdaService) store(reqCtx *request.RequestContext) (*lambdaStore, error) {
-	return storecommon.GetOrCreateStoreE(&s.storeCache, reqCtx.GetRegion(), func() (*lambdaStore, error) {
-		storage, err := reqCtx.GetStorage()
+	return s.getOrCreateLambdaStoreE(reqCtx.GetRegion())
+}
+
+// getOrCreateLambdaStoreE constructs (or reuses) the per-region lambdaStore
+// bundle. It is the single construction path into the service's store
+// cache: the request-plane accessor (store), the admin-plane accessor
+// (getOrCreateLambdaStore) and the ESM poller all resolve through it, so
+// exactly one storage handle per region backs every consumer.
+func (s *LambdaService) getOrCreateLambdaStoreE(region string) (*lambdaStore, error) {
+	return storecommon.GetOrCreateStoreE(&s.storeCache, region, func() (*lambdaStore, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("storage manager is not set")
+		}
+		st, err := s.storageManager.GetStorage(region)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get storage: %w", err)
 		}
 		return &lambdaStore{
-			Functions:    lambdastore.NewFunctionStore(storage, s.accountID, reqCtx.GetRegion()),
-			Layers:       lambdastore.NewLayerStore(storage, s.accountID, reqCtx.GetRegion()),
-			EventSources: lambdastore.NewEventSourceStore(storage, s.accountID, reqCtx.GetRegion()),
+			Functions:    lambdastore.NewFunctionStore(st, s.accountID, region),
+			Layers:       lambdastore.NewLayerStore(st, s.accountID, region),
+			EventSources: lambdastore.NewEventSourceStore(st, s.accountID, region),
 		}, nil
 	})
+}
+
+// getOrCreateLambdaStore returns the full lambdaStore for the given region,
+// creating it if necessary. Used by the admin handler and core functions.
+// It reports construction failures by logging and returning nil; callers
+// on those paths run inside panic-recovered handlers.
+func (s *LambdaService) getOrCreateLambdaStore(region string) *lambdaStore {
+	stores, err := s.getOrCreateLambdaStoreE(region)
+	if err != nil {
+		logs.Error("failed to build lambda store", logs.String("region", region), logs.Err(err))
+		return nil
+	}
+	return stores
 }
 
 // NewLambdaService creates a new Lambda service instance.
@@ -162,6 +187,23 @@ func (s *LambdaService) SetLogsInvoker(invoker invokers.LogsInvoker) {
 // SetStorageManager sets the region storage manager for resolving regional storage.
 func (s *LambdaService) SetStorageManager(sm *storage.RegionStorageManager) {
 	s.storageManager = sm
+}
+
+// SetRoleProvider injects the IAM role policy provider so that the admin
+// console handler can validate execution-role trust policies on the same
+// path as the HTTP API.
+func (s *LambdaService) SetRoleProvider(rp iam.RolePolicyProvider) {
+	s.roleProvider = rp
+}
+
+// RoleProvider returns the injected IAM role policy provider, or nil.
+func (s *LambdaService) RoleProvider() iam.RolePolicyProvider {
+	return s.roleProvider
+}
+
+// AccountID returns the account ID the service was constructed with.
+func (s *LambdaService) AccountID() string {
+	return s.accountID
 }
 
 // SetHostEndpoint sets the endpoint URL injected into Lambda containers
@@ -253,6 +295,9 @@ func (s *LambdaService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("lambda", "AddPermission", s.AddPermission)
 	d.RegisterHandlerForService("lambda", "RemovePermission", s.RemovePermission)
 	d.RegisterHandlerForService("lambda", "GetPolicy", s.GetPolicy)
+	d.RegisterHandlerForService("lambda", "PutResourcePolicy", s.PutResourcePolicy)
+	d.RegisterHandlerForService("lambda", "GetResourcePolicy", s.GetResourcePolicy)
+	d.RegisterHandlerForService("lambda", "DeleteResourcePolicy", s.DeleteResourcePolicy)
 
 	d.RegisterHandlerForService("lambda", "TagResource", s.TagResource)
 	d.RegisterHandlerForService("lambda", "UntagResource", s.UntagResource)
@@ -288,81 +333,6 @@ func (s *LambdaService) initDataDir() string {
 		}
 	})
 	return s.dataDir
-}
-
-// storeLayerCode persists a layer version's zip archive to disk so it
-// can be retrieved later via GetLayerVersion for download by clients.
-func (s *LambdaService) storeLayerCode(layerName string, versionNum int64, code []byte, region string) (string, error) {
-	dataDir := s.initDataDir()
-
-	safeLayer := naming.SanitizePathComponent(layerName)
-	safeRegion := naming.SanitizePathComponent(region)
-	codeDir := fmt.Sprintf("%s/%s/layers/%s/%d", dataDir, safeRegion, safeLayer, versionNum)
-	if err := os.MkdirAll(codeDir, 0755); err != nil {
-		return "", fmt.Errorf("failed to create layer code directory: %w", err)
-	}
-
-	codePath := fmt.Sprintf("%s/code.zip", codeDir)
-	if err := os.WriteFile(codePath, code, 0644); err != nil {
-		return "", fmt.Errorf("failed to write layer code file: %w", err)
-	}
-
-	return codePath, nil
-}
-
-func (s *LambdaService) storeCode(functionName, version string, code []byte, region string) (string, int64, error) {
-	dataDir := s.initDataDir()
-
-	if version == "" {
-		version = "$LATEST"
-	}
-
-	safeFunctionName := naming.SanitizePathComponent(functionName)
-	safeVersion := naming.SanitizePathComponent(version)
-	codeDir := fmt.Sprintf("%s/%s/code/%s/%s", dataDir, naming.SanitizePathComponent(region), safeFunctionName, safeVersion)
-	if err := os.MkdirAll(codeDir, 0755); err != nil {
-		return "", 0, fmt.Errorf("failed to create code directory: %w", err)
-	}
-
-	codePath := fmt.Sprintf("%s/code.zip", codeDir)
-	if err := os.WriteFile(codePath, code, 0644); err != nil {
-		return "", 0, fmt.Errorf("failed to write code file: %w", err)
-	}
-
-	return codePath, int64(len(code)), nil
-}
-
-// fetchCodeFromS3 reads a deployment package from S3. A non-empty
-// versionID reads that specific object version ("For versioned objects,
-// the version of the deployment package object to use"); an empty one
-// reads the latest version.
-func (s *LambdaService) fetchCodeFromS3(ctx context.Context, bucket, key, versionID, region string) ([]byte, error) {
-	if s.s3Invoker == nil {
-		return nil, fmt.Errorf("S3 invoker not configured")
-	}
-	data, err := s.s3Invoker.GetObjectVersion(ctx, region, bucket, key, versionID, 250*1024*1024)
-	if err != nil {
-		if versionID != "" {
-			return nil, fmt.Errorf("failed to get object version from S3: s3://%s/%s@%s: %w", bucket, key, versionID, err)
-		}
-		return nil, fmt.Errorf("failed to get object from S3: s3://%s/%s: %w", bucket, key, err)
-	}
-	return data, nil
-}
-
-func (s *LambdaService) loadCode(functionName, version string, region string) ([]byte, error) {
-	dataDir := s.initDataDir()
-
-	if version == "" {
-		version = "$LATEST"
-	}
-
-	codePath := fmt.Sprintf("%s/%s/code/%s/%s/code.zip", dataDir, naming.SanitizePathComponent(region), naming.SanitizePathComponent(functionName), naming.SanitizePathComponent(version))
-	code, err := os.ReadFile(codePath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read code file: %w", err)
-	}
-	return code, nil
 }
 
 // executionConfig carries the runtime parameters an execution must use.
@@ -764,8 +734,8 @@ func captureLogResult(logType string, events []eventbus.LogEntry) string {
 		b.WriteByte('\n')
 	}
 	logContent := b.String()
-	if len(logContent) > 4096 {
-		logContent = logContent[len(logContent)-4096:]
+	if len(logContent) > invokeTailLogLimitBytes {
+		logContent = logContent[len(logContent)-invokeTailLogLimitBytes:]
 	}
 	return base64.StdEncoding.EncodeToString([]byte(logContent))
 }
@@ -849,10 +819,12 @@ func (s *LambdaService) writeLambdaLogsDirect(logGroupName, logStreamName string
 	ctx := context.Background()
 
 	if err := s.logsInvoker.EnsureLogGroup(ctx, region, logGroupName, s.accountID); err != nil {
+		logs.Warn("Failed to ensure log group on the direct log path", logs.String("logGroup", logGroupName), logs.Err(err))
 		return
 	}
 
 	if err := s.logsInvoker.EnsureLogStream(ctx, region, logGroupName, logStreamName); err != nil {
+		logs.Warn("Failed to ensure log stream on the direct log path", logs.String("logStream", logStreamName), logs.Err(err))
 		return
 	}
 
@@ -878,6 +850,9 @@ func (s *LambdaService) GetFunctionARN(ctx context.Context, functionRef string) 
 		functionName = svcarn.ExtractFunctionNameFromARN(functionRef)
 	}
 	store := s.getOrCreateFunctionStore(region)
+	if store == nil {
+		return "", fmt.Errorf("failed to build the function store for region %s", region)
+	}
 	fn, err := store.Get(functionName)
 	if err != nil {
 		return "", err
@@ -934,6 +909,9 @@ func (s *LambdaService) InvokeForEventSource(ctx context.Context, functionRef st
 	}
 	functionName, embeddedQualifier := resolveFunctionRef(functionRef)
 	store := s.getOrCreateFunctionStore(region)
+	if store == nil {
+		return nil, fmt.Errorf("failed to build the function store for region %s", region)
+	}
 	function, ver, alias, err := s.resolveQualifier(store, functionName, embeddedQualifier)
 	if err != nil {
 		return nil, err
@@ -951,8 +929,8 @@ func (s *LambdaService) InvokeForEventSource(ctx context.Context, functionRef st
 	})
 }
 
-// GetFunctionStore returns a new FunctionStore for the Lambda service
-// using the constructor region.
+// GetFunctionStore returns the cached FunctionStore for the service's
+// constructor region, creating it on first use.
 func (s *LambdaService) GetFunctionStore() *lambdastore.FunctionStore {
 	return s.getOrCreateFunctionStore(s.region)
 }
@@ -1010,8 +988,11 @@ func (s *LambdaService) getOrCreateFunctionStore(region string) *lambdastore.Fun
 
 // GetFunctionPolicy retrieves the resource-based policy for a Lambda function.
 func (s *LambdaService) GetFunctionPolicy(functionName string) ([]lambdastore.FunctionPolicy, error) {
-	store := s.GetFunctionStore()
-	return store.GetPolicy(functionName)
+	stores, err := s.getOrCreateLambdaStoreE(s.region)
+	if err != nil {
+		return nil, err
+	}
+	return stores.Functions.GetPolicy(functionName)
 }
 
 // GetAccountSettings returns account limits and usage for Lambda functions.

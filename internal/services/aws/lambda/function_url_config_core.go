@@ -43,9 +43,16 @@ func (s *LambdaService) createFunctionUrlConfigCore(stores *lambdaStore, functio
 		return nil, err
 	}
 
+	if err := validateCorsConfig(in.Cors); err != nil {
+		return nil, err
+	}
+
 	qualifier := in.Qualifier
 	if qualifier != "" && qualifier != "$LATEST" {
-		if _, _, _, err := stores.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil {
+		// The model documents the qualifier as "The alias name." — a
+		// numeric version resolves through ResolveQualifier but is not a
+		// valid URL qualifier, so the resolution must yield an alias.
+		if _, _, alias, err := stores.Functions.ResolveQualifier(function.FunctionName, qualifier); err != nil || alias == nil {
 			return nil, NewInvalidParameter("Qualifier", "The function URL qualifier must name an alias of the function")
 		}
 	}
@@ -97,13 +104,19 @@ func (s *LambdaService) updateFunctionUrlConfigCore(stores *lambdaStore, functio
 			function.UrlConfig.Cors = &lambdastore.CorsConfig{}
 		}
 		function.UrlConfig.Cors = updateCorsConfig(function.UrlConfig.Cors, in.Cors)
+		// The range check runs on the merged configuration so a partial
+		// update cannot smuggle an out-of-range MaxAge past a stored
+		// in-range value.
+		if err := validateCorsConfig(function.UrlConfig.Cors); err != nil {
+			return nil, err
+		}
 	}
 
 	// The URL qualifier names an alias of the function; numeric versions
 	// are rejected like on create.
 	if in.Qualifier != "" {
 		if in.Qualifier != "$LATEST" {
-			if _, _, _, err := stores.Functions.ResolveQualifier(function.FunctionName, in.Qualifier); err != nil {
+			if _, _, alias, err := stores.Functions.ResolveQualifier(function.FunctionName, in.Qualifier); err != nil || alias == nil {
 				return nil, NewInvalidParameter("Qualifier", "The function URL qualifier must name an alias of the function")
 			}
 		}

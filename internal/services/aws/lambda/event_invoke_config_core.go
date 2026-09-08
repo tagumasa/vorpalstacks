@@ -1,6 +1,7 @@
 package lambda
 
 import (
+	"errors"
 	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -54,7 +55,7 @@ func (s *LambdaService) putFunctionEventInvokeConfigCore(reqCtx *request.Request
 		return nil, err
 	}
 	if err := stores.Functions.SetEventInvokeConfig(in.FunctionName, in.Qualifier, config); err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err
@@ -71,7 +72,7 @@ func (s *LambdaService) getFunctionEventInvokeConfigCore(stores *lambdaStore, fu
 	}
 	config, err := stores.Functions.GetEventInvokeConfig(functionName, qualifier)
 	if err != nil {
-		if err == lambdastore.ErrEventInvokeConfigNotFound || err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrEventInvokeConfigNotFound) || errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err
@@ -87,7 +88,7 @@ func (s *LambdaService) deleteFunctionEventInvokeConfigCore(stores *lambdaStore,
 		return NewInvalidParameter("FunctionName", "Function name is required")
 	}
 	if err := stores.Functions.DeleteEventInvokeConfig(functionName, qualifier); err != nil {
-		if err == lambdastore.ErrEventInvokeConfigNotFound || err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrEventInvokeConfigNotFound) || errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return ErrResourceNotFound
 		}
 		return err
@@ -103,7 +104,7 @@ func (s *LambdaService) listFunctionEventInvokeConfigsCore(stores *lambdaStore, 
 	}
 	configs, err := stores.Functions.ListEventInvokeConfigs(functionName)
 	if err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err
@@ -153,7 +154,7 @@ func (s *LambdaService) updateFunctionEventInvokeConfigCore(stores *lambdaStore,
 	}
 
 	if err := stores.Functions.SetEventInvokeConfig(in.FunctionName, in.Qualifier, config); err != nil {
-		if err == lambdastore.ErrFunctionNotFound {
+		if errors.Is(err, lambdastore.ErrFunctionNotFound) {
 			return nil, ErrResourceNotFound
 		}
 		return nil, err

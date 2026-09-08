@@ -83,6 +83,43 @@ func runLambdaLayerTests(tc *lambdaTestContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, tc.r.RunTest("lambda", "GetLayerVersionByArn", func() error {
+		layerArn := ""
+		var marker *string
+		for layerArn == "" {
+			page, err := tc.client.ListLayers(tc.ctx, &lambda.ListLayersInput{Marker: marker})
+			if err != nil {
+				return err
+			}
+			for _, l := range page.Layers {
+				if l.LayerArn != nil && strings.HasSuffix(*l.LayerArn, ":"+layerName) {
+					layerArn = *l.LayerArn
+					break
+				}
+			}
+			if page.NextMarker == nil || *page.NextMarker == "" {
+				break
+			}
+			marker = page.NextMarker
+		}
+		if layerArn == "" {
+			return fmt.Errorf("published layer %s not found via ListLayers", layerName)
+		}
+		resp, err := tc.client.GetLayerVersionByArn(tc.ctx, &lambda.GetLayerVersionByArnInput{
+			Arn: aws.String(layerArn + ":2"),
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Version != 2 {
+			return fmt.Errorf("expected version 2, got %d", resp.Version)
+		}
+		if resp.LayerArn == nil || *resp.LayerArn != layerArn {
+			return fmt.Errorf("LayerArn %v, want %s", resp.LayerArn, layerArn)
+		}
+		return nil
+	}))
+
 	results = append(results, tc.r.RunTest("lambda", "GetLayerVersion", func() error {
 		resp, err := tc.client.GetLayerVersion(tc.ctx, &lambda.GetLayerVersionInput{
 			LayerName:     aws.String(layerName),
@@ -216,6 +253,25 @@ func runLambdaLayerTests(tc *lambdaTestContext) []TestResult {
 			StatementId:   aws.String("cross-account"),
 		}); err != nil {
 			return fmt.Errorf("remove permission: %v", err)
+		}
+		return nil
+	}))
+
+	// Delete every remaining version so the layer leaves no residue in the
+	// store across suite runs; versions already deleted by earlier tests
+	// answer ResourceNotFoundException and are skipped.
+	results = append(results, tc.r.RunTest("lambda", "LayerVersion_Cleanup", func() error {
+		for v := int64(3); v >= 1; v-- {
+			_, err := tc.client.DeleteLayerVersion(tc.ctx, &lambda.DeleteLayerVersionInput{
+				LayerName:     aws.String(layerName),
+				VersionNumber: aws.Int64(v),
+			})
+			if err != nil {
+				if nf := expectAWSErrorCode(err, "ResourceNotFoundException"); nf == nil {
+					continue
+				}
+				return fmt.Errorf("delete version %d: %v", v, err)
+			}
 		}
 		return nil
 	}))

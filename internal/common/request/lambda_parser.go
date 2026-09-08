@@ -17,7 +17,7 @@ func extractLambdaOperation(r *http.Request) string {
 	case strings.HasPrefix(path, "/2015-03-31/functions"):
 		return extractLambdaFunctionOperation(path, method)
 	case strings.HasPrefix(path, "/2018-10-31/layers"):
-		return extractLambdaLayerOperation(path, method)
+		return extractLambdaLayerOperation(r, path, method)
 	case strings.HasPrefix(path, "/2015-03-31/event-source-mappings"):
 		return extractLambdaEventSourceOperation(path, method)
 	case strings.HasPrefix(path, "/2017-03-31/tags/"):
@@ -42,6 +42,8 @@ func extractLambdaOperation(r *http.Request) string {
 		}
 	case strings.HasPrefix(path, "/2021-10-31/functions/"):
 		return extractLambdaUrlOperation(path, method)
+	case strings.HasPrefix(path, "/2026-07-09/resource-policy/"):
+		return extractLambdaResourcePolicyOperation(path, method)
 	case path == "/2016-08-19/account-settings" && method == "GET":
 		return "GetAccountSettings"
 	}
@@ -82,10 +84,6 @@ func extractLambdaFunctionOperation(path, method string) string {
 	case "invocations":
 		if method == "POST" {
 			return "Invoke"
-		}
-	case "invoke-async":
-		if method == "POST" {
-			return "InvokeAsync"
 		}
 	case "configuration":
 		switch method {
@@ -141,11 +139,19 @@ func extractLambdaFunctionOperation(path, method string) string {
 	return ""
 }
 
-func extractLambdaLayerOperation(path, method string) string {
+// extractLambdaLayerOperation maps the /2018-10-31/layers URI space. The
+// bare collection GET answers ListLayers, except when the find query
+// parameter selects the by-ARN lookup: GET /2018-10-31/layers?find=LayerVersion
+// is GetLayerVersionByArn, whose Arn member arrives through the generic
+// query merge.
+func extractLambdaLayerOperation(r *http.Request, path, method string) string {
 	path = strings.TrimPrefix(path, "/2018-10-31/layers")
 
 	if path == "" || path == "/" {
 		if method == "GET" {
+			if r.URL.Query().Get("find") == "LayerVersion" {
+				return "GetLayerVersionByArn"
+			}
 			return "ListLayers"
 		}
 		return ""
@@ -309,6 +315,18 @@ func extractLambdaEventInvokeConfigOperation(path, method string) string {
 	return ""
 }
 
+func extractLambdaResourcePolicyOperation(path, method string) string {
+	switch method {
+	case "PUT":
+		return "PutResourcePolicy"
+	case "GET":
+		return "GetResourcePolicy"
+	case "DELETE":
+		return "DeleteResourcePolicy"
+	}
+	return ""
+}
+
 func extractLambdaPathParams(path string, params map[string]interface{}) {
 	switch {
 	case strings.HasPrefix(path, "/2015-03-31/functions/"):
@@ -335,6 +353,8 @@ func extractLambdaPathParams(path string, params map[string]interface{}) {
 		extractInvokeAsyncPathParams(path, params)
 	case strings.HasPrefix(path, "/2021-11-15/functions/"):
 		extractResponseStreamPathParams(path, params)
+	case strings.HasPrefix(path, "/2026-07-09/resource-policy/"):
+		extractResourcePolicyPathParams(path, params)
 	}
 }
 
@@ -492,15 +512,30 @@ func extractResponseStreamPathParams(path string, params map[string]interface{})
 	}
 }
 
-func extractLambdaHeaders(r *http.Request, params map[string]interface{}) {
-	headerMappings := map[string]string{
-		"X-Amz-Invocation-Type": "InvocationType",
-		"X-Amz-Log-Type":        "LogType",
-		"X-Amz-Client-Context":  "ClientContext",
-		"X-Amz-Function-Error":  "FunctionError",
-		"X-Amz-Qualifier":       "Qualifier",
+// extractResourcePolicyPathParams binds the ResourceArn label of the
+// resource-policy URI space. An ARN's colons are path-safe, so the label
+// is the whole remainder of the path.
+func extractResourcePolicyPathParams(path string, params map[string]interface{}) {
+	resourceArn := strings.TrimPrefix(path, "/2026-07-09/resource-policy/")
+	if resourceArn != "" {
+		if _, ok := params["ResourceArn"]; !ok {
+			params["ResourceArn"] = resourceArn
+		}
 	}
-	for header, param := range headerMappings {
+}
+
+// LambdaInvokeHeaderMappings maps the modelled Invoke request headers —
+// the httpHeader traits on the Invoke input shape — to their parameter
+// names. The REST parser and the dispatcher's parse fallback both apply
+// this one mapping; a present header always sets its parameter.
+var LambdaInvokeHeaderMappings = map[string]string{
+	"X-Amz-Invocation-Type": "InvocationType",
+	"X-Amz-Log-Type":        "LogType",
+	"X-Amz-Client-Context":  "ClientContext",
+}
+
+func extractLambdaHeaders(r *http.Request, params map[string]interface{}) {
+	for header, param := range LambdaInvokeHeaderMappings {
 		if v := r.Header.Get(header); v != "" {
 			params[param] = v
 		}

@@ -7,8 +7,29 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	lambdastore "vorpalstacks/internal/store/aws/lambda"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+// toLayerVersionResponse renders the LayerVersion wire shape shared by
+// PublishLayerVersion, GetLayerVersion and GetLayerVersionByArn.
+func toLayerVersionResponse(layerArn string, v *lambdastore.LayerVersion) map[string]interface{} {
+	return map[string]interface{}{
+		"Content": map[string]interface{}{
+			"Location":   v.CodeLocation,
+			"CodeSha256": v.CodeSha256,
+			"CodeSize":   v.CodeSize,
+		},
+		"LayerArn":                layerArn,
+		"LayerVersionArn":         v.LayerVersionArn,
+		"Description":             v.Description,
+		"CreatedDate":             v.CreatedDate.Format(timeutils.ISO8601UTCFormat),
+		"Version":                 v.Version,
+		"CompatibleRuntimes":      v.CompatibleRuntimes,
+		"LicenseInfo":             v.LicenseInfo,
+		"CompatibleArchitectures": v.CompatibleArchitectures,
+	}
+}
 
 // PublishLayerVersion publishes a new version of a Lambda layer.
 // Creates the layer if it does not exist, and publishes a new version with the provided content.
@@ -40,21 +61,7 @@ func (s *LambdaService) PublishLayerVersion(ctx context.Context, reqCtx *request
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Content": map[string]interface{}{
-			"Location":   created.CodeLocation,
-			"CodeSha256": created.CodeSha256,
-			"CodeSize":   created.CodeSize,
-		},
-		"LayerArn":                layer.LayerArn,
-		"LayerVersionArn":         created.LayerVersionArn,
-		"Description":             created.Description,
-		"CreatedDate":             created.CreatedDate.Format(timeutils.ISO8601UTCFormat),
-		"Version":                 created.Version,
-		"CompatibleRuntimes":      created.CompatibleRuntimes,
-		"LicenseInfo":             created.LicenseInfo,
-		"CompatibleArchitectures": created.CompatibleArchitectures,
-	}, nil
+	return toLayerVersionResponse(layer.LayerArn, created), nil
 }
 
 // DeleteLayerVersion deletes a specific version of a Lambda layer.
@@ -80,21 +87,7 @@ func (s *LambdaService) GetLayerVersion(ctx context.Context, reqCtx *request.Req
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Content": map[string]interface{}{
-			"Location":   layerVersion.CodeLocation,
-			"CodeSha256": layerVersion.CodeSha256,
-			"CodeSize":   layerVersion.CodeSize,
-		},
-		"LayerArn":                layer.LayerArn,
-		"LayerVersionArn":         layerVersion.LayerVersionArn,
-		"Description":             layerVersion.Description,
-		"CreatedDate":             layerVersion.CreatedDate.Format(timeutils.ISO8601UTCFormat),
-		"Version":                 layerVersion.Version,
-		"CompatibleRuntimes":      layerVersion.CompatibleRuntimes,
-		"LicenseInfo":             layerVersion.LicenseInfo,
-		"CompatibleArchitectures": layerVersion.CompatibleArchitectures,
-	}, nil
+	return toLayerVersionResponse(layer.LayerArn, layerVersion), nil
 }
 
 // ListLayers lists the Lambda layers in the account, with optional filtering by runtime.
@@ -191,21 +184,7 @@ func (s *LambdaService) GetLayerVersionByArn(ctx context.Context, reqCtx *reques
 		return nil, err
 	}
 
-	return map[string]interface{}{
-		"Content": map[string]interface{}{
-			"Location":   layerVersion.CodeLocation,
-			"CodeSha256": layerVersion.CodeSha256,
-			"CodeSize":   layerVersion.CodeSize,
-		},
-		"LayerArn":                layerArn,
-		"LayerVersionArn":         layerVersion.LayerVersionArn,
-		"Description":             layerVersion.Description,
-		"CreatedDate":             layerVersion.CreatedDate.Format(timeutils.ISO8601UTCFormat),
-		"Version":                 layerVersion.Version,
-		"CompatibleRuntimes":      layerVersion.CompatibleRuntimes,
-		"LicenseInfo":             layerVersion.LicenseInfo,
-		"CompatibleArchitectures": layerVersion.CompatibleArchitectures,
-	}, nil
+	return toLayerVersionResponse(layerArn, layerVersion), nil
 }
 
 // AddLayerVersionPermission adds a permission to a layer version's

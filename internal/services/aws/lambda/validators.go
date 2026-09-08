@@ -19,33 +19,40 @@ import (
 // alphanumeric, hyphens, and underscores, 1-64 characters.
 var functionNamePattern = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
 
+// namespacedFunctionNamePattern is the NamespacedFunctionName pattern from
+// the Smithy model: an optional arn:partition:lambda: prefix followed by
+// optional region, account and "function:" segments, a name that may
+// contain dots, and an optional qualifier ($LATEST, $LATEST.PUBLISHED or a
+// plain alias/version). Members typed by this shape accept every form the
+// pattern admits; FunctionName-typed members keep the stricter
+// validateFunctionName bound.
+var namespacedFunctionNamePattern = regexp.MustCompile(`^(arn:(aws[a-zA-Z-]*)?:lambda:)?((eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\d{1}:)?(\d{12}:)?(function:)?([a-zA-Z0-9-_.]+)(:(\$LATEST(\.PUBLISHED)?|[a-zA-Z0-9-_]+))?$`)
+
+// resourcePolicyArnPattern is the PolicyResourceArn pattern from the
+// Smithy model: a complete function ARN, optionally qualified, without
+// wildcard characters. The resource-policy operations bind this as their
+// ResourceArn path label.
+var resourcePolicyArnPattern = regexp.MustCompile(`^arn:(aws[a-zA-Z-]*)?:lambda:(eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\d{1}:\d{12}:function:[a-zA-Z0-9-_]+(:(\$LATEST(\.PUBLISHED)?|[a-zA-Z0-9-_])+)?$`)
+
+// validateResourcePolicyArn validates the ResourceArn of a resource-policy
+// operation against the PolicyResourceArn shape (@length 0-256 plus the
+// ARN pattern above) and splits it into the function name and an embedded
+// qualifier.
+func validateResourcePolicyArn(resourceArn string) (functionName, qualifier string, err error) {
+	if resourceArn == "" {
+		return "", "", NewInvalidParameter("ResourceArn", "ResourceArn is required")
+	}
+	if len(resourceArn) > lambdastore.MaxPolicyResourceArnLength || !resourcePolicyArnPattern.MatchString(resourceArn) {
+		return "", "", NewInvalidParameter("ResourceArn", "ResourceArn must be a complete function ARN without wildcard characters")
+	}
+	resource := arnutil.ExtractResourceFromARN(resourceArn)
+	functionName, qualifier = splitNameQualifier(strings.TrimPrefix(resource, "function:"))
+	return functionName, qualifier, nil
+}
+
 // ---------------------------------------------------------------------------
 // Runtime validation (Smithy Runtime enum)
 // ---------------------------------------------------------------------------
-
-// validRuntimes contains every Lambda runtime recognised by this platform.
-// Values are lowercase canonical forms; callers compare case-insensitively.
-var validRuntimes = []string{
-	"nodejs24.x", "nodejs22.x",
-	"python3.14", "python3.13", "python3.12", "python3.11", "python3.10",
-	"java25", "java21", "java17", "java11",
-	"java17.al2023", "java11.al2023", "java8.al2023",
-	"java8.al2",
-	"dotnet10", "dotnet9", "dotnet8",
-	"ruby4.0", "ruby3.4", "ruby3.3",
-	"provided.al2023", "provided.al2",
-}
-
-// ValidateRuntime checks if the provided runtime is a valid Lambda runtime.
-func ValidateRuntime(runtime string) bool {
-	runtimeLower := strings.ToLower(runtime)
-	for _, r := range validRuntimes {
-		if r == runtimeLower {
-			return true
-		}
-	}
-	return false
-}
 
 // ValidateHandler validates the handler string for a Lambda function.
 // Checks that the handler is not empty and conforms to runtime-specific
@@ -112,11 +119,56 @@ func validateEnvironmentVariables(env *lambdastore.Environment) error {
 // ---------------------------------------------------------------------------
 
 func validateFunctionName(name string) error {
-	if len(name) == 0 || len(name) > 64 {
-		return NewInvalidParameter("FunctionName", "Function name must be between 1 and 64 characters")
+	if len(name) == 0 || len(name) > maxFunctionNameLength {
+		return NewInvalidParameter("FunctionName", fmt.Sprintf("Function name must be between 1 and %d characters", maxFunctionNameLength))
 	}
 	if !functionNamePattern.MatchString(name) {
 		return NewInvalidParameter("FunctionName", "Function name can only contain alphanumeric characters, hyphens, and underscores")
+	}
+	return nil
+}
+
+// validateNamespacedFunctionName validates the whole wire form of a
+// FunctionName reference on operations whose member the Smithy model types
+// as NamespacedFunctionName. Unlike validateFunctionName, which checks the
+// extracted bare name, this checks the raw reference: a malformed ARN
+// segment is rejected here instead of passing through to the not-found
+// path, while dotted names and the wider reference length the pattern
+// admits are accepted and left to resolve (or not) against the store.
+func validateNamespacedFunctionName(ref string) error {
+	if len(ref) == 0 || len(ref) > maxNamespacedFunctionRefLength {
+		return NewInvalidParameter("FunctionName", fmt.Sprintf("Function name must be between 1 and %d characters", maxNamespacedFunctionRefLength))
+	}
+	if !namespacedFunctionNamePattern.MatchString(ref) {
+		return NewInvalidParameter("FunctionName", "Function name reference form is not valid")
+	}
+	return nil
+}
+
+// validateFileSystemConfigs enforces the S3FilesConfig contract on the
+// FileSystemConfigs member: DirectS3Read, when provided, must be one of
+// the modelled enum values, and an S3FilesConfig is valid only on an
+// Amazon S3 Files access point — "If you specify a different access point
+// type (for example, Amazon Elastic File System), the operation returns an
+// InvalidParameterException".
+func validateFileSystemConfigs(configs []lambdastore.FileSystemConfig) error {
+	for _, config := range configs {
+		if config.S3FilesConfig == nil {
+			continue
+		}
+		if direct := config.S3FilesConfig.DirectS3Read; direct != "" {
+			switch direct {
+			case lambdastore.DirectS3ReadAuto, lambdastore.DirectS3ReadEnabled, lambdastore.DirectS3ReadDisabled:
+			default:
+				return NewInvalidParameter("FileSystemConfigs.S3FilesConfig.DirectS3Read",
+					fmt.Sprintf("DirectS3Read must be one of '%s', '%s' or '%s'",
+						lambdastore.DirectS3ReadAuto, lambdastore.DirectS3ReadEnabled, lambdastore.DirectS3ReadDisabled))
+			}
+		}
+		if arnutil.GetServiceFromARN(config.Arn) != "s3files" {
+			return NewInvalidParameter("FileSystemConfigs.S3FilesConfig",
+				fmt.Sprintf("S3FilesConfig is valid only on an Amazon S3 Files access point ARN, got %q", config.Arn))
+		}
 	}
 	return nil
 }
@@ -126,15 +178,19 @@ func validateFunctionName(name string) error {
 // ---------------------------------------------------------------------------
 
 func validateTimeout(timeout int32) error {
-	if timeout < 1 || timeout > 900 {
-		return NewInvalidParameter("Timeout", "Timeout must be between 1 and 900 seconds")
+	if timeout < lambdastore.MinTimeoutSeconds || timeout > lambdastore.MaxTimeoutSeconds {
+		return NewInvalidParameter("Timeout",
+			fmt.Sprintf("Timeout must be between %d and %d seconds",
+				lambdastore.MinTimeoutSeconds, lambdastore.MaxTimeoutSeconds))
 	}
 	return nil
 }
 
 func validateMemorySize(memorySize int32) error {
-	if memorySize < 128 || memorySize > 10240 {
-		return NewInvalidParameter("MemorySize", "MemorySize must be between 128 and 10240 MB")
+	if memorySize < lambdastore.MinMemorySizeMB || memorySize > lambdastore.MaxMemorySizeMB {
+		return NewInvalidParameter("MemorySize",
+			fmt.Sprintf("MemorySize must be between %d and %d MB",
+				lambdastore.MinMemorySizeMB, lambdastore.MaxMemorySizeMB))
 	}
 	return nil
 }
@@ -233,6 +289,21 @@ func validateInvokeMode(mode string) error {
 	return nil
 }
 
+// validateCorsConfig enforces the modelled CORS bounds on a function URL
+// configuration: Cors.MaxAge targets the MaxAge shape whose @range is 0
+// to 86400 seconds.
+func validateCorsConfig(cors *lambdastore.CorsConfig) error {
+	if cors == nil {
+		return nil
+	}
+	if cors.MaxAge < 0 || cors.MaxAge > lambdastore.MaxCorsMaxAgeSeconds {
+		return NewInvalidParameter("Cors.MaxAge",
+			fmt.Sprintf("Cors.MaxAge must be between 0 and %d seconds; got %d",
+				lambdastore.MaxCorsMaxAgeSeconds, cors.MaxAge))
+	}
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Event invoke config validation (Smithy range traits)
 // ---------------------------------------------------------------------------
@@ -240,9 +311,10 @@ func validateInvokeMode(mode string) error {
 // validateMaximumEventAgeInSeconds enforces the Smithy range
 // MaximumEventAgeInSeconds: min 60, max 21600.
 func validateMaximumEventAgeInSeconds(v int32) error {
-	if v < 60 || v > 21600 {
+	if v < lambdastore.MinEventAgeSeconds || v > lambdastore.MaxEventAgeSeconds {
 		return NewInvalidParameter("MaximumEventAgeInSeconds",
-			"MaximumEventAgeInSeconds must be between 60 and 21600 seconds")
+			fmt.Sprintf("MaximumEventAgeInSeconds must be between %d and %d seconds",
+				lambdastore.MinEventAgeSeconds, lambdastore.MaxEventAgeSeconds))
 	}
 	return nil
 }
@@ -250,9 +322,10 @@ func validateMaximumEventAgeInSeconds(v int32) error {
 // validateMaximumRetryAttempts enforces the Smithy range
 // MaximumRetryAttempts: min 0, max 2.
 func validateMaximumRetryAttempts(v int32) error {
-	if v < 0 || v > 2 {
+	if v < lambdastore.MinEventInvokeRetryAttempts || v > lambdastore.MaxEventInvokeRetryAttempts {
 		return NewInvalidParameter("MaximumRetryAttempts",
-			"MaximumRetryAttempts must be between 0 and 2")
+			fmt.Sprintf("MaximumRetryAttempts must be between %d and %d",
+				lambdastore.MinEventInvokeRetryAttempts, lambdastore.MaxEventInvokeRetryAttempts))
 	}
 	return nil
 }
@@ -305,8 +378,8 @@ var aliasNamePattern = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
 // length 1-128, pattern ^(?!^[0-9]+$)[a-zA-Z0-9-_]+$
 // (alphanumeric/hyphen/underscore, not purely numeric).
 func validateAliasName(name string) error {
-	if len(name) < 1 || len(name) > 128 {
-		return NewInvalidParameter("Name", "Alias name must be between 1 and 128 characters")
+	if len(name) < 1 || len(name) > maxAliasNameLength {
+		return NewInvalidParameter("Name", fmt.Sprintf("Alias name must be between 1 and %d characters", maxAliasNameLength))
 	}
 	if !aliasNamePattern.MatchString(name) {
 		return NewInvalidParameter("Name", "Alias name can only contain alphanumeric characters, hyphens, and underscores")
@@ -332,8 +405,8 @@ var statementIdPattern = regexp.MustCompile(`^[a-zA-Z0-9-_]+$`)
 // validateStatementId validates a policy statement ID per the Smithy model:
 // length 1-100, pattern ^([a-zA-Z0-9-_]+)$.
 func validateStatementId(id string) error {
-	if len(id) < 1 || len(id) > 100 {
-		return NewInvalidParameter("StatementId", "StatementId must be between 1 and 100 characters")
+	if len(id) < 1 || len(id) > lambdastore.MaxStatementIdLength {
+		return NewInvalidParameter("StatementId", fmt.Sprintf("StatementId must be between 1 and %d characters", lambdastore.MaxStatementIdLength))
 	}
 	if !statementIdPattern.MatchString(id) {
 		return NewInvalidParameter("StatementId", "StatementId can only contain alphanumeric characters, hyphens, and underscores")
@@ -373,11 +446,12 @@ func validateArchitecture(arch string) error {
 }
 
 // validateEphemeralStorageSize validates the EphemeralStorage.Size per
-// the Smithy range: min 512, max 10240 MB.
+// the Smithy range: min 512, max 32768 MB.
 func validateEphemeralStorageSize(size int32) error {
-	if size < 512 || size > 10240 {
+	if size < lambdastore.MinEphemeralStorageSizeMB || size > lambdastore.MaxEphemeralStorageSizeMB {
 		return NewInvalidParameter("EphemeralStorage.Size",
-			"EphemeralStorage.Size must be between 512 and 10240 MB")
+			fmt.Sprintf("EphemeralStorage.Size must be between %d and %d MB",
+				lambdastore.MinEphemeralStorageSizeMB, lambdastore.MaxEphemeralStorageSizeMB))
 	}
 	return nil
 }
@@ -407,7 +481,7 @@ func snapStartSupportedRuntime(runtime string) bool {
 	case strings.HasPrefix(r, "python3."):
 		minor, err := strconv.Atoi(strings.TrimPrefix(r, "python3."))
 		return err == nil && minor >= 12
-	case r == "dotnet8", r == "dotnet9", r == "dotnet10":
+	case r == "dotnet8", r == "dotnet10":
 		return true
 	default:
 		return false
@@ -424,6 +498,76 @@ func validateSnapStartForRuntime(runtime string, snapStart *lambdastore.SnapStar
 	if !snapStartSupportedRuntime(runtime) {
 		return NewInvalidParameter("SnapStart",
 			"SnapStart is supported on Java 11 and later, Python 3.12 and later, and .NET 8 and later runtimes")
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// LoggingConfig / ImageConfig validation (model enums, lengths, pattern)
+// ---------------------------------------------------------------------------
+
+// logGroupPattern enforces the modelled LogGroup shape: letters, digits,
+// and the characters . - _ / #, length 1-512.
+var logGroupPattern = regexp.MustCompile(lambdastore.LogGroupPattern)
+
+// validateLoggingConfig enforces the modelled LoggingConfig member
+// constraints: the LogFormat enum (JSON, Text), the ApplicationLogLevel
+// enum (TRACE, DEBUG, INFO, WARN, ERROR, FATAL), the SystemLogLevel enum
+// (DEBUG, INFO, WARN), and the LogGroup length and pattern. Empty members
+// keep their platform defaults and are accepted.
+func validateLoggingConfig(lc *lambdastore.LoggingConfig) error {
+	if lc == nil {
+		return nil
+	}
+	switch lc.LogFormat {
+	case "", "JSON", "Text":
+	default:
+		return NewInvalidParameter("LoggingConfig.LogFormat",
+			fmt.Sprintf("LogFormat must be JSON or Text; got %q", lc.LogFormat))
+	}
+	switch lc.ApplicationLogLevel {
+	case "", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL":
+	default:
+		return NewInvalidParameter("LoggingConfig.ApplicationLogLevel",
+			fmt.Sprintf("ApplicationLogLevel must be one of TRACE, DEBUG, INFO, WARN, ERROR, FATAL; got %q", lc.ApplicationLogLevel))
+	}
+	switch lc.SystemLogLevel {
+	case "", "DEBUG", "INFO", "WARN":
+	default:
+		return NewInvalidParameter("LoggingConfig.SystemLogLevel",
+			fmt.Sprintf("SystemLogLevel must be one of DEBUG, INFO, WARN; got %q", lc.SystemLogLevel))
+	}
+	if lc.LogGroup != "" {
+		if len(lc.LogGroup) > lambdastore.MaxLogGroupLength {
+			return NewInvalidParameter("LoggingConfig.LogGroup",
+				fmt.Sprintf("LogGroup must be at most %d characters", lambdastore.MaxLogGroupLength))
+		}
+		if !logGroupPattern.MatchString(lc.LogGroup) {
+			return NewInvalidParameter("LoggingConfig.LogGroup",
+				fmt.Sprintf("LogGroup may only contain letters, numbers, and the characters . - _ / #; got %q", lc.LogGroup))
+		}
+	}
+	return nil
+}
+
+// validateImageConfig enforces the modelled ImageConfig member constraints:
+// EntryPoint and Command target the StringList shape (at most 1500 entries
+// each) and WorkingDirectory is at most 1000 characters.
+func validateImageConfig(ic *lambdastore.ImageConfig) error {
+	if ic == nil {
+		return nil
+	}
+	if len(ic.EntryPoint) > lambdastore.MaxImageConfigListLength {
+		return NewInvalidParameter("ImageConfig.EntryPoint",
+			fmt.Sprintf("ImageConfig.EntryPoint must hold at most %d entries", lambdastore.MaxImageConfigListLength))
+	}
+	if len(ic.Command) > lambdastore.MaxImageConfigListLength {
+		return NewInvalidParameter("ImageConfig.Command",
+			fmt.Sprintf("ImageConfig.Command must hold at most %d entries", lambdastore.MaxImageConfigListLength))
+	}
+	if len(ic.WorkingDirectory) > lambdastore.MaxImageConfigWorkingDirectory {
+		return NewInvalidParameter("ImageConfig.WorkingDirectory",
+			fmt.Sprintf("ImageConfig.WorkingDirectory must be at most %d characters", lambdastore.MaxImageConfigWorkingDirectory))
 	}
 	return nil
 }
@@ -486,8 +630,10 @@ func validateMaxItemsCapped(v, cap int) int {
 
 // validateESMBatchSize enforces the Smithy range for BatchSize: min 1, max 10000.
 func validateESMBatchSize(v int32) error {
-	if v < 1 || v > 10000 {
-		return NewInvalidParameter("BatchSize", "BatchSize must be between 1 and 10000")
+	if v < lambdastore.MinESMBatchSize || v > lambdastore.MaxESMBatchSize {
+		return NewInvalidParameter("BatchSize",
+			fmt.Sprintf("BatchSize must be between %d and %d",
+				lambdastore.MinESMBatchSize, lambdastore.MaxESMBatchSize))
 	}
 	return nil
 }
@@ -511,6 +657,21 @@ func defaultESMBatchSize(eventSourceArn string) int32 {
 	return defaultStreamESMBatchSize
 }
 
+// clampESMBatchSize applies the defensive default-and-cap every poller
+// path runs on the stored BatchSize: a non-positive value falls back to
+// the per-source documented default and the result is capped at the
+// modelled maximum. The SQS fallback is 10 — the documented queue
+// default — never the stream default 100.
+func clampESMBatchSize(batchSize int32, eventSourceArn string) int32 {
+	if batchSize <= 0 {
+		batchSize = defaultESMBatchSize(eventSourceArn)
+	}
+	if batchSize > lambdastore.MaxESMBatchSize {
+		batchSize = lambdastore.MaxESMBatchSize
+	}
+	return batchSize
+}
+
 // validateESMBatchSizeForSource enforces the per-source batch size rules on
 // top of the generic range: FIFO queue names end in ".fifo" and accept at
 // most 10 records per batch.
@@ -530,9 +691,10 @@ func validateESMBatchSizeForSource(v int32, eventSourceArn string) error {
 // validateESMBatchingWindow enforces the Smithy range for
 // MaximumBatchingWindowInSeconds: min 0, max 300.
 func validateESMBatchingWindow(v int32) error {
-	if v < 0 || v > 300 {
+	if v < lambdastore.MinESMBatchingWindowSeconds || v > lambdastore.MaxESMBatchingWindowSeconds {
 		return NewInvalidParameter("MaximumBatchingWindowInSeconds",
-			"MaximumBatchingWindowInSeconds must be between 0 and 300")
+			fmt.Sprintf("MaximumBatchingWindowInSeconds must be between %d and %d",
+				lambdastore.MinESMBatchingWindowSeconds, lambdastore.MaxESMBatchingWindowSeconds))
 	}
 	return nil
 }
@@ -548,6 +710,32 @@ func validateESMParallelFactor(v int32) error {
 	return nil
 }
 
+// validateESMDestinationConfig enforces the modelled DestinationConfig
+// contract for event source mappings: the model marks OnSuccess as "not
+// supported in CreateEventSourceMapping or UpdateEventSourceMapping
+// requests", and an on-failure destination must be the ARN of an SQS queue,
+// SNS topic, or S3 bucket — the destinations the delivery path implements
+// for stream sources.
+func validateESMDestinationConfig(dc *lambdastore.DestinationConfig) error {
+	if dc == nil {
+		return nil
+	}
+	if dc.OnSuccess != nil && dc.OnSuccess.Destination != "" {
+		return NewInvalidParameter("DestinationConfig.OnSuccess",
+			"OnSuccess destinations are not supported for event source mappings")
+	}
+	if dc.OnFailure != nil && dc.OnFailure.Destination != "" {
+		_, service, _, _, _ := arnutil.SplitARN(dc.OnFailure.Destination)
+		switch service {
+		case "sqs", "sns", "s3":
+		default:
+			return NewInvalidParameter("DestinationConfig.OnFailure",
+				fmt.Sprintf("OnFailure destination must be an SQS queue, SNS topic, or S3 bucket ARN; got service %q", service))
+		}
+	}
+	return nil
+}
+
 // validateESMBatchWindowPair enforces the documented pairing between the
 // batch size and the batching window: "For Kinesis, DynamoDB, and Amazon
 // SQS event sources, when you set BatchSize to a value greater than 10,
@@ -555,8 +743,10 @@ func validateESMParallelFactor(v int32) error {
 // (CreateEventSourceMapping model, MaximumBatchingWindowInSeconds member
 // documentation.) SQS, Kinesis, and DynamoDB streams are exactly the event
 // sources this platform polls, so the rule applies unconditionally.
+const esmBatchWindowPairingThreshold = int32(10)
+
 func validateESMBatchWindowPair(batchSize, batchingWindowSeconds int32) error {
-	if batchSize > 10 && batchingWindowSeconds < 1 {
+	if batchSize > esmBatchWindowPairingThreshold && batchingWindowSeconds < 1 {
 		return NewInvalidParameter("MaximumBatchingWindowInSeconds",
 			"MaximumBatchingWindowInSeconds must be at least 1 when BatchSize is greater than 10")
 	}
@@ -566,9 +756,10 @@ func validateESMBatchWindowPair(batchSize, batchingWindowSeconds int32) error {
 // validateESMMaxRecordAge enforces the Smithy range for
 // MaximumRecordAgeInSeconds: min -1, max 604800.
 func validateESMMaxRecordAge(v int32) error {
-	if v < -1 || v > 604800 {
+	if v < lambdastore.MinESMRecordAgeSeconds || v > lambdastore.MaxESMRecordAgeSeconds {
 		return NewInvalidParameter("MaximumRecordAgeInSeconds",
-			"MaximumRecordAgeInSeconds must be between -1 and 604800")
+			fmt.Sprintf("MaximumRecordAgeInSeconds must be between %d and %d",
+				lambdastore.MinESMRecordAgeSeconds, lambdastore.MaxESMRecordAgeSeconds))
 	}
 	return nil
 }
@@ -576,9 +767,10 @@ func validateESMMaxRecordAge(v int32) error {
 // validateESMMaxRetry enforces the Smithy range for
 // MaximumRetryAttemptsEventSourceMapping: min -1, max 10000.
 func validateESMMaxRetry(v int32) error {
-	if v < -1 || v > 10000 {
+	if v < lambdastore.MinESMRetryAttempts || v > lambdastore.MaxESMRetryAttempts {
 		return NewInvalidParameter("MaximumRetryAttempts",
-			"MaximumRetryAttempts must be between -1 and 10000")
+			fmt.Sprintf("MaximumRetryAttempts must be between %d and %d",
+				lambdastore.MinESMRetryAttempts, lambdastore.MaxESMRetryAttempts))
 	}
 	return nil
 }
@@ -586,9 +778,10 @@ func validateESMMaxRetry(v int32) error {
 // validateESMTumblingWindow enforces the Smithy range for
 // TumblingWindowInSeconds: min 0, max 900.
 func validateESMTumblingWindow(v int32) error {
-	if v < 0 || v > 900 {
+	if v < lambdastore.MinESMTumblingWindowSeconds || v > lambdastore.MaxESMTumblingWindowSeconds {
 		return NewInvalidParameter("TumblingWindowInSeconds",
-			"TumblingWindowInSeconds must be between 0 and 900")
+			fmt.Sprintf("TumblingWindowInSeconds must be between %d and %d",
+				lambdastore.MinESMTumblingWindowSeconds, lambdastore.MaxESMTumblingWindowSeconds))
 	}
 	return nil
 }
@@ -601,19 +794,27 @@ func validateESMTumblingWindow(v int32) error {
 // layer version resource-based policy statement, applying the same rules
 // as validatePermission but for layer-version-scoped policies.
 func validateLayerPermission(p *lambdastore.LayerPolicy) error {
-	if p.Principal == "" {
+	return validatePolicyStatement(p.Principal, p.Action)
+}
+
+// validatePolicyStatement holds the shared member contract of the function
+// and layer-version resource policies: a required Principal (an IAM ARN, a
+// recognised service principal, or "*") and a required Action scoped to the
+// "lambda:" namespace.
+func validatePolicyStatement(principal, action string) error {
+	if principal == "" {
 		return NewInvalidParameter("Principal", "Principal is required")
 	}
-	if !isValidPrincipal(p.Principal) {
+	if !isValidPrincipal(principal) {
 		return NewInvalidParameter("Principal",
-			fmt.Sprintf("Principal %q is not a valid IAM ARN, recognised service principal, or wildcard", p.Principal))
+			fmt.Sprintf("Principal %q is not a valid IAM ARN, recognised service principal, or wildcard", principal))
 	}
-	if p.Action == "" {
+	if action == "" {
 		return NewInvalidParameter("Action", "Action is required")
 	}
-	if !strings.HasPrefix(p.Action, "lambda:") {
+	if !strings.HasPrefix(action, "lambda:") {
 		return NewInvalidParameter("Action",
-			fmt.Sprintf("Action %q must start with 'lambda:'", p.Action))
+			fmt.Sprintf("Action %q must start with 'lambda:'", action))
 	}
 	return nil
 }
@@ -708,21 +909,7 @@ func principalType(principal string) string {
 // resource-based policy statement. Principal must be an IAM ARN, a
 // recognised service principal, or "*". Action must start with "lambda:".
 func validatePermission(p *lambdastore.FunctionPolicy) error {
-	if p.Principal == "" {
-		return NewInvalidParameter("Principal", "Principal is required")
-	}
-	if !isValidPrincipal(p.Principal) {
-		return NewInvalidParameter("Principal",
-			fmt.Sprintf("Principal %q is not a valid IAM ARN, recognised service principal, or wildcard", p.Principal))
-	}
-	if p.Action == "" {
-		return NewInvalidParameter("Action", "Action is required")
-	}
-	if !strings.HasPrefix(p.Action, "lambda:") {
-		return NewInvalidParameter("Action",
-			fmt.Sprintf("Action %q must start with 'lambda:'", p.Action))
-	}
-	return nil
+	return validatePolicyStatement(p.Principal, p.Action)
 }
 
 // isValidPrincipal checks whether the principal string is a recognised

@@ -886,7 +886,7 @@ func (a *App) initEventBusPolicies() {
 				entries := make([]eventbus.LambdaPolicyEntry, len(policies))
 				for i, p := range policies {
 					entries[i] = eventbus.LambdaPolicyEntry{
-						Statement: p.Statement,
+						Effect:    p.Effect,
 						Principal: p.Principal,
 						Action:    p.Action,
 						Resource:  p.Resource,

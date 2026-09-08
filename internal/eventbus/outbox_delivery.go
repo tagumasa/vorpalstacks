@@ -123,6 +123,7 @@ func (b *EventBus) recover(ctx context.Context) error {
 			case b.asyncCh <- entry:
 			default:
 				b.logWarn("async channel full during recovery, will retry later", "event_id", entry.EventID)
+				b.notifyBacklog()
 			}
 		}
 
@@ -248,12 +249,17 @@ func (b *EventBus) processOutboxEntry(entry *OutboxEntry) {
 			select {
 			case b.asyncCh <- entry:
 			default:
+				// The retry waits for the requeue scan; shorten that wait
+				// to the retry interval instead of the full period.
+				b.notifyBacklog()
 			}
 		}
 	case hasSkipped:
-		// "skipped" means the subscriber never ran (semaphore saturated or
-		// shutdown in progress): the event is not lost, it simply has not
-		// been delivered yet. The entry returns to Pending without
+		// "skipped" means the subscriber never ran because the semaphore
+		// acquisition took the shutdown escape: acquisition blocks until
+		// capacity, so saturation itself never skips — only a closed
+		// stopCh reports failure. The event is not lost, it simply has
+		// not been delivered yet. The entry returns to Pending without
 		// consuming the retry budget — otherwise every restart or busy
 		// period would burn budget and a handful of deployments could
 		// drive a never-attempted entry to OutboxFailed. It is not marked
@@ -320,19 +326,56 @@ func (b *EventBus) cleanupLoop() {
 // retried while the channel was saturated. Without this loop such entries
 // would sit unprocessed until the next restart, violating the at-least-once
 // delivery contract.
+//
+// The wait between scans is adaptive: a publish-time enqueue drop signals
+// notifyBacklog, and a walk that stops early because the channel is full
+// proves a backlog outlives the channel — both re-arm the timer at the short
+// PendingRequeueRetryInterval instead of the full PendingRequeueInterval, so
+// momentary saturation cannot stretch into a full-period visibility delay
+// for the dropped entries. A kick never extends an already-short deadline,
+// which also bounds kick storms to at most one walk per retry interval. The
+// full interval remains the idle backstop.
 func (b *EventBus) requeuePendingLoop() {
 	defer b.wg.Done()
 	defer func() { resilience.RecoverAndRestart("eventbus requeuePendingLoop", &b.wg, b.requeuePendingLoop) }()
-	ticker := time.NewTicker(PendingRequeueInterval)
-	defer ticker.Stop()
+	armed := PendingRequeueInterval
+	timer := time.NewTimer(armed)
+	defer timer.Stop()
 
 	for {
 		select {
 		case <-b.stopCh:
 			return
-		case <-ticker.C:
-			b.requeuePending()
+		case <-b.requeueKick:
+			if armed <= PendingRequeueRetryInterval {
+				continue
+			}
+			if !timer.Stop() {
+				select {
+				case <-timer.C:
+				default:
+				}
+			}
+			armed = PendingRequeueRetryInterval
+			timer.Reset(armed)
+		case <-timer.C:
+			if b.requeuePending() {
+				armed = PendingRequeueRetryInterval
+			} else {
+				armed = PendingRequeueInterval
+			}
+			timer.Reset(armed)
 		}
+	}
+}
+
+// notifyBacklog prompts the requeue loop to scan without waiting out the
+// full PendingRequeueInterval. The channel has capacity one, so a burst of
+// drops coalesces into a single scheduled scan.
+func (b *EventBus) notifyBacklog() {
+	select {
+	case b.requeueKick <- struct{}{}:
+	default:
 	}
 }
 
@@ -340,10 +383,11 @@ func (b *EventBus) requeuePendingLoop() {
 // entries dropped because the async channel was full, or retried while the
 // channel was saturated. Without this loop such entries would sit
 // unprocessed until the next restart, violating the at-least-once delivery
-// contract.
-func (b *EventBus) requeuePending() {
+// contract. It reports whether the walk stopped early because the channel
+// was full, meaning a backlog may still be waiting behind the cursor.
+func (b *EventBus) requeuePending() bool {
 	if !b.started.Load() {
-		return
+		return false
 	}
 	// Walk every page of the backlog, resuming from where the previous
 	// tick stopped. When the async channel saturates mid-walk the scan
@@ -360,7 +404,7 @@ func (b *EventBus) requeuePending() {
 		pending, nextCursor, err := b.outbox.ListPendingFrom(context.Background(), pageSize, after)
 		if err != nil {
 			b.logWarn("failed to list pending outbox entries for requeue", "error", err)
-			return
+			return false
 		}
 		for _, entry := range pending {
 			select {
@@ -369,12 +413,12 @@ func (b *EventBus) requeuePending() {
 				// Channel full; the next tick resumes from this page so
 				// the entries behind it are not starved.
 				b.requeueCursor = after
-				return
+				return true
 			}
 		}
 		if len(pending) < pageSize {
 			b.requeueCursor = ""
-			return
+			return false
 		}
 		after = nextCursor
 	}

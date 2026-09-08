@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+
 	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/core/logs"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
@@ -44,7 +46,9 @@ func deliverDestination(
 		"version":   "1.0",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"requestContext": map[string]interface{}{
-			"requestId":              fmt.Sprintf("dest-%d", time.Now().UnixNano()),
+			// Event-destination records carry a UUID request id, the same
+			// shape Invoke assigns to invocation requests.
+			"requestId":              uuid.NewString(),
 			"functionArn":            function.FunctionArn,
 			"condition":              condition,
 			"approximateInvokeCount": invokeCount,

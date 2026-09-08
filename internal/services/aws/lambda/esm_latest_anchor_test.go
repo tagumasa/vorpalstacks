@@ -29,7 +29,9 @@ func (b *memBucket) Get(key []byte) ([]byte, error) {
 	defer b.mu.Unlock()
 	v, ok := b.data[string(key)]
 	if !ok {
-		return nil, fmt.Errorf("key not found: %s", key)
+		// Missing keys answer nil, nil — the production bucket contract
+		// that BaseStore.Get's not-found detection relies on.
+		return nil, nil
 	}
 	return append([]byte(nil), v...), nil
 }

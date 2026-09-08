@@ -3,9 +3,7 @@ package lambda
 
 import (
 	"context"
-	"os"
 
-	"vorpalstacks/internal/common/iam"
 	"vorpalstacks/internal/common/request"
 	lambdastore "vorpalstacks/internal/store/aws/lambda"
 )
@@ -24,59 +22,22 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 	}
 
 	codeMap := request.GetMapParam(req.Parameters, "Code")
-	zipFileStr := ""
-	imageUri := ""
-	s3Bucket := ""
-	s3Key := ""
-	s3Version := ""
-
-	if codeMap != nil {
-		if z, ok := codeMap["ZipFile"].(string); ok {
-			zipFileStr = z
-		}
-		if i, ok := codeMap["ImageUri"].(string); ok {
-			imageUri = i
-		}
-		if b, ok := codeMap["S3Bucket"].(string); ok {
-			s3Bucket = b
-		}
-		if k, ok := codeMap["S3Key"].(string); ok {
-			s3Key = k
-		}
-		if v, ok := codeMap["S3ObjectVersion"].(string); ok {
-			s3Version = v
-		}
-	}
-	if zipFileStr == "" {
-		if z, ok := req.Parameters["ZipFile"].(string); ok {
-			zipFileStr = z
-		}
-	}
-	if imageUri == "" {
-		if i, ok := req.Parameters["ImageUri"].(string); ok {
-			imageUri = i
-		}
+	if codeMap == nil {
+		codeMap = map[string]interface{}{}
 	}
 	// UpdateFunctionCode carries the code members at the top level of the
-	// request (only CreateFunction nests them under Code), so the S3
-	// placement has a flat fallback like ZipFile and ImageUri.
-	if s3Bucket == "" {
-		if b, ok := req.Parameters["S3Bucket"].(string); ok {
-			s3Bucket = b
-		}
-	}
-	if s3Key == "" {
-		if k, ok := req.Parameters["S3Key"].(string); ok {
-			s3Key = k
-		}
-	}
-	if s3Version == "" {
-		if v, ok := req.Parameters["S3ObjectVersion"].(string); ok {
-			s3Version = v
+	// request (only CreateFunction nests them under Code), so each member
+	// has a flat fallback like ZipFile and ImageUri; a member already read
+	// from the Code map wins over the flat one.
+	for _, member := range []string{"ZipFile", "ImageUri", "S3Bucket", "S3Key", "S3ObjectVersion"} {
+		if _, ok := codeMap[member]; !ok {
+			if v, ok := req.Parameters[member].(string); ok {
+				codeMap[member] = v
+			}
 		}
 	}
 
-	codeMeta, err := s.prepareFunctionCodeUpdateCore(ctx, reqCtx.GetRegion(), functionName, zipFileStr, imageUri, s3Bucket, s3Key, s3Version)
+	codeMeta, err := s.prepareFunctionCodeUpdateCore(ctx, reqCtx.GetRegion(), functionName, codeMap)
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +62,7 @@ func (s *LambdaService) UpdateFunctionCode(ctx context.Context, reqCtx *request.
 		return s.toFunctionConfiguration(current), nil
 	}
 
+	imageUri, _ := codeMap["ImageUri"].(string)
 	function, published, err := s.updateFunctionCodeCore(store, &UpdateFunctionCodeInput{
 		FunctionName:  functionName,
 		CodeLocation:  codeMeta.CodeLocation,
@@ -139,14 +101,6 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 
 	runtime := request.GetStringParam(req.Parameters, "Runtime")
 	role := request.GetStringParam(req.Parameters, "Role")
-	if role != "" {
-		validator := reqCtx.GetIAMValidator()
-		if os.Getenv("TEST_MODE") != "true" {
-			if err := validator.ValidateRoleForService(ctx, role, iam.ServicePrincipalLambda); err != nil {
-				return nil, err
-			}
-		}
-	}
 
 	// Parse and resolve VpcConfig before the Core call so that
 	// EC2 subnet validation (I/O) happens outside the store lock.
@@ -205,29 +159,9 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 		}
 	}
 
-	// A present member is validated as-is: negative or zero values are
-	// rejected instead of being silently ignored as "not provided".
-	if _, ok := req.Parameters["Timeout"]; ok {
-		if err := validateTimeout(int32(request.GetIntParam(req.Parameters, "Timeout"))); err != nil {
-			return nil, err
-		}
-	}
-	if _, ok := req.Parameters["MemorySize"]; ok {
-		if err := validateMemorySize(int32(request.GetIntParam(req.Parameters, "MemorySize"))); err != nil {
-			return nil, err
-		}
-	}
-
 	var newFileSystemConfigs []lambdastore.FileSystemConfig
 	if fscs, ok := req.Parameters["FileSystemConfigs"].([]interface{}); ok {
-		for _, fsc := range fscs {
-			if m, ok := fsc.(map[string]interface{}); ok {
-				newFileSystemConfigs = append(newFileSystemConfigs, lambdastore.FileSystemConfig{
-					Arn:            request.GetStringParam(m, "Arn"),
-					LocalMountPath: request.GetStringParam(m, "LocalMountPath"),
-				})
-			}
-		}
+		newFileSystemConfigs = parseFileSystemConfigs(fscs)
 	}
 
 	var newLayers []lambdastore.LayerReference
@@ -240,7 +174,7 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 		}
 	}
 
-	function, err := s.updateFunctionConfigurationCore(ctx, store, &UpdateFunctionConfigurationInput{
+	update := &UpdateFunctionConfigurationInput{
 		FunctionName:         functionName,
 		Runtime:              runtime,
 		Role:                 role,
@@ -260,7 +194,26 @@ func (s *LambdaService) UpdateFunctionConfiguration(ctx context.Context, reqCtx 
 		SnapStart:            newSnapStart,
 		FileSystemConfigs:    newFileSystemConfigs,
 		Layers:               newLayers,
-	})
+		IAMValidator:         reqCtx.GetIAMValidator(),
+		RevisionId:           request.GetStringParam(req.Parameters, "RevisionId"),
+	}
+	// Presence detection for the members whose zero value carries request
+	// meaning (an empty Description clears, a zero Timeout or MemorySize is
+	// range-rejected); the Core owns the semantics for both planes.
+	if _, ok := req.Parameters["Description"]; ok {
+		update.HasDescription = true
+	}
+	if _, ok := req.Parameters["Timeout"]; ok {
+		update.HasTimeout = true
+	}
+	if _, ok := req.Parameters["MemorySize"]; ok {
+		update.HasMemorySize = true
+	}
+	if request.GetMapParam(req.Parameters, "DeadLetterConfig") != nil {
+		update.HasDeadLetterConfig = true
+	}
+
+	function, err := s.updateFunctionConfigurationCore(ctx, store, update)
 	if err != nil {
 		return nil, err
 	}

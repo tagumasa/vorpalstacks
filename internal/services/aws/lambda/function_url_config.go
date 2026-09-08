@@ -44,22 +44,7 @@ func (s *LambdaService) CreateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
-	result := map[string]interface{}{
-		"FunctionUrl":      config.FunctionUrl,
-		"FunctionArn":      config.FunctionArn,
-		"AuthType":         config.AuthType,
-		"CreationTime":     config.CreationTime.Format(timeutils.ISO8601UTCFormat),
-		"LastModifiedTime": config.LastModifiedTime.Format(timeutils.ISO8601UTCFormat),
-	}
-
-	if config.InvokeMode != "" {
-		result["InvokeMode"] = config.InvokeMode
-	}
-	if config.Cors != nil {
-		result["Cors"] = toCorsConfig(config.Cors)
-	}
-
-	return result, nil
+	return s.toFunctionUrlConfig(config), nil
 }
 
 // DeleteFunctionUrlConfig deletes the function URL configuration for a Lambda function.
@@ -109,11 +94,16 @@ func (s *LambdaService) UpdateFunctionUrlConfig(ctx context.Context, reqCtx *req
 		return nil, err
 	}
 
+	// An embedded ":qualifier" suffix on the FunctionName reference is
+	// equivalent to the Qualifier parameter, as on create.
+	_, embeddedQualifier := resolveFunctionRef(request.GetStringParam(req.Parameters, "FunctionName"))
+	qualifier := mergeQualifier(request.GetStringParam(req.Parameters, "Qualifier"), embeddedQualifier)
+
 	config, err := s.updateFunctionUrlConfigCore(store, function, &FunctionUrlConfigUpdateInput{
 		AuthType:   request.GetStringParam(req.Parameters, "AuthType"),
 		InvokeMode: request.GetStringParam(req.Parameters, "InvokeMode"),
 		Cors:       request.GetMapParam(req.Parameters, "Cors"),
-		Qualifier:  request.GetStringParam(req.Parameters, "Qualifier"),
+		Qualifier:  qualifier,
 	})
 	if err != nil {
 		return nil, err

@@ -27,13 +27,9 @@ var (
 	_ response.StatusCodeResponse = (*invokeAsyncResponse)(nil)
 )
 
-// Payload size limits per the API model's Invoke documentation: "The
-// maximum payload size is 6 MB for synchronous invocations and 1 MB for
-// asynchronous invocations."
-const (
-	syncMaxPayloadSize  = 6 * 1024 * 1024 // 6 MB for synchronous invocation
-	asyncMaxPayloadSize = 1024 * 1024     // 1 MB for asynchronous invocation
-)
+// invokeTailLogLimitBytes is the Invoke LogType=Tail contract: "Tail"
+// returns the last 4 KB of the function's log output.
+const invokeTailLogLimitBytes = 4096
 
 // Invoke synchronously invokes a Lambda function with the given payload.
 // Returns the function output, status code, and executed version.
@@ -57,24 +53,23 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 	payload := req.Body
 
 	invocationType := request.GetStringParam(req.Parameters, "InvocationType")
-	if err := validateInvocationType(invocationType); err != nil {
+	mode, err := prepareInvocationCore(&InvokeRequest{
+		InvocationType: invocationType,
+		LogType:        request.GetStringParam(req.Parameters, "LogType"),
+		Payload:        payload,
+	})
+	if err != nil {
 		return nil, err
 	}
 
 	// DryRun: AWS returns 204 without invoking the function. The
 	// caller has already been authorised by this point, so we simply
 	// acknowledge the request.
-	if invocationType == "DryRun" {
+	if mode == InvocationModeDryRun {
 		return &lambdaInvokeResponse{result: &lambdastore.InvocationResult{StatusCode: 204}}, nil
 	}
 
-	if invocationType == "Event" {
-		if len(payload) > asyncMaxPayloadSize {
-			return nil, ErrRequestTooLarge
-		}
-		region := reqCtx.GetRegion()
-		functionCopy := deepCopyFunction(function)
-		verCopy := deepCopyVersion(ver)
+	if mode == InvocationModeEvent {
 		// The effective qualifier (explicit parameter or embedded in the
 		// function reference) selects the event-invoke config and reaches
 		// the handler context's invoked ARN.
@@ -82,22 +77,7 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		if alias != nil {
 			qualifier = alias.Name
 		}
-		s.asyncWg.Add(1)
-		go func() {
-			defer s.asyncWg.Done()
-			defer func() {
-				if r := recover(); r != nil {
-					logs.Error("Invoke Event panic", logs.String("function", functionCopy.FunctionName), logs.Any("panic", r))
-				}
-			}()
-			// Use a detached context so that retry and destination
-			// delivery survive after the HTTP 202 response is sent and
-			// the request context is cancelled.
-			asyncCtx, cancel := context.WithCancel(context.Background())
-			defer cancel()
-			asyncStore := s.getOrCreateFunctionStore(region)
-			s.invokeAsyncWithRetry(asyncCtx, functionCopy, verCopy, asyncStore, region, payload, qualifier)
-		}()
+		s.invokeAsyncDetached("Invoke Event", function, ver, reqCtx.GetRegion(), payload, qualifier)
 		return &lambdaInvokeResponse{result: &lambdastore.InvocationResult{StatusCode: 202}}, nil
 	}
 
@@ -106,15 +86,7 @@ func (s *LambdaService) Invoke(ctx context.Context, reqCtx *request.RequestConte
 		return nil, err
 	}
 
-	// Synchronous invocation payload limit: 6 MB.
-	if len(payload) > syncMaxPayloadSize {
-		return nil, ErrRequestTooLarge
-	}
-
 	logType := request.GetStringParam(req.Parameters, "LogType")
-	if err := validateLogType(logType); err != nil {
-		return nil, err
-	}
 
 	// The invoked ARN records the qualifier the caller used (plain ARN,
 	// ARN:alias or ARN:version — including one embedded in the FunctionName
@@ -196,11 +168,14 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 	}
 
 	// Payload is bound as httpPayload (the body is the payload document,
-	// not a parameter map).
+	// not a parameter map). Streaming invocation is synchronous: the 6 MB
+	// cap and the LogType enum are validated by the shared core guard.
 	payload := req.Body
-
-	if len(payload) > syncMaxPayloadSize {
-		return nil, ErrRequestTooLarge
+	if _, err := validateInvokeSyncCore(&InvokeRequest{
+		LogType: request.GetStringParam(req.Parameters, "LogType"),
+		Payload: payload,
+	}); err != nil {
+		return nil, err
 	}
 
 	store, err := s.store(reqCtx)
@@ -211,9 +186,6 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 	// Tail carries the execution log in the InvokeComplete event's
 	// LogResult member.
 	logType := request.GetStringParam(req.Parameters, "LogType")
-	if err := validateLogType(logType); err != nil {
-		return nil, err
-	}
 	// ClientContext reaches the handler's context object on synchronous
 	// invocations only (Smithy); the invoked ARN records the qualifier,
 	// including one embedded in the FunctionName reference.
@@ -241,7 +213,11 @@ func (s *LambdaService) InvokeWithResponseStream(ctx context.Context, reqCtx *re
 	pr, pw := io.Pipe()
 	go func() {
 		defer pw.Close()
-		defer func() { recover() }()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("Panic in InvokeWithResponseStream writer goroutine", logs.Any("panic", r))
+			}
+		}()
 		w := NewInvokeResponseStreamWriter(pw)
 
 		if result.FunctionError != "" {
@@ -320,35 +296,40 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 	}
 
 	// InvokeArgs is bound as httpPayload: the body is the argument document
-	// the handler receives as its event.
+	// the handler receives as its event. The asynchronous 1 MB payload cap
+	// is validated by the shared core guard.
 	payload := req.Body
-
-	if len(payload) > asyncMaxPayloadSize {
-		return nil, ErrRequestTooLarge
-	}
-
-	region := reqCtx.GetRegion()
-
-	functionCopy := deepCopyFunction(function)
-	var verCopy *lambdastore.Version
-	if ver != nil {
-		verCopy = deepCopyVersion(ver)
+	if err := validateInvokeAsyncCore(&InvokeRequest{Payload: payload}); err != nil {
+		return nil, err
 	}
 
 	// The effective qualifier (explicit parameter or embedded in the
-	// function reference) selects the event-invoke config and reaches the
-	// handler context's invoked ARN.
+	// function reference) selects the event-invoke config and reaches
+	// the handler context's invoked ARN.
 	qualifier := effectiveQualifier
 	if alias != nil {
 		qualifier = alias.Name
 	}
 
+	s.invokeAsyncDetached("InvokeAsync", function, ver, reqCtx.GetRegion(), payload, qualifier)
+
+	return &invokeAsyncResponse{Status: 202}, nil
+}
+
+// invokeAsyncDetached launches one asynchronous invocation in a background
+// goroutine: it snapshots the function and the addressed version so the
+// launch reads records that stay stable after the HTTP 202 response returns,
+// then runs the retry/destination pipeline on a context detached from the
+// request. op names the launching operation in panic logs.
+func (s *LambdaService) invokeAsyncDetached(op string, function *lambdastore.Function, ver *lambdastore.Version, region string, payload []byte, qualifier string) {
+	functionCopy := function.DeepCopy()
+	verCopy := ver.DeepCopy() // nil-safe: a nil version deep-copies to nil
 	s.asyncWg.Add(1)
 	go func() {
 		defer s.asyncWg.Done()
 		defer func() {
 			if r := recover(); r != nil {
-				logs.Error("InvokeAsync panic", logs.String("function", functionCopy.FunctionName), logs.Any("panic", r))
+				logs.Error(op+" panic", logs.String("function", functionCopy.FunctionName), logs.Any("panic", r))
 			}
 		}()
 		// Use a detached context so that retry and destination
@@ -359,8 +340,6 @@ func (s *LambdaService) InvokeAsync(ctx context.Context, reqCtx *request.Request
 		asyncStore := s.getOrCreateFunctionStore(region)
 		s.invokeAsyncWithRetry(asyncCtx, functionCopy, verCopy, asyncStore, region, payload, qualifier)
 	}()
-
-	return &invokeAsyncResponse{Status: 202}, nil
 }
 
 // invokeAsyncResponse represents the response from an asynchronous Lambda invocation.
@@ -392,12 +371,13 @@ func (s *LambdaService) PublishVersion(ctx context.Context, reqCtx *request.Requ
 	}
 
 	description := request.GetStringParam(req.Parameters, "Description")
+	revisionId := request.GetStringParam(req.Parameters, "RevisionId")
 
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	version, err := s.publishVersionWithCode(store, function, description, reqCtx.GetRegion())
+	version, err := s.publishVersionWithCode(store, function, description, revisionId, reqCtx.GetRegion())
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +388,7 @@ func (s *LambdaService) PublishVersion(ctx context.Context, reqCtx *request.Requ
 // ListVersionsByFunction returns all versions of a Lambda function,
 // including the $LATEST version and all published versions.
 func (s *LambdaService) ListVersionsByFunction(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	function, err := s.validateAndGetFunction(reqCtx, req.Parameters)
+	function, err := s.validateAndGetFunctionNamespaced(reqCtx, req.Parameters)
 	if err != nil {
 		return nil, err
 	}
@@ -541,9 +521,6 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 	functionName = extractFunctionName(functionName)
 
 	aliasName := request.GetStringParam(req.Parameters, "Name")
-	if err := validateAliasName(aliasName); err != nil {
-		return nil, err
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -553,6 +530,7 @@ func (s *LambdaService) UpdateAlias(ctx context.Context, reqCtx *request.Request
 	in := &AliasUpdateInput{
 		Description:     request.GetStringParam(req.Parameters, "Description"),
 		FunctionVersion: request.GetStringParam(req.Parameters, "FunctionVersion"),
+		RevisionId:      request.GetStringParam(req.Parameters, "RevisionId"),
 	}
 	_, in.HasDescription = req.Parameters["Description"]
 	if routingMap := request.GetMapParam(req.Parameters, "RoutingConfig"); routingMap != nil {
