@@ -10,7 +10,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
-func newTestStorage(t *testing.T) storage.Storage {
+func newTestStorage(t *testing.T) *storage.PebbleStorage {
 	tmpDir := filepath.Join(os.TempDir(), "api-store-test")
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 
@@ -19,7 +19,7 @@ func newTestStorage(t *testing.T) storage.Storage {
 	return s
 }
 
-func newTestStorageForSubtest(t *testing.T) storage.Storage {
+func newTestStorageForSubtest(t *testing.T) *storage.PebbleStorage {
 	tmpDir := filepath.Join(os.TempDir(), "api-store-test-"+t.Name())
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 

@@ -53,10 +53,13 @@ func (b *PebbleVersionedBucket) makeCounterKey() []byte {
 	return k
 }
 
-func (b *PebbleVersionedBucket) getNextVersion() (uint64, error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-
+// enqueueNextVersion reads the version counter and enqueues its increment
+// into batch, returning the version the batch's value writes must carry.
+// The counter moves with the value in one commit — a crash between
+// allocation and use can no longer burn a version number, and callers
+// holding b.mu serialise concurrent allocations. The counter write is
+// visible to later reads only after the batch commits.
+func (b *PebbleVersionedBucket) enqueueNextVersion(batch *pebbledb.Batch) (uint64, error) {
 	counterKey := b.makeCounterKey()
 
 	var currentVersion uint64
@@ -71,17 +74,9 @@ func (b *PebbleVersionedBucket) getNextVersion() (uint64, error) {
 	newVersion := currentVersion + 1
 	counterData := make([]byte, uint64Size)
 	binary.BigEndian.PutUint64(counterData, newVersion)
-
-	batch := b.db.NewBatch()
 	if err := batch.Set(counterKey, counterData); err != nil {
-		batch.Close()
 		return 0, err
 	}
-	if err := batch.Commit(pebble.Sync); err != nil {
-		batch.Close()
-		return 0, err
-	}
-	batch.Close()
 
 	return newVersion, nil
 }
@@ -122,7 +117,13 @@ func (b *PebbleVersionedBucket) GetLatest(key []byte) (*VersionedValue, error) {
 // PutWithVersion stores a value with automatic version incrementing.
 // Returns the new versioned value.
 func (b *PebbleVersionedBucket) PutWithVersion(key, value []byte) (*VersionedValue, error) {
-	version, err := b.getNextVersion()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	batch := b.db.NewBatch()
+	defer batch.Close()
+
+	version, err := b.enqueueNextVersion(batch)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +138,6 @@ func (b *PebbleVersionedBucket) PutWithVersion(key, value []byte) (*VersionedVal
 
 	encoded := b.encodeVersionedValue(vv)
 	fullKey := b.makeKey(key, version)
-
-	batch := b.db.NewBatch()
-	defer batch.Close()
 
 	if err := batch.Set(fullKey, encoded); err != nil {
 		return nil, err
@@ -162,7 +160,13 @@ func (b *PebbleVersionedBucket) PutWithVersion(key, value []byte) (*VersionedVal
 // DeleteWithVersion marks a key as deleted with a new version.
 // This creates a tombstone that can be filtered in list operations.
 func (b *PebbleVersionedBucket) DeleteWithVersion(key []byte) (*VersionedValue, error) {
-	version, err := b.getNextVersion()
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	batch := b.db.NewBatch()
+	defer batch.Close()
+
+	version, err := b.enqueueNextVersion(batch)
 	if err != nil {
 		return nil, err
 	}
@@ -177,9 +181,6 @@ func (b *PebbleVersionedBucket) DeleteWithVersion(key []byte) (*VersionedValue, 
 
 	encoded := b.encodeVersionedValue(vv)
 	fullKey := b.makeKey(key, version)
-
-	batch := b.db.NewBatch()
-	defer batch.Close()
 
 	if err := batch.Set(fullKey, encoded); err != nil {
 		return nil, err
@@ -344,21 +345,3 @@ func (b *PebbleVersionedBucket) decodeVersionedValue(data []byte) *VersionedValu
 
 	return vv
 }
-
-// VersionConflictError is returned when a version conflict is detected
-// during optimistic locking operations.
-type VersionConflictError struct {
-	Key []byte
-	Err error
-}
-
-// Error returns the error message for the version conflict.
-func (e *VersionConflictError) Error() string {
-	if e.Err != nil {
-		return "version conflict: " + e.Err.Error()
-	}
-	return "version conflict: failed to acquire unique version after retries"
-}
-
-// Unwrap returns the underlying error, if any.
-func (e *VersionConflictError) Unwrap() error { return e.Err }

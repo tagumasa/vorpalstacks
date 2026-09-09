@@ -178,7 +178,7 @@ func lifecycleTransitionToProto(t *LifecycleTransition) *pb.LifecycleTransition 
 	return &pb.LifecycleTransition{
 		Date:         timeToProto(t.Date),
 		Days:         ptrutil.DerefOrZero(t.Days),
-		StorageClass: objectStorageClassToProto(t.StorageClass),
+		StorageClass: ObjectStorageClassToProto(t.StorageClass),
 	}
 }
 
@@ -242,7 +242,7 @@ func noncurrentVersionTransitionToProto(t *NoncurrentVersionTransition) *pb.Nonc
 	return &pb.NoncurrentVersionTransition{
 		NoncurrentDays:          ptrutil.DerefOrZero(t.NoncurrentDays),
 		NewerNoncurrentVersions: ptrutil.DerefOrZero(t.NewerNoncurrentVersions),
-		StorageClass:            objectStorageClassToProto(t.StorageClass),
+		StorageClass:            ObjectStorageClassToProto(t.StorageClass),
 	}
 }
 

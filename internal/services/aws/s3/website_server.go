@@ -119,55 +119,19 @@ func (s *WebsiteServer) HandleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The website request path only fails with 404 (the single object Get
+	// above), so routing rules are matched against that status; a rule
+	// conditioned on another error code can never fire here.
 	for _, rule := range wc.RoutingRules {
-		if routingRuleMatches(&rule, requestKey, 404) {
-			redirect := rule.Redirect
-			if redirect.ReplaceKeyWith != nil {
-				loc := "/" + *redirect.ReplaceKeyWith
-				if redirect.HostName != nil {
-					loc = "http://" + *redirect.HostName + loc
-				}
-				code := http.StatusFound
-				if redirect.HTTPRedirectCode != nil {
-					parsed := 0
-					if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
-						code = parsed
-					}
-				}
-				http.Redirect(w, r, loc, code)
-				return
-			}
-			if redirect.ReplaceKeyPrefixWith != nil {
-				loc := "/" + *redirect.ReplaceKeyPrefixWith + strings.TrimPrefix(requestKey, *rule.Condition.KeyPrefixEquals)
-				if redirect.HostName != nil {
-					loc = "http://" + *redirect.HostName + loc
-				}
-				code := http.StatusFound
-				if redirect.HTTPRedirectCode != nil {
-					parsed := 0
-					if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
-						code = parsed
-					}
-				}
-				http.Redirect(w, r, loc, code)
-				return
-			}
-			if redirect.HostName != nil {
-				proto := "http"
-				if redirect.Protocol != nil {
-					proto = *redirect.Protocol
-				}
-				loc := proto + "://" + *redirect.HostName + "/" + requestKey
-				code := http.StatusFound
-				if redirect.HTTPRedirectCode != nil {
-					parsed := 0
-					if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
-						code = parsed
-					}
-				}
-				http.Redirect(w, r, loc, code)
-				return
-			}
+		if !routingRuleMatches(&rule, requestKey, 404) || rule.Redirect == nil {
+			continue
+		}
+		var keyPrefix string
+		if rule.Condition != nil && rule.Condition.KeyPrefixEquals != nil {
+			keyPrefix = *rule.Condition.KeyPrefixEquals
+		}
+		if applyWebsiteRedirect(w, r, rule.Redirect, requestKey, keyPrefix) {
+			return
 		}
 	}
 
@@ -222,6 +186,44 @@ func (s *WebsiteServer) writeWebsiteError(w http.ResponseWriter, statusCode int,
 <p>%s</p>
 </body>
 </html>`, code, code, message)
+}
+
+// applyWebsiteRedirect writes the redirect for a matched routing rule. The
+// Location is derived from whichever member the redirect carries —
+// ReplaceKeyWith, ReplaceKeyPrefixWith (which rewrites only the matched
+// key prefix) or a HostName retarget — and the status from
+// HTTPRedirectCode, defaulting to 302 Found when unset or unparsable. It
+// reports whether the redirect carried any of those members.
+func applyWebsiteRedirect(w http.ResponseWriter, r *http.Request, redirect *s3store.RoutingRuleRedirect, requestKey, keyPrefixEquals string) bool {
+	var loc string
+	switch {
+	case redirect.ReplaceKeyWith != nil:
+		loc = "/" + *redirect.ReplaceKeyWith
+	case redirect.ReplaceKeyPrefixWith != nil:
+		loc = "/" + *redirect.ReplaceKeyPrefixWith + strings.TrimPrefix(requestKey, keyPrefixEquals)
+	case redirect.HostName != nil:
+		proto := "http"
+		if redirect.Protocol != nil {
+			proto = *redirect.Protocol
+		}
+		loc = proto + "://" + *redirect.HostName + "/" + requestKey
+	default:
+		return false
+	}
+	// A key rewrite combined with a host name retargets the rewritten path
+	// at that host; the host branch above already carries its own scheme.
+	if redirect.HostName != nil && strings.HasPrefix(loc, "/") {
+		loc = "http://" + *redirect.HostName + loc
+	}
+	code := http.StatusFound
+	if redirect.HTTPRedirectCode != nil {
+		parsed := 0
+		if _, err := fmt.Sscanf(*redirect.HTTPRedirectCode, "%d", &parsed); err == nil && parsed > 0 {
+			code = parsed
+		}
+	}
+	http.Redirect(w, r, loc, code)
+	return true
 }
 
 func routingRuleMatches(rr *s3store.RoutingRule, key string, httpCode int) bool {

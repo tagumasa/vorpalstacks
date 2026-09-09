@@ -144,15 +144,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		return nil, fmt.Errorf("eventbus: get storage for region %s: %w", region, err)
 	}
 
-	pebbleStorage, ok := regionStorage.(*storage.PebbleStorage)
-	if !ok {
-		if ownsStorage {
-			storageMgr.Close()
-		}
-		return nil, fmt.Errorf("eventbus: storage is not PebbleStorage")
-	}
-
-	pebbleDB := pebbleStorage.DB()
+	pebbleDB := regionStorage.DB()
 
 	outbox := eventbus.NewPebbleOutboxStore(pebbleDB)
 

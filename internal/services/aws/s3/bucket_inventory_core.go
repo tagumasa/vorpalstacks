@@ -94,25 +94,23 @@ func (s *S3Service) putBucketInventoryConfigurationCore(bucketStore s3store.Buck
 	if config.Filter != nil {
 		stored.Filter = &s3store.InventoryFilter{Prefix: config.Filter.Prefix}
 	}
-	if dest != nil {
-		storedEncryption := &s3store.InventoryEncryption{}
-		if dest.Encryption != nil {
-			if dest.Encryption.SSES3 != nil {
-				storedEncryption.SSES3 = true
-			}
-			if dest.Encryption.SSEKMS != nil {
-				storedEncryption.SSEKMS = &s3store.InventorySSEKMS{KeyID: dest.Encryption.SSEKMS.KeyID}
-			}
+	storedEncryption := &s3store.InventoryEncryption{}
+	if dest.Encryption != nil {
+		if dest.Encryption.SSES3 != nil {
+			storedEncryption.SSES3 = true
 		}
-		stored.Destination = &s3store.InventoryDestination{
-			S3BucketDestination: &s3store.InventoryS3BucketDestination{
-				AccountID:  dest.AccountID,
-				Bucket:     dest.Bucket,
-				Format:     dest.Format,
-				Prefix:     dest.Prefix,
-				Encryption: storedEncryption,
-			},
+		if dest.Encryption.SSEKMS != nil {
+			storedEncryption.SSEKMS = &s3store.InventorySSEKMS{KeyID: dest.Encryption.SSEKMS.KeyID}
 		}
+	}
+	stored.Destination = &s3store.InventoryDestination{
+		S3BucketDestination: &s3store.InventoryS3BucketDestination{
+			AccountID:  dest.AccountID,
+			Bucket:     dest.Bucket,
+			Format:     dest.Format,
+			Prefix:     dest.Prefix,
+			Encryption: storedEncryption,
+		},
 	}
 	return bucketStore.SetInventoryConfiguration(in.Bucket, in.Id, stored)
 }
@@ -147,27 +145,15 @@ func (s *S3Service) listBucketInventoryConfigurationsCore(bucketStore s3store.Bu
 	if err != nil {
 		return nil, err
 	}
-	const pageSize = 100
-	start := 0
-	if in.ContinuationToken != "" {
-		for start < len(configs) && configs[start].ID <= in.ContinuationToken {
-			start++
-		}
-	}
-	end := start + pageSize
-	if end > len(configs) {
-		end = len(configs)
-	}
+	page, nextToken, truncated := paginateIDConfigurations(configs, in.ContinuationToken, func(c *s3store.InventoryConfiguration) string { return c.ID })
 	out := &ListBucketInventoryConfigurationsOutput{
 		ContinuationToken: in.ContinuationToken,
 	}
-	for _, stored := range configs[start:end] {
+	for _, stored := range page {
 		out.InventoryConfigurations = append(out.InventoryConfigurations, *inventoryConfigurationToOutput(stored))
 	}
-	if end < len(configs) {
-		out.IsTruncated = true
-		out.NextContinuationToken = configs[end-1].ID
-	}
+	out.IsTruncated = truncated
+	out.NextContinuationToken = nextToken
 	return out, nil
 }
 

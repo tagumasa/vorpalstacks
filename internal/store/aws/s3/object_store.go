@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,7 +11,6 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"vorpalstacks/internal/core/storage"
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
@@ -52,6 +52,9 @@ var (
 	// specific object version runs against a bucket whose versioning was
 	// never enabled.
 	ErrVersioningNotEnabled = common.NewStoreError("s3", "versioning_not_enabled", common.ErrInvalidState)
+	// ErrRetentionNotFound is returned when an object version carries no
+	// retention configuration — the NoSuchObjectRetention condition.
+	ErrRetentionNotFound = common.NewStoreError("s3", "retention_not_found", common.ErrNotFound)
 )
 
 // ObjectStore manages S3 object storage and retrieval.
@@ -158,45 +161,133 @@ func (s *ObjectStore) isVersioningEnabled(bucket string) bool {
 	return enabled
 }
 
-// resolveObjectMetaPB loads the protobuf record for a bucket/key/versionId
-// request using the shared version-resolution rules: an explicit version ID
-// reads that version's record; an implicit request on a versioned bucket
-// reads the latest pointer and falls back to the pre-versioning null-version
-// record when the pointer is absent; a non-versioned bucket reads the
-// null-version record directly. Delete markers surface as ErrObjectNotFound.
-func (s *ObjectStore) resolveObjectMetaPB(bucket, key, versionId string) (*pb.Object, error) {
-	isVersioned := s.isVersioningEnabled(bucket)
-	effectiveVersionId := versionId
-	if !isVersioned && versionId == "null" {
-		effectiveVersionId = ""
+// recordNotFoundOrErr maps a record read to its caller-facing error: an
+// absent key is the not-found sentinel, while any other failure (I/O,
+// corruption, unmarshal) propagates — a store fault must never surface as
+// a missing object.
+func recordNotFoundOrErr(err error) error {
+	if errors.Is(err, common.ErrNotFound) {
+		return ErrObjectNotFound
 	}
+	return err
+}
 
+// resolveObjectRecordPB loads the protobuf record addressed by the layout
+// rules and reports the storage key it was read from, so mutation paths
+// write the record back where it lives. The layout decides, not the
+// bucket's current versioning status: an explicit versionId addresses
+// that record directly (the null version included), while the current
+// version is the "_latest" pointer when the key carries versioned layout
+// and the null record otherwise — suspension rewrites nothing, and a
+// suspended write replaces the pointer with its null record. Unlike
+// resolveObjectMetaPB it does not reject delete markers; the caller
+// decides what a marker means for its operation.
+func (s *ObjectStore) resolveObjectRecordPB(bucket, key, versionId string) (*pb.Object, string, error) {
 	var pbObj pb.Object
-	if effectiveVersionId != "" {
-		if err := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, effectiveVersionId), &pbObj); err != nil {
-			return nil, ErrObjectNotFound
+	if versionId != "" {
+		storageKey := s.versionedStorageKey(bucket, key, versionId)
+		if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
+			return nil, "", recordNotFoundOrErr(err)
 		}
-	} else if isVersioned {
-		if err := s.BaseStore.GetProto(s.latestKeyStorageKey(bucket, key), &pbObj); err != nil {
-			// Fallback: object may predate versioning enablement, in which
-			// case only the null-version record exists.
-			if err2 := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err2 != nil {
-				return nil, ErrObjectNotFound
-			}
+		return &pbObj, storageKey, nil
+	}
+	latestKey := s.latestKeyStorageKey(bucket, key)
+	if err := s.BaseStore.GetProto(latestKey, &pbObj); err != nil {
+		if !errors.Is(err, common.ErrNotFound) {
+			return nil, "", err
 		}
-	} else {
-		if err := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &pbObj); err != nil {
-			return nil, ErrObjectNotFound
+		// Fallback: the key may predate versioning enablement or carry
+		// a suspended write — only the null-version record exists.
+		nullKey := s.versionedStorageKey(bucket, key, "null")
+		if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
+			return nil, "", recordNotFoundOrErr(err2)
 		}
+		return &pbObj, nullKey, nil
+	}
+	return &pbObj, latestKey, nil
+}
+
+// resolveObjectMetaPB reads one object record through the shared layout
+// resolution (see resolveObjectRecordPB). Delete markers surface as
+// ErrObjectNotFound: a marker is not a readable object.
+func (s *ObjectStore) resolveObjectMetaPB(bucket, key, versionId string) (*pb.Object, error) {
+	pbObj, _, err := s.resolveObjectRecordPB(bucket, key, versionId)
+	if err != nil {
+		return nil, err
 	}
 	if pbObj.IsDeleteMarker {
 		return nil, ErrObjectNotFound
 	}
-	return &pbObj, nil
+	return pbObj, nil
 }
 
-func (s *ObjectStore) multipartKey(uploadId string) string {
-	return uploadId
+// mutateObjectRecord is the single mutation skeleton for object metadata:
+// it resolves the addressed record (explicit versionId, or the current
+// version by layout), rejects delete markers, applies mutate, and commits
+// the mutated record together with its shadow copies in one atomic batch —
+// a crash between writes can never leave the record and its shadows out of
+// step. Callers that need extra writes in the same commit (the restore
+// index) use enqueueRecordWithShadows directly instead.
+func (s *ObjectStore) mutateObjectRecord(bucket, key, versionId string, mutate func(*Object) error) error {
+	lockKey := bucket + keySep + key
+	return s.keyLocker.WithLock(lockKey, func() error {
+		pbObj, storageKey, err := s.resolveObjectRecordPB(bucket, key, versionId)
+		if err != nil {
+			return err
+		}
+		if pbObj.IsDeleteMarker {
+			return ErrObjectNotFound
+		}
+
+		obj := ProtoToObject(pbObj)
+		if err := mutate(obj); err != nil {
+			return err
+		}
+
+		batchBucket, ok := s.BaseStore.Bucket().(storage.BatchBucket)
+		if !ok {
+			return fmt.Errorf("s3: storage bucket does not support atomic batches")
+		}
+		batch := batchBucket.NewBatch()
+		defer batch.Close()
+
+		if err := s.enqueueRecordWithShadows(batch, bucket, key, storageKey, versionId, obj); err != nil {
+			return err
+		}
+		return batch.Commit()
+	})
+}
+
+// enqueueRecordWithShadows buffers obj's record and its shadow copies into
+// batch: the addressed storage key, the versioned record when the address
+// was the "_latest" pointer, and the pointer itself when the record is the
+// current version and the pointer already exists — a suspended key never
+// resurrects its pointer, and a never-versioned key never grows one.
+func (s *ObjectStore) enqueueRecordWithShadows(batch storage.Batch, bucket, key, storageKey, versionId string, obj *Object) error {
+	objBytes, err := proto.Marshal(ObjectToProto(obj))
+	if err != nil {
+		return err
+	}
+	if err := batch.Put([]byte(storageKey), objBytes); err != nil {
+		return err
+	}
+	vid := versionId
+	if vid == "" {
+		vid = obj.VersionID
+	}
+	versionedKey := s.versionedStorageKey(bucket, key, vid)
+	if versionedKey != storageKey {
+		if err := batch.Put([]byte(versionedKey), objBytes); err != nil {
+			return err
+		}
+	}
+	latestKey := s.latestKeyStorageKey(bucket, key)
+	if obj.IsLatest && latestKey != storageKey && s.BaseStore.Exists(latestKey) {
+		if err := batch.Put([]byte(latestKey), objBytes); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func multipartIndexBucketName(region string) string {
@@ -207,16 +298,6 @@ func (s *ObjectStore) multipartIndexKey(bucket, key, uploadId string) string {
 	return bucket + keySep + key + keySep + uploadId
 }
 
-func validateS3Key(key string) error {
-	if strings.Contains(key, "..") {
-		return fmt.Errorf("invalid object key: path traversal detected")
-	}
-	if strings.Contains(key, "\x00") {
-		return fmt.Errorf("invalid object key: null byte detected")
-	}
-	return nil
-}
-
 // Get retrieves an object from the store.
 func (s *ObjectStore) Get(ctx context.Context, bucket, key string) (io.ReadCloser, *Object, error) {
 	return s.GetWithVersion(ctx, bucket, key, "")
@@ -224,27 +305,7 @@ func (s *ObjectStore) Get(ctx context.Context, bucket, key string) (io.ReadClose
 
 // GetMetadata retrieves metadata for an object.
 func (s *ObjectStore) GetMetadata(bucket, key string) (*Object, error) {
-	var obj pb.Object
-
-	if s.isVersioningEnabled(bucket) {
-		latestKey := s.latestKeyStorageKey(bucket, key)
-		if err := s.BaseStore.GetProto(latestKey, &obj); err != nil {
-			// Fallback: object may have been created before versioning was enabled.
-			nullKey := s.versionedStorageKey(bucket, key, "null")
-			if err2 := s.BaseStore.GetProto(nullKey, &obj); err2 != nil {
-				return nil, err2
-			}
-		}
-	} else {
-		if err := s.BaseStore.GetProto(s.versionedStorageKey(bucket, key, "null"), &obj); err != nil {
-			return nil, err
-		}
-	}
-
-	if obj.IsDeleteMarker {
-		return nil, ErrObjectNotFound
-	}
-	return ProtoToObject(&obj), nil
+	return s.getVersionedObjectMeta(bucket, key, "")
 }
 
 // Put stores an object in the store.
@@ -266,6 +327,11 @@ func (s *ObjectStore) Exists(ctx context.Context, bucket, key string) (bool, err
 // Head retrieves metadata for an object without the body content.
 func (s *ObjectStore) Head(ctx context.Context, bucket, key string) (*Object, error) {
 	return s.HeadWithVersion(ctx, bucket, key, "")
+}
+
+// GetRange retrieves a range of bytes from an object.
+func (s *ObjectStore) GetRange(ctx context.Context, bucket, key string, offset, length int64) (io.ReadCloser, *Object, error) {
+	return s.GetRangeWithVersion(ctx, bucket, key, "", offset, length)
 }
 
 // SystemMetadata holds S3 object system-level metadata (content-type, size, etc.).
@@ -305,62 +371,8 @@ func newObject(key, bucket, contentType string, metadata map[string]string, vers
 
 // SetStorageClass updates the storage class of an object.
 func (s *ObjectStore) SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error {
-	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
-		isVersioned := s.isVersioningEnabled(bucket)
-
-		var storageKey string
-		if versionId != "" {
-			storageKey = s.versionedStorageKey(bucket, key, versionId)
-		} else if isVersioned {
-			storageKey = s.latestKeyStorageKey(bucket, key)
-		} else {
-			storageKey = s.versionedStorageKey(bucket, key, "null")
-		}
-
-		var pbObj pb.Object
-		if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
-			// Fallback: object may predate versioning enablement and have no
-			// _latest pointer. Mirror SetACLWithVersion behaviour.
-			if isVersioned && versionId == "" {
-				nullKey := s.versionedStorageKey(bucket, key, "null")
-				if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
-					return ErrObjectNotFound
-				}
-				storageKey = nullKey
-			} else {
-				return err
-			}
-		}
-		pbObj.StorageClass = objectStorageClassToProto(storageClass)
-		obj := ProtoToObject(&pbObj)
-
-		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
-			return err
-		}
-
-		// When versioning is enabled, keep the versioned record and the
-		// _latest pointer in sync, mirroring updateObjectLockMetadata.
-		if isVersioned {
-			vid := versionId
-			if vid == "" {
-				vid = obj.VersionID
-			}
-			versionedKey := s.versionedStorageKey(bucket, key, vid)
-			if versionedKey != storageKey {
-				if err := s.BaseStore.PutProto(versionedKey, ObjectToProto(obj)); err != nil {
-					return err
-				}
-			}
-			if obj.IsLatest {
-				latestKey := s.latestKeyStorageKey(bucket, key)
-				if latestKey != storageKey {
-					if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
-						return err
-					}
-				}
-			}
-		}
-
+	return s.mutateObjectRecord(bucket, key, versionId, func(obj *Object) error {
+		obj.StorageClass = storageClass
 		return nil
 	})
 }
@@ -382,55 +394,26 @@ type RestoreIndexEntry struct {
 // single atomic batch — so the expiry sweep only ever visits objects with
 // an active restore and the record and index can never diverge.
 func (s *ObjectStore) SetRestoreState(bucket, key, versionId string, expiry *time.Time) error {
-	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
-		isVersioned := s.isVersioningEnabled(bucket)
-
-		var storageKey string
-		if versionId != "" {
-			storageKey = s.versionedStorageKey(bucket, key, versionId)
-		} else if isVersioned {
-			storageKey = s.latestKeyStorageKey(bucket, key)
-		} else {
-			storageKey = s.versionedStorageKey(bucket, key, "null")
-		}
-
-		var pbObj pb.Object
-		if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
-			if isVersioned && versionId == "" {
-				nullKey := s.versionedStorageKey(bucket, key, "null")
-				if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
-					if expiry == nil {
-						// The object record is gone; forget the restore
-						// state entirely instead of failing the sweep.
-						return s.BaseStore.Delete(restoreIndexKey(bucket, key, versionId))
-					}
-					return ErrObjectNotFound
-				}
-				storageKey = nullKey
-			} else {
-				if expiry == nil {
-					return s.BaseStore.Delete(restoreIndexKey(bucket, key, versionId))
-				}
-				return err
+	lockKey := bucket + keySep + key
+	return s.keyLocker.WithLock(lockKey, func() error {
+		pbObj, storageKey, err := s.resolveObjectRecordPB(bucket, key, versionId)
+		if err != nil {
+			if expiry == nil {
+				// The object record is gone; forget the restore
+				// state entirely instead of failing the sweep.
+				return s.BaseStore.Delete(restoreIndexKey(bucket, key, versionId))
 			}
+			return ErrObjectNotFound
 		}
 
-		if expiry != nil {
-			pbObj.RestoreExpiry = timestamppb.New(*expiry)
-		} else {
-			pbObj.RestoreExpiry = nil
-		}
-		obj := ProtoToObject(&pbObj)
+		obj := ProtoToObject(pbObj)
+		obj.RestoreExpiry = expiry
 
 		vid := versionId
 		if vid == "" {
 			vid = obj.VersionID
 		}
 
-		// Buffer every mutation — the addressed record, the restore index
-		// entry, and the shadow copies of the record — and commit them in
-		// one batch so a crash between writes can never leave the object
-		// record and the restore index out of step.
 		batchBucket, ok := s.BaseStore.Bucket().(storage.BatchBucket)
 		if !ok {
 			return fmt.Errorf("s3: storage bucket does not support atomic batches")
@@ -438,11 +421,7 @@ func (s *ObjectStore) SetRestoreState(bucket, key, versionId string, expiry *tim
 		batch := batchBucket.NewBatch()
 		defer batch.Close()
 
-		objBytes, err := proto.Marshal(ObjectToProto(obj))
-		if err != nil {
-			return err
-		}
-		if err := batch.Put([]byte(storageKey), objBytes); err != nil {
+		if err := s.enqueueRecordWithShadows(batch, bucket, key, storageKey, versionId, obj); err != nil {
 			return err
 		}
 
@@ -453,23 +432,6 @@ func (s *ObjectStore) SetRestoreState(bucket, key, versionId string, expiry *tim
 			}
 		} else if err := batch.Delete([]byte(indexKey)); err != nil {
 			return err
-		}
-
-		if isVersioned {
-			versionedKey := s.versionedStorageKey(bucket, key, vid)
-			if versionedKey != storageKey {
-				if err := batch.Put([]byte(versionedKey), objBytes); err != nil {
-					return err
-				}
-			}
-			if obj.IsLatest {
-				latestKey := s.latestKeyStorageKey(bucket, key)
-				if latestKey != storageKey {
-					if err := batch.Put([]byte(latestKey), objBytes); err != nil {
-						return err
-					}
-				}
-			}
 		}
 
 		return batch.Commit()
@@ -511,58 +473,8 @@ const (
 // and "FAILED"; on a replication destination the status is "REPLICA",
 // marking the object as a copy rather than an original upload.
 func (s *ObjectStore) SetReplicationStatus(bucket, key, versionId, status string) error {
-	return s.keyLocker.WithLock(bucket+keySep+key, func() error {
-		isVersioned := s.isVersioningEnabled(bucket)
-
-		var storageKey string
-		if versionId != "" {
-			storageKey = s.versionedStorageKey(bucket, key, versionId)
-		} else if isVersioned {
-			storageKey = s.latestKeyStorageKey(bucket, key)
-		} else {
-			storageKey = s.versionedStorageKey(bucket, key, "null")
-		}
-
-		var pbObj pb.Object
-		if err := s.BaseStore.GetProto(storageKey, &pbObj); err != nil {
-			if isVersioned && versionId == "" {
-				nullKey := s.versionedStorageKey(bucket, key, "null")
-				if err2 := s.BaseStore.GetProto(nullKey, &pbObj); err2 != nil {
-					return ErrObjectNotFound
-				}
-				storageKey = nullKey
-			} else {
-				return err
-			}
-		}
-		pbObj.ReplicationStatus = status
-		obj := ProtoToObject(&pbObj)
-
-		if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
-			return err
-		}
-
-		if isVersioned {
-			vid := versionId
-			if vid == "" {
-				vid = obj.VersionID
-			}
-			versionedKey := s.versionedStorageKey(bucket, key, vid)
-			if versionedKey != storageKey {
-				if err := s.BaseStore.PutProto(versionedKey, ObjectToProto(obj)); err != nil {
-					return err
-				}
-			}
-			if obj.IsLatest {
-				latestKey := s.latestKeyStorageKey(bucket, key)
-				if latestKey != storageKey {
-					if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
-						return err
-					}
-				}
-			}
-		}
-
+	return s.mutateObjectRecord(bucket, key, versionId, func(obj *Object) error {
+		obj.ReplicationStatus = status
 		return nil
 	})
 }

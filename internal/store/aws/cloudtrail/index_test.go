@@ -488,9 +488,6 @@ func TestEventIndexManager_AddIndexInTxn(t *testing.T) {
 	require.NoError(t, err)
 	defer s.Close()
 
-	tstore, ok := s.(storage.TransactionalStorageWith2PC)
-	require.True(t, ok, "storage must support transactions")
-
 	manager := NewEventIndexManager(s, "acc123", "us-east-1")
 
 	event := &Event{
@@ -504,7 +501,7 @@ func TestEventIndexManager_AddIndexInTxn(t *testing.T) {
 		},
 	}
 
-	err = tstore.Update(context.Background(), func(txn storage.Transaction) error {
+	err = s.Update(context.Background(), func(txn storage.Transaction) error {
 		return manager.AddIndexInTxn(txn, event)
 	})
 	require.NoError(t, err)

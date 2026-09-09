@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
 // CreateMultipartUploadInput contains the parameters for initiating a multipart upload.
@@ -183,6 +184,7 @@ type ListPartsInput struct {
 
 // ListPartsOutput contains the result of listing uploaded parts.
 // Bucket, Key, UploadId identify the multipart upload.
+// Initiator and Owner identify the upload's initiator and object owner.
 // Parts contains the list of uploaded parts.
 // NextPartNumberMarker is used for pagination.
 // IsTruncated indicates if more parts exist.
@@ -191,12 +193,27 @@ type ListPartsOutput struct {
 	Bucket               string
 	Key                  string
 	UploadId             string
+	Initiator            *Owner
+	Owner                *Owner
 	Parts                []*Part
 	NextPartNumberMarker string
 	IsTruncated          bool
 	MaxParts             int
 	PartNumberMarker     string
 	StorageClass         string
+}
+
+// writeOwnerXML appends an Initiator or Owner element. AWS emits these as
+// <ID>/<DisplayName> pairs in every multipart listing that carries them.
+func writeOwnerXML(result *strings.Builder, element string, o *Owner) {
+	if o == nil {
+		return
+	}
+	result.WriteString(`<` + element + `><ID>`)
+	result.WriteString(xmlEscape(o.ID))
+	result.WriteString(`</ID><DisplayName>`)
+	result.WriteString(xmlEscape(o.DisplayName))
+	result.WriteString(`</DisplayName></` + element + `>`)
 }
 
 // Part represents an uploaded part in a multipart upload.
@@ -221,7 +238,10 @@ func (o *ListPartsOutput) ToXML() string {
 	result.WriteString(xmlEscape(o.Key))
 	result.WriteString(`</Key><UploadId>`)
 	result.WriteString(xmlEscape(o.UploadId))
-	result.WriteString(`</UploadId><StorageClass>`)
+	result.WriteString(`</UploadId>`)
+	writeOwnerXML(&result, "Initiator", o.Initiator)
+	writeOwnerXML(&result, "Owner", o.Owner)
+	result.WriteString(`<StorageClass>`)
 	result.WriteString(o.StorageClass)
 	result.WriteString(`</StorageClass>`)
 	if o.PartNumberMarker != "" {
@@ -247,7 +267,7 @@ func (o *ListPartsOutput) ToXML() string {
 		result.WriteString(`</ETag><Size>`)
 		result.WriteString(strconv.FormatInt(p.Size, 10))
 		result.WriteString(`</Size><LastModified>`)
-		result.WriteString(p.LastModified.Format(time.RFC3339))
+		result.WriteString(p.LastModified.Format(timeutils.ISO8601UTCFormat))
 		result.WriteString(`</LastModified></Part>`)
 	}
 	result.WriteString(`</ListPartsResult>`)
@@ -272,11 +292,16 @@ type CompletedPart struct {
 // Key is the object key.
 // UploadId is the multipart upload identifier.
 // Parts is the list of uploaded parts in the order they should be assembled.
+// Host and IsTLS carry the serving endpoint from the wire request; the
+// Location in the response is an absolute URL derived from them (falling
+// back to a path-only Location when no host is known, e.g. the admin plane).
 type CompleteMultipartUploadInput struct {
 	Bucket   string
 	Key      string
 	UploadId string
 	Parts    []CompletedPart
+	Host     string
+	IsTLS    bool
 }
 
 // CompleteMultipartUploadOutput contains the result of completing a multipart upload.
@@ -286,13 +311,16 @@ type CompleteMultipartUploadInput struct {
 // VersionId is the version ID if versioning is enabled.
 // ServerSideEncryption, SSEKMSKeyId contain encryption settings.
 type CompleteMultipartUploadOutput struct {
-	Location             string `xml:"Location"`
-	Bucket               string `xml:"Bucket"`
-	Key                  string `xml:"Key"`
-	ETag                 string `xml:"ETag"`
-	VersionId            string `xml:"VersionId,omitempty"`
-	ServerSideEncryption string
-	SSEKMSKeyId          string
+	Location string `xml:"Location"`
+	Bucket   string `xml:"Bucket"`
+	Key      string `xml:"Key"`
+	ETag     string `xml:"ETag"`
+	// VersionId and the SSE fields travel as response headers (the Smithy
+	// model binds VersionId to x-amz-version-id), never as body elements —
+	// the XML marshal of this struct must skip them.
+	VersionId            string `xml:"-"`
+	ServerSideEncryption string `xml:"-"`
+	SSEKMSKeyId          string `xml:"-"`
 }
 
 // CompleteMultipartUpload assembles the uploaded parts into a complete object.
@@ -418,10 +446,13 @@ func (o *ListMultipartUploadsOutput) ToXML() string {
 		result.WriteString(xmlEscape(u.Key))
 		result.WriteString(`</Key><UploadId>`)
 		result.WriteString(xmlEscape(u.UploadId))
-		result.WriteString(`</UploadId><StorageClass>`)
+		result.WriteString(`</UploadId>`)
+		writeOwnerXML(&result, "Initiator", u.Initiator)
+		writeOwnerXML(&result, "Owner", u.Owner)
+		result.WriteString(`<StorageClass>`)
 		result.WriteString(u.StorageClass)
 		result.WriteString(`</StorageClass><Initiated>`)
-		result.WriteString(u.Initiated.Format(time.RFC3339))
+		result.WriteString(u.Initiated.Format(timeutils.ISO8601UTCFormat))
 		result.WriteString(`</Initiated></Upload>`)
 	}
 	writeCommonPrefixesXML(&result, o.CommonPrefixes, "")

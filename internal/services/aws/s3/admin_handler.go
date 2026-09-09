@@ -77,7 +77,7 @@ func (h *AdminHandler) DeleteBucket(ctx context.Context, req *connect.Request[pb
 	}
 
 	input := pbToDeleteBucketInput(req.Msg)
-	_, err := h.service.deleteBucketCore(bucketStore, objectStore, input)
+	_, err := h.service.deleteBucketCore(ctx, bucketStore, objectStore, input)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

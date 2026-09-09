@@ -8,7 +8,7 @@ import (
 	"vorpalstacks/internal/core/storage"
 )
 
-func newContributorTestStore(t *testing.T) (*ContributorStore, storage.Storage) {
+func newContributorTestStore(t *testing.T) (*ContributorStore, *storage.PebbleStorage) {
 	t.Helper()
 	st, err := storage.Open(t.TempDir())
 	if err != nil {

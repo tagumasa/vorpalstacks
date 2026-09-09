@@ -5,7 +5,10 @@ import (
 	pb "vorpalstacks/internal/pb/storage/storage_s3"
 )
 
-func objectStorageClassToProto(s ObjectStorageClass) pb.ObjectStorageClass {
+// ObjectStorageClassToProto maps a storage class onto the storage proto
+// enum; callers outside the store (the admin console converters) share it
+// so the enum mapping lives once.
+func ObjectStorageClassToProto(s ObjectStorageClass) pb.ObjectStorageClass {
 	switch s {
 	case StorageClassStandard:
 		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD
@@ -19,6 +22,10 @@ func objectStorageClassToProto(s ObjectStorageClass) pb.ObjectStorageClass {
 		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_ONEZONE_IA
 	case StorageClassIntelligentTiering:
 		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING
+	case StorageClassGlacierIR:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER_IR
+	case StorageClassDeepArchive:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_DEEP_ARCHIVE
 	default:
 		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_UNSPECIFIED
 	}
@@ -38,6 +45,10 @@ func protoToObjectStorageClass(p pb.ObjectStorageClass) ObjectStorageClass {
 		return StorageClassOneZoneIA
 	case pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING:
 		return StorageClassIntelligentTiering
+	case pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER_IR:
+		return StorageClassGlacierIR
+	case pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_DEEP_ARCHIVE:
+		return StorageClassDeepArchive
 	default:
 		return ""
 	}
@@ -72,7 +83,7 @@ func sseTypeToProto(s SSEType) pb.SSEType {
 	case SSETypeKMS:
 		return pb.SSEType_SSE_TYPE_KMS
 	case SSETypeDSSEKMS:
-		return pb.SSEType_SSE_TYPE_KMS_ES
+		return pb.SSEType_SSE_TYPE_KMS_DSSE
 	case SSETypeCustomer:
 		return pb.SSEType_SSE_TYPE_CUSTOMER
 	default:
@@ -86,7 +97,7 @@ func protoToSSEType(p pb.SSEType) SSEType {
 		return SSETypeAES256
 	case pb.SSEType_SSE_TYPE_KMS:
 		return SSETypeKMS
-	case pb.SSEType_SSE_TYPE_KMS_ES:
+	case pb.SSEType_SSE_TYPE_KMS_DSSE:
 		return SSETypeDSSEKMS
 	case pb.SSEType_SSE_TYPE_CUSTOMER:
 		return SSETypeCustomer

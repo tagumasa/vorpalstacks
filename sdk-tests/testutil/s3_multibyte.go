@@ -172,7 +172,9 @@ func (r *TestRunner) s3MultibyteTests(ctx context.Context, client *s3.Client, ts
 		if err != nil {
 			return fmt.Errorf("CreateMultipartUpload failed: %w", err)
 		}
-		part1Body := bytes.Repeat([]byte("パート1"), 2*1024*1024)
+		// 5 MiB is the documented multipart part minimum; anything larger
+		// only slows the suite.
+		part1Body := bytes.Repeat([]byte("パート1"), 512*1024)
 		part2Body := "パート2の内容"
 		up1, err := client.UploadPart(ctx, &s3.UploadPartInput{
 			Bucket:     aws.String(bucketName),

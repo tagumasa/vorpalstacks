@@ -96,42 +96,6 @@ func (s *PebbleStorage) DeleteBucket(name string) error {
 	return s.db.DeleteRange(prefix, append(prefix, 0xFF))
 }
 
-// ListBuckets returns a list of all bucket names.
-func (s *PebbleStorage) ListBuckets() []string {
-	prefixSet := make(map[string]struct{})
-	prefix := []byte(BucketPrefix)
-	iter, err := s.db.NewIter(&pebble.IterOptions{
-		LowerBound: prefix,
-	})
-	if err != nil {
-		return nil
-	}
-	defer iter.Close()
-
-	for iter.First(); iter.Valid(); iter.Next() {
-		key := iter.Key()
-		if len(key) <= len(prefix) {
-			continue
-		}
-		remainder := key[len(prefix):]
-		for i, b := range remainder {
-			if b == ':' {
-				prefixSet[string(remainder[:i])] = struct{}{}
-				break
-			}
-		}
-	}
-	if err := iter.Error(); err != nil {
-		return nil
-	}
-
-	buckets := make([]string, 0, len(prefixSet))
-	for name := range prefixSet {
-		buckets = append(buckets, name)
-	}
-	return buckets
-}
-
 // View executes a read-only transaction.
 // The provided function receives a Transaction that can be used for read operations.
 func (s *PebbleStorage) View(ctx context.Context, fn func(Transaction) error) error {
@@ -313,17 +277,6 @@ func (s *PebbleStorage) Backup(w io.Writer) error {
 // Compact triggers a manual compaction of the database.
 func (s *PebbleStorage) Compact() error {
 	return s.db.Compact(context.Background())
-}
-
-// Stats returns statistics about the storage.
-func (s *PebbleStorage) Stats() Stats {
-	metrics := s.db.Metrics()
-	return Stats{
-		KeyCount:    int64(metrics.Keys.RangeKeySetsCount + metrics.Keys.TombstoneCount),
-		SizeBytes:   int64(metrics.DiskSpaceUsage()),
-		Compactions: int64(metrics.Compact.Count),
-		ReadAmp:     float64(metrics.ReadAmp()),
-	}
 }
 
 // DB returns the underlying CockroachDB Pebble instance.

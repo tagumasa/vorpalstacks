@@ -61,6 +61,22 @@ type TestRunner struct {
 	// service at a time.
 	registerOnly bool
 	pending      []PendingTest
+
+	// closureWrappers holds per-service wrappers applied to every closure
+	// RunTest registers or executes for that service. Builders use them to
+	// move fixture lifecycle into the executed phase, so the registration
+	// pass carries no side effects for the facade. The wrapped form is
+	// what pending registrations store, so facade execution runs the
+	// wrapper too.
+	closureWrappers map[string][]func(func() error) func() error
+
+	// serviceCleanups holds per-service cleanups registered by builders to
+	// run after that service's tests have executed — eagerly at builder
+	// return in binary mode, after the pending subtests in facade mode.
+	// fixtureMu guards both maps (builders run concurrently under
+	// RunServicesParallel on this shared runner).
+	serviceCleanups map[string][]func()
+	fixtureMu       sync.Mutex
 }
 
 type ServiceFactory func(*TestRunner) []TestResult
@@ -276,7 +292,72 @@ func (r *TestRunner) RunServiceTests(service string) []TestResult {
 			Error:    "Unknown service",
 		}}
 	}
-	return entry.factory(r)
+	results := entry.factory(r)
+	// The eager binary path has executed every test by the time the
+	// builder returns, so the service's registered cleanups run here. The
+	// facade calls RunServiceCleanups itself after its pending subtests.
+	if !r.registerOnly {
+		r.RunServiceCleanups(service)
+	}
+	return results
+}
+
+// PushClosureWrapper stacks a wrapper applied to every closure RunTest
+// registers or executes for the given service; the wrapper pushed last
+// wraps outermost. Registration stores the wrapped closure, so both the
+// eager binary path and the facade's deferred execution run it.
+func (r *TestRunner) PushClosureWrapper(service string, w func(func() error) func() error) {
+	r.fixtureMu.Lock()
+	defer r.fixtureMu.Unlock()
+	if r.closureWrappers == nil {
+		r.closureWrappers = make(map[string][]func(func() error) func() error)
+	}
+	r.closureWrappers[service] = append(r.closureWrappers[service], w)
+}
+
+// PopClosureWrapper drops the service's most recently pushed wrapper.
+func (r *TestRunner) PopClosureWrapper(service string) {
+	r.fixtureMu.Lock()
+	defer r.fixtureMu.Unlock()
+	if ws := r.closureWrappers[service]; len(ws) > 0 {
+		r.closureWrappers[service] = ws[:len(ws)-1]
+	}
+}
+
+func (r *TestRunner) applyClosureWrappers(service string, fn func() error) func() error {
+	r.fixtureMu.Lock()
+	ws := r.closureWrappers[service]
+	r.fixtureMu.Unlock()
+	for i := len(ws) - 1; i >= 0; i-- {
+		fn = ws[i](fn)
+	}
+	return fn
+}
+
+// RegisterServiceCleanup registers a cleanup to run once the service's
+// tests have executed: at builder return in binary mode, after the pending
+// subtests in facade mode. In register-only mode the cleanup is stored,
+// never run — builder-time side effects firing before any test executes
+// are the hazard this moves off the registration path.
+func (r *TestRunner) RegisterServiceCleanup(service string, fn func()) {
+	r.fixtureMu.Lock()
+	defer r.fixtureMu.Unlock()
+	if r.serviceCleanups == nil {
+		r.serviceCleanups = make(map[string][]func())
+	}
+	r.serviceCleanups[service] = append(r.serviceCleanups[service], fn)
+}
+
+// RunServiceCleanups executes and clears the service's registered
+// cleanups, in registration order.
+func (r *TestRunner) RunServiceCleanups(service string) {
+	r.fixtureMu.Lock()
+	fns := r.serviceCleanups[service]
+	delete(r.serviceCleanups, service)
+	r.fixtureMu.Unlock()
+	for _, fn := range fns {
+		fn()
+	}
 }
 
 func (r *TestRunner) RunServicesParallel(services []string, parallelism int) map[string][]TestResult {
@@ -377,6 +458,7 @@ func (r *TestRunner) rejectDuplicateRegistration(service, testName string) {
 
 func (r *TestRunner) RunTest(service, testName string, testFunc func() error) TestResult {
 	r.rejectDuplicateRegistration(service, testName)
+	testFunc = r.applyClosureWrappers(service, testFunc)
 	if r.registerOnly {
 		r.pending = append(r.pending, PendingTest{Service: service, TestName: testName, Fn: testFunc})
 		return TestResult{Service: service, TestName: testName, Status: "SKIP", Error: "not executed (register-only mode)"}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -122,9 +123,16 @@ func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {
 			objs = append(objs, types.ObjectIdentifier{Key: m.Key, VersionId: m.VersionId})
 		}
 		if len(objs) > 0 {
+			// Governance-mode retentions are bypassed here: cleanup must be
+			// able to empty a lock-enabled bucket (test fixtures set
+			// short retentions), and the bypass is a no-op for unlocked
+			// versions. Compliance-mode versions stay undeletable until
+			// expiry — the compliance fixture therefore clears its own
+			// retentions before this runs (see complianceFixture.remove).
 			client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
-				Bucket: aws.String(bucket),
-				Delete: &types.Delete{Objects: objs},
+				Bucket:                    aws.String(bucket),
+				Delete:                    &types.Delete{Objects: objs},
+				BypassGovernanceRetention: aws.Bool(true),
 			})
 		}
 		keyMarker = listResp.NextKeyMarker
@@ -134,6 +142,77 @@ func s3CleanupBucket(ctx context.Context, client *s3.Client, bucket string) {
 		}
 	}
 	client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(bucket)})
+}
+
+// s3ListBucketsAll pages through ListBuckets. The account's bucket list
+// is shared with every service running in the same regression pass, so a
+// contains-style assertion cannot rely on a single response page.
+func s3ListBucketsAll(ctx context.Context, client *s3.Client) ([]types.Bucket, error) {
+	var all []types.Bucket
+	var token *string
+	for page := 0; page < 10000; page++ {
+		resp, err := client.ListBuckets(ctx, &s3.ListBucketsInput{ContinuationToken: token})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Buckets...)
+		if resp.ContinuationToken == nil || *resp.ContinuationToken == "" {
+			return all, nil
+		}
+		token = resp.ContinuationToken
+	}
+	return nil, fmt.Errorf("ListBuckets pagination did not terminate")
+}
+
+// s3ListPartsAll pages through ListParts by part-number marker so part
+// assertions see the whole upload, not one response page.
+func s3ListPartsAll(ctx context.Context, client *s3.Client, bucket, key, uploadID string) ([]types.Part, error) {
+	var all []types.Part
+	var marker *string
+	for page := 0; page < 10000; page++ {
+		resp, err := client.ListParts(ctx, &s3.ListPartsInput{
+			Bucket:           aws.String(bucket),
+			Key:              aws.String(key),
+			UploadId:         aws.String(uploadID),
+			PartNumberMarker: marker,
+		})
+		if err != nil {
+			return nil, err
+		}
+		all = append(all, resp.Parts...)
+		if !aws.ToBool(resp.IsTruncated) {
+			return all, nil
+		}
+		marker = resp.NextPartNumberMarker
+	}
+	return nil, fmt.Errorf("ListParts pagination did not terminate")
+}
+
+// s3ListVersionsAll pages through ListObjectVersions by key/version marker
+// so version assertions see every version of every key, not one page.
+func s3ListVersionsAll(ctx context.Context, client *s3.Client, bucket string) ([]types.ObjectVersion, []types.DeleteMarkerEntry, error) {
+	var versions []types.ObjectVersion
+	var markers []types.DeleteMarkerEntry
+	var keyMarker *string
+	var versionMarker *string
+	for page := 0; page < 10000; page++ {
+		resp, err := client.ListObjectVersions(ctx, &s3.ListObjectVersionsInput{
+			Bucket:          aws.String(bucket),
+			KeyMarker:       keyMarker,
+			VersionIdMarker: versionMarker,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		versions = append(versions, resp.Versions...)
+		markers = append(markers, resp.DeleteMarkers...)
+		if !aws.ToBool(resp.IsTruncated) {
+			return versions, markers, nil
+		}
+		keyMarker = resp.NextKeyMarker
+		versionMarker = resp.NextVersionIdMarker
+	}
+	return nil, nil, fmt.Errorf("ListObjectVersions pagination did not terminate")
 }
 
 // s3CreateBucket creates a plain bucket and wraps failures with the bucket
@@ -289,6 +368,53 @@ func s3HasPublicReadGrant(grants []types.Grant) bool {
 	return false
 }
 
+// s3BucketFixture owns a shared test bucket's lifecycle on the executed
+// phase: the wrapper provisions the bucket before the first wrapped
+// closure that runs needs it (creating an own bucket in the default
+// region is the documented 200 OK path, so a leftover from an aborted run
+// is adopted rather than failing the suite), and remove deletes it as the
+// service cleanup. Registration itself carries no bucket side effects —
+// the go test facade registers the whole suite before any subtest
+// executes, and filtered -run selections still find the bucket in place.
+type s3BucketFixture struct {
+	ctx    context.Context
+	client *s3.Client
+	name   string
+	// provision creates the bucket plus any required setup (versioning
+	// for an inventory destination, say); it runs once, before the first
+	// wrapped closure.
+	provision func() error
+
+	mu      sync.Mutex
+	created bool
+}
+
+func (f *s3BucketFixture) wrapper(fn func() error) func() error {
+	return func() error {
+		if err := f.ensure(); err != nil {
+			return err
+		}
+		return fn()
+	}
+}
+
+func (f *s3BucketFixture) ensure() error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.created {
+		return nil
+	}
+	if err := f.provision(); err != nil {
+		return err
+	}
+	f.created = true
+	return nil
+}
+
+func (f *s3BucketFixture) remove() {
+	s3CleanupBucket(f.ctx, f.client, f.name)
+}
+
 func (r *TestRunner) RunS3Tests() []TestResult {
 	var results []TestResult
 
@@ -311,16 +437,35 @@ func (r *TestRunner) RunS3Tests() []TestResult {
 	ctx := context.Background()
 	ts := fmt.Sprintf("%d", time.Now().UnixNano())
 	bucketName := s3Bucket(ts, "main")
-	defer s3CleanupBucket(ctx, client, bucketName)
 
+	// The main bucket lives on the executed phase: the families that
+	// receive it register through the fixture wrapper (registration order
+	// is preserved), and the registered cleanup removes it after the
+	// service's tests finish — in binary mode at builder return, in
+	// facade mode after the pending subtests.
+	main := &s3BucketFixture{
+		ctx:    ctx,
+		client: client,
+		name:   bucketName,
+		provision: func() error {
+			return s3CreateBucket(ctx, client, bucketName)
+		},
+	}
+	r.RegisterServiceCleanup("s3", main.remove)
+	r.PushClosureWrapper("s3", main.wrapper)
 	results = append(results, r.s3BucketTests(ctx, client, ts, bucketName)...)
 	results = append(results, r.s3ObjectTests(ctx, client, ts, bucketName)...)
 	results = append(results, r.s3BucketConfigTests(ctx, client, ts, bucketName)...)
 	results = append(results, r.s3ObjectConfigTests(ctx, client, ts, bucketName)...)
-	results = append(results, r.s3MultipartTests(ctx, client, ts)...)
 	results = append(results, r.s3MultibyteTests(ctx, client, ts, bucketName)...)
+	r.PopClosureWrapper("s3")
+
+	results = append(results, r.s3MultipartTests(ctx, client, ts)...)
 	results = append(results, r.s3EncryptionTests(ctx, client, ts)...)
+
+	r.PushClosureWrapper("s3", main.wrapper)
 	results = append(results, r.s3AdvancedTests(ctx, client, ts, bucketName)...)
+	r.PopClosureWrapper("s3")
 
 	return results
 }

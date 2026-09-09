@@ -31,7 +31,13 @@ func (s *S3Service) handleS3Notification(ctx context.Context, event *eventbus.S3
 	}
 
 	config, err := buckets.GetNotificationConfiguration(event.Bucket)
-	if err != nil || config == nil {
+	if err != nil {
+		// A configuration read failure is not "no configuration": the drop
+		// is logged so a delivery gap stays diagnosable.
+		logs.Warn("s3: notification configuration read failed", logs.String("bucket", event.Bucket), logs.Err(err))
+		return eventbus.HandlerResult{}
+	}
+	if config == nil {
 		return eventbus.HandlerResult{}
 	}
 
@@ -208,7 +214,11 @@ func (s *S3Service) dispatchToSNS(ctx context.Context, topicArn string, payload 
 	}
 
 	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, topicArn, "sns", "s3.amazonaws.com", "sns:Publish", topicArn)
-	if evalErr != nil || !allowed {
+	if evalErr != nil {
+		logs.Warn("s3: SNS notification target policy evaluation failed", logs.String("topicArn", topicArn), logs.Err(evalErr))
+		return
+	}
+	if !allowed {
 		return
 	}
 
@@ -257,11 +267,16 @@ func (s *S3Service) dispatchToSQS(ctx context.Context, queueArn string, payload 
 
 	queueURL, qErr := sqsInvoker.GetQueueByName(ctx, sqsRegion, queueName)
 	if qErr != nil {
+		logs.Warn("s3: SQS notification queue resolution failed", logs.String("queueName", queueName), logs.String("region", sqsRegion), logs.Err(qErr))
 		return
 	}
 
 	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, queueArn, "sqs", "s3.amazonaws.com", "sqs:SendMessage", queueArn)
-	if evalErr != nil || !allowed {
+	if evalErr != nil {
+		logs.Warn("s3: SQS notification target policy evaluation failed", logs.String("queueArn", queueArn), logs.Err(evalErr))
+		return
+	}
+	if !allowed {
 		return
 	}
 
@@ -285,7 +300,11 @@ func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, pa
 	}
 
 	allowed, evalErr := s.bus.EvaluateTargetPolicy(ctx, functionArn, "lambda", "s3.amazonaws.com", "lambda:InvokeFunction", functionArn)
-	if evalErr != nil || !allowed {
+	if evalErr != nil {
+		logs.Warn("s3: Lambda notification target policy evaluation failed", logs.String("functionArn", functionArn), logs.Err(evalErr))
+		return
+	}
+	if !allowed {
 		return
 	}
 
@@ -297,6 +316,8 @@ func (s *S3Service) dispatchToLambda(ctx context.Context, functionArn string, pa
 // dispatchToEventBridge sends the S3 event to the default EventBridge event bus
 // for the account. AWS S3 delivers events to EventBridge when
 // EventBridgeConfiguration is set on the bucket notification configuration.
+// The bus delivery requires both a source and a detail-type on the event;
+// without a detail-type the event is dropped at the bus handler.
 func (s *S3Service) dispatchToEventBridge(ctx context.Context, event *eventbus.S3ObjectEvent, eventName string) {
 	if s.bus == nil {
 		return
@@ -317,14 +338,14 @@ func (s *S3Service) dispatchToEventBridge(ctx context.Context, event *eventbus.S
 	}
 
 	detail := map[string]interface{}{
-		"version":       "0",
-		"bucket":        map[string]string{"name": event.Bucket},
-		"object":        map[string]interface{}{"key": event.Key, "size": event.Size, "etag": event.ETag, "version-id": event.VersionID},
-		"request-id":    fmt.Sprintf("%016X", event.EventTimestamp().UnixNano()),
-		"requester":     event.EventAccountID(),
-		"source-ip":     sourceIP,
-		"reason":        reason,
-		"deletion-type": deletionType,
+		"version":           "0",
+		"bucket":            map[string]string{"name": event.Bucket},
+		"object":            map[string]interface{}{"key": event.Key, "size": event.Size, "etag": event.ETag, "version-id": event.VersionID},
+		"request-id":        fmt.Sprintf("%016X", event.EventTimestamp().UnixNano()),
+		"requester":         event.EventAccountID(),
+		"source-ip-address": sourceIP,
+		"reason":            reason,
+		"deletion-type":     deletionType,
 	}
 	detailBytes, _ := json.Marshal(detail)
 
@@ -337,8 +358,40 @@ func (s *S3Service) dispatchToEventBridge(ctx context.Context, event *eventbus.S
 		},
 		EventBusName: "default",
 		Input:        string(detailBytes),
+		DetailType:   eventBridgeDetailType(eventName),
+		// The outer Source field shadows EventBase.Source and is the one
+		// the bus handler reads to construct the delivered event.
+		Source: "aws.s3",
 	}
 	if err := s.bus.Publish(ctx, ebEvt); err != nil {
 		logs.Warn("s3: failed to publish EventBridge event", logs.String("bucket", event.Bucket), logs.Err(err))
+	}
+}
+
+// eventBridgeDetailType maps a classic S3 notification event name to the
+// detail-type EventBridge delivers for it. AWS documents the detail-type
+// value set (Object Created, Object Deleted, Object Restore Initiated /
+// Completed / Expired, Object Tags Added / Deleted, Object ACL Updated,
+// Object Storage Class Changed, Object Access Tier Changed) with source
+// aws.s3; the platform emits the created, deleted, restore, and tagging
+// families.
+func eventBridgeDetailType(eventName string) string {
+	switch {
+	case strings.HasPrefix(eventName, "s3:ObjectCreated:"):
+		return "Object Created"
+	case strings.HasPrefix(eventName, "s3:ObjectRemoved:"):
+		return "Object Deleted"
+	case strings.HasPrefix(eventName, "s3:ObjectRestore:Post"):
+		return "Object Restore Initiated"
+	case strings.HasPrefix(eventName, "s3:ObjectRestore:Completed"):
+		return "Object Restore Completed"
+	case strings.HasPrefix(eventName, "s3:ObjectRestore:Delete"):
+		return "Object Restore Expired"
+	case strings.HasPrefix(eventName, "s3:ObjectTagging:Put"):
+		return "Object Tags Added"
+	case strings.HasPrefix(eventName, "s3:ObjectTagging:Delete"):
+		return "Object Tags Deleted"
+	default:
+		return eventName
 	}
 }

@@ -57,11 +57,10 @@ type BlobStore interface {
 	GetWithVersion(ctx context.Context, bucket, key, versionId string) (BlobReader, *BlobMetadata, error)
 	GetRangeWithVersion(ctx context.Context, bucket, key, versionId string, offset, length int64) (BlobReader, *BlobMetadata, error)
 	DeleteWithVersion(ctx context.Context, bucket, key, versionId string) error
-	CopyWithVersion(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string) (*BlobMetadata, error)
 
 	CreateMultipartUpload(ctx context.Context, bucket, key string, metadata *BlobMetadata) (uploadID string, err error)
 	UploadPart(ctx context.Context, bucket, key, uploadID string, partNumber int, reader io.Reader) (etag string, err error)
-	CompleteMultipartUpload(ctx context.Context, bucket, key, uploadID string, parts []PartInfo) (*BlobMetadata, error)
+	CompleteMultipartUpload(ctx context.Context, bucket, key, versionId, uploadID string, parts []PartInfo) (*BlobMetadata, error)
 	AbortMultipartUpload(ctx context.Context, bucket, key, uploadID string) error
 	ListParts(ctx context.Context, bucket, key, uploadID string) ([]PartInfo, error)
 

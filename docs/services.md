@@ -1,6 +1,6 @@
 # Implemented Services
 
-**Last Updated**: 2026-09-06
+**Last Updated**: 2026-09-09
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
 **SDK Tests**: over 3,000 passing (Go SDK, cross-service integration, and WebSocket suites; exact counts live in `sdk-tests/README.md`)
 
@@ -25,19 +25,19 @@
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
 | CloudWatch Logs | Selective | No Logs Insights queries or export |
 | Cognito IDP | Selective | No external IdP |
-| Cognito Identity | Selective | Basic identity pool support |
-| DynamoDB | Broad | No ION import/export; Streams and Global Tables implemented |
+| Cognito Identity | Selective | Identity pools only |
+| DynamoDB | Broad | No ION import/export |
 | EventBridge | Broad | No global endpoints or partner event sources |
 | IAM | Broad | No policy-simulator family beyond `SimulatePrincipalPolicy` and `ListPoliciesGrantingServiceAccess`; no organisations integration, GetHumanReadableSummary, or delegation request APIs |
 | Kinesis | Full | |
 | KMS | Full | |
 | Lambda | Broad | No durable functions, code signing, capacity providers, recursive loop detection, function scaling, managed runtime updates, or resource-policy public-access rejection |
-| S3 | Broad | Inventory and metrics configurations implemented; no analytics/intelligent-tiering configurations, object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, or WriteGetObjectResponse; Object Lock, CORS, lifecycle, and SSE enforced |
-| Scheduler | Full | Templated targets limited to platform-implemented services; no SageMaker, CodeBuild, CodePipeline, or Inspector targets |
+| S3 | Broad | No analytics/intelligent-tiering configurations, object annotations, bucket ABAC, S3 Express, S3 Metadata tables, GetObjectTorrent, WriteGetObjectResponse, S3 Select (SelectObjectContent), or hardware-bound storage classes |
+| Scheduler | Full | No SageMaker, CodeBuild, CodePipeline, or Inspector targets |
 | Secrets Manager | Full | No managed external rotation execution |
 | SESv2 | Broad | No deliverability testing, dedicated IP address management, import/export jobs, multi-region endpoints, tenant management, custom verification email templates, reputation management, or account pricing plans |
 | SFN (Step Functions) | Full | |
-| SNS | Broad | No SMS, email/email-json, or mobile push (application protocol) delivery; platform application/endpoint CRUD, FilterPolicy, and RawMessageDelivery implemented |
+| SNS | Broad | No SMS, email/email-json, or mobile push (application protocol) delivery |
 | SQS | Broad | No SSE-KMS message encryption, FIFO advanced-attribute enforcement (DeduplicationScope, FifoThroughputLimit, RedriveAllowPolicy), or per-account request-rate quotas |
 | SSM | Selective | Parameter Store only |
 | STS | Full | |
@@ -47,19 +47,19 @@
 | Service | Coverage | Default | Notes |
 |---------|----------|---------|-------|
 | Athena | Broad | enabled | No capacity reservations or notebook sessions |
-| AppSync | Broad | enabled | GraphQL API with VTL resolvers, real-time subscriptions |
-| CloudFront | Broad | enabled | Origin proxy with cache behaviours, TTL edge cache, invalidation, CNAME aliases, continuous deployment policies, viewer TLS serving, and ViewerProtocolPolicy enforcement |
-| CloudTrail | Broad | **disabled** | Audit logging. No event data stores or SQL queries |
-| EC2 | Selective | enabled | Basic instance management |
+| AppSync | Broad | enabled | GraphQL APIs, VTL resolvers, real-time subscriptions |
+| CloudFront | Broad | enabled | Origin proxy, cache behaviours, TTL edge cache, invalidation, CNAME aliases, continuous deployment policies, viewer TLS, ViewerProtocolPolicy |
+| CloudTrail | Broad | **disabled** | No event data stores or SQL queries |
+| EC2 | Selective | enabled | Instance management only |
 | IoT Core | Broad | enabled | Things, certificates, policies, rules engine, jobs, shadows, and device management |
 | Neptune | Full | enabled | Property graph + RDF, openCypher/Gremlin, bulk loader, management API |
 | NeptuneData | Broad | enabled | Gremlin/SPARQL query endpoint |
-| NeptuneGraph | Broad | enabled | Graph engine with graph/SPARQL/neptune-analytics APIs |
-| RDS Data | Full | **disabled** | MySQL-compatible SQL via vmysql engine |
+| NeptuneGraph | Broad | enabled | Graph, SPARQL, and neptune-analytics APIs |
+| RDS Data | Full | **disabled** | MySQL-compatible SQL |
 | Route53 | Selective | enabled | DNS record management only |
 | Timestream Query | Broad | enabled | SQL query engine |
 | Timestream Write | Broad | enabled | Time-series data ingestion |
-| WAFv2 | Broad | enabled | Signature managed rule groups implemented; no data-dependent groups (IP reputation, anonymous IP, Bot Control, ATP, ACFP, Anti-DDoS) or Known Bad Inputs ReactJS RCE rule; Monetize payment settlement unverified |
+| WAFv2 | Broad | enabled | No data-dependent groups (IP reputation, anonymous IP, Bot Control, ATP, ACFP, Anti-DDoS) or Known Bad Inputs ReactJS RCE rule |
 
 ### Service Scope
 
@@ -100,10 +100,13 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **Lambda — RuntimeManagementConfig**: excluded; the configuration API drives a managed runtime-update mechanism (a runtime-version registry that pins and advances each function's runtime patch level). This platform has no update engine — `RuntimeVersionConfig` is configuration echo only — so the API surface would be inert.
 - **Lambda — RecursionConfig**: excluded; its only enforced semantics is the recursion loop detector's behaviour (Terminate/AllowOnFail). This platform has no loop-detection engine, so the default Terminate would report terminating behaviour that never occurs.
 - **Lambda — ScalingConfig**: excluded; the model scopes the API to Managed-Instances functions running on Lambda capacity providers, which this platform does not provide.
-- **S3 — inventory report delivery**: reports deliver on daily/weekly UTC boundaries to the S3 destination as CSV (gzip), Parquet (snappy), and ORC (ZLIB), with manifest.json, manifest.checksum, and the Hive symlink; report files honour the configuration's SSE-S3/SSE-KMS encryption choice. The report columns IntelligentTieringAccessTier, ChecksumAlgorithm, and LifecycleExpirationDate are emitted empty (no single-tier substrate). Both configuration families are bounded by the 1,000-configuration limit with 100-item pagination.
+- **S3 — inventory report delivery**: reports deliver on daily/weekly UTC boundaries to the S3 destination as CSV (gzip), Parquet (snappy), and ORC (ZLIB), with manifest.json, manifest.checksum, and the Hive symlink; report files honour the configuration's SSE-S3/SSE-KMS encryption choice. The report columns IntelligentTieringAccessTier and ChecksumAlgorithm are emitted empty (no access-tier or checksum substrate); the LifecycleExpirationDate column carries the ISO-8601 projection of an applicable expiration rule and stays empty when none applies or the object's replication has not succeeded. Both configuration families are bounded by the 1,000-configuration limit with 100-item pagination.
 - **S3 — metrics configurations**: per-filter CloudWatch request metrics in the AWS/S3 namespace; requests on both the object and bucket planes count into AllRequests plus their per-operation metric, and each minute window publishes a CloudWatch statistic set (sample count, sum, min, max, so Average carries the documented error rate and bytes-per-request semantics). A filter carrying an access-point ARN generates no datapoints (no access-point substrate).
-- **S3 — analytics/intelligent-tiering configurations**: excluded; this single-tier platform has no storage-class transition substrate.
-- **RDS Data — enablement**: requires `RDS_MYSQL_ENABLED=true` or `ALL_SERVICES_ENABLED=true`.
+- **S3 — analytics/intelligent-tiering configurations**: excluded; this platform has no access-tier machinery (its storage classes are software classifications) and no access-pattern analysis substrate to configure. Lifecycle-driven storage-class transitions are implemented — see the lifecycle enforcement note.
+- **S3 — storage classes**: the eight software classes (STANDARD, REDUCED_REDUNDANCY, STANDARD_IA, ONEZONE_IA, INTELLIGENT_TIERING, GLACIER, GLACIER_IR, DEEP_ARCHIVE) persist and round-trip on puts, copies, replication destinations, and lifecycle transitions; the acceptance set is defined once beside the store constants and every validation site derives from it. The AWS enum's hardware- and backup-bound classes (OUTPOSTS, SNOW, EXPRESS_ONEZONE, FSX_OPENZFS, FSX_ONTAP, AWS_BACKUP_WARM, AWS_BACKUP_LOW_COST_WARM) are rejected at validation: they name physical media and backup tiers this platform does not have.
+- **S3 — lifecycle enforcement**: Transition and NoncurrentVersionTransition are executed by the lifecycle sweep. A Days window counts from the object's LastModified for current versions and from the successor version's creation for noncurrent versions, and rounds up to the next midnight UTC — enforcement and the x-amz-expiration projection share the one calculation; a Date entry applies to every matching object once the date has passed. Entries replay in rule order under the supported-transitions waterfall, so a move the waterfall forbids is skipped rather than regressing a class. The default 128 KiB transition minimum applies unless the rule's filter carries an explicit size bound; objects with a Pending or Failed replication status are not transitioned; NewerNoncurrentVersions gates both noncurrent actions on an exceeded newer-noncurrent count and requires a rule filter. Get and Head responses carry x-amz-expiration (expiry-date at HTTP-date, URL-encoded rule-id) when an enabled expiration rule projects onto the current version, and expiration and transition actions are prevented on objects whose replication has not succeeded. The `x-amz-transition-default-minimum-object-size` header is not implemented: it selects a pre-September-2024 AWS compatibility behaviour for configuration bases that predate the current default, and this platform has none.
+- **S3 — Select**: excluded; AWS no longer offers S3 Select to new customers, and the platform does not reimplement it — `POST /{bucket}/{key}?select` is refused with 501 NotImplemented. The operation remains in the AWS API surface for existing AWS customers, so workloads that require it are not supported here.
+- **RDS Data — enablement**: queries run on the vmysql engine; the service requires `RDS_MYSQL_ENABLED=true` or `ALL_SERVICES_ENABLED=true`.
 - **Scheduler — templated targets**: platform-implemented targets are Lambda, SQS, SNS, Kinesis, Step Functions, and EventBridge; ECS and Firehose targets are accepted by rule templates but delivery fails until those services exist on the platform; SageMaker, CodeBuild, CodePipeline, and Inspector targets are permanently out of scope (those services are not implemented on this platform).
 - **Secrets Manager — ListTagsForResource and managed rotation members**: the operation does not exist in the 2017-10-17 model, so AWS SDKs never generate a client method for it; the platform operation serves raw-HTTP/console consumers. Managed external rotation members are configuration storage and echo only — the partner integration itself is external.
 - **SQS — SSE-KMS and request throttling**: SSE-KMS attributes are accepted but messages are stored unencrypted; per-account request-rate quotas are not enforced, and the RequestThrottled error shape exists for wire-contract completeness only.

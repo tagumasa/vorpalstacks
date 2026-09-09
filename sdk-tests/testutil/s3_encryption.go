@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -136,6 +137,34 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if headResp.ServerSideEncryption != types.ServerSideEncryptionAes256 {
 			return fmt.Errorf("expected HeadObject ServerSideEncryption AES256, got %s", headResp.ServerSideEncryption)
 		}
+
+		// An unmodelled SSE algorithm is a client input error (400
+		// InvalidArgument), not a server error.
+		_, err = client.PutBucketEncryption(ctx, &s3.PutBucketEncryptionInput{
+			Bucket: aws.String(bucket),
+			ServerSideEncryptionConfiguration: &types.ServerSideEncryptionConfiguration{
+				Rules: []types.ServerSideEncryptionRule{
+					{
+						ApplyServerSideEncryptionByDefault: &types.ServerSideEncryptionByDefault{
+							SSEAlgorithm: types.ServerSideEncryption("rot13"),
+						},
+					},
+				},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error for unmodelled SSE algorithm, got nil")
+		}
+		var algoErr smithy.APIError
+		if !errors.As(err, &algoErr) {
+			return fmt.Errorf("expected API error for unmodelled SSE algorithm, got %T: %v", err, err)
+		}
+		if algoErr.ErrorCode() != "InvalidArgument" {
+			return fmt.Errorf("expected InvalidArgument for unmodelled SSE algorithm, got %s: %v", algoErr.ErrorCode(), err)
+		}
+		if code := awsHTTPStatus(err); code != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for unmodelled SSE algorithm, got %d: %v", code, err)
+		}
 		return nil
 	}))
 
@@ -194,17 +223,46 @@ func (r *TestRunner) s3EncryptionTests(ctx context.Context, client *s3.Client, t
 		if headResp.ContentLength == nil || *headResp.ContentLength != int64(len(body)) {
 			return fmt.Errorf("expected ContentLength %d, got %v", len(body), headResp.ContentLength)
 		}
-		return nil
-	}))
 
-	results = append(results, r.RunTest("s3", "SSEC_GetWithoutKeyFails", func() error {
-		bucket := s3Bucket(ts, "enc-cust")
-		_, err := client.GetObject(ctx, &s3.GetObjectInput{
+		// A HEAD of an SSE-C object validates the key like a GET does: a
+		// well-formed base64 key that does not decode to 32 bytes (or whose
+		// MD5 does not match) is a client error, not a metadata response.
+		_, headErr := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket:               aws.String(bucket),
+			Key:                  aws.String("ssec.txt"),
+			SSECustomerAlgorithm: aws.String("AES256"),
+			SSECustomerKey:       aws.String("aGVsbG8="), // "hello" — 5 bytes
+			SSECustomerKeyMD5:    aws.String(encodedMD5),
+		})
+		if headErr == nil {
+			return fmt.Errorf("expected error for HEAD with a malformed SSE-C key, got nil")
+		}
+		var headAPIErr smithy.APIError
+		if !errors.As(headErr, &headAPIErr) {
+			return fmt.Errorf("expected API error for malformed SSE-C HEAD, got %T: %v", headErr, headErr)
+		}
+		if code := awsHTTPStatus(headErr); code != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for malformed SSE-C HEAD, got %d: %v", code, headErr)
+		}
+
+		// Reading an SSE-C object without the customer key is 400
+		// InvalidRequest, not a plain denial.
+		_, noKeyErr := client.GetObject(ctx, &s3.GetObjectInput{
 			Bucket: aws.String(bucket),
 			Key:    aws.String("ssec.txt"),
 		})
-		if err == nil {
+		if noKeyErr == nil {
 			return fmt.Errorf("expected error when getting SSE-C object without customer key, got nil")
+		}
+		var noKeyAPIErr smithy.APIError
+		if !errors.As(noKeyErr, &noKeyAPIErr) {
+			return fmt.Errorf("expected API error for keyless SSE-C GET, got %T: %v", noKeyErr, noKeyErr)
+		}
+		if noKeyAPIErr.ErrorCode() != "InvalidRequest" {
+			return fmt.Errorf("expected InvalidRequest for keyless SSE-C GET, got %s: %v", noKeyAPIErr.ErrorCode(), noKeyErr)
+		}
+		if code := awsHTTPStatus(noKeyErr); code != http.StatusBadRequest {
+			return fmt.Errorf("expected HTTP 400 for keyless SSE-C GET, got %d: %v", code, noKeyErr)
 		}
 		return nil
 	}))

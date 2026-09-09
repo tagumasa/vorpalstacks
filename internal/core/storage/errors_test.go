@@ -21,17 +21,3 @@ func TestConditionalCheckFailedError_WithWrappedError(t *testing.T) {
 	assert.Equal(t, "conditional check failed: inner error", err.Error())
 	assert.Equal(t, inner, err.Unwrap())
 }
-
-func TestVersionConflictError(t *testing.T) {
-	err := &VersionConflictError{Key: []byte("key")}
-	assert.Equal(t, "version conflict: failed to acquire unique version after retries", err.Error())
-	assert.Nil(t, err.Unwrap())
-}
-
-func TestVersionConflictError_WithWrappedError(t *testing.T) {
-	inner := errors.New("inner error")
-	err := &VersionConflictError{Key: []byte("key"), Err: inner}
-
-	assert.Equal(t, "version conflict: inner error", err.Error())
-	assert.Equal(t, inner, err.Unwrap())
-}

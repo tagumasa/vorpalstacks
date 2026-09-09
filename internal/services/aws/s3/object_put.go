@@ -2,7 +2,9 @@ package s3
 
 import (
 	"context"
+	"fmt"
 	"io"
+	"net/url"
 	"strings"
 	"time"
 
@@ -10,8 +12,6 @@ import (
 	types "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/eventbus"
 )
-
-const maxCopyObjectSize int64 = 5 * 1024 * 1024 * 1024
 
 // PutObjectInput contains the input parameters for the PutObject operation.
 type PutObjectInput struct {
@@ -111,6 +111,10 @@ type CopyObjectInput struct {
 	CopySourceIfUnmodifiedSince *time.Time
 	MetadataDirective           string
 	ContentType                 string
+	ContentEncoding             string
+	ContentDisposition          string
+	ContentLanguage             string
+	CacheControl                string
 	Metadata                    map[string]string
 	StorageClass                string
 	ServerSideEncryption        string
@@ -171,6 +175,10 @@ func (o *ObjectOperations) CopyObject(ctx context.Context, reqCtx *request.Reque
 		CopySourceIfUnmodifiedSince: input.CopySourceIfUnmodifiedSince,
 		MetadataDirective:           input.MetadataDirective,
 		ContentType:                 input.ContentType,
+		ContentEncoding:             input.ContentEncoding,
+		ContentDisposition:          input.ContentDisposition,
+		ContentLanguage:             input.ContentLanguage,
+		CacheControl:                input.CacheControl,
 		Metadata:                    input.Metadata,
 		StorageClass:                input.StorageClass,
 		ServerSideEncryption:        input.ServerSideEncryption,
@@ -223,18 +231,30 @@ func (o *ObjectOperations) RestoreObject(ctx context.Context, reqCtx *request.Re
 	return o.svc.restoreObjectCore(ctx, reqCtx, stores, input)
 }
 
-// parseTaggingHeader parses the x-amz-tagging header value (URL-encoded
-// key=value pairs separated by &) into a slice of Tag structs.
-func parseTaggingHeader(tagging string) []types.Tag {
+// parseTaggingHeader parses the x-amz-tagging header value into a slice of
+// Tag structs. The header is URL query-parameter encoded per the API
+// contract, so each key and value is percent-decoded here; a malformed
+// escape is rejected as an invalid argument instead of being stored
+// verbatim.
+func parseTaggingHeader(tagging string) ([]types.Tag, error) {
 	if tagging == "" {
-		return nil
+		return nil, nil
 	}
 	var tags []types.Tag
 	for _, pair := range strings.Split(tagging, "&") {
 		kv := strings.SplitN(pair, "=", 2)
-		if len(kv) == 2 && kv[0] != "" {
-			tags = append(tags, types.Tag{Key: kv[0], Value: kv[1]})
+		if len(kv) != 2 || kv[0] == "" {
+			continue
 		}
+		key, err := url.QueryUnescape(kv[0])
+		if err != nil {
+			return nil, NewInvalidArgumentError(fmt.Sprintf("invalid x-amz-tagging encoding in key: %s", kv[0]))
+		}
+		value, err := url.QueryUnescape(kv[1])
+		if err != nil {
+			return nil, NewInvalidArgumentError(fmt.Sprintf("invalid x-amz-tagging encoding in value: %s", kv[1]))
+		}
+		tags = append(tags, types.Tag{Key: key, Value: value})
 	}
-	return tags
+	return tags, nil
 }

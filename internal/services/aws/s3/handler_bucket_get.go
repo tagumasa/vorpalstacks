@@ -154,6 +154,7 @@ func (h *S3Handler) dispatchGetBucket(ctx *request.RequestContext, r *http.Reque
 			ContinuationToken: query.Get("continuation-token"),
 			StartAfter:        query.Get("start-after"),
 			EncodingType:      query.Get("encoding-type"),
+			FetchOwner:        query.Get("fetch-owner") == "true",
 		}
 		maxKeys, err := parseListLimit(query, "max-keys", s3MaxKeys)
 		if err != nil {

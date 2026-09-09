@@ -10,6 +10,7 @@ import (
 
 	"vorpalstacks/internal/common/bucketname"
 	tagutil "vorpalstacks/internal/common/tags"
+	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // === Validation constants ===========================================
@@ -23,7 +24,10 @@ const (
 	// Multipart upload constraints (AWS: 1-10000 parts, min 5 MiB except last).
 	minPartNumber = 1
 	maxPartNumber = 10000
-	minPartSize   = 5 * 1024 * 1024 // 5 MiB
+	// Object Lock default-retention bounds (AWS spec).
+	maxRetentionDays  = 3650
+	maxRetentionYears = 100
+	minPartSize       = 5 * 1024 * 1024 // 5 MiB
 
 	// Lifecycle rule constraints (AWS: max 1000 rules per bucket).
 	maxLifecycleRules = 1000
@@ -46,21 +50,6 @@ var validCORSMethods = map[string]bool{
 	"DELETE": true,
 }
 
-// validStorageClasses contains all S3 storage class enum values.
-var validStorageClasses = map[string]bool{
-	"STANDARD":            true,
-	"REDUCED_REDUNDANCY":  true,
-	"STANDARD_IA":         true,
-	"ONEZONE_IA":          true,
-	"INTELLIGENT_TIERING": true,
-	"GLACIER":             true,
-	"DEEP_ARCHIVE":        true,
-	"GLACIER_IR":          true,
-	"OUTPOSTS":            true,
-	"EXPRESS_ONEZONE":     true,
-	"SNOW":                true,
-}
-
 // === Existing validators (consolidated from bucket_operations.go,
 //      object_operations.go) ========================================
 
@@ -76,16 +65,15 @@ func validateBucketName(name string) error {
 }
 
 // validateObjectKey validates an S3 object key (1-1024 bytes, no control
-// characters except TAB/LF/CR, no null bytes).
+// characters except TAB/LF/CR, no null bytes). Keys are otherwise opaque
+// UTF-8 per the model — dot segments are legal input, and the blob tier's
+// key-to-path mapping is the traversal defence.
 func validateObjectKey(key string) error {
 	if len(key) == 0 {
 		return NewInvalidArgumentError("object key cannot be empty")
 	}
 	if len(key) > maxObjectKeyLength {
 		return NewInvalidArgumentError("object key cannot exceed 1024 bytes")
-	}
-	if strings.Contains(key, "..") {
-		return NewInvalidArgumentError("invalid object key: path traversal detected")
 	}
 	if strings.Contains(key, "\x00") {
 		return NewInvalidArgumentError("invalid object key: null byte detected")
@@ -99,9 +87,10 @@ func validateObjectKey(key string) error {
 }
 
 // validateTags validates a list of S3 tags (max 50, key ≤ 128, value ≤ 256,
-// no "aws:" prefix).
-func validateTags(tags []Tag) error {
-	switch v, _ := tagutil.CheckTags(TagsToCommon(tags), tagutil.StandardLimits()); v {
+// no "aws:" prefix). Shared by the tagging subresource operations and the
+// x-amz-tagging upload header.
+func validateTags(tags []tagutil.Tag) error {
+	switch v, _ := tagutil.CheckTags(tags, tagutil.StandardLimits()); v {
 	case tagutil.TooManyTags:
 		return NewInvalidArgumentError(fmt.Sprintf("too many tags (maximum %d)", tagutil.MaxTagsPerResource))
 	case tagutil.TagKeyTooShort:
@@ -291,6 +280,20 @@ func validateLifecycleRules(rules []LifecycleRuleInput) error {
 			if hasDays && (*rule.Expiration.Days < 1 || *rule.Expiration.Days > maxLifecycleDays) {
 				return NewInvalidArgumentError(fmt.Sprintf("Expiration Days must be between 1 and %d, got %d", maxLifecycleDays, *rule.Expiration.Days))
 			}
+			// AWS: ExpiredObjectDeleteMarker "cannot be specified with Days
+			// or Date in a Lifecycle Expiration Policy", and neither it nor
+			// AbortIncompleteMultipartUpload may be combined with a filter
+			// that uses object tags.
+			if rule.Expiration.ExpiredObjectDeleteMarker != nil && (hasDays || hasDate) {
+				return NewInvalidArgumentError("ExpiredObjectDeleteMarker cannot be specified with Days or Date")
+			}
+			if rule.Expiration.ExpiredObjectDeleteMarker != nil && filterUsesTags(rule.Filter) {
+				return NewInvalidArgumentError("ExpiredObjectDeleteMarker cannot be specified in a rule with a tag filter")
+			}
+		}
+
+		if rule.AbortIncompleteMultipartUpload != nil && filterUsesTags(rule.Filter) {
+			return NewInvalidArgumentError("AbortIncompleteMultipartUpload cannot be specified in a rule with a tag filter")
 		}
 
 		for _, t := range rule.Transitions {
@@ -302,10 +305,8 @@ func validateLifecycleRules(rules []LifecycleRuleInput) error {
 			if hasDays && (*t.Days < 0 || *t.Days > maxLifecycleDays) {
 				return NewInvalidArgumentError(fmt.Sprintf("Transition Days must be between 0 and %d, got %d", maxLifecycleDays, *t.Days))
 			}
-			if t.StorageClass != "" {
-				if err := validateStorageClass(t.StorageClass); err != nil {
-					return err
-				}
+			if err := validateTransitionStorageClass(t.StorageClass); err != nil {
+				return err
 			}
 		}
 
@@ -316,10 +317,11 @@ func validateLifecycleRules(rules []LifecycleRuleInput) error {
 					return NewInvalidArgumentError(fmt.Sprintf("NoncurrentVersionTransition NoncurrentDays must be between 1 and %d, got %d", maxLifecycleDays, nd))
 				}
 			}
-			if t.StorageClass != "" {
-				if err := validateStorageClass(t.StorageClass); err != nil {
-					return err
-				}
+			if err := validateNewerNoncurrentVersions(t.NewerNoncurrentVersions, rule.Filter); err != nil {
+				return err
+			}
+			if err := validateTransitionStorageClass(t.StorageClass); err != nil {
+				return err
 			}
 		}
 
@@ -330,14 +332,61 @@ func validateLifecycleRules(rules []LifecycleRuleInput) error {
 			}
 		}
 
-		if rule.NoncurrentVersionExpiration != nil && rule.NoncurrentVersionExpiration.NoncurrentDays != nil {
-			d := *rule.NoncurrentVersionExpiration.NoncurrentDays
-			if d < 1 || d > maxLifecycleDays {
-				return NewInvalidArgumentError(fmt.Sprintf("NoncurrentVersionExpiration NoncurrentDays must be between 1 and %d, got %d", maxLifecycleDays, d))
+		if rule.NoncurrentVersionExpiration != nil {
+			if rule.NoncurrentVersionExpiration.NoncurrentDays != nil {
+				d := *rule.NoncurrentVersionExpiration.NoncurrentDays
+				if d < 1 || d > maxLifecycleDays {
+					return NewInvalidArgumentError(fmt.Sprintf("NoncurrentVersionExpiration NoncurrentDays must be between 1 and %d, got %d", maxLifecycleDays, d))
+				}
+			}
+			if err := validateNewerNoncurrentVersions(rule.NoncurrentVersionExpiration.NewerNoncurrentVersions, rule.Filter); err != nil {
+				return err
 			}
 		}
 	}
 	return nil
+}
+
+// validateTransitionStorageClass checks a Transition or
+// NoncurrentVersionTransition StorageClass member: required, and restricted
+// to the TransitionStorageClass set of the AWS model (STANDARD and
+// REDUCED_REDUNDANCY are not transition destinations).
+func validateTransitionStorageClass(class string) error {
+	if class == "" {
+		return NewInvalidArgumentError("Transition StorageClass is required")
+	}
+	if !s3store.IsValidTransitionTargetClass(s3store.ObjectStorageClass(class)) {
+		return NewInvalidArgumentError(fmt.Sprintf("%s is not a valid transition storage class", class))
+	}
+	return nil
+}
+
+// validateNewerNoncurrentVersions checks the shared contract of the
+// NewerNoncurrentVersions member: between 1 and 100, and — an AWS-documented
+// InvalidRequest — only specifiable when the rule carries a Filter element.
+func validateNewerNoncurrentVersions(n *int32, filter *LifecycleRuleFilterInput) error {
+	if n == nil {
+		return nil
+	}
+	if *n < 1 || *n > s3store.MaxNewerNoncurrentVersions {
+		return NewInvalidArgumentError(fmt.Sprintf("NewerNoncurrentVersions must be between 1 and %d, got %d", s3store.MaxNewerNoncurrentVersions, *n))
+	}
+	if filter == nil {
+		return NewInvalidRequestError("NewerNoncurrentVersions requires a Filter element in the lifecycle rule")
+	}
+	return nil
+}
+
+// filterUsesTags reports whether a lifecycle rule filter selects objects by
+// tag, directly or inside the And operator.
+func filterUsesTags(filter *LifecycleRuleFilterInput) bool {
+	if filter == nil {
+		return false
+	}
+	if filter.Tag != nil {
+		return true
+	}
+	return filter.And != nil && len(filter.And.Tags) > 0
 }
 
 // validateRestoreDays validates the Days parameter of a RestoreObject
@@ -359,18 +408,6 @@ const (
 	// Ownership controls: AWS allows exactly one rule.
 	maxOwnershipRules = 1
 )
-
-// validateStorageClass checks that the value is either empty (defaults to
-// STANDARD) or a recognised S3 storage class enum.
-func validateStorageClass(sc string) error {
-	if sc == "" {
-		return nil
-	}
-	if !validStorageClasses[sc] {
-		return NewInvalidArgumentError(fmt.Sprintf("invalid StorageClass: %s", sc))
-	}
-	return nil
-}
 
 // validatePayer checks that the Payer value is one of the two AWS-allowed
 // values for the RequestPaymentConfiguration.

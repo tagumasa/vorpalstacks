@@ -94,6 +94,10 @@ func TestService(t *testing.T) {
 					}
 				})
 			}
+			// Service cleanups registered during the registration pass run
+			// after the service's subtests, mirroring the binary's
+			// builder-return tail.
+			r.RunServiceCleanups(svc)
 		})
 	}
 }

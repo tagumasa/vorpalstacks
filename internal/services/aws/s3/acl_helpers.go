@@ -59,6 +59,15 @@ func BuildACLXML(owner *s3store.ACLOwner, grants []*s3store.Grant) string {
 	return result.String()
 }
 
+// aclAllowedWithAclsDisabled reports whether a canned ACL is accepted on a
+// bucket whose object ownership is BucketOwnerEnforced. AWS accepts only
+// requests that specify no ACL at all or the bucket-owner-full-control
+// canned ACL; every other canned ACL — private included — fails with
+// AccessControlListNotSupported.
+func aclAllowedWithAclsDisabled(cannedACL string) bool {
+	return cannedACL == "bucket-owner-full-control"
+}
+
 // CannedACLToPolicy converts a canned ACL string to an access control policy.
 func CannedACLToPolicy(cannedACL string, owner *s3store.ACLOwner) (*s3store.AccessControlPolicy, error) {
 	if owner == nil {

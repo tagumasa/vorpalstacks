@@ -11,7 +11,6 @@ package s3
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -123,44 +122,10 @@ func (s *S3Service) putObjectAclCore(ctx context.Context, stores *s3Stores, inpu
 		return err
 	}
 
-	owner := &s3store.ACLOwner{ID: s.accountID, DisplayName: s.accountID}
-
-	var acp *s3store.AccessControlPolicy
-	var err error
-
-	if input.ACL != "" {
-		acp, err = CannedACLToPolicy(input.ACL, owner)
-		if err != nil {
-			return err
-		}
-	} else if input.AccessControlPolicy != nil {
-		acp = input.AccessControlPolicy
-	} else {
-		grants, err := ParseGrantHeaders(input.GrantFullControl, input.GrantRead, input.GrantReadACP, input.GrantWrite, input.GrantWriteACP)
-		if err != nil {
-			return NewInvalidArgumentError(err.Error())
-		}
-		if len(grants) > 0 {
-			acp = &s3store.AccessControlPolicy{Owner: owner, Grants: grants}
-		} else {
-			return NewInvalidArgumentError("missing required ACL specification")
-		}
-	}
-
-	publicAccessBlock, _ := stores.buckets.GetPublicAccessBlock(input.Bucket)
-	if publicAccessBlock != nil && publicAccessBlock.BlockPublicAcls {
-		if isPublicCannedACL(input.ACL) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-		if acpContainsPublicAccess(acp) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-	}
-
-	// With Object Ownership set to BucketOwnerEnforced, "requests to set or
-	// update ACLs fail" with AccessControlListNotSupported.
-	if aclsDisabled, _ := s.bucketACLsDisabled(ctx, stores, input.Bucket); aclsDisabled {
-		return ErrAccessControlListNotSupported
+	acp, err := s.resolveAndGuardACL(ctx, stores, input.Bucket, input.ACL, input.AccessControlPolicy,
+		input.GrantFullControl, input.GrantRead, input.GrantReadACP, input.GrantWrite, input.GrantWriteACP)
+	if err != nil {
+		return err
 	}
 
 	if err := stores.objects.SetACLWithVersion(input.Bucket, input.Key, input.VersionId, acp); err != nil {
@@ -270,10 +235,12 @@ func (s *S3Service) deleteObjectsOpCore(ctx context.Context, reqCtx *request.Req
 						s.replicateDeleteMarker(dmCtx, reqCtx, stores, bucket, keyVal)
 					})
 				}
-			} else if obj.VersionId != "" {
-				deletedObj.VersionId = obj.VersionId
-				s.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
 			} else {
+				// Versioned and unversioned deletes publish the same
+				// removal event; only the reported version ID differs.
+				if obj.VersionId != "" {
+					deletedObj.VersionId = obj.VersionId
+				}
 				s.publishObjectNotification(ctx, reqCtx, input.Bucket, obj.Key, 0, "", "", eventbus.S3ObjectRemovedDelete)
 			}
 			deleted = append(deleted, deletedObj)
@@ -297,6 +264,25 @@ func (s *S3Service) getObjectAttributesCore(ctx context.Context, stores *s3Store
 		return nil, err
 	}
 
+	// The attribute list is required ("Fields that you do not specify are
+	// not returned" — the response carries exactly the requested set) and
+	// every entry must be a modelled attribute value.
+	if len(input.ObjectAttributes) == 0 {
+		return nil, NewInvalidArgumentError("x-amz-object-attributes is required")
+	}
+	for _, attr := range input.ObjectAttributes {
+		switch attr {
+		case "ETag", "Checksum", "ObjectParts", "StorageClass", "ObjectSize":
+		default:
+			return nil, NewInvalidArgumentError(fmt.Sprintf("invalid object attribute: %s", attr))
+		}
+	}
+
+	maxParts, err := parseLimitValue(input.MaxParts, "max-parts", s3MaxParts)
+	if err != nil {
+		return nil, err
+	}
+
 	obj, err := stores.objects.HeadWithVersion(ctx, input.Bucket, input.Key, input.VersionId)
 	if err != nil {
 		return nil, mapVersionLookupError(err, input.VersionId)
@@ -307,11 +293,10 @@ func (s *S3Service) getObjectAttributesCore(ctx context.Context, stores *s3Store
 		objectSize = obj.SSEMetadata.UnencryptedSize
 	}
 
+	// VersionId and LastModified travel as response headers; each body
+	// attribute is populated only when requested.
 	output := &GetObjectAttributesOutput{
 		VersionId:    obj.VersionID,
-		ETag:         formatETag(obj.ETag),
-		ObjectSize:   objectSize,
-		StorageClass: string(obj.StorageClass),
 		LastModified: s3Timestamp(obj.LastModified),
 	}
 
@@ -324,50 +309,20 @@ func (s *S3Service) getObjectAttributesCore(ctx context.Context, stores *s3Store
 		case "StorageClass":
 			output.StorageClass = string(obj.StorageClass)
 		case "ObjectParts":
-			if obj.SSEMetadata != nil && len(obj.SSEMetadata.PartEncryptionInfos) > 0 {
-				partInfos := obj.SSEMetadata.PartEncryptionInfos
-				totalParts := int32(len(partInfos))
-
-				partNumberStart := int32(0)
-				if input.PartNumberMarker != "" {
-					if parsed, pErr := strconv.ParseInt(input.PartNumberMarker, 10, 32); pErr == nil && parsed > 0 {
-						partNumberStart = int32(parsed)
-					}
-				}
-
-				maxParts := input.MaxParts
-				if maxParts <= 0 {
-					maxParts = s3MaxParts
-				}
-
-				var filteredParts []GetObjectAttributesPart
-				for i, pi := range partInfos {
-					pn := int32(i + 1)
-					if pn <= partNumberStart {
-						continue
-					}
-					if int32(len(filteredParts)) >= maxParts {
-						break
-					}
-					filteredParts = append(filteredParts, GetObjectAttributesPart{
-						PartNumber: pn,
-						Size:       pi.PlainSize,
-					})
-				}
-
-				isTruncated := int32(len(partInfos)) > partNumberStart+int32(len(filteredParts))
-				var nextMarker string
-				if isTruncated && len(filteredParts) > 0 {
-					nextMarker = strconv.FormatInt(int64(filteredParts[len(filteredParts)-1].PartNumber), 10)
-				}
-
+			// The attribute applies to any multipart object: the record
+			// keeps the part boundaries in obj.Parts for both the plain
+			// and the SSE-chunked layout. The individual Part elements
+			// are checksum-gated in general-purpose buckets ("if an
+			// additional checksum ... isn't applied to the object
+			// specified in the request, the response doesn't return the
+			// Part element"), and this platform applies no additional
+			// checksums — so the count and the pagination markers are
+			// served without the element list.
+			if len(obj.Parts) > 0 {
 				output.ObjectParts = &GetObjectAttributesParts{
-					IsTruncated:          isTruncated,
-					MaxParts:             maxParts,
-					NextPartNumberMarker: nextMarker,
-					PartNumberMarker:     input.PartNumberMarker,
-					Parts:                filteredParts,
-					TotalPartsCount:      totalParts,
+					MaxParts:         int32(maxParts),
+					PartNumberMarker: input.PartNumberMarker,
+					TotalPartsCount:  int32(len(obj.Parts)),
 				}
 			}
 		case "Checksum":
@@ -524,6 +479,9 @@ func (s *S3Service) listObjectVersionsCore(stores *s3Stores, input *ListObjectVe
 	var deleteMarkers []*DeleteMarkerEntry
 	var commonPrefixes []CommonPrefix
 
+	// Versions and delete markers carry the owner on every entry
+	// unconditionally; unlike V2 listing there is no fetch-owner opt-in.
+	listOwner := s.bucketOwner()
 	for _, obj := range result.Objects {
 		if obj.IsDeleteMarker {
 			deleteMarkers = append(deleteMarkers, &DeleteMarkerEntry{
@@ -531,6 +489,7 @@ func (s *S3Service) listObjectVersionsCore(stores *s3Stores, input *ListObjectVe
 				LastModified: obj.LastModified,
 				VersionId:    obj.VersionID,
 				IsLatest:     obj.IsLatest,
+				Owner:        listOwner,
 			})
 		} else {
 			versions = append(versions, &ObjectVersion{
@@ -541,6 +500,7 @@ func (s *S3Service) listObjectVersionsCore(stores *s3Stores, input *ListObjectVe
 				StorageClass: string(obj.StorageClass),
 				VersionId:    obj.VersionID,
 				IsLatest:     obj.IsLatest,
+				Owner:        listOwner,
 			})
 		}
 	}
@@ -639,7 +599,7 @@ func (s *S3Service) putObjectTaggingCore(ctx context.Context, reqCtx *request.Re
 		return versionLookupError(input.Key, input.VersionId)
 	}
 
-	if err := validateTags(input.Tags); err != nil {
+	if err := validateTags(TagsToCommon(input.Tags)); err != nil {
 		return err
 	}
 

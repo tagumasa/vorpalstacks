@@ -6,7 +6,6 @@ import (
 
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 
-	"vorpalstacks/internal/services/aws/kms/hsm"
 	s3store "vorpalstacks/internal/store/aws/s3"
 	"vorpalstacks/internal/utils/crypto"
 )
@@ -24,42 +23,6 @@ type GenerateDataKeyResult struct {
 	Ciphertext []byte
 }
 
-// HSMKMSClient implements KMSClient using an HSM backend.
-type HSMKMSClient struct {
-	hsmBackend hsm.Backend
-}
-
-// NewHSMKMSClient creates a new HSM-based KMS client.
-func NewHSMKMSClient(backend hsm.Backend) *HSMKMSClient {
-	return &HSMKMSClient{hsmBackend: backend}
-}
-
-// GenerateDataKey generates a new data key using KMS.
-func (c *HSMKMSClient) GenerateDataKey(keyID string, keySpec string, context map[string]string, _ string) (*GenerateDataKeyResult, error) {
-	result, err := c.hsmBackend.GenerateDataKey(keyID, keySpec, 0, context)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate data key: %w", err)
-	}
-	return &GenerateDataKeyResult{
-		Plaintext:  result.Plaintext,
-		Ciphertext: result.Ciphertext,
-	}, nil
-}
-
-// Decrypt decrypts data using KMS.
-func (c *HSMKMSClient) Decrypt(keyID string, ciphertext []byte, context map[string]string, _ string) ([]byte, error) {
-	result, err := c.hsmBackend.Decrypt(keyID, ciphertext, hsm.EncryptionAlgorithmSymmetricDefault, context)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt: %w", err)
-	}
-	return result.Plaintext, nil
-}
-
-// KeyExists checks if a KMS key exists.
-func (c *HSMKMSClient) KeyExists(keyID string) bool {
-	return c.hsmBackend.KeyExists(keyID)
-}
-
 // SSEKMSEncryptor handles S3 server-side encryption with AWS KMS-managed keys.
 type SSEKMSEncryptor struct {
 	kmsClient KMSClient
@@ -68,11 +31,6 @@ type SSEKMSEncryptor struct {
 // NewSSEKMSEncryptor creates a new KMS-based encryptor.
 func NewSSEKMSEncryptor(kmsClient KMSClient) *SSEKMSEncryptor {
 	return &SSEKMSEncryptor{kmsClient: kmsClient}
-}
-
-// GetEncryptionType returns the KMS encryption type.
-func (e *SSEKMSEncryptor) GetEncryptionType() EncryptionType {
-	return EncryptionTypeSSE_KMS
 }
 
 func (e *SSEKMSEncryptor) buildEncryptionContext(bucket, key string) map[string]string {

@@ -147,27 +147,15 @@ func (s *S3Service) listBucketMetricsConfigurationsCore(bucketStore s3store.Buck
 	if err != nil {
 		return nil, err
 	}
-	const pageSize = 100
-	start := 0
-	if in.ContinuationToken != "" {
-		for start < len(configs) && configs[start].ID <= in.ContinuationToken {
-			start++
-		}
-	}
-	end := start + pageSize
-	if end > len(configs) {
-		end = len(configs)
-	}
+	page, nextToken, truncated := paginateIDConfigurations(configs, in.ContinuationToken, func(c *s3store.MetricsConfiguration) string { return c.ID })
 	out := &ListBucketMetricsConfigurationsOutput{
 		ContinuationToken: in.ContinuationToken,
 	}
-	for _, stored := range configs[start:end] {
+	for _, stored := range page {
 		out.MetricsConfigurations = append(out.MetricsConfigurations, *metricsConfigurationToOutput(stored))
 	}
-	if end < len(configs) {
-		out.IsTruncated = true
-		out.NextContinuationToken = configs[end-1].ID
-	}
+	out.IsTruncated = truncated
+	out.NextContinuationToken = nextToken
 	return out, nil
 }
 

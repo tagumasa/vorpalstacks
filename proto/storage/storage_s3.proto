@@ -16,6 +16,8 @@ enum ObjectStorageClass {
   OBJECT_STORAGE_CLASS_STANDARD_IA = 4;
   OBJECT_STORAGE_CLASS_ONEZONE_IA = 5;
   OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING = 6;
+  OBJECT_STORAGE_CLASS_GLACIER_IR = 7;
+  OBJECT_STORAGE_CLASS_DEEP_ARCHIVE = 8;
 }
 
 // BucketVersioningStatus represents the versioning status of an S3 bucket.
@@ -30,7 +32,7 @@ enum SSEType {
   SSE_TYPE_UNSPECIFIED = 0;
   SSE_TYPE_AES256 = 1;
   SSE_TYPE_KMS = 2;
-  SSE_TYPE_KMS_ES = 3;
+  SSE_TYPE_KMS_DSSE = 3;
   SSE_TYPE_CUSTOMER = 4;
 }
 
@@ -396,11 +398,18 @@ message LambdaNotificationConfiguration {
   NotificationConfigurationFilter filter = 4;
 }
 
+// EventBridgeNotificationConfiguration routes bucket notifications to
+// EventBridge. The configuration carries no members: its presence alone
+// enables the routing, matching the EventBridgeConfiguration element.
+message EventBridgeNotificationConfiguration {
+}
+
 // NotificationConfiguration represents the notification configuration for an S3 bucket.
 message NotificationConfiguration {
   repeated TopicNotificationConfiguration topic_configurations = 1;
   repeated QueueNotificationConfiguration queue_configurations = 2;
   repeated LambdaNotificationConfiguration lambda_configurations = 3;
+  EventBridgeNotificationConfiguration event_bridge_configuration = 4;
 }
 
 // TargetGrant represents a grant in the logging configuration.
@@ -556,20 +565,20 @@ message Bucket {
   bool object_lock_enabled = 5;
   ObjectLockConfiguration object_lock_config = 6;
   BucketVersioningStatus versioning_status = 7;
-  EncryptionConfig encryption_config = 8;
-  LifecycleConfiguration lifecycle_configuration = 9;
-  WebsiteConfiguration website_configuration = 10;
-  CORSConfiguration cors_configuration = 11;
-  string policy = 12;
-  PublicAccessBlockConfig public_access_block = 13;
-  repeated Tag tags = 14;
-  NotificationConfiguration notification_configuration = 15;
-  LoggingConfiguration logging_configuration = 16;
-  OwnershipControls ownership_controls = 17;
-  RequestPaymentConfiguration request_payment = 18;
-  AccelerateConfiguration accelerate_configuration = 19;
-  ReplicationConfiguration replication_configuration = 20;
-  string mfa_delete = 21;
+  string mfa_delete = 8;
+  EncryptionConfig encryption_config = 9;
+  LifecycleConfiguration lifecycle_configuration = 10;
+  WebsiteConfiguration website_configuration = 11;
+  CORSConfiguration cors_configuration = 12;
+  string policy = 13;
+  PublicAccessBlockConfig public_access_block = 14;
+  repeated Tag tags = 15;
+  NotificationConfiguration notification_configuration = 16;
+  LoggingConfiguration logging_configuration = 17;
+  OwnershipControls ownership_controls = 18;
+  RequestPaymentConfiguration request_payment = 19;
+  AccelerateConfiguration accelerate_configuration = 20;
+  ReplicationConfiguration replication_configuration = 21;
   repeated InventoryConfiguration inventory_configurations = 22;
   repeated MetricsConfiguration metrics_configurations = 23;
 }

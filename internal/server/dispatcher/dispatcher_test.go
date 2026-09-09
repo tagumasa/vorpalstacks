@@ -17,7 +17,7 @@ import (
 	"vorpalstacks/internal/store/api"
 )
 
-func newTestStorage(t *testing.T) storage.Storage {
+func newTestStorage(t *testing.T) *storage.PebbleStorage {
 	tmpDir := filepath.Join(os.TempDir(), "dispatcher-test-"+t.Name())
 	t.Cleanup(func() { os.RemoveAll(tmpDir) })
 

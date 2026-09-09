@@ -3,13 +3,13 @@ package s3
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"google.golang.org/protobuf/proto"
 	"vorpalstacks/internal/common/defaults"
 	"vorpalstacks/internal/common/request"
 	types "vorpalstacks/internal/common/tags"
 	s3store "vorpalstacks/internal/store/aws/s3"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // Core functions for the bucket sub-resource configuration operations
@@ -59,44 +59,10 @@ func (s *S3Service) getBucketAccelerateConfigurationCore(bucketStore s3store.Buc
 // policy body, or grant headers), enforces BlockPublicAcls and the
 // BucketOwnerEnforced ownership rule, and persists the bucket ACL.
 func (s *S3Service) putBucketAclCore(ctx *request.RequestContext, store *s3Stores, in *PutBucketAclInput) error {
-	owner := &s3store.ACLOwner{ID: s.accountID, DisplayName: s.accountID}
-
-	var acp *s3store.AccessControlPolicy
-	var err error
-
-	if in.ACL != "" {
-		acp, err = CannedACLToPolicy(in.ACL, owner)
-		if err != nil {
-			return err
-		}
-	} else if in.AccessControlPolicy != nil {
-		acp = in.AccessControlPolicy
-	} else {
-		grants, err := ParseGrantHeaders(in.GrantFullControl, in.GrantRead, in.GrantReadACP, in.GrantWrite, in.GrantWriteACP)
-		if err != nil {
-			return NewInvalidArgumentError(err.Error())
-		}
-		if len(grants) > 0 {
-			acp = &s3store.AccessControlPolicy{Owner: owner, Grants: grants}
-		} else {
-			return NewInvalidArgumentError("missing required ACL specification")
-		}
-	}
-
-	publicAccessBlock, _ := store.buckets.GetPublicAccessBlock(in.Bucket)
-	if publicAccessBlock != nil && publicAccessBlock.BlockPublicAcls {
-		if isPublicCannedACL(in.ACL) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-		if acpContainsPublicAccess(acp) {
-			return NewInvalidArgumentError("bucket has BlockPublicAcls enabled")
-		}
-	}
-
-	// With Object Ownership set to BucketOwnerEnforced, "requests to set or
-	// update ACLs fail" with AccessControlListNotSupported.
-	if aclsDisabled, _ := s.bucketACLsDisabled(ctx, store, in.Bucket); aclsDisabled {
-		return ErrAccessControlListNotSupported
+	acp, err := s.resolveAndGuardACL(ctx, store, in.Bucket, in.ACL, in.AccessControlPolicy,
+		in.GrantFullControl, in.GrantRead, in.GrantReadACP, in.GrantWrite, in.GrantWriteACP)
+	if err != nil {
+		return err
 	}
 
 	return store.buckets.SetACL(in.Bucket, acp)
@@ -220,7 +186,7 @@ func (s *S3Service) putBucketEncryptionCore(bucketStore s3store.BucketStoreInter
 	rule := in.ServerSideEncryptionConfiguration.Rules[0]
 	sseAlgorithm := rule.ApplyServerSideEncryptionByDefault.SSEAlgorithm
 	if sseAlgorithm != "AES256" && sseAlgorithm != "aws:kms" && sseAlgorithm != "aws:kms:dsse" {
-		return fmt.Errorf("invalid SSE algorithm: %s (must be AES256, aws:kms, or aws:kms:dsse)", sseAlgorithm)
+		return NewInvalidArgumentError(fmt.Sprintf("invalid SSE algorithm: %s (must be AES256, aws:kms, or aws:kms:dsse)", sseAlgorithm))
 	}
 
 	if err := validateKMSMasterKeyID(rule.ApplyServerSideEncryptionByDefault.KMSMasterKeyID, sseAlgorithm); err != nil {
@@ -538,148 +504,134 @@ func (s *S3Service) getBucketLoggingCore(bucketStore s3store.BucketStoreInterfac
 	return output, nil
 }
 
+// validateNotificationArn checks that a destination ARN is shaped like an
+// ARN and carries the expected service namespace.
+func validateNotificationArn(arn, expectedService string) error {
+	if arn == "" {
+		return NewInvalidArgumentError("notification ARN is required")
+	}
+	parsed, parseErr := svcarn.ParseARN(arn)
+	if parseErr != nil {
+		return NewInvalidArgumentError(fmt.Sprintf("invalid ARN format: %s", arn))
+	}
+	if parsed.Service != expectedService {
+		return NewInvalidArgumentError(fmt.Sprintf("expected ARN service %s, got %s in: %s", expectedService, parsed.Service, arn))
+	}
+	return nil
+}
+
+// validateNotificationDestination runs the shared per-destination checks —
+// Id uniqueness across the whole configuration, ARN shape and service
+// namespace, target existence via the event bus, event names, and filter
+// rules — and returns the copied store-side filter. Topic, queue, and
+// Lambda destinations differ only in the fields around this path.
+func (s *S3Service) validateNotificationDestination(ctx *request.RequestContext, seenIds map[string]bool, id, arn, service string, events []string, filter *NotificationFilterInput) (*s3store.NotificationConfigurationFilter, error) {
+	if id != "" {
+		if seenIds[id] {
+			return nil, NewInvalidArgumentError(fmt.Sprintf("duplicate notification configuration Id: %s", id))
+		}
+		seenIds[id] = true
+	}
+	if err := validateNotificationArn(arn, service); err != nil {
+		return nil, err
+	}
+	if err := s.validateNotificationTarget(ctx, arn, service); err != nil {
+		return nil, err
+	}
+	if err := validateS3EventNames(events); err != nil {
+		return nil, err
+	}
+	return notificationFilterToStore(filter)
+}
+
+// notificationFilterToStore validates and copies the request-side key filter
+// into the store-side form; a request without an S3Key member yields no
+// filter.
+func notificationFilterToStore(in *NotificationFilterInput) (*s3store.NotificationConfigurationFilter, error) {
+	if in == nil || in.S3Key == nil {
+		return nil, nil
+	}
+	filter := &s3store.NotificationConfigurationFilter{Key: &s3store.S3KeyFilter{}}
+	for _, fr := range in.S3Key.FilterRules {
+		if err := validateFilterRule(fr.Name, fr.Value); err != nil {
+			return nil, err
+		}
+		filter.Key.FilterRules = append(filter.Key.FilterRules, s3store.FilterRule{
+			Name:  fr.Name,
+			Value: fr.Value,
+		})
+	}
+	return filter, nil
+}
+
+// notificationFilterToOutput copies the store-side key filter into the
+// response form; a store filter without key rules yields no filter member.
+func notificationFilterToOutput(f *s3store.NotificationConfigurationFilter) *NotificationFilterOutput {
+	if f == nil || f.Key == nil {
+		return nil
+	}
+	out := &NotificationFilterOutput{S3Key: &S3KeyFilterOutput{}}
+	for _, fr := range f.Key.FilterRules {
+		out.S3Key.FilterRules = append(out.S3Key.FilterRules, FilterRuleOutput{
+			Name:  fr.Name,
+			Value: fr.Value,
+		})
+	}
+	return out
+}
+
 // putBucketNotificationConfigurationCore validates the notification
 // configurations (Id uniqueness, ARN shape, target existence via the event
 // bus, event names, filter rules) and persists the notification
 // configuration for a bucket.
 func (s *S3Service) putBucketNotificationConfigurationCore(ctx *request.RequestContext, bucketStore s3store.BucketStoreInterface, in *PutBucketNotificationInput) error {
-	// Track Id uniqueness across all configurations.
 	seenIds := make(map[string]bool)
-
-	validateId := func(id string) error {
-		if id == "" {
-			return nil
-		}
-		if seenIds[id] {
-			return NewInvalidArgumentError(fmt.Sprintf("duplicate notification configuration Id: %s", id))
-		}
-		seenIds[id] = true
-		return nil
-	}
-
-	validateArn := func(arn, expectedService string) error {
-		if arn == "" {
-			return NewInvalidArgumentError("notification ARN is required")
-		}
-		parts := strings.SplitN(arn, ":", 6)
-		if len(parts) < 6 || parts[0] != "arn" {
-			return NewInvalidArgumentError(fmt.Sprintf("invalid ARN format: %s", arn))
-		}
-		if parts[2] != expectedService {
-			return NewInvalidArgumentError(fmt.Sprintf("expected ARN service %s, got %s in: %s", expectedService, parts[2], arn))
-		}
-		return nil
-	}
-
-	validateEvents := func(events []string) error {
-		return validateS3EventNames(events)
-	}
 
 	config := &s3store.NotificationConfiguration{}
 
 	for _, tc := range in.NotificationConfiguration.TopicConfigurations {
-		if err := validateId(tc.Id); err != nil {
+		filter, err := s.validateNotificationDestination(ctx, seenIds, tc.Id, tc.TopicArn, "sns", tc.Events, tc.Filter)
+		if err != nil {
 			return err
 		}
-		if err := validateArn(tc.TopicArn, "sns"); err != nil {
-			return err
-		}
-		if err := s.validateNotificationTarget(ctx, tc.TopicArn, "sns"); err != nil {
-			return err
-		}
-		if err := validateEvents(tc.Events); err != nil {
-			return err
-		}
-		topicConfig := s3store.TopicNotificationConfiguration{
+		config.TopicConfigurations = append(config.TopicConfigurations, s3store.TopicNotificationConfiguration{
 			Id:       tc.Id,
 			TopicArn: tc.TopicArn,
 			Events:   tc.Events,
-		}
-		if tc.Filter != nil && tc.Filter.S3Key != nil {
-			topicConfig.Filter = &s3store.NotificationConfigurationFilter{
-				Key: &s3store.S3KeyFilter{},
-			}
-			for _, fr := range tc.Filter.S3Key.FilterRules {
-				if err := validateFilterRule(fr.Name, fr.Value); err != nil {
-					return err
-				}
-				topicConfig.Filter.Key.FilterRules = append(topicConfig.Filter.Key.FilterRules, s3store.FilterRule{
-					Name:  fr.Name,
-					Value: fr.Value,
-				})
-			}
-		}
-		config.TopicConfigurations = append(config.TopicConfigurations, topicConfig)
+			Filter:   filter,
+		})
 	}
 
 	for _, qc := range in.NotificationConfiguration.QueueConfigurations {
-		if err := validateId(qc.Id); err != nil {
+		filter, err := s.validateNotificationDestination(ctx, seenIds, qc.Id, qc.QueueArn, "sqs", qc.Events, qc.Filter)
+		if err != nil {
 			return err
 		}
-		if err := validateArn(qc.QueueArn, "sqs"); err != nil {
-			return err
-		}
-		if err := s.validateNotificationTarget(ctx, qc.QueueArn, "sqs"); err != nil {
-			return err
-		}
-		if err := validateEvents(qc.Events); err != nil {
-			return err
-		}
-		queueConfig := s3store.QueueNotificationConfiguration{
+		config.QueueConfigurations = append(config.QueueConfigurations, s3store.QueueNotificationConfiguration{
 			Id:       qc.Id,
 			QueueArn: qc.QueueArn,
 			Events:   qc.Events,
-		}
-		if qc.Filter != nil && qc.Filter.S3Key != nil {
-			queueConfig.Filter = &s3store.NotificationConfigurationFilter{
-				Key: &s3store.S3KeyFilter{},
-			}
-			for _, fr := range qc.Filter.S3Key.FilterRules {
-				if err := validateFilterRule(fr.Name, fr.Value); err != nil {
-					return err
-				}
-				queueConfig.Filter.Key.FilterRules = append(queueConfig.Filter.Key.FilterRules, s3store.FilterRule{
-					Name:  fr.Name,
-					Value: fr.Value,
-				})
-			}
-		}
-		config.QueueConfigurations = append(config.QueueConfigurations, queueConfig)
+			Filter:   filter,
+		})
 	}
 
 	for _, lc := range in.NotificationConfiguration.LambdaConfigurations {
-		if err := validateId(lc.Id); err != nil {
+		filter, err := s.validateNotificationDestination(ctx, seenIds, lc.Id, lc.LambdaFunctionArn, "lambda", lc.Events, lc.Filter)
+		if err != nil {
 			return err
 		}
-		if err := validateArn(lc.LambdaFunctionArn, "lambda"); err != nil {
-			return err
-		}
-		if err := s.validateNotificationTarget(ctx, lc.LambdaFunctionArn, "lambda"); err != nil {
-			return err
-		}
-		if err := validateEvents(lc.Events); err != nil {
-			return err
-		}
-		lambdaConfig := s3store.LambdaNotificationConfiguration{
+		config.LambdaConfigurations = append(config.LambdaConfigurations, s3store.LambdaNotificationConfiguration{
 			Id:                lc.Id,
 			LambdaFunctionArn: lc.LambdaFunctionArn,
 			Events:            lc.Events,
-		}
-		if lc.Filter != nil && lc.Filter.S3Key != nil {
-			lambdaConfig.Filter = &s3store.NotificationConfigurationFilter{
-				Key: &s3store.S3KeyFilter{},
-			}
-			for _, fr := range lc.Filter.S3Key.FilterRules {
-				if err := validateFilterRule(fr.Name, fr.Value); err != nil {
-					return err
-				}
-				lambdaConfig.Filter.Key.FilterRules = append(lambdaConfig.Filter.Key.FilterRules, s3store.FilterRule{
-					Name:  fr.Name,
-					Value: fr.Value,
-				})
-			}
-		}
-		config.LambdaConfigurations = append(config.LambdaConfigurations, lambdaConfig)
+			Filter:            filter,
+		})
+	}
+
+	// EventBridge delivery carries no members: the element's presence alone
+	// routes all bucket events to the account's default bus.
+	if in.NotificationConfiguration.EventBridgeConfiguration != nil {
+		config.EventBridgeConfiguration = &s3store.EventBridgeNotificationConfiguration{}
 	}
 
 	return bucketStore.SetNotificationConfiguration(in.Bucket, config)
@@ -703,57 +655,34 @@ func (s *S3Service) getBucketNotificationConfigurationCore(bucketStore s3store.B
 	}
 
 	for _, tc := range config.TopicConfigurations {
-		topicOut := TopicConfigurationOutput{
+		output.NotificationConfiguration.TopicConfigurations = append(output.NotificationConfiguration.TopicConfigurations, TopicConfigurationOutput{
 			Id:       tc.Id,
 			TopicArn: tc.TopicArn,
 			Events:   tc.Events,
-		}
-		if tc.Filter != nil && tc.Filter.Key != nil {
-			topicOut.Filter = &NotificationFilterOutput{S3Key: &S3KeyFilterOutput{}}
-			for _, fr := range tc.Filter.Key.FilterRules {
-				topicOut.Filter.S3Key.FilterRules = append(topicOut.Filter.S3Key.FilterRules, FilterRuleOutput{
-					Name:  fr.Name,
-					Value: fr.Value,
-				})
-			}
-		}
-		output.NotificationConfiguration.TopicConfigurations = append(output.NotificationConfiguration.TopicConfigurations, topicOut)
+			Filter:   notificationFilterToOutput(tc.Filter),
+		})
 	}
 
 	for _, qc := range config.QueueConfigurations {
-		queueOut := QueueConfigurationOutput{
+		output.NotificationConfiguration.QueueConfigurations = append(output.NotificationConfiguration.QueueConfigurations, QueueConfigurationOutput{
 			Id:       qc.Id,
 			QueueArn: qc.QueueArn,
 			Events:   qc.Events,
-		}
-		if qc.Filter != nil && qc.Filter.Key != nil {
-			queueOut.Filter = &NotificationFilterOutput{S3Key: &S3KeyFilterOutput{}}
-			for _, fr := range qc.Filter.Key.FilterRules {
-				queueOut.Filter.S3Key.FilterRules = append(queueOut.Filter.S3Key.FilterRules, FilterRuleOutput{
-					Name:  fr.Name,
-					Value: fr.Value,
-				})
-			}
-		}
-		output.NotificationConfiguration.QueueConfigurations = append(output.NotificationConfiguration.QueueConfigurations, queueOut)
+			Filter:   notificationFilterToOutput(qc.Filter),
+		})
 	}
 
 	for _, lc := range config.LambdaConfigurations {
-		lambdaOut := LambdaConfigurationOutput{
+		output.NotificationConfiguration.LambdaConfigurations = append(output.NotificationConfiguration.LambdaConfigurations, LambdaConfigurationOutput{
 			Id:                lc.Id,
 			LambdaFunctionArn: lc.LambdaFunctionArn,
 			Events:            lc.Events,
-		}
-		if lc.Filter != nil && lc.Filter.Key != nil {
-			lambdaOut.Filter = &NotificationFilterOutput{S3Key: &S3KeyFilterOutput{}}
-			for _, fr := range lc.Filter.Key.FilterRules {
-				lambdaOut.Filter.S3Key.FilterRules = append(lambdaOut.Filter.S3Key.FilterRules, FilterRuleOutput{
-					Name:  fr.Name,
-					Value: fr.Value,
-				})
-			}
-		}
-		output.NotificationConfiguration.LambdaConfigurations = append(output.NotificationConfiguration.LambdaConfigurations, lambdaOut)
+			Filter:            notificationFilterToOutput(lc.Filter),
+		})
+	}
+
+	if config.EventBridgeConfiguration != nil {
+		output.NotificationConfiguration.EventBridgeConfiguration = &EventBridgeConfigurationOutput{}
 	}
 
 	return output, nil
@@ -786,9 +715,8 @@ func (s *S3Service) putObjectLockConfigurationCore(bucketStore s3store.BucketSto
 	if in.ObjectLockConfiguration.Rule != nil && in.ObjectLockConfiguration.Rule.DefaultRetention != nil {
 		dr := in.ObjectLockConfiguration.Rule.DefaultRetention
 
-		// Validate Mode: must be GOVERNANCE or COMPLIANCE
-		if dr.Mode != string(s3store.ObjectLockRetentionModeGovernance) && dr.Mode != string(s3store.ObjectLockRetentionModeCompliance) {
-			return NewInvalidArgumentError(fmt.Sprintf("invalid retention mode: %s (must be GOVERNANCE or COMPLIANCE)", dr.Mode))
+		if err := validateRetentionMode(dr.Mode); err != nil {
+			return err
 		}
 
 		// Days/Years are mutually exclusive: exactly one must be specified
@@ -801,13 +729,13 @@ func (s *S3Service) putObjectLockConfigurationCore(bucketStore s3store.BucketSto
 			return NewInvalidArgumentError("either Days or Years must be specified in DefaultRetention")
 		}
 		if hasDays {
-			if *dr.Days < 1 || *dr.Days > 3650 {
-				return NewInvalidArgumentError(fmt.Sprintf("Days must be between 1 and 3650, got %d", *dr.Days))
+			if *dr.Days < 1 || *dr.Days > maxRetentionDays {
+				return NewInvalidArgumentError(fmt.Sprintf("Days must be between 1 and %d, got %d", maxRetentionDays, *dr.Days))
 			}
 		}
 		if hasYears {
-			if *dr.Years < 1 || *dr.Years > 100 {
-				return NewInvalidArgumentError(fmt.Sprintf("Years must be between 1 and 100, got %d", *dr.Years))
+			if *dr.Years < 1 || *dr.Years > maxRetentionYears {
+				return NewInvalidArgumentError(fmt.Sprintf("Years must be between 1 and %d, got %d", maxRetentionYears, *dr.Years))
 			}
 		}
 
@@ -937,7 +865,11 @@ func (s *S3Service) putBucketPolicyCore(bucketStore s3store.BucketStoreInterface
 		return err
 	}
 
-	publicAccessBlock, _ := bucketStore.GetPublicAccessBlock(in.Bucket)
+	// A failed block-config read must fail the write (see putBucketAclCore).
+	publicAccessBlock, err := bucketStore.GetPublicAccessBlock(in.Bucket)
+	if err != nil {
+		return err
+	}
 	if publicAccessBlock != nil && publicAccessBlock.BlockPublicPolicy {
 		if policyContainsPublicAccess(in.Policy) {
 			return NewInvalidArgumentError("bucket has BlockPublicPolicy enabled")
@@ -1069,7 +1001,7 @@ func (s *S3Service) getBucketRequestPaymentCore(bucketStore s3store.BucketStoreI
 
 // putBucketTaggingCore validates the tag set and persists the bucket tags.
 func (s *S3Service) putBucketTaggingCore(bucketStore s3store.BucketStoreInterface, in *PutBucketTaggingInput) error {
-	if err := validateTags(in.Tags); err != nil {
+	if err := validateTags(TagsToCommon(in.Tags)); err != nil {
 		return err
 	}
 	return bucketStore.SetTags(in.Bucket, TagsToCommon(in.Tags))
@@ -1253,4 +1185,26 @@ func (s *S3Service) getBucketWebsiteCore(bucketStore s3store.BucketStoreInterfac
 // deleteBucketWebsiteCore removes the website configuration from a bucket.
 func (s *S3Service) deleteBucketWebsiteCore(bucketStore s3store.BucketStoreInterface, in *DeleteBucketWebsiteInput) error {
 	return bucketStore.SetWebsiteConfiguration(in.Bucket, nil)
+}
+
+// paginateIDConfigurations slices an id-ordered configuration list into one
+// page of at most 100 entries past the continuation token. The token is the
+// id of the last configuration returned; a returned nextToken is non-empty
+// only when entries remain beyond the page.
+func paginateIDConfigurations[T any](configs []T, token string, id func(T) string) (page []T, nextToken string, truncated bool) {
+	const pageSize = 100
+	start := 0
+	if token != "" {
+		for start < len(configs) && id(configs[start]) <= token {
+			start++
+		}
+	}
+	end := start + pageSize
+	if end > len(configs) {
+		end = len(configs)
+	}
+	if end < len(configs) {
+		return configs[start:end], id(configs[end-1]), true
+	}
+	return configs[start:end], "", false
 }

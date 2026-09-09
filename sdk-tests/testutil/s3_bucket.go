@@ -18,31 +18,35 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 	var results []TestResult
 
 	results = append(results, r.RunTest("s3", "CreateBucket", func() error {
+		// A throwaway name, not the fixture bucket: the fixture provisions
+		// its bucket before the first wrapped closure runs, so creating
+		// that name again would exercise only the 200-OK adoption path —
+		// the duplicate-create path has its own test. This one exercises a
+		// fresh create and its Location response.
+		name := s3Bucket(ts, "cb-fresh")
 		resp, err := client.CreateBucket(ctx, &s3.CreateBucketInput{
-			Bucket: aws.String(bucketName),
+			Bucket: aws.String(name),
 		})
 		if err != nil {
 			return fmt.Errorf("CreateBucket failed: %w", err)
 		}
+		defer s3CleanupBucket(ctx, client, name)
 		if resp.Location == nil {
 			return fmt.Errorf("Location is nil")
 		}
-		if *resp.Location != "/"+bucketName {
-			return fmt.Errorf("expected Location /%s, got %s", bucketName, *resp.Location)
+		if *resp.Location != "/"+name {
+			return fmt.Errorf("expected Location /%s, got %s", name, *resp.Location)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("s3", "ListBuckets", func() error {
-		resp, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
+		buckets, err := s3ListBucketsAll(ctx, client)
 		if err != nil {
 			return fmt.Errorf("ListBuckets failed: %w", err)
 		}
-		if resp.Buckets == nil {
-			return fmt.Errorf("Buckets is nil")
-		}
 		found := false
-		for _, b := range resp.Buckets {
+		for _, b := range buckets {
 			if b.Name != nil && *b.Name == bucketName {
 				found = true
 				break
@@ -51,7 +55,7 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 		if !found {
 			return fmt.Errorf("bucket %q not found in list", bucketName)
 		}
-		for _, b := range resp.Buckets {
+		for _, b := range buckets {
 			if b.Name != nil && *b.Name == bucketName {
 				if b.CreationDate == nil {
 					return fmt.Errorf("bucket %q has nil CreationDate", bucketName)
@@ -78,13 +82,13 @@ func (r *TestRunner) s3BucketTests(ctx context.Context, client *s3.Client, ts st
 			}
 		}()
 
-		resp, err := client.ListBuckets(ctx, &s3.ListBucketsInput{})
+		buckets, err := s3ListBucketsAll(ctx, client)
 		if err != nil {
 			return fmt.Errorf("ListBuckets failed: %w", err)
 		}
 
 		var found []string
-		for _, b := range resp.Buckets {
+		for _, b := range buckets {
 			if b.Name == nil {
 				continue
 			}

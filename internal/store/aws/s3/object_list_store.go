@@ -26,7 +26,6 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 	started := marker == ""
 	skipUntilNewKey := ""
 	hasMore := false
-	isVersioned := s.isVersioningEnabled(bucket)
 	searchPrefix := bucket + keySep + prefix
 
 	err := s.ScanPrefix(searchPrefix, func(key string, value []byte) error {
@@ -52,11 +51,18 @@ func (s *ObjectStore) List(bucket, prefix, delimiter, marker string, maxKeys int
 			return nil
 		}
 
-		if isVersioned && strings.HasSuffix(key, keySep+"_latest") {
+		// Layout-based filters: the records carry their own versioning
+		// layout regardless of the bucket's CURRENT status — suspension
+		// stops new versions but rewrites nothing. The "_latest" pointer
+		// is a copy of the newest version record (which keeps IsLatest
+		// true), and non-latest records are flagged at write time, so
+		// skipping pointers and non-latest records yields one entry per
+		// key whether the bucket is enabled, suspended, or never enabled.
+		if strings.HasSuffix(key, keySep+"_latest") {
 			return nil
 		}
 
-		if isVersioned && !obj.IsLatest {
+		if !obj.IsLatest {
 			return nil
 		}
 
@@ -208,35 +214,14 @@ func (s *ObjectStore) ListObjectVersions(bucket, prefix, delimiter, keyMarker, v
 
 // CountByBucket returns the number of objects in a bucket.
 func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
+	// Layout-based counting, independent of the bucket's current
+	// versioning status: each object key counts once when its newest
+	// record is not a delete marker. The IsLatest flag is maintained at
+	// write time — the "_latest" pointer and the newest version record
+	// share it, and suspended or never-enabled buckets write single
+	// IsLatest records — and seenKeys dedups the pointer/record pair.
 	count := 0
-	isVersioned := s.isVersioningEnabled(bucket)
-
-	if isVersioned {
-		// Each object key may have several entries: a per-version record, a
-		// "_latest" pointer (a copy of the newest version), and, for objects
-		// created before versioning was enabled, a single "null" version with
-		// no "_latest" pointer. Counting only "_latest" keys therefore misses
-		// those legacy objects and makes a non-empty bucket appear empty.
-		// Instead, count each object key once when its latest version is not a
-		// delete marker, identified by the IsLatest flag which is kept in sync
-		// by the version store.
-		prefix := bucket + keySep
-		seenKeys := make(map[string]bool)
-		err := s.ScanPrefix(prefix, func(key string, value []byte) error {
-			var pbObj pb.Object
-			if err := proto.Unmarshal(value, &pbObj); err != nil {
-				return err
-			}
-			obj := ProtoToObject(&pbObj)
-			if obj.IsLatest && !obj.IsDeleteMarker && !seenKeys[obj.Key] {
-				seenKeys[obj.Key] = true
-				count++
-			}
-			return nil
-		})
-		return count, err
-	}
-
+	seenKeys := make(map[string]bool)
 	prefix := bucket + keySep
 	err := s.ScanPrefix(prefix, func(key string, value []byte) error {
 		var pbObj pb.Object
@@ -244,7 +229,8 @@ func (s *ObjectStore) CountByBucket(bucket string) (int, error) {
 			return err
 		}
 		obj := ProtoToObject(&pbObj)
-		if !obj.IsDeleteMarker {
+		if obj.IsLatest && !obj.IsDeleteMarker && !seenKeys[obj.Key] {
+			seenKeys[obj.Key] = true
 			count++
 		}
 		return nil

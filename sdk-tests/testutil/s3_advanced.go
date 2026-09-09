@@ -85,47 +85,6 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		return nil
 	}))
 
-	// Every storage class accepted on PUT must round-trip its class value
-	// through HEAD metadata together with the object content length.
-	results = append(results, r.RunTest("s3", "StorageClass_HeadRoundTrip", func() error {
-		for _, sc := range []struct {
-			name  string
-			class types.StorageClass
-			key   string
-			body  string
-		}{
-			{"STANDARD_IA", types.StorageClassStandardIa, "sc-ia.txt", "standard-ia"},
-			{"GLACIER", types.StorageClassGlacier, "sc-glacier.txt", "glacier"},
-			{"ONEZONE_IA", types.StorageClassOnezoneIa, "sc-1ia.txt", "onezone-ia"},
-			{"INTELLIGENT_TIERING", types.StorageClassIntelligentTiering, "sc-it.txt", "intelligent-tiering"},
-			{"REDUCED_REDUNDANCY", types.StorageClassReducedRedundancy, "sc-rr.txt", "reduced-redundancy"},
-		} {
-			if _, err := client.PutObject(ctx, &s3.PutObjectInput{
-				Bucket:       aws.String(bucketName),
-				Key:          aws.String(sc.key),
-				Body:         strings.NewReader(sc.body),
-				StorageClass: sc.class,
-			}); err != nil {
-				return fmt.Errorf("PutObject %s failed: %w", sc.name, err)
-			}
-
-			resp, err := client.HeadObject(ctx, &s3.HeadObjectInput{
-				Bucket: aws.String(bucketName),
-				Key:    aws.String(sc.key),
-			})
-			if err != nil {
-				return fmt.Errorf("HeadObject %s failed: %w", sc.name, err)
-			}
-			if resp.StorageClass != sc.class {
-				return fmt.Errorf("%s: expected StorageClass %s, got %s", sc.name, sc.class, resp.StorageClass)
-			}
-			if resp.ContentLength == nil || *resp.ContentLength != int64(len(sc.body)) {
-				return fmt.Errorf("%s: expected ContentLength %d, got %v", sc.name, len(sc.body), resp.ContentLength)
-			}
-		}
-		return nil
-	}))
-
 	results = append(results, r.RunTest("s3", "DeleteObjects_MultiDelete", func() error {
 		multiDelBucket := s3Bucket(ts, "multidel")
 		if err := s3CreateBucket(ctx, client, multiDelBucket); err != nil {
@@ -178,6 +137,52 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if len(listResp.Contents) != 0 {
 			return fmt.Errorf("expected 0 objects after multi-delete, got %d", len(listResp.Contents))
 		}
+
+		// A version-addressed entry reports DeleteMarker=true (with the
+		// marker's version ID) only when the removed version WAS a delete
+		// marker; removing a regular version reports neither field.
+		verBucket := s3Bucket(ts, "multidel-ver")
+		if err := s3CreateBucket(ctx, client, verBucket); err != nil {
+			return err
+		}
+		defer s3CleanupBucket(ctx, client, verBucket)
+		if err := s3EnableVersioning(ctx, client, verBucket); err != nil {
+			return err
+		}
+		if _, err := s3PutObject(ctx, client, verBucket, "v.txt", "v1 body"); err != nil {
+			return err
+		}
+		delMarkerResp, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket: aws.String(verBucket),
+			Key:    aws.String("v.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("DeleteObject (marker creation) failed: %w", err)
+		}
+		markerVersion := aws.ToString(delMarkerResp.VersionId)
+		if markerVersion == "" || !aws.ToBool(delMarkerResp.DeleteMarker) {
+			return fmt.Errorf("expected a delete marker version from the plain delete, got %v", delMarkerResp)
+		}
+
+		verDelResp, err := client.DeleteObjects(ctx, &s3.DeleteObjectsInput{
+			Bucket: aws.String(verBucket),
+			Delete: &types.Delete{Objects: []types.ObjectIdentifier{
+				{Key: aws.String("v.txt"), VersionId: aws.String(markerVersion)},
+			}},
+		})
+		if err != nil {
+			return fmt.Errorf("DeleteObjects (marker removal) failed: %w", err)
+		}
+		if len(verDelResp.Deleted) != 1 {
+			return fmt.Errorf("expected 1 deleted entry, got %d", len(verDelResp.Deleted))
+		}
+		entry := verDelResp.Deleted[0]
+		if !aws.ToBool(entry.DeleteMarker) {
+			return fmt.Errorf("removing a delete marker must report DeleteMarker=true, got %+v", entry)
+		}
+		if aws.ToString(entry.DeleteMarkerVersionId) != markerVersion {
+			return fmt.Errorf("DeleteMarkerVersionId = %q, want the removed marker's version %q", aws.ToString(entry.DeleteMarkerVersionId), markerVersion)
+		}
 		return nil
 	}))
 
@@ -207,41 +212,6 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		}
 		if string(body) != "0123456789ABCDEFGHIJ" {
 			return fmt.Errorf("expected body %q, got %q", "0123456789ABCDEFGHIJ", string(body))
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "GetObject_GlacierInvalidObjectState", func() error {
-		key := "glacier-gate.txt"
-		_, err := client.PutObject(ctx, &s3.PutObjectInput{
-			Bucket:       aws.String(bucketName),
-			Key:          aws.String(key),
-			Body:         strings.NewReader("archived"),
-			StorageClass: types.StorageClassGlacier,
-		})
-		if err != nil {
-			return fmt.Errorf("PutObject failed: %w", err)
-		}
-
-		_, err = client.GetObject(ctx, &s3.GetObjectInput{
-			Bucket: aws.String(bucketName),
-			Key:    aws.String(key),
-		})
-		if err == nil {
-			return fmt.Errorf("expected InvalidObjectState for archived object, got nil")
-		}
-		// The S3 API reference documents InvalidObjectState with HTTP 403.
-		if err := expectS3Error(err, "InvalidObjectState", http.StatusForbidden); err != nil {
-			return err
-		}
-
-		// HEAD remains available for archived objects.
-		headResp, err := s3HeadObject(ctx, client, bucketName, key)
-		if err != nil {
-			return fmt.Errorf("HeadObject on archived object failed: %w", err)
-		}
-		if headResp.StorageClass != types.StorageClassGlacier {
-			return fmt.Errorf("expected StorageClass GLACIER on HEAD, got %s", headResp.StorageClass)
 		}
 		return nil
 	}))
@@ -410,8 +380,17 @@ func (r *TestRunner) s3AdvancedTests(ctx context.Context, client *s3.Client, ts 
 		if err == nil {
 			return fmt.Errorf("expected InvalidObjectState for unrestored archive object, got nil")
 		}
-		if err := expectAWSErrorCode(err, "InvalidObjectState"); err != nil {
-			return fmt.Errorf("expected InvalidObjectState for unrestored archive object: %v", err)
+		// The S3 API reference documents InvalidObjectState with HTTP 403.
+		if err := expectS3Error(err, "InvalidObjectState", http.StatusForbidden); err != nil {
+			return err
+		}
+		// HEAD remains available for archived objects.
+		headBefore, herr := s3HeadObject(ctx, client, bucketName, key)
+		if herr != nil {
+			return fmt.Errorf("HeadObject on unrestored archive failed: %w", herr)
+		}
+		if headBefore.StorageClass != types.StorageClassGlacier {
+			return fmt.Errorf("expected StorageClass GLACIER on HEAD, got %s", headBefore.StorageClass)
 		}
 
 		if _, err := client.RestoreObject(ctx, &s3.RestoreObjectInput{

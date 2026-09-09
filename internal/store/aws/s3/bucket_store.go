@@ -20,8 +20,6 @@ func bucketBucketName(region string) string {
 }
 
 var (
-	// ErrBucketNotFound is returned when the specified bucket does not exist.
-	ErrBucketNotFound = common.NewStoreError("s3", "bucket_not_found", common.ErrNotFound)
 	// ErrBucketAlreadyExists is returned when attempting to create a bucket that already exists.
 	ErrBucketAlreadyExists = common.NewStoreError("s3", "bucket_already_exists", common.ErrAlreadyExists)
 	// ErrBucketNotEmpty is returned when attempting to delete a bucket that contains objects.
@@ -87,9 +85,14 @@ func (s *BucketStore) Put(bucket *Bucket) error {
 	return s.BaseStore.PutProto(bucket.Name, BucketToProto(bucket))
 }
 
-// Delete removes a bucket from the store.
-// Returns an error if the bucket does not exist.
+// Delete removes a bucket record. Deleting an absent key succeeds (the
+// underlying store treats it as a no-op). The delete callback and the
+// locker cleanup run only after the record is gone, so their contract —
+// "this bucket has been deleted" — holds whenever they fire.
 func (s *BucketStore) Delete(name string) error {
+	if err := s.BaseStore.Delete(name); err != nil {
+		return err
+	}
 	s.callbackMu.RLock()
 	callback := s.onDelete
 	s.callbackMu.RUnlock()
@@ -97,7 +100,7 @@ func (s *BucketStore) Delete(name string) error {
 		callback(name)
 	}
 	s.keyLocker.Delete(name)
-	return s.BaseStore.Delete(name)
+	return nil
 }
 
 // Exists checks whether a bucket exists in the store.
@@ -369,12 +372,19 @@ func (s *BucketStore) ListInventoryConfigurations(name string) ([]*InventoryConf
 }
 
 func sortedInventoryConfigs(configs map[string]*InventoryConfiguration) []*InventoryConfiguration {
+	return sortedByID(configs)
+}
+
+// sortedByID returns the map's configurations ordered by their map key (the
+// configuration ID), so listing is stable across map iteration for both the
+// inventory and metrics families.
+func sortedByID[T any](configs map[string]*T) []*T {
 	ids := make([]string, 0, len(configs))
 	for id := range configs {
 		ids = append(ids, id)
 	}
 	sort.Strings(ids)
-	result := make([]*InventoryConfiguration, 0, len(ids))
+	result := make([]*T, 0, len(ids))
 	for _, id := range ids {
 		result = append(result, configs[id])
 	}
@@ -423,14 +433,5 @@ func (s *BucketStore) ListMetricsConfigurations(name string) ([]*MetricsConfigur
 	if err != nil {
 		return nil, err
 	}
-	ids := make([]string, 0, len(bucket.MetricsConfigurations))
-	for id := range bucket.MetricsConfigurations {
-		ids = append(ids, id)
-	}
-	sort.Strings(ids)
-	result := make([]*MetricsConfiguration, 0, len(ids))
-	for _, id := range ids {
-		result = append(result, bucket.MetricsConfigurations[id])
-	}
-	return result, nil
+	return sortedByID(bucket.MetricsConfigurations), nil
 }

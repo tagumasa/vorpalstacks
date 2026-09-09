@@ -9,9 +9,10 @@ func notificationConfigurationToProto(c *NotificationConfiguration) *pb.Notifica
 		return nil
 	}
 	return &pb.NotificationConfiguration{
-		TopicConfigurations:  topicNotificationConfigsToProto(c.TopicConfigurations),
-		QueueConfigurations:  queueNotificationConfigsToProto(c.QueueConfigurations),
-		LambdaConfigurations: lambdaNotificationConfigsToProto(c.LambdaConfigurations),
+		TopicConfigurations:      topicNotificationConfigsToProto(c.TopicConfigurations),
+		QueueConfigurations:      queueNotificationConfigsToProto(c.QueueConfigurations),
+		LambdaConfigurations:     lambdaNotificationConfigsToProto(c.LambdaConfigurations),
+		EventBridgeConfiguration: eventBridgeConfigToProto(c.EventBridgeConfiguration),
 	}
 }
 
@@ -20,10 +21,25 @@ func protoToNotificationConfiguration(p *pb.NotificationConfiguration) *Notifica
 		return nil
 	}
 	return &NotificationConfiguration{
-		TopicConfigurations:  protoToTopicNotificationConfigs(p.TopicConfigurations),
-		QueueConfigurations:  protoToQueueNotificationConfigs(p.QueueConfigurations),
-		LambdaConfigurations: protoToLambdaNotificationConfigs(p.LambdaConfigurations),
+		TopicConfigurations:      protoToTopicNotificationConfigs(p.TopicConfigurations),
+		QueueConfigurations:      protoToQueueNotificationConfigs(p.QueueConfigurations),
+		LambdaConfigurations:     protoToLambdaNotificationConfigs(p.LambdaConfigurations),
+		EventBridgeConfiguration: protoToEventBridgeConfig(p.EventBridgeConfiguration),
 	}
+}
+
+func eventBridgeConfigToProto(c *EventBridgeNotificationConfiguration) *pb.EventBridgeNotificationConfiguration {
+	if c == nil {
+		return nil
+	}
+	return &pb.EventBridgeNotificationConfiguration{}
+}
+
+func protoToEventBridgeConfig(p *pb.EventBridgeNotificationConfiguration) *EventBridgeNotificationConfiguration {
+	if p == nil {
+		return nil
+	}
+	return &EventBridgeNotificationConfiguration{}
 }
 
 func topicNotificationConfigsToProto(configs []TopicNotificationConfiguration) []*pb.TopicNotificationConfiguration {

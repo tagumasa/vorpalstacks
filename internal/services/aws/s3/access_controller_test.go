@@ -169,11 +169,25 @@ func TestAccessController_PermissionMatchesAction(t *testing.T) {
 		want     bool
 	}{
 		{
-			name:     "full control matches any action",
+			name:     "full control matches the read action (row union)",
 			perm:     s3store.PermissionFullControl,
 			action:   "s3:GetObject",
 			isObject: true,
 			want:     true,
+		},
+		{
+			name:     "full control does not match actions outside the row union",
+			perm:     s3store.PermissionFullControl,
+			action:   "s3:DeleteObject",
+			isObject: true,
+			want:     false,
+		},
+		{
+			name:     "bucket full control does not match policy actions",
+			perm:     s3store.PermissionFullControl,
+			action:   "s3:GetBucketPolicyStatus",
+			isObject: false,
+			want:     false,
 		},
 		{
 			name:     "read permission matches GetObject",
@@ -197,18 +211,39 @@ func TestAccessController_PermissionMatchesAction(t *testing.T) {
 			want:     false,
 		},
 		{
-			name:     "write permission matches PutObject",
+			name:     "object write maps to nothing (Not applicable)",
 			perm:     s3store.PermissionWrite,
 			action:   "s3:PutObject",
 			isObject: true,
-			want:     true,
+			want:     false,
 		},
 		{
-			name:     "write permission matches DeleteObject",
+			name:     "object write does not match DeleteObject",
 			perm:     s3store.PermissionWrite,
 			action:   "s3:DeleteObject",
 			isObject: true,
+			want:     false,
+		},
+		{
+			name:     "bucket write matches PutObject",
+			perm:     s3store.PermissionWrite,
+			action:   "s3:PutObject",
+			isObject: false,
 			want:     true,
+		},
+		{
+			name:     "bucket write does not match DeleteObject",
+			perm:     s3store.PermissionWrite,
+			action:   "s3:DeleteObject",
+			isObject: false,
+			want:     false,
+		},
+		{
+			name:     "bucket read does not grant object reads",
+			perm:     s3store.PermissionRead,
+			action:   "s3:GetObject",
+			isObject: false,
+			want:     false,
 		},
 		{
 			name:     "read_acp matches GetObjectAcl",
@@ -223,6 +258,41 @@ func TestAccessController_PermissionMatchesAction(t *testing.T) {
 			action:   "s3:PutObjectAcl",
 			isObject: true,
 			want:     true,
+		},
+		{
+			name:     "object read matches the versioned get action",
+			perm:     s3store.PermissionRead,
+			action:   "s3:GetObjectVersion",
+			isObject: true,
+			want:     true,
+		},
+		{
+			name:     "object read_acp matches the versioned acl read action",
+			perm:     s3store.PermissionReadACP,
+			action:   "s3:GetObjectVersionAcl",
+			isObject: true,
+			want:     true,
+		},
+		{
+			name:     "object write_acp matches the versioned acl write action",
+			perm:     s3store.PermissionWriteACP,
+			action:   "s3:PutObjectVersionAcl",
+			isObject: true,
+			want:     true,
+		},
+		{
+			name:     "object write grants no versioned delete action",
+			perm:     s3store.PermissionWrite,
+			action:   "s3:DeleteObjectVersion",
+			isObject: true,
+			want:     false,
+		},
+		{
+			name:     "bucket read does not match the object versioned get action",
+			perm:     s3store.PermissionRead,
+			action:   "s3:GetObjectVersion",
+			isObject: false,
+			want:     false,
 		},
 	}
 
@@ -282,8 +352,6 @@ func TestAccessController_ExtractAccountFromPrincipal(t *testing.T) {
 }
 
 func TestAccessController_AclContainsPublicAccess(t *testing.T) {
-	ac := NewAccessController("account-123")
-
 	tests := []struct {
 		name string
 		acl  *s3store.AccessControlPolicy
@@ -343,7 +411,7 @@ func TestAccessController_AclContainsPublicAccess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ac.aclContainsPublicAccess(tt.acl)
+			got := acpContainsPublicAccess(tt.acl)
 			if got != tt.want {
 				t.Errorf("aclContainsPublicAccess() = %v, want %v", got, tt.want)
 			}

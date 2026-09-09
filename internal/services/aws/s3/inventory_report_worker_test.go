@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/csv"
 	"encoding/json"
-	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -89,7 +88,7 @@ func TestBuildCSVReportColumnsAndEncoding(t *testing.T) {
 		{Key: "spaced key +&.csv", IsDeleteMarker: true},
 	}
 
-	data, schema, err := buildCSVReport("src-bucket", config, rows)
+	data, schema, err := buildCSVReport("src-bucket", nil, config, rows)
 	if err != nil {
 		t.Fatalf("buildCSVReport: %v", err)
 	}
@@ -130,7 +129,7 @@ func TestBuildCSVReportCurrentOmitsVersionColumns(t *testing.T) {
 		IncludedObjectVersions: "Current",
 		OptionalFields:         []string{"Size"},
 	}
-	data, schema, err := buildCSVReport("b", config, nil)
+	data, schema, err := buildCSVReport("b", nil, config, nil)
 	if err != nil {
 		t.Fatalf("buildCSVReport: %v", err)
 	}
@@ -150,45 +149,71 @@ func TestBuildCSVReportCurrentOmitsVersionColumns(t *testing.T) {
 	}
 }
 
+// TestObjectEncryptionStatus pins the EncryptionStatus value set: every
+// encryption layout the platform persists maps to its documented column
+// value, and unencrypted objects report NOT-SSE.
+func TestObjectEncryptionStatus(t *testing.T) {
+	cases := []struct {
+		name string
+		obj  *s3store.Object
+		want string
+	}{
+		{"unencrypted", &s3store.Object{}, "NOT-SSE"},
+		{"sse-s3", &s3store.Object{SSEMetadata: &s3store.SSEObjectMetadata{EncryptionType: s3store.SSETypeAES256}}, "SSE-S3"},
+		{"sse-kms", &s3store.Object{SSEMetadata: &s3store.SSEObjectMetadata{EncryptionType: s3store.SSETypeKMS}}, "SSE-KMS"},
+		{"dsse-kms", &s3store.Object{SSEMetadata: &s3store.SSEObjectMetadata{EncryptionType: s3store.SSETypeDSSEKMS}}, "DSSE-KMS"},
+		{"sse-c", &s3store.Object{SSEMetadata: &s3store.SSEObjectMetadata{EncryptionType: s3store.SSETypeCustomer}}, "SSE-C"},
+	}
+	for _, tc := range cases {
+		if got := objectEncryptionStatus(tc.obj); got != tc.want {
+			t.Fatalf("%s: objectEncryptionStatus = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
+
 func TestBuildParquetReportRoundTrip(t *testing.T) {
+	retainUntil := time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC)
 	config := &s3store.InventoryConfiguration{
 		IncludedObjectVersions: "All",
-		OptionalFields:         []string{"Size", "LastModifiedDate", "StorageClass", "IsMultipartUploaded"},
+		OptionalFields:         []string{"Size", "LastModifiedDate", "StorageClass", "IsMultipartUploaded", "ObjectLockRetainUntilDate"},
 	}
 	modified := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
 	rows := []*s3store.Object{
 		{Key: "data/one.bin", VersionID: "v1", IsLatest: true, Size: 42, LastModified: modified, StorageClass: "STANDARD"},
 		{Key: "data/two.bin", VersionID: "v2", Size: 7, LastModified: modified, Parts: []s3store.ObjectPartBoundary{{PartNumber: 1}}},
+		{Key: "data/locked.bin", VersionID: "v3", IsLatest: true, Size: 9, LastModified: modified, ObjectLockRetention: &s3store.ObjectLockRetention{RetainUntilDate: &retainUntil}},
 	}
 
-	data, schema, err := buildParquetReport("src-bucket", config, rows)
+	data, schema, err := buildParquetReport("src-bucket", nil, config, rows)
 	if err != nil {
 		t.Fatalf("buildParquetReport: %v", err)
 	}
 	if !strings.Contains(schema, "required binary bucket (UTF8)") ||
 		!strings.Contains(schema, "optional int64 last_modified_date (TIMESTAMP_MILLIS)") ||
-		!strings.Contains(schema, "optional boolean is_multipart_uploaded") {
+		!strings.Contains(schema, "optional boolean is_multipart_uploaded") ||
+		!strings.Contains(schema, "optional int64 object_lock_retain_until_date (TIMESTAMP_MILLIS)") {
 		t.Fatalf("schema = %q, want the AWS column forms", schema)
 	}
 
 	type row struct {
-		Bucket              string  `parquet:"bucket"`
-		Key                 string  `parquet:"key"`
-		VersionID           *string `parquet:"version_id,optional"`
-		IsLatest            *bool   `parquet:"is_latest,optional"`
-		IsDeleteMarker      *bool   `parquet:"is_delete_marker,optional"`
-		Size                *int64  `parquet:"size,optional"`
-		LastModifiedDate    *int64  `parquet:"last_modified_date,optional"`
-		StorageClass        *string `parquet:"storage_class,optional"`
-		IsMultipartUploaded *bool   `parquet:"is_multipart_uploaded,optional"`
+		Bucket                    string  `parquet:"bucket"`
+		Key                       string  `parquet:"key"`
+		VersionID                 *string `parquet:"version_id,optional"`
+		IsLatest                  *bool   `parquet:"is_latest,optional"`
+		IsDeleteMarker            *bool   `parquet:"is_delete_marker,optional"`
+		Size                      *int64  `parquet:"size,optional"`
+		LastModifiedDate          *int64  `parquet:"last_modified_date,optional"`
+		StorageClass              *string `parquet:"storage_class,optional"`
+		IsMultipartUploaded       *bool   `parquet:"is_multipart_uploaded,optional"`
+		ObjectLockRetainUntilDate *int64  `parquet:"object_lock_retain_until_date,optional"`
 	}
 	rowsOut, err := parquet.Read[row](bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		t.Fatalf("parquet read: %v", err)
 	}
 	got := rowsOut
-	if len(got) != 2 {
-		t.Fatalf("rows = %d, want 2", len(got))
+	if len(got) != 3 {
+		t.Fatalf("rows = %d, want 3", len(got))
 	}
 	if got[0].Bucket != "src-bucket" || got[0].Key != "data/one.bin" || got[0].Size == nil || *got[0].Size != 42 {
 		t.Fatalf("first row = %+v", got[0])
@@ -196,8 +221,14 @@ func TestBuildParquetReportRoundTrip(t *testing.T) {
 	if got[0].LastModifiedDate == nil || *got[0].LastModifiedDate != modified.UnixMilli() {
 		t.Fatalf("first row timestamp = %v, want %d", got[0].LastModifiedDate, modified.UnixMilli())
 	}
+	if got[0].ObjectLockRetainUntilDate != nil {
+		t.Fatalf("unlocked row retention = %v, want null", got[0].ObjectLockRetainUntilDate)
+	}
 	if got[1].IsMultipartUploaded == nil || !*got[1].IsMultipartUploaded {
 		t.Fatalf("second row multipart flag = %v, want true", got[1].IsMultipartUploaded)
+	}
+	if got[2].ObjectLockRetainUntilDate == nil || *got[2].ObjectLockRetainUntilDate != retainUntil.UnixMilli() {
+		t.Fatalf("locked row retention = %v, want %d", got[2].ObjectLockRetainUntilDate, retainUntil.UnixMilli())
 	}
 }
 
@@ -205,21 +236,23 @@ func TestBuildParquetReportRoundTrip(t *testing.T) {
 // schema matches the struct form AWS documents, and the file decodes back
 // through the ORC reader with the documented column types and values.
 func TestBuildORCReportReadBack(t *testing.T) {
+	retainUntil := time.Date(2026, 10, 1, 8, 0, 0, 0, time.UTC)
 	config := &s3store.InventoryConfiguration{
 		IncludedObjectVersions: "All",
-		OptionalFields:         []string{"Size", "LastModifiedDate", "BucketKeyStatus"},
+		OptionalFields:         []string{"Size", "LastModifiedDate", "BucketKeyStatus", "ObjectLockRetainUntilDate"},
 	}
 	modified := time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)
 	rows := []*s3store.Object{
-		{Key: "kept/kms.txt", VersionID: "v1", IsLatest: true, Size: 42, LastModified: modified, ServerSideEncryption: "aws:kms"},
+		{Key: "kept/kms.txt", VersionID: "v1", IsLatest: true, Size: 42, LastModified: modified, SSEMetadata: &s3store.SSEObjectMetadata{EncryptionType: s3store.SSETypeKMS}},
 		{Key: "kept/plain.txt", VersionID: "v2", IsLatest: false, Size: 7, LastModified: modified},
+		{Key: "kept/locked.txt", VersionID: "v3", IsLatest: true, Size: 9, LastModified: modified, ObjectLockRetention: &s3store.ObjectLockRetention{RetainUntilDate: &retainUntil}},
 	}
 
-	data, schema, err := buildORCReport("src-bucket", config, rows)
+	data, schema, err := buildORCReport("src-bucket", nil, config, rows)
 	if err != nil {
 		t.Fatalf("buildORCReport: %v", err)
 	}
-	wantSchema := "struct<bucket:string,key:string,version_id:string,is_latest:boolean,is_delete_marker:boolean,size:bigint,last_modified_date:timestamp,bucket_key_status:string>"
+	wantSchema := "struct<bucket:string,key:string,version_id:string,is_latest:boolean,is_delete_marker:boolean,size:bigint,last_modified_date:timestamp,object_lock_retain_until_date:timestamp,bucket_key_status:string>"
 	if schema != wantSchema {
 		t.Fatalf("schema = %q, want %q", schema, wantSchema)
 	}
@@ -228,25 +261,39 @@ func TestBuildORCReportReadBack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("orc reader: %v", err)
 	}
-	cursor := reader.Select("bucket", "key", "size", "bucket_key_status")
-	seen := map[string]string{}
+	cursor := reader.Select("bucket", "key", "size", "bucket_key_status", "object_lock_retain_until_date")
+	type orcRow struct {
+		size      int64
+		bucketKey string
+		retain    time.Time
+		hasRetain bool
+	}
+	seen := map[string]*orcRow{}
 	for cursor.Stripes() {
 		for cursor.Next() {
 			row := cursor.Row()
-			seen[row[1].(string)] = fmt.Sprintf("%d|%s", row[2].(int64), row[3].(string))
+			r := &orcRow{size: row[2].(int64), bucketKey: row[3].(string)}
+			if row[4] != nil {
+				r.retain, r.hasRetain = row[4].(time.Time), true
+			}
+			seen[row[1].(string)] = r
 		}
 	}
 	if err := cursor.Err(); err != nil {
 		t.Fatalf("cursor: %v", err)
 	}
-	if len(seen) != 2 {
-		t.Fatalf("read back %d rows, want 2", len(seen))
+	if len(seen) != 3 {
+		t.Fatalf("read back %d rows, want 3", len(seen))
 	}
-	if got := seen["kept/kms.txt"]; got != "42|DISABLED" {
-		t.Fatalf("kms row = %q, want 42|DISABLED", got)
+	if got := seen["kept/kms.txt"]; got.size != 42 || got.bucketKey != "DISABLED" || got.hasRetain {
+		t.Fatalf("kms row = %+v, want size 42, DISABLED, no retention", got)
 	}
-	if got := seen["kept/plain.txt"]; got != "7|" {
-		t.Fatalf("plain row = %q, want 7| (empty bucket key status)", got)
+	if got := seen["kept/plain.txt"]; got.size != 7 || got.bucketKey != "" || got.hasRetain {
+		t.Fatalf("plain row = %+v, want size 7, empty bucket key status, no retention", got)
+	}
+	got := seen["kept/locked.txt"]
+	if !got.hasRetain || !got.retain.Equal(retainUntil) {
+		t.Fatalf("locked row retention = %v (present=%v), want %v", got.retain, got.hasRetain, retainUntil)
 	}
 }
 

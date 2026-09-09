@@ -7,14 +7,14 @@ import (
 )
 
 type twoPhaseTxn struct {
-	storage    Storage
+	storage    *PebbleStorage
 	validators []Validator
 	executors  []Executor
 }
 
 // NewTwoPhaseTransaction creates a new two-phase transaction for performing
 // validate-then-execute operations atomically.
-func NewTwoPhaseTransaction(storage Storage) TwoPhaseTransaction {
+func NewTwoPhaseTransaction(storage *PebbleStorage) TwoPhaseTransaction {
 	return &twoPhaseTxn{
 		storage:    storage,
 		validators: make([]Validator, 0),
@@ -68,7 +68,7 @@ func (t *twoPhaseTxn) ExecutorCount() int {
 }
 
 type multiItemTransaction struct {
-	storage    Storage
+	storage    *PebbleStorage
 	operations []transactionalOperation
 	conditions []transactionalCondition
 }
@@ -95,7 +95,7 @@ const (
 
 // NewMultiItemTransaction creates a new multi-item transaction for performing
 // batch operations with conditional checks across multiple items.
-func NewMultiItemTransaction(storage Storage) MultiItemTransaction {
+func NewMultiItemTransaction(storage *PebbleStorage) MultiItemTransaction {
 	return &multiItemTransaction{
 		storage:    storage,
 		operations: make([]transactionalOperation, 0),

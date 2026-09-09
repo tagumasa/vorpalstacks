@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/eventbridge"
+	ebtypes "github.com/aws/aws-sdk-go-v2/service/eventbridge/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
@@ -21,7 +23,7 @@ func (r *TestRunner) runS3NotificationToLambda(ic *integClients, ts string) Test
 	ic.createLambda(fnName, roleName)
 	defer ic.deleteLambda(fnName)
 
-	fnARN := fmt.Sprintf("arn:aws:lambda:%s:000000000000:function:%s", ic.region, fnName)
+	fnARN := fmt.Sprintf("arn:aws:lambda:%s:%s:function:%s", ic.region, r.AccountID(), fnName)
 
 	err := ic.createBucket(bucketName)
 	if err != nil {
@@ -61,7 +63,7 @@ func (r *TestRunner) runS3NotificationToSQS(ic *integClients, ts string) TestRes
 	}
 	defer ic.deleteQueue(queueURL)
 
-	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:%s:%s", ic.region, r.AccountID(), queueName)
 
 	err = ic.createBucket(bucketName)
 	if err != nil {
@@ -104,7 +106,7 @@ func (r *TestRunner) runS3TaggingNotificationToSQS(ic *integClients, ts string) 
 	}
 	defer ic.deleteQueue(queueURL)
 
-	queueARN := fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:%s:%s", ic.region, r.AccountID(), queueName)
 
 	err = ic.createBucket(bucketName)
 	if err != nil {
@@ -164,7 +166,7 @@ func (r *TestRunner) runS3NotificationToSNS(ic *integClients, ts string) TestRes
 	ic.sns.Subscribe(ic.ctx, &sns.SubscribeInput{
 		TopicArn: aws.String(topicARN),
 		Protocol: aws.String("sqs"),
-		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:000000000000:%s", ic.region, queueName)),
+		Endpoint: aws.String(fmt.Sprintf("arn:aws:sqs:%s:%s:%s", ic.region, r.AccountID(), queueName)),
 	})
 
 	err = ic.createBucket(bucketName)
@@ -192,5 +194,63 @@ func (r *TestRunner) runS3NotificationToSNS(ic *integClients, ts string) TestRes
 
 	return r.pollVerify("S3_Notification_SNS", defaultPollTimeout, func() error {
 		return ic.verifyMessageContains(queueURL, bucketName)
+	})
+}
+
+// runS3NotificationToEventBridge pins the EventBridge notification
+// destination: with EventBridgeConfiguration set on the bucket, an object
+// upload delivers an aws.s3 event to the default bus, where a rule
+// forwards it to SQS.
+func (r *TestRunner) runS3NotificationToEventBridge(ic *integClients, ts string) TestResult {
+	bucketName := fmt.Sprintf("integ-s3-eb-%s", strings.ToLower(ts))
+	queueName := fmt.Sprintf("integ-s3-eb-q-%s", ts)
+	ruleName := fmt.Sprintf("integ-s3-eb-rule-%s", ts)
+
+	queueURL, err := ic.createQueue(queueName)
+	if err != nil {
+		return r.RunTest(integSvc, "S3_Notification_EventBridge", func() error { return fmt.Errorf("create queue: %w", err) })
+	}
+	defer ic.deleteQueue(queueURL)
+
+	queueARN := fmt.Sprintf("arn:aws:sqs:%s:%s:%s", ic.region, r.AccountID(), queueName)
+
+	err = ic.createBucket(bucketName)
+	if err != nil {
+		return r.RunTest(integSvc, "S3_Notification_EventBridge", func() error { return fmt.Errorf("create bucket: %w", err) })
+	}
+	defer ic.deleteBucket(bucketName)
+
+	ic.eb.PutRule(ic.ctx, &eventbridge.PutRuleInput{
+		Name:         aws.String(ruleName),
+		EventBusName: aws.String("default"),
+		EventPattern: aws.String(`{"source":["aws.s3"],"detail-type":["Object Created"]}`),
+	})
+	defer func() {
+		ic.eb.DeleteRule(ic.ctx, &eventbridge.DeleteRuleInput{Name: aws.String(ruleName), EventBusName: aws.String("default")})
+	}()
+
+	ic.eb.PutTargets(ic.ctx, &eventbridge.PutTargetsInput{
+		Rule:         aws.String(ruleName),
+		EventBusName: aws.String("default"),
+		Targets:      []ebtypes.Target{{Id: aws.String("t1"), Arn: aws.String(queueARN)}},
+	})
+	defer func() {
+		ic.eb.RemoveTargets(ic.ctx, &eventbridge.RemoveTargetsInput{Rule: aws.String(ruleName), EventBusName: aws.String("default"), Ids: []string{"t1"}})
+	}()
+
+	_, err = ic.s3.PutBucketNotificationConfiguration(ic.ctx, &s3.PutBucketNotificationConfigurationInput{
+		Bucket: aws.String(bucketName),
+		NotificationConfiguration: &s3types.NotificationConfiguration{
+			EventBridgeConfiguration: &s3types.EventBridgeConfiguration{},
+		},
+	})
+	if err != nil {
+		return r.RunTest(integSvc, "S3_Notification_EventBridge", func() error { return fmt.Errorf("put notification config: %w", err) })
+	}
+
+	ic.putObject(bucketName, "eb-key.txt", []byte("event bridge delivery"))
+
+	return r.pollVerify("S3_Notification_EventBridge", defaultPollTimeout, func() error {
+		return ic.verifyMessageContainsAll(queueURL, "Object Created", bucketName)
 	})
 }

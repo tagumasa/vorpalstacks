@@ -20,6 +20,8 @@ const (
 	s3MaxKeys    = 1000
 	s3MaxParts   = 1000
 	s3MaxUploads = 1000
+	// ListBuckets returns at most this many buckets in one response.
+	s3MaxBuckets = 10000
 )
 
 func errorStatusCode(err error, fallback int) int {
@@ -62,8 +64,64 @@ type objectResponseHeaders struct {
 	StorageClass         string
 	ReplicationStatus    string
 	Restore              string
+	Expiration           string
 	Metadata             map[string]string
 	PartsCount           int32
+}
+
+// objectHeadersFromMeta maps the metadata subset shared by the GET and
+// HEAD object outputs onto the response-header writer's input — the single
+// place the two operations' header rendering agrees.
+func objectHeadersFromMeta(m objectResponseMeta) objectResponseHeaders {
+	return objectResponseHeaders{
+		ETag:                 m.ETag,
+		ContentType:          m.ContentType,
+		ContentLength:        m.ContentLength,
+		LastModified:         m.LastModified,
+		VersionId:            m.VersionId,
+		SSECustomerAlgorithm: m.SSECustomerAlgorithm,
+		SSECustomerKeyMD5:    m.SSECustomerKeyMD5,
+		ServerSideEncryption: m.ServerSideEncryption,
+		SSEKMSKeyId:          m.SSEKMSKeyId,
+		CacheControl:         m.CacheControl,
+		ContentDisposition:   m.ContentDisposition,
+		ContentEncoding:      m.ContentEncoding,
+		ContentLanguage:      m.ContentLanguage,
+		StorageClass:         m.StorageClass,
+		ReplicationStatus:    m.ReplicationStatus,
+		Restore:              m.Restore,
+		Expiration:           m.Expiration,
+		Metadata:             m.Metadata,
+		PartsCount:           m.PartsCount,
+	}
+}
+
+// objectReadParams carries the request-derived values the GET and HEAD
+// object branches share: the partNumber window selector and the parsed
+// conditional timestamps.
+type objectReadParams struct {
+	partNumber        int
+	ifModifiedSince   *time.Time
+	ifUnmodifiedSince *time.Time
+}
+
+func parseObjectReadParams(r *http.Request, query url.Values) (objectReadParams, error) {
+	partNumber, err := parsePartNumberQuery(query)
+	if err != nil {
+		return objectReadParams{}, err
+	}
+	params := objectReadParams{partNumber: partNumber}
+	if modSince := r.Header.Get("If-Modified-Since"); modSince != "" {
+		if t, err := time.Parse(http.TimeFormat, modSince); err == nil {
+			params.ifModifiedSince = &t
+		}
+	}
+	if unmodSince := r.Header.Get("If-Unmodified-Since"); unmodSince != "" {
+		if t, err := time.Parse(http.TimeFormat, unmodSince); err == nil {
+			params.ifUnmodifiedSince = &t
+		}
+	}
+	return params, nil
 }
 
 func setObjectResponseHeaders(header http.Header, h objectResponseHeaders) {
@@ -96,12 +154,29 @@ func setObjectResponseHeaders(header http.Header, h objectResponseHeaders) {
 	if h.Restore != "" {
 		header.Set("x-amz-restore", h.Restore)
 	}
+	if h.Expiration != "" {
+		header.Set("x-amz-expiration", h.Expiration)
+	}
 	if h.PartsCount > 0 {
 		header.Set("x-amz-mp-parts-count", strconv.Itoa(int(h.PartsCount)))
 	}
 	for k, v := range h.Metadata {
 		header.Set("x-amz-meta-"+k, v)
 	}
+}
+
+// extractUserMetadata collects the x-amz-meta-* headers into a metadata
+// map, initialising the map only when a header is present.
+func extractUserMetadata(header http.Header, metadata map[string]string) map[string]string {
+	for k, v := range header {
+		if strings.HasPrefix(k, "X-Amz-Meta-") {
+			if metadata == nil {
+				metadata = make(map[string]string)
+			}
+			metadata[strings.TrimPrefix(k, "X-Amz-Meta-")] = v[0]
+		}
+	}
+	return metadata
 }
 
 // parsePartNumberQuery extracts the partNumber query parameter, which the
@@ -112,8 +187,8 @@ func parsePartNumberQuery(query url.Values) (int, error) {
 		return 0, nil
 	}
 	n, err := strconv.Atoi(raw)
-	if err != nil || n < 1 || n > 10000 {
-		return 0, NewInvalidArgumentError("Part number must be an integer between 1 and 10000")
+	if err != nil || n < minPartNumber || n > maxPartNumber {
+		return 0, NewInvalidArgumentError(fmt.Sprintf("Part number must be an integer between %d and %d", minPartNumber, maxPartNumber))
 	}
 	return n, nil
 }
@@ -193,14 +268,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
 			ACLHeaders:           parseACLHeaders(r),
 		}
-		for k, v := range r.Header {
-			if strings.HasPrefix(k, "X-Amz-Meta-") {
-				if input.Metadata == nil {
-					input.Metadata = make(map[string]string)
-				}
-				input.Metadata[strings.TrimPrefix(k, "X-Amz-Meta-")] = v[0]
-			}
-		}
+		input.Metadata = extractUserMetadata(r.Header, input.Metadata)
 		result, err := o.CreateMultipartUpload(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
@@ -209,9 +277,9 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, nil
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber") && r.Header.Get("x-amz-copy-source") != "":
-		partNumber, err := strconv.Atoi(query.Get("partNumber"))
-		if err != nil || partNumber < minPartNumber || partNumber > maxPartNumber {
-			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", minPartNumber, maxPartNumber))
+		partNumber, pnErr := parsePartNumberQuery(query)
+		if pnErr != nil {
+			return nil, header, http.StatusBadRequest, pnErr
 		}
 		input := &UploadPartCopyInput{
 			Bucket:                    bucket,
@@ -247,9 +315,9 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, nil
 
 	case method == "PUT" && query.Has("uploadId") && query.Has("partNumber"):
-		partNumber, err := strconv.Atoi(query.Get("partNumber"))
-		if err != nil || partNumber < minPartNumber || partNumber > maxPartNumber {
-			return nil, header, http.StatusBadRequest, NewInvalidArgumentError(fmt.Sprintf("invalid partNumber: must be between %d and %d", minPartNumber, maxPartNumber))
+		partNumber, pnErr := parsePartNumberQuery(query)
+		if pnErr != nil {
+			return nil, header, http.StatusBadRequest, pnErr
 		}
 
 		var partBody io.Reader = r.Body
@@ -314,6 +382,8 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			Key:      key,
 			UploadId: query.Get("uploadId"),
 			Parts:    completeReq.Parts,
+			Host:     r.Host,
+			IsTLS:    r.TLS != nil,
 		}
 		result, err := o.CompleteMultipartUpload(ctx, reqCtx, stores, input)
 		if err != nil {
@@ -328,7 +398,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			Key:      key,
 			UploadId: query.Get("uploadId"),
 		})
-		return nil, header, http.StatusNoContent, err
+		return nil, header, errorStatusCode(err, http.StatusNoContent), err
 
 	case method == "GET" && query.Has("tagging"):
 		result, err := o.GetObjectTagging(ctx, reqCtx, stores, &GetObjectTaggingInput{
@@ -392,9 +462,16 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			GrantWrite:       r.Header.Get("x-amz-grant-write"),
 			GrantWriteACP:    r.Header.Get("x-amz-grant-write-acp"),
 		}
-		if input.ACL == "" && input.GrantFullControl == "" && input.GrantRead == "" && input.GrantWrite == "" {
+		if input.ACL == "" && input.GrantFullControl == "" && input.GrantRead == "" && input.GrantReadACP == "" && input.GrantWrite == "" && input.GrantWriteACP == "" {
 			var acp s3store.AccessControlPolicy
-			if err := request.NewSafeXMLDecoder(r.Body).Decode(&acp); err == nil {
+			if err := request.NewSafeXMLDecoder(r.Body).Decode(&acp); err != nil {
+				if !errors.Is(err, io.EOF) {
+					// A present-but-unparsable body is MalformedXML; an
+					// empty body simply carries no policy and the core
+					// reports the missing ACL its own way.
+					return nil, header, http.StatusBadRequest, ErrMalformedXML
+				}
+			} else {
 				input.AccessControlPolicy = &acp
 			}
 		}
@@ -406,106 +483,69 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 		return result, header, http.StatusOK, err
 
 	case method == "GET" && query.Has("attributes"):
-		objectAttributes := r.Header["X-Amz-Object-Attributes"]
-		maxParts := int32(1000)
-		if mp := query.Get("max-parts"); mp != "" {
-			if parsed, err := strconv.ParseInt(mp, 10, 32); err == nil {
-				maxParts = int32(parsed)
-			}
-		}
+		// The operation's parameters travel as headers (the model binds
+		// ObjectAttributes, max-parts and part-number-marker to
+		// x-amz-object-attributes, x-amz-max-parts and
+		// x-amz-part-number-marker); the core validates them.
 		result, err := o.GetObjectAttributes(ctx, reqCtx, stores, &GetObjectAttributesInput{
 			Bucket:           bucket,
 			Key:              key,
 			VersionId:        query.Get("versionId"),
-			MaxParts:         maxParts,
-			PartNumberMarker: query.Get("part-number-marker"),
-			ObjectAttributes: objectAttributes,
+			MaxParts:         r.Header.Get("x-amz-max-parts"),
+			PartNumberMarker: r.Header.Get("x-amz-part-number-marker"),
+			ObjectAttributes: r.Header["X-Amz-Object-Attributes"],
 		})
 		return result, header, http.StatusOK, err
 
 	case method == "GET":
-		partNumber, pnErr := parsePartNumberQuery(query)
-		if pnErr != nil {
-			return nil, header, http.StatusBadRequest, pnErr
+		readParams, pErr := parseObjectReadParams(r, query)
+		if pErr != nil {
+			return nil, header, http.StatusBadRequest, pErr
 		}
-		input := &GetObjectInput{
+		result, err := o.GetObject(ctx, reqCtx, stores, &GetObjectInput{
 			Bucket:               bucket,
 			Key:                  key,
 			Range:                r.Header.Get("Range"),
-			PartNumber:           partNumber,
+			PartNumber:           readParams.partNumber,
 			VersionId:            query.Get("versionId"),
 			IfMatch:              r.Header.Get("If-Match"),
 			IfNoneMatch:          r.Header.Get("If-None-Match"),
+			IfModifiedSince:      readParams.ifModifiedSince,
+			IfUnmodifiedSince:    readParams.ifUnmodifiedSince,
 			SSECustomerAlgorithm: r.Header.Get("x-amz-server-side-encryption-customer-algorithm"),
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
 			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-md5"),
-		}
-		if modSince := r.Header.Get("If-Modified-Since"); modSince != "" {
-			if t, err := time.Parse(http.TimeFormat, modSince); err == nil {
-				input.IfModifiedSince = &t
-			}
-		}
-		if unmodSince := r.Header.Get("If-Unmodified-Since"); unmodSince != "" {
-			if t, err := time.Parse(http.TimeFormat, unmodSince); err == nil {
-				input.IfUnmodifiedSince = &t
-			}
-		}
-		result, err := o.GetObject(ctx, reqCtx, stores, input)
+		})
 		if err != nil {
 			return nil, header, errorStatusCode(err, http.StatusNotFound), err
 		}
-		setObjectResponseHeaders(header, objectResponseHeaders{
-			ETag: result.ETag, ContentType: result.ContentType, ContentLength: result.ContentLength, LastModified: result.LastModified,
-			VersionId: result.VersionId, SSECustomerAlgorithm: result.SSECustomerAlgorithm, SSECustomerKeyMD5: result.SSECustomerKeyMD5,
-			ServerSideEncryption: result.ServerSideEncryption, SSEKMSKeyId: result.SSEKMSKeyId,
-			CacheControl: result.CacheControl, ContentDisposition: result.ContentDisposition, ContentEncoding: result.ContentEncoding, ContentLanguage: result.ContentLanguage,
-			StorageClass: result.StorageClass, ReplicationStatus: result.ReplicationStatus, Metadata: result.Metadata,
-			Restore:    result.Restore,
-			PartsCount: result.PartsCount,
-		})
+		setObjectResponseHeaders(header, objectHeadersFromMeta(result.objectResponseMeta))
 		applyResponseHeaderOverrides(header, query)
 		return result, header, http.StatusOK, nil
 
 	case method == "HEAD":
-		partNumber, pnErr := parsePartNumberQuery(query)
-		if pnErr != nil {
-			return nil, header, http.StatusBadRequest, pnErr
+		readParams, pErr := parseObjectReadParams(r, query)
+		if pErr != nil {
+			return nil, header, http.StatusBadRequest, pErr
 		}
-		input := &HeadObjectInput{
+		result, err := o.HeadObject(ctx, reqCtx, stores, &HeadObjectInput{
 			Bucket:               bucket,
 			Key:                  key,
 			VersionId:            query.Get("versionId"),
 			Range:                r.Header.Get("Range"),
-			PartNumber:           partNumber,
+			PartNumber:           readParams.partNumber,
 			IfMatch:              r.Header.Get("If-Match"),
 			IfNoneMatch:          r.Header.Get("If-None-Match"),
+			IfModifiedSince:      readParams.ifModifiedSince,
+			IfUnmodifiedSince:    readParams.ifUnmodifiedSince,
 			SSECustomerAlgorithm: r.Header.Get("x-amz-server-side-encryption-customer-algorithm"),
 			SSECustomerKey:       r.Header.Get("x-amz-server-side-encryption-customer-key"),
-			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-MD5"),
-		}
-		if modSince := r.Header.Get("If-Modified-Since"); modSince != "" {
-			if t, err := time.Parse(http.TimeFormat, modSince); err == nil {
-				input.IfModifiedSince = &t
-			}
-		}
-		if unmodSince := r.Header.Get("If-Unmodified-Since"); unmodSince != "" {
-			if t, err := time.Parse(http.TimeFormat, unmodSince); err == nil {
-				input.IfUnmodifiedSince = &t
-			}
-		}
-		result, err := o.HeadObject(ctx, reqCtx, stores, input)
+			SSECustomerKeyMD5:    r.Header.Get("x-amz-server-side-encryption-customer-key-md5"),
+		})
 		if err != nil {
 			return nil, header, errorStatusCode(err, http.StatusNotFound), err
 		}
-		setObjectResponseHeaders(header, objectResponseHeaders{
-			ETag: result.ETag, ContentType: result.ContentType, ContentLength: result.ContentLength, LastModified: result.LastModified,
-			VersionId: result.VersionId, SSECustomerAlgorithm: result.SSECustomerAlgorithm, SSECustomerKeyMD5: result.SSECustomerKeyMD5,
-			ServerSideEncryption: result.ServerSideEncryption, SSEKMSKeyId: result.SSEKMSKeyId,
-			CacheControl: result.CacheControl, ContentDisposition: result.ContentDisposition, ContentEncoding: result.ContentEncoding, ContentLanguage: result.ContentLanguage,
-			StorageClass: result.StorageClass, ReplicationStatus: result.ReplicationStatus, Metadata: result.Metadata,
-			Restore:    result.Restore,
-			PartsCount: result.PartsCount,
-		})
+		setObjectResponseHeaders(header, objectHeadersFromMeta(result.objectResponseMeta))
 		applyResponseHeaderOverrides(header, query)
 		return result, header, http.StatusOK, nil
 
@@ -533,6 +573,10 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			CopySourceIfNoneMatch:     r.Header.Get("x-amz-copy-source-if-none-match"),
 			MetadataDirective:         r.Header.Get("x-amz-metadata-directive"),
 			ContentType:               r.Header.Get("Content-Type"),
+			ContentEncoding:           r.Header.Get("Content-Encoding"),
+			ContentDisposition:        r.Header.Get("Content-Disposition"),
+			ContentLanguage:           r.Header.Get("Content-Language"),
+			CacheControl:              r.Header.Get("Cache-Control"),
 			StorageClass:              r.Header.Get("x-amz-storage-class"),
 			ServerSideEncryption:      r.Header.Get("x-amz-server-side-encryption"),
 			SSEKMSKeyId:               r.Header.Get("x-amz-server-side-encryption-aws-kms-key-id"),
@@ -554,14 +598,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 				input.CopySourceIfUnmodifiedSince = &t
 			}
 		}
-		for k, v := range r.Header {
-			if strings.HasPrefix(k, "X-Amz-Meta-") {
-				if input.Metadata == nil {
-					input.Metadata = make(map[string]string)
-				}
-				input.Metadata[strings.TrimPrefix(k, "X-Amz-Meta-")] = v[0]
-			}
-		}
+		input.Metadata = extractUserMetadata(r.Header, input.Metadata)
 		result, err := o.CopyObject(ctx, reqCtx, stores, input)
 		if err != nil {
 			return nil, header, http.StatusInternalServerError, err
@@ -593,13 +630,7 @@ func (o *ObjectOperations) HandleRequest(ctx context.Context, reqCtx *request.Re
 			}
 		}
 
-		metadata := make(map[string]string)
-		for k, v := range r.Header {
-			if strings.HasPrefix(k, "X-Amz-Meta-") {
-				metaKey := strings.TrimPrefix(k, "X-Amz-Meta-")
-				metadata[metaKey] = v[0]
-			}
-		}
+		metadata := extractUserMetadata(r.Header, make(map[string]string))
 
 		var body io.Reader = r.Body
 		if isAwsChunkedRequest(r) {

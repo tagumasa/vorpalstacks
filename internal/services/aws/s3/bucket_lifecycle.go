@@ -1,9 +1,14 @@
 package s3
 
 import (
+	"fmt"
+	"net/http"
+	"net/url"
+	"os"
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
 // PutBucketLifecycleConfigurationInput is the input for PutBucketLifecycleConfiguration.
@@ -179,4 +184,96 @@ func (o *BucketOperations) DeleteBucketLifecycleConfiguration(ctx *request.Reque
 		return err
 	}
 	return o.svc.deleteBucketLifecycleConfigurationCore(store.buckets, input)
+}
+
+// lifecycleDayUnit is the duration one lifecycle day occupies. TEST_MODE
+// compresses it to one second so rule windows are observable within a test
+// run; production keeps the real day unit. Both the x-amz-expiration
+// projection and the enforcement worker derive their timing from this single
+// unit, so the promised expiry and the executed one can never disagree.
+var lifecycleDayUnit = 24 * time.Hour
+
+func init() {
+	if os.Getenv("TEST_MODE") == "true" {
+		lifecycleDayUnit = time.Second
+	}
+}
+
+// lifecycleDaysInstant returns the instant a Days-based lifecycle action
+// occurs, following the AWS timing calculation: the days are added to base —
+// the object's creation, or the successor's creation for noncurrent windows —
+// and the result is rounded up to the next midnight UTC. Midnights are the
+// multiples of the day unit from the epoch, so the compressed test unit
+// keeps the same calculation shape.
+func lifecycleDaysInstant(base time.Time, days int32) time.Time {
+	t := base.UTC().Add(time.Duration(days) * lifecycleDayUnit)
+	if rem := t.Sub(t.Truncate(lifecycleDayUnit)); rem > 0 {
+		t = t.Add(lifecycleDayUnit - rem)
+	}
+	return t
+}
+
+// objectExpiration projects a bucket's lifecycle configuration onto one
+// object: the earliest instant an Enabled expiration rule will expire it,
+// with the rule's ID. Only the current version carries a projected expiry,
+// and rules whose only expiration member is ExpiredObjectDeleteMarker
+// remove markers, not data objects. A Days window follows the AWS timing
+// calculation: the days are added to the object's LastModified and the
+// result is rounded up to the next midnight UTC; a Date rule expires at
+// the configured date. Objects whose replication has not succeeded carry
+// no expiry — S3 Lifecycle prevents expiration and transition actions on
+// them until replication succeeds.
+func objectExpiration(config *s3store.LifecycleConfiguration, obj *s3store.Object) (time.Time, string, bool) {
+	if config == nil || !obj.IsLatest || obj.IsDeleteMarker {
+		return time.Time{}, "", false
+	}
+	if !lifecycleReplicationEligible(obj) {
+		return time.Time{}, "", false
+	}
+	var earliest time.Time
+	ruleID := ""
+	for _, rule := range config.Rules {
+		if rule.Status != "Enabled" || rule.Expiration == nil {
+			continue
+		}
+		exp := rule.Expiration
+		var expiry time.Time
+		switch {
+		case exp.Days != nil && *exp.Days > 0:
+			expiry = lifecycleDaysInstant(obj.LastModified, *exp.Days)
+		case exp.Date != nil:
+			expiry = exp.Date.UTC()
+		default:
+			continue
+		}
+		if !matchesLifecycleFilter(obj, rule.Filter) {
+			continue
+		}
+		if ruleID == "" || expiry.Before(earliest) {
+			earliest, ruleID = expiry, rule.ID
+		}
+	}
+	return earliest, ruleID, ruleID != ""
+}
+
+// objectExpirationHeaderValue renders the x-amz-expiration response value
+// AWS documents: expiry-date at HTTP-date, with the rule-id URL-encoded.
+func objectExpirationHeaderValue(config *s3store.LifecycleConfiguration, obj *s3store.Object) string {
+	expiry, ruleID, ok := objectExpiration(config, obj)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("expiry-date=%q, rule-id=%q", expiry.Format(http.TimeFormat), url.QueryEscape(ruleID))
+}
+
+// objectExpirationHeaderFor renders the x-amz-expiration value for an
+// object read from a bucket, looking the bucket's lifecycle configuration
+// up through the cross-region bucket finder; a missing bucket yields no
+// header (the read planes validate existence before this runs).
+func (s *S3Service) objectExpirationHeaderFor(bucket string, obj *s3store.Object) string {
+	b, _ := s.s3FindBucket(bucket)
+	if b == nil {
+		return ""
+	}
+	return objectExpirationHeaderValue(b.LifecycleConfiguration, obj)
 }

@@ -70,6 +70,7 @@ func sseContentLength(obj *s3store.Object) int64 {
 // GetObject from a store Object.
 func fillObjectMetadata(out *pbMetaFields, obj *s3store.Object) {
 	out.contentLength = sseContentLength(obj)
+	out.storageClass = obj.StorageClass
 	out.contentType = obj.ContentType
 	out.contentEncoding = obj.ContentEncoding
 	out.contentLanguage = obj.ContentLanguage
@@ -100,6 +101,7 @@ type pbMetaFields struct {
 	metadata           map[string]string
 	sseType            pb.ServerSideEncryption
 	kmsKeyID           string
+	storageClass       s3store.ObjectStorageClass
 }
 
 // ---------------------------------------------------------------------------
@@ -215,6 +217,37 @@ func createBucketResultToPb(result *AdminCreateBucketResult) *pb.CreateBucketOut
 	return &pb.CreateBucketOutput{Location: proto.String(result.Location)}
 }
 
+// objectStorageClassToPb maps the persisted storage class onto the admin
+// proto's object-listing enum; values outside the persisted set default to
+// STANDARD, matching the store's own defaulting.
+func objectStorageClassToPb(sc s3store.ObjectStorageClass) pb.ObjectStorageClass {
+	switch sc {
+	case s3store.StorageClassReducedRedundancy:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_REDUCED_REDUNDANCY
+	case s3store.StorageClassStandardIA:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD_IA
+	case s3store.StorageClassOneZoneIA:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_ONEZONE_IA
+	case s3store.StorageClassIntelligentTiering:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_INTELLIGENT_TIERING
+	case s3store.StorageClassGlacier:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER
+	case s3store.StorageClassGlacierIR:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_GLACIER_IR
+	case s3store.StorageClassDeepArchive:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_DEEP_ARCHIVE
+	default:
+		return pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD
+	}
+}
+
+// storageClassToPb maps onto the head/get output enum. The two proto enums
+// are generated from the same model enum and carry identical members, so the
+// numeric conversion is exact.
+func storageClassToPb(sc s3store.ObjectStorageClass) pb.StorageClass {
+	return pb.StorageClass(objectStorageClassToPb(sc))
+}
+
 func listObjectsResultToPb(result *AdminListObjectsResult, in AdminListObjectsInput, maxKeys int) *pb.ListObjectsV2Output {
 	var contents []*pb.Object
 	for _, obj := range result.Objects {
@@ -226,7 +259,7 @@ func listObjectsResultToPb(result *AdminListObjectsResult, in AdminListObjectsIn
 			Lastmodified: proto.String(obj.LastModified.Format(timeutils.ISO8601UTCFormat)),
 			Etag:         proto.String(formatETag(obj.ETag)),
 			Size:         proto.Int64(obj.Size),
-			Storageclass: pb.ObjectStorageClass_OBJECT_STORAGE_CLASS_STANDARD,
+			Storageclass: objectStorageClassToPb(obj.StorageClass),
 		})
 	}
 
@@ -266,7 +299,7 @@ func headObjectResultToPb(result *AdminHeadObjectResult) *pb.HeadObjectOutput {
 		Cachecontrol:       proto.String(mf.cacheControl),
 		Etag:               proto.String(mf.etag),
 		Lastmodified:       proto.String(mf.lastModified),
-		Storageclass:       pb.StorageClass_STORAGE_CLASS_STANDARD,
+		Storageclass:       storageClassToPb(mf.storageClass),
 		Versionid:          proto.String(mf.versionID),
 		Acceptranges:       proto.String("bytes"),
 	}

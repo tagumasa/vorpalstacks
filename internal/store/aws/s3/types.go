@@ -106,6 +106,65 @@ const (
 	StorageClassDeepArchive        ObjectStorageClass = "DEEP_ARCHIVE"
 )
 
+// validObjectStorageClasses is the definitive storage-class acceptance set.
+// Every acceptance site (object and multipart puts, copy destination,
+// replication destination, lifecycle transitions) derives from it so the
+// accepted values cannot drift from the persisted enum. The hardware- and
+// backup-bound classes of the AWS enum (OUTPOSTS, SNOW, EXPRESS_ONEZONE,
+// FSX_OPENZFS, FSX_ONTAP, AWS_BACKUP_WARM, AWS_BACKUP_LOW_COST_WARM) are
+// excluded: they name physical media and backup tiers this edge platform
+// does not have.
+var validObjectStorageClasses = map[ObjectStorageClass]bool{
+	StorageClassStandard:           true,
+	StorageClassReducedRedundancy:  true,
+	StorageClassGlacier:            true,
+	StorageClassStandardIA:         true,
+	StorageClassOneZoneIA:          true,
+	StorageClassIntelligentTiering: true,
+	StorageClassGlacierIR:          true,
+	StorageClassDeepArchive:        true,
+}
+
+// IsValidStorageClass reports whether the storage class is accepted for
+// persistence on this platform.
+func IsValidStorageClass(c ObjectStorageClass) bool {
+	return validObjectStorageClasses[c]
+}
+
+// validTransitionTargetClasses is the TransitionStorageClass acceptance set:
+// the classes a lifecycle transition may name as its destination. STANDARD
+// and REDUCED_REDUNDANCY are Standard-tier classes an object starts in; the
+// AWS transition model offers no transition that lands in either.
+var validTransitionTargetClasses = map[ObjectStorageClass]bool{
+	StorageClassGlacier:            true,
+	StorageClassStandardIA:         true,
+	StorageClassOneZoneIA:          true,
+	StorageClassIntelligentTiering: true,
+	StorageClassGlacierIR:          true,
+	StorageClassDeepArchive:        true,
+}
+
+// IsValidTransitionTargetClass reports whether the storage class is a valid
+// lifecycle transition destination (Transition and
+// NoncurrentVersionTransition StorageClass).
+func IsValidTransitionTargetClass(c ObjectStorageClass) bool {
+	return validTransitionTargetClasses[c]
+}
+
+// Lifecycle limit values (AWS specification).
+const (
+	// MinTransitionObjectSize is the AWS default minimum size for lifecycle
+	// transitions: objects smaller than 128 KiB do not transition to any
+	// storage class unless the rule's filter carries an explicit
+	// ObjectSizeGreaterThan or ObjectSizeLessThan bound.
+	MinTransitionObjectSize int64 = 128 * 1024
+
+	// MaxNewerNoncurrentVersions caps the NewerNoncurrentVersions retention
+	// count of the NoncurrentVersionTransition and
+	// NoncurrentVersionExpiration actions (AWS: between 1 and 100).
+	MaxNewerNoncurrentVersions int32 = 100
+)
+
 // BucketVersioningStatus represents the versioning status of an S3 bucket.
 type BucketVersioningStatus string
 
@@ -325,7 +384,9 @@ type ObjectPartBoundary struct {
 	Size       int64 `json:"size"`
 }
 
-// SSEObjectMetadata represents the server-side encryption metadata for an S3 object.
+// PartEncryptionInfo records the encryption facts of one uploaded part of
+// an encrypted multipart upload: the ciphertext and plaintext sizes plus
+// the nonce and data key the part was sealed with.
 type PartEncryptionInfo struct {
 	EncryptedSize int64  `json:"encrypted_size,omitempty"`
 	PlainSize     int64  `json:"plain_size,omitempty"`
@@ -347,11 +408,15 @@ type SSEObjectMetadata struct {
 
 // MultipartUpload represents a multipart upload to S3.
 type MultipartUpload struct {
-	UploadID         string             `json:"upload_id"`
-	Key              string             `json:"key"`
-	BucketName       string             `json:"bucket_name"`
-	Initiated        time.Time          `json:"initiated"`
-	StorageClass     ObjectStorageClass `json:"storage_class,omitempty"`
+	UploadID     string             `json:"upload_id"`
+	Key          string             `json:"key"`
+	BucketName   string             `json:"bucket_name"`
+	Initiated    time.Time          `json:"initiated"`
+	StorageClass ObjectStorageClass `json:"storage_class,omitempty"`
+	// Owner and Initiator stay in account-id string form: they are
+	// persisted fields of the upload record, and the structured ACLOwner
+	// shape lives on the response plane, where the cores convert and
+	// default them.
 	Owner            string             `json:"owner,omitempty"`
 	Initiator        string             `json:"initiator,omitempty"`
 	Parts            []ObjectPart       `json:"parts,omitempty"`
@@ -406,13 +471,6 @@ type ObjectPart struct {
 	EncryptedSize int64     `json:"encrypted_size,omitempty"`
 	ContentNonce  []byte    `json:"content_nonce,omitempty"`
 	DataKey       []byte    `json:"data_key,omitempty"`
-}
-
-// BucketListResult represents the result of listing S3 buckets.
-type BucketListResult struct {
-	Buckets     []*Bucket
-	NextMarker  string
-	IsTruncated bool
 }
 
 // ObjectListResult represents the result of listing S3 objects.

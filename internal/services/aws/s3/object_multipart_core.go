@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -170,14 +171,17 @@ func (s *S3Service) createMultipartUploadCore(ctx context.Context, stores *s3Sto
 		UploadId: upload.UploadID,
 	}
 
-	if sseType != "" {
+	// SSE-C is signalled only through the customer headers; the
+	// x-amz-server-side-encryption value set cannot carry it (the model enum
+	// is AES256|aws:kms|aws:kms:dsse|…). Same branch as the GetObject path.
+	if sseType != "" && sseType != s3store.SSETypeCustomer {
 		output.ServerSideEncryption = string(sseType)
 		if sseType == s3store.SSETypeKMS && kmsKeyID != "" {
 			output.SSEKMSKeyId = kmsKeyID
 		}
-		if sseType == s3store.SSETypeCustomer {
-			output.SSECustomerAlgorithm = "AES256"
-		}
+	}
+	if sseType == s3store.SSETypeCustomer {
+		output.SSECustomerAlgorithm = "AES256"
 	}
 
 	return output, nil
@@ -198,7 +202,7 @@ func (s *S3Service) uploadPartCore(ctx context.Context, stores *s3Stores, input 
 
 	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
 	if err != nil {
-		return nil, err
+		return nil, uploadNotFound(err)
 	}
 
 	var reader io.Reader = input.Body
@@ -272,7 +276,7 @@ func (s *S3Service) uploadPartCopyCore(ctx context.Context, stores *s3Stores, in
 
 	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
 	if err != nil {
-		return nil, err
+		return nil, uploadNotFound(err)
 	}
 
 	var srcObj *s3store.Object
@@ -296,7 +300,7 @@ func (s *S3Service) uploadPartCopyCore(ctx context.Context, stores *s3Stores, in
 		return nil, ErrObjectNotInActiveTier
 	}
 
-	if input.CopySourceRange == "" && srcObj.Size > maxCopyObjectSize {
+	if input.CopySourceRange == "" && srcObj.Size > maxSingleUploadSize {
 		return nil, ErrEntityTooLarge
 	}
 
@@ -384,6 +388,22 @@ func (s *S3Service) uploadPartCopyCore(ctx context.Context, stores *s3Stores, in
 	}, nil
 }
 
+// objectLocationURL builds the Location of a newly created object from the
+// serving endpoint of the request. Without a known host (admin plane) the
+// location degrades to the path-only form the CreateBucket response uses.
+func objectLocationURL(host string, isTLS bool, bucket, key string) string {
+	path := "/" + bucket + "/" + key
+	if host == "" {
+		return path
+	}
+	scheme := "http"
+	if isTLS {
+		scheme = "https"
+	}
+	u := url.URL{Scheme: scheme, Host: host, Path: path}
+	return u.String()
+}
+
 func (s *S3Service) listPartsCore(ctx context.Context, stores *s3Stores, input *ListPartsInput) (*ListPartsOutput, error) {
 	if err := s.validateBucketExists(stores, input.Bucket); err != nil {
 		return nil, err
@@ -402,10 +422,21 @@ func (s *S3Service) listPartsCore(ctx context.Context, stores *s3Stores, input *
 
 	parts, nextPartNumberMarker, isTruncated, err := stores.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
 	if err != nil {
-		if errors.Is(err, s3store.ErrUploadNotFound) {
-			return nil, ErrNoSuchUpload
-		}
-		return nil, err
+		return nil, uploadNotFound(err)
+	}
+
+	// Initiator, Owner and StorageClass come from the upload record itself,
+	// not from a constant.
+	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
+	if err != nil {
+		return nil, uploadNotFound(err)
+	}
+	initiator, owner := upload.Initiator, upload.Owner
+	if initiator == "" {
+		initiator = s.accountID
+	}
+	if owner == "" {
+		owner = s.accountID
 	}
 
 	var outputParts []*Part
@@ -427,9 +458,11 @@ func (s *S3Service) listPartsCore(ctx context.Context, stores *s3Stores, input *
 		Bucket:       input.Bucket,
 		Key:          input.Key,
 		UploadId:     input.UploadId,
+		Initiator:    &Owner{ID: initiator, DisplayName: initiator},
+		Owner:        &Owner{ID: owner, DisplayName: owner},
 		Parts:        outputParts,
 		MaxParts:     maxParts,
-		StorageClass: "STANDARD",
+		StorageClass: string(upload.StorageClass),
 		IsTruncated:  isTruncated,
 	}
 	if nextPartNumberMarker > 0 {
@@ -480,7 +513,7 @@ func (s *S3Service) completeMultipartUploadCore(ctx context.Context, reqCtx *req
 
 	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
 	if err != nil {
-		return nil, ErrNoSuchUpload
+		return nil, uploadNotFound(err)
 	}
 
 	for _, p := range parts {
@@ -528,14 +561,16 @@ func (s *S3Service) completeMultipartUploadCore(ctx context.Context, reqCtx *req
 	s.launchObjectReplication(reqCtx, stores, input.Bucket, input.Key, obj)
 
 	output := &CompleteMultipartUploadOutput{
-		Location:  fmt.Sprintf("http://%s.s3.amazonaws.com/%s", input.Bucket, input.Key),
+		Location:  objectLocationURL(input.Host, input.IsTLS, input.Bucket, input.Key),
 		Bucket:    input.Bucket,
 		Key:       input.Key,
 		ETag:      formatETag(obj.ETag),
 		VersionId: obj.VersionID,
 	}
 
-	if obj.SSEMetadata != nil {
+	// SSE-C responses carry no x-amz-server-side-encryption value (see the
+	// create branch above).
+	if obj.SSEMetadata != nil && obj.SSEMetadata.EncryptionType != s3store.SSETypeCustomer {
 		output.ServerSideEncryption = string(obj.SSEMetadata.EncryptionType)
 		if obj.SSEMetadata.KMSKeyID != "" {
 			output.SSEKMSKeyId = obj.SSEMetadata.KMSKeyID
@@ -554,7 +589,22 @@ func (s *S3Service) abortMultipartUploadCore(ctx context.Context, stores *s3Stor
 		return err
 	}
 
-	return stores.objects.AbortMultipartUpload(ctx, input.Bucket, input.Key, input.UploadId)
+	if err := stores.objects.AbortMultipartUpload(ctx, input.Bucket, input.Key, input.UploadId); err != nil {
+		return uploadNotFound(err)
+	}
+	return nil
+}
+
+// uploadNotFound maps the store's upload-not-found sentinel — a missing
+// upload ID or a bucket/key that does not match the upload's own address —
+// to the NoSuchUpload API error. Every multipart core reports the same
+// condition the same way, and no other error is masked: a transient store
+// failure must not surface as a missing upload.
+func uploadNotFound(err error) error {
+	if errors.Is(err, s3store.ErrUploadNotFound) {
+		return ErrNoSuchUpload
+	}
+	return err
 }
 
 func (s *S3Service) listMultipartUploadsCore(stores *s3Stores, input *ListMultipartUploadsInput) (*ListMultipartUploadsOutput, error) {
@@ -569,18 +619,25 @@ func (s *S3Service) listMultipartUploadsCore(stores *s3Stores, input *ListMultip
 
 	var uploads []*Upload
 	for _, u := range result.Uploads {
+		initiator, owner := u.Initiator, u.Owner
+		if initiator == "" {
+			initiator = s.accountID
+		}
+		if owner == "" {
+			owner = s.accountID
+		}
 		uploads = append(uploads, &Upload{
 			Key:          u.Key,
 			UploadId:     u.UploadID,
 			Initiated:    u.Initiated,
 			StorageClass: string(u.StorageClass),
 			Initiator: &Owner{
-				ID:          u.Initiator,
-				DisplayName: u.Initiator,
+				ID:          initiator,
+				DisplayName: initiator,
 			},
 			Owner: &Owner{
-				ID:          u.Owner,
-				DisplayName: u.Owner,
+				ID:          owner,
+				DisplayName: owner,
 			},
 		})
 	}

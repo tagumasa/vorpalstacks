@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,6 +70,19 @@ func (s *HybridBlobStore) Put(ctx context.Context, bucket, key string, reader io
 }
 
 func (s *HybridBlobStore) putUnlock(ctx context.Context, bucket, key string, reader io.Reader, metadata *BlobMetadata) (*BlobMetadata, error) {
+	return s.putAt(s.plainAddress(bucket, key), key, reader, metadata)
+}
+
+// putVersionedUnlock streams a versioned write to the versioned address —
+// the same locations GetWithVersion and GetRangeWithVersion read.
+func (s *HybridBlobStore) putVersionedUnlock(bucket, key, versionId string, reader io.Reader, metadata *BlobMetadata) (*BlobMetadata, error) {
+	return s.putAt(s.versionedAddress(bucket, key, versionId), key, reader, metadata)
+}
+
+// putAt streams reader into the tier the peek selects at one address. key is
+// the logical object key recorded in the metadata; the address, not the key,
+// decides where the bytes land.
+func (s *HybridBlobStore) putAt(addr blobAddress, key string, reader io.Reader, metadata *BlobMetadata) (*BlobMetadata, error) {
 	// Peek at the first threshold+1 bytes to determine whether this is a
 	// small or large object without loading arbitrarily large content into
 	// memory.
@@ -81,8 +95,7 @@ func (s *HybridBlobStore) putUnlock(ctx context.Context, bucket, key string, rea
 	}
 	metadata.Key = key
 
-	storageKey := s.storageKey(bucket, key)
-	s.cleanupAllTiers(storageKey, bucket, key)
+	s.cleanupAllTiers(addr)
 
 	// io.ReadFull returns nil only when exactly len(buf) bytes were read,
 	// meaning there is at least one more byte in reader → large object.
@@ -105,13 +118,13 @@ func (s *HybridBlobStore) putUnlock(ctx context.Context, bucket, key string, rea
 			metadata.LastModified = time.Now().UTC()
 		}
 
-		if err := s.putSmallObject(storageKey, data, metadata); err != nil {
+		if err := s.putSmallObject(addr.storageKey, data, metadata); err != nil {
 			return nil, err
 		}
 	} else {
 		// Large object: combine peeked bytes with remaining reader and stream to disk.
 		fullReader := io.MultiReader(bytes.NewReader(peekData), reader)
-		if err := s.putLargeStreaming(bucket, key, fullReader, metadata); err != nil {
+		if err := s.putLargeStreaming(addr, fullReader, metadata); err != nil {
 			return nil, err
 		}
 	}
@@ -131,8 +144,8 @@ func (s *HybridBlobStore) putSmallObject(key string, data []byte, meta *BlobMeta
 	return s.storage.Bucket("blob_small").Put([]byte(key), bytes)
 }
 
-func (s *HybridBlobStore) putLargeStreaming(bucket, key string, reader io.Reader, meta *BlobMetadata) error {
-	path := s.filePath(bucket, key)
+func (s *HybridBlobStore) putLargeStreaming(addr blobAddress, reader io.Reader, meta *BlobMetadata) error {
+	path := addr.path
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil { // #nosec G301
 		return fmt.Errorf("failed to create directory: %w", err)
@@ -172,8 +185,7 @@ func (s *HybridBlobStore) putLargeStreaming(bucket, key string, reader io.Reader
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
-	storageKey := s.storageKey(bucket, key)
-	return s.storage.Bucket("blob_meta").Put([]byte(storageKey), metaBytes)
+	return s.storage.Bucket("blob_meta").Put([]byte(addr.storageKey), metaBytes)
 }
 
 // Get retrieves an object from the hybrid blob store.
@@ -193,12 +205,8 @@ func (s *HybridBlobStore) Get(ctx context.Context, bucket, key string) (BlobRead
 
 	storageKey := s.storageKey(bucket, key)
 
-	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
-	if err == nil && data != nil {
-		var obj smallObject
-		if err := json.Unmarshal(data, &obj); err == nil {
-			return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
-		}
+	if obj, ok := s.getSmallObject(storageKey); ok {
+		return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
 	}
 
 	path := s.filePath(bucket, key)
@@ -250,13 +258,9 @@ func (s *HybridBlobStore) GetRange(ctx context.Context, bucket, key string, offs
 
 	storageKey := s.storageKey(bucket, key)
 
-	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
-	if err == nil && data != nil {
-		var obj smallObject
-		if err := json.Unmarshal(data, &obj); err == nil {
-			start, end := clampRange(offset, length, int64(len(obj.Data)))
-			return newMemoryReader(obj.Data[start:end], obj.Metadata), obj.Metadata, nil
-		}
+	if obj, ok := s.getSmallObject(storageKey); ok {
+		start, end := clampRange(offset, length, int64(len(obj.Data)))
+		return newMemoryReader(obj.Data[start:end], obj.Metadata), obj.Metadata, nil
 	}
 
 	path := s.filePath(bucket, key)
@@ -310,21 +314,36 @@ func (s *HybridBlobStore) deleteUnlock(bucket, key string) error {
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) && firstErr == nil {
 		firstErr = err
 	}
+	pruneEmptyDirs(filepath.Dir(path), s.blobRoot())
 
 	return firstErr
 }
 
-func (s *HybridBlobStore) cleanupAllTiers(storageKey, bucket, key string) {
+func (s *HybridBlobStore) cleanupAllTiers(addr blobAddress) {
 	for _, op := range []struct {
 		name string
 		fn   func() error
 	}{
-		{"blob_small", func() error { return s.storage.Bucket("blob_small").Delete([]byte(storageKey)) }},
-		{"blob_meta", func() error { return s.storage.Bucket("blob_meta").Delete([]byte(storageKey)) }},
-		{"file", func() error { return os.Remove(s.filePath(bucket, key)) }},
+		{"blob_small", func() error { return s.storage.Bucket("blob_small").Delete([]byte(addr.storageKey)) }},
+		{"blob_meta", func() error { return s.storage.Bucket("blob_meta").Delete([]byte(addr.storageKey)) }},
+		{"file", func() error {
+			// A fresh overwrite target has no file-tier entry; that is
+			// the common case, not a cleanup failure.
+			err := os.Remove(addr.path)
+			if os.IsNotExist(err) {
+				return nil
+			}
+			if err == nil {
+				// Match the delete paths: a reclaimed file prunes its
+				// directory chain so a tier-switching overwrite leaves
+				// no skeleton directories behind.
+				pruneEmptyDirs(filepath.Dir(addr.path), s.blobRoot())
+			}
+			return err
+		}},
 	} {
 		if err := op.fn(); err != nil {
-			fmt.Printf("[WARN] blob cleanup failed: tier=%s err=%v\n", op.name, err)
+			slog.Error("blob cleanup failed", "tier", op.name, "error", err)
 		}
 	}
 }
@@ -370,12 +389,8 @@ func (s *HybridBlobStore) Head(ctx context.Context, bucket, key string) (*BlobMe
 
 	storageKey := s.storageKey(bucket, key)
 
-	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
-	if err == nil && data != nil {
-		var obj smallObject
-		if err := json.Unmarshal(data, &obj); err == nil {
-			return obj.Metadata, nil
-		}
+	if obj, ok := s.getSmallObject(storageKey); ok {
+		return obj.Metadata, nil
 	}
 
 	meta, err := s.getMetadata(storageKey)
@@ -405,12 +420,8 @@ func (s *HybridBlobStore) Copy(ctx context.Context, srcBucket, srcKey, dstBucket
 	defer s.mu.Unlock()
 
 	// Check small object store first.
-	raw, err := s.storage.Bucket("blob_small").Get([]byte(srcStorageKey))
-	if err == nil && raw != nil {
-		var obj smallObject
-		if err := json.Unmarshal(raw, &obj); err == nil {
-			return s.putUnlock(ctx, dstBucket, dstKey, bytes.NewReader(obj.Data), obj.Metadata)
-		}
+	if obj, ok := s.getSmallObject(srcStorageKey); ok {
+		return s.putUnlock(ctx, dstBucket, dstKey, bytes.NewReader(obj.Data), obj.Metadata)
 	}
 
 	// Large object: stream directly from file without loading entire content into memory.
@@ -471,24 +482,126 @@ func (s *HybridBlobStore) DeleteBucket(ctx context.Context, name string) error {
 	return os.RemoveAll(bucketDir)
 }
 
+// blobAddress names one logical object's storage locations: the Pebble key
+// shared by the blob_small and blob_meta buckets and the file-tier path
+// large objects stream to. Composing both halves in one place is what keeps
+// a write and the reads that follow it on the same locations — a versioned
+// write must not reach the file tier as a "key#versionId"-munged plain key,
+// because sanitisation would embed the version in the final segment and
+// diverge from the read path (which appends the version after sanitisation)
+// for every key whose final segment rewrites (trailing "/", "/.", "/..").
+type blobAddress struct {
+	storageKey string
+	path       string
+}
+
+// plainAddress is the address of the unversioned copy of key: the write
+// target on never-versioned and suspended buckets, and the copy the
+// "null"-version reads fall back to.
+func (s *HybridBlobStore) plainAddress(bucket, key string) blobAddress {
+	return blobAddress{
+		storageKey: s.storageKey(bucket, key),
+		path:       s.filePath(bucket, key),
+	}
+}
+
+// versionedAddress is the address of one explicit version of key, matching
+// the WithVersion read paths byte for byte.
+func (s *HybridBlobStore) versionedAddress(bucket, key, versionId string) blobAddress {
+	return blobAddress{
+		storageKey: s.storageKeyWithVersion(bucket, key, versionId),
+		path:       s.filePathWithVersion(bucket, key, versionId),
+	}
+}
+
 func (s *HybridBlobStore) storageKey(bucket, key string) string {
-	return bucket + "#" + key
+	return bucket + "#" + escapeBlobKeyComponent(key)
+}
+
+// escapeBlobKeyComponent neutralises the "#" record separator inside a raw
+// key component of the composed Pebble keys ("bucket#key[#versionId]").
+// Without the escape, a legal user key such as "a#b" would compose the same
+// key as the versioned address of version "b" of object "a" and the two
+// objects would alias each other in the small tier. "%" is escaped first so
+// the mapping stays injective (a literal "%23" in a key cannot impersonate
+// an escaped "#").
+func escapeBlobKeyComponent(component string) string {
+	component = strings.ReplaceAll(component, "%", "%25")
+	return strings.ReplaceAll(component, "#", "%23")
+}
+
+// blobRoot is the root directory every bucket's blob tree lives under.
+func (s *HybridBlobStore) blobRoot() string {
+	return filepath.Join(s.dataDir, "blobs")
+}
+
+// pruneEmptyDirs removes the directory chain above a deleted blob file,
+// but only while the directories are empty, and never at or above stop.
+// Object writes create directory nodes (MkdirAll in putLargeStreaming);
+// without this walk every deleted object leaves its prefix chain behind
+// and the skeletons accumulate without bound. A concurrent writer
+// repopulating a directory stops the walk — ReadDir sees its file or
+// in-flight temp file — so pruning cannot remove a directory another
+// blob still needs.
+func pruneEmptyDirs(dir, stop string) {
+	for strings.HasPrefix(dir, stop+string(os.PathSeparator)) {
+		entries, err := os.ReadDir(dir)
+		if err != nil || len(entries) > 0 {
+			return
+		}
+		if err := os.Remove(dir); err != nil {
+			return
+		}
+		dir = filepath.Dir(dir)
+	}
 }
 
 func (s *HybridBlobStore) storageKeyWithVersion(bucket, key, versionId string) string {
 	if versionId == "" {
 		versionId = "null"
 	}
-	return bucket + "#" + key + "#" + versionId
+	return bucket + "#" + escapeBlobKeyComponent(key) + "#" + versionId
 }
 
+// sanitizeKey maps an object key to a filesystem path that is both
+// traversal-safe and injective: distinct keys always map to distinct
+// paths, so legal AWS keys such as "a/../b" and "b", or "a//b" and
+// "a/b", never share a blob file (the previous filepath.Clean-based
+// mapping aliased them). Percent signs are escaped first so the mapping
+// stays reversible; the path-meaningful segments (".", "..", and the
+// empty segment a doubled or trailing slash produces) are rewritten to
+// forms that carry no filesystem meaning; and "#" is escaped so a key
+// such as "a#b" cannot collide with the version suffix of another key's
+// versioned file ("f:a" + "#versionId" — see filePathWithVersion).
+//
+// Each segment also carries a role marker: the final segment (the blob
+// file) is prefixed "f:" and every other segment (the directories it
+// lives in) "d:". The S3 key namespace is flat — a key and its prefix
+// extension ("a" and "a/b") are independent objects — but the
+// filesystem namespace distinguishes files from directories at one
+// path. The markers keep file names and directory names disjoint, so
+// one key's file can never sit where another key's directory must be.
 func (s *HybridBlobStore) sanitizeKey(key string) string {
-	sanitized := strings.ReplaceAll(key, "/", string(os.PathSeparator))
-	sanitized = filepath.Clean(sanitized)
-	if strings.Contains(sanitized, "..") {
-		sanitized = filepath.Base(sanitized)
+	segments := strings.Split(key, "/")
+	for i, seg := range segments {
+		seg = strings.ReplaceAll(seg, "%", "%25")
+		seg = strings.ReplaceAll(seg, "#", "%23")
+		switch seg {
+		case "":
+			seg = "%2F"
+		case ".":
+			seg = "%2E"
+		case "..":
+			seg = "%2E%2E"
+		}
+		if i == len(segments)-1 {
+			seg = "f:" + seg
+		} else {
+			seg = "d:" + seg
+		}
+		segments[i] = seg
 	}
-	return sanitized
+	return strings.Join(segments, string(os.PathSeparator))
 }
 
 func (s *HybridBlobStore) filePath(bucket, key string) string {
@@ -521,8 +634,19 @@ type smallObject struct {
 	Metadata *BlobMetadata `json:"metadata"`
 }
 
-type multipartUploadState struct {
-	Bucket   string        `json:"bucket"`
-	Key      string        `json:"key"`
-	Metadata *BlobMetadata `json:"metadata"`
+// getSmallObject reads the small-tier record for a storage key. A record
+// that fails to unmarshal is corruption, not absence: it is logged so the
+// gap stays diagnosable, and treated as absent — the file tier holds no
+// copy of a small object, so the caller's not-found follows traceably.
+func (s *HybridBlobStore) getSmallObject(storageKey string) (*smallObject, bool) {
+	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
+	if err != nil || data == nil {
+		return nil, false
+	}
+	var obj smallObject
+	if err := json.Unmarshal(data, &obj); err != nil {
+		slog.Error("blob small-tier record is corrupt; treating as absent", "storageKey", storageKey, "error", err)
+		return nil, false
+	}
+	return &obj, true
 }

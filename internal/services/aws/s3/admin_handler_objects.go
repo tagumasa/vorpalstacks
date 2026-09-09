@@ -26,10 +26,10 @@ func (h *AdminHandler) ListObjectsV2(ctx context.Context, req *connect.Request[p
 	// 1000-page default; resolve it here because listObjectsCore only
 	// clamps and no longer re-defaults.
 	if input.MaxKeys <= 0 {
-		input.MaxKeys = 1000
+		input.MaxKeys = s3MaxKeys
 	}
-	if input.MaxKeys > 1000 {
-		input.MaxKeys = 1000
+	if input.MaxKeys > s3MaxKeys {
+		input.MaxKeys = s3MaxKeys
 	}
 	result, err := h.service.listObjectsCore(objectStore, input)
 	if err != nil {

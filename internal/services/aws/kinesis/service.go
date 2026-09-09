@@ -70,11 +70,7 @@ func (s *KinesisService) GetStoreForRegion(region string) (*kinesisstore.Kinesis
 	if err != nil {
 		return nil, err
 	}
-	tstore, ok := regionStorage.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		return nil, fmt.Errorf("kinesis: storage for region %s does not support 2PC", region)
-	}
-	store := kinesisstore.NewKinesisStore(tstore, s.accountID, region)
+	store := kinesisstore.NewKinesisStore(regionStorage, s.accountID, region)
 	if actual, loaded := s.stores.LoadOrStore(region, store); loaded {
 		return actual.(*kinesisstore.KinesisStore), nil
 	}

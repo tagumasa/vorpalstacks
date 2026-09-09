@@ -2,22 +2,22 @@ package storage
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
+	"path/filepath"
 )
 
-// PutWithVersion stores a versioned object in the hybrid blob store.
-// The versionId is appended to the key using the same separator as
-// storageKeyWithVersion so that GetWithVersion can locate it.
+// PutWithVersion stores a versioned object in the hybrid blob store. The
+// write lands at the versioned address — the same locations
+// GetWithVersion and GetRangeWithVersion read — never at a
+// "key#versionId"-munged plain address, whose sanitised file path diverges
+// from the read path for keys whose final segment rewrites.
 func (s *HybridBlobStore) PutWithVersion(ctx context.Context, bucket, key, versionId string, reader io.Reader, metadata *BlobMetadata) (*BlobMetadata, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	versionedKey := key + "#" + versionId
-	return s.putUnlock(ctx, bucket, versionedKey, reader, metadata)
+	return s.putVersionedUnlock(bucket, key, versionId, reader, metadata)
 }
 
 // GetWithVersion retrieves a specific version of an object.
@@ -38,12 +38,8 @@ func (s *HybridBlobStore) GetWithVersion(ctx context.Context, bucket, key, versi
 
 	storageKey := s.storageKeyWithVersion(bucket, key, versionId)
 
-	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
-	if err == nil && data != nil {
-		var obj smallObject
-		if err := json.Unmarshal(data, &obj); err == nil {
-			return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
-		}
+	if obj, ok := s.getSmallObject(storageKey); ok {
+		return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
 	}
 
 	path := s.filePathWithVersion(bucket, key, versionId)
@@ -51,17 +47,15 @@ func (s *HybridBlobStore) GetWithVersion(ctx context.Context, bucket, key, versi
 	if err != nil {
 		if versionId == "null" {
 			fallbackKey := s.storageKey(bucket, key)
-			data, err2 := s.storage.Bucket("blob_small").Get([]byte(fallbackKey))
-			if err2 == nil && data != nil {
-				var obj smallObject
-				if jsonErr := json.Unmarshal(data, &obj); jsonErr == nil {
-					return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
-				}
+			if obj, ok := s.getSmallObject(fallbackKey); ok {
+				return newMemoryReader(obj.Data, obj.Metadata), obj.Metadata, nil
 			}
 			fallbackPath := s.filePath(bucket, key)
 			f2, info2, err3 := openAndStat(fallbackPath, fmt.Sprintf("%s/%s", bucket, key))
 			if err3 != nil {
-				return nil, nil, err
+				// The fallback's own failure is the reportable one; the
+				// versioned miss that led here is already accounted for.
+				return nil, nil, err3
 			}
 			meta, metaErr := s.getMetadata(fallbackKey)
 			if metaErr != nil {
@@ -108,13 +102,9 @@ func (s *HybridBlobStore) GetRangeWithVersion(ctx context.Context, bucket, key, 
 
 	storageKey := s.storageKeyWithVersion(bucket, key, versionId)
 
-	data, err := s.storage.Bucket("blob_small").Get([]byte(storageKey))
-	if err == nil && data != nil {
-		var obj smallObject
-		if err := json.Unmarshal(data, &obj); err == nil {
-			start, end := clampRange(offset, length, int64(len(obj.Data)))
-			return newMemoryReader(obj.Data[start:end], obj.Metadata), obj.Metadata, nil
-		}
+	if obj, ok := s.getSmallObject(storageKey); ok {
+		start, end := clampRange(offset, length, int64(len(obj.Data)))
+		return newMemoryReader(obj.Data[start:end], obj.Metadata), obj.Metadata, nil
 	}
 
 	path := s.filePathWithVersion(bucket, key, versionId)
@@ -152,41 +142,20 @@ func (s *HybridBlobStore) DeleteWithVersion(ctx context.Context, bucket, key, ve
 	defer s.mu.Unlock()
 
 	storageKey := s.storageKeyWithVersion(bucket, key, versionId)
+	var firstErr error
 
 	if err := s.storage.Bucket("blob_small").Delete([]byte(storageKey)); err != nil {
-		slog.Error("Failed to delete from blob_small", "error", err)
+		firstErr = err
 	}
-	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil {
-		slog.Error("Failed to delete from blob_meta", "error", err)
+	if err := s.storage.Bucket("blob_meta").Delete([]byte(storageKey)); err != nil && firstErr == nil {
+		firstErr = err
 	}
 
 	path := s.filePathWithVersion(bucket, key, versionId)
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		slog.Error("Failed to remove file", "path", path, "error", err)
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) && firstErr == nil {
+		firstErr = err
 	}
+	pruneEmptyDirs(filepath.Dir(path), s.blobRoot())
 
-	return nil
-}
-
-// CopyWithVersion copies a specific version of an object to a new location.
-//
-// Parameters:
-//   - ctx: The context for the operation
-//   - srcBucket: The source bucket name
-//   - srcKey: The source object key
-//   - srcVersionId: The source version ID
-//   - dstBucket: The destination bucket name
-//   - dstKey: The destination object key
-//
-// Returns:
-//   - *BlobMetadata: The destination object metadata
-//   - error: An error if the operation fails
-func (s *HybridBlobStore) CopyWithVersion(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string) (*BlobMetadata, error) {
-	reader, meta, err := s.GetWithVersion(ctx, srcBucket, srcKey, srcVersionId)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-
-	return s.Put(ctx, dstBucket, dstKey, reader, meta)
+	return firstErr
 }

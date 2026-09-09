@@ -50,18 +50,14 @@ type AccessCheck struct {
 // The S3 HTTP plane is mounted ahead of the gRPC dispatcher, so identity
 // policies are not evaluated here: bucket policies and ACLs are the only
 // authorisation inputs on this path.
-func (ac *AccessController) CheckAccess(
-	ctx context.Context,
+// evaluatePolicyThenACL runs the evaluation ladder the bucket and object
+// planes share: owner → Allow, bucket-policy explicit Deny → Deny, bucket
+// policy explicit Allow → Allow, then the plane-specific ACL evaluator.
+func (ac *AccessController) evaluatePolicyThenACL(
 	stores *s3Stores,
 	check *AccessCheck,
+	aclEvaluator func(bucket *s3store.Bucket) error,
 ) error {
-	// Service-level operations (ListAllMyBuckets) and CreateBucket do not
-	// target an existing bucket, so skip the bucket lookup and policy/ACL
-	// evaluation.
-	if check.Action == "s3:ListAllMyBuckets" || check.Action == "s3:CreateBucket" {
-		return nil
-	}
-
 	bucket, err := stores.buckets.Get(check.Bucket)
 	if err != nil {
 		return ErrNoSuchBucket
@@ -83,11 +79,28 @@ func (ac *AccessController) CheckAccess(
 		// DefaultDeny: fall through to ACL
 	}
 
-	if err := ac.evaluateACL(check, bucket, stores); err == nil {
+	if err := aclEvaluator(bucket); err == nil {
 		return nil
 	}
 
 	return ErrAccessDenied
+}
+
+func (ac *AccessController) CheckAccess(
+	ctx context.Context,
+	stores *s3Stores,
+	check *AccessCheck,
+) error {
+	// Service-level operations (ListAllMyBuckets) and CreateBucket do not
+	// target an existing bucket, so skip the bucket lookup and policy/ACL
+	// evaluation.
+	if check.Action == "s3:ListAllMyBuckets" || check.Action == "s3:CreateBucket" {
+		return nil
+	}
+
+	return ac.evaluatePolicyThenACL(stores, check, func(bucket *s3store.Bucket) error {
+		return ac.evaluateACL(check, bucket, stores)
+	})
 }
 
 // CheckObjectAccess evaluates whether an operation on an object should be allowed.
@@ -102,32 +115,9 @@ func (ac *AccessController) CheckObjectAccess(
 	stores *s3Stores,
 	check *AccessCheck,
 ) error {
-	bucket, err := stores.buckets.Get(check.Bucket)
-	if err != nil {
-		return ErrNoSuchBucket
-	}
-
-	if ac.isOwner(check, bucket) {
-		return nil
-	}
-
-	// Evaluate bucket policy first so explicit Deny overrides ACL Allow.
-	if bucket.Policy != "" {
-		decision := ac.evaluateBucketPolicyDecision(check, bucket)
-		if decision.Effect == policy.DecisionEffectDeny {
-			return ErrAccessDenied
-		}
-		if decision.Effect == policy.DecisionEffectAllow {
-			return nil
-		}
-		// DefaultDeny: fall through to ACL
-	}
-
-	if err := ac.evaluateObjectACL(ctx, check, bucket, stores); err == nil {
-		return nil
-	}
-
-	return ErrAccessDenied
+	return ac.evaluatePolicyThenACL(stores, check, func(bucket *s3store.Bucket) error {
+		return ac.evaluateObjectACL(ctx, check, bucket, stores)
+	})
 }
 
 func (ac *AccessController) isOwner(check *AccessCheck, bucket *s3store.Bucket) bool {
@@ -144,15 +134,15 @@ func (ac *AccessController) isOwner(check *AccessCheck, bucket *s3store.Bucket) 
 
 func (ac *AccessController) evaluateACL(check *AccessCheck, bucket *s3store.Bucket, stores *s3Stores) error {
 	acl := bucket.ACL
+	// A bucket with no ACL denies every ACL-based check: both a pristine
+	// bucket and one whose ACL was never written behave the same whether
+	// or not public-access blocks are set.
 	if acl == nil {
-		if bucket.PublicAccessBlock != nil && bucket.PublicAccessBlock.IgnorePublicAcls {
-			return ErrAccessDenied
-		}
 		return ErrAccessDenied
 	}
 
 	if bucket.PublicAccessBlock != nil && bucket.PublicAccessBlock.IgnorePublicAcls {
-		if ac.aclContainsPublicAccess(acl) {
+		if acpContainsPublicAccess(acl) {
 			return ErrAccessDenied
 		}
 	}
@@ -185,7 +175,7 @@ func (ac *AccessController) evaluateObjectACL(
 
 	if obj.ACL != nil {
 		if bucket.PublicAccessBlock != nil && bucket.PublicAccessBlock.IgnorePublicAcls {
-			if ac.aclContainsPublicAccess(obj.ACL) {
+			if acpContainsPublicAccess(obj.ACL) {
 				return ErrAccessDenied
 			}
 		}
@@ -251,50 +241,46 @@ func (ac *AccessController) grantMatchesPrincipal(grant *s3store.Grant, check *A
 	return false
 }
 
+// permissionMatchesAction applies the ACL-to-action mapping (AWS ACL
+// overview, "Mapping of ACL permissions and access policy permissions").
+// The table is encoded action-first so each action names the permissions
+// whose row carries it: READ/READ_ACP/WRITE_ACP rows include the Version
+// twins of their base actions (the classifier emits the versioned action
+// for version-addressed requests, and the ACL grant covers both in AWS).
+// WRITE on an object maps to no action ("Not applicable" in the table);
+// FULL_CONTROL is the union of the four rows for the resource, never a
+// blanket match for arbitrary actions.
 func (ac *AccessController) permissionMatchesAction(perm s3store.Permission, action string, isObject bool) bool {
-	switch perm {
-	case s3store.PermissionFullControl:
-		return true
-	case s3store.PermissionRead:
-		if isObject {
-			return action == "s3:GetObject"
+	grants := func(perms ...s3store.Permission) bool {
+		for _, p := range perms {
+			if perm == p {
+				return true
+			}
 		}
-		return action == "s3:GetObject" || action == "s3:ListBucket" ||
-			action == "s3:ListBucketVersions" || action == "s3:ListMultipartUploadParts" ||
-			action == "s3:ListBucketMultipartUploads"
-	case s3store.PermissionWrite:
-		if isObject {
-			return action == "s3:PutObject" || action == "s3:DeleteObject" ||
-				action == "s3:PutObjectTagging" || action == "s3:DeleteObjectTagging"
-		}
-		return action == "s3:PutObject" || action == "s3:DeleteObject" ||
-			action == "s3:AbortMultipartUpload"
-	case s3store.PermissionReadACP:
-		if isObject {
-			return action == "s3:GetObjectAcl"
-		}
-		return action == "s3:GetBucketAcl" || action == "s3:GetBucketPolicyStatus"
-	case s3store.PermissionWriteACP:
-		if isObject {
-			return action == "s3:PutObjectAcl"
-		}
-		return action == "s3:PutBucketAcl" || action == "s3:PutBucketPolicy"
-	}
-	return false
-}
-
-func (ac *AccessController) aclContainsPublicAccess(acl *s3store.AccessControlPolicy) bool {
-	if acl == nil {
 		return false
 	}
-	for _, grant := range acl.Grants {
-		if grant.Grantee == nil {
-			continue
+
+	if isObject {
+		switch action {
+		case "s3:GetObject", "s3:GetObjectVersion":
+			return grants(s3store.PermissionRead, s3store.PermissionFullControl)
+		case "s3:GetObjectAcl", "s3:GetObjectVersionAcl":
+			return grants(s3store.PermissionReadACP, s3store.PermissionFullControl)
+		case "s3:PutObjectAcl", "s3:PutObjectVersionAcl":
+			return grants(s3store.PermissionWriteACP, s3store.PermissionFullControl)
 		}
-		if grant.Grantee.URI == s3store.AllUsersGroup ||
-			grant.Grantee.URI == s3store.AuthenticatedUsersGroup {
-			return true
-		}
+		return false
+	}
+
+	switch action {
+	case "s3:ListBucket", "s3:ListBucketVersions", "s3:ListBucketMultipartUploads":
+		return grants(s3store.PermissionRead, s3store.PermissionFullControl)
+	case "s3:PutObject":
+		return grants(s3store.PermissionWrite, s3store.PermissionFullControl)
+	case "s3:GetBucketAcl":
+		return grants(s3store.PermissionReadACP, s3store.PermissionFullControl)
+	case "s3:PutBucketAcl":
+		return grants(s3store.PermissionWriteACP, s3store.PermissionFullControl)
 	}
 	return false
 }

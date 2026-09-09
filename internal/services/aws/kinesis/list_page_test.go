@@ -23,11 +23,7 @@ func newListPageTestEnv(t *testing.T) (*KinesisService, *kinesisstore.KinesisSto
 	if err != nil {
 		t.Fatalf("get region storage: %v", err)
 	}
-	tstore, ok := bs.(storage.TransactionalStorageWith2PC)
-	if !ok {
-		t.Fatal("region storage does not support TransactionalStorageWith2PC")
-	}
-	store := kinesisstore.NewKinesisStore(tstore, "000000000000", "us-east-1")
+	store := kinesisstore.NewKinesisStore(bs, "000000000000", "us-east-1")
 	svc := NewKinesisService("000000000000", "us-east-1")
 	reqCtx := request.NewRequestContext(context.Background(), mgr, "000000000000", "us-east-1")
 	return svc, store, reqCtx

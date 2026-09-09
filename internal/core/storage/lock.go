@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"vorpalstacks/internal/core/storage/pebbledb"
@@ -72,21 +73,27 @@ func (m *PebbleLockManager) getLockEntry(fullKey []byte) (*lockEntry, error) {
 func (m *PebbleLockManager) tryAcquire(key []byte, mode LockMode, ttl time.Duration) (*LockHandle, error) {
 	fullKey := m.makeKey(key)
 
+	// The version of the newest entry this attempt has seen, seeded from
+	// existing entries (live or expired) so each acquisition writes the
+	// observed version + 1: versions stay monotonic across expiry, and the
+	// verify-after-write check can tell this attempt's write from any
+	// earlier incarnation of the key.
+	var observedVersion uint64
+
 	for i := 0; i < DefaultLockMaxRetries; i++ {
 		existing, err := m.getLockEntry(fullKey)
 		if err != nil {
 			return nil, err
 		}
 
-		var existingVersion uint64
 		if existing != nil {
+			observedVersion = existing.Version
 			if existing.ExpiresAt > 0 && time.Now().Unix() > existing.ExpiresAt {
 				if delErr := m.db.Delete(fullKey); delErr != nil {
-					fmt.Printf("[WARN] failed to delete expired lock entry: %v\n", delErr)
+					slog.Error("failed to delete expired lock entry", "error", delErr)
 				}
 				continue
 			}
-			_ = existing.Version
 			return nil, &LockConflictError{
 				Key: key,
 				ExistingHandle: &LockHandle{
@@ -98,7 +105,7 @@ func (m *PebbleLockManager) tryAcquire(key []byte, mode LockMode, ttl time.Durat
 			}
 		}
 
-		newVersion := existingVersion + 1
+		newVersion := observedVersion + 1
 		token, err := m.generateToken()
 		if err != nil {
 			return nil, fmt.Errorf("failed to generate lock token: %w", err)
@@ -153,6 +160,15 @@ func (m *PebbleLockManager) TryLock(key []byte, mode LockMode, ttl time.Duration
 // Lock acquires a lock, blocking until it is available.
 // The lock is automatically released when the context is cancelled or times out.
 func (m *PebbleLockManager) Lock(ctx context.Context, key []byte, mode LockMode, ttl time.Duration) (*LockHandle, error) {
+	return m.lockLoop(ctx, key, mode, ttl, m.tryAcquire)
+}
+
+// lockLoop drives acquisition against an injectable acquire step.
+// Conflicts wait the standard delay and retry until the context ends.
+// Non-conflict errors (infrastructure trouble: reads, token generation,
+// writes) retry up to maxNonConflict times before the failure is
+// returned — one-shot returns would leave the budget dead.
+func (m *PebbleLockManager) lockLoop(ctx context.Context, key []byte, mode LockMode, ttl time.Duration, acquire func([]byte, LockMode, time.Duration) (*LockHandle, error)) (*LockHandle, error) {
 	nonConflictErrors := 0
 	for {
 		select {
@@ -161,19 +177,15 @@ func (m *PebbleLockManager) Lock(ctx context.Context, key []byte, mode LockMode,
 		default:
 		}
 
-		handle, err := m.tryAcquire(key, mode, ttl)
+		handle, err := acquire(key, mode, ttl)
 		if err == nil {
 			return handle, nil
 		}
 
 		var conflictErr *LockConflictError
 		if errors.As(err, &conflictErr) {
-			timer := time.NewTimer(DefaultLockRetryDelay)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return nil, ctx.Err()
-			case <-timer.C:
+			if waitErr := waitOrCancel(ctx, DefaultLockRetryDelay); waitErr != nil {
+				return nil, waitErr
 			}
 			continue
 		}
@@ -182,7 +194,21 @@ func (m *PebbleLockManager) Lock(ctx context.Context, key []byte, mode LockMode,
 		if nonConflictErrors >= m.maxNonConflict {
 			return nil, fmt.Errorf("lock acquisition failed after %d non-conflict errors: %w", nonConflictErrors, err)
 		}
-		return nil, err
+		if waitErr := waitOrCancel(ctx, DefaultLockRetryDelay); waitErr != nil {
+			return nil, waitErr
+		}
+	}
+}
+
+// waitOrCancel sleeps for the given delay unless the context ends first.
+func waitOrCancel(ctx context.Context, delay time.Duration) error {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 

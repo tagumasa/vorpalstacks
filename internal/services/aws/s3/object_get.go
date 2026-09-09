@@ -30,9 +30,10 @@ type GetObjectInput struct {
 	SSECustomerKeyMD5    string
 }
 
-// GetObjectOutput contains the output from the GetObject operation.
-type GetObjectOutput struct {
-	Body                 io.ReadCloser
+// objectResponseMeta is the response-metadata subset shared by the
+// GetObject and HeadObject outputs: both operations render identical
+// response headers from it, and the transport layer maps it in one place.
+type objectResponseMeta struct {
 	ContentLength        int64
 	ContentType          string
 	ContentEncoding      string
@@ -45,15 +46,22 @@ type GetObjectOutput struct {
 	StorageClass         string
 	VersionId            string
 	Restore              string
+	Expiration           string
 	ContentRange         string
 	IsPartial            bool
-	AcceptRanges         string
 	ServerSideEncryption string
 	SSEKMSKeyId          string
 	SSECustomerAlgorithm string
 	SSECustomerKeyMD5    string
 	ReplicationStatus    string
 	PartsCount           int32
+}
+
+// GetObjectOutput contains the output from the GetObject operation.
+type GetObjectOutput struct {
+	objectResponseMeta
+	Body         io.ReadCloser
+	AcceptRanges string
 }
 
 // GetObject retrieves an object from S3.
@@ -85,28 +93,31 @@ func (o *ObjectOperations) GetObject(ctx context.Context, reqCtx *request.Reques
 	}
 
 	return &GetObjectOutput{
-		Body:                 coreResult.Body,
-		ContentLength:        coreResult.ContentLength,
-		ContentType:          coreResult.ContentType,
-		ContentEncoding:      coreResult.ContentEncoding,
-		ContentLanguage:      coreResult.ContentLanguage,
-		ContentDisposition:   coreResult.ContentDisposition,
-		CacheControl:         coreResult.CacheControl,
-		ETag:                 coreResult.ETag,
-		LastModified:         coreResult.LastModified,
-		Metadata:             coreResult.Metadata,
-		StorageClass:         coreResult.StorageClass,
-		VersionId:            coreResult.VersionID,
-		Restore:              coreResult.Restore,
-		ContentRange:         coreResult.ContentRange,
-		IsPartial:            coreResult.IsPartial,
-		AcceptRanges:         coreResult.AcceptRanges,
-		ServerSideEncryption: coreResult.ServerSideEncryption,
-		SSEKMSKeyId:          coreResult.SSEKMSKeyId,
-		SSECustomerAlgorithm: coreResult.SSECustomerAlgorithm,
-		SSECustomerKeyMD5:    coreResult.SSECustomerKeyMD5,
-		ReplicationStatus:    coreResult.ReplicationStatus,
-		PartsCount:           coreResult.PartsCount,
+		Body: coreResult.Body,
+		objectResponseMeta: objectResponseMeta{
+			ContentLength:        coreResult.ContentLength,
+			ContentType:          coreResult.ContentType,
+			ContentEncoding:      coreResult.ContentEncoding,
+			ContentLanguage:      coreResult.ContentLanguage,
+			ContentDisposition:   coreResult.ContentDisposition,
+			CacheControl:         coreResult.CacheControl,
+			ETag:                 coreResult.ETag,
+			LastModified:         coreResult.LastModified,
+			Metadata:             coreResult.Metadata,
+			StorageClass:         coreResult.StorageClass,
+			VersionId:            coreResult.VersionID,
+			Restore:              coreResult.Restore,
+			ContentRange:         coreResult.ContentRange,
+			IsPartial:            coreResult.IsPartial,
+			ServerSideEncryption: coreResult.ServerSideEncryption,
+			SSEKMSKeyId:          coreResult.SSEKMSKeyId,
+			SSECustomerAlgorithm: coreResult.SSECustomerAlgorithm,
+			SSECustomerKeyMD5:    coreResult.SSECustomerKeyMD5,
+			ReplicationStatus:    coreResult.ReplicationStatus,
+			PartsCount:           coreResult.PartsCount,
+			Expiration:           coreResult.Expiration,
+		},
+		AcceptRanges: coreResult.AcceptRanges,
 	}, nil
 }
 
@@ -129,26 +140,7 @@ type HeadObjectInput struct {
 
 // HeadObjectOutput contains the output from the HeadObject operation.
 type HeadObjectOutput struct {
-	ContentLength        int64
-	ContentType          string
-	ContentEncoding      string
-	ContentLanguage      string
-	ContentDisposition   string
-	CacheControl         string
-	ETag                 string
-	LastModified         time.Time
-	Metadata             map[string]string
-	StorageClass         string
-	VersionId            string
-	Restore              string
-	ServerSideEncryption string
-	SSEKMSKeyId          string
-	SSECustomerAlgorithm string
-	SSECustomerKeyMD5    string
-	ReplicationStatus    string
-	ContentRange         string
-	IsPartial            bool
-	PartsCount           int32
+	objectResponseMeta
 }
 
 // HeadObject retrieves metadata for an object without returning the object itself.
@@ -162,20 +154,18 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 	}
 
 	coreResult, err := o.svc.headObjectCore(ctx, stores.objects, AdminHeadObjectInput{
-		Bucket:    input.Bucket,
-		Key:       input.Key,
-		VersionID: input.VersionId,
+		Bucket:            input.Bucket,
+		Key:               input.Key,
+		VersionID:         input.VersionId,
+		IfMatch:           input.IfMatch,
+		IfNoneMatch:       input.IfNoneMatch,
+		IfModifiedSince:   input.IfModifiedSince,
+		IfUnmodifiedSince: input.IfUnmodifiedSince,
 	})
 	if err != nil {
 		return nil, err
 	}
 	obj := coreResult.Object
-
-	if input.IfMatch != "" || input.IfNoneMatch != "" || input.IfModifiedSince != nil || input.IfUnmodifiedSince != nil {
-		if err := checkObjectPreconditions(obj, input.IfMatch, input.IfNoneMatch, input.IfModifiedSince, input.IfUnmodifiedSince); err != nil {
-			return nil, err
-		}
-	}
 
 	contentLength := obj.Size
 	if obj.SSEMetadata != nil {
@@ -183,19 +173,22 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 	}
 
 	output := &HeadObjectOutput{
-		ContentLength:      contentLength,
-		ContentType:        obj.ContentType,
-		ContentEncoding:    obj.ContentEncoding,
-		ContentLanguage:    obj.ContentLanguage,
-		ContentDisposition: obj.ContentDisposition,
-		CacheControl:       obj.CacheControl,
-		ETag:               formatETag(obj.ETag),
-		LastModified:       obj.LastModified,
-		Metadata:           obj.Metadata,
-		StorageClass:       string(obj.StorageClass),
-		VersionId:          obj.VersionID,
-		Restore:            restoreHeaderValue(obj, time.Now()),
-		ReplicationStatus:  obj.ReplicationStatus,
+		objectResponseMeta: objectResponseMeta{
+			ContentLength:      contentLength,
+			ContentType:        obj.ContentType,
+			ContentEncoding:    obj.ContentEncoding,
+			ContentLanguage:    obj.ContentLanguage,
+			ContentDisposition: obj.ContentDisposition,
+			CacheControl:       obj.CacheControl,
+			ETag:               formatETag(obj.ETag),
+			LastModified:       obj.LastModified,
+			Metadata:           obj.Metadata,
+			StorageClass:       string(obj.StorageClass),
+			VersionId:          obj.VersionID,
+			Restore:            restoreHeaderValue(obj, time.Now()),
+			ReplicationStatus:  obj.ReplicationStatus,
+			Expiration:         coreResult.Expiration,
+		},
 	}
 
 	// A HEAD Range is resolved against metadata only: the response carries
@@ -215,41 +208,13 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		if rangeErr != nil {
 			return nil, rangeErr
 		}
-		firstRange := ranges[0]
-		var offset, length int64
-		totalSize := contentLength
-
-		if firstRange.Start == -1 {
-			length = firstRange.Length
-			offset = totalSize - length
-			if offset < 0 {
-				offset = 0
-				length = totalSize
-			}
-		} else {
-			offset = firstRange.Start
-			if firstRange.Length == -1 {
-				length = totalSize - offset
-				if length < 0 {
-					length = 0
-				}
-			} else {
-				length = firstRange.Length
-			}
-		}
-
-		if offset >= totalSize {
-			return nil, ErrInvalidRange
-		}
-
-		actualEnd := offset + length - 1
-		if actualEnd >= totalSize {
-			actualEnd = totalSize - 1
-			length = totalSize - offset
+		offset, length, winErr := resolveRangeWindow(ranges[0], contentLength)
+		if winErr != nil {
+			return nil, winErr
 		}
 
 		output.ContentLength = length
-		output.ContentRange = fmt.Sprintf("bytes %d-%d/%d", offset, actualEnd, totalSize)
+		output.ContentRange = fmt.Sprintf("bytes %d-%d/%d", offset, offset+length-1, contentLength)
 		output.IsPartial = true
 	}
 
@@ -262,6 +227,13 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 		if obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
 			if input.SSECustomerKey == "" {
 				return nil, awserrors.NewAWSError("InvalidRequest", "The object was stored using a form of Server Side Encryption. The correct parameters must be provided to retrieve the object.", http.StatusBadRequest)
+			}
+			// The key is required to retrieve the metadata at all, so the
+			// same format and MD5-integrity checks the GET path applies
+			// (ParseCustomerKey) validate it here too — a garbage key
+			// string must not be echoed back as if it were accepted.
+			if _, err := o.svc.encryptionManager.ParseCustomerKey(input.SSECustomerKey, input.SSECustomerKeyMD5); err != nil {
+				return nil, ErrInvalidSSECustomerKey
 			}
 			output.SSECustomerAlgorithm = "AES256"
 			output.SSECustomerKeyMD5 = input.SSECustomerKeyMD5
@@ -276,22 +248,27 @@ func (o *ObjectOperations) HeadObject(ctx context.Context, reqCtx *request.Reque
 
 // GetObjectAttributesInput contains the input parameters for the GetObjectAttributes operation.
 type GetObjectAttributesInput struct {
-	Bucket           string
-	Key              string
-	VersionId        string
-	MaxParts         int32
+	Bucket    string
+	Key       string
+	VersionId string
+	// MaxParts arrives as the x-amz-max-parts header verbatim; the core
+	// parses and validates it.
+	MaxParts         string
 	PartNumberMarker string
 	ObjectAttributes []string
 }
 
 // GetObjectAttributesOutput contains the output from the GetObjectAttributes operation.
 type GetObjectAttributesOutput struct {
-	XMLName      xml.Name                     `xml:"GetObjectAttributesOutput"`
-	VersionId    string                       `xml:"VersionId,omitempty"`
+	XMLName xml.Name `xml:"GetObjectAttributesOutput"`
+	// VersionId and LastModified travel as response headers
+	// (x-amz-version-id, Last-Modified) per the operation's model; the
+	// body carries only the requested attributes.
+	VersionId    string                       `xml:"-"`
+	LastModified s3Timestamp                  `xml:"-"`
 	ETag         string                       `xml:"ETag,omitempty"`
 	ObjectSize   int64                        `xml:"ObjectSize,omitempty"`
 	StorageClass string                       `xml:"StorageClass,omitempty"`
-	LastModified s3Timestamp                  `xml:"LastModified,omitempty"`
 	ObjectParts  *GetObjectAttributesParts    `xml:"ObjectParts,omitempty"`
 	Checksum     *GetObjectAttributesChecksum `xml:"Checksum,omitempty"`
 }

@@ -178,8 +178,10 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if getResp.Policy == nil {
 			return fmt.Errorf("Policy is nil")
 		}
-		if !strings.Contains(*getResp.Policy, "Allow") {
-			return fmt.Errorf("policy does not contain 'Allow'")
+		for _, want := range []string{"Allow", "s3:GetObject", bucketName} {
+			if !strings.Contains(*getResp.Policy, want) {
+				return fmt.Errorf("policy round-trip lost %q: %s", want, *getResp.Policy)
+			}
 		}
 		return nil
 	}))
@@ -407,8 +409,83 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		return nil
 	}))
 
-	results = append(results, r.RunTest("s3", "PutBucketLifecycleConfiguration", func() error {
-		_, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+	// Suspension stops new versions but rewrites nothing: the twice-
+	// versioned key still lists once, stays readable at its current
+	// version, a versionless delete inserts a delete marker, and the
+	// bucket deletes once empty.
+	results = append(results, r.RunTest("s3", "Versioning_SuspendedBucketListsOnceAndDeleteSucceeds", func() error {
+		vb := s3Bucket(ts, "vsuspend")
+		if err := s3CreateBucket(ctx, client, vb); err != nil {
+			return err
+		}
+
+		enable := func(status types.BucketVersioningStatus) error {
+			_, err := client.PutBucketVersioning(ctx, &s3.PutBucketVersioningInput{
+				Bucket: aws.String(vb),
+				VersioningConfiguration: &types.VersioningConfiguration{
+					Status: status,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("PutBucketVersioning(%s) failed: %w", status, err)
+			}
+			return nil
+		}
+		if err := enable(types.BucketVersioningStatusEnabled); err != nil {
+			return err
+		}
+		if _, err := s3PutObject(ctx, client, vb, "doc.txt", "first version"); err != nil {
+			return err
+		}
+		if _, err := s3PutObject(ctx, client, vb, "doc.txt", "second version"); err != nil {
+			return err
+		}
+		if err := enable(types.BucketVersioningStatusSuspended); err != nil {
+			return err
+		}
+
+		list, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(vb)})
+		if err != nil {
+			return fmt.Errorf("ListObjectsV2 after suspend failed: %w", err)
+		}
+		if aws.ToInt32(list.KeyCount) != 1 || len(list.Contents) != 1 {
+			return fmt.Errorf("suspended list: KeyCount=%d Contents=%d, want exactly 1", aws.ToInt32(list.KeyCount), len(list.Contents))
+		}
+
+		_, body, err := s3GetRead(ctx, client, vb, "doc.txt")
+		if err != nil {
+			return fmt.Errorf("GetObject after suspend failed: %w", err)
+		}
+		if body != "second version" {
+			return fmt.Errorf("GetObject after suspend = %q, want the current version", body)
+		}
+
+		del, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{Bucket: aws.String(vb), Key: aws.String("doc.txt")})
+		if err != nil {
+			return fmt.Errorf("DeleteObject failed: %w", err)
+		}
+		if !aws.ToBool(del.DeleteMarker) {
+			return fmt.Errorf("suspended DeleteObject must insert a delete marker, got %+v", del)
+		}
+
+		list, err = client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{Bucket: aws.String(vb)})
+		if err != nil {
+			return fmt.Errorf("ListObjectsV2 after delete failed: %w", err)
+		}
+		if aws.ToInt32(list.KeyCount) != 0 {
+			return fmt.Errorf("list after delete-marker: KeyCount=%d, want 0", aws.ToInt32(list.KeyCount))
+		}
+
+		if _, err := client.DeleteBucket(ctx, &s3.DeleteBucketInput{Bucket: aws.String(vb)}); err != nil {
+			return fmt.Errorf("DeleteBucket on the emptied suspended bucket failed: %w", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("s3", "DeleteBucketLifecycleConfiguration", func() error {
+		// The configuration this test deletes is its own: the scenario is
+		// self-sufficient and no longer depends on a prior put test.
+		if _, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
 			Bucket: aws.String(bucketName),
 			LifecycleConfiguration: &types.BucketLifecycleConfiguration{
 				Rules: []types.LifecycleRule{
@@ -424,33 +501,9 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 					},
 				},
 			},
-		})
-		if err != nil {
+		}); err != nil {
 			return fmt.Errorf("PutBucketLifecycleConfiguration failed: %w", err)
 		}
-		getResp, err := client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
-			Bucket: aws.String(bucketName),
-		})
-		if err != nil {
-			return fmt.Errorf("GetBucketLifecycleConfiguration failed: %w", err)
-		}
-		if len(getResp.Rules) == 0 {
-			return fmt.Errorf("Rules is empty")
-		}
-		rule := getResp.Rules[0]
-		if rule.ID == nil || *rule.ID != "test-expire-rule" {
-			return fmt.Errorf("expected ID test-expire-rule, got %v", rule.ID)
-		}
-		if rule.Expiration == nil || rule.Expiration.Days == nil || *rule.Expiration.Days != 30 {
-			return fmt.Errorf("expected Expiration.Days=30, got %v", rule.Expiration)
-		}
-		if rule.Filter == nil || rule.Filter.Prefix == nil || *rule.Filter.Prefix != "logs/" {
-			return fmt.Errorf("expected Filter prefix logs/, got %v", rule.Filter)
-		}
-		return nil
-	}))
-
-	results = append(results, r.RunTest("s3", "DeleteBucketLifecycleConfiguration", func() error {
 		_, err := client.DeleteBucketLifecycle(ctx, &s3.DeleteBucketLifecycleInput{
 			Bucket: aws.String(bucketName),
 		})
@@ -549,6 +602,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 						},
 					},
 				},
+				EventBridgeConfiguration: &types.EventBridgeConfiguration{},
 			},
 		})
 		if err != nil {
@@ -562,6 +616,9 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if len(getResp.TopicConfigurations) == 0 {
 			return fmt.Errorf("TopicConfigurations is empty")
+		}
+		if getResp.EventBridgeConfiguration == nil {
+			return fmt.Errorf("EventBridgeConfiguration not echoed by GetBucketNotificationConfiguration")
 		}
 		tc := getResp.TopicConfigurations[0]
 		if tc.TopicArn == nil || *tc.TopicArn != topicArn {
@@ -1664,6 +1721,491 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if !found {
 			return fmt.Errorf("expected a rule with Expiration.Days=1")
 		}
+
+		// The abort-uploads rule covers every key in the shared bucket; the
+		// compressed test cadence would abort multipart uploads started by
+		// later tests, so the configuration must not outlive this test.
+		if _, err := client.DeleteBucketLifecycle(ctx, &s3.DeleteBucketLifecycleInput{
+			Bucket: aws.String(bucketName),
+		}); err != nil {
+			return fmt.Errorf("DeleteBucketLifecycle failed: %w", err)
+		}
+		return nil
+	}))
+
+	// Lifecycle expiration is enforced by the background sweep: a Days=1
+	// rule expires an object past its rule window while an object outside
+	// the rule's prefix survives.
+	results = append(results, r.RunTest("s3", "Lifecycle_ExpiryEnforced", func() error {
+		lcBucket := s3Bucket(ts, "lcexpire")
+		if err := s3CreateBucket(ctx, client, lcBucket); err != nil {
+			return err
+		}
+		defer s3CleanupBucket(ctx, client, lcBucket)
+
+		_, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+			Bucket: aws.String(lcBucket),
+			LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+				Rules: []types.LifecycleRule{
+					{
+						ID:     aws.String("expire-prefix"),
+						Status: types.ExpirationStatusEnabled,
+						Filter: &types.LifecycleRuleFilter{
+							Prefix: aws.String("expire/"),
+						},
+						Expiration: &types.LifecycleExpiration{
+							Days: aws.Int32(1),
+						},
+					},
+				},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("PutBucketLifecycleConfiguration failed: %w", err)
+		}
+
+		if _, err := s3PutObject(ctx, client, lcBucket, "expire/doomed.txt", "expired by rule"); err != nil {
+			return err
+		}
+		if _, err := s3PutObject(ctx, client, lcBucket, "keep/survivor.txt", "outside the rule"); err != nil {
+			return err
+		}
+
+		// The rule's projection reaches the read plane immediately: the
+		// doomed object answers x-amz-expiration with the rule id and the
+		// AWS timing instant — the rule days added to LastModified and
+		// rounded up to the next day boundary. The regression server runs
+		// the compressed TEST_MODE timeline (one day = one second), so the
+		// boundary is a second edge; the read plane reports LastModified
+		// at HTTP-date second precision while the server projects from the
+		// nanosecond timestamp, making the promise one of the two boundary
+		// instants that straddle the sub-second remainder. The survivor
+		// outside the rule prefix carries no header.
+		expHead, err := s3HeadObject(ctx, client, lcBucket, "expire/doomed.txt")
+		if err != nil {
+			return fmt.Errorf("HeadObject doomed failed: %w", err)
+		}
+		if expHead.Expiration == nil || !strings.Contains(*expHead.Expiration, `rule-id="expire-prefix"`) {
+			return fmt.Errorf("x-amz-expiration missing the rule id: %v", expHead.Expiration)
+		}
+		lastMod := aws.ToTime(expHead.LastModified).UTC()
+		matched := false
+		for _, edge := range []time.Time{lastMod.Add(time.Second), lastMod.Add(2 * time.Second)} {
+			if strings.Contains(*expHead.Expiration, edge.Format("Mon, 02 Jan 2006 15:04:05 GMT")) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return fmt.Errorf("x-amz-expiration expiry-date %q lacks the rounded compressed-timeline instant (%v or %v)",
+				*expHead.Expiration, lastMod.Add(time.Second), lastMod.Add(2*time.Second))
+		}
+		expGet, err := client.GetObject(ctx, &s3.GetObjectInput{Bucket: aws.String(lcBucket), Key: aws.String("expire/doomed.txt")})
+		if err == nil {
+			expGet.Body.Close()
+		}
+		if err != nil || expGet.Expiration == nil {
+			return fmt.Errorf("GetObject must carry x-amz-expiration like the HEAD: %v", err)
+		}
+		survHead, err := s3HeadObject(ctx, client, lcBucket, "keep/survivor.txt")
+		if err != nil {
+			return fmt.Errorf("HeadObject survivor failed: %w", err)
+		}
+		if survHead.Expiration != nil {
+			return fmt.Errorf("object outside the rule prefix must carry no x-amz-expiration: %v", *survHead.Expiration)
+		}
+
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			_, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+				Bucket: aws.String(lcBucket),
+				Key:    aws.String("expire/doomed.txt"),
+			})
+			if err != nil {
+				break
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("expired object still present after 30s")
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		if _, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(lcBucket),
+			Key:    aws.String("keep/survivor.txt"),
+		}); err != nil {
+			return fmt.Errorf("object outside the rule prefix must survive: %w", err)
+		}
+		return nil
+	}))
+
+	// Lifecycle transitions are enforced by the background sweep: a Days=1
+	// rule with an explicit size bound transitions its objects to the target
+	// class, while the default 128 KiB minimum keeps a small object under a
+	// bound-free rule in its present class.
+	results = append(results, r.RunTest("s3", "Lifecycle_TransitionEnforced", func() error {
+		lcBucket := s3Bucket(ts, "lctrans")
+		if err := s3CreateBucket(ctx, client, lcBucket); err != nil {
+			return err
+		}
+		defer s3CleanupBucket(ctx, client, lcBucket)
+
+		boundedRule := types.LifecycleRule{
+			ID:     aws.String("transition-bounded"),
+			Status: types.ExpirationStatusEnabled,
+			Filter: &types.LifecycleRuleFilter{
+				Prefix:                aws.String("bounded/"),
+				ObjectSizeGreaterThan: aws.Int64(100),
+			},
+			Transitions: []types.Transition{
+				{Days: aws.Int32(1), StorageClass: types.TransitionStorageClassGlacierIr},
+			},
+		}
+		defaultMinRule := types.LifecycleRule{
+			ID:     aws.String("transition-default-min"),
+			Status: types.ExpirationStatusEnabled,
+			Filter: &types.LifecycleRuleFilter{Prefix: aws.String("small/")},
+			Transitions: []types.Transition{
+				{Days: aws.Int32(1), StorageClass: types.TransitionStorageClassStandardIa},
+			},
+		}
+		if _, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+			Bucket: aws.String(lcBucket),
+			LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+				Rules: []types.LifecycleRule{boundedRule, defaultMinRule},
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketLifecycleConfiguration failed: %w", err)
+		}
+
+		getResp, err := client.GetBucketLifecycleConfiguration(ctx, &s3.GetBucketLifecycleConfigurationInput{
+			Bucket: aws.String(lcBucket),
+		})
+		if err != nil {
+			return fmt.Errorf("GetBucketLifecycleConfiguration failed: %w", err)
+		}
+		if len(getResp.Rules) != 2 || len(getResp.Rules[0].Transitions) != 1 {
+			return fmt.Errorf("expected the two rules with one transition each to round-trip, got %d rules", len(getResp.Rules))
+		}
+		got := getResp.Rules[0].Transitions[0]
+		if aws.ToInt32(got.Days) != 1 || got.StorageClass != types.TransitionStorageClassGlacierIr {
+			return fmt.Errorf("transition round-trip mismatch: Days=%v StorageClass=%v", got.Days, got.StorageClass)
+		}
+
+		if _, err := s3PutObject(ctx, client, lcBucket, "bounded/obj.txt", strings.Repeat("transitions under an explicit size bound. ", 3)); err != nil {
+			return err
+		}
+		if _, err := s3PutObject(ctx, client, lcBucket, "small/obj.txt", "below the default transition minimum"); err != nil {
+			return err
+		}
+
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+				Bucket: aws.String(lcBucket),
+				Key:    aws.String("bounded/obj.txt"),
+			})
+			if err == nil && head.StorageClass == types.StorageClassGlacierIr {
+				break
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("bounded object did not transition to GLACIER_IR within 30s: %v", err)
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		head, err := client.HeadObject(ctx, &s3.HeadObjectInput{
+			Bucket: aws.String(lcBucket),
+			Key:    aws.String("small/obj.txt"),
+		})
+		if err != nil {
+			return fmt.Errorf("HeadObject small object failed: %w", err)
+		}
+		if head.StorageClass == types.StorageClassStandardIa {
+			return fmt.Errorf("object below the 128 KiB default minimum must not transition under a bound-free rule")
+		}
+		return nil
+	}))
+
+	// Noncurrent version transitions follow the successor-creation basis and
+	// the NewerNoncurrentVersions retention count: with a retention count of
+	// one, only the oldest of three noncurrent versions has enough newer
+	// noncurrent versions for the transition to fire; the others stay put
+	// however long the sweep waits.
+	results = append(results, r.RunTest("s3", "Lifecycle_NoncurrentVersionTransition", func() error {
+		lcBucket := s3Bucket(ts, "lcnvt")
+		if err := s3CreateBucket(ctx, client, lcBucket); err != nil {
+			return err
+		}
+		defer s3CleanupBucket(ctx, client, lcBucket)
+		if err := s3EnableVersioning(ctx, client, lcBucket); err != nil {
+			return err
+		}
+
+		if _, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+			Bucket: aws.String(lcBucket),
+			LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+				Rules: []types.LifecycleRule{
+					{
+						ID:     aws.String("noncurrent-transition"),
+						Status: types.ExpirationStatusEnabled,
+						Filter: &types.LifecycleRuleFilter{
+							Prefix:                aws.String("docs/"),
+							ObjectSizeGreaterThan: aws.Int64(100),
+						},
+						NoncurrentVersionTransitions: []types.NoncurrentVersionTransition{
+							{
+								NoncurrentDays:          aws.Int32(1),
+								NewerNoncurrentVersions: aws.Int32(1),
+								StorageClass:            types.TransitionStorageClassStandardIa,
+							},
+						},
+					},
+				},
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketLifecycleConfiguration failed: %w", err)
+		}
+
+		for i := 1; i <= 4; i++ {
+			if _, err := s3PutObject(ctx, client, lcBucket, "docs/a.txt", fmt.Sprintf("version %d: %s", i, strings.Repeat("noncurrent transition rule body. ", 4))); err != nil {
+				return err
+			}
+		}
+
+		versionsOf := func(key string) []types.ObjectVersion {
+			versions, _, err := s3ListVersionsAll(ctx, client, lcBucket)
+			if err != nil {
+				return nil
+			}
+			var of []types.ObjectVersion
+			for _, v := range versions {
+				if aws.ToString(v.Key) == key {
+					of = append(of, v)
+				}
+			}
+			return of
+		}
+
+		// The four rapid puts carry second-granularity LastModified values
+		// in the listing, so the client cannot tell which noncurrent version
+		// is the oldest by timestamp alone; the retention contract is
+		// asserted by count instead — with a retention count of one, exactly
+		// one of the three noncurrent versions may transition.
+		countTransitioned := func() (int, error) {
+			of := versionsOf("docs/a.txt")
+			transitioned := 0
+			for _, v := range of {
+				if v.StorageClass == types.ObjectVersionStorageClass(types.StorageClassStandardIa) {
+					transitioned++
+				}
+			}
+			return transitioned, nil
+		}
+
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			transitioned, _ := countTransitioned()
+			if transitioned == 1 {
+				break
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("expected exactly one noncurrent version to transition to STANDARD_IA within 30s, got %d", transitioned)
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+
+		of := versionsOf("docs/a.txt")
+		if len(of) != 4 {
+			return fmt.Errorf("expected 4 versions of docs/a.txt, got %d", len(of))
+		}
+		transitioned, _ := countTransitioned()
+		if transitioned != 1 {
+			return fmt.Errorf("with a retention count of 1 and three noncurrent versions, exactly one version may transition; got %d", transitioned)
+		}
+		return nil
+	}))
+
+	// The expired-delete-marker action removes a latest delete marker only
+	// when it is the object's only version: a marker above a noncurrent
+	// version stays put, and once that version is removed the sweep clears
+	// the marker and the object disappears entirely.
+	results = append(results, r.RunTest("s3", "Lifecycle_ExpiredObjectDeleteMarker", func() error {
+		lcBucket := s3Bucket(ts, "lcdm")
+		if err := s3CreateBucket(ctx, client, lcBucket); err != nil {
+			return err
+		}
+		defer s3CleanupBucket(ctx, client, lcBucket)
+		if err := s3EnableVersioning(ctx, client, lcBucket); err != nil {
+			return err
+		}
+
+		if _, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+			Bucket: aws.String(lcBucket),
+			LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+				Rules: []types.LifecycleRule{
+					{
+						ID:     aws.String("marker-cleanup"),
+						Status: types.ExpirationStatusEnabled,
+						Filter: &types.LifecycleRuleFilter{Prefix: aws.String("dm/")},
+						Expiration: &types.LifecycleExpiration{
+							ExpiredObjectDeleteMarker: aws.Bool(true),
+						},
+					},
+				},
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketLifecycleConfiguration failed: %w", err)
+		}
+
+		if _, err := s3PutObject(ctx, client, lcBucket, "dm/only-marker.txt", "beneath the delete marker"); err != nil {
+			return err
+		}
+		if _, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket: aws.String(lcBucket),
+			Key:    aws.String("dm/only-marker.txt"),
+		}); err != nil {
+			return fmt.Errorf("DeleteObject failed: %w", err)
+		}
+
+		// Two sweeps' worth of quiet: the marker above a noncurrent version
+		// is not expired and must still be there.
+		time.Sleep(3 * time.Second)
+		versions, markers, err := s3ListVersionsAll(ctx, client, lcBucket)
+		if err != nil {
+			return fmt.Errorf("ListObjectVersions failed: %w", err)
+		}
+		if len(versions) != 1 || len(markers) != 1 {
+			return fmt.Errorf("marker above a noncurrent version must survive: %d versions, %d markers", len(versions), len(markers))
+		}
+
+		if _, err := client.DeleteObject(ctx, &s3.DeleteObjectInput{
+			Bucket:    aws.String(lcBucket),
+			Key:       aws.String("dm/only-marker.txt"),
+			VersionId: versions[0].VersionId,
+		}); err != nil {
+			return fmt.Errorf("DeleteObject by version failed: %w", err)
+		}
+
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			versions, markers, err := s3ListVersionsAll(ctx, client, lcBucket)
+			if err != nil {
+				return fmt.Errorf("ListObjectVersions failed: %w", err)
+			}
+			if len(versions) == 0 && len(markers) == 0 {
+				return nil
+			}
+			if time.Now().After(deadline) {
+				return fmt.Errorf("sole delete marker not removed within 30s: %d versions, %d markers", len(versions), len(markers))
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+	}))
+
+	// The lifecycle configuration surface rejects the AWS-invalid
+	// combinations: Standard-tier transition destinations,
+	// ExpiredObjectDeleteMarker combined with Days or a tag filter,
+	// AbortIncompleteMultipartUpload with a tag filter, and
+	// NewerNoncurrentVersions without a Filter or beyond its cap.
+	results = append(results, r.RunTest("s3", "Lifecycle_ConfigurationValidation", func() error {
+		lcBucket := s3Bucket(ts, "lcval")
+		if err := s3CreateBucket(ctx, client, lcBucket); err != nil {
+			return err
+		}
+		defer s3CleanupBucket(ctx, client, lcBucket)
+
+		prefixFilter := &types.LifecycleRuleFilter{Prefix: aws.String("docs/")}
+		tagFilter := &types.LifecycleRuleFilter{Tag: &types.Tag{Key: aws.String("tier"), Value: aws.String("cold")}}
+		cases := []struct {
+			name string
+			rule types.LifecycleRule
+			code string
+		}{
+			{
+				name: "STANDARD transition target",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled, Filter: prefixFilter,
+					Transitions: []types.Transition{{Days: aws.Int32(1), StorageClass: types.TransitionStorageClass("STANDARD")}},
+				},
+				code: "InvalidArgument",
+			},
+			{
+				name: "REDUCED_REDUNDANCY transition target",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled, Filter: prefixFilter,
+					Transitions: []types.Transition{{Days: aws.Int32(1), StorageClass: types.TransitionStorageClass("REDUCED_REDUNDANCY")}},
+				},
+				code: "InvalidArgument",
+			},
+			{
+				name: "ExpiredObjectDeleteMarker with Days",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled, Filter: prefixFilter,
+					Expiration: &types.LifecycleExpiration{Days: aws.Int32(1), ExpiredObjectDeleteMarker: aws.Bool(true)},
+				},
+				code: "InvalidArgument",
+			},
+			{
+				name: "ExpiredObjectDeleteMarker with a tag filter",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled, Filter: tagFilter,
+					Expiration: &types.LifecycleExpiration{ExpiredObjectDeleteMarker: aws.Bool(true)},
+				},
+				code: "InvalidArgument",
+			},
+			{
+				name: "AbortIncompleteMultipartUpload with a tag filter",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled, Filter: tagFilter,
+					AbortIncompleteMultipartUpload: &types.AbortIncompleteMultipartUpload{DaysAfterInitiation: aws.Int32(1)},
+				},
+				code: "InvalidArgument",
+			},
+			{
+				name: "NewerNoncurrentVersions without a Filter (expiration)",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled,
+					NoncurrentVersionExpiration: &types.NoncurrentVersionExpiration{
+						NoncurrentDays: aws.Int32(1), NewerNoncurrentVersions: aws.Int32(1),
+					},
+				},
+				code: "InvalidRequest",
+			},
+			{
+				name: "NewerNoncurrentVersions without a Filter (transition)",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled,
+					NoncurrentVersionTransitions: []types.NoncurrentVersionTransition{{
+						NoncurrentDays: aws.Int32(1), NewerNoncurrentVersions: aws.Int32(1),
+						StorageClass: types.TransitionStorageClassGlacier,
+					}},
+				},
+				code: "InvalidRequest",
+			},
+			{
+				name: "NewerNoncurrentVersions beyond the cap",
+				rule: types.LifecycleRule{
+					Status: types.ExpirationStatusEnabled, Filter: prefixFilter,
+					NoncurrentVersionExpiration: &types.NoncurrentVersionExpiration{
+						NoncurrentDays: aws.Int32(1), NewerNoncurrentVersions: aws.Int32(101),
+					},
+				},
+				code: "InvalidArgument",
+			},
+		}
+		for _, c := range cases {
+			c.rule.ID = aws.String("invalid")
+			_, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+				Bucket: aws.String(lcBucket),
+				LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+					Rules: []types.LifecycleRule{c.rule},
+				},
+			})
+			if err := expectS3Error(err, c.code, 400); err != nil {
+				return fmt.Errorf("%s: %w", c.name, err)
+			}
+		}
 		return nil
 	}))
 
@@ -1801,6 +2343,20 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			return err
 		}
 
+		// The permitted set is no ACL at all or bucket-owner-full-control:
+		// private is "any other ACL" and fails the same way.
+		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
+			Bucket:          aws.String(s3Bucket(ts, "own-enf-priv")),
+			ACL:             types.BucketCannedACLPrivate,
+			ObjectOwnership: types.ObjectOwnershipBucketOwnerEnforced,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for private ACL with enforced ownership, got nil")
+		}
+		if err := expectS3Error(err, "AccessControlListNotSupported", http.StatusBadRequest); err != nil {
+			return err
+		}
+
 		_, err = client.CreateBucket(ctx, &s3.CreateBucketInput{
 			Bucket:          aws.String(s3Bucket(ts, "own-enf-ok")),
 			ACL:             types.BucketCannedACL("bucket-owner-full-control"),
@@ -1863,6 +2419,21 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		})
 		if err == nil {
 			return fmt.Errorf("expected AccessControlListNotSupported for public-read upload ACL, got nil")
+		}
+		if err := expectS3Error(err, "AccessControlListNotSupported", http.StatusBadRequest); err != nil {
+			return err
+		}
+
+		// Uploads fail "if they specify any other ACL": private is not in
+		// the permitted set either.
+		_, err = client.PutObject(ctx, &s3.PutObjectInput{
+			Bucket: aws.String(enforcedBucket),
+			Key:    aws.String("rejected-private.txt"),
+			Body:   strings.NewReader("data"),
+			ACL:    types.ObjectCannedACLPrivate,
+		})
+		if err == nil {
+			return fmt.Errorf("expected AccessControlListNotSupported for private upload ACL, got nil")
 		}
 		if err := expectS3Error(err, "AccessControlListNotSupported", http.StatusBadRequest); err != nil {
 			return err
@@ -1979,12 +2550,27 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 
 	// --- Bucket inventory configurations ---
 
-	destARN, cleanupDest, destErr := s3CreateReplicationDest(ctx, client, s3Bucket(ts, "inv-dest"))
-	if destErr != nil {
-		return append(results, TestResult{Service: "s3", TestName: "PutBucketInventoryConfiguration", Status: "FAIL",
-			Error: fmt.Sprintf("Failed to create inventory destination bucket: %v", destErr)})
+	// The inventory destination lives on the executed phase like the main
+	// bucket: registration must not create or delete it (the facade
+	// registers the whole suite before any subtest runs), so the family's
+	// closures from here on run under the fixture wrapper and the service
+	// cleanup removes the bucket after the suite finishes.
+	invDestName := s3Bucket(ts, "inv-dest")
+	invDest := &s3BucketFixture{
+		ctx:    ctx,
+		client: client,
+		name:   invDestName,
+		provision: func() error {
+			if err := s3CreateBucket(ctx, client, invDestName); err != nil {
+				return err
+			}
+			return s3EnableVersioning(ctx, client, invDestName)
+		},
 	}
-	defer cleanupDest()
+	destARN := "arn:aws:s3:::" + invDestName
+	r.RegisterServiceCleanup("s3", invDest.remove)
+	r.PushClosureWrapper("s3", invDest.wrapper)
+	defer r.PopClosureWrapper("s3")
 
 	results = append(results, r.RunTest("s3", "PutBucketInventoryConfiguration", func() error {
 		put := &types.InventoryConfiguration{
@@ -2001,7 +2587,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			Schedule: &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
 			Destination: &types.InventoryDestination{
 				S3BucketDestination: &types.InventoryS3BucketDestination{
-					AccountId: aws.String("123456789012"),
+					AccountId: aws.String(r.AccountID()),
 					Bucket:    aws.String(destARN),
 					Format:    types.InventoryFormatCsv,
 					Prefix:    aws.String("inv"),
@@ -2048,7 +2634,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		gotDest := dest.S3BucketDestination
 		if aws.ToString(gotDest.Bucket) != destARN || gotDest.Format != types.InventoryFormatCsv ||
-			aws.ToString(gotDest.Prefix) != "inv" || aws.ToString(gotDest.AccountId) != "123456789012" {
+			aws.ToString(gotDest.Prefix) != "inv" || aws.ToString(gotDest.AccountId) != r.AccountID() {
 			return fmt.Errorf("round-trip lost the destination details: %+v", gotDest)
 		}
 		if gotDest.Encryption == nil || gotDest.Encryption.SSES3 == nil {
@@ -2694,6 +3280,26 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 			}
 		}
 
+		// A far-future expiry rule on kept/ gives the report's
+		// LifecycleExpirationDate column a projection to carry; the window
+		// is far beyond the compressed test cadence, so nothing expires
+		// while the test runs.
+		if _, err := client.PutBucketLifecycleConfiguration(ctx, &s3.PutBucketLifecycleConfigurationInput{
+			Bucket: aws.String(srcBucket),
+			LifecycleConfiguration: &types.BucketLifecycleConfiguration{
+				Rules: []types.LifecycleRule{{
+					ID:     aws.String("inv-expiry"),
+					Status: types.ExpirationStatusEnabled,
+					Filter: &types.LifecycleRuleFilter{Prefix: aws.String("kept/")},
+					Expiration: &types.LifecycleExpiration{
+						Days: aws.Int32(3650),
+					},
+				}},
+			},
+		}); err != nil {
+			return fmt.Errorf("PutBucketLifecycleConfiguration failed: %w", err)
+		}
+
 		csvID := "csv-delivery"
 		pqID := "pq-delivery"
 		orcID := "orc-delivery"
@@ -2727,7 +3333,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 				IncludedObjectVersions: types.InventoryIncludedObjectVersionsCurrent,
 				Filter:                 &types.InventoryFilter{Prefix: aws.String("kept/")},
 				Schedule:               &types.InventorySchedule{Frequency: types.InventoryFrequencyDaily},
-				OptionalFields:         []types.InventoryOptionalField{types.InventoryOptionalFieldSize, types.InventoryOptionalFieldStorageClass},
+				OptionalFields:         []types.InventoryOptionalField{types.InventoryOptionalFieldSize, types.InventoryOptionalFieldStorageClass, types.InventoryOptionalFieldLifecycleExpirationDate},
 				Destination: &types.InventoryDestination{
 					S3BucketDestination: &types.InventoryS3BucketDestination{
 						Bucket: aws.String(destARN),
@@ -2755,6 +3361,22 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(csvID)})
 		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(pqID)})
 		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(orcID)})
+
+		// A configuration naming a foreign destination account is accepted —
+		// the model documents the owner validation as running before
+		// exporting data, not at configuration time — but on this
+		// single-account platform no other account can own the destination
+		// bucket, so its export must be refused.
+		foreignID := "foreign-account"
+		foreignCfg := inventoryCfg(foreignID, "foreign", types.InventoryFormatCsv)
+		foreignCfg.Destination.S3BucketDestination.AccountId = aws.String("123456789012")
+		if _, err := client.PutBucketInventoryConfiguration(ctx, &s3.PutBucketInventoryConfigurationInput{
+			Bucket: aws.String(srcBucket), Id: aws.String(foreignID),
+			InventoryConfiguration: foreignCfg,
+		}); err != nil {
+			return fmt.Errorf("PutBucketInventoryConfiguration(foreign) failed: %w", err)
+		}
+		defer client.DeleteBucketInventoryConfiguration(ctx, &s3.DeleteBucketInventoryConfigurationInput{Bucket: aws.String(srcBucket), Id: aws.String(foreignID)})
 
 		destBucket := s3Bucket(ts, "inv-dest")
 		findManifest := func(prefix string) (string, bool) {
@@ -2800,6 +3422,21 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if csvManifestKey == "" || pqManifestKey == "" || orcManifestKey == "" {
 			return fmt.Errorf("inventory reports not delivered in time (csv=%q parquet=%q orc=%q)", csvManifestKey, pqManifestKey, orcManifestKey)
+		}
+
+		// The foreign-account configuration anchored at the same instant as
+		// the three that delivered, so it has met the same schedule window
+		// and been refused; a short margin covers a straggler boundary.
+		time.Sleep(3 * time.Second)
+		foreignList, err := client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
+			Bucket: aws.String(destBucket),
+			Prefix: aws.String("foreign/"),
+		})
+		if err != nil {
+			return fmt.Errorf("ListObjectsV2 foreign prefix failed: %w", err)
+		}
+		if len(foreignList.Contents) != 0 {
+			return fmt.Errorf("a destination AccountId naming a foreign account must not deliver: %d objects under foreign/", len(foreignList.Contents))
 		}
 
 		verifyManifest := func(manifestKey string) (manifest struct {
@@ -2872,7 +3509,7 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		if csvManifest.Version != "2016-11-30" || csvManifest.FileFormat != "CSV" {
 			return fmt.Errorf("csv manifest version/format wrong: %+v", csvManifest)
 		}
-		if csvManifest.FileSchema != "Bucket, Key, Size, StorageClass" {
+		if csvManifest.FileSchema != "Bucket, Key, Size, StorageClass, LifecycleExpirationDate" {
 			return fmt.Errorf("csv fileSchema = %q, want the selected-column order", csvManifest.FileSchema)
 		}
 		if !strings.HasPrefix(csvDataKey, srcBucket+"/"+csvID+"/data/") || !strings.HasSuffix(csvDataKey, ".csv.gz") {
@@ -2891,6 +3528,30 @@ func (r *TestRunner) s3BucketConfigTests(ctx context.Context, client *s3.Client,
 		}
 		if strings.Contains(string(csvText), "skipped/gamma.txt") {
 			return fmt.Errorf("csv report included an object outside the filter: %s", csvText)
+		}
+
+		// The LifecycleExpirationDate column carries the kept/ rule's
+		// projection in ISO 8601 with milliseconds: the rule days added to
+		// LastModified and rounded up to the next day boundary. The
+		// regression server's compressed TEST_MODE timeline makes the day
+		// unit one second, and the HTTP-date LastModified carries second
+		// precision against the server's nanosecond projection, so the
+		// column holds one of the two boundary instants that straddle the
+		// sub-second remainder.
+		alphaHead, err := s3HeadObject(ctx, client, srcBucket, "kept/alpha.txt")
+		if err != nil {
+			return fmt.Errorf("HeadObject alpha failed: %w", err)
+		}
+		lastMod := aws.ToTime(alphaHead.LastModified).UTC()
+		matched := false
+		for _, edge := range []time.Time{lastMod.Add(3650 * time.Second), lastMod.Add(3651 * time.Second)} {
+			if strings.Contains(string(csvText), edge.Format("2006-01-02T15:04:05.000Z")) {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			return fmt.Errorf("csv report lacks the projected lifecycle expiry near %v: %s", lastMod.Add(3650*time.Second), csvText)
 		}
 
 		pqManifest, pqDataKey, pqData, err := verifyManifest(pqManifestKey)

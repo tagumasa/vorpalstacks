@@ -127,7 +127,10 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var header http.Header
 
-	event, _ := classifyS3Request(r, bucket, key)
+	// The request is classified exactly once, here: the audit event name
+	// and the IAM action specs come from the same call, and the dispatch
+	// cases below thread the specs through so no plane re-classifies.
+	event, actions := classifyS3Request(r, bucket, key)
 
 	// Request-metrics recording is wired at this single dispatch point: only
 	// here can the recorder observe both latency phases — dispatch completion
@@ -141,9 +144,9 @@ func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case bucket == "":
 		result, statusCode, err = h.handleServiceRequest(reqCtx, r)
 	case key == "":
-		result, statusCode, err = h.handleBucketRequest(reqCtx, r, bucket)
+		result, statusCode, err = h.handleBucketRequest(reqCtx, r, bucket, actions)
 	default:
-		result, header, statusCode, err = h.handleObjectRequest(reqCtx, r, bucket, key)
+		result, header, statusCode, err = h.handleObjectRequest(reqCtx, r, bucket, key, actions)
 	}
 	firstByte := time.Since(started)
 
@@ -207,6 +210,8 @@ func (h *S3Handler) recordAudit(eventName string, reqCtx *request.RequestContext
 	builder := audit.NewEventBuilder("s3", eventName, reqCtx, nil)
 	event := builder.Build(response, err)
 	if recorder, ok := h.auditRecorder.(audit.Recorder); ok {
-		_ = recorder.RecordEvent(event)
+		if recErr := recorder.RecordEvent(event); recErr != nil {
+			logs.Warn("s3: audit event recording failed", logs.String("event", eventName), logs.Err(recErr))
+		}
 	}
 }

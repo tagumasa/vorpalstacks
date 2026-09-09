@@ -221,6 +221,13 @@ func (s *EventsService) handlePutEventsEvent(ctx context.Context, evt *eventbus.
 		case string:
 			_ = json.Unmarshal([]byte(d), &detail)
 		}
+	} else {
+		// Publishers carry the detail payload as the Input itself (the
+		// scheduler's target input, the S3 notification detail); the
+		// "Detail" wrapper key appears only when a publisher wraps it
+		// explicitly. Falling back to the whole map keeps the delivered
+		// event's detail populated for both forms.
+		detail = inputMap
 	}
 
 	eventBusName := evt.EventBusName

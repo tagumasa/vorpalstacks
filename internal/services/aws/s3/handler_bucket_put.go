@@ -48,7 +48,7 @@ func (h *S3Handler) dispatchPutBucket(ctx *request.RequestContext, r *http.Reque
 			GrantWrite:       headers.GrantWrite,
 			GrantWriteACP:    headers.GrantWriteACP,
 		}
-		if input.ACL == "" && input.GrantFullControl == "" && input.GrantRead == "" && input.GrantWrite == "" {
+		if input.ACL == "" && input.GrantFullControl == "" && input.GrantRead == "" && input.GrantReadACP == "" && input.GrantWrite == "" && input.GrantWriteACP == "" {
 			var acp s3store.AccessControlPolicy
 			if err := request.NewSafeXMLDecoder(r.Body).Decode(&acp); err == nil {
 				input.AccessControlPolicy = &acp

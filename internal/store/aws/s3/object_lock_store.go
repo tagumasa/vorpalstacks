@@ -2,56 +2,15 @@ package s3
 
 import (
 	"context"
-	"fmt"
 )
 
-// updateObjectLockMetadata is a shared helper for SetObjectLegalHold and
-// SetObjectRetention. It locks the key, reads the target version, applies
-// the mutation via the callback, writes back the versioned record, and only
-// updates the _latest pointer when the modified version is the current latest.
-func (s *ObjectStore) updateObjectLockMetadata(ctx context.Context, bucket, key, versionId string, mutate func(obj *Object)) error {
-	lockKey := bucket + keySep + key
-	s.keyLocker.Lock(lockKey)
-	defer s.keyLocker.Unlock(lockKey)
-
-	obj, err := s.getVersionedObjectMeta(bucket, key, versionId)
-	if err != nil {
-		return err
-	}
-
-	mutate(obj)
-
-	isVersioned := s.isVersioningEnabled(bucket)
-
-	var storageKey string
-	if isVersioned {
-		vid := versionId
-		if vid == "" {
-			vid = obj.VersionID
-		}
-		storageKey = s.versionedStorageKey(bucket, key, vid)
-	} else {
-		storageKey = s.versionedStorageKey(bucket, key, "null")
-	}
-
-	if err := s.BaseStore.PutProto(storageKey, ObjectToProto(obj)); err != nil {
-		return err
-	}
-
-	if isVersioned && obj.IsLatest {
-		latestKey := s.latestKeyStorageKey(bucket, key)
-		if err := s.BaseStore.PutProto(latestKey, ObjectToProto(obj)); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // SetObjectLegalHold sets the legal hold status for an object version.
+// The mutation skeleton keeps the versioned record and the _latest pointer
+// in sync in one atomic batch.
 func (s *ObjectStore) SetObjectLegalHold(ctx context.Context, bucket, key, versionId string, legalHold *ObjectLockLegalHold) error {
-	return s.updateObjectLockMetadata(ctx, bucket, key, versionId, func(obj *Object) {
+	return s.mutateObjectRecord(bucket, key, versionId, func(obj *Object) error {
 		obj.ObjectLockLegalHold = legalHold
+		return nil
 	})
 }
 
@@ -71,8 +30,9 @@ func (s *ObjectStore) GetObjectLegalHold(ctx context.Context, bucket, key, versi
 
 // SetObjectRetention sets the retention policy for an object version.
 func (s *ObjectStore) SetObjectRetention(ctx context.Context, bucket, key, versionId string, retention *ObjectLockRetention) error {
-	return s.updateObjectLockMetadata(ctx, bucket, key, versionId, func(obj *Object) {
+	return s.mutateObjectRecord(bucket, key, versionId, func(obj *Object) error {
 		obj.ObjectLockRetention = retention
+		return nil
 	})
 }
 
@@ -84,7 +44,7 @@ func (s *ObjectStore) GetObjectRetention(ctx context.Context, bucket, key, versi
 	}
 
 	if obj.ObjectLockRetention == nil {
-		return nil, fmt.Errorf("retention configuration not found")
+		return nil, ErrRetentionNotFound
 	}
 
 	return obj.ObjectLockRetention, nil

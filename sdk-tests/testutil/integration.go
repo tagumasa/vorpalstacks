@@ -278,6 +278,32 @@ func (ic *integClients) verifyMessageContains(queueURL, substr string) error {
 	return fmt.Errorf("no message contains %q", substr)
 }
 
+// verifyMessageContainsAll checks every substring against one receive:
+// a second receive would hit the visibility timeout applied to the first
+// one's messages and report an empty queue.
+func (ic *integClients) verifyMessageContainsAll(queueURL string, substrs ...string) error {
+	msgs, err := ic.receiveMessages(queueURL, 10, 3)
+	if err != nil {
+		return err
+	}
+	if len(msgs) == 0 {
+		return fmt.Errorf("expected message in queue, got 0")
+	}
+	for _, substr := range substrs {
+		found := false
+		for _, m := range msgs {
+			if strings.Contains(aws.ToString(m.Body), substr) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("no message contains %q", substr)
+		}
+	}
+	return nil
+}
+
 func (ic *integClients) createBucket(name string) error {
 	_, err := ic.s3.CreateBucket(ic.ctx, &s3.CreateBucketInput{Bucket: aws.String(name)})
 	return err
@@ -495,6 +521,9 @@ func (r *TestRunner) RunIntegrationTests() []TestResult {
 	}))
 	results = append(results, r.runIntegWithTimeout("S3_Notification_SNS", func() TestResult {
 		return r.runS3NotificationToSNS(ic, ts)
+	}))
+	results = append(results, r.runIntegWithTimeout("S3_Notification_EventBridge", func() TestResult {
+		return r.runS3NotificationToEventBridge(ic, ts)
 	}))
 
 	results = append(results, r.runIntegWithTimeout("CWLogs_Lambda", func() TestResult {

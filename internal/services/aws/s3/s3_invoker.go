@@ -22,7 +22,7 @@ func (s *S3Service) GetObject(ctx context.Context, region, bucket, key string, m
 	}
 	defer reader.Close()
 	if maxBytes <= 0 {
-		maxBytes = 5 * 1024 * 1024 * 1024
+		maxBytes = maxSingleUploadSize
 	}
 	data, err := io.ReadAll(io.LimitReader(reader, maxBytes))
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *S3Service) GetObjectVersion(ctx context.Context, region, bucket, key, v
 	}
 	defer reader.Close()
 	if maxBytes <= 0 {
-		maxBytes = 5 * 1024 * 1024 * 1024
+		maxBytes = maxSingleUploadSize
 	}
 	data, err := io.ReadAll(io.LimitReader(reader, maxBytes))
 	if err != nil {
@@ -112,7 +112,7 @@ func (s *S3Service) ListObjects(ctx context.Context, region, bucket, prefix stri
 		var allKeys []string
 		marker := ""
 		for {
-			result, err := objs.List(bucket, prefix, "", marker, 1000)
+			result, err := objs.List(bucket, prefix, "", marker, s3MaxKeys)
 			if err != nil {
 				return nil, fmt.Errorf("s3 ListObjects %s/%s: %w", bucket, prefix, err)
 			}
@@ -166,7 +166,7 @@ func (s *S3Service) ListObjectEntries(ctx context.Context, region, bucket, prefi
 		var all []invokers.S3ObjectEntry
 		marker := ""
 		for {
-			result, err := objs.List(bucket, prefix, "", marker, 1000)
+			result, err := objs.List(bucket, prefix, "", marker, s3MaxKeys)
 			if err != nil {
 				return nil, fmt.Errorf("s3 ListObjectEntries %s/%s: %w", bucket, prefix, err)
 			}

@@ -20,6 +20,11 @@ var (
 	ErrNoSuchKey = awserrors.NewAWSError("NoSuchKey", "The specified key does not exist.", http.StatusNotFound)
 	// ErrNoSuchVersion is returned when an explicitly requested object version does not exist.
 	ErrNoSuchVersion = awserrors.NewAWSError("NoSuchVersion", "The specified version does not exist.", http.StatusNotFound)
+	// ErrMethodNotAllowed is returned when a read addresses a delete marker
+	// through an explicit versionId: the documented GetObject and HeadObject
+	// contracts reject that read with 405 and the marker's Last-Modified
+	// response header.
+	ErrMethodNotAllowed = awserrors.NewAWSError("MethodNotAllowed", "The specified method is not allowed against this resource.", http.StatusMethodNotAllowed)
 	// ErrInvalidBucketName is returned when the specified bucket name is not valid.
 	ErrInvalidBucketName = awserrors.NewAWSError("InvalidBucketName", "The specified bucket is not valid.", http.StatusBadRequest)
 	// ErrInvalidRequest is returned when the request is malformed or invalid.
@@ -139,6 +144,39 @@ func mapVersionLookupError(err error, versionId string) error {
 		return ErrNoSuchVersion
 	}
 	return err
+}
+
+// deleteMarkerReadError couples a failed object read with the delete-marker
+// record the store surfaced alongside the failure, so the transport can set
+// the response headers the documented delete-marker read contracts carry:
+// an explicit versionId is the 405 surface (Last-Modified,
+// x-amz-delete-marker, x-amz-version-id), while a marker that is the latest
+// version keeps the NoSuchKey 404 and still reports the marker
+// identification headers.
+type deleteMarkerReadError struct {
+	err    error
+	marker *s3store.Object
+}
+
+func (e *deleteMarkerReadError) Error() string { return e.err.Error() }
+
+func (e *deleteMarkerReadError) Unwrap() error { return e.err }
+
+// mapVersionReadError translates a failed object read the way the object was
+// addressed, surfacing a delete-marker hit: an explicitly requested marker
+// version becomes the documented MethodNotAllowed 405, and a marker that is
+// the latest version stays a NoSuchKey 404 — both carry the marker record
+// for their response headers. obj is the record the store returned alongside
+// the failure, nil for a plain miss; every other miss keeps the addressing
+// rules of mapVersionLookupError.
+func mapVersionReadError(err error, obj *s3store.Object, key, versionId string) error {
+	if obj != nil && obj.IsDeleteMarker {
+		if versionId != "" {
+			return &deleteMarkerReadError{err: ErrMethodNotAllowed, marker: obj}
+		}
+		return &deleteMarkerReadError{err: NewNoSuchKeyError(key), marker: obj}
+	}
+	return mapVersionLookupError(err, versionId)
 }
 
 // NewInvalidBucketNameError creates an InvalidBucketName error for the given bucket name.

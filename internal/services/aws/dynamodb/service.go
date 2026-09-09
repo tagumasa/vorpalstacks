@@ -109,11 +109,7 @@ func (s *DynamoDBService) storeForRegion(region string) (dynamodbstore.DynamoDBS
 		if err != nil {
 			return nil, fmt.Errorf("failed to get storage for region %s: %w", region, err)
 		}
-		txnStorage, ok := basicStorage.(storage.TransactionalStorageWith2PC)
-		if !ok {
-			return nil, fmt.Errorf("storage does not implement TransactionalStorageWith2PC")
-		}
-		return dynamodbstore.NewDynamoDBStore(txnStorage, s.accountID, region), nil
+		return dynamodbstore.NewDynamoDBStore(basicStorage, s.accountID, region), nil
 	})
 }
 

@@ -214,10 +214,15 @@ func (w *InventoryReportWorker) deliverReport(bucketStore *s3store.BucketStore, 
 	scanStart := w.now().UTC()
 
 	dest := config.Destination.S3BucketDestination
-	destBucket, err := bucketNameFromARN(dest.Bucket)
+	// The destination must be a well-formed bucket ARN
+	// (arn:aws:s3:::bucket-name): unlike replication destinations, a
+	// malformed reference is an error — the delivery target cannot be
+	// guessed from a bare name.
+	parsedArn, err := svcarn.ParseARN(dest.Bucket)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse inventory destination %q: %w", dest.Bucket, err)
 	}
+	destBucket := parsedArn.Resource
 	// The destination bucket may live in a different region than the source;
 	// resolve its region through the same cross-region lookup the request
 	// plane uses.
@@ -225,6 +230,14 @@ func (w *InventoryReportWorker) deliverReport(bucketStore *s3store.BucketStore, 
 	destObjects := w.svc.s3Objects(destRegion)
 	if destObjects == nil {
 		return fmt.Errorf("inventory destination bucket %q does not exist", destBucket)
+	}
+	// The destination owner validation the model documents ("If no account
+	// ID is provided, the owner is not validated before exporting data")
+	// runs at export time, not at configuration time. This platform has a
+	// single account that owns every bucket, so an AccountId naming any
+	// other account can never own the destination and the export refuses.
+	if dest.AccountID != "" && dest.AccountID != w.svc.accountID {
+		return fmt.Errorf("inventory destination account %s does not own the destination bucket %s", dest.AccountID, destBucket)
 	}
 	destPrefix := strings.Trim(dest.Prefix, "/")
 
@@ -243,6 +256,11 @@ func (w *InventoryReportWorker) deliverReport(bucketStore *s3store.BucketStore, 
 		}
 	}
 
+	srcBucket, err := bucketStore.Get(sourceBucket)
+	if err != nil {
+		return fmt.Errorf("load source bucket %q for its lifecycle configuration: %w", sourceBucket, err)
+	}
+
 	rows, err := collectInventoryRows(sourceObjects, sourceBucket, config)
 	if err != nil {
 		return err
@@ -252,13 +270,13 @@ func (w *InventoryReportWorker) deliverReport(bucketStore *s3store.BucketStore, 
 	var extension, contentType, fileSchema string
 	switch dest.Format {
 	case "CSV":
-		data, fileSchema, err = buildCSVReport(sourceBucket, config, rows)
+		data, fileSchema, err = buildCSVReport(sourceBucket, srcBucket.LifecycleConfiguration, config, rows)
 		extension, contentType = "csv.gz", "application/gzip"
 	case "Parquet":
-		data, fileSchema, err = buildParquetReport(sourceBucket, config, rows)
+		data, fileSchema, err = buildParquetReport(sourceBucket, srcBucket.LifecycleConfiguration, config, rows)
 		extension, contentType = "parquet", "application/octet-stream"
 	case "ORC":
-		data, fileSchema, err = buildORCReport(sourceBucket, config, rows)
+		data, fileSchema, err = buildORCReport(sourceBucket, srcBucket.LifecycleConfiguration, config, rows)
 		extension, contentType = "orc", "application/octet-stream"
 	default:
 		return fmt.Errorf("unsupported inventory report format %q", dest.Format)
@@ -341,7 +359,7 @@ func collectInventoryRows(objectStore *s3store.ObjectStore, sourceBucket string,
 	if config.IncludedObjectVersions == "All" {
 		keyMarker, versionMarker := "", ""
 		for {
-			result, err := objectStore.ListObjectVersions(sourceBucket, prefix, "", keyMarker, versionMarker, 1000)
+			result, err := objectStore.ListObjectVersions(sourceBucket, prefix, "", keyMarker, versionMarker, s3MaxKeys)
 			if err != nil {
 				return nil, err
 			}
@@ -356,7 +374,7 @@ func collectInventoryRows(objectStore *s3store.ObjectStore, sourceBucket string,
 
 	marker := ""
 	for {
-		result, err := objectStore.List(sourceBucket, prefix, "", marker, 1000)
+		result, err := objectStore.List(sourceBucket, prefix, "", marker, s3MaxKeys)
 		if err != nil {
 			return nil, err
 		}
@@ -439,7 +457,7 @@ func inventoryColumns(config *s3store.InventoryConfiguration) []string {
 // reportColumnValue renders one object's value for one column. CSV booleans
 // are the uppercase words AWS's examples show, empty values stay empty, and
 // the CSV key column is percent-encoded (slashes literal) as AWS documents.
-func reportColumnValue(column string, bucket string, obj *s3store.Object) string {
+func reportColumnValue(column string, bucket string, lc *s3store.LifecycleConfiguration, obj *s3store.Object) string {
 	switch column {
 	case "Bucket":
 		return bucket
@@ -460,6 +478,13 @@ func reportColumnValue(column string, bucket string, obj *s3store.Object) string
 		return fmt.Sprintf("%d", obj.Size)
 	case "LastModifiedDate":
 		return obj.LastModified.UTC().Format("2006-01-02T15:04:05.000Z")
+	case "LifecycleExpirationDate":
+		// Populated only when an applicable rule will expire the object;
+		// objects whose replication has not succeeded carry no expiry.
+		if expiry, _, ok := objectExpiration(lc, obj); ok {
+			return expiry.Format("2006-01-02T15:04:05.000Z")
+		}
+		return ""
 	case "ETag":
 		return strings.Trim(obj.ETag, `"`)
 	case "StorageClass":
@@ -488,7 +513,7 @@ func reportColumnValue(column string, bucket string, obj *s3store.Object) string
 			return ""
 		}
 		return string(obj.ObjectLockLegalHold.Status)
-	case "IntelligentTieringAccessTier", "ChecksumAlgorithm", "LifecycleExpirationDate":
+	case "IntelligentTieringAccessTier", "ChecksumAlgorithm":
 		// No substrate on this single-tier platform: the columns exist but
 		// carry no values.
 		return ""
@@ -496,8 +521,7 @@ func reportColumnValue(column string, bucket string, obj *s3store.Object) string
 		// The column reports S3 Bucket Key usage for SSE-KMS objects. The
 		// platform has no bucket keys, so every SSE-KMS object is DISABLED,
 		// and objects without SSE-KMS carry no bucket-key status.
-		switch obj.ServerSideEncryption {
-		case "aws:kms", "aws:kms+dbz":
+		if obj.SSEMetadata != nil && obj.SSEMetadata.EncryptionType == s3store.SSETypeKMS {
 			return "DISABLED"
 		}
 		return ""
@@ -522,20 +546,26 @@ func boolWord(value bool) string {
 	return "FALSE"
 }
 
+// objectEncryptionStatus classifies an object for the EncryptionStatus
+// column. The classification reads the SSE metadata (the single source every
+// write path populates), not the denormalised ServerSideEncryption string.
+// The value set is the documented one: SSE-S3, SSE-KMS, DSSE-KMS, SSE-C,
+// NOT-SSE.
 func objectEncryptionStatus(obj *s3store.Object) string {
-	switch obj.ServerSideEncryption {
-	case "AES256":
-		return "SSE-S3"
-	case "aws:kms", "aws:kms+dbz":
-		return "SSE-KMS"
-	case "":
-		if obj.SSEMetadata != nil && obj.SSEMetadata.EncryptionType == s3store.SSETypeCustomer {
-			return "SSE-C"
-		}
-		return "NOT-SSE"
-	default:
+	if obj.SSEMetadata == nil {
 		return "NOT-SSE"
 	}
+	switch obj.SSEMetadata.EncryptionType {
+	case s3store.SSETypeAES256:
+		return "SSE-S3"
+	case s3store.SSETypeKMS:
+		return "SSE-KMS"
+	case s3store.SSETypeDSSEKMS:
+		return "DSSE-KMS"
+	case s3store.SSETypeCustomer:
+		return "SSE-C"
+	}
+	return "NOT-SSE"
 }
 
 // objectACLReportJSON renders the object ACL in the JSON form AWS embeds
@@ -589,7 +619,7 @@ func csvEncodeKey(key string) string {
 
 // buildCSVReport renders the gzip-compressed CSV report and its schema
 // string (the comma-separated column names).
-func buildCSVReport(bucket string, config *s3store.InventoryConfiguration, rows []*s3store.Object) ([]byte, string, error) {
+func buildCSVReport(bucket string, lc *s3store.LifecycleConfiguration, config *s3store.InventoryConfiguration, rows []*s3store.Object) ([]byte, string, error) {
 	columns := inventoryColumns(config)
 
 	var raw bytes.Buffer
@@ -597,7 +627,7 @@ func buildCSVReport(bucket string, config *s3store.InventoryConfiguration, rows 
 	for _, obj := range rows {
 		record := make([]string, len(columns))
 		for i, column := range columns {
-			value := reportColumnValue(column, bucket, obj)
+			value := reportColumnValue(column, bucket, lc, obj)
 			if column == "Key" {
 				value = csvEncodeKey(value)
 			}
@@ -625,13 +655,17 @@ func buildCSVReport(bucket string, config *s3store.InventoryConfiguration, rows 
 
 // parquetColumnType maps one report column to its Parquet field: the Go
 // value kind drives the physical type, names follow the AWS schema.
-func buildParquetReport(bucket string, config *s3store.InventoryConfiguration, rows []*s3store.Object) ([]byte, string, error) {
+func buildParquetReport(bucket string, lc *s3store.LifecycleConfiguration, config *s3store.InventoryConfiguration, rows []*s3store.Object) ([]byte, string, error) {
 	columns := inventoryColumns(config)
 
 	type columnSpec struct {
 		name     string
 		optional bool
-		kind     parquet.Kind
+		// nullableInt64 marks the int64 columns whose absent state is null
+		// rather than a value (an unlocked object's retention date); they map
+		// to a *int64 field so the writer emits a true null.
+		nullableInt64 bool
+		kind          parquet.Kind
 	}
 	specs := make([]columnSpec, 0, len(columns))
 	for _, column := range columns {
@@ -642,7 +676,11 @@ func buildParquetReport(bucket string, config *s3store.InventoryConfiguration, r
 		case "IsLatest", "IsDeleteMarker", "IsMultipartUploaded":
 			spec.kind = parquet.Boolean
 			spec.optional = true
-		case "Size", "LastModifiedDate", "ObjectLockRetainUntilDate":
+		case "ObjectLockRetainUntilDate":
+			spec.kind = parquet.Int64
+			spec.optional = true
+			spec.nullableInt64 = true
+		case "Size", "LastModifiedDate":
 			spec.kind = parquet.Int64
 			spec.optional = true
 		default:
@@ -663,11 +701,14 @@ func buildParquetReport(bucket string, config *s3store.InventoryConfiguration, r
 			Type: reflect.TypeOf(""),
 			Tag:  tag,
 		}
-		// Boolean and int64 columns need matching Go kinds.
-		switch spec.kind {
-		case parquet.Boolean:
+		// Boolean and int64 columns need matching Go kinds; a nullable int64
+		// column is a pointer so absent values write as null.
+		switch {
+		case spec.nullableInt64:
+			fields[i].Type = reflect.TypeOf((*int64)(nil))
+		case spec.kind == parquet.Boolean:
 			fields[i].Type = reflect.TypeOf(false)
-		case parquet.Int64:
+		case spec.kind == parquet.Int64:
 			fields[i].Type = reflect.TypeOf(int64(0))
 		}
 	}
@@ -682,8 +723,13 @@ func buildParquetReport(bucket string, config *s3store.InventoryConfiguration, r
 				row.Field(i).SetBool(reportColumnBool(column, obj))
 			case reflect.Int64:
 				row.Field(i).SetInt(reportColumnInt64(column, obj))
+			case reflect.Ptr:
+				if obj.ObjectLockRetention != nil && obj.ObjectLockRetention.RetainUntilDate != nil {
+					millis := obj.ObjectLockRetention.RetainUntilDate.UnixMilli()
+					row.Field(i).Set(reflect.ValueOf(&millis))
+				}
 			default:
-				row.Field(i).SetString(reportColumnValue(column, bucket, obj))
+				row.Field(i).SetString(reportColumnValue(column, bucket, lc, obj))
 			}
 		}
 		values = append(values, row.Interface())
@@ -737,7 +783,7 @@ func orcFileSchema(config *s3store.InventoryConfiguration) string {
 
 // buildORCReport renders the ORC report and its schema string, compressed
 // with ZLIB as the AWS ORC deliveries are.
-func buildORCReport(bucket string, config *s3store.InventoryConfiguration, rows []*s3store.Object) ([]byte, string, error) {
+func buildORCReport(bucket string, lc *s3store.LifecycleConfiguration, config *s3store.InventoryConfiguration, rows []*s3store.Object) ([]byte, string, error) {
 	columns := inventoryColumns(config)
 	schema, err := orc.ParseSchema(orcFileSchema(config))
 	if err != nil {
@@ -758,14 +804,19 @@ func buildORCReport(bucket string, config *s3store.InventoryConfiguration, rows 
 			case "bigint":
 				values = append(values, reportColumnInt64(column, obj))
 			case "timestamp":
-				if column == "ObjectLockRetainUntilDate" && obj.ObjectLockRetention != nil &&
-					obj.ObjectLockRetention.RetainUntilDate != nil {
-					values = append(values, *obj.ObjectLockRetention.RetainUntilDate)
+				if column == "ObjectLockRetainUntilDate" {
+					// An absent retention date is null, never another
+					// timestamp standing in for it.
+					if obj.ObjectLockRetention != nil && obj.ObjectLockRetention.RetainUntilDate != nil {
+						values = append(values, *obj.ObjectLockRetention.RetainUntilDate)
+					} else {
+						values = append(values, nil)
+					}
 					continue
 				}
 				values = append(values, obj.LastModified)
 			default:
-				values = append(values, reportColumnValue(column, bucket, obj))
+				values = append(values, reportColumnValue(column, bucket, lc, obj))
 			}
 		}
 		if err := writer.Write(values...); err != nil {
@@ -779,18 +830,14 @@ func buildORCReport(bucket string, config *s3store.InventoryConfiguration, rows 
 }
 
 // reportColumnInt64 renders the int64 columns: sizes in bytes, timestamps
-// as epoch milliseconds (the AWS Parquet schema's TIMESTAMP_MILLIS).
+// as epoch milliseconds (the AWS Parquet schema's TIMESTAMP_MILLIS). The
+// retention date has its own null rendering and is not served from here.
 func reportColumnInt64(column string, obj *s3store.Object) int64 {
 	switch column {
 	case "Size":
 		return obj.Size
 	case "LastModifiedDate":
 		return obj.LastModified.UnixMilli()
-	case "ObjectLockRetainUntilDate":
-		if obj.ObjectLockRetention == nil || obj.ObjectLockRetention.RetainUntilDate == nil {
-			return 0
-		}
-		return obj.ObjectLockRetention.RetainUntilDate.UnixMilli()
 	}
 	return 0
 }
@@ -923,16 +970,6 @@ func buildInventoryManifest(sourceBucket, destinationBucket string, scanStart ti
 func md5Hex(data []byte) string {
 	sum := md5.Sum(data)
 	return hex.EncodeToString(sum[:])
-}
-
-// bucketNameFromARN extracts the bucket name from the destination ARN the
-// configuration carries (arn:aws:s3:::bucket-name).
-func bucketNameFromARN(arn string) (string, error) {
-	parsed, err := svcarn.ParseARN(arn)
-	if err != nil {
-		return "", fmt.Errorf("parse inventory destination %q: %w", arn, err)
-	}
-	return parsed.Resource, nil
 }
 
 // inventoryDataKey builds the data file's delivery key. The file name is

@@ -56,11 +56,7 @@ func (s *EC2Service) storeForRegion(region string) (*ec2store.EC2Store, error) {
 		if err != nil {
 			return nil, err
 		}
-		tstore, ok := rs.(storage.TransactionalStorageWith2PC)
-		if !ok {
-			return nil, fmt.Errorf("storage does not support 2PC")
-		}
-		return ec2store.NewEC2Store(tstore, s.accountID, region), nil
+		return ec2store.NewEC2Store(rs, s.accountID, region), nil
 	})
 }
 

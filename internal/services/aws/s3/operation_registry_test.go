@@ -84,7 +84,6 @@ var cloudTrailEventNames = map[string]bool{
 	"PutObjectRetention":               true,
 	"GetObjectAttributes":              true,
 	"RestoreObject":                    true,
-	"SelectObjectContent":              true,
 	"UpdateObjectEncryption":           true,
 }
 
@@ -269,7 +268,6 @@ func TestClassifyS3Request(t *testing.T) {
 		{name: "POST bucket ?delete", method: "POST", path: "/bucket", rawQuery: "delete", wantEvent: "DeleteObjects"},
 
 		// Object operations
-		objectCase("POST", "select", "SelectObjectContent", "s3:GetObject", nil),
 		objectCase("POST", "restore", "RestoreObject", "s3:RestoreObject", nil),
 		objectCase("PUT", "encryption", "UpdateObjectEncryption", "s3:UpdateObjectEncryption", nil),
 		objectCase("POST", "uploads", "CreateMultipartUpload", "s3:PutObject", nil),

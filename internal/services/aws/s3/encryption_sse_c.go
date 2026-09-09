@@ -18,11 +18,6 @@ func NewSSECEncryptor() *SSECEncryptor {
 	return &SSECEncryptor{}
 }
 
-// GetEncryptionType returns the encryption type.
-func (e *SSECEncryptor) GetEncryptionType() EncryptionType {
-	return EncryptionTypeSSE_C
-}
-
 // ParseCustomerKey parses and validates a base64-encoded customer key.
 // Returns the parsed key bytes for per-request use.
 func (e *SSECEncryptor) ParseCustomerKey(encodedKey, encodedMD5 string) ([]byte, error) {

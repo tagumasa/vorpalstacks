@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash"
 	"io"
 
 	s3store "vorpalstacks/internal/store/aws/s3"
@@ -23,10 +24,9 @@ type StreamEncryptionResult struct {
 	UnencryptedMD5  string
 }
 
-// EncryptStream reads plaintext from src in chunks, encrypts each chunk with
-// AES-GCM using the appropriate key for the given encryption type, and returns
-// the combined encrypted bytes along with SSE metadata that records per-chunk
-// information for later streaming decryption.
+// EncryptStream encrypts plaintext in chunks and returns the combined
+// encrypted bytes. Callers that persist through a store reader should
+// prefer NewChunkEncryptReader, which avoids buffering the whole object.
 func (m *EncryptionManager) EncryptStream(
 	src io.Reader,
 	encryptionType EncryptionType,
@@ -34,71 +34,119 @@ func (m *EncryptionManager) EncryptStream(
 	bucket, key, kmsKeyID string,
 	customerKey []byte,
 ) (*StreamEncryptionResult, error) {
+	sseMeta := &s3store.SSEObjectMetadata{}
+	reader, err := m.NewChunkEncryptReader(src, encryptionType, bucketEncryption, bucket, key, kmsKeyID, customerKey, sseMeta)
+	if err != nil {
+		return nil, err
+	}
+	encrypted, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, err
+	}
+	return &StreamEncryptionResult{
+		SSEMetadata:     sseMeta,
+		EncryptedData:   encrypted,
+		UnencryptedSize: sseMeta.UnencryptedSize,
+		UnencryptedMD5:  sseMeta.UnencryptedMD5,
+	}, nil
+}
+
+// chunkEncryptReader encrypts plaintext chunks on-the-fly as they are
+// read — the write-side mirror of chunkDecryptReader. The SSE metadata
+// accumulates as chunks pass through: sseMetadata holds the encryption
+// type and key material from construction, and the digest, unencrypted
+// size and part table are final only once the reader has returned io.EOF.
+type chunkEncryptReader struct {
+	src              io.Reader
+	plainKey         []byte
+	encryptedDataKey []byte
+	h                hash.Hash
+	sseMeta          *s3store.SSEObjectMetadata
+	pending          []byte
+	pendingOff       int
+	done             bool
+	buf              []byte
+}
+
+// NewChunkEncryptReader returns a reader that encrypts src chunk-by-chunk
+// with AES-GCM using the appropriate key for the given encryption type.
+// The caller-provided sseMetadata is populated as the stream is consumed;
+// reading it before the reader has fully drained yields partial metadata.
+func (m *EncryptionManager) NewChunkEncryptReader(
+	src io.Reader,
+	encryptionType EncryptionType,
+	bucketEncryption *s3store.EncryptionConfig,
+	bucket, key, kmsKeyID string,
+	customerKey []byte,
+	sseMetadata *s3store.SSEObjectMetadata,
+) (io.Reader, error) {
 	genKey, err := m.resolveEncryptionKey(encryptionType, bucketEncryption, bucket, key, kmsKeyID, customerKey)
 	if err != nil {
 		return nil, err
 	}
-
-	var encryptedBuf bytes.Buffer
-	var parts []s3store.PartEncryptionInfo
-	var totalPlain int64
-	h := md5.New()
-
-	buf := make([]byte, encryptionChunkSize)
-	for {
-		n, readErr := io.ReadFull(src, buf)
-		if n > 0 {
-			chunk := buf[:n]
-			totalPlain += int64(n)
-			h.Write(chunk)
-
-			nonce, nonceErr := crypto.RandomNonce()
-			if nonceErr != nil {
-				return nil, fmt.Errorf("failed to generate nonce: %w", nonceErr)
-			}
-
-			encChunk, encErr := crypto.AESGCMEncryptWithNonce(genKey.PlaintextKey, chunk, nonce)
-			if encErr != nil {
-				return nil, fmt.Errorf("failed to encrypt chunk: %w", encErr)
-			}
-
-			parts = append(parts, s3store.PartEncryptionInfo{
-				EncryptedSize: int64(len(encChunk)),
-				PlainSize:     int64(n),
-				ContentNonce:  nonce,
-				DataKey:       genKey.EncryptedDataKey,
-			})
-
-			if _, writeErr := encryptedBuf.Write(encChunk); writeErr != nil {
-				return nil, fmt.Errorf("failed to write encrypted chunk: %w", writeErr)
-			}
-		}
-		if readErr == io.EOF || readErr == io.ErrUnexpectedEOF {
-			break
-		}
-		if readErr != nil {
-			return nil, fmt.Errorf("failed to read plaintext chunk: %w", readErr)
-		}
-	}
-
-	encType := s3store.SSEType(encryptionType)
-	unencryptedMD5 := base64.StdEncoding.EncodeToString(h.Sum(nil))
-	sseMeta := &s3store.SSEObjectMetadata{
-		EncryptionType:      encType,
-		EncryptedDataKey:    genKey.EncryptedDataKey,
-		ContentNonce:        nil,
-		KMSKeyID:            genKey.KMSKeyID,
-		UnencryptedMD5:      unencryptedMD5,
-		UnencryptedSize:     totalPlain,
-		PartEncryptionInfos: parts,
-	}
-
-	return &StreamEncryptionResult{
-		SSEMetadata:     sseMeta,
-		EncryptedData:   encryptedBuf.Bytes(),
-		UnencryptedSize: totalPlain,
-		UnencryptedMD5:  unencryptedMD5,
+	sseMetadata.EncryptionType = s3store.SSEType(encryptionType)
+	sseMetadata.EncryptedDataKey = genKey.EncryptedDataKey
+	sseMetadata.KMSKeyID = genKey.KMSKeyID
+	return &chunkEncryptReader{
+		src:              src,
+		plainKey:         genKey.PlaintextKey,
+		encryptedDataKey: genKey.EncryptedDataKey,
+		h:                md5.New(),
+		sseMeta:          sseMetadata,
+		buf:              make([]byte, encryptionChunkSize),
 	}, nil
+}
+
+func (r *chunkEncryptReader) Read(p []byte) (int, error) {
+	if r.pendingOff < len(r.pending) {
+		n := copy(p, r.pending[r.pendingOff:])
+		r.pendingOff += n
+		return n, nil
+	}
+	if r.done {
+		return 0, io.EOF
+	}
+
+	n, readErr := io.ReadFull(r.src, r.buf)
+	if n > 0 {
+		chunk := r.buf[:n]
+		r.h.Write(chunk)
+		r.sseMeta.UnencryptedSize += int64(n)
+
+		nonce, nonceErr := crypto.RandomNonce()
+		if nonceErr != nil {
+			return 0, fmt.Errorf("failed to generate nonce: %w", nonceErr)
+		}
+		encChunk, encErr := crypto.AESGCMEncryptWithNonce(r.plainKey, chunk, nonce)
+		if encErr != nil {
+			return 0, fmt.Errorf("failed to encrypt chunk: %w", encErr)
+		}
+		r.sseMeta.PartEncryptionInfos = append(r.sseMeta.PartEncryptionInfos, s3store.PartEncryptionInfo{
+			EncryptedSize: int64(len(encChunk)),
+			PlainSize:     int64(n),
+			ContentNonce:  nonce,
+			DataKey:       r.encryptedDataKey,
+		})
+		r.pending = encChunk
+		r.pendingOff = 0
+	}
+	if readErr == io.EOF || readErr == io.ErrUnexpectedEOF {
+		r.done = true
+		r.sseMeta.UnencryptedMD5 = base64.StdEncoding.EncodeToString(r.h.Sum(nil))
+		if n > 0 {
+			c := copy(p, r.pending)
+			r.pendingOff = c
+			return c, nil
+		}
+		return 0, io.EOF
+	}
+	if readErr != nil {
+		return 0, fmt.Errorf("failed to read plaintext chunk: %w", readErr)
+	}
+
+	c := copy(p, r.pending)
+	r.pendingOff = c
+	return c, nil
 }
 
 // DecryptChunked decrypts combined encrypted data that was produced by chunked
@@ -141,6 +189,66 @@ func (m *EncryptionManager) DecryptChunked(
 	}
 
 	return result.Bytes(), nil
+}
+
+// DecryptChunkRange decrypts the plaintext window [offset, offset+length)
+// of a chunk-encrypted object without materialising the whole object: the
+// per-chunk plain sizes locate the chunks the window overlaps, fetchRange
+// retrieves only their encrypted bytes, and the window is sliced from the
+// concatenated plaintext of those chunks.
+func (m *EncryptionManager) DecryptChunkRange(
+	sseMetadata *s3store.SSEObjectMetadata,
+	bucket, key string,
+	customerKey []byte,
+	offset, length int64,
+	fetchRange func(encOffset, encLength int64) ([]byte, error),
+) ([]byte, error) {
+	if sseMetadata == nil || len(sseMetadata.PartEncryptionInfos) == 0 {
+		return nil, fmt.Errorf("missing part encryption infos for ranged decryption")
+	}
+
+	plainKey, err := m.resolveDecryptionKey(sseMetadata, bucket, key, customerKey)
+	if err != nil {
+		return nil, err
+	}
+
+	type chunkSpan struct {
+		part       s3store.PartEncryptionInfo
+		encOffset  int64
+		plainStart int64
+	}
+	var spans []chunkSpan
+	var encCursor, plainCursor int64
+	for _, part := range sseMetadata.PartEncryptionInfos {
+		if part.EncryptedSize > 0 && plainCursor+part.PlainSize > offset && plainCursor < offset+length {
+			spans = append(spans, chunkSpan{part: part, encOffset: encCursor, plainStart: plainCursor})
+		}
+		encCursor += part.EncryptedSize
+		plainCursor += part.PlainSize
+	}
+	if len(spans) == 0 {
+		return nil, fmt.Errorf("range window [%d,%d) does not overlap any encrypted chunk", offset, offset+length)
+	}
+
+	fetchStart := spans[0].encOffset
+	fetchEnd := spans[len(spans)-1].encOffset + spans[len(spans)-1].part.EncryptedSize
+	encrypted, err := fetchRange(fetchStart, fetchEnd-fetchStart)
+	if err != nil {
+		return nil, err
+	}
+
+	var plain bytes.Buffer
+	for _, sp := range spans {
+		rel := sp.encOffset - fetchStart
+		plainChunk, decErr := crypto.AESGCMDecryptWithNonce(plainKey, encrypted[rel:rel+sp.part.EncryptedSize], sp.part.ContentNonce)
+		if decErr != nil {
+			return nil, fmt.Errorf("failed to decrypt chunk at encrypted offset %d: %w", sp.encOffset, decErr)
+		}
+		plain.Write(plainChunk)
+	}
+
+	start := offset - spans[0].plainStart
+	return plain.Bytes()[start : start+length], nil
 }
 
 // chunkDecryptReader decrypts chunked encrypted data on-the-fly as it is

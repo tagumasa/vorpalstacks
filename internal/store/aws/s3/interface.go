@@ -80,12 +80,10 @@ type ObjectStoreInterface interface {
 	CompleteMultipartUpload(ctx context.Context, bucket, key, uploadId string, parts []ObjectPart) (*Object, error)
 	AbortMultipartUpload(ctx context.Context, bucket, key, uploadId string) error
 	ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMarker string, maxUploads int) (*MultipartUploadListResult, error)
-	Copy(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, storageClass ObjectStorageClass) (*Object, error)
-	CopyWithMetadata(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, contentType string, metadata map[string]string, storageClass ObjectStorageClass) (*Object, error)
-	CopyWithVersion(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string, storageClass ObjectStorageClass) (*Object, error)
-	CopyWithVersionAndMetadata(ctx context.Context, srcBucket, srcKey, srcVersionId, dstBucket, dstKey string, contentType string, metadata map[string]string, storageClass ObjectStorageClass) (*Object, error)
+	CopyObject(ctx context.Context, srcBucket, srcKey, dstBucket, dstKey string, overrides *CopyOverrides) (*Object, error)
 	PutEncrypted(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error)
 	PutEncryptedWithVersioning(ctx context.Context, bucket, key string, encryptedData []byte, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, isDeleteMarker bool, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error)
+	PutEncryptedStreaming(ctx context.Context, bucket, key string, encryptedReader io.Reader, contentType string, metadata map[string]string, sseMetadata *SSEObjectMetadata, storageClass ObjectStorageClass, sysMeta *SystemMetadata) (*Object, error)
 	GetEncrypted(ctx context.Context, bucket, key, versionId string) ([]byte, *Object, error)
 	UpdateObjectEncryption(ctx context.Context, bucket, key, versionId string, encryptedData []byte, sseMetadata *SSEObjectMetadata) (*Object, error)
 	List(bucket, prefix, delimiter, marker string, maxKeys int) (*ObjectListResult, error)
@@ -99,8 +97,6 @@ type ObjectStoreInterface interface {
 	GetRange(ctx context.Context, bucket, key string, offset, length int64) (io.ReadCloser, *Object, error)
 	SetTags(bucket, key, versionId string, tags []types.Tag) error
 	SetACL(bucket, key string, acp *AccessControlPolicy) error
-	GetACL(bucket, key string) (*AccessControlPolicy, error)
-	SetStorageClass(bucket, key, versionId string, storageClass ObjectStorageClass) error
 	SetRestoreState(bucket, key, versionId string, expiry *time.Time) error
 	ActiveRestores() ([]RestoreIndexEntry, error)
 	SetReplicationStatus(bucket, key, versionId, status string) error

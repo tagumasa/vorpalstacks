@@ -9,7 +9,6 @@ import (
 	"vorpalstacks/internal/common/auth"
 	appconfig "vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
-	"vorpalstacks/internal/core/storage"
 	"vorpalstacks/internal/eventbus"
 	svcacm "vorpalstacks/internal/services/aws/acm"
 	svcapigateway "vorpalstacks/internal/services/aws/apigateway"
@@ -277,10 +276,7 @@ func (a *App) initKinesis(st *serviceState) error {
 	if err != nil {
 		return fmt.Errorf("failed to get Kinesis regional storage: %w", err)
 	}
-	tstore, ok := kinesisRegionalStorage.(storage.TransactionalStorageWith2PC)
-	if ok {
-		st.kinesisStoreInstance = storekinesis.NewKinesisStore(tstore, st.accountID, st.region)
-	}
+	st.kinesisStoreInstance = storekinesis.NewKinesisStore(kinesisRegionalStorage, st.accountID, st.region)
 	st.kinesisService = svckinesis.NewKinesisService(st.accountID, st.region)
 	st.kinesisService.SetStorageManager(a.server.StorageManager())
 	if st.kinesisStoreInstance != nil {
@@ -354,7 +350,7 @@ func (a *App) initS3(st *serviceState) error {
 		eb.SetS3Invoker(st.s3Service)
 	}
 
-	st.lifecycleWorker = svcs3.NewLifecycleWorker(st.s3Service, a.server.StorageManager(), st.accountID)
+	st.lifecycleWorker = svcs3.NewLifecycleWorker(st.s3Service)
 	st.lifecycleWorker.Start()
 	a.addShutdown("s3-lifecycle", func(ctx context.Context) error {
 		st.lifecycleWorker.Close()

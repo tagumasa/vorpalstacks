@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -70,12 +71,17 @@ func (r *sectionFileReader) Close() error {
 }
 
 // openAndStat opens a file and retrieves its FileInfo, returning a descriptive error if the file does not exist.
+// ErrBlobNotFound is the sentinel for blob reads that address no stored
+// object; every other read error (I/O, permissions) is infrastructure
+// trouble and must not be mistaken for absence.
+var ErrBlobNotFound = errors.New("object not found")
+
 func openAndStat(path, notFoundMsg string) (*os.File, os.FileInfo, error) {
 	// #nosec G304
 	f, err := os.Open(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil, fmt.Errorf("object not found: %s", notFoundMsg)
+			return nil, nil, fmt.Errorf("%w: %s", ErrBlobNotFound, notFoundMsg)
 		}
 		return nil, nil, fmt.Errorf("failed to open file: %w", err)
 	}

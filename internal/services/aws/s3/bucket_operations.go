@@ -81,7 +81,7 @@ func (o *BucketOperations) DeleteBucket(ctx *request.RequestContext, input *Dele
 		return err
 	}
 
-	_, err = o.svc.deleteBucketCore(store.buckets, store.objects, AdminDeleteBucketInput{
+	_, err = o.svc.deleteBucketCore(ctx, store.buckets, store.objects, AdminDeleteBucketInput{
 		Bucket: input.Bucket,
 	})
 	return err

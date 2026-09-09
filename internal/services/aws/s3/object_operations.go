@@ -24,7 +24,14 @@ func formatETag(etag string) string {
 	return fmt.Sprintf("\"%s\"", etag)
 }
 
-func buildObjectContents(objects []*s3store.Object) []*ObjectContent {
+// bucketOwner is the owner identity list operations render on their
+// entries. AWS identifies the bucket owner by account, and the platform's
+// single-tenant account doubles as the display name.
+func (s *S3Service) bucketOwner() *Owner {
+	return &Owner{ID: s.accountID, DisplayName: s.accountID}
+}
+
+func buildObjectContents(objects []*s3store.Object, owner *Owner) []*ObjectContent {
 	var contents []*ObjectContent
 	for _, obj := range objects {
 		if !obj.IsDeleteMarker {
@@ -34,6 +41,7 @@ func buildObjectContents(objects []*s3store.Object) []*ObjectContent {
 				ETag:         formatETag(obj.ETag),
 				Size:         obj.Size,
 				StorageClass: string(obj.StorageClass),
+				Owner:        owner,
 			})
 		}
 	}

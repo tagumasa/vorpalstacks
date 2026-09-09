@@ -13,7 +13,7 @@ import (
 type RegionStorageManager struct {
 	baseDir  string
 	config   *Config
-	storages map[string]Storage
+	storages map[string]*PebbleStorage
 	mu       sync.RWMutex
 }
 
@@ -32,7 +32,7 @@ func NewRegionStorageManager(cfg *Config) (*RegionStorageManager, error) {
 	return &RegionStorageManager{
 		baseDir:  cfg.Path,
 		config:   cfg,
-		storages: make(map[string]Storage),
+		storages: make(map[string]*PebbleStorage),
 	}, nil
 }
 
@@ -44,7 +44,7 @@ func NewRegionStorageManager(cfg *Config) (*RegionStorageManager, error) {
 // Returns:
 //   - Storage: The storage instance for the region
 //   - error: An error if retrieval or creation fails
-func (m *RegionStorageManager) GetStorage(region string) (Storage, error) {
+func (m *RegionStorageManager) GetStorage(region string) (*PebbleStorage, error) {
 	if region == "" {
 		region = defaults.DefaultRegion
 	}
@@ -81,7 +81,7 @@ func (m *RegionStorageManager) GetStorage(region string) (Storage, error) {
 }
 
 // GetGlobalStorage retrieves or creates the global storage instance.
-func (m *RegionStorageManager) GetGlobalStorage() (Storage, error) {
+func (m *RegionStorageManager) GetGlobalStorage() (*PebbleStorage, error) {
 	return m.GetStorage("global")
 }
 
@@ -96,7 +96,7 @@ func (m *RegionStorageManager) Close() error {
 			lastErr = fmt.Errorf("failed to close storage for region %s: %w", region, err)
 		}
 	}
-	m.storages = make(map[string]Storage)
+	m.storages = make(map[string]*PebbleStorage)
 	return lastErr
 }
 

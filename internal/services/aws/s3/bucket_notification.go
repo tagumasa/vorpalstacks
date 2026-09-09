@@ -3,9 +3,9 @@ package s3
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"vorpalstacks/internal/common/request"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // PutBucketNotificationInput contains the request parameters for the PutBucketNotificationConfiguration operation.
@@ -16,9 +16,15 @@ type PutBucketNotificationInput struct {
 
 // NotificationConfigurationInput defines the notification configuration for a bucket.
 type NotificationConfigurationInput struct {
-	TopicConfigurations  []TopicConfigurationInput  `xml:"TopicConfiguration,omitempty"`
-	QueueConfigurations  []QueueConfigurationInput  `xml:"QueueConfiguration,omitempty"`
-	LambdaConfigurations []LambdaConfigurationInput `xml:"CloudFunctionConfiguration,omitempty"`
+	TopicConfigurations      []TopicConfigurationInput      `xml:"TopicConfiguration,omitempty"`
+	QueueConfigurations      []QueueConfigurationInput      `xml:"QueueConfiguration,omitempty"`
+	LambdaConfigurations     []LambdaConfigurationInput     `xml:"CloudFunctionConfiguration,omitempty"`
+	EventBridgeConfiguration *EventBridgeConfigurationInput `xml:"EventBridgeConfiguration,omitempty"`
+}
+
+// EventBridgeConfigurationInput enables event delivery to EventBridge; the
+// element is empty — its presence alone turns delivery on.
+type EventBridgeConfigurationInput struct {
 }
 
 // TopicConfigurationInput defines a topic notification configuration.
@@ -82,9 +88,15 @@ type GetBucketNotificationOutput struct {
 
 // NotificationConfigurationOutput defines the notification configuration for a bucket.
 type NotificationConfigurationOutput struct {
-	TopicConfigurations  []TopicConfigurationOutput  `xml:"TopicConfiguration,omitempty"`
-	QueueConfigurations  []QueueConfigurationOutput  `xml:"QueueConfiguration,omitempty"`
-	LambdaConfigurations []LambdaConfigurationOutput `xml:"CloudFunctionConfiguration,omitempty"`
+	TopicConfigurations      []TopicConfigurationOutput      `xml:"TopicConfiguration,omitempty"`
+	QueueConfigurations      []QueueConfigurationOutput      `xml:"QueueConfiguration,omitempty"`
+	LambdaConfigurations     []LambdaConfigurationOutput     `xml:"CloudFunctionConfiguration,omitempty"`
+	EventBridgeConfiguration *EventBridgeConfigurationOutput `xml:"EventBridgeConfiguration,omitempty"`
+}
+
+// EventBridgeConfigurationOutput reports that event delivery to EventBridge
+// is enabled; the element is empty, matching the request form.
+type EventBridgeConfigurationOutput struct {
 }
 
 // TopicConfigurationOutput defines a topic notification configuration.
@@ -158,11 +170,12 @@ func (s *S3Service) validateNotificationTarget(ctx context.Context, arn, service
 		if sqsInvoker == nil {
 			return nil
 		}
-		parts := strings.SplitN(arn, ":", 6)
-		if len(parts) < 6 {
-			return nil
+		queueName := svcarn.ExtractQueueNameFromARN(arn)
+		region := ""
+		if parsed, parseErr := svcarn.ParseARN(arn); parseErr == nil {
+			region = parsed.Region
 		}
-		if _, err := sqsInvoker.GetQueueByName(ctx, parts[3], parts[5]); err != nil {
+		if _, err := sqsInvoker.GetQueueByName(ctx, region, queueName); err != nil {
 			return NewInvalidArgumentError(fmt.Sprintf("SQS queue does not exist: %s", arn))
 		}
 	case "lambda":

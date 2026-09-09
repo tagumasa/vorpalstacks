@@ -2,36 +2,63 @@ package common
 
 import "sync"
 
-// KeyLocker provides per-key mutual exclusion using a sharded sync.Map of
-// mutexes. It is designed to protect Get-Modify-Put cycles in stores backed
-// by Pebble (where individual operations are safe but read-modify-write
-// sequences are not).
+// KeyLocker provides per-key mutual exclusion. It is designed to protect
+// Get-Modify-Put cycles in stores backed by Pebble (where individual
+// operations are safe but read-modify-write sequences are not).
 //
 // Each key gets its own mutex, so concurrent operations on different keys do
-// not block each other. Mutex entries are created on demand via
-// sync.Map.LoadOrStore and retained for the lifetime of the KeyLocker.
-//
-// Delete must ONLY be called for truly transient keys (e.g. multipart upload
-// IDs that are never reused after completion). For persistent keys (e.g.
-// bucket\x00key), never call Delete — the mutex must remain in the map so
-// that concurrent goroutines always acquire the same mutex instance. Calling
-// Unlock followed by Delete on a key where another goroutine is waiting
-// creates a new mutex on the next Lock call, breaking mutual exclusion.
+// not block each other. Entries are reference-counted: Lock counts a
+// goroutine in (including while it waits on the mutex) and Unlock counts it
+// out, removing the entry when the last one leaves. A goroutine therefore
+// always counts itself in under the locker's map mutex before it can touch
+// the entry's mutex, which is what makes cleanup safe for transient keys
+// (e.g. S3 multipart upload IDs): deleting an entry whose last holder has
+// gone can never strand a waiter on an orphaned mutex, and two goroutines
+// can never hold two different mutexes for the same key. This contract
+// exists because an earlier unlock-then-delete pattern did break mutual
+// exclusion exactly that way.
 type KeyLocker struct {
-	mu sync.Map
+	mu   sync.Mutex
+	keys map[string]*keyEntry
+}
+
+type keyEntry struct {
+	mu   sync.Mutex
+	refs int
 }
 
 // Lock acquires an exclusive lock for the given key. The caller must call
 // Unlock with the same key when the critical section is done.
 func (kl *KeyLocker) Lock(key string) {
-	mu := kl.getMutex(key)
-	mu.Lock()
+	kl.mu.Lock()
+	if kl.keys == nil {
+		kl.keys = map[string]*keyEntry{}
+	}
+	e, ok := kl.keys[key]
+	if !ok {
+		e = &keyEntry{}
+		kl.keys[key] = e
+	}
+	e.refs++
+	kl.mu.Unlock()
+	e.mu.Lock()
 }
 
-// Unlock releases the exclusive lock for the given key.
+// Unlock releases the exclusive lock for the given key. The entry is
+// removed once no holder or waiter remains.
 func (kl *KeyLocker) Unlock(key string) {
-	mu := kl.getMutex(key)
-	mu.Unlock()
+	kl.mu.Lock()
+	e, ok := kl.keys[key]
+	if !ok {
+		kl.mu.Unlock()
+		panic("keylocker: Unlock without a matching Lock for key " + key)
+	}
+	e.refs--
+	if e.refs == 0 {
+		delete(kl.keys, key)
+	}
+	kl.mu.Unlock()
+	e.mu.Unlock()
 }
 
 // WithLock acquires the lock for key, runs fn, then releases the lock.
@@ -42,37 +69,42 @@ func (kl *KeyLocker) WithLock(key string, fn func() error) error {
 	return fn()
 }
 
-// Delete removes the mutex entry for a key. This prevents unbounded growth
-// when keys are transient (e.g. S3 multipart upload IDs that are deleted
-// after completion).
+// Delete removes the mutex entry for an idle key. An entry with active
+// holders or waiters is left in place and self-cleans at its last Unlock,
+// so deletion can never hand two goroutines different mutexes for one key.
 func (kl *KeyLocker) Delete(key string) {
-	kl.mu.Delete(key)
+	kl.mu.Lock()
+	defer kl.mu.Unlock()
+	if e, ok := kl.keys[key]; ok && e.refs == 0 {
+		delete(kl.keys, key)
+	}
 }
 
-// DeleteByPrefix removes all mutex entries whose key starts with the given
-// prefix. Useful for cleaning up all locks for a resource that has been
-// deleted (e.g. all object locks for a deleted S3 bucket).
+// DeleteByPrefix removes the idle mutex entries whose key starts with the
+// given prefix. Entries with active holders or waiters self-clean at their
+// last Unlock.
 func (kl *KeyLocker) DeleteByPrefix(prefix string) {
-	kl.mu.Range(func(key, _ any) bool {
-		if k, ok := key.(string); ok && len(k) >= len(prefix) && k[:len(prefix)] == prefix {
-			kl.mu.Delete(key)
+	kl.mu.Lock()
+	defer kl.mu.Unlock()
+	for k, e := range kl.keys {
+		if len(k) >= len(prefix) && k[:len(prefix)] == prefix && e.refs == 0 {
+			delete(kl.keys, k)
 		}
-		return true
-	})
+	}
 }
 
 // Range calls fn for each key in the locker. If fn returns false, iteration
-// stops. Use with Delete to implement custom cleanup logic.
+// stops.
 func (kl *KeyLocker) Range(fn func(key string) bool) {
-	kl.mu.Range(func(key, _ any) bool {
-		if k, ok := key.(string); ok {
-			return fn(k)
+	kl.mu.Lock()
+	keys := make([]string, 0, len(kl.keys))
+	for k := range kl.keys {
+		keys = append(keys, k)
+	}
+	kl.mu.Unlock()
+	for _, k := range keys {
+		if !fn(k) {
+			return
 		}
-		return true
-	})
-}
-
-func (kl *KeyLocker) getMutex(key string) *sync.Mutex {
-	v, _ := kl.mu.LoadOrStore(key, &sync.Mutex{})
-	return v.(*sync.Mutex)
+	}
 }

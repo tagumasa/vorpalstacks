@@ -148,8 +148,7 @@ func TestRequestMetricAccumulation(t *testing.T) {
 // the AWS metric definitions: object-plane requests classify by method with
 // list-oriented GETs on ListRequests; the bucket plane contributes
 // HeadRequests, the list requests, DeleteObjects (as DeleteRequests), and
-// nothing else beyond AllRequests; SelectObjectContent classifies as
-// SelectRequests, never PostRequests.
+// nothing else beyond AllRequests.
 func TestClassifyRequestMetrics(t *testing.T) {
 	cases := []struct {
 		name   string
@@ -163,7 +162,6 @@ func TestClassifyRequestMetrics(t *testing.T) {
 		{"object head", "HEAD", "/bucket/docs/a.txt", "HeadRequests"},
 		{"object put", "PUT", "/bucket/docs/a.txt", "PutRequests"},
 		{"object delete", "DELETE", "/bucket/docs/a.txt", "DeleteRequests"},
-		{"object select", "POST", "/bucket/docs/a.txt?select&select-type=SQL", "SelectRequests"},
 		{"multipart create", "POST", "/bucket/docs/a.txt?uploads", "PostRequests"},
 		{"multipart complete", "POST", "/bucket/docs/a.txt?uploadId=abc", "PostRequests"},
 		{"restore", "POST", "/bucket/docs/a.txt?restore", "PostRequests"},

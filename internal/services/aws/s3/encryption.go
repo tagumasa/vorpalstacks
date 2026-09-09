@@ -6,20 +6,23 @@ import (
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
 
-// EncryptionType represents the type of S3 server-side encryption.
-type EncryptionType string
+// EncryptionType represents the type of S3 server-side encryption. It is
+// an alias of the store's SSEType: the services layer shares the store's
+// wire values directly instead of maintaining a parallel enum that needs
+// converting in both directions.
+type EncryptionType = s3store.SSEType
 
 const (
 	// EncryptionTypeNone indicates no server-side encryption.
 	EncryptionTypeNone EncryptionType = ""
 	// EncryptionTypeSSE_S3 indicates Amazon S3-managed keys.
-	EncryptionTypeSSE_S3 EncryptionType = "AES256"
+	EncryptionTypeSSE_S3 EncryptionType = s3store.SSETypeAES256
 	// EncryptionTypeSSE_KMS indicates AWS KMS-managed keys.
-	EncryptionTypeSSE_KMS EncryptionType = "aws:kms"
+	EncryptionTypeSSE_KMS EncryptionType = s3store.SSETypeKMS
 	// EncryptionTypeSSE_DSSE_KMS indicates dual-layer AWS KMS-managed keys.
-	EncryptionTypeSSE_DSSE_KMS EncryptionType = "aws:kms:dsse"
+	EncryptionTypeSSE_DSSE_KMS EncryptionType = s3store.SSETypeDSSEKMS
 	// EncryptionTypeSSE_C indicates customer-provided keys.
-	EncryptionTypeSSE_C EncryptionType = "CUSTOMER"
+	EncryptionTypeSSE_C EncryptionType = s3store.SSETypeCustomer
 )
 
 // EncryptionResult holds the result of an encryption operation.

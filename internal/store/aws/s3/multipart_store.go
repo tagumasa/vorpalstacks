@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"sort"
@@ -49,14 +50,14 @@ func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key str
 		return nil, err
 	}
 
-	if err := s.storage.Bucket(multipartBucketName(s.region)).Put([]byte(s.multipartKey(uploadId)), data); err != nil {
+	if err := s.storage.Bucket(multipartBucketName(s.region)).Put([]byte(uploadId), data); err != nil {
 		s.blobStore.AbortMultipartUpload(ctx, bucket, key, uploadId)
 		return nil, err
 	}
 
 	indexKey := s.multipartIndexKey(bucket, key, uploadId)
 	if err := s.storage.Bucket(multipartIndexBucketName(s.region)).Put([]byte(indexKey), []byte{}); err != nil {
-		s.storage.Bucket(multipartBucketName(s.region)).Delete([]byte(s.multipartKey(uploadId)))
+		s.storage.Bucket(multipartBucketName(s.region)).Delete([]byte(uploadId))
 		s.blobStore.AbortMultipartUpload(ctx, bucket, key, uploadId)
 		return nil, err
 	}
@@ -66,9 +67,11 @@ func (s *ObjectStore) CreateMultipartUpload(ctx context.Context, bucket, key str
 
 // GetMultipartUpload retrieves a multipart upload by its upload ID.
 func (s *ObjectStore) GetMultipartUpload(uploadId string) (*MultipartUpload, error) {
-	data, err := s.storage.Bucket(multipartBucketName(s.region)).Get([]byte(s.multipartKey(uploadId)))
+	data, err := s.storage.Bucket(multipartBucketName(s.region)).Get([]byte(uploadId))
 	if err != nil {
-		return nil, ErrUploadNotFound
+		// A read failure is infrastructure trouble, not a missing upload;
+		// surfacing it as not-found would mask it behind 404s.
+		return nil, err
 	}
 	if data == nil {
 		return nil, ErrUploadNotFound
@@ -86,10 +89,7 @@ func (s *ObjectStore) GetMultipartUpload(uploadId string) (*MultipartUpload, err
 func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId string, partNumber int, reader io.Reader, encryptedSize int64, plainSize int64, contentNonce, dataKey []byte) (*ObjectPart, error) {
 	lockKey := "multipart#" + uploadId
 	s.keyLocker.Lock(lockKey)
-	defer func() {
-		s.keyLocker.Unlock(lockKey)
-		s.keyLocker.Delete(lockKey)
-	}()
+	defer s.keyLocker.Unlock(lockKey)
 
 	upload, err := s.GetMultipartUpload(uploadId)
 	if err != nil {
@@ -121,7 +121,7 @@ func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId stri
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal upload metadata: %w", err)
 	}
-	if err := s.storage.Bucket(multipartBucketName(s.region)).Put([]byte(s.multipartKey(uploadId)), data); err != nil {
+	if err := s.storage.Bucket(multipartBucketName(s.region)).Put([]byte(uploadId), data); err != nil {
 		return nil, fmt.Errorf("failed to save part metadata: %w", err)
 	}
 
@@ -213,10 +213,7 @@ func listPartsFromUpload(parts []ObjectPart, partNumberMarker int, maxParts int)
 func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, uploadId string, parts []ObjectPart) (*Object, error) {
 	lockKey := "multipart#" + uploadId
 	s.keyLocker.Lock(lockKey)
-	defer func() {
-		s.keyLocker.Unlock(lockKey)
-		s.keyLocker.Delete(lockKey)
-	}()
+	defer s.keyLocker.Unlock(lockKey)
 
 	upload, err := s.GetMultipartUpload(uploadId)
 	if err != nil {
@@ -240,29 +237,17 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		versionId = s.generateVersionId()
 	}
 
-	blobKey := key
-	if versionId != "null" {
-		// The blob store keys versioned objects as "key#versionId" (see
-		// PutWithVersion and storageKeyWithVersion). The Pebble keySep
-		// delimiter must not be used here: it embeds a NUL byte into the
-		// file-tier path, which makes os.Create fail with EINVAL and the
-		// complete fail after the parts have already been removed.
-		blobKey = key + "#" + versionId
-	}
-
-	blobMeta, err := s.blobStore.CompleteMultipartUpload(ctx, bucket, blobKey, uploadId, blobParts)
+	// The blob tier derives the storage locations from bucket/key/versionId
+	// itself (plain address for the null version, versioned address
+	// otherwise), so the completed object lands exactly where the
+	// WithVersion reads look.
+	blobMeta, err := s.blobStore.CompleteMultipartUpload(ctx, bucket, key, versionId, uploadId, blobParts)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := s.AbortMultipartUpload(ctx, bucket, key, uploadId); err != nil {
-		logs.Error("Failed to cleanup multipart upload after complete", logs.Err(err))
-	}
-
 	obj := newObject(key, bucket, upload.ContentType, upload.Metadata, versionId, false, upload.StorageClass, nil)
-	obj.Size = blobMeta.Size
-	obj.ETag = blobMeta.ETag
-	obj.LastModified = blobMeta.LastModified
+	applyBlobFacts(obj, blobMeta)
 
 	// Keep the plain-size part boundaries so partNumber reads can resolve
 	// individual parts of the completed object.
@@ -310,6 +295,12 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		}
 		sseMetadata.UnencryptedSize = totalPlain
 
+		// The assembled blob is ciphertext; the object's reported size is
+		// the plaintext length, exactly like the single-put path.
+		if totalPlain > 0 {
+			obj.Size = totalPlain
+		}
+
 		obj.SSEMetadata = sseMetadata
 	}
 
@@ -324,17 +315,31 @@ func (s *ObjectStore) CompleteMultipartUpload(ctx context.Context, bucket, key, 
 		}
 	}
 
+	// The upload is torn down only after the record is persisted: the parts
+	// stay recoverable for a client retry until the completed object itself
+	// is durably stored (the blob tier's keep-parts-for-retry contract).
+	if err := s.AbortMultipartUpload(ctx, bucket, key, uploadId); err != nil {
+		logs.Error("Failed to cleanup multipart upload after complete", logs.Err(err))
+	}
+
 	return obj, nil
 }
 
-// AbortMultipartUpload aborts a multipart upload.
+// AbortMultipartUpload aborts a multipart upload. A missing upload — or one
+// whose bucket/key does not match the upload's own address, which AWS
+// reports identically as NoSuchUpload — returns the ErrUploadNotFound
+// sentinel unwrapped so every caller maps it with errors.Is.
 func (s *ObjectStore) AbortMultipartUpload(ctx context.Context, bucket, key, uploadId string) error {
-	if _, err := s.GetMultipartUpload(uploadId); err != nil {
-		return fmt.Errorf("upload not found: %w", err)
+	upload, err := s.GetMultipartUpload(uploadId)
+	if err != nil {
+		return err
+	}
+	if upload.BucketName != bucket || upload.Key != key {
+		return ErrUploadNotFound
 	}
 
 	err1 := s.blobStore.AbortMultipartUpload(ctx, bucket, key, uploadId)
-	err2 := s.storage.Bucket(multipartBucketName(s.region)).Delete([]byte(s.multipartKey(uploadId)))
+	err2 := s.storage.Bucket(multipartBucketName(s.region)).Delete([]byte(uploadId))
 	err3 := s.storage.Bucket(multipartIndexBucketName(s.region)).Delete([]byte(s.multipartIndexKey(bucket, key, uploadId)))
 	if err1 != nil {
 		return err1
@@ -380,15 +385,34 @@ func (s *ObjectStore) ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMa
 			continue
 		}
 
+		// Marker semantics per the API contract: without an upload-id-marker
+		// only keys lexicographically greater than the key-marker are
+		// included; with one, equal-key uploads whose upload ID is
+		// lexicographically greater than the upload-id-marker are included
+		// too (the marker entry itself is never returned).
 		if !started {
-			if key == keyMarker && (uploadIdMarker == "" || uploadId == uploadIdMarker) {
+			if key > keyMarker {
 				started = true
+			} else if key == keyMarker && uploadIdMarker != "" && uploadId > uploadIdMarker {
+				started = true
+			} else {
+				continue
 			}
-			continue
 		}
 
 		upload, err := s.GetMultipartUpload(uploadId)
 		if err != nil {
+			// A missing upload record makes the index entry stale: the
+			// abort/complete paths remove both together, so a lone index
+			// key is residue from a partial failure — reconcile it here
+			// instead of skipping it on every listing forever. Any other
+			// error is infrastructure trouble and stops the listing.
+			if !errors.Is(err, ErrUploadNotFound) {
+				return nil, err
+			}
+			if delErr := s.storage.Bucket(multipartIndexBucketName(s.region)).Delete([]byte(indexKey)); delErr != nil {
+				logs.Warn("s3: stale multipart index entry could not be removed", logs.String("indexKey", indexKey), logs.Err(delErr))
+			}
 			continue
 		}
 
@@ -410,7 +434,9 @@ func (s *ObjectStore) ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMa
 		IsTruncated: hasMore,
 	}
 
-	if len(uploads) > 0 {
+	// The Next markers name the first entry NOT returned and are emitted
+	// only on truncation — AWS defines them for exactly that case.
+	if hasMore && len(uploads) > 0 {
 		result.NextKeyMarker = uploads[len(uploads)-1].Key
 		result.NextUploadIDMarker = uploads[len(uploads)-1].UploadID
 	}

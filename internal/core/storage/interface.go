@@ -32,7 +32,6 @@ type BasicStorage interface {
 	Bucket(name string) Bucket
 	CreateBucket(name string) error
 	DeleteBucket(name string) error
-	ListBuckets() []string
 }
 
 // TransactionalStorage provides transaction support.
@@ -53,7 +52,6 @@ type MaintenanceStorage interface {
 	TransactionalStorage
 	Backup(w io.Writer) error
 	Compact() error
-	Stats() Stats
 }
 
 // FeatureStorage provides advanced feature accessors.
@@ -64,14 +62,6 @@ type FeatureStorage interface {
 	LockManager() LockManager
 	TwoPhaseTransaction() TwoPhaseTransaction
 	MultiItemTransaction() MultiItemTransaction
-}
-
-// Storage defines the full interface for a storage system.
-// Deprecated: Use BasicStorage, TransactionalStorage, or TransactionalStorageWith2PC instead.
-// This interface is kept only for test utilities and backward compatibility.
-type Storage interface {
-	MaintenanceStorage
-	FeatureStorage
 }
 
 // Bucket provides key-value storage operations.
@@ -296,16 +286,6 @@ type Snapshot interface {
 // strategy when the bucket does not implement Snapshotter.
 type Snapshotter interface {
 	NewSnapshot() Snapshot
-}
-
-// Stats contains storage statistics.
-type Stats struct {
-	KeyCount    int64
-	BucketCount int
-	SizeBytes   int64
-	Compactions int64
-	WriteAmp    float64
-	ReadAmp     float64
 }
 
 // KeyValueStore provides basic key-value storage operations.

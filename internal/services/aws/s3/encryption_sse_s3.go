@@ -27,11 +27,6 @@ type sseS3KeyMetadata struct {
 	CreatedAt int64  `json:"created_at"`
 }
 
-// GetEncryptionType returns the encryption type.
-func (e *SSES3Encryptor) GetEncryptionType() EncryptionType {
-	return EncryptionTypeSSE_S3
-}
-
 // DeleteBucketKey removes the cached S3-managed key for a bucket.
 func (e *SSES3Encryptor) DeleteBucketKey(bucket string) {
 	e.bucketKeys.Delete(bucket)

@@ -8,15 +8,19 @@ import (
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/utils/timeutils"
 )
 
-// s3Encode applies URL percent-encoding when encodingType is "url", otherwise
-// returns the value unchanged (already XML-escaped by the caller).
+// s3Encode renders a list-response string value under encodingType. With
+// url encoding the raw value is percent-encoded first: the encoded form
+// contains no XML-special characters, so the XML escape that follows is
+// inert and a URL-decoding client recovers the original value. Without it
+// the value is XML-escaped only.
 func s3Encode(value, encodingType string) string {
 	if encodingType == "url" {
-		return url.QueryEscape(value)
+		value = url.QueryEscape(value)
 	}
-	return value
+	return xmlEscape(value)
 }
 
 // ListObjectsInput contains the input parameters for the ListObjects operation.
@@ -48,27 +52,14 @@ func (o *ListObjectsOutput) ToXML() string {
 	var result strings.Builder
 	enc := o.EncodingType
 	result.WriteString(`<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`)
-	for _, c := range o.Contents {
-		result.WriteString(`<Contents>`)
-		result.WriteString(`<Key>`)
-		result.WriteString(s3Encode(xmlEscape(c.Key), enc))
-		result.WriteString(`</Key><LastModified>`)
-		result.WriteString(c.LastModified.Format(time.RFC3339))
-		result.WriteString(`</LastModified><ETag>`)
-		result.WriteString(xmlEscape(c.ETag))
-		result.WriteString(`</ETag><Size>`)
-		result.WriteString(strconv.FormatInt(c.Size, 10))
-		result.WriteString(`</Size><StorageClass>`)
-		result.WriteString(c.StorageClass)
-		result.WriteString(`</StorageClass></Contents>`)
-	}
+	writeContentsXML(&result, o.Contents, enc)
 	writeCommonPrefixesXML(&result, o.CommonPrefixes, enc)
 	result.WriteString(`<Delimiter>`)
-	result.WriteString(s3Encode(xmlEscape(o.Delimiter), enc))
+	result.WriteString(s3Encode(o.Delimiter, enc))
 	result.WriteString(`</Delimiter><IsTruncated>`)
 	result.WriteString(strconv.FormatBool(o.IsTruncated))
 	result.WriteString(`</IsTruncated><Marker>`)
-	result.WriteString(s3Encode(xmlEscape(o.Marker), enc))
+	result.WriteString(s3Encode(o.Marker, enc))
 	result.WriteString(`</Marker><MaxKeys>`)
 	result.WriteString(strconv.Itoa(o.MaxKeys))
 	result.WriteString(`</MaxKeys><Name>`)
@@ -78,11 +69,11 @@ func (o *ListObjectsOutput) ToXML() string {
 	// a delimiter; otherwise clients paginate using the last Key value.
 	if o.NextMarker != "" && o.IsTruncated && o.Delimiter != "" {
 		result.WriteString(`<NextMarker>`)
-		result.WriteString(s3Encode(xmlEscape(o.NextMarker), enc))
+		result.WriteString(s3Encode(o.NextMarker, enc))
 		result.WriteString(`</NextMarker>`)
 	}
 	result.WriteString(`<Prefix>`)
-	result.WriteString(s3Encode(xmlEscape(o.Prefix), enc))
+	result.WriteString(s3Encode(o.Prefix, enc))
 	result.WriteString(`</Prefix>`)
 	if enc != "" {
 		result.WriteString(`<EncodingType>`)
@@ -111,8 +102,36 @@ type CommonPrefix struct {
 func writeCommonPrefixesXML(builder *strings.Builder, prefixes []CommonPrefix, encodingType string) {
 	for _, p := range prefixes {
 		builder.WriteString(`<CommonPrefixes><Prefix>`)
-		builder.WriteString(s3Encode(xmlEscape(p.Prefix), encodingType))
+		builder.WriteString(s3Encode(p.Prefix, encodingType))
 		builder.WriteString(`</Prefix></CommonPrefixes>`)
+	}
+}
+
+// writeContentsXML renders the <Contents> entries of a list result; the
+// ListObjects and ListObjectsV2 models define the entry identically, so
+// the rendering lives here once.
+func writeContentsXML(builder *strings.Builder, contents []*ObjectContent, encodingType string) {
+	for _, c := range contents {
+		builder.WriteString(`<Contents>`)
+		builder.WriteString(`<Key>`)
+		builder.WriteString(s3Encode(c.Key, encodingType))
+		builder.WriteString(`</Key><LastModified>`)
+		builder.WriteString(c.LastModified.Format(timeutils.ISO8601UTCFormat))
+		builder.WriteString(`</LastModified><ETag>`)
+		builder.WriteString(xmlEscape(c.ETag))
+		builder.WriteString(`</ETag><Size>`)
+		builder.WriteString(strconv.FormatInt(c.Size, 10))
+		builder.WriteString(`</Size><StorageClass>`)
+		builder.WriteString(c.StorageClass)
+		builder.WriteString(`</StorageClass>`)
+		if c.Owner != nil {
+			builder.WriteString(`<Owner><ID>`)
+			builder.WriteString(xmlEscape(c.Owner.ID))
+			builder.WriteString(`</ID><DisplayName>`)
+			builder.WriteString(xmlEscape(c.Owner.DisplayName))
+			builder.WriteString(`</DisplayName></Owner>`)
+		}
+		builder.WriteString(`</Contents>`)
 	}
 }
 
@@ -139,7 +158,9 @@ func (o *ObjectOperations) ListObjects(ctx context.Context, reqCtx *request.Requ
 	}
 
 	return &ListObjectsOutput{
-		Contents:       buildObjectContents(coreResult.Objects),
+		// V1 carries the owner on every Contents entry unconditionally;
+		// the fetch-owner opt-in exists only in V2.
+		Contents:       buildObjectContents(coreResult.Objects, o.svc.bucketOwner()),
 		CommonPrefixes: commonPrefixes,
 		Delimiter:      input.Delimiter,
 		EncodingType:   input.EncodingType,
@@ -161,6 +182,9 @@ type ListObjectsV2Input struct {
 	ContinuationToken string
 	StartAfter        string
 	EncodingType      string
+	// FetchOwner surfaces the bucket owner on each entry (?fetch-owner=true);
+	// V2 omits Owner unless requested.
+	FetchOwner bool
 }
 
 // ListObjectsV2Output contains the output from the ListObjectsV2 operation.
@@ -183,23 +207,10 @@ func (o *ListObjectsV2Output) ToXML() string {
 	var result strings.Builder
 	enc := o.EncodingType
 	result.WriteString(`<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">`)
-	for _, c := range o.Contents {
-		result.WriteString(`<Contents>`)
-		result.WriteString(`<Key>`)
-		result.WriteString(s3Encode(xmlEscape(c.Key), enc))
-		result.WriteString(`</Key><LastModified>`)
-		result.WriteString(c.LastModified.Format(time.RFC3339))
-		result.WriteString(`</LastModified><ETag>`)
-		result.WriteString(xmlEscape(c.ETag))
-		result.WriteString(`</ETag><Size>`)
-		result.WriteString(strconv.FormatInt(c.Size, 10))
-		result.WriteString(`</Size><StorageClass>`)
-		result.WriteString(c.StorageClass)
-		result.WriteString(`</StorageClass></Contents>`)
-	}
+	writeContentsXML(&result, o.Contents, enc)
 	writeCommonPrefixesXML(&result, o.CommonPrefixes, enc)
 	result.WriteString(`<Delimiter>`)
-	result.WriteString(s3Encode(xmlEscape(o.Delimiter), enc))
+	result.WriteString(s3Encode(o.Delimiter, enc))
 	result.WriteString(`</Delimiter><IsTruncated>`)
 	result.WriteString(strconv.FormatBool(o.IsTruncated))
 	result.WriteString(`</IsTruncated><KeyCount>`)
@@ -215,11 +226,11 @@ func (o *ListObjectsV2Output) ToXML() string {
 		result.WriteString(`</NextContinuationToken>`)
 	}
 	result.WriteString(`<Prefix>`)
-	result.WriteString(s3Encode(xmlEscape(o.Prefix), enc))
+	result.WriteString(s3Encode(o.Prefix, enc))
 	result.WriteString(`</Prefix>`)
 	if o.StartAfter != "" {
 		result.WriteString(`<StartAfter>`)
-		result.WriteString(s3Encode(xmlEscape(o.StartAfter), enc))
+		result.WriteString(s3Encode(o.StartAfter, enc))
 		result.WriteString(`</StartAfter>`)
 	}
 	if enc != "" {
@@ -258,7 +269,13 @@ func (o *ObjectOperations) ListObjectsV2(ctx context.Context, reqCtx *request.Re
 		commonPrefixes = append(commonPrefixes, CommonPrefix{Prefix: prefix})
 	}
 
-	contents := buildObjectContents(coreResult.Objects)
+	// ?fetch-owner=true surfaces the bucket owner on every entry; V2
+	// omits the element otherwise.
+	var listOwner *Owner
+	if input.FetchOwner {
+		listOwner = o.svc.bucketOwner()
+	}
+	contents := buildObjectContents(coreResult.Objects, listOwner)
 	output := &ListObjectsV2Output{
 		Contents:       contents,
 		CommonPrefixes: commonPrefixes,
@@ -339,11 +356,11 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 	result.WriteString(`<Name>`)
 	result.WriteString(xmlEscape(o.Name))
 	result.WriteString(`</Name><Prefix>`)
-	result.WriteString(s3Encode(xmlEscape(o.Prefix), enc))
+	result.WriteString(s3Encode(o.Prefix, enc))
 	result.WriteString(`</Prefix>`)
 	if o.KeyMarker != "" {
 		result.WriteString(`<KeyMarker>`)
-		result.WriteString(s3Encode(xmlEscape(o.KeyMarker), enc))
+		result.WriteString(s3Encode(o.KeyMarker, enc))
 		result.WriteString(`</KeyMarker>`)
 	}
 	if o.VersionIdMarker != "" {
@@ -353,7 +370,7 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 	}
 	if o.NextKeyMarker != "" {
 		result.WriteString(`<NextKeyMarker>`)
-		result.WriteString(s3Encode(xmlEscape(o.NextKeyMarker), enc))
+		result.WriteString(s3Encode(o.NextKeyMarker, enc))
 		result.WriteString(`</NextKeyMarker>`)
 	}
 	if o.NextVersionIdMarker != "" {
@@ -366,37 +383,53 @@ func (o *ListObjectVersionsOutput) ToXML() string {
 	result.WriteString(`</MaxKeys><IsTruncated>`)
 	result.WriteString(strconv.FormatBool(o.IsTruncated))
 	result.WriteString(`</IsTruncated><Delimiter>`)
-	result.WriteString(s3Encode(xmlEscape(o.Delimiter), enc))
+	result.WriteString(s3Encode(o.Delimiter, enc))
 	result.WriteString(`</Delimiter>`)
 
 	for _, v := range o.Versions {
 		result.WriteString(`<Version><Key>`)
-		result.WriteString(s3Encode(xmlEscape(v.Key), enc))
+		result.WriteString(s3Encode(v.Key, enc))
 		result.WriteString(`</Key><VersionId>`)
 		result.WriteString(xmlEscape(v.VersionId))
 		result.WriteString(`</VersionId><IsLatest>`)
 		result.WriteString(strconv.FormatBool(v.IsLatest))
 		result.WriteString(`</IsLatest><LastModified>`)
-		result.WriteString(v.LastModified.Format(time.RFC3339))
+		result.WriteString(v.LastModified.Format(timeutils.ISO8601UTCFormat))
 		result.WriteString(`</LastModified><ETag>`)
 		result.WriteString(xmlEscape(v.ETag))
 		result.WriteString(`</ETag><Size>`)
 		result.WriteString(strconv.FormatInt(v.Size, 10))
 		result.WriteString(`</Size><StorageClass>`)
 		result.WriteString(v.StorageClass)
-		result.WriteString(`</StorageClass></Version>`)
+		result.WriteString(`</StorageClass>`)
+		if v.Owner != nil {
+			result.WriteString(`<Owner><ID>`)
+			result.WriteString(xmlEscape(v.Owner.ID))
+			result.WriteString(`</ID><DisplayName>`)
+			result.WriteString(xmlEscape(v.Owner.DisplayName))
+			result.WriteString(`</DisplayName></Owner>`)
+		}
+		result.WriteString(`</Version>`)
 	}
 
 	for _, d := range o.DeleteMarkers {
 		result.WriteString(`<DeleteMarker><Key>`)
-		result.WriteString(s3Encode(xmlEscape(d.Key), enc))
+		result.WriteString(s3Encode(d.Key, enc))
 		result.WriteString(`</Key><VersionId>`)
 		result.WriteString(xmlEscape(d.VersionId))
 		result.WriteString(`</VersionId><IsLatest>`)
 		result.WriteString(strconv.FormatBool(d.IsLatest))
 		result.WriteString(`</IsLatest><LastModified>`)
-		result.WriteString(d.LastModified.Format(time.RFC3339))
-		result.WriteString(`</LastModified></DeleteMarker>`)
+		result.WriteString(d.LastModified.Format(timeutils.ISO8601UTCFormat))
+		result.WriteString(`</LastModified>`)
+		if d.Owner != nil {
+			result.WriteString(`<Owner><ID>`)
+			result.WriteString(xmlEscape(d.Owner.ID))
+			result.WriteString(`</ID><DisplayName>`)
+			result.WriteString(xmlEscape(d.Owner.DisplayName))
+			result.WriteString(`</DisplayName></Owner>`)
+		}
+		result.WriteString(`</DeleteMarker>`)
 	}
 
 	writeCommonPrefixesXML(&result, o.CommonPrefixes, enc)

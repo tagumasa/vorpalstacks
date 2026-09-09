@@ -43,7 +43,7 @@ which are separate services in the SDK classification used by
 | NeptuneGraph | 49 | 100% | ✅ Perfect |
 | RDS Data | 15 | 100% | ✅ Perfect |
 | Route53 | 59 | 100% | ✅ Perfect |
-| S3 | 163 | 100% | ✅ Perfect |
+| S3 | 177 | 100% | ✅ Perfect |
 | Scheduler | 58 | 100% | ✅ Perfect |
 | SecretsManager | 53 | 100% | ✅ Perfect |
 | SESv2 | 86 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,520/3,520 tests passing (100%) — 3,437 SDK + 66 integration + 17 WebSocket** (confirmed 2026-09-08 on main; per-session deltas live in git history)
+**Overall: 3,535/3,535 tests passing (100%) — 3,451 SDK + 67 integration + 17 WebSocket** (confirmed 2026-09-08 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

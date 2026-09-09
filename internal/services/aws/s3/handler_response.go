@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
@@ -92,6 +93,21 @@ func (h *S3Handler) writeError(w http.ResponseWriter, err error, bucket, key, re
 		}
 	}
 
+	// A delete-marker read carries the marker's response headers alongside
+	// the error: the documented 405 (explicit versionId) sets Last-Modified,
+	// and both the 405 and the latest-marker 404 report the marker
+	// identification headers.
+	var markerErr *deleteMarkerReadError
+	if errors.As(err, &markerErr) {
+		if awsErr.HTTPStatus == http.StatusMethodNotAllowed {
+			w.Header().Set("Last-Modified", markerErr.marker.LastModified.UTC().Format(http.TimeFormat))
+		}
+		w.Header().Set("x-amz-delete-marker", "true")
+		if markerErr.marker.VersionID != "" {
+			w.Header().Set("x-amz-version-id", markerErr.marker.VersionID)
+		}
+	}
+
 	resource := bucket
 	if key != "" {
 		resource = bucket + "/" + key
@@ -104,18 +120,20 @@ func (h *S3Handler) writeError(w http.ResponseWriter, err error, bucket, key, re
 		xmlEscape(awsErr.Code), xmlEscape(awsErr.Message), xmlEscape(resource), requestID)))
 }
 
+// writeToXMLResult emits an output that renders itself through ToXML.
+func writeToXMLResult(w http.ResponseWriter, v interface{ ToXML() string }, statusCode int) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(statusCode)
+	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
+	_, _ = w.Write([]byte(v.ToXML()))
+}
+
 // writeResult serialises the operation result into the HTTP response.
-// Streaming operations (GetObject, SelectObjectContent) write directly;
-// all other results are rendered as XML or plain status codes.
+// Streaming operations (GetObject) write directly; types that render
+// themselves through ToXML fall through to the shared writer; all other
+// results are rendered as XML or plain status codes.
 func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statusCode int, requestID string) {
 	switch v := result.(type) {
-	case *SelectObjectContentOutput:
-		if v.Payload != nil {
-			defer v.Payload.Close()
-			if _, err := io.Copy(w, v.Payload); err != nil {
-				logs.Error("S3: failed to stream SelectObjectContent payload", logs.Err(err))
-			}
-		}
 	case *GetObjectOutput:
 		if v.AcceptRanges != "" {
 			w.Header().Set("Accept-Ranges", v.AcceptRanges)
@@ -143,46 +161,6 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 		} else {
 			w.WriteHeader(statusCode)
 		}
-	case *ListBucketsOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *ListObjectsOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *ListObjectsV2Output:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *ListObjectVersionsOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *ListMultipartUploadsOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *ListPartsOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *GetBucketAclOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
-	case *GetObjectAclOutput:
-		w.Header().Set("Content-Type", "application/xml")
-		w.WriteHeader(statusCode)
-		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>` + "\n"))
-		_, _ = w.Write([]byte(v.ToXML()))
 	case *CopyObjectOutput:
 		h.writeXMLResponse(w, "CopyObjectResult", v.CopyObjectResult, statusCode, "", requestID)
 	case *UploadPartCopyOutput:
@@ -200,6 +178,15 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 			_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><BucketLoggingStatus xmlns="http://s3.amazonaws.com/doc/2006-03-01/"></BucketLoggingStatus>`))
 		}
 	case *GetObjectAttributesOutput:
+		// VersionId and LastModified are header-bound members (the
+		// operation's model): x-amz-version-id and Last-Modified. The
+		// body carries only the requested attributes.
+		if v.VersionId != "" && v.VersionId != "null" {
+			w.Header().Set("x-amz-version-id", v.VersionId)
+		}
+		if !time.Time(v.LastModified).IsZero() {
+			w.Header().Set("Last-Modified", time.Time(v.LastModified).UTC().Format(http.TimeFormat))
+		}
 		h.writeXMLResponse(w, "GetObjectAttributesOutput", v, statusCode, "", requestID)
 	case *GetBucketEncryptionOutput:
 		if v.ServerSideEncryptionConfiguration != nil {
@@ -300,9 +287,19 @@ func (h *S3Handler) writeResult(w http.ResponseWriter, result interface{}, statu
 	case *CreateMultipartUploadOutput:
 		h.writeXMLResponse(w, "InitiateMultipartUploadResult", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
 	case *CompleteMultipartUploadOutput:
+		// The complete response carries its per-object facts as headers —
+		// the Smithy model binds VersionId to x-amz-version-id and the SSE
+		// fields mirror every other write response — never as body
+		// elements.
+		if v.VersionId != "" && v.VersionId != "null" {
+			w.Header().Set("x-amz-version-id", v.VersionId)
+		}
+		setSSEHeaders(w.Header(), "", "", v.ServerSideEncryption, v.SSEKMSKeyId)
 		h.writeXMLResponse(w, "CompleteMultipartUploadResult", v, statusCode, "http://s3.amazonaws.com/doc/2006-03-01/", requestID)
 	case nil:
 		w.WriteHeader(statusCode)
+	case interface{ ToXML() string }:
+		writeToXMLResult(w, v, statusCode)
 	default:
 		h.writeXMLResponse(w, "", v, statusCode, "", requestID)
 	}

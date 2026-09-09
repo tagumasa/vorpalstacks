@@ -58,7 +58,7 @@ func (s *S3Service) putBucketReplicationCore(stores *s3Stores, input *PutBucketR
 		if destBucketName == "" {
 			return NewInvalidArgumentError("rule Destination.Bucket is required")
 		}
-		destBucket, _ := s.findDestBucket(destBucketName, stores, "")
+		destBucket, _ := s.findDestBucket(destBucketName, "")
 		if destBucket == nil {
 			return NewInvalidRequestError("Destination bucket must exist")
 		}
@@ -275,7 +275,7 @@ func (s *S3Service) replicateObject(ctx context.Context, reqCtx *request.Request
 
 	for _, rule := range rules {
 		destBucketName := bucketNameFromArn(rule.Destination.Bucket)
-		destBucket, destRegion := s.findDestBucket(destBucketName, stores, sourceRegion)
+		destBucket, destRegion := s.findDestBucket(destBucketName, sourceRegion)
 		if destBucket == nil {
 			logs.Warn("s3: replication destination bucket not found", logs.String("bucket", destBucketName))
 			failed++

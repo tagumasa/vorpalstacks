@@ -8,6 +8,8 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	types "vorpalstacks/internal/common/tags"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
+
 	"vorpalstacks/internal/core/logs"
 	s3store "vorpalstacks/internal/store/aws/s3"
 )
@@ -134,9 +136,17 @@ func (s *S3Service) replicateDeleteMarker(ctx context.Context, reqCtx *request.R
 			continue
 		}
 
-		destBucket, destRegion := s.findDestBucket(destBucketName, stores, sourceRegion)
+		destBucket, destRegion := s.findDestBucket(destBucketName, sourceRegion)
 		if destBucket == nil {
 			logs.Warn("s3: delete-marker replication destination bucket not found", logs.String("bucket", destBucketName))
+			continue
+		}
+		// The same destination-versioning gate as replicateObject: a
+		// destination suspended after the configuration was written must
+		// fail the rule, not degrade the marker to a null-record delete on
+		// the suspended bucket.
+		if destBucket.VersioningStatus != s3store.BucketVersioningEnabled {
+			logs.Warn("s3: delete-marker replication destination versioning is not enabled", logs.String("bucket", destBucketName))
 			continue
 		}
 
@@ -146,12 +156,10 @@ func (s *S3Service) replicateDeleteMarker(ctx context.Context, reqCtx *request.R
 			continue
 		}
 
-		marker, err := destStores.objects.DeleteWithVersion(ctx, destBucketName, key, "")
-		if err != nil {
+		if _, err := destStores.objects.DeleteWithVersion(ctx, destBucketName, key, ""); err != nil {
 			logs.Warn("s3: delete-marker replication write failed", logs.String("destBucket", destBucketName), logs.String("key", key), logs.Err(err))
 			continue
 		}
-		_ = marker
 	}
 }
 
@@ -203,35 +211,30 @@ func startsWith(s, prefix string) bool {
 }
 
 // bucketNameFromArn extracts the bucket name from an S3 ARN or bucket path.
-// Accepts "arn:aws:s3:::bucket-name", "bucket-name", or "/bucket-name".
+// Accepts an ARN of any partition ("arn:aws:s3:::bucket-name"), a bare
+// "bucket-name", or "/bucket-name"; the ARN's resource part is the name.
 func bucketNameFromArn(bucketArn string) string {
-	bucketArn = strings.TrimPrefix(bucketArn, "/")
-	bucketArn = strings.TrimPrefix(bucketArn, "arn:aws:s3:::")
-	bucketArn = strings.TrimPrefix(bucketArn, "arn:aws-cn:s3:::")
-	bucketArn = strings.TrimPrefix(bucketArn, "arn:aws-us-gov:s3:::")
-	return bucketArn
+	trimmed := strings.TrimPrefix(bucketArn, "/")
+	if parsed, err := svcarn.ParseARN(trimmed); err == nil {
+		return parsed.Resource
+	}
+	return trimmed
 }
 
 // findDestBucket resolves a destination bucket by name, searching across all
-// regions when the multi-region store is available. Falls back to the source
-// region store when multi-region is not configured. Returns the bucket
-// metadata and the region in which it was found.
-func (s *S3Service) findDestBucket(name string, sourceStores *s3Stores, sourceRegion string) (*s3store.Bucket, string) {
+// regions through the multi-region store. Returns the bucket metadata and
+// the region in which it was found. The multi-region store is the only
+// replication substrate: storeForReplication cannot resolve a region without
+// it, so a name it cannot find — or its absence — resolves to nil rather
+// than a bucket no writer could reach.
+func (s *S3Service) findDestBucket(name string, sourceRegion string) (*s3store.Bucket, string) {
 	if s.s3Store != nil {
 		if bucket, region := s.s3Store.FindBucket(name); bucket != nil {
 			return bucket, region
 		}
 		return nil, ""
 	}
-	bucket, err := sourceStores.buckets.Get(name)
-	if err != nil {
-		return nil, ""
-	}
-	region := bucket.Region
-	if region == "" {
-		region = sourceRegion
-	}
-	return bucket, region
+	return nil, ""
 }
 
 // storeForReplication returns the stores for a destination region.

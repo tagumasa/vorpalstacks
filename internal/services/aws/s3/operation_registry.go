@@ -223,8 +223,6 @@ func classifyObjectRequest(r *http.Request, bucket, key string) (string, []s3Act
 	}
 
 	switch {
-	case r.Method == "POST" && query.Has("select"):
-		return "SelectObjectContent", objectAction("s3:GetObject")
 	case r.Method == "POST" && query.Has("restore"):
 		return "RestoreObject", objectAction("s3:RestoreObject")
 	case r.Method == "PUT" && query.Has("encryption"):

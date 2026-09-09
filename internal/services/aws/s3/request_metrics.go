@@ -42,8 +42,8 @@ func requestMetricsUnit(name string) string {
 // for the source of each CopyObject request" is added separately);
 // HeadRequests covers the HEAD requests made to an Amazon S3 bucket,
 // object heads included; DeleteRequests "also includes DeleteObjects
-// requests"; PostRequests excludes DeleteObjects and SelectObjectContent,
-// which classify as DeleteRequests and SelectRequests; ListRequests covers
+// requests"; PostRequests excludes DeleteObjects, which classifies as
+// DeleteRequests; ListRequests covers
 // the requests that list the contents of a bucket. A bucket-subresource
 // request (GetBucketAcl, PutBucketVersioning, CreateBucket, ...) counts in
 // AllRequests only: an empty result never suppresses the AllRequests count.
@@ -52,9 +52,6 @@ func classifyRequestMetrics(r *http.Request, key string) string {
 	if key != "" {
 		switch r.Method {
 		case http.MethodPost:
-			if query.Has("select") {
-				return "SelectRequests"
-			}
 			return "PostRequests"
 		case http.MethodHead:
 			return "HeadRequests"

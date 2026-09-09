@@ -23,7 +23,14 @@ type RangeSpec struct {
 // empty page, and a negative value is clamped to zero rather than silently
 // re-defaulted to a full page.
 func parseListLimit(query url.Values, name string, defaultLimit int) (int, error) {
-	raw := query.Get(name)
+	return parseLimitValue(query.Get(name), name, defaultLimit)
+}
+
+// parseLimitValue applies the shared list-limit semantics to one raw
+// header or parameter value. An empty value yields the default; a
+// non-integer is an InvalidArgument; negatives clamp to zero and values
+// above the API maximum clamp to the maximum.
+func parseLimitValue(raw, name string, defaultLimit int) (int, error) {
 	if raw == "" {
 		return defaultLimit, nil
 	}
@@ -111,6 +118,42 @@ func parseRangeHeader(rangeHeader string) (ranges []RangeSpec, err error) {
 	}
 
 	return ranges, nil
+}
+
+// resolveRangeWindow converts the first parsed Range spec into an absolute
+// [offset, offset+length) window clamped to totalSize — the shared ladder
+// behind GET's body slice and HEAD's Content-Range arithmetic. A suffix
+// range (Start == -1) measures its length from the end of the object; an
+// open length (Length == -1) extends to the last byte. A start at or
+// beyond the object size is InvalidRange, and a window running past the
+// end is clamped to it.
+func resolveRangeWindow(firstRange RangeSpec, totalSize int64) (offset, length int64, err error) {
+	if firstRange.Start == -1 {
+		length = firstRange.Length
+		offset = totalSize - length
+		if offset < 0 {
+			offset = 0
+			length = totalSize
+		}
+	} else {
+		offset = firstRange.Start
+		if firstRange.Length == -1 {
+			length = totalSize - offset
+			if length < 0 {
+				length = 0
+			}
+		} else {
+			length = firstRange.Length
+		}
+	}
+
+	if offset >= totalSize {
+		return 0, 0, ErrInvalidRange
+	}
+	if offset+length > totalSize {
+		length = totalSize - offset
+	}
+	return offset, length, nil
 }
 
 func parseCopySource(copySource string) (bucket, key, versionId string, err error) {

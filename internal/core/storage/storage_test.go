@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -146,17 +148,6 @@ func TestPebbleStorage(t *testing.T) {
 		assert.Nil(t, val)
 	})
 
-	t.Run("ListBuckets", func(t *testing.T) {
-		b1 := s.Bucket("list-1")
-		b1.Put([]byte("key"), []byte("value"))
-		b2 := s.Bucket("list-2")
-		b2.Put([]byte("key"), []byte("value"))
-
-		buckets := s.ListBuckets()
-		assert.Contains(t, buckets, "list-1")
-		assert.Contains(t, buckets, "list-2")
-	})
-
 	t.Run("DeleteBucket", func(t *testing.T) {
 		bucket := s.Bucket("delete-me")
 		bucket.Put([]byte("key"), []byte("value"))
@@ -168,10 +159,6 @@ func TestPebbleStorage(t *testing.T) {
 		assert.Equal(t, 0, count)
 	})
 
-	t.Run("Stats", func(t *testing.T) {
-		stats := s.Stats()
-		assert.GreaterOrEqual(t, stats.BucketCount, 0)
-	})
 }
 
 func TestOpenBackend(t *testing.T) {
@@ -587,6 +574,34 @@ func TestVersionedBucket(t *testing.T) {
 		assert.Len(t, versionsLimited, 2)
 	})
 
+	t.Run("ListVersions reverse", func(t *testing.T) {
+		bucket := s.VersionedBucket("ver-test-6")
+
+		var ascending []uint64
+		for i := 0; i < 4; i++ {
+			vv, err := bucket.PutWithVersion([]byte("key6"), []byte{byte(i)})
+			require.NoError(t, err)
+			ascending = append(ascending, vv.Version)
+		}
+
+		reverse, err := bucket.ListVersions([]byte("key6"), VersionListOptions{Reverse: true})
+		require.NoError(t, err)
+		require.Len(t, reverse, 4)
+		for i, vv := range reverse {
+			assert.Equal(t, ascending[3-i], vv.Version)
+		}
+
+		reverseLimited, err := bucket.ListVersions([]byte("key6"), VersionListOptions{Reverse: true, Limit: 2})
+		require.NoError(t, err)
+		require.Len(t, reverseLimited, 2)
+		assert.Equal(t, ascending[3], reverseLimited[0].Version)
+		assert.Equal(t, ascending[2], reverseLimited[1].Version)
+
+		reverseEmpty, err := bucket.ListVersions([]byte("no-such-key"), VersionListOptions{Reverse: true})
+		require.NoError(t, err)
+		assert.Empty(t, reverseEmpty)
+	})
+
 	t.Run("PurgeVersions", func(t *testing.T) {
 		bucket := s.VersionedBucket("ver-test-5")
 
@@ -681,5 +696,62 @@ func TestLockManager(t *testing.T) {
 		err := lm.Unlock(wrongHandle)
 		require.Error(t, err)
 		assert.IsType(t, &LockTokenMismatchError{}, err)
+	})
+
+	t.Run("Acquire over an expired entry keeps versions monotonic", func(t *testing.T) {
+		lm := s.lockManager
+
+		key := []byte("lock6")
+		expired := lockEntry{
+			Token:     "expired-holder",
+			Mode:      int(LockModeExclusive),
+			Version:   7,
+			ExpiresAt: time.Now().Unix() - 10,
+		}
+		entryData, err := json.Marshal(expired)
+		require.NoError(t, err)
+		require.NoError(t, lm.db.Set(lm.makeKey(key), entryData))
+
+		handle, err := lm.TryLock(key, LockModeExclusive, time.Minute)
+		require.NoError(t, err)
+
+		stored, err := lm.getLockEntry(lm.makeKey(key))
+		require.NoError(t, err)
+		require.NotNil(t, stored)
+		assert.Equal(t, uint64(8), stored.Version)
+		assert.Equal(t, handle.Token, stored.Token)
+	})
+
+	t.Run("Non-conflict errors retry within the budget", func(t *testing.T) {
+		lm := s.lockManager
+
+		want := &LockHandle{Key: []byte("lock7"), Token: "t"}
+		calls := 0
+		acquire := func(key []byte, mode LockMode, ttl time.Duration) (*LockHandle, error) {
+			calls++
+			if calls < 3 {
+				return nil, fmt.Errorf("transient store failure")
+			}
+			return want, nil
+		}
+
+		got, err := lm.lockLoop(context.Background(), []byte("lock7"), LockModeExclusive, time.Minute, acquire)
+		require.NoError(t, err)
+		assert.Equal(t, want, got)
+		assert.Equal(t, 3, calls)
+	})
+
+	t.Run("Non-conflict errors exhaust the budget", func(t *testing.T) {
+		lm := &PebbleLockManager{prefix: []byte(LockPrefix), maxNonConflict: 3}
+		calls := 0
+		acquire := func(key []byte, mode LockMode, ttl time.Duration) (*LockHandle, error) {
+			calls++
+			return nil, fmt.Errorf("transient store failure")
+		}
+
+		_, err := lm.lockLoop(context.Background(), []byte("lock8"), LockModeExclusive, time.Minute, acquire)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "3 non-conflict errors")
+		assert.Equal(t, 3, calls)
 	})
 }

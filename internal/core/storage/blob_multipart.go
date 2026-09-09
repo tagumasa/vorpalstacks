@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -18,6 +17,9 @@ import (
 )
 
 // CreateMultipartUpload initiates a multipart upload for an object.
+// The parts live under the upload directory alone: the durable upload
+// record (bucket, key, metadata) belongs to the store layer, which keeps
+// it in its own Pebble bucket — the blob tier needs no second copy.
 //
 // Parameters:
 //   - ctx: The context for the operation
@@ -36,19 +38,6 @@ func (s *HybridBlobStore) CreateMultipartUpload(ctx context.Context, bucket, key
 	uploadDir := s.uploadDir(uploadID)
 	if err := os.MkdirAll(uploadDir, 0755); err != nil { // #nosec G301
 		return "", fmt.Errorf("failed to create upload directory: %w", err)
-	}
-
-	upload := &multipartUploadState{
-		Bucket:   bucket,
-		Key:      key,
-		Metadata: metadata,
-	}
-	data, err := json.Marshal(upload)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal upload state: %w", err)
-	}
-	if err := s.storage.Bucket("blob_uploads").Put([]byte(uploadID), data); err != nil {
-		return "", fmt.Errorf("failed to store upload state: %w", err)
 	}
 
 	return uploadID, nil
@@ -91,13 +80,15 @@ func (s *HybridBlobStore) UploadPart(ctx context.Context, bucket, key, uploadID 
 //   - ctx: The context for the operation
 //   - bucket: The bucket name
 //   - key: The object key
+//   - versionId: The version the completed object is stored as; "" and
+//     "null" address the plain (unversioned) copy
 //   - uploadID: The upload ID from CreateMultipartUpload
 //   - parts: The list of part information
 //
 // Returns:
 //   - *BlobMetadata: The final object metadata
 //   - error: An error if the operation fails
-func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, key, uploadID string, parts []PartInfo) (*BlobMetadata, error) {
+func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, key, versionId, uploadID string, parts []PartInfo) (*BlobMetadata, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -123,7 +114,17 @@ func (s *HybridBlobStore) CompleteMultipartUpload(ctx context.Context, bucket, k
 		}
 	}
 
-	result, err := s.putUnlock(ctx, bucket, key, &combined, metadata)
+	// The completed object lands at the plain address for the null version
+	// (and unversioned buckets) and at the versioned address otherwise —
+	// exactly the locations the WithVersion reads and the null fallback
+	// resolve to.
+	var addr blobAddress
+	if versionId == "" || versionId == "null" {
+		addr = s.plainAddress(bucket, key)
+	} else {
+		addr = s.versionedAddress(bucket, key, versionId)
+	}
+	result, err := s.putAt(addr, key, &combined, metadata)
 	if err != nil {
 		// The parts are kept so the client can retry the completion; the
 		// upload is only torn down after the assembled object is stored.
@@ -157,9 +158,6 @@ func (s *HybridBlobStore) AbortMultipartUpload(ctx context.Context, bucket, key,
 func (s *HybridBlobStore) abortMultipartUploadUnlock(uploadID string) error {
 	if err := os.RemoveAll(s.uploadDir(uploadID)); err != nil {
 		slog.Error("Failed to remove upload dir", "error", err)
-	}
-	if err := s.storage.Bucket("blob_uploads").Delete([]byte(uploadID)); err != nil {
-		slog.Error("Failed to delete upload metadata", "error", err)
 	}
 	return nil
 }
@@ -200,17 +198,25 @@ func (s *HybridBlobStore) ListParts(ctx context.Context, bucket, key, uploadID s
 
 			partPath := filepath.Join(uploadDir, entry.Name())
 			data, err := os.ReadFile(partPath)
-			var etag string
-			if err == nil {
-				etag = s.calculateETag(data)
+			if err != nil {
+				// An unreadable part cannot be completed against; skip it
+				// so the listing stays truthful and the completion path
+				// rejects the gap instead of matching an empty ETag.
+				slog.Error("blob multipart part unreadable; skipping in listing", "path", partPath, "error", err)
+				continue
 			}
 
 			parts = append(parts, PartInfo{
 				PartNumber: partNum,
 				Size:       info.Size(),
-				ETag:       etag,
+				ETag:       s.calculateETag(data),
 			})
 		}
 	}
+
+	// os.ReadDir yields lexical entry order, where part.10 precedes part.2;
+	// the ListParts contract is ascending part-number order, and every
+	// consumer (pagination, truncation markers) relies on it.
+	sort.Slice(parts, func(i, j int) bool { return parts[i].PartNumber < parts[j].PartNumber })
 	return parts, nil
 }

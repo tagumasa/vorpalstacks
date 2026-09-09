@@ -16,7 +16,7 @@ const (
 )
 
 // Open opens a storage backend at the given path with the specified options.
-func Open(path string, opts ...Option) (Storage, error) {
+func Open(path string, opts ...Option) (*PebbleStorage, error) {
 	cfg := &Config{
 		Path:           path,
 		CacheSizeBytes: 256 << 20,
@@ -35,7 +35,7 @@ func Open(path string, opts ...Option) (Storage, error) {
 }
 
 // OpenBackend opens a storage backend of the specified type at the given path.
-func OpenBackend(backend BackendType, path string, opts ...Option) (Storage, error) {
+func OpenBackend(backend BackendType, path string, opts ...Option) (*PebbleStorage, error) {
 	switch backend {
 	case BackendPebble:
 		return Open(path, opts...)
