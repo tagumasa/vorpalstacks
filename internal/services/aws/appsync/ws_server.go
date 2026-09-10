@@ -3,8 +3,8 @@ package appsync
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -67,10 +67,11 @@ type wsConnection struct {
 }
 
 // subscription represents a single channel subscription on a connection.
+// The subscription ID is the map key it is stored under; per-operation
+// authorisation happens at subscribe time, so the credentials need no
+// retention.
 type subscription struct {
-	id      string
 	channel string
-	auth    map[string]interface{}
 }
 
 // channelManager tracks all active subscriptions across connections,
@@ -270,18 +271,19 @@ func (s *EventServer) SetSigVerifier(v *auth.SignatureV4Verifier) {
 }
 
 // authorizeEventOperation checks whether the caller is authenticated to
-// perform a publish or subscribe operation on the given channel.
+// perform a publish or subscribe operation on the given channel. It is
+// fail-closed: a missing store, an unknown API, an API without an EventConfig,
+// and an empty effective auth-mode set all deny.
 //
 // Enforcement rules:
-//   - If storeLookup is nil or apiId is empty → allow (test mode / no FQDN).
-//   - If the API has no EventConfig or no auth modes configured → allow.
 //   - Per-namespace auth modes take precedence over EventConfig defaults
 //     when the channel falls under a namespace with explicit overrides.
 //   - If auth modes are configured → verify credentials for each type:
 //     API_KEY (store lookup + expiry), AWS_IAM (connection-level SigV4),
 //     AMAZON_COGNITO_USER_POOLS (JWT via CognitoTokenValidator),
 //     AWS_LAMBDA (Lambda authorizer invocation),
-//     OPENID_CONNECT (fail-closed — out of scope per docs/services.md).
+//     OPENID_CONNECT (never accepted — external IdP integration is outside
+//     the platform's scope; see docs/services.md).
 func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId, channel string, auth map[string]interface{}, isSubscribe bool, iamVerified bool) *string {
 	deniedMsg := "Unauthorized: valid authentication required for this operation"
 
@@ -327,9 +329,10 @@ func (s *EventServer) authorizeEventOperation(ctx context.Context, apiId, channe
 				return nil
 			}
 		case "OPENID_CONNECT":
-			// OIDC token verification requires external IdP connectivity.
-			// Out of scope per docs/services.md "No external IdP".
-			// Fail-closed: do not accept unverified credentials.
+			// Verifying an OIDC token requires reaching the external
+			// identity provider that issued it; the platform integrates no
+			// external IdPs (recorded in docs/services.md), so credentials
+			// are never accepted unverified.
 		}
 	}
 
@@ -394,7 +397,7 @@ func (s *EventServer) verifyAPIKey(store *appsyncstore.AppSyncStore, apiId strin
 	if err != nil {
 		return false
 	}
-	if apiKey.Expires == 0 || time.Now().Unix() > apiKey.Expires {
+	if apiKeyExpired(apiKey.Expires) {
 		return false
 	}
 	return true
@@ -498,13 +501,12 @@ func (s *EventServer) lookupRegion(apiId string) string {
 	return store.GetRegion()
 }
 
-// verifyConnectionIAM attempts SigV4 verification of the WebSocket upgrade
-// request. Unlike the previous implementation that gated on
-// ConnectionAuthModes, this always attempts verification so that the
-// iamVerified flag is available for per-operation auth checks that may
-// include namespace-level IAM overrides (which are only resolved inside
-// authorizeEventOperation).
-func (s *EventServer) verifyConnectionIAM(r *http.Request, apiId string) bool {
+// verifyEventsIAM attempts SigV4 verification of the request against the
+// API's regional store with a single lookup, serving both the WebSocket
+// connection upgrade and the HTTP publish endpoint. Per-operation
+// authorisation may additionally account for namespace-level IAM overrides,
+// which are resolved inside authorizeEventOperation.
+func (s *EventServer) verifyEventsIAM(r *http.Request, apiId string) bool {
 	if s.sigVerifier == nil || s.storeLookup == nil {
 		return false
 	}
@@ -513,12 +515,13 @@ func (s *EventServer) verifyConnectionIAM(r *http.Request, apiId string) bool {
 		return false
 	}
 	if err := s.sigVerifier.VerifyRequest(r, "appsync", store.GetRegion()); err != nil {
-		logs.Warn("WebSocket IAM verification failed", logs.String("apiId", apiId), logs.Err(err))
+		logs.Warn("Events IAM verification failed", logs.String("apiId", apiId), logs.Err(err))
 		return false
 	}
 	return true
 }
 
+// DisconnectByApiId closes all connections associated with the
 // given API ID. Call this when an API is deleted to prevent stale connections
 // from receiving events for a non-existent API.
 func (s *EventServer) DisconnectByApiId(apiId string) {
@@ -590,9 +593,17 @@ func (s *EventServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *EventServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	apiId := s.extractApiId(r)
 
+	// Connection-level authorisation is mandatory: the credentials must
+	// arrive as the header- subprotocol and satisfy one of the API's
+	// ConnectionAuthModes before the upgrade is accepted.
+	if !s.verifyConnectionAuth(r.Context(), apiId, extractSubprotocolAuth(r)) {
+		http.Error(w, `{"message":"Required headers are missing"}`, http.StatusUnauthorized)
+		return
+	}
+
 	iamVerified := false
 	if s.sigVerifier != nil && apiId != "" && r.Header.Get("Authorization") != "" {
-		iamVerified = s.verifyConnectionIAM(r, apiId)
+		iamVerified = s.verifyEventsIAM(r, apiId)
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -622,6 +633,40 @@ func (s *EventServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	go s.readPump(ws)
 }
 
+// publishPayloadError is the shared rejection for an invalid publish
+// payload. errorType carries the wire classification the WebSocket frame
+// reports; the HTTP endpoint answers every case with 400.
+type publishPayloadError struct {
+	errorType string
+	message   string
+}
+
+func (e *publishPayloadError) Error() string { return e.message }
+
+// validatePublishPayload applies the publish rules shared by both transports:
+// the channel must be present and well-formed, the batch within the
+// per-publish event bound, and every event within the per-event size bound.
+func validatePublishPayload(channel string, events []string) error {
+	if channel == "" {
+		return &publishPayloadError{errorType: "InvalidInput", message: "channel is required"}
+	}
+	if !channelPathPattern.MatchString(channel) {
+		return &publishPayloadError{errorType: "InvalidInput", message: "Invalid channel format"}
+	}
+	if len(events) == 0 || len(events) > maxEventsPerPublish {
+		return &publishPayloadError{errorType: "InvalidInput", message: "events must contain 1-5 items"}
+	}
+	for i, ev := range events {
+		if len(ev) > maxEventSizeBytes {
+			return &publishPayloadError{
+				errorType: "LimitExceededException",
+				message:   fmt.Sprintf("Event at index %d exceeds %dKB", i, maxEventSizeBytes/1024),
+			}
+		}
+	}
+	return nil
+}
+
 // handleHTTPPublish processes a POST /event request, validates the payload,
 // and broadcasts events to matching subscribers.
 func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) {
@@ -644,27 +689,9 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if req.Channel == "" {
-		s.writeHTTPError(w, http.StatusBadRequest, "channel is required")
-		return
-	}
-	if !channelPathPattern.MatchString(req.Channel) {
-		s.writeHTTPError(w, http.StatusBadRequest, "Invalid channel format")
-		return
-	}
-	if len(req.Events) == 0 || len(req.Events) > maxEventsPerPublish {
-		s.writeHTTPError(w, http.StatusBadRequest, "events must contain 1-5 items")
-		return
-	}
-
-	for i, ev := range req.Events {
-		if len(ev) > maxEventSizeBytes {
-			s.writeHTTPError(w, http.StatusBadRequest, "Event at index %d exceeds 240KB", i)
-			return
-		}
-	}
-
-	// Enforce configured auth modes for HTTP publish.
+	// Enforce configured auth modes for HTTP publish. Authorisation
+	// precedes payload validation, matching the WebSocket publish path —
+	// an unauthenticated caller learns nothing about the payload rules.
 	apiId := s.extractApiId(r)
 	auth := map[string]interface{}{}
 	if apiKey := r.Header.Get("x-api-key"); apiKey != "" {
@@ -674,7 +701,8 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 		auth["Authorization"] = authorization
 	}
 
-	// Verify SigV4 signature when an Authorization header is present.
+	// Verify SigV4 signature when an Authorization header is present, with
+	// the same single regional store lookup the WebSocket handshake uses.
 	// We always attempt verification rather than gating on a specific auth
 	// mode, because namespace-level IAM overrides are only resolved later
 	// inside authorizeEventOperation. If the client sent a valid SigV4
@@ -683,13 +711,16 @@ func (s *EventServer) handleHTTPPublish(w http.ResponseWriter, r *http.Request) 
 	// auth modes, the flag is simply ignored.
 	iamVerified := false
 	if s.sigVerifier != nil && apiId != "" && r.Header.Get("Authorization") != "" {
-		if err := s.sigVerifier.VerifyRequest(r, "appsync", s.lookupRegion(apiId)); err == nil {
-			iamVerified = true
-		}
+		iamVerified = s.verifyEventsIAM(r, apiId)
 	}
 
 	if msg := s.authorizeEventOperation(r.Context(), apiId, req.Channel, auth, false, iamVerified); msg != nil {
 		s.writeHTTPError(w, http.StatusUnauthorized, "%s", *msg)
+		return
+	}
+
+	if perr := validatePublishPayload(req.Channel, req.Events); perr != nil {
+		s.writeHTTPError(w, http.StatusBadRequest, "%s", perr.Error())
 		return
 	}
 
@@ -723,29 +754,23 @@ func (s *EventServer) extractApiId(r *http.Request) string {
 		return parts[0]
 	}
 
-	// Try parsing from the subprotocol header
-	for _, proto := range websocket.Subprotocols(r) {
-		if strings.HasPrefix(proto, "header-") {
-			encoded := strings.TrimPrefix(proto, "header-")
-			if decoded, err := base64.RawURLEncoding.DecodeString(encoded); err == nil {
-				var auth map[string]string
-				if json.Unmarshal(decoded, &auth) == nil {
-					if h, ok := auth["host"]; ok {
-						hostParts := strings.Split(h, ".")
-						if len(hostParts) > 0 {
-							return hostParts[0]
-						}
-					}
-				}
-			}
-		}
-	}
-
 	// Fall back to the "apiId" query parameter. This is used in non-FQDN
-	// environments (e.g. testing against a bare IP address) where the host
-	// header does not carry the API identifier.
+	// environments (e.g. testing against a bare IP address) where neither
+	// the host header nor the subprotocol credentials carry the API
+	// identifier, and it takes precedence over the subprotocol host so a
+	// bare-IP host never shadows an explicit identifier.
 	if q := r.URL.Query().Get("apiId"); q != "" {
 		return q
+	}
+
+	// Try parsing from the subprotocol credentials: the apiId is the first
+	// dot-segment of the host encoded in the header- subprotocol.
+	if auth := extractSubprotocolAuth(r); auth != nil {
+		if h := auth["host"]; h != "" {
+			if hostParts := strings.Split(h, "."); len(hostParts) > 0 && hostParts[0] != "" {
+				return hostParts[0]
+			}
+		}
 	}
 
 	return ""
@@ -782,7 +807,7 @@ func (s *EventServer) readPump(ws *wsConnection) {
 		"type":                "connection_ack",
 		"connectionTimeoutMs": connectionTimeoutMs,
 	})
-	ws.sendCh <- ack
+	s.sendMessage(ws, ack)
 	for {
 		_, message, err := ws.conn.ReadMessage()
 		if err != nil {
@@ -904,11 +929,7 @@ func (s *EventServer) handleSubscribe(ctx context.Context, ws *wsConnection, sub
 		return
 	}
 
-	sub := &subscription{
-		id:      subId,
-		channel: channel,
-		auth:    auth,
-	}
+	sub := &subscription{channel: channel}
 	ws.subscriptions[subId] = sub
 	ws.mu.Unlock()
 
@@ -918,7 +939,7 @@ func (s *EventServer) handleSubscribe(ctx context.Context, ws *wsConnection, sub
 		"type": "subscribe_success",
 		"id":   subId,
 	})
-	s.sendControlMessage(ws, resp)
+	s.sendMessage(ws, resp)
 }
 
 // handlePublish validates events and broadcasts them to matching subscribers.
@@ -928,27 +949,20 @@ func (s *EventServer) handlePublish(ctx context.Context, ws *wsConnection, pubId
 		return
 	}
 
-	if channel == "" || !channelPathPattern.MatchString(channel) {
-		s.sendPublishError(ws, pubId, "InvalidInput", "Invalid channel format")
-		return
-	}
-
 	// Enforce configured auth modes.
 	if msg := s.authorizeEventOperation(ctx, ws.apiId, channel, auth, false, ws.iamVerified); msg != nil {
 		s.sendPublishError(ws, pubId, "UnauthorizedException", *msg)
 		return
 	}
 
-	if len(events) == 0 || len(events) > maxEventsPerPublish {
-		s.sendPublishError(ws, pubId, "InvalidInput", "events must contain 1-5 items")
-		return
-	}
-
-	for i, ev := range events {
-		if len(ev) > maxEventSizeBytes {
-			s.sendPublishError(ws, pubId, "LimitExceededException", fmt.Sprintf("Event at index %d exceeds 240KB", i))
-			return
+	if perr := validatePublishPayload(channel, events); perr != nil {
+		var ppe *publishPayloadError
+		errorType := "InvalidInput"
+		if errors.As(perr, &ppe) {
+			errorType = ppe.errorType
 		}
+		s.sendPublishError(ws, pubId, errorType, perr.Error())
+		return
 	}
 
 	result := s.publishEvents(channel, events)
@@ -959,7 +973,7 @@ func (s *EventServer) handlePublish(ctx context.Context, ws *wsConnection, pubId
 		"successful": result.Successful,
 		"failed":     result.Failed,
 	})
-	s.sendControlMessage(ws, resp)
+	s.sendMessage(ws, resp)
 }
 
 // handleUnsubscribe removes a subscription and stops receiving events on that channel.
@@ -986,18 +1000,13 @@ func (s *EventServer) handleUnsubscribe(ws *wsConnection, subId string) {
 		"type": "unsubscribe_success",
 		"id":   subId,
 	})
-	s.sendControlMessage(ws, resp)
+	s.sendMessage(ws, resp)
 }
 
 // publishEvents broadcasts events to all subscribers matching the channel path.
 // Returns the publish result with per-event identifiers.
 func (s *EventServer) publishEvents(channel string, events []string) *publishResult {
 	result := &publishResult{}
-
-	// Double-encode events as per the protocol specification:
-	// The "event" field in data messages is a JSON string containing a JSON array.
-	eventsJSON, _ := json.Marshal(events)
-	eventString := string(eventsJSON)
 
 	matches := s.channels.matchSubscriptions(channel)
 	for _, match := range matches {
@@ -1008,13 +1017,17 @@ func (s *EventServer) publishEvents(channel string, events []string) *publishRes
 			continue
 		}
 
-		dataMsg, _ := json.Marshal(map[string]string{
-			"type":  "data",
-			"id":    match.subId,
-			"event": eventString,
-		})
-
-		s.sendMessage(ws, dataMsg)
+		// One data message per event. The event member is an array holding
+		// the published event as a stringified JSON value, per the Event API
+		// WebSocket protocol's data-message contract.
+		for _, ev := range events {
+			dataMsg, _ := json.Marshal(map[string]interface{}{
+				"type":  "data",
+				"id":    match.subId,
+				"event": []string{ev},
+			})
+			s.sendMessage(ws, dataMsg)
+		}
 	}
 
 	for i := range events {
@@ -1082,24 +1095,16 @@ type publishResult struct {
 	Failed []interface{} `json:"failed"`
 }
 
+// sendMessage queues a message on the connection's send channel.
+// Always non-blocking: if writePump exits after a write error and sendCh is
+// full, a blocking path would deadlock readPump inside handleMessage and
+// prevent its defer cleanup from ever running.
 func (s *EventServer) sendMessage(ws *wsConnection, msg []byte) {
-	s.sendMessageInternal(ws, msg, false)
-}
-
-func (s *EventServer) sendControlMessage(ws *wsConnection, msg []byte) {
-	s.sendMessageInternal(ws, msg, true)
-}
-
-func (s *EventServer) sendMessageInternal(ws *wsConnection, msg []byte, block bool) {
 	ws.mu.RLock()
 	defer ws.mu.RUnlock()
 	if ws.closed {
 		return
 	}
-	// Always use non-blocking send. The previous blocking path (when block=true)
-	// could deadlock: if writePump exits after a write error and sendCh is full,
-	// readPump would block forever inside handleMessage -> sendControlMessage,
-	// preventing the defer cleanup from ever running.
 	select {
 	case ws.sendCh <- msg:
 	default:
@@ -1108,46 +1113,32 @@ func (s *EventServer) sendMessageInternal(ws *wsConnection, msg []byte, block bo
 	}
 }
 
-func (s *EventServer) sendError(ws *wsConnection, id, errorType, message string) {
+// sendWsError marshals and delivers the error frame shared by every
+// events-plane operation type; the frame's "type" member is the only
+// per-operation difference.
+func (s *EventServer) sendWsError(ws *wsConnection, frameType, id, errorType, message string) {
 	resp, _ := json.Marshal(map[string]interface{}{
-		"type": "error",
+		"type": frameType,
 		"id":   id,
 		"errors": []map[string]string{
 			{"errorType": errorType, "message": message},
 		},
 	})
-	s.sendControlMessage(ws, resp)
+	s.sendMessage(ws, resp)
+}
+
+func (s *EventServer) sendError(ws *wsConnection, id, errorType, message string) {
+	s.sendWsError(ws, "error", id, errorType, message)
 }
 
 func (s *EventServer) sendSubscribeError(ws *wsConnection, id, errorType, message string) {
-	resp, _ := json.Marshal(map[string]interface{}{
-		"type": "subscribe_error",
-		"id":   id,
-		"errors": []map[string]string{
-			{"errorType": errorType, "message": message},
-		},
-	})
-	s.sendControlMessage(ws, resp)
+	s.sendWsError(ws, "subscribe_error", id, errorType, message)
 }
 
 func (s *EventServer) sendPublishError(ws *wsConnection, id, errorType, message string) {
-	resp, _ := json.Marshal(map[string]interface{}{
-		"type": "publish_error",
-		"id":   id,
-		"errors": []map[string]string{
-			{"errorType": errorType, "message": message},
-		},
-	})
-	s.sendControlMessage(ws, resp)
+	s.sendWsError(ws, "publish_error", id, errorType, message)
 }
 
 func (s *EventServer) sendUnsubscribeError(ws *wsConnection, id, errorType, message string) {
-	resp, _ := json.Marshal(map[string]interface{}{
-		"type": "unsubscribe_error",
-		"id":   id,
-		"errors": []map[string]string{
-			{"errorType": errorType, "message": message},
-		},
-	})
-	s.sendControlMessage(ws, resp)
+	s.sendWsError(ws, "unsubscribe_error", id, errorType, message)
 }

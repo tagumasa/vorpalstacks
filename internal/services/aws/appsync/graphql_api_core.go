@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // createGraphqlApiInput is the transport-agnostic input for creating a
@@ -84,8 +83,9 @@ func (s *AppSyncService) createGraphqlApiCore(store *appsyncstore.AppSyncStore, 
 		OpenIDConnectConfig:               in.OpenIDConnectConfig,
 		OwnerContact:                      in.OwnerContact,
 		QueryDepthLimit:                   in.QueryDepthLimit,
+		QueryDepthLimitSet:                in.HasQueryDepthLimit,
 		ResolverCountLimit:                in.ResolverCountLimit,
-		Tags:                              in.Tags,
+		ResolverCountLimitSet:             in.HasResolverCountLimit,
 		UserPoolConfig:                    in.UserPoolConfig,
 		Visibility:                        in.Visibility,
 		WafWebAclArn:                      in.WafWebAclArn,
@@ -97,14 +97,8 @@ func (s *AppSyncService) createGraphqlApiCore(store *appsyncstore.AppSyncStore, 
 		return nil, nil, mapStoreErrorE(err)
 	}
 
-	if len(created.Tags) > 0 {
-		tagMap := make(map[string]string, len(created.Tags))
-		for k, v := range created.Tags {
-			tagMap[k] = v
-		}
-		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {
-			return nil, nil, err
-		}
+	if err := applyCreateTags(store, created.Arn, in.Tags); err != nil {
+		return nil, nil, err
 	}
 
 	return created, listTagsIfAny(store, created.Arn), nil
@@ -236,7 +230,9 @@ func (s *AppSyncService) updateGraphqlApiCore(store *appsyncstore.AppSyncStore, 
 		OpenIDConnectConfig:               in.OpenIDConnectConfig,
 		OwnerContact:                      in.OwnerContact,
 		QueryDepthLimit:                   in.QueryDepthLimit,
+		QueryDepthLimitSet:                in.HasQueryDepthLimit,
 		ResolverCountLimit:                in.ResolverCountLimit,
+		ResolverCountLimitSet:             in.HasResolverCountLimit,
 		UserPoolConfig:                    in.UserPoolConfig,
 		WafWebAclArn:                      wafWebAclArn,
 		XrayEnabled:                       xrayEnabled,
@@ -257,21 +253,24 @@ type graphqlApiWithTags struct {
 }
 
 // listGraphqlApisCore lists GraphQL APIs with pagination, enriching each
-// entry with its tag-store view.
-func (s *AppSyncService) listGraphqlApisCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string, apiTypeFilter string) ([]graphqlApiWithTags, string, error) {
-	if maxResults < 0 {
-		maxResults = 0
+// entry with its tag-store view. ownerFilter carries the Ownership enum of
+// the list request: every API in a regional store belongs to that account,
+// so CURRENT_ACCOUNT is the unfiltered view, while OTHER_ACCOUNTS — APIs
+// shared into the account — has no substrate and lists nothing.
+func (s *AppSyncService) listGraphqlApisCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string, apiTypeFilter, ownerFilter string) ([]graphqlApiWithTags, string, error) {
+	switch ownerFilter {
+	case "", "CURRENT_ACCOUNT":
+	case "OTHER_ACCOUNTS":
+		return []graphqlApiWithTags{}, "", nil
+	default:
+		return nil, "", NewBadRequestException(fmt.Sprintf("Invalid owner: %s", ownerFilter))
 	}
-	if maxResults == 0 {
-		maxResults = 25
+
+	opts, err := listOptionsFromParams(maxResults, nextToken)
+	if err != nil {
+		return nil, "", err
 	}
-	if maxResults > 25 {
-		return nil, "", NewBadRequestException("maxResults must be between 1 and 25")
-	}
-	apis, nextToken, err := store.ListGraphqlApis(storecommon.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	}, apiTypeFilter)
+	apis, nextToken, err := store.ListGraphqlApis(opts, apiTypeFilter)
 	if err != nil {
 		return nil, "", mapStoreErrorE(err)
 	}

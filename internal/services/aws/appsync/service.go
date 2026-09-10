@@ -92,21 +92,19 @@ func (s *AppSyncService) ShutdownEventServer() {
 
 // GetStoreForRegion returns the cached AppSync store for the given region,
 // creating one if not already cached. Used by both HTTP handlers and the
-// admin console to ensure a single store instance per region.
+// admin console to ensure a single store instance per region; creation goes
+// through the same idiom as the request-scoped store().
 func (s *AppSyncService) GetStoreForRegion(region string) (*appsyncstore.AppSyncStore, error) {
-	if cached, ok := s.stores.Load(region); ok {
-		return cached.(*appsyncstore.AppSyncStore), nil
-	}
-	if s.storageManager == nil {
-		return nil, fmt.Errorf("appsync storage manager not initialised")
-	}
-	rs, err := s.storageManager.GetStorage(region)
-	if err != nil {
-		return nil, err
-	}
-	store := appsyncstore.NewAppSyncStore(rs, s.accountID, region)
-	actual, _ := s.stores.LoadOrStore(region, store)
-	return actual.(*appsyncstore.AppSyncStore), nil
+	return storecommon.GetOrCreateStoreE(&s.stores, region, func() (*appsyncstore.AppSyncStore, error) {
+		if s.storageManager == nil {
+			return nil, fmt.Errorf("appsync storage manager not initialised")
+		}
+		rs, err := s.storageManager.GetStorage(region)
+		if err != nil {
+			return nil, err
+		}
+		return appsyncstore.NewAppSyncStore(rs, s.accountID, region), nil
+	})
 }
 
 func (s *AppSyncService) store(reqCtx *request.RequestContext) (*appsyncstore.AppSyncStore, error) {

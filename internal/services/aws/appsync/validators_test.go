@@ -4,9 +4,28 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-
-	"vorpalstacks/internal/common/request"
 )
+
+// TestValidateDataSourceTypeAcceptance pins that the acceptance set matches
+// the servable dispatch types: enum members whose runtime is an AWS-side
+// service this platform does not host (Bedrock) are rejected at creation
+// instead of failing at every resolver dispatch.
+func TestValidateDataSourceTypeAcceptance(t *testing.T) {
+	for _, accepted := range []string{
+		"AWS_LAMBDA", "AMAZON_DYNAMODB", "AMAZON_ELASTICSEARCH", "NONE",
+		"HTTP", "RELATIONAL_DATABASE", "AMAZON_OPENSEARCH_SERVICE",
+		"AMAZON_EVENTBRIDGE",
+	} {
+		if !validateDataSourceType(accepted) {
+			t.Errorf("expected %s to be accepted", accepted)
+		}
+	}
+	for _, rejected := range []string{"AMAZON_BEDROCK_RUNTIME", "HTTP_V2", ""} {
+		if validateDataSourceType(rejected) {
+			t.Errorf("expected %q to be rejected", rejected)
+		}
+	}
+}
 
 // TestValidateDescriptionUnicodeLengths pins that AppSync descriptions
 // follow the Smithy Description @length(0, 255) trait counted in Unicode
@@ -59,24 +78,19 @@ func TestValidateEnvVarValueUnicodeLengths(t *testing.T) {
 	}
 }
 
-// TestParsePaginationOptionsTokenPattern pins the PaginationToken
+// TestListOptionsFromParamsTokenPattern pins the PaginationToken
 // @pattern ^[\S]+$: a non-empty token containing whitespace is rejected
 // with BadRequestException, while an empty token (first page) and opaque
 // non-whitespace tokens pass.
-func TestParsePaginationOptionsTokenPattern(t *testing.T) {
-	mkReq := func(token string) *request.ParsedRequest {
-		return &request.ParsedRequest{
-			Parameters: map[string]interface{}{"nextToken": token},
-		}
-	}
-	if _, err := parsePaginationOptions(mkReq("opaque-token_1.2")); err != nil {
+func TestListOptionsFromParamsTokenPattern(t *testing.T) {
+	if _, err := listOptionsFromParams(25, "opaque-token_1.2"); err != nil {
 		t.Errorf("valid token rejected: %v", err)
 	}
-	if _, err := parsePaginationOptions(mkReq("")); err != nil {
+	if _, err := listOptionsFromParams(0, ""); err != nil {
 		t.Errorf("empty token (first page) rejected: %v", err)
 	}
 	for _, bad := range []string{"has space", "tab\tinside", "line\nbreak"} {
-		if _, err := parsePaginationOptions(mkReq(bad)); err == nil {
+		if _, err := listOptionsFromParams(25, bad); err == nil {
 			t.Errorf("token %q accepted", bad)
 		}
 	}

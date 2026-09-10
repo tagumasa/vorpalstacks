@@ -146,9 +146,12 @@ func nonNullType(name string) *ast.Type {
 	return &ast.Type{NamedType: name, NonNull: true}
 }
 
-// listType creates a nullable list of a named type.
+// listType creates a nullable list of a named type. The outer NamedType must
+// stay empty: isListType treats "Elem != nil && NamedType == \"\"" as the list
+// marker, and a non-empty outer name would route list values down the
+// composite-object completion path instead.
 func listType(elem string) *ast.Type {
-	return &ast.Type{NamedType: elem, Elem: &ast.Type{NamedType: elem}}
+	return &ast.Type{Elem: &ast.Type{NamedType: elem}}
 }
 
 // nonNullListType creates a NonNull list of NonNull element type.
@@ -168,9 +171,6 @@ func (e *graphQLEngine) resolveIntrospectionField(
 ) (interface{}, bool) {
 	switch fieldName {
 	case "__typename":
-		if parentSource != nil {
-			return parentTypeName, true
-		}
 		return parentTypeName, true
 
 	case "__schema":

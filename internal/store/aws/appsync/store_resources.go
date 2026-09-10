@@ -80,7 +80,7 @@ func (s *AppSyncStore) UpdateFunction(f *FunctionConfiguration) (*FunctionConfig
 	if f.Code != "" {
 		existing.Code = f.Code
 	}
-	if f.MaxBatchSize > 0 {
+	if f.MaxBatchSizeSet {
 		existing.MaxBatchSize = f.MaxBatchSize
 	}
 	if f.SyncConfig != nil {
@@ -94,12 +94,17 @@ func (s *AppSyncStore) UpdateFunction(f *FunctionConfiguration) (*FunctionConfig
 }
 
 // DeleteFunction removes an AppSync function by API ID and function ID.
+// Tag rows are keyed by the function ARN and removed with the record.
 func (s *AppSyncStore) DeleteFunction(apiId, functionId string) error {
 	key := apiId + "/" + functionId
 	if !s.functionsStore.Exists(key) {
 		return ErrFunctionNotFound
 	}
-	return s.functionsStore.Delete(key)
+	if err := s.functionsStore.Delete(key); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildFunctionARN(apiId, functionId))
+	return nil
 }
 
 // ListFunctions returns a paginated list of AppSync functions for a given GraphQL API.
@@ -189,13 +194,18 @@ func (s *AppSyncStore) UpdateType(t *Type) (*Type, error) {
 	return existing, nil
 }
 
-// DeleteType removes a type definition by API ID and type name.
+// DeleteType removes a type definition by API ID and type name. Tag rows are
+// keyed by the type ARN and removed with the record.
 func (s *AppSyncStore) DeleteType(apiId, typeName string) error {
 	key := apiId + "/" + typeName
 	if !s.typesStore.Exists(key) {
 		return ErrTypeNotFound
 	}
-	return s.typesStore.Delete(key)
+	if err := s.typesStore.Delete(key); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildTypeARN(apiId, typeName))
+	return nil
 }
 
 // ListTypes returns a paginated list of type definitions for a given GraphQL API.
@@ -296,13 +306,18 @@ func (s *AppSyncStore) UpdateApiKey(apiId string, apiKey *ApiKey) error {
 	return s.apiKeysStore.Put(apiId+"/"+apiKey.Id, apiKey)
 }
 
-// DeleteApiKey removes an API key by ID.
+// DeleteApiKey removes an API key by ID. Tag rows are keyed by the API key
+// ARN and removed with the record.
 func (s *AppSyncStore) DeleteApiKey(apiId, id string) error {
 	key := apiId + "/" + id
 	if !s.apiKeysStore.Exists(key) {
 		return ErrApiKeyNotFound
 	}
-	return s.apiKeysStore.Delete(key)
+	if err := s.apiKeysStore.Delete(key); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildApiKeyARN(apiId, id))
+	return nil
 }
 
 // ListApiKeys lists API keys for a given API.
@@ -361,13 +376,18 @@ func (s *AppSyncStore) UpdateApiCache(apiId string, cache *ApiCache) error {
 	return s.apiCachesStore.Put(apiId, cache)
 }
 
-// DeleteApiCache removes the API cache configuration.
+// DeleteApiCache removes the API cache configuration. Tag rows are keyed by
+// the cache ARN and removed with the record.
 // Validates existence first, as BaseStore.Delete silently succeeds on missing keys.
 func (s *AppSyncStore) DeleteApiCache(apiId string) error {
 	if !s.apiCachesStore.Exists(apiId) {
 		return ErrApiCacheNotFound
 	}
-	return s.apiCachesStore.Delete(apiId)
+	if err := s.apiCachesStore.Delete(apiId); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildApiCacheARN(apiId))
+	return nil
 }
 
 // --- Domain Names ---
@@ -406,13 +426,18 @@ func (s *AppSyncStore) UpdateDomainName(domainName *DomainNameConfig) error {
 	return s.domainNamesStore.Put(domainName.DomainName, domainName)
 }
 
-// DeleteDomainName removes a domain name configuration.
+// DeleteDomainName removes a domain name configuration. Tag rows are keyed
+// by the domain ARN and removed with the record.
 // Validates existence first, as BaseStore.Delete silently succeeds on missing keys.
 func (s *AppSyncStore) DeleteDomainName(domainName string) error {
 	if !s.domainNamesStore.Exists(domainName) {
 		return ErrDomainNameNotFound
 	}
-	return s.domainNamesStore.Delete(domainName)
+	if err := s.domainNamesStore.Delete(domainName); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildDomainNameARN(domainName))
+	return nil
 }
 
 // ListDomainNames lists all domain names.

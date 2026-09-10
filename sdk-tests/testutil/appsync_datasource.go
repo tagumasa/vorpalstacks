@@ -56,6 +56,17 @@ func (r *TestRunner) runAppSyncDataSourceTests(res *appsyncResources) []TestResu
 		return nil
 	}))
 
+	// Bedrock-runtime data sources name an AWS-side LLM runtime this platform
+	// does not host; creation rejects them rather than failing at dispatch.
+	results = append(results, r.RunTest("appsync", "CreateDataSource_BedrockRuntimeRejected", func() error {
+		_, err := client.CreateDataSource(ctx, &appsync.CreateDataSourceInput{
+			ApiId: aws.String(res.gqlApiId),
+			Name:  aws.String("testDSBedrock"),
+			Type:  types.DataSourceTypeAmazonBedrockRuntime,
+		})
+		return expectAWSErrorCode(err, "BadRequestException")
+	}))
+
 	results = append(results, r.RunTest("appsync", "GetDataSource", func() error {
 		resp, err := client.GetDataSource(ctx, &appsync.GetDataSourceInput{
 			ApiId: aws.String(res.gqlApiId),

@@ -42,7 +42,7 @@ func (h *AdminHandler) ListApis(ctx context.Context, req *connect.Request[pb.Lis
 
 	pbApis := make([]*pb.Api, len(entries))
 	for i, a := range entries {
-		pbApis[i] = toPbApi(a.Api)
+		pbApis[i] = toPbApi(a.Api, a.Tags)
 	}
 
 	return connect.NewResponse(&pb.ListApisResponse{
@@ -58,14 +58,18 @@ func (h *AdminHandler) ListGraphqlApis(ctx context.Context, req *connect.Request
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	entries, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.GetNexttoken(), "")
+	// The owner filter stays unfiltered on the console plane: the proto
+	// enum's zero value is OWNERSHIP_OTHER_ACCOUNTS, so an unset request is
+	// indistinguishable from an explicit one and wiring it through would
+	// empty every default console listing.
+	entries, nextToken, err := h.service.listGraphqlApisCore(store, int(req.Msg.GetMaxresults()), req.Msg.GetNexttoken(), "", "")
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
 	pbApis := make([]*pb.GraphqlApi, len(entries))
 	for i, a := range entries {
-		pbApis[i] = toPbGraphqlApi(a.Api)
+		pbApis[i] = toPbGraphqlApi(a.Api, a.Tags)
 	}
 
 	return connect.NewResponse(&pb.ListGraphqlApisResponse{
@@ -86,7 +90,7 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 		return nil, svcerrors.StoreErrorToGRPC(err)
 	}
 
-	result, _, err := h.service.createGraphqlApiCore(store, createGraphqlApiInput{
+	result, tags, err := h.service.createGraphqlApiCore(store, createGraphqlApiInput{
 		Name:               req.Msg.GetName(),
 		AuthenticationType: authType,
 		Tags:               req.Msg.GetTags(),
@@ -97,7 +101,7 @@ func (h *AdminHandler) CreateGraphqlApi(ctx context.Context, req *connect.Reques
 	}
 
 	return connect.NewResponse(&pb.CreateGraphqlApiResponse{
-		Graphqlapi: toPbGraphqlApi(result),
+		Graphqlapi: toPbGraphqlApi(result, tags),
 	}), nil
 }
 

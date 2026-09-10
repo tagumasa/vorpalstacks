@@ -47,7 +47,7 @@
 | Service | Coverage | Default | Notes |
 |---------|----------|---------|-------|
 | Athena | Broad | enabled | No capacity reservations or notebook sessions |
-| AppSync | Broad | enabled | GraphQL APIs, VTL resolvers, real-time subscriptions |
+| AppSync | Broad | enabled | GraphQL APIs, VTL resolvers, real-time subscriptions; AMAZON_BEDROCK_RUNTIME data source type excluded; Events API OpenID Connect authorisation excluded; appsyncDomainName is synthesised, not provisioned |
 | CloudFront | Broad | enabled | Origin proxy, cache behaviours, TTL edge cache, invalidation, CNAME aliases, continuous deployment policies, viewer TLS, ViewerProtocolPolicy |
 | CloudTrail | Broad | **disabled** | No event data stores or SQL queries |
 | EC2 | Selective | enabled | Instance management only |
@@ -90,6 +90,9 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **API Gateway — VPC_LINK connection type**: rejects at both integration create and the /connectionType replace path; a VPC_LINK integration would route through a VpcLink to a Network Load Balancer, which this platform does not provide.
 - **API Gateway — domain name access associations**: the four operations are absent because the feature exists only for VPC-endpoint-backed access — the access association source type admits VPCE as its only valid value and applies to PRIVATE custom domain names, and the platform provides no VPC-endpoint substrate (the same basis as the VpcLink exclusion).
 - **API Gateway — GetSdk**: excluded with the documentation-parts and client-certificate families; SDK package generation has no consumer on this platform, while the static SDK-type metadata operations (GetSdkType, GetSdkTypes) are implemented.
+- **AppSync — AMAZON_BEDROCK_RUNTIME data source type**: rejected at creation; the type names the AWS-side Bedrock LLM runtime, which this platform does not provide — admitting it would leave every resolver on such a data source failing at dispatch.
+- **AppSync — Events API OpenID Connect authorisation**: excluded; verifying an OIDC token requires reaching the external identity provider that issued it, and external IdP integration is outside this platform's scope. Connections and operations presenting OPENID_CONNECT credentials are denied (fail-closed); the other Events authorisation modes — API key, IAM, Cognito user pools, Lambda authoriser — are verified.
+- **AppSync — appsyncDomainName**: synthesised deterministically as `<domainName>.appsync-api.<region>.amazonaws.com`; AWS provisions a CloudFront distribution and returns its domain, which cannot exist in an edge/on-premises deployment — no distribution is created and no DNS record is served, so the value is metadata for client-side CNAME setup (the same basis as the Cognito user-pool domain note).
 - **Athena — TEST_MODE**: query execution history is purged at startup.
 - **CloudFront — viewer TLS serving**: SNI per distribution, from the attached ACM/IAM certificate.
 - **Cognito IDP — user-pool domains**: the four domain operations are implemented; domain entries resolve to the platform endpoint suffix (`<domain>.auth.<cognito_suffix>` with the region substituted) rather than AWS-hosted CloudFront domains, which cannot exist in an edge/on-premises deployment.

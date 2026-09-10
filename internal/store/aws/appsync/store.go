@@ -92,6 +92,42 @@ func apiKeyBucketName(region string) string {
 	return "appsync-api-keys-" + region
 }
 
+// endpointHost extracts the bare host from a configured base URL, dropping
+// the scheme and any port suffix.
+func endpointHost(baseURL string) string {
+	host := strings.TrimPrefix(strings.TrimPrefix(baseURL, "http://"), "https://")
+	if idx := strings.Index(host, ":"); idx >= 0 {
+		host = host[:idx]
+	}
+	return host
+}
+
+// graphqlEndpointURLs returns the GRAPHQL and REALTIME endpoint URLs of a
+// GraphQL API, derived from the configured base URL.
+func graphqlEndpointURLs(apiId string) map[string]string {
+	baseURL := config.BaseURL()
+	wsBase := strings.Replace(baseURL, "http://", "ws://", 1)
+	return map[string]string{
+		"GRAPHQL":  fmt.Sprintf("%s/v1/apis/%s/graphql", baseURL, apiId),
+		"REALTIME": fmt.Sprintf("%s/v1/apis/%s/realtime", wsBase, apiId),
+	}
+}
+
+// eventEndpointURLs returns the HTTP and REALTIME endpoint URLs of an Event
+// API, derived from the configured base URL host and the events listener
+// port.
+func eventEndpointURLs() map[string]string {
+	host := endpointHost(config.BaseURL())
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := config.GetInt("ports.appsync_events")
+	return map[string]string{
+		"HTTP":     fmt.Sprintf("http://%s:%d/event", host, port),
+		"REALTIME": fmt.Sprintf("ws://%s:%d/event/realtime", host, port),
+	}
+}
+
 // apiCacheBucketName returns the PebbleDB bucket name for API cache resources.
 func apiCacheBucketName(region string) string {
 	return "appsync-api-caches-" + region
@@ -191,9 +227,38 @@ func (s *AppSyncStore) BuildTypeARN(apiId, typeName string) string {
 	return s.arnBuilder.AppSync().Type(apiId, typeName)
 }
 
+// BuildApiKeyARN constructs an ARN for an API key.
+func (s *AppSyncStore) BuildApiKeyARN(apiId, keyId string) string {
+	return s.arnBuilder.AppSync().ApiKey(apiId, keyId)
+}
+
+// BuildApiCacheARN constructs an ARN for an API cache.
+func (s *AppSyncStore) BuildApiCacheARN(apiId string) string {
+	return s.arnBuilder.AppSync().ApiCache(apiId)
+}
+
 // BuildDomainNameARN constructs an ARN for a custom domain name.
 func (s *AppSyncStore) BuildDomainNameARN(name string) string {
 	return s.arnBuilder.AppSync().DomainName(name)
+}
+
+// sweepChildTags removes the TagStore entries of every child resource under
+// the apiId key prefix, deriving each ARN from the key segments that follow
+// the prefix. Best effort: a failed entry logs and the sweep continues, since
+// the resource records themselves are being deleted regardless.
+func (s *AppSyncStore) sweepChildTags(bucket *common.BaseStore, apiId string, arnFor func(segments []string) string) {
+	_ = bucket.ScanPrefix(apiId+"/", func(key string, _ []byte) error {
+		segments := strings.Split(strings.TrimPrefix(key, apiId+"/"), "/")
+		arn := arnFor(segments)
+		if arn == "" {
+			return nil
+		}
+		if err := s.TagStore.Delete(arn); err != nil {
+			logs.Warn("failed to delete child tags during API deletion",
+				logs.String("apiId", apiId), logs.String("arn", arn), logs.Err(err))
+		}
+		return nil
+	})
 }
 
 // --- Event API (v2) ---
@@ -224,27 +289,21 @@ func (s *AppSyncStore) CreateApi(api *Api) (*Api, error) {
 	api.Arn = s.BuildApiARN(api.ApiId)
 	api.Created = time.Now().UTC()
 	if api.Dns == nil {
-		eventsPort := config.GetInt("ports.appsync_events")
-		baseURL := config.GetString("endpoints.base_url")
-		host := strings.TrimPrefix(baseURL, "http://")
-		host = strings.TrimPrefix(host, "https://")
-		if idx := strings.Index(host, ":"); idx >= 0 {
-			host = host[:idx]
-		}
-		if host == "" {
-			host = "127.0.0.1"
-		}
-		api.Dns = map[string]string{
-			"HTTP":     fmt.Sprintf("http://%s:%d/event", host, eventsPort),
-			"REALTIME": fmt.Sprintf("ws://%s:%d/event/realtime", host, eventsPort),
-		}
+		api.Dns = eventEndpointURLs()
 	}
 
 	if err := s.apisStore.Put(api.Name, api); err != nil {
 		return nil, err
 	}
 	if err := s.putApiIdIndex(api.ApiId, api.Name); err != nil {
-		logs.Warn("failed to write apiId index", logs.String("apiId", api.ApiId), logs.Err(err))
+		// The index is the only ID-lookup path, so a failed index write
+		// must fail the create: the record is rolled back best-effort
+		// rather than left unreachable by ID.
+		if delErr := s.apisStore.Delete(api.Name); delErr != nil {
+			logs.Error("failed to roll back API record after index write failure",
+				logs.String("name", api.Name), logs.Err(delErr))
+		}
+		return nil, err
 	}
 	return api, nil
 }
@@ -259,25 +318,20 @@ func (s *AppSyncStore) putApiIdIndex(apiId, name string) error {
 	return s.apisStore.Put(apiIdIndexKey(apiId), map[string]string{"name": name})
 }
 
-// getApiNameByIndex retrieves the API name from the apiId index.
-// Falls back to full scan if the index entry is missing (pre-index data).
+// getApiNameByIndex retrieves the API name from the apiId index. A missing
+// index entry means the API does not exist: every fresh write records the
+// index entry alongside the record. Any other read failure is a storage
+// error and propagates as such rather than masquerading as absence.
 func (s *AppSyncStore) getApiNameByIndex(apiId string) (string, error) {
 	var m map[string]string
-	if err := s.apisStore.Get(apiIdIndexKey(apiId), &m); err == nil {
-		if name, ok := m["name"]; ok {
-			return name, nil
+	if err := s.apisStore.Get(apiIdIndexKey(apiId), &m); err != nil {
+		if !common.IsNotFound(err) {
+			return "", err
 		}
+		return "", ErrApiNotFound
 	}
-
-	// Fallback: full scan for pre-index data.
-	apis, err := common.ListMatching[Api](s.apisStore, "", func(a *Api) bool {
-		return a.ApiId == apiId
-	})
-	if err != nil {
-		return "", err
-	}
-	if len(apis) > 0 {
-		return apis[0].Name, nil
+	if name, ok := m["name"]; ok {
+		return name, nil
 	}
 	return "", ErrApiNotFound
 }
@@ -286,13 +340,15 @@ func (s *AppSyncStore) getApiNameByIndex(apiId string) (string, error) {
 func (s *AppSyncStore) GetApi(name string) (*Api, error) {
 	var api Api
 	if err := s.apisStore.Get(name, &api); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, ErrApiNotFound
 	}
 	return &api, nil
 }
 
-// GetApiById retrieves an Event API by its UUID.
-// Uses the apiId→name index for direct lookup, with full-scan fallback.
+// GetApiById retrieves an Event API by its UUID via the apiId→name index.
 func (s *AppSyncStore) GetApiById(apiId string) (*Api, error) {
 	name, err := s.getApiNameByIndex(apiId)
 	if err != nil {
@@ -302,7 +358,7 @@ func (s *AppSyncStore) GetApiById(apiId string) (*Api, error) {
 }
 
 // UpdateApiById updates an Event API identified by apiId.
-// Merges non-zero fields from the update; always copies Tags if present.
+// Merges non-zero fields from the update.
 func (s *AppSyncStore) UpdateApiById(apiId string, update *Api) (*Api, error) {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
@@ -363,9 +419,21 @@ func (s *AppSyncStore) DeleteApiById(apiId string) error {
 	s.createMu.Lock()
 	defer s.createMu.Unlock()
 
-	// Remove all channel namespaces for this Event API.
+	// Remove all channel namespaces and API keys for this Event API. The
+	// child tag rows are keyed by ARN, so they are swept before the bulk
+	// prefix delete removes the records they derive from.
+	s.sweepChildTags(s.channelsStore, apiId, func(segments []string) string {
+		return s.BuildChannelNamespaceARN(apiId, segments[0])
+	})
+	s.sweepChildTags(s.apiKeysStore, apiId, func(segments []string) string {
+		return s.BuildApiKeyARN(apiId, segments[0])
+	})
 	if err := s.channelsStore.DeleteByPrefix(apiId + "/"); err != nil {
 		logs.Warn("failed to delete channel namespaces during Event API deletion",
+			logs.String("apiId", apiId), logs.Err(err))
+	}
+	if err := s.apiKeysStore.DeleteByPrefix(apiId + "/"); err != nil {
+		logs.Warn("failed to delete API keys during Event API deletion",
 			logs.String("apiId", apiId), logs.Err(err))
 	}
 

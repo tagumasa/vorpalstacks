@@ -11,6 +11,18 @@ import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 )
 
+// requireTypeFormat validates the requested type serialisation format:
+// present and one of SDL or JSON.
+func requireTypeFormat(format string) error {
+	if format == "" {
+		return NewBadRequestException("format is required")
+	}
+	if !validateTypeFormat(format) {
+		return NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
+	}
+	return nil
+}
+
 // typeInRequestedFormat returns the definition and format members a list
 // response should carry for the requested output serialisation. When the
 // stored serialisation differs from the requested one the definition is

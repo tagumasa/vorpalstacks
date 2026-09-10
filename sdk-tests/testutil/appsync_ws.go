@@ -2,8 +2,10 @@ package testutil
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -100,7 +102,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_ConnectionAck", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return fmt.Errorf("dial failed: %w", err)
 		}
@@ -120,7 +122,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeSuccess", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -154,7 +156,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeError_InvalidChannel", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -185,7 +187,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeError_DuplicateId", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -222,7 +224,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_SubscribeError_InvalidSubId", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -252,8 +254,32 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("appsync-ws", "WebSocket_HandshakeRejectedWithoutAuth", func() error {
+		// The header- subprotocol is the only accepted connection credential
+		// carrier: a handshake without it must be refused before the upgrade
+		// completes, with the missing-credentials error.
+		_, resp, err := websocket.DefaultDialer.Dial(wsEndpoint, http.Header{
+			"Sec-WebSocket-Protocol": []string{"aws-appsync-event-ws"},
+		})
+		if err == nil {
+			return fmt.Errorf("expected handshake rejection without credentials")
+		}
+		if resp == nil {
+			return fmt.Errorf("expected HTTP response on rejection: %v", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusUnauthorized {
+			return fmt.Errorf("expected 401, got %d", resp.StatusCode)
+		}
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
+		if !strings.Contains(string(body), "Required headers are missing") {
+			return fmt.Errorf("expected the missing-credentials error, got: %s", string(body))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_PublishAndReceiveData", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -281,54 +307,68 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 			"type":          "publish",
 			"id":            "pub-1",
 			"channel":       ch,
-			"events":        []string{`{"msg":"hello"}`},
+			"events":        []string{`{"msg":"hello"}`, `{"msg":"world"}`},
 			"authorization": authMap(),
 		}); err != nil {
 			return err
 		}
 
-		msgs, err := readMessages(conn, 3*time.Second, 2)
+		msgs, err := readMessages(conn, 3*time.Second, 3)
 		if err != nil {
 			return fmt.Errorf("failed to read responses: %w", err)
 		}
 
-		var pubResp, dataMsg map[string]interface{}
+		var pubResp map[string]interface{}
+		var dataMsgs []map[string]interface{}
 		for _, m := range msgs {
 			switch m["type"] {
 			case "publish_success":
 				pubResp = m
 			case "data":
-				dataMsg = m
+				dataMsgs = append(dataMsgs, m)
 			}
 		}
 		if pubResp == nil {
 			return fmt.Errorf("expected publish_success, got types: %v", messageTypes(msgs))
 		}
-		if dataMsg == nil {
-			return fmt.Errorf("expected data message, got types: %v", messageTypes(msgs))
+		if len(dataMsgs) != 2 {
+			return fmt.Errorf("expected one data message per event (2), got %d, types: %v", len(dataMsgs), messageTypes(msgs))
 		}
-		if dataMsg["type"] != "data" {
-			return fmt.Errorf("expected data message, got type %v", dataMsg["type"])
+
+		// Each data message carries its event in the documented array form:
+		// the event member is an array of stringified events, one message
+		// per published event.
+		var payloads []string
+		for _, m := range dataMsgs {
+			if m["id"] != "sub-pub" {
+				return fmt.Errorf("expected data id sub-pub, got %v", m["id"])
+			}
+			eventArr, ok := m["event"].([]interface{})
+			if !ok {
+				return fmt.Errorf("event field is not an array: %T", m["event"])
+			}
+			if len(eventArr) != 1 {
+				return fmt.Errorf("expected one event per data message, got %d", len(eventArr))
+			}
+			eventStr, ok := eventArr[0].(string)
+			if !ok {
+				return fmt.Errorf("event array element is not a string: %T", eventArr[0])
+			}
+			var payload map[string]interface{}
+			if err := json.Unmarshal([]byte(eventStr), &payload); err != nil {
+				return fmt.Errorf("event array element is not a stringified JSON payload: %w", err)
+			}
+			msg, _ := payload["msg"].(string)
+			payloads = append(payloads, msg)
 		}
-		if dataMsg["id"] != "sub-pub" {
-			return fmt.Errorf("expected data id sub-pub, got %v", dataMsg["id"])
-		}
-		eventStr, ok := dataMsg["event"].(string)
-		if !ok {
-			return fmt.Errorf("event field is not a string: %T", dataMsg["event"])
-		}
-		var events []json.RawMessage
-		if err := json.Unmarshal([]byte(eventStr), &events); err != nil {
-			return fmt.Errorf("event field is not valid JSON array: %w", err)
-		}
-		if len(events) != 1 {
-			return fmt.Errorf("expected 1 event, got %d", len(events))
+		if len(payloads) != 2 || payloads[0] != "hello" || payloads[1] != "world" {
+			return fmt.Errorf("expected per-event payloads hello,world in order, got %v", payloads)
 		}
 		return nil
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_PublishError_EmptyEvents", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -359,7 +399,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnsubscribeSuccess", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -402,7 +442,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnsubscribeError_UnknownId", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -430,7 +470,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_ConnectionInit_Accepted", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -455,7 +495,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnknownMessageType", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -482,13 +522,13 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_MultiSubscriberFanOut", func() error {
-		conn1, err := dialWS(wsEndpoint)
+		conn1, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
 		defer conn1.Close()
 
-		conn2, err := dialWS(wsEndpoint)
+		conn2, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -568,7 +608,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_WildcardChannel", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -626,7 +666,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "WebSocket_UnsubscribeStopsDelivery", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -683,7 +723,7 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	}))
 
 	results = append(results, r.RunTest("appsync-ws", "HTTP_Publish_Success", func() error {
-		conn, err := dialWS(wsEndpoint)
+		conn, err := dialWS(wsEndpoint, apiKey)
 		if err != nil {
 			return err
 		}
@@ -790,11 +830,26 @@ func (r *TestRunner) RunAppSyncWSTests() []TestResult {
 	return results
 }
 
-func dialWS(endpoint string) (*websocket.Conn, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(endpoint, http.Header{
-		"Sec-WebSocket-Protocol": []string{"aws-appsync-event-ws"},
-	})
+// dialWS connects to the Event API realtime endpoint with the mandatory
+// connection authorisation: the credentials travel as the Base64URL-encoded
+// header- subprotocol alongside aws-appsync-event-ws, as real AWS requires.
+func dialWS(endpoint, apiKey string) (*websocket.Conn, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(endpoint, wsHandshakeHeaders(apiKey))
 	return conn, err
+}
+
+// wsHandshakeHeaders builds the WebSocket handshake headers carrying the
+// API key credentials in the header- subprotocol.
+func wsHandshakeHeaders(apiKey string) http.Header {
+	creds, _ := json.Marshal(map[string]string{
+		"host":      fmt.Sprintf("127.0.0.1:%d", appsyncListenerPort),
+		"x-api-key": apiKey,
+	})
+	return http.Header{
+		"Sec-WebSocket-Protocol": []string{
+			"aws-appsync-event-ws, header-" + base64.RawURLEncoding.EncodeToString(creds),
+		},
+	}
 }
 
 func drainAck(conn *websocket.Conn) error {

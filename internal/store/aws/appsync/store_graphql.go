@@ -2,10 +2,8 @@ package appsync
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
-	"vorpalstacks/internal/config"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/common"
 )
@@ -22,25 +20,21 @@ func (s *AppSyncStore) putGraphqlApiIdIndex(apiId, name string) error {
 	return s.graphqlApisStore.Put(graphqlApiIdIndexKey(apiId), map[string]string{"name": name})
 }
 
-// getGraphqlApiNameByIndex retrieves the GraphQL API name from the apiId index.
-// Falls back to full scan if the index entry is missing (pre-index data).
+// getGraphqlApiNameByIndex retrieves the GraphQL API name from the apiId
+// index. A missing index entry means the API does not exist: every fresh
+// write records the index entry alongside the record. Any other read
+// failure is a storage error and propagates as such rather than
+// masquerading as absence.
 func (s *AppSyncStore) getGraphqlApiNameByIndex(apiId string) (string, error) {
 	var m map[string]string
-	if err := s.graphqlApisStore.Get(graphqlApiIdIndexKey(apiId), &m); err == nil {
-		if name, ok := m["name"]; ok {
-			return name, nil
+	if err := s.graphqlApisStore.Get(graphqlApiIdIndexKey(apiId), &m); err != nil {
+		if !common.IsNotFound(err) {
+			return "", err
 		}
+		return "", ErrGraphqlApiNotFound
 	}
-
-	// Fallback: full scan for pre-index data.
-	apis, err := common.ListMatching[GraphqlApi](s.graphqlApisStore, "", func(a *GraphqlApi) bool {
-		return a.ApiId == apiId
-	})
-	if err != nil {
-		return "", err
-	}
-	if len(apis) > 0 {
-		return apis[0].Name, nil
+	if name, ok := m["name"]; ok {
+		return name, nil
 	}
 	return "", ErrGraphqlApiNotFound
 }
@@ -74,27 +68,24 @@ func (s *AppSyncStore) CreateGraphqlApi(api *GraphqlApi) (*GraphqlApi, error) {
 		api.ApiType = "GRAPHQL"
 	}
 	if api.Uris == nil {
-		baseURL := config.BaseURL()
-		wsBase := strings.Replace(baseURL, "http://", "ws://", 1)
-		api.Uris = map[string]string{
-			"GRAPHQL":  fmt.Sprintf("%s/v1/apis/%s/graphql", baseURL, api.ApiId),
-			"REALTIME": fmt.Sprintf("%s/v1/apis/%s/realtime", wsBase, api.ApiId),
-		}
+		api.Uris = graphqlEndpointURLs(api.ApiId)
 	}
 	if api.Dns == nil {
-		baseURL := config.BaseURL()
-		wsBase := strings.Replace(baseURL, "http://", "ws://", 1)
-		api.Dns = map[string]string{
-			"GRAPHQL":  fmt.Sprintf("%s/v1/apis/%s/graphql", baseURL, api.ApiId),
-			"REALTIME": fmt.Sprintf("%s/v1/apis/%s/realtime", wsBase, api.ApiId),
-		}
+		api.Dns = graphqlEndpointURLs(api.ApiId)
 	}
 
 	if err := s.graphqlApisStore.Put(api.Name, api); err != nil {
 		return nil, err
 	}
 	if err := s.putGraphqlApiIdIndex(api.ApiId, api.Name); err != nil {
-		logs.Warn("failed to write graphqlApiId index", logs.String("apiId", api.ApiId), logs.Err(err))
+		// The index is the only ID-lookup path, so a failed index write
+		// must fail the create: the record is rolled back best-effort
+		// rather than left unreachable by ID.
+		if delErr := s.graphqlApisStore.Delete(api.Name); delErr != nil {
+			logs.Error("failed to roll back GraphQL API record after index write failure",
+				logs.String("name", api.Name), logs.Err(delErr))
+		}
+		return nil, err
 	}
 	return api, nil
 }
@@ -103,13 +94,15 @@ func (s *AppSyncStore) CreateGraphqlApi(api *GraphqlApi) (*GraphqlApi, error) {
 func (s *AppSyncStore) GetGraphqlApi(name string) (*GraphqlApi, error) {
 	var api GraphqlApi
 	if err := s.graphqlApisStore.Get(name, &api); err != nil {
+		if !common.IsNotFound(err) {
+			return nil, err
+		}
 		return nil, ErrGraphqlApiNotFound
 	}
 	return &api, nil
 }
 
-// GetGraphqlApiById retrieves a GraphQL API by its UUID.
-// Uses the apiId→name index for direct lookup, with full-scan fallback.
+// GetGraphqlApiById retrieves a GraphQL API by its UUID via the apiId→name index.
 func (s *AppSyncStore) GetGraphqlApiById(apiId string) (*GraphqlApi, error) {
 	name, err := s.getGraphqlApiNameByIndex(apiId)
 	if err != nil {
@@ -161,10 +154,10 @@ func (s *AppSyncStore) UpdateGraphqlApiById(apiId string, update *GraphqlApi) (*
 	if update.OwnerContact != "" {
 		existing.OwnerContact = update.OwnerContact
 	}
-	if update.QueryDepthLimit > 0 {
+	if update.QueryDepthLimitSet {
 		existing.QueryDepthLimit = update.QueryDepthLimit
 	}
-	if update.ResolverCountLimit > 0 {
+	if update.ResolverCountLimitSet {
 		existing.ResolverCountLimit = update.ResolverCountLimit
 	}
 	if update.UserPoolConfig != nil {
@@ -214,6 +207,28 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 
 	prefix := apiId + "/"
 
+	// Child tag rows are keyed by ARN, so they are swept before the bulk
+	// prefix deletes remove the records they derive from.
+	s.sweepChildTags(s.dataSourcesStore, apiId, func(segments []string) string {
+		return s.BuildDataSourceARN(apiId, segments[0])
+	})
+	s.sweepChildTags(s.resolversStore, apiId, func(segments []string) string {
+		if len(segments) < 2 {
+			return ""
+		}
+		return s.BuildResolverARN(apiId, segments[0], segments[1])
+	})
+	s.sweepChildTags(s.functionsStore, apiId, func(segments []string) string {
+		return s.BuildFunctionARN(apiId, segments[0])
+	})
+	s.sweepChildTags(s.typesStore, apiId, func(segments []string) string {
+		return s.BuildTypeARN(apiId, segments[0])
+	})
+	s.sweepChildTags(s.apiKeysStore, apiId, func(segments []string) string {
+		return s.BuildApiKeyARN(apiId, segments[0])
+	})
+	_ = s.TagStore.Delete(s.BuildApiCacheARN(apiId))
+
 	// Remove all prefix-scoped child resources.
 	for _, op := range []struct {
 		name string
@@ -224,6 +239,7 @@ func (s *AppSyncStore) DeleteGraphqlApiById(apiId string) error {
 		{"functions", s.functionsStore.DeleteByPrefix},
 		{"types", s.typesStore.DeleteByPrefix},
 		{"apiKeys", s.apiKeysStore.DeleteByPrefix},
+		{"resolverCache", s.resolverCacheStore.DeleteByPrefix},
 	} {
 		if err := op.fn(prefix); err != nil {
 			logs.Warn("failed to delete child resources during API deletion",
@@ -428,13 +444,18 @@ func (s *AppSyncStore) UpdateDataSource(ds *DataSource) (*DataSource, error) {
 	return existing, nil
 }
 
-// DeleteDataSource removes a data source by API ID and name.
+// DeleteDataSource removes a data source by API ID and name. Tag rows are
+// keyed by the data source ARN and removed with the record.
 func (s *AppSyncStore) DeleteDataSource(apiId, name string) error {
 	key := apiId + "/" + name
 	if !s.dataSourcesStore.Exists(key) {
 		return ErrDataSourceNotFound
 	}
-	return s.dataSourcesStore.Delete(key)
+	if err := s.dataSourcesStore.Delete(key); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildDataSourceARN(apiId, name))
+	return nil
 }
 
 // ListDataSources returns a paginated list of data sources for a given GraphQL API.
@@ -524,7 +545,7 @@ func (s *AppSyncStore) UpdateResolver(r *Resolver) (*Resolver, error) {
 	if r.CachingConfig != nil {
 		existing.CachingConfig = r.CachingConfig
 	}
-	if r.MaxBatchSize > 0 {
+	if r.MaxBatchSizeSet {
 		existing.MaxBatchSize = r.MaxBatchSize
 	}
 	if r.MetricsConfig != "" {
@@ -546,7 +567,11 @@ func (s *AppSyncStore) DeleteResolver(apiId, typeName, fieldName string) error {
 	if !s.resolversStore.Exists(key) {
 		return ErrResolverNotFound
 	}
-	return s.resolversStore.Delete(key)
+	if err := s.resolversStore.Delete(key); err != nil {
+		return err
+	}
+	_ = s.TagStore.Delete(s.BuildResolverARN(apiId, typeName, fieldName))
+	return nil
 }
 
 // ListResolvers returns a paginated list of resolvers for a given GraphQL API type.

@@ -190,13 +190,9 @@ func (s *AppSyncService) ListGraphqlApis(ctx context.Context, reqCtx *request.Re
 		return mapStoreError(err)
 	}
 
-	opts, err := parsePaginationOptions(req)
-	if err != nil {
-		return nil, err
-	}
 	apiTypeFilter := request.GetStringParam(req.Parameters, "apiType")
 
-	entries, nextToken, err := s.listGraphqlApisCore(store, int(opts.MaxItems), opts.Marker, apiTypeFilter)
+	entries, nextToken, err := s.listGraphqlApisCore(store, request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"), apiTypeFilter, request.GetStringParam(req.Parameters, "owner"))
 	if err != nil {
 		return nil, err
 	}

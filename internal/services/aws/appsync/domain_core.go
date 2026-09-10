@@ -13,30 +13,36 @@ type createDomainNameInput struct {
 }
 
 // updateDomainNameInput carries the parsed UpdateDomainName request payload.
+// The wire request carries only domainName and description; tag changes go
+// through the tag operations.
 type updateDomainNameInput struct {
 	DomainName  string
 	Description string
-	Tags        map[string]string
 }
 
-// createDomainNameCore validates the request and registers a custom domain
-// name for AppSync.
-func (s *AppSyncService) createDomainNameCore(store *appsyncstore.AppSyncStore, in createDomainNameInput) (*appsyncstore.DomainNameConfig, error) {
+// cloudFrontHostedZoneID is the fixed Route 53 hosted zone ID for all
+// CloudFront distributions. AppSync custom domains are backed by CloudFront,
+// so this value is always returned in DomainNameConfig.hostedZoneId.
+const cloudFrontHostedZoneID = "Z2FDTNDATAQYW2"
+
+// createDomainNameCore validates the request, registers a custom domain name
+// for AppSync, and returns the configuration with its tag-store view.
+func (s *AppSyncService) createDomainNameCore(store *appsyncstore.AppSyncStore, in createDomainNameInput) (*appsyncstore.DomainNameConfig, map[string]string, error) {
 	if in.DomainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+		return nil, nil, NewBadRequestException("domainName is required")
 	}
 	if err := validateDomainName(in.DomainName); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if in.CertificateArn == "" {
-		return nil, NewBadRequestException("certificateArn is required")
+		return nil, nil, NewBadRequestException("certificateArn is required")
 	}
 	if err := validateCertificateArn(in.CertificateArn); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if err := validateDescription(in.Description); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	config := &appsyncstore.DomainNameConfig{
@@ -46,19 +52,28 @@ func (s *AppSyncService) createDomainNameCore(store *appsyncstore.AppSyncStore, 
 		AppsyncDomainName: in.DomainName + ".appsync-api." + store.GetRegion() + ".amazonaws.com",
 		DomainNameArn:     store.BuildDomainNameARN(in.DomainName),
 		HostedZoneId:      cloudFrontHostedZoneID,
-		// Tags must be parsed from the request and persisted at creation time.
-		Tags: in.Tags,
 	}
 
 	if err := store.CreateDomainName(config); err != nil {
-		return nil, mapStoreErrorE(err)
+		return nil, nil, mapStoreErrorE(err)
 	}
 
-	return config, nil
+	if err := applyCreateTags(store, config.DomainNameArn, in.Tags); err != nil {
+		return nil, nil, err
+	}
+
+	return config, listTagsIfAny(store, config.DomainNameArn), nil
 }
 
-// listDomainNamesCore lists custom domain names with pagination.
-func (s *AppSyncService) listDomainNamesCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string) ([]*appsyncstore.DomainNameConfig, string, error) {
+// domainNameWithTags pairs a domain configuration with its tag-store view.
+type domainNameWithTags struct {
+	Config *appsyncstore.DomainNameConfig
+	Tags   map[string]string
+}
+
+// listDomainNamesCore lists custom domain names with pagination, pairing each
+// configuration with its tag-store view.
+func (s *AppSyncService) listDomainNamesCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string) ([]*domainNameWithTags, string, error) {
 	opts, err := listOptionsFromParams(maxResults, nextToken)
 	if err != nil {
 		return nil, "", err
@@ -69,52 +84,52 @@ func (s *AppSyncService) listDomainNamesCore(store *appsyncstore.AppSyncStore, m
 		return nil, "", mapStoreErrorE(err)
 	}
 
-	return configs, nextToken, nil
+	entries := make([]*domainNameWithTags, len(configs))
+	for i, c := range configs {
+		entries[i] = &domainNameWithTags{Config: c, Tags: listTagsIfAny(store, c.DomainNameArn)}
+	}
+	return entries, nextToken, nil
 }
 
-// getDomainNameCore fetches a custom domain name configuration.
-func (s *AppSyncService) getDomainNameCore(store *appsyncstore.AppSyncStore, domainName string) (*appsyncstore.DomainNameConfig, error) {
+// getDomainNameCore fetches a custom domain name configuration together with
+// its tag-store view.
+func (s *AppSyncService) getDomainNameCore(store *appsyncstore.AppSyncStore, domainName string) (*appsyncstore.DomainNameConfig, map[string]string, error) {
 	if domainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+		return nil, nil, NewBadRequestException("domainName is required")
 	}
 
 	config, err := store.GetDomainName(domainName)
 	if err != nil {
-		return nil, mapStoreErrorE(err)
+		return nil, nil, mapStoreErrorE(err)
 	}
 
-	return config, nil
+	return config, listTagsIfAny(store, config.DomainNameArn), nil
 }
 
-// updateDomainNameCore applies description/tag updates to an existing custom
-// domain name.
-func (s *AppSyncService) updateDomainNameCore(store *appsyncstore.AppSyncStore, in updateDomainNameInput) (*appsyncstore.DomainNameConfig, error) {
+// updateDomainNameCore applies a description update to an existing custom
+// domain name and returns the configuration with its tag-store view.
+func (s *AppSyncService) updateDomainNameCore(store *appsyncstore.AppSyncStore, in updateDomainNameInput) (*appsyncstore.DomainNameConfig, map[string]string, error) {
 	if in.DomainName == "" {
-		return nil, NewBadRequestException("domainName is required")
+		return nil, nil, NewBadRequestException("domainName is required")
 	}
 
 	config, err := store.GetDomainName(in.DomainName)
 	if err != nil {
-		return nil, mapStoreErrorE(err)
+		return nil, nil, mapStoreErrorE(err)
 	}
 
 	if in.Description != "" {
 		if err := validateDescription(in.Description); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		config.Description = in.Description
 	}
 
-	// Update tags if provided in the request.
-	if len(in.Tags) > 0 {
-		config.Tags = in.Tags
-	}
-
 	if err := store.UpdateDomainName(config); err != nil {
-		return nil, mapStoreErrorE(err)
+		return nil, nil, mapStoreErrorE(err)
 	}
 
-	return config, nil
+	return config, listTagsIfAny(store, config.DomainNameArn), nil
 }
 
 // deleteDomainNameCore removes a custom domain name, disassociating any API
@@ -124,9 +139,13 @@ func (s *AppSyncService) deleteDomainNameCore(store *appsyncstore.AppSyncStore, 
 		return NewBadRequestException("domainName is required")
 	}
 
-	// Disassociate API before deleting the domain to prevent dangling references.
+	// Disassociate API before deleting the domain to prevent dangling
+	// references; a failed disassociation aborts the delete so the
+	// association cannot outlive the domain silently.
 	if assoc, err := store.GetApiAssociation(domainName); err == nil && assoc != nil {
-		_ = store.DisassociateApi(domainName)
+		if err := store.DisassociateApi(domainName); err != nil {
+			return mapStoreErrorE(err)
+		}
 	}
 
 	if err := store.DeleteDomainName(domainName); err != nil {

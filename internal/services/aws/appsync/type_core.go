@@ -1,8 +1,6 @@
 package appsync
 
 import (
-	"fmt"
-
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 )
 
@@ -39,12 +37,8 @@ func (s *AppSyncService) createTypeCore(store *appsyncstore.AppSyncStore, in cre
 		return nil, NewBadRequestException("definition is required")
 	}
 
-	if in.Format == "" {
-		return nil, NewBadRequestException("format is required")
-	}
-
-	if !validateTypeFormat(in.Format) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", in.Format))
+	if err := requireTypeFormat(in.Format); err != nil {
+		return nil, err
 	}
 
 	t := &appsyncstore.Type{
@@ -82,12 +76,8 @@ func (s *AppSyncService) updateTypeCore(store *appsyncstore.AppSyncStore, in upd
 		return nil, NewBadRequestException("apiId and typeName are required")
 	}
 
-	if in.Format == "" {
-		return nil, NewBadRequestException("format is required")
-	}
-
-	if !validateTypeFormat(in.Format) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", in.Format))
+	if err := requireTypeFormat(in.Format); err != nil {
+		return nil, err
 	}
 
 	t := &appsyncstore.Type{
@@ -135,11 +125,8 @@ func (s *AppSyncService) listTypesCore(store *appsyncstore.AppSyncStore, apiId, 
 		return nil, "", NewBadRequestException("apiId is required")
 	}
 
-	if format == "" {
-		return nil, "", NewBadRequestException("format is required")
-	}
-	if !validateTypeFormat(format) {
-		return nil, "", NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
+	if err := requireTypeFormat(format); err != nil {
+		return nil, "", err
 	}
 
 	opts, err := listOptionsFromParams(maxResults, nextToken)
@@ -172,11 +159,8 @@ func (s *AppSyncService) listTypesByAssociationCore(store *appsyncstore.AppSyncS
 		return nil, "", mapStoreErrorE(err)
 	}
 
-	if format == "" {
-		return nil, "", NewBadRequestException("format is required")
-	}
-	if !validateTypeFormat(format) {
-		return nil, "", NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", format))
+	if err := requireTypeFormat(format); err != nil {
+		return nil, "", err
 	}
 
 	opts, err := listOptionsFromParams(maxResults, nextToken)

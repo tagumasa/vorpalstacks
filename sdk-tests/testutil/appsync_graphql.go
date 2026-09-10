@@ -1,8 +1,13 @@
 package testutil
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/appsync"
@@ -37,6 +42,12 @@ func (r *TestRunner) runAppSyncGraphqlApiTests(res *appsyncResources) []TestResu
 		}
 		if !strings.HasPrefix(*resp.GraphqlApi.Arn, "arn:aws:appsync:") {
 			return fmt.Errorf("invalid ARN format: %s", *resp.GraphqlApi.Arn)
+		}
+		if resp.GraphqlApi.Owner == nil || *resp.GraphqlApi.Owner == "" {
+			return fmt.Errorf("owner is empty")
+		}
+		if arnFields := strings.Split(*resp.GraphqlApi.Arn, ":"); len(arnFields) > 4 && arnFields[4] != *resp.GraphqlApi.Owner {
+			return fmt.Errorf("owner %s does not match the ARN account %s", *resp.GraphqlApi.Owner, arnFields[4])
 		}
 		res.gqlApiId = *resp.GraphqlApi.ApiId
 		return nil
@@ -113,6 +124,26 @@ func (r *TestRunner) runAppSyncGraphqlApiTests(res *appsyncResources) []TestResu
 		return nil
 	}))
 
+	results = append(results, r.RunTest("appsync", "ListGraphqlApis_OwnerFilter", func() error {
+		current, err := client.ListGraphqlApis(ctx, &appsync.ListGraphqlApisInput{Owner: types.OwnershipCurrentAccount})
+		if err != nil {
+			return err
+		}
+		if containsID(current.GraphqlApis, func(api *types.GraphqlApi) bool {
+			return api.ApiId != nil && *api.ApiId == res.gqlApiId
+		}) == nil {
+			return fmt.Errorf("current-account listing must contain the created API")
+		}
+		other, err := client.ListGraphqlApis(ctx, &appsync.ListGraphqlApisInput{Owner: types.OwnershipOtherAccounts})
+		if err != nil {
+			return err
+		}
+		if len(other.GraphqlApis) != 0 {
+			return fmt.Errorf("other-accounts listing must be empty on a single-account platform, got %d", len(other.GraphqlApis))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("appsync", "UpdateGraphqlApi", func() error {
 		newName := fmt.Sprintf("updated-gql-%d", uid)
 		resp, err := client.UpdateGraphqlApi(ctx, &appsync.UpdateGraphqlApiInput{
@@ -139,6 +170,98 @@ func (r *TestRunner) runAppSyncGraphqlApiTests(res *appsyncResources) []TestResu
 			AuthenticationType: types.AuthenticationTypeApiKey,
 		})
 		return AssertErrorContains(err, "NotFoundException")
+	}))
+
+	// The execution limits round-trip on the wire and drive enforcement: a
+	// depth-limited query is rejected while the limit is set and passes
+	// after an update raises it. Clearing the limit with an explicit zero
+	// is unreachable through this SDK (the serialiser omits a zero
+	// queryDepthLimit), so that leg is pinned by the store unit tests.
+	results = append(results, r.RunTest("appsync", "GraphqlApi_LimitsRoundTripAndEnforcement", func() error {
+		apiResp, err := client.CreateGraphqlApi(ctx, &appsync.CreateGraphqlApiInput{
+			Name:               aws.String(fmt.Sprintf("test-gql-limits-%d", uid)),
+			AuthenticationType: types.AuthenticationTypeApiKey,
+			QueryDepthLimit:    1,
+		})
+		if err != nil {
+			return err
+		}
+		limitsApiId := *apiResp.GraphqlApi.ApiId
+		defer func() {
+			_, _ = client.DeleteGraphqlApi(ctx, &appsync.DeleteGraphqlApiInput{ApiId: aws.String(limitsApiId)})
+		}()
+
+		getResp, err := client.GetGraphqlApi(ctx, &appsync.GetGraphqlApiInput{ApiId: aws.String(limitsApiId)})
+		if err != nil {
+			return err
+		}
+		if got := getResp.GraphqlApi.QueryDepthLimit; got != 1 {
+			return fmt.Errorf("expected stored queryDepthLimit 1, got %d", got)
+		}
+
+		if _, err := client.StartSchemaCreation(ctx, &appsync.StartSchemaCreationInput{
+			ApiId:      aws.String(limitsApiId),
+			Definition: []byte("type Query { a: A } type A { b: String }"),
+		}); err != nil {
+			return err
+		}
+		keyResp, err := client.CreateApiKey(ctx, &appsync.CreateApiKeyInput{ApiId: aws.String(limitsApiId)})
+		if err != nil {
+			return err
+		}
+		apiKey := aws.ToString(keyResp.ApiKey.Id)
+
+		sendQuery := func() (int, string, error) {
+			req, err := http.NewRequestWithContext(ctx, "POST",
+				fmt.Sprintf("%s/v1/apis/%s/graphql", r.endpoint, limitsApiId),
+				bytes.NewReader([]byte(`{"query":"{ a { b } }"}`)))
+			if err != nil {
+				return 0, "", err
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("x-api-key", apiKey)
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return 0, "", err
+			}
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			return resp.StatusCode, string(body), err
+		}
+
+		_, body, err := sendQuery()
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(body, "Query depth limit exceeded") {
+			return fmt.Errorf("depth-limited query must be rejected, got: %s", body)
+		}
+
+		if _, err := client.UpdateGraphqlApi(ctx, &appsync.UpdateGraphqlApiInput{
+			ApiId:              aws.String(limitsApiId),
+			Name:               aws.String(fmt.Sprintf("test-gql-limits-%d", uid)),
+			AuthenticationType: types.AuthenticationTypeApiKey,
+			QueryDepthLimit:    8,
+		}); err != nil {
+			return err
+		}
+
+		getResp, err = client.GetGraphqlApi(ctx, &appsync.GetGraphqlApiInput{ApiId: aws.String(limitsApiId)})
+		if err != nil {
+			return err
+		}
+		if got := getResp.GraphqlApi.QueryDepthLimit; got != 8 {
+			return fmt.Errorf("updated queryDepthLimit must overwrite the stored limit, got %d", got)
+		}
+
+		_, body, err = sendQuery()
+		if err != nil {
+			return err
+		}
+		if strings.Contains(body, "Query depth limit exceeded") {
+			return fmt.Errorf("query must pass after the limit is raised, got: %s", body)
+		}
+		return nil
 	}))
 
 	results = append(results, r.runAppSyncSchemaTests(res)...)
@@ -209,6 +332,94 @@ func (r *TestRunner) runAppSyncSchemaTests(res *appsyncResources) []TestResult {
 			Format: types.OutputType("YAML"),
 		})
 		return expectAWSErrorCode(err, "BadRequestException")
+	}))
+
+	// The list-shaped __Type meta-fields (fields, enumValues, inputFields)
+	// must serialise as JSON arrays; a broken list marker would collapse
+	// them into a null-valued object. The query runs on a self-contained
+	// API because the shared test API has switched auth type by now.
+	results = append(results, r.RunTest("appsync", "GraphqlExecution_IntrospectionListFields", func() error {
+		apiResp, err := client.CreateGraphqlApi(ctx, &appsync.CreateGraphqlApiInput{
+			Name:               aws.String(fmt.Sprintf("test-gql-introspection-%d", res.uid)),
+			AuthenticationType: types.AuthenticationTypeApiKey,
+		})
+		if err != nil {
+			return err
+		}
+		apiId := *apiResp.GraphqlApi.ApiId
+		defer func() {
+			_, _ = client.DeleteGraphqlApi(ctx, &appsync.DeleteGraphqlApiInput{ApiId: aws.String(apiId)})
+		}()
+
+		if _, err := client.StartSchemaCreation(ctx, &appsync.StartSchemaCreationInput{
+			ApiId:      aws.String(apiId),
+			Definition: []byte("type Query { hello: String }"),
+		}); err != nil {
+			return err
+		}
+		deadline := time.Now().Add(10 * time.Second)
+		for {
+			statusResp, err := client.GetSchemaCreationStatus(ctx, &appsync.GetSchemaCreationStatusInput{ApiId: aws.String(apiId)})
+			if err != nil {
+				return err
+			}
+			if statusResp.Status == "SUCCESS" || time.Now().After(deadline) {
+				break
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+
+		keyResp, err := client.CreateApiKey(ctx, &appsync.CreateApiKeyInput{ApiId: aws.String(apiId)})
+		if err != nil {
+			return err
+		}
+		apiKey := aws.ToString(keyResp.ApiKey.Id)
+
+		graphqlURL := fmt.Sprintf("%s/v1/apis/%s/graphql", r.endpoint, apiId)
+		query := []byte(`{"query":"{ __type(name: \"Query\") { fields { name } } }"}`)
+		req, err := http.NewRequestWithContext(ctx, "POST", graphqlURL, bytes.NewReader(query))
+		if err != nil {
+			return err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("x-api-key", apiKey)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("expected 200, got %d: %s", resp.StatusCode, string(body))
+		}
+		var out struct {
+			Data struct {
+				Type *struct {
+					Fields []struct {
+						Name string `json:"name"`
+					} `json:"fields"`
+				} `json:"__type"`
+			} `json:"data"`
+			Errors []struct {
+				Message string `json:"message"`
+			} `json:"errors"`
+		}
+		if err := json.Unmarshal(body, &out); err != nil {
+			return fmt.Errorf("invalid JSON response: %v: %s", err, string(body))
+		}
+		if len(out.Errors) > 0 {
+			return fmt.Errorf("introspection query returned errors: %v", out.Errors)
+		}
+		if out.Data.Type == nil || len(out.Data.Type.Fields) == 0 {
+			return fmt.Errorf("__type.fields must be a non-empty array, got: %s", string(body))
+		}
+		if out.Data.Type.Fields[0].Name != "hello" {
+			return fmt.Errorf("expected first Query field \"hello\", got %q", out.Data.Type.Fields[0].Name)
+		}
+		return nil
 	}))
 
 	return results

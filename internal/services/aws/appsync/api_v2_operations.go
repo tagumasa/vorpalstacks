@@ -126,12 +126,7 @@ func (s *AppSyncService) ListApis(ctx context.Context, reqCtx *request.RequestCo
 		return mapStoreError(err)
 	}
 
-	opts, err := parsePaginationOptions(req)
-	if err != nil {
-		return nil, err
-	}
-
-	entries, nextToken, err := s.listApisCore(store, int(opts.MaxItems), opts.Marker)
+	entries, nextToken, err := s.listApisCore(store, request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
 	if err != nil {
 		return nil, err
 	}

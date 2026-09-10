@@ -31,21 +31,16 @@ func (e *AppSyncError) ToJSON() string {
 	return e.AWSError.ToJSONWithFormat("rest-json")
 }
 
-// Pre-defined sentinel errors matching the AppSync error types.
+// Pre-defined sentinel errors matching the AppSync error types. Only the
+// sentinels with live call sites are kept; one-off messages use the
+// NewXxxException constructors.
 var (
 	ErrNotFoundException                  = NewAppSyncError("NotFoundException", "Resource not found.", http.StatusNotFound)
-	ErrBadRequestException                = NewAppSyncError("BadRequestException", "The request is not valid.", http.StatusBadRequest)
-	ErrUnauthorizedException              = NewAppSyncError("UnauthorizedException", "You are not authorized to perform this operation.", http.StatusUnauthorized)
-	ErrAccessDeniedException              = NewAppSyncError("AccessDeniedException", "Access denied.", http.StatusForbidden)
 	ErrConflictException                  = NewAppSyncError("ConflictException", "The resource already exists.", http.StatusConflict)
-	ErrConcurrentModificationException    = NewAppSyncError("ConcurrentModificationException", "The resource is being modified by another request.", http.StatusConflict)
-	ErrLimitExceededException             = NewAppSyncError("LimitExceededException", "The limit has been exceeded.", http.StatusTooManyRequests)
 	ErrApiLimitExceededException          = NewAppSyncError("ApiLimitExceededException", "The API limit has been exceeded.", http.StatusBadRequest)
 	ErrApiKeyLimitExceededException       = NewAppSyncError("ApiKeyLimitExceededException", "The API key limit has been exceeded.", http.StatusBadRequest)
 	ErrApiKeyValidityOutOfBoundsException = NewAppSyncError("ApiKeyValidityOutOfBoundsException", "The API key validity period is out of bounds.", http.StatusBadRequest)
-	ErrGraphQLSchemaException             = NewAppSyncError("GraphQLSchemaException", "The GraphQL schema is not valid.", http.StatusBadRequest)
 	ErrInternalFailureException           = NewAppSyncError("InternalFailureException", "An internal failure occurred.", http.StatusInternalServerError)
-	ErrServiceQuotaExceededException      = NewAppSyncError("ServiceQuotaExceededException", "The service quota has been exceeded.", http.StatusTooManyRequests)
 )
 
 // NewNotFoundException creates a NotFoundException with the specified resource description.
@@ -101,11 +96,16 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 }
 
 // mapStoreError converts a store-level error to the corresponding AppSync
-// service error using the data-driven storeErrorMappings table. Unknown
-// errors fall back to ErrInternalFailureException.
+// service error using the data-driven storeErrorMappings table. Errors that
+// are already typed as AppSyncError pass through unchanged — validation
+// helpers return service-level errors whose status must survive the
+// mapping. Unknown errors fall back to ErrInternalFailureException.
 func mapStoreError(err error) (interface{}, error) {
 	if err == nil {
 		return nil, nil
+	}
+	if typed, ok := err.(*AppSyncError); ok {
+		return nil, typed
 	}
 	mapped := awserrors.MapStoreError(err, storeErrorMappings)
 	if mapped == err {
@@ -115,10 +115,14 @@ func mapStoreError(err error) (interface{}, error) {
 }
 
 // mapStoreErrorE maps a store error to an AppSync error, returning only the
-// error (for use in Core methods that return typed results).
+// error (for use in Core methods that return typed results). Already-typed
+// AppSyncError values pass through unchanged, as in mapStoreError.
 func mapStoreErrorE(err error) error {
 	if err == nil {
 		return nil
+	}
+	if typed, ok := err.(*AppSyncError); ok {
+		return typed
 	}
 	mapped := awserrors.MapStoreError(err, storeErrorMappings)
 	if mapped == err {

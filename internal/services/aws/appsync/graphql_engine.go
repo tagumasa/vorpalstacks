@@ -12,6 +12,7 @@ import (
 	"github.com/vektah/gqlparser/v2/ast"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
@@ -40,33 +41,57 @@ type gqlErrLoc struct {
 }
 
 // schemaCacheEntry holds a parsed schema and resolver map for a given API.
+// The SDL itself is not retained: the hash identifies the schema version.
 type schemaCacheEntry struct {
 	schema      *ast.Schema
-	sdl         string
 	hash        [32]byte
 	resolverMap map[string]map[string]*appsyncstore.Resolver
 }
 
-// execState tracks runtime execution limits during a single GraphQL operation.
-// QueryDepthLimit caps the nesting depth of selection sets.
-// ResolverCountLimit caps the total number of resolver invocations.
+// execState tracks the runtime resolver invocation limit during a single
+// GraphQL operation. The query depth limit is enforced statically from the
+// document before execution starts.
 type execState struct {
-	depth           int
-	queryDepthLimit int32
-	resolverCount   int
-	resolverLimit   int32
-}
-
-// depthExceeded reports whether the current selection-set depth has exceeded
-// the configured QueryDepthLimit. A limit of 0 means unlimited.
-func (s *execState) depthExceeded() bool {
-	return s.queryDepthLimit > 0 && s.depth > int(s.queryDepthLimit)
+	resolverCount int
+	resolverLimit int32
 }
 
 // resolverLimitExceeded reports whether the resolver invocation count has
 // reached the configured ResolverCountLimit. A limit of 0 means unlimited.
 func (s *execState) resolverLimitReached() bool {
 	return s.resolverLimit > 0 && s.resolverCount >= int(s.resolverLimit)
+}
+
+// selectionDepth computes the selection-set nesting of a query body — the
+// depth the documented QueryDepthLimit bounds ("the amount of nested levels
+// allowed in the body of query"). A field with a subselection adds a level;
+// inline fragments and fragment spreads are transparent (their selections
+// sit at the level they appear at). The query loader's NoFragmentCycles
+// validation guarantees the fragment graph is acyclic.
+func selectionDepth(set ast.SelectionSet, fragments ast.FragmentDefinitionList) int {
+	maxNesting := 0
+	for _, sel := range set {
+		var d int
+		switch s := sel.(type) {
+		case *ast.Field:
+			if len(s.SelectionSet) > 0 {
+				d = selectionDepth(s.SelectionSet, fragments) + 1
+			}
+		case *ast.InlineFragment:
+			d = selectionDepth(s.SelectionSet, fragments)
+		case *ast.FragmentSpread:
+			if fd := fragments.ForName(s.Name); fd != nil {
+				d = selectionDepth(fd.SelectionSet, fragments)
+			}
+		}
+		if d > maxNesting {
+			maxNesting = d
+		}
+	}
+	if maxNesting == 0 {
+		return 1
+	}
+	return maxNesting
 }
 
 func schemaHash(sdl string) [32]byte {
@@ -81,10 +106,16 @@ type graphQLEngine struct {
 	schemaCache *sync.Map
 }
 
-// BusPublisher abstracts the event bus publish capability for WebSocket
-// subscription fan-out. Uses an interface to allow nil-safe calls.
+// BusPublisher abstracts the event bus capabilities the GraphQL engine
+// needs: event publishing for subscription fan-out and the cross-service
+// invoker accessors the data source dispatchers route through. Uses an
+// interface to allow nil-safe calls.
 type BusPublisher interface {
 	Publish(ctx context.Context, event interface{}) error
+	LambdaInvoker() invokers.LambdaInvoker
+	DynamoDBInvoker() invokers.DynamoDBInvoker
+	NeptuneGraphInvoker() invokers.NeptuneGraphInvoker
+	RDSDataInvoker() invokers.RDSDataInvoker
 }
 
 // busPublisherAdapter wraps an eventbus.ServiceBus to satisfy the BusPublisher interface.
@@ -100,6 +131,26 @@ func (a *busPublisherAdapter) Publish(ctx context.Context, event interface{}) er
 	return nil
 }
 
+// LambdaInvoker returns the configured Lambda invoker of the underlying bus.
+func (a *busPublisherAdapter) LambdaInvoker() invokers.LambdaInvoker {
+	return a.bus.LambdaInvoker()
+}
+
+// DynamoDBInvoker returns the configured DynamoDB invoker of the underlying bus.
+func (a *busPublisherAdapter) DynamoDBInvoker() invokers.DynamoDBInvoker {
+	return a.bus.DynamoDBInvoker()
+}
+
+// NeptuneGraphInvoker returns the configured NeptuneGraph invoker of the underlying bus.
+func (a *busPublisherAdapter) NeptuneGraphInvoker() invokers.NeptuneGraphInvoker {
+	return a.bus.NeptuneGraphInvoker()
+}
+
+// RDSDataInvoker returns the configured RDS Data API invoker of the underlying bus.
+func (a *busPublisherAdapter) RDSDataInvoker() invokers.RDSDataInvoker {
+	return a.bus.RDSDataInvoker()
+}
+
 // newGraphQLEngine creates a new GraphQL execution engine scoped to the given store.
 func newGraphQLEngine(store *appsyncstore.AppSyncStore, bus BusPublisher, schemaCache *sync.Map) *graphQLEngine {
 	return &graphQLEngine{
@@ -110,7 +161,7 @@ func newGraphQLEngine(store *appsyncstore.AppSyncStore, bus BusPublisher, schema
 }
 
 // Execute processes a GraphQL request and returns the execution result.
-func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestContext, apiId string, gqlReq *graphqlRequest) *graphqlExecutionResult {
+func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestContext, apiId string, gqlReq *graphqlRequest, queryDepthLimit, resolverLimit int32) *graphqlExecutionResult {
 	entry, err := e.loadSchema(ctx, reqCtx, apiId)
 	if err != nil {
 		return &graphqlExecutionResult{
@@ -153,10 +204,17 @@ func (e *graphQLEngine) Execute(ctx context.Context, reqCtx *request.RequestCont
 		}
 	}
 
-	state := &execState{}
-	if api, err := e.store.GetGraphqlApiById(apiId); err == nil {
-		state.queryDepthLimit = api.QueryDepthLimit
-		state.resolverLimit = api.ResolverCountLimit
+	state := &execState{resolverLimit: resolverLimit}
+
+	// The query depth limit bounds the query body's nesting, so it is
+	// checked statically before any execution work — a query whose fields
+	// would resolve to null is still a too-deep query.
+	if queryDepthLimit > 0 {
+		if d := selectionDepth(op.SelectionSet, doc.Fragments); d > int(queryDepthLimit) {
+			return &graphqlExecutionResult{
+				Errors: []graphqlError{{Message: fmt.Sprintf("Query depth limit exceeded (limit: %d)", queryDepthLimit), ErrorType: "BadRequestException"}},
+			}
+		}
 	}
 
 	data, execErrs := e.executeOperation(ctx, reqCtx, apiId, schema, op, gqlReq.Variables, entry.resolverMap, doc.Fragments, state)
@@ -202,7 +260,7 @@ func (e *graphQLEngine) loadSchema(ctx context.Context, reqCtx *request.RequestC
 		return nil, fmt.Errorf("failed to build resolver map: %w", err)
 	}
 
-	entry := &schemaCacheEntry{schema: schema, sdl: sdl, hash: h, resolverMap: rMap}
+	entry := &schemaCacheEntry{schema: schema, hash: h, resolverMap: rMap}
 	e.schemaCache.Store(apiId, entry)
 	return entry, nil
 }
@@ -280,13 +338,6 @@ func (e *graphQLEngine) resolveSelectionSet(
 ) (map[string]interface{}, []graphqlError) {
 	result := make(map[string]interface{})
 	var errs []graphqlError
-
-	if state.depthExceeded() {
-		return nil, []graphqlError{{
-			Message:   fmt.Sprintf("Query depth limit exceeded (limit: %d)", state.queryDepthLimit),
-			ErrorType: "BadRequestException",
-		}}
-	}
 
 	for _, sel := range selectionSet {
 		switch s := sel.(type) {
@@ -430,14 +481,11 @@ func (e *graphQLEngine) resolveField(
 	}
 	state.resolverCount++
 
-	fieldType := e.resolveFieldType(schema, field.Definition.Type)
-	isList := e.isListType(field.Definition.Type)
-
 	if resolver.Kind == "PIPELINE" && resolver.PipelineConfig != nil && len(resolver.PipelineConfig.Functions) > 0 {
-		return e.executePipelineResolver(ctx, reqCtx, apiId, schema, resolver, parentTypeName, fieldName, parentSource, args, fieldType, isList, resolverMap, variables)
+		return e.executePipelineResolver(ctx, reqCtx, apiId, schema, resolver, parentTypeName, fieldName, parentSource, args, resolverMap, variables)
 	}
 
-	return e.executeUnitResolver(ctx, reqCtx, apiId, schema, resolver, parentTypeName, fieldName, parentSource, args, fieldType, isList)
+	return e.executeUnitResolver(ctx, reqCtx, apiId, schema, resolver, parentTypeName, fieldName, parentSource, args)
 }
 
 // executeUnitResolver runs a single resolver: VTL request template → DataSource dispatch → VTL response template.
@@ -451,8 +499,6 @@ func (e *graphQLEngine) executeUnitResolver(
 	fieldName string,
 	parentSource interface{},
 	args map[string]interface{},
-	fieldType string,
-	isList bool,
 ) (interface{}, []graphqlError) {
 
 	engine := vtl.NewEngine()
@@ -480,9 +526,11 @@ func (e *graphQLEngine) executeUnitResolver(
 		}
 	}
 
-	// Check resolver result cache before dispatch.
+	// Check resolver result cache before dispatch. The key is computed once
+	// and reused for the post-dispatch store path.
+	var cacheKey string
 	if cacheEnabled {
-		cacheKey := computeResolverCacheKey(parentTypeName, fieldName, resolver.CachingConfig.CachingKeys, args, parentSource)
+		cacheKey = computeResolverCacheKey(parentTypeName, fieldName, resolver.CachingConfig.CachingKeys, args, parentSource)
 		if entry, gerr := e.store.GetResolverCacheEntry(apiId, cacheKey); gerr == nil && !entry.IsExpired() {
 			var cached interface{}
 			if json.Unmarshal(entry.Result, &cached) == nil {
@@ -544,20 +592,22 @@ func (e *graphQLEngine) executeUnitResolver(
 		}
 	}
 
-	// Store result in resolver cache if caching is enabled.
+	// Store result in resolver cache if caching is enabled. A result that
+	// cannot be marshalled is left uncached rather than persisted as a
+	// nil-Result slot the read path could never match.
 	if cacheEnabled {
-		cacheKey := computeResolverCacheKey(parentTypeName, fieldName, resolver.CachingConfig.CachingKeys, args, parentSource)
 		ttl := resolver.CachingConfig.Ttl
 		if ttl <= 0 {
 			ttl = cacheCfg.Ttl
 		}
 		if ttl > 0 {
-			resultJSON, _ := json.Marshal(finalResult)
-			_ = e.store.PutResolverCacheEntry(apiId, cacheKey, &appsyncstore.ResolverCacheEntry{
-				Result:   resultJSON,
-				CachedAt: time.Now().Unix(),
-				TTL:      ttl,
-			})
+			if resultJSON, merr := json.Marshal(finalResult); merr == nil {
+				_ = e.store.PutResolverCacheEntry(apiId, cacheKey, &appsyncstore.ResolverCacheEntry{
+					Result:   resultJSON,
+					CachedAt: time.Now().Unix(),
+					TTL:      ttl,
+				})
+			}
 		}
 	}
 
@@ -577,8 +627,6 @@ func (e *graphQLEngine) executePipelineResolver(
 	fieldName string,
 	parentSource interface{},
 	args map[string]interface{},
-	fieldType string,
-	isList bool,
 	resolverMap map[string]map[string]*appsyncstore.Resolver,
 	variables map[string]interface{},
 ) (interface{}, []graphqlError) {
@@ -769,19 +817,6 @@ func (e *graphQLEngine) resolveArguments(field *ast.Field, variables map[string]
 	return args, nil
 }
 
-// resolveFieldType extracts the named type string from a gqlparser Type,
-// unwrapping NonNull and List wrappers.
-func (e *graphQLEngine) resolveFieldType(schema *ast.Schema, t *ast.Type) string {
-	if t == nil {
-		return "String"
-	}
-	named := t.NamedType
-	if named != "" && schema.Types[named] != nil {
-		return named
-	}
-	return "String"
-}
-
 // isListType checks whether a gqlparser Type represents a list type.
 // In gqlparser v2, a list type has Elem != nil and NamedType == "".
 func (e *graphQLEngine) isListType(t *ast.Type) bool {
@@ -855,13 +890,11 @@ func (e *graphQLEngine) completeValue(
 		return value
 	}
 
-	state.depth++
 	childResult, _ := e.resolveSelectionSet(
 		ctx, reqCtx, apiId, schema,
 		namedType, value,
 		selectionSet, variables, resolverMap, fragments, state,
 	)
-	state.depth--
 	return childResult
 }
 

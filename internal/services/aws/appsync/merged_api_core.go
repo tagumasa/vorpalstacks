@@ -13,6 +13,17 @@ import (
 	arnutil "vorpalstacks/internal/utils/aws/arn"
 )
 
+// The SourceApiAssociationStatus values this service writes. Every value
+// must be a member of the SourceApiAssociationStatus enum of the AppSync
+// API model; the membership is pinned by test.
+const (
+	assocStatusMergeScheduled    = "MERGE_SCHEDULED"
+	assocStatusMergeInProgress   = "MERGE_IN_PROGRESS"
+	assocStatusMergeSuccess      = "MERGE_SUCCESS"
+	assocStatusDeletionScheduled = "DELETION_SCHEDULED"
+	assocStatusDeletionFailed    = "DELETION_FAILED"
+)
+
 // associateSourceApiInput carries the parsed payload of the two association
 // create operations (from the merged-API side and from the source-API side).
 type associateSourceApiInput struct {
@@ -22,9 +33,12 @@ type associateSourceApiInput struct {
 	AssocConfig *appsyncstore.SourceApiAssociationConfig
 }
 
-// associateSourceGraphqlApiCore validates the request and creates a source
-// API association addressed from the merged API side.
-func (s *AppSyncService) associateSourceGraphqlApiCore(store *appsyncstore.AppSyncStore, in associateSourceApiInput) (*appsyncstore.SourceApiAssociation, error) {
+// buildSourceApiAssociation validates both APIs and constructs the
+// association record. fromMergedSide selects the addressing side of the two
+// association-create operations; it only determines the association ARN's
+// shape — merged-API-side ARNs nest under the merged API, source-API-side
+// ARNs under the source API.
+func (s *AppSyncService) buildSourceApiAssociation(store *appsyncstore.AppSyncStore, in associateSourceApiInput, fromMergedSide bool) (*appsyncstore.SourceApiAssociation, error) {
 	if in.MergedApiId == "" {
 		return nil, NewBadRequestException("mergedApiIdentifier is required")
 	}
@@ -40,16 +54,21 @@ func (s *AppSyncService) associateSourceGraphqlApiCore(store *appsyncstore.AppSy
 	}
 
 	assocID := uuid.New().String()
+	arns := arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion())
 	assoc := &appsyncstore.SourceApiAssociation{
 		AssociationId:              assocID,
 		MergedApiId:                in.MergedApiId,
 		SourceApiId:                in.SourceApiId,
-		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(in.MergedApiId),
-		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(in.SourceApiId),
-		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().SourceApiAssociation(in.MergedApiId, assocID),
-		SourceApiAssociationStatus: "MERGE_SCHEDULED",
+		MergedApiArn:               arns.AppSync().Api(in.MergedApiId),
+		SourceApiArn:               arns.AppSync().Api(in.SourceApiId),
+		SourceApiAssociationStatus: assocStatusMergeScheduled,
 		Description:                in.Description,
 		SourceApiAssociationConfig: in.AssocConfig,
+	}
+	if fromMergedSide {
+		assoc.AssociationArn = arns.AppSync().SourceApiAssociation(in.MergedApiId, assocID)
+	} else {
+		assoc.AssociationArn = arns.AppSync().MergedApiAssociation(in.SourceApiId, assocID)
 	}
 
 	if err := store.CreateMergedApiAssociation(assoc); err != nil {
@@ -59,41 +78,16 @@ func (s *AppSyncService) associateSourceGraphqlApiCore(store *appsyncstore.AppSy
 	return assoc, nil
 }
 
+// associateSourceGraphqlApiCore validates the request and creates a source
+// API association addressed from the merged API side.
+func (s *AppSyncService) associateSourceGraphqlApiCore(store *appsyncstore.AppSyncStore, in associateSourceApiInput) (*appsyncstore.SourceApiAssociation, error) {
+	return s.buildSourceApiAssociation(store, in, true)
+}
+
 // associateMergedGraphqlApiCore validates the request and creates a source
 // API association addressed from the source API side.
 func (s *AppSyncService) associateMergedGraphqlApiCore(store *appsyncstore.AppSyncStore, in associateSourceApiInput) (*appsyncstore.SourceApiAssociation, error) {
-	if in.SourceApiId == "" {
-		return nil, NewBadRequestException("sourceApiIdentifier is required")
-	}
-	if in.MergedApiId == "" {
-		return nil, NewBadRequestException("mergedApiIdentifier is required")
-	}
-
-	if _, err := store.GetGraphqlApiById(in.SourceApiId); err != nil {
-		return nil, mapStoreErrorE(err)
-	}
-	if _, err := store.GetGraphqlApiById(in.MergedApiId); err != nil {
-		return nil, mapStoreErrorE(err)
-	}
-
-	assocID := uuid.New().String()
-	assoc := &appsyncstore.SourceApiAssociation{
-		AssociationId:              assocID,
-		MergedApiId:                in.MergedApiId,
-		SourceApiId:                in.SourceApiId,
-		MergedApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(in.MergedApiId),
-		SourceApiArn:               arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().Api(in.SourceApiId),
-		AssociationArn:             arnutil.NewARNBuilder(store.GetAccountID(), store.GetRegion()).AppSync().MergedApiAssociation(in.SourceApiId, assocID),
-		SourceApiAssociationStatus: "MERGE_SCHEDULED",
-		Description:                in.Description,
-		SourceApiAssociationConfig: in.AssocConfig,
-	}
-
-	if err := store.CreateMergedApiAssociation(assoc); err != nil {
-		return nil, mapStoreErrorE(err)
-	}
-
-	return assoc, nil
+	return s.buildSourceApiAssociation(store, in, false)
 }
 
 // getSourceApiAssociationCore fetches one source API association of a merged
@@ -144,6 +138,41 @@ func (s *AppSyncService) updateSourceApiAssociationCore(store *appsyncstore.AppS
 	return assoc, nil
 }
 
+// scheduleAssociationDeletion marks the association DELETION_SCHEDULED and
+// performs the delayed deletion. On delete failure the status is persisted
+// as DELETION_FAILED so the association does not silently remain scheduled
+// forever. opLabel names the addressing side in log messages.
+func (s *AppSyncService) scheduleAssociationDeletion(store *appsyncstore.AppSyncStore, assoc *appsyncstore.SourceApiAssociation, mergedApiId, associationId, opLabel string) (string, error) {
+	assoc.SourceApiAssociationStatus = assocStatusDeletionScheduled
+	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
+		return "", mapStoreErrorE(err)
+	}
+
+	go func() {
+		defer func() { resilience.RecoverPanic("appsync association async cleanup") }()
+		time.Sleep(5 * time.Second)
+		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
+			// The failure marker is written through a value copy so the
+			// record handed to the caller is never mutated after the
+			// response has been serialised.
+			failed := *assoc
+			failed.SourceApiAssociationStatus = assocStatusDeletionFailed
+			if updateErr := store.UpdateMergedApiAssociation(&failed); updateErr != nil {
+				logs.Warn("failed to persist the deletion-failed status marker",
+					logs.String("mergedApiId", mergedApiId),
+					logs.String("associationId", associationId),
+					logs.Err(updateErr))
+			}
+			logs.Warn("async deletion of "+opLabel+" failed",
+				logs.String("mergedApiId", mergedApiId),
+				logs.String("associationId", associationId),
+				logs.Err(err))
+		}
+	}()
+
+	return assocStatusDeletionScheduled, nil
+}
+
 // disassociateSourceGraphqlApiCore schedules the deletion of a source API
 // association addressed from the merged API side.
 func (s *AppSyncService) disassociateSourceGraphqlApiCore(store *appsyncstore.AppSyncStore, mergedApiId, associationId string) (string, error) {
@@ -159,33 +188,7 @@ func (s *AppSyncService) disassociateSourceGraphqlApiCore(store *appsyncstore.Ap
 		return "", mapStoreErrorE(err)
 	}
 
-	assoc.SourceApiAssociationStatus = "DELETION_SCHEDULED"
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		return "", mapStoreErrorE(err)
-	}
-
-	// Async deletion with persistent failure status.
-	// On delete failure, the association status is updated to DELETION_FAILED
-	// so it does not silently remain in DELETION_SCHEDULED forever.
-	go func() {
-		defer func() { resilience.RecoverPanic("appsync DisassociateSourceGraphqlApi async cleanup") }()
-		time.Sleep(5 * time.Second)
-		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
-			assoc.SourceApiAssociationStatus = "DELETION_FAILED"
-			if updateErr := store.UpdateMergedApiAssociation(assoc); updateErr != nil {
-				logs.Warn("failed to persist DELETION_FAILED status",
-					logs.String("mergedApiId", mergedApiId),
-					logs.String("associationId", associationId),
-					logs.Err(updateErr))
-			}
-			logs.Warn("async deletion of source API association failed",
-				logs.String("mergedApiId", mergedApiId),
-				logs.String("associationId", associationId),
-				logs.Err(err))
-		}
-	}()
-
-	return "DELETION_SCHEDULED", nil
+	return s.scheduleAssociationDeletion(store, assoc, mergedApiId, associationId, "source API association")
 }
 
 // disassociateMergedGraphqlApiCore schedules the deletion of a source API
@@ -207,32 +210,7 @@ func (s *AppSyncService) disassociateMergedGraphqlApiCore(store *appsyncstore.Ap
 		return "", NewNotFoundException(fmt.Sprintf("Source API association %s not found for source API %s", associationId, sourceApiId))
 	}
 
-	assoc.SourceApiAssociationStatus = "DELETION_SCHEDULED"
-	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
-		return "", mapStoreErrorE(err)
-	}
-
-	mergedApiId := assoc.MergedApiId
-	// Async deletion with persistent failure status.
-	go func() {
-		defer func() { resilience.RecoverPanic("appsync DisassociateMergedGraphqlApi async cleanup") }()
-		time.Sleep(5 * time.Second)
-		if err := store.DeleteMergedApiAssociation(mergedApiId, associationId); err != nil {
-			assoc.SourceApiAssociationStatus = "DELETION_FAILED"
-			if updateErr := store.UpdateMergedApiAssociation(assoc); updateErr != nil {
-				logs.Warn("failed to persist DELETION_FAILED status",
-					logs.String("mergedApiId", mergedApiId),
-					logs.String("associationId", associationId),
-					logs.Err(updateErr))
-			}
-			logs.Warn("async deletion of merged API association failed",
-				logs.String("mergedApiId", mergedApiId),
-				logs.String("associationId", associationId),
-				logs.Err(err))
-		}
-	}()
-
-	return "DELETION_SCHEDULED", nil
+	return s.scheduleAssociationDeletion(store, assoc, assoc.MergedApiId, associationId, "merged API association")
 }
 
 // startSchemaMergeCore transitions a source API association into
@@ -250,19 +228,22 @@ func (s *AppSyncService) startSchemaMergeCore(store *appsyncstore.AppSyncStore, 
 		return "", mapStoreErrorE(err)
 	}
 
-	assoc.SourceApiAssociationStatus = "MERGE_IN_PROGRESS"
+	assoc.SourceApiAssociationStatus = assocStatusMergeInProgress
 	if err := store.UpdateMergedApiAssociation(assoc); err != nil {
 		return "", mapStoreErrorE(err)
 	}
 
-	// Simulate async schema merge: transition MERGE_IN_PROGRESS → MERGE_SUCCESS.
+	// Simulate async schema merge: transition MERGE_IN_PROGRESS →
+	// MERGE_SUCCESS, writing through a value copy so the record handed to
+	// the caller is never mutated after the response has been serialised.
 	go func() {
 		defer func() { resilience.RecoverPanic("appsync schema merge async") }()
 		time.Sleep(2 * time.Second)
-		assoc.SourceApiAssociationStatus = "MERGE_SUCCESS"
+		merged := *assoc
+		merged.SourceApiAssociationStatus = assocStatusMergeSuccess
 		now := time.Now().UTC()
-		assoc.LastSuccessfulMergeDate = &now
-		if err := store.UpdateMergedApiAssociation(assoc); err != nil {
+		merged.LastSuccessfulMergeDate = &now
+		if err := store.UpdateMergedApiAssociation(&merged); err != nil {
 			logs.Warn("failed to persist merged API SUCCESS status",
 				logs.String("mergedApiId", mergedApiId),
 				logs.String("associationId", associationId),
@@ -270,7 +251,7 @@ func (s *AppSyncService) startSchemaMergeCore(store *appsyncstore.AppSyncStore, 
 		}
 	}()
 
-	return "MERGE_IN_PROGRESS", nil
+	return assocStatusMergeInProgress, nil
 }
 
 // listSourceApiAssociationsCore lists the source API associations of a

@@ -4,8 +4,16 @@ import (
 	"time"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
+	arnutil "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+// ownerFromArn extracts the account ID component of an AppSync ARN — the
+// account owner reported in the GraphqlApi owner member.
+func ownerFromArn(arn string) string {
+	_, _, _, account, _ := arnutil.SplitARN(arn)
+	return account
+}
 
 // --- Event API (v2) ---
 
@@ -191,6 +199,10 @@ func graphqlApiToMap(api *appsyncstore.GraphqlApi) map[string]interface{} {
 		"xrayEnabled":        api.XrayEnabled,
 	}
 
+	if owner := ownerFromArn(api.Arn); owner != "" {
+		m["owner"] = owner
+	}
+
 	if api.ApiType != "" {
 		m["apiType"] = api.ApiType
 	}
@@ -221,9 +233,6 @@ func graphqlApiToMap(api *appsyncstore.GraphqlApi) map[string]interface{} {
 	}
 	if api.OpenIDConnectConfig != nil {
 		m["openIDConnectConfig"] = openIDConnectConfigToMap(api.OpenIDConnectConfig)
-	}
-	if api.Owner != "" {
-		m["owner"] = api.Owner
 	}
 	if api.OwnerContact != "" {
 		m["ownerContact"] = api.OwnerContact
@@ -372,9 +381,6 @@ func dataSourceToMap(ds *appsyncstore.DataSource) map[string]interface{} {
 	}
 	if ds.RelationalDatabaseConfig != nil {
 		m["relationalDatabaseConfig"] = relationalDatabaseConfigToMap(ds.RelationalDatabaseConfig)
-	}
-	if len(ds.Tags) > 0 {
-		m["tags"] = ds.Tags
 	}
 
 	return m
@@ -719,9 +725,6 @@ func domainNameConfigToMap(c *appsyncstore.DomainNameConfig) map[string]interfac
 	if c.HostedZoneId != "" {
 		result["hostedZoneId"] = c.HostedZoneId
 	}
-	if len(c.Tags) > 0 {
-		result["tags"] = c.Tags
-	}
 	return result
 }
 
@@ -732,9 +735,6 @@ func apiAssociationToMap(a *appsyncstore.ApiAssociation) map[string]interface{} 
 	}
 	if a.ApiId != "" {
 		result["apiId"] = a.ApiId
-	}
-	if a.DeploymentDetail != "" {
-		result["deploymentDetail"] = a.DeploymentDetail
 	}
 	return result
 }

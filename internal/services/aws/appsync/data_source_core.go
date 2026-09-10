@@ -25,6 +25,46 @@ type dataSourceInput struct {
 	RelationalDatabaseConfig *appsyncstore.RelationalDatabaseDataSourceConfig
 }
 
+// validateDataSourceInput applies the type, metricsConfig, description, and
+// relational-source checks shared by the create and update data source
+// cores.
+func validateDataSourceInput(in dataSourceInput) error {
+	if in.Type == "" {
+		return NewBadRequestException("type is required")
+	}
+	if !validateDataSourceType(in.Type) {
+		return NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", in.Type))
+	}
+	if in.MetricsConfig != "" && !validateEnabledDisabled(in.MetricsConfig) {
+		return NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", in.MetricsConfig))
+	}
+	if err := validateDescription(in.Description); err != nil {
+		return err
+	}
+	return checkRelationalDatabaseSourceType(in.RelationalDatabaseConfig)
+}
+
+// dataSourceFromInput builds the store record from the parsed wire input,
+// shared by the create and update data source cores.
+func dataSourceFromInput(in dataSourceInput) *appsyncstore.DataSource {
+	return &appsyncstore.DataSource{
+		ApiId:                    in.ApiId,
+		Name:                     in.Name,
+		Type:                     in.Type,
+		Description:              in.Description,
+		ServiceRoleArn:           in.ServiceRoleArn,
+		DynamodbConfig:           in.DynamodbConfig,
+		ElasticsearchConfig:      in.ElasticsearchConfig,
+		EventBridgeConfig:        in.EventBridgeConfig,
+		HttpConfig:               in.HttpConfig,
+		LambdaConfig:             in.LambdaConfig,
+		MetricsConfig:            in.MetricsConfig,
+		NeptuneConfig:            in.NeptuneConfig,
+		OpenSearchServiceConfig:  in.OpenSearchServiceConfig,
+		RelationalDatabaseConfig: in.RelationalDatabaseConfig,
+	}
+}
+
 // createDataSourceCore validates the request and persists a new data source.
 func (s *AppSyncService) createDataSourceCore(store *appsyncstore.AppSyncStore, in dataSourceInput) (*appsyncstore.DataSource, error) {
 	if in.ApiId == "" {
@@ -41,43 +81,11 @@ func (s *AppSyncService) createDataSourceCore(store *appsyncstore.AppSyncStore, 
 		return nil, err
 	}
 
-	if in.Type == "" {
-		return nil, NewBadRequestException("type is required")
-	}
-	if !validateDataSourceType(in.Type) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", in.Type))
-	}
-
-	if in.MetricsConfig != "" && !validateEnabledDisabled(in.MetricsConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", in.MetricsConfig))
-	}
-
-	if err := validateDescription(in.Description); err != nil {
+	if err := validateDataSourceInput(in); err != nil {
 		return nil, err
 	}
 
-	if err := checkRelationalDatabaseSourceType(in.RelationalDatabaseConfig); err != nil {
-		return nil, err
-	}
-
-	ds := &appsyncstore.DataSource{
-		ApiId:                    in.ApiId,
-		Name:                     in.Name,
-		Type:                     in.Type,
-		Description:              in.Description,
-		ServiceRoleArn:           in.ServiceRoleArn,
-		DynamodbConfig:           in.DynamodbConfig,
-		ElasticsearchConfig:      in.ElasticsearchConfig,
-		EventBridgeConfig:        in.EventBridgeConfig,
-		HttpConfig:               in.HttpConfig,
-		LambdaConfig:             in.LambdaConfig,
-		MetricsConfig:            in.MetricsConfig,
-		NeptuneConfig:            in.NeptuneConfig,
-		OpenSearchServiceConfig:  in.OpenSearchServiceConfig,
-		RelationalDatabaseConfig: in.RelationalDatabaseConfig,
-	}
-
-	created, err := store.CreateDataSource(ds)
+	created, err := store.CreateDataSource(dataSourceFromInput(in))
 	if err != nil {
 		return nil, mapStoreErrorE(err)
 	}
@@ -109,43 +117,11 @@ func (s *AppSyncService) updateDataSourceCore(store *appsyncstore.AppSyncStore, 
 		return nil, err
 	}
 
-	if in.Type == "" {
-		return nil, NewBadRequestException("type is required")
-	}
-	if !validateDataSourceType(in.Type) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid data source type: %s", in.Type))
-	}
-
-	if in.MetricsConfig != "" && !validateEnabledDisabled(in.MetricsConfig) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid metricsConfig: %s", in.MetricsConfig))
-	}
-
-	if err := validateDescription(in.Description); err != nil {
+	if err := validateDataSourceInput(in); err != nil {
 		return nil, err
 	}
 
-	if err := checkRelationalDatabaseSourceType(in.RelationalDatabaseConfig); err != nil {
-		return nil, err
-	}
-
-	ds := &appsyncstore.DataSource{
-		ApiId:                    in.ApiId,
-		Name:                     in.Name,
-		Type:                     in.Type,
-		Description:              in.Description,
-		ServiceRoleArn:           in.ServiceRoleArn,
-		DynamodbConfig:           in.DynamodbConfig,
-		ElasticsearchConfig:      in.ElasticsearchConfig,
-		EventBridgeConfig:        in.EventBridgeConfig,
-		HttpConfig:               in.HttpConfig,
-		LambdaConfig:             in.LambdaConfig,
-		MetricsConfig:            in.MetricsConfig,
-		NeptuneConfig:            in.NeptuneConfig,
-		OpenSearchServiceConfig:  in.OpenSearchServiceConfig,
-		RelationalDatabaseConfig: in.RelationalDatabaseConfig,
-	}
-
-	updated, err := store.UpdateDataSource(ds)
+	updated, err := store.UpdateDataSource(dataSourceFromInput(in))
 	if err != nil {
 		return nil, mapStoreErrorE(err)
 	}

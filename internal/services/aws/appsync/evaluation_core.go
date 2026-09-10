@@ -35,6 +35,22 @@ type EvaluateMappingTemplateInput struct {
 	Template string
 }
 
+// evalErrorResponse builds the failure envelope of a JS evaluation run:
+// the echoed outErrors member is suppressed in quiet mode.
+func evalErrorResponse(errMsg string, quietMode bool, logs []interface{}, vm *goja.Runtime, ctxObj *goja.Object) map[string]interface{} {
+	outErr := errMsg
+	if quietMode {
+		outErr = ""
+	}
+	return map[string]interface{}{
+		"evaluationResult": "",
+		"error":            map[string]string{"message": errMsg},
+		"logs":             logs,
+		"outErrors":        outErr,
+		"stash":            extractStashFromVM(vm, ctxObj),
+	}
+}
+
 // evaluateCodeCore executes an AppSync function resolver code snippet and
 // returns the result.
 func evaluateCodeCore(in *EvaluateCodeInput) (map[string]interface{}, error) {
@@ -104,24 +120,15 @@ func evaluateCodeCore(in *EvaluateCodeInput) (map[string]interface{}, error) {
 	utilObj := buildUtilObject(vm, &logs, &hasError, &errorResult, &quietMode)
 	vm.Set("util", utilObj)
 	vm.Set("context", ctxObj)
-	vm.Set("console", map[string]interface{}{
-		"log": func(call goja.FunctionCall) goja.Value {
-			parts := make([]string, len(call.Arguments))
-			for i, a := range call.Arguments {
-				parts[i] = a.String()
-			}
-			logs = append(logs, strings.Join(parts, " "))
-			return goja.Undefined()
-		},
-		"error": func(call goja.FunctionCall) goja.Value {
-			parts := make([]string, len(call.Arguments))
-			for i, a := range call.Arguments {
-				parts[i] = a.String()
-			}
-			logs = append(logs, strings.Join(parts, " "))
-			return goja.Undefined()
-		},
-	})
+	consoleLog := func(call goja.FunctionCall) goja.Value {
+		parts := make([]string, len(call.Arguments))
+		for i, a := range call.Arguments {
+			parts[i] = a.String()
+		}
+		logs = append(logs, strings.Join(parts, " "))
+		return goja.Undefined()
+	}
+	vm.Set("console", map[string]interface{}{"log": consoleLog, "error": consoleLog})
 
 	_, err := vm.RunString(in.Code)
 	if err != nil {
@@ -129,17 +136,7 @@ func evaluateCodeCore(in *EvaluateCodeInput) (map[string]interface{}, error) {
 		if jsErr, ok := err.(*goja.Exception); ok {
 			errMsg = jsErr.Error()
 		}
-		outErr := errMsg
-		if quietMode {
-			outErr = ""
-		}
-		return map[string]interface{}{
-			"evaluationResult": "",
-			"error":            map[string]string{"message": errMsg},
-			"logs":             logs,
-			"outErrors":        outErr,
-			"stash":            extractStashFromVM(vm, ctxObj),
-		}, nil
+		return evalErrorResponse(errMsg, quietMode, logs, vm, ctxObj), nil
 	}
 
 	var evalResult interface{}
@@ -157,17 +154,7 @@ func evaluateCodeCore(in *EvaluateCodeInput) (map[string]interface{}, error) {
 				if jsErr, ok := err.(*goja.Exception); ok {
 					errMsg = jsErr.Error()
 				}
-				outErr := errMsg
-				if quietMode {
-					outErr = ""
-				}
-				return map[string]interface{}{
-					"evaluationResult": "",
-					"error":            map[string]string{"message": errMsg},
-					"logs":             logs,
-					"outErrors":        outErr,
-					"stash":            extractStashFromVM(vm, ctxObj),
-				}, nil
+				return evalErrorResponse(errMsg, quietMode, logs, vm, ctxObj), nil
 			}
 			if ret != nil && !goja.IsUndefined(ret) && !goja.IsNull(ret) {
 				evalResult = ret.Export()
@@ -176,17 +163,7 @@ func evaluateCodeCore(in *EvaluateCodeInput) (map[string]interface{}, error) {
 	}
 
 	if hasError {
-		outErr := errorResult
-		if quietMode {
-			outErr = ""
-		}
-		return map[string]interface{}{
-			"evaluationResult": "",
-			"error":            map[string]string{"message": errorResult},
-			"logs":             logs,
-			"outErrors":        outErr,
-			"stash":            extractStashFromVM(vm, ctxObj),
-		}, nil
+		return evalErrorResponse(errorResult, quietMode, logs, vm, ctxObj), nil
 	}
 
 	evalResultStr := ""

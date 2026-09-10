@@ -80,12 +80,15 @@ func (s *AppSyncService) createApiCacheCore(store *appsyncstore.AppSyncStore, in
 		return nil, mapStoreErrorE(err)
 	}
 
-	// Simulate async cache creation: transition CREATING → AVAILABLE.
+	// Simulate async cache creation: transition CREATING → AVAILABLE. The
+	// goroutine works on a value copy so the record handed to the caller is
+	// never mutated after the response has been serialised.
 	go func() {
 		defer func() { resilience.RecoverPanic("appsync cache creation async") }()
 		time.Sleep(2 * time.Second)
-		cache.Status = "AVAILABLE"
-		if err := store.UpdateApiCache(in.ApiId, cache); err != nil {
+		available := *cache
+		available.Status = "AVAILABLE"
+		if err := store.UpdateApiCache(in.ApiId, &available); err != nil {
 			logs.Warn("failed to persist cache AVAILABLE status",
 				logs.String("apiId", in.ApiId),
 				logs.Err(err))

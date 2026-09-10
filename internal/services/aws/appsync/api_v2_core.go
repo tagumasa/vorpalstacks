@@ -2,8 +2,6 @@ package appsync
 
 import (
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
-
-	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // createApiInput carries the parsed CreateApi (Event API, v2) request payload.
@@ -41,7 +39,6 @@ func (s *AppSyncService) createApiCore(store *appsyncstore.AppSyncStore, in crea
 		Name:         in.Name,
 		EventConfig:  eventConfig,
 		OwnerContact: in.OwnerContact,
-		Tags:         tagMap,
 		WafWebAclArn: in.WafWebAclArn,
 		XrayEnabled:  in.XrayEnabled,
 	}
@@ -51,14 +48,8 @@ func (s *AppSyncService) createApiCore(store *appsyncstore.AppSyncStore, in crea
 		return nil, nil, mapStoreErrorE(err)
 	}
 
-	if len(created.Tags) > 0 {
-		tagMap := make(map[string]string, len(created.Tags))
-		for k, v := range created.Tags {
-			tagMap[k] = v
-		}
-		if err := store.TagStore.Tag(created.Arn, tagMap); err != nil {
-			return nil, nil, err
-		}
+	if err := applyCreateTags(store, created.Arn, tagMap); err != nil {
+		return nil, nil, err
 	}
 
 	return created, listTagsIfAny(store, created.Arn), nil
@@ -152,6 +143,19 @@ func (s *AppSyncService) deleteApiCore(store *appsyncstore.AppSyncStore, apiId s
 	return nil
 }
 
+// applyCreateTags persists a created resource's embedded create-time tags
+// to the ARN-keyed tag store. No-op when the resource carries none.
+func applyCreateTags(store *appsyncstore.AppSyncStore, arn string, tags map[string]string) error {
+	if len(tags) == 0 {
+		return nil
+	}
+	tagMap := make(map[string]string, len(tags))
+	for k, v := range tags {
+		tagMap[k] = v
+	}
+	return store.TagStore.Tag(arn, tagMap)
+}
+
 // listTagsIfAny reads the tag-store view of a resource, returning nil when the
 // read fails or the tag set is empty so callers can omit the member.
 func listTagsIfAny(store *appsyncstore.AppSyncStore, arn string) map[string]string {
@@ -170,19 +174,11 @@ type apiWithTags struct {
 // listApisCore lists Event APIs (v2) with pagination, enriching each entry
 // with its tag-store view.
 func (s *AppSyncService) listApisCore(store *appsyncstore.AppSyncStore, maxResults int, nextToken string) ([]apiWithTags, string, error) {
-	if maxResults < 0 {
-		maxResults = 0
+	opts, err := listOptionsFromParams(maxResults, nextToken)
+	if err != nil {
+		return nil, "", err
 	}
-	if maxResults == 0 {
-		maxResults = 25
-	}
-	if maxResults > 25 {
-		return nil, "", NewBadRequestException("maxResults must be between 1 and 25")
-	}
-	apis, nextToken, err := store.ListApis(storecommon.ListOptions{
-		MaxItems: maxResults,
-		Marker:   nextToken,
-	})
+	apis, nextToken, err := store.ListApis(opts)
 	if err != nil {
 		return nil, "", mapStoreErrorE(err)
 	}

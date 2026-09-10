@@ -2,7 +2,6 @@ package appsync
 
 import (
 	"encoding/base64"
-	"fmt"
 	"strings"
 	"time"
 
@@ -57,7 +56,7 @@ func (s *AppSyncService) startSchemaCreationCore(store *appsyncstore.AppSyncStor
 
 	_, err = store.GetGraphqlApiById(in.ApiId)
 	if err != nil {
-		return "", NewNotFoundException(fmt.Sprintf("GraphQL API with ID %s", in.ApiId))
+		return "", mapStoreErrorE(err)
 	}
 
 	status := &appsyncstore.SchemaCreationStatus{
@@ -68,7 +67,7 @@ func (s *AppSyncService) startSchemaCreationCore(store *appsyncstore.AppSyncStor
 	}
 
 	if err := store.SaveSchemaCreationStatus(in.ApiId, status); err != nil {
-		return "", ErrInternalFailureException
+		return "", mapStoreErrorE(err)
 	}
 
 	defStr := string(decodedDef)
@@ -135,11 +134,8 @@ func (s *AppSyncService) getIntrospectionSchemaCore(store *appsyncstore.AppSyncS
 	if in.ApiId == "" {
 		return nil, NewBadRequestException("apiId is required")
 	}
-	if in.Format == "" {
-		return nil, NewBadRequestException("format is required")
-	}
-	if !validateTypeFormat(in.Format) {
-		return nil, NewBadRequestException(fmt.Sprintf("Invalid format: %s. Valid values: SDL, JSON", in.Format))
+	if err := requireTypeFormat(in.Format); err != nil {
+		return nil, err
 	}
 
 	_, err := store.GetGraphqlApiById(in.ApiId)

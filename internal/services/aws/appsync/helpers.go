@@ -45,17 +45,9 @@ func validateEventApiExists(store *appsyncstore.AppSyncStore, apiId string) erro
 	return nil
 }
 
-// parsePaginationOptions extracts list pagination parameters from the request.
 // paginationTokenPattern mirrors the Smithy @pattern on
 // com.amazonaws.appsync#PaginationToken: ^[\S]+$.
 var paginationTokenPattern = regexp.MustCompile(`^\S+$`)
-
-// AppSync uses maxResults (int) and nextToken (string) in query params.
-// Smithy MaxResults shape: range 0-25. When omitted (0), defaults to 25.
-// Values exceeding 25 are rejected with BadRequestException.
-func parsePaginationOptions(req *request.ParsedRequest) (common.ListOptions, error) {
-	return listOptionsFromParams(request.GetIntParam(req.Parameters, "maxResults"), request.GetStringParam(req.Parameters, "nextToken"))
-}
 
 // listOptionsFromParams validates raw maxResults/nextToken wire values in
 // the order the wire parser historically applied them, so Core functions can

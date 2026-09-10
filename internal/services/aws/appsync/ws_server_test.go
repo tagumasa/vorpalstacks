@@ -1,7 +1,12 @@
 package appsync
 
 import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -120,5 +125,85 @@ func TestChannelMatches(t *testing.T) {
 			got := channelMatches(tt.subCh, tt.pubCh)
 			assert.Equal(t, tt.expected, got)
 		})
+	}
+}
+
+func TestAPIKeyExpired(t *testing.T) {
+	assert.False(t, apiKeyExpired(0), "zero expiry means the key never expires")
+	assert.False(t, apiKeyExpired(time.Now().Unix()+3600), "future expiry is not expired")
+	assert.True(t, apiKeyExpired(time.Now().Unix()-3600), "past expiry is expired")
+}
+
+func TestExtractSubprotocolAuth(t *testing.T) {
+	creds := base64.RawURLEncoding.EncodeToString([]byte(`{"host":"api123.example.com","x-api-key":"da2-test"}`))
+
+	joined := httptest.NewRequest("GET", "/event/realtime", nil)
+	joined.Header.Set("Sec-WebSocket-Protocol", "aws-appsync-event-ws, header-"+creds)
+	auth := extractSubprotocolAuth(joined)
+	assert.NotNil(t, auth)
+	assert.Equal(t, "api123.example.com", auth["host"])
+	assert.Equal(t, "da2-test", auth["x-api-key"])
+
+	repeated := httptest.NewRequest("GET", "/event/realtime", nil)
+	repeated.Header.Add("Sec-WebSocket-Protocol", "aws-appsync-event-ws")
+	repeated.Header.Add("Sec-WebSocket-Protocol", "header-"+creds)
+	auth = extractSubprotocolAuth(repeated)
+	assert.NotNil(t, auth, "repeated header lines carry the same protocol list")
+	assert.Equal(t, "da2-test", auth["x-api-key"])
+
+	bare := httptest.NewRequest("GET", "/event/realtime", nil)
+	bare.Header.Set("Sec-WebSocket-Protocol", "aws-appsync-event-ws")
+	assert.Nil(t, extractSubprotocolAuth(bare), "no header- subprotocol yields no credentials")
+}
+
+func TestVerifyConnectionAuthFailClosed(t *testing.T) {
+	s := NewEventServer()
+
+	assert.False(t, s.verifyConnectionAuth(context.Background(), "", nil), "missing apiId fails closed")
+	assert.False(t, s.verifyConnectionAuth(context.Background(), "api123", nil), "missing subprotocol credentials fail closed")
+	assert.False(t, s.verifyConnectionAuth(context.Background(), "api123", map[string]string{"host": "h", "x-api-key": "k"}),
+		"credentials without a reachable API configuration fail closed")
+}
+
+func TestPublishEventsPerEventDataMessages(t *testing.T) {
+	s := NewEventServer()
+	ws := &wsConnection{
+		id:            "conn1",
+		sendCh:        make(chan []byte, 8),
+		subscriptions: make(map[string]*subscription),
+	}
+	s.connections["conn1"] = ws
+	s.channels.subscribe("/default/ch", "conn1", "sub1")
+
+	result := s.publishEvents("/default/ch", []string{`{"msg":"first"}`, `{"msg":"second"}`})
+
+	// One data message per event; the event member is the documented array
+	// form carrying the published stringified event.
+	var got [][]string
+	for i := 0; i < 2; i++ {
+		select {
+		case raw := <-ws.sendCh:
+			var m struct {
+				Type  string   `json:"type"`
+				Id    string   `json:"id"`
+				Event []string `json:"event"`
+			}
+			if err := json.Unmarshal(raw, &m); err != nil {
+				t.Fatalf("data message %d is not valid JSON: %v", i, err)
+			}
+			assert.Equal(t, "data", m.Type)
+			assert.Equal(t, "sub1", m.Id)
+			got = append(got, m.Event)
+		case <-time.After(time.Second):
+			t.Fatalf("data message %d not delivered", i)
+		}
+	}
+	assert.Equal(t, [][]string{{`{"msg":"first"}`}, {`{"msg":"second"}`}}, got)
+	assert.Len(t, result.Successful, 2, "both events reported successful")
+
+	select {
+	case raw := <-ws.sendCh:
+		t.Fatalf("unexpected extra message after the per-event deliveries: %s", raw)
+	default:
 	}
 }

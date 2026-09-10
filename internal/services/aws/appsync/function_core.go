@@ -59,6 +59,7 @@ func (s *AppSyncService) createFunctionCore(store *appsyncstore.AppSyncStore, in
 		Runtime:                 in.Runtime,
 		Code:                    in.Code,
 		MaxBatchSize:            in.MaxBatchSize,
+		MaxBatchSizeSet:         in.HasMaxBatchSize,
 		SyncConfig:              in.SyncConfig,
 	}
 
@@ -122,6 +123,7 @@ func (s *AppSyncService) updateFunctionCore(store *appsyncstore.AppSyncStore, in
 		Runtime:                 in.Runtime,
 		Code:                    in.Code,
 		MaxBatchSize:            in.MaxBatchSize,
+		MaxBatchSizeSet:         in.HasMaxBatchSize,
 		SyncConfig:              in.SyncConfig,
 	}
 

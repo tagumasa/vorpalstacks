@@ -12,13 +12,21 @@ import (
 	"github.com/google/uuid"
 
 	"vorpalstacks/internal/common/request"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-var sharedHTTPClient = &http.Client{Timeout: 30 * time.Second}
+// Dispatch limits shared by the HTTP-plane data source dispatchers. Raw
+// values appear here and nowhere else.
+const (
+	httpDispatchTimeout    = 30 * time.Second
+	httpMaxResponseBytes   = 6 * 1024 * 1024
+	dynamoDefaultPageLimit = 1000
+	maxSQLStatements       = 2
+)
+
+var sharedHTTPClient = &http.Client{Timeout: httpDispatchTimeout}
 
 // dispatchDataSource routes a resolver payload to the appropriate data source
 // based on the data source type (DynamoDB, Lambda, HTTP, EventBridge, Neptune, None, etc.).
@@ -51,7 +59,7 @@ func (e *graphQLEngine) dispatchDataSource(
 	case "AMAZON_NEPTUNE":
 		return e.dispatchNeptune(ctx, reqCtx, ds, payload)
 	case "NONE":
-		return e.dispatchNone(payload)
+		return e.dispatchNone()
 	case "AMAZON_ELASTICSEARCH", "AMAZON_OPENSEARCH_SERVICE":
 		return e.dispatchOpenSearch(ctx, reqCtx, ds, payload)
 	case "RELATIONAL_DATABASE":
@@ -88,12 +96,12 @@ func (e *graphQLEngine) dispatchLambda(
 		functionName = ds.LambdaConfig.LambdaFunctionArn
 	}
 
-	busImpl, ok := e.bus.(*busPublisherAdapter)
-	if !ok || busImpl == nil {
-		return nil, fmt.Errorf("event bus adapter not available for Lambda invocation")
+	invoker := e.bus.LambdaInvoker()
+	if invoker == nil {
+		return nil, fmt.Errorf("Lambda invoker not configured on event bus")
 	}
 
-	_, responseBytes, err := busImpl.bus.LambdaInvoker().InvokeForGateway(ctx, functionName, payloadBytes)
+	_, responseBytes, err := invoker.InvokeForGateway(ctx, functionName, payloadBytes)
 	if err != nil {
 		return nil, fmt.Errorf("lambda invocation failed: %w", err)
 	}
@@ -119,12 +127,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		return nil, fmt.Errorf("event bus not configured for DynamoDB invocation")
 	}
 
-	busImpl, ok := e.bus.(*busPublisherAdapter)
-	if !ok || busImpl == nil {
-		return nil, fmt.Errorf("event bus adapter not available for DynamoDB invocation")
-	}
-
-	invoker := busImpl.bus.DynamoDBInvoker()
+	invoker := e.bus.DynamoDBInvoker()
 	if invoker == nil {
 		return nil, fmt.Errorf("DynamoDB invoker not configured on event bus")
 	}
@@ -186,7 +189,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 		return map[string]interface{}{}, nil
 
 	case "Scan":
-		scanLimit := 1000
+		scanLimit := dynamoDefaultPageLimit
 		if maxBatchSize > 0 && int(maxBatchSize) < scanLimit {
 			scanLimit = int(maxBatchSize)
 		}
@@ -213,7 +216,7 @@ func (e *graphQLEngine) dispatchDynamoDB(
 				break
 			}
 		}
-		queryLimit := 1000
+		queryLimit := dynamoDefaultPageLimit
 		if maxBatchSize > 0 && int(maxBatchSize) < queryLimit {
 			queryLimit = int(maxBatchSize)
 		}
@@ -260,30 +263,36 @@ func (e *graphQLEngine) dispatchHTTP(
 		endpoint = "https://" + endpoint
 	}
 
+	return postJSON(ctx, endpoint, payload, "HTTP")
+}
+
+// postJSON dispatches a JSON POST to an HTTP endpoint and decodes the JSON
+// response, falling back to the raw body string when the response is not
+// valid JSON. Shared by the HTTP and OpenSearch data source dispatchers.
+func postJSON(ctx context.Context, endpoint string, payload interface{}, source string) (interface{}, error) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal HTTP payload: %w", err)
+		return nil, fmt.Errorf("failed to marshal %s payload: %w", source, err)
 	}
 
-	httpCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	httpCtx, cancel := context.WithTimeout(ctx, httpDispatchTimeout)
 	defer cancel()
 
 	httpReq, err := http.NewRequestWithContext(httpCtx, http.MethodPost, endpoint, strings.NewReader(string(payloadBytes)))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		return nil, fmt.Errorf("failed to create %s request: %w", source, err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	client := sharedHTTPClient
-	resp, err := client.Do(httpReq)
+	resp, err := sharedHTTPClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("HTTP request failed: %w", err)
+		return nil, fmt.Errorf("%s request failed: %w", source, err)
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 6*1024*1024))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, httpMaxResponseBytes))
 	if err != nil {
-		return nil, fmt.Errorf("failed to read HTTP response: %w", err)
+		return nil, fmt.Errorf("failed to read %s response: %w", source, err)
 	}
 
 	var result interface{}
@@ -334,9 +343,10 @@ func (e *graphQLEngine) dispatchEventBridge(
 				Payload:     evMap,
 			}
 			if err := e.bus.Publish(ctx, publishEvent); err != nil {
-				logs.Warn("Failed to publish AppSync event to bus",
-					logs.String("eventBus", eventBusArn),
-					logs.Err(err))
+				// The first delivery failure is the operation's failure:
+				// reporting success for a publish that did not land
+				// falsifies the delivery state.
+				return nil, fmt.Errorf("EventBridge publish failed: %w", err)
 			}
 		}
 	}
@@ -355,12 +365,7 @@ func (e *graphQLEngine) dispatchNeptune(
 		return nil, fmt.Errorf("event bus not configured for Neptune invocation")
 	}
 
-	busImpl, ok := e.bus.(*busPublisherAdapter)
-	if !ok || busImpl == nil {
-		return nil, fmt.Errorf("event bus adapter not available for Neptune invocation")
-	}
-
-	invoker := busImpl.bus.NeptuneGraphInvoker()
+	invoker := e.bus.NeptuneGraphInvoker()
 	if invoker == nil {
 		return nil, fmt.Errorf("NeptuneGraph invoker not configured on event bus")
 	}
@@ -395,7 +400,7 @@ func (e *graphQLEngine) dispatchNeptune(
 
 // dispatchNone returns null for NONE data sources. These are used for
 // resolvers that don't interact with any external data source.
-func (e *graphQLEngine) dispatchNone(payload interface{}) (interface{}, error) {
+func (e *graphQLEngine) dispatchNone() (interface{}, error) {
 	return nil, nil
 }
 
@@ -416,37 +421,7 @@ func (e *graphQLEngine) dispatchOpenSearch(
 		return nil, fmt.Errorf("OpenSearch data source has no endpoint configured")
 	}
 
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal OpenSearch payload: %w", err)
-	}
-
-	httpCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-
-	httpReq, err := http.NewRequestWithContext(httpCtx, http.MethodPost, endpoint, strings.NewReader(string(payloadBytes)))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create OpenSearch request: %w", err)
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
-
-	client := sharedHTTPClient
-	resp, err := client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("OpenSearch request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 6*1024*1024))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read OpenSearch response: %w", err)
-	}
-
-	var result interface{}
-	if err := json.Unmarshal(body, &result); err != nil {
-		return string(body), nil
-	}
-	return result, nil
+	return postJSON(ctx, endpoint, payload, "OpenSearch")
 }
 
 // dispatchRDS forwards SQL queries to the RDS Data API via the EventBus
@@ -462,12 +437,7 @@ func (e *graphQLEngine) dispatchRDS(
 		return nil, fmt.Errorf("event bus not configured for RDS invocation")
 	}
 
-	busImpl, ok := e.bus.(*busPublisherAdapter)
-	if !ok || busImpl == nil {
-		return nil, fmt.Errorf("event bus adapter not available for RDS invocation")
-	}
-
-	invoker := busImpl.bus.RDSDataInvoker()
+	invoker := e.bus.RDSDataInvoker()
 	if invoker == nil {
 		return nil, fmt.Errorf("RDSData invoker not configured on event bus")
 	}
@@ -492,14 +462,21 @@ func (e *graphQLEngine) dispatchRDS(
 	if len(statements) == 0 {
 		return nil, fmt.Errorf("no SQL statements in payload")
 	}
-	if len(statements) > 2 {
-		return nil, fmt.Errorf("maximum 2 SQL statements allowed per request")
+	if len(statements) > maxSQLStatements {
+		return nil, fmt.Errorf("maximum %d SQL statements allowed per request", maxSQLStatements)
 	}
 
-	// Execute first statement and return result
-	result, err := invoker.ExecuteStatement(ctx, resourceArn, secretArn, database, schema, statements[0], false, "")
-	if err != nil {
-		return nil, fmt.Errorf("RDS execution failed: %w", err)
+	// The RDS request mapping template admits up to two statements per
+	// request; they execute in order — the documented pattern is a mutation
+	// followed by a read-back select — and the resolver returns the final
+	// statement's result.
+	var result interface{}
+	for _, stmt := range statements {
+		r, execErr := invoker.ExecuteStatement(ctx, resourceArn, secretArn, database, schema, stmt, false, "")
+		if execErr != nil {
+			return nil, fmt.Errorf("RDS execution failed: %w", execErr)
+		}
+		result = r
 	}
 
 	return result, nil
@@ -520,12 +497,9 @@ func extractStatements(payload map[string]interface{}) []string {
 		}
 	}
 
-	// JS resolver format: {"sql":"SELECT ..."}
-	if sql, ok := payload["sql"].(string); ok && sql != "" {
-		return []string{sql}
-	}
-
-	// Direct sql field
+	// JS resolver payloads carry the SQL string in the "sql" member; the
+	// typed check and the generic lookup read the same key, so one
+	// extraction covers both.
 	if sql := request.GetStringParam(payload, "sql"); sql != "" {
 		return []string{sql}
 	}

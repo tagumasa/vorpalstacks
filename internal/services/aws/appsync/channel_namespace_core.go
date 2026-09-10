@@ -65,7 +65,6 @@ func (s *AppSyncService) createChannelNamespaceCore(store *appsyncstore.AppSyncS
 		HandlerConfigs:     in.HandlerConfigs,
 		PublishAuthModes:   in.PublishAuthModes,
 		SubscribeAuthModes: in.SubscribeAuthModes,
-		Tags:               in.Tags,
 	}
 
 	created, err := store.CreateChannelNamespace(ns)
@@ -73,14 +72,8 @@ func (s *AppSyncService) createChannelNamespaceCore(store *appsyncstore.AppSyncS
 		return nil, nil, mapStoreErrorE(err)
 	}
 
-	if len(created.Tags) > 0 {
-		tagMap := make(map[string]string, len(created.Tags))
-		for k, v := range created.Tags {
-			tagMap[k] = v
-		}
-		if err := store.TagStore.Tag(created.ChannelNamespaceArn, tagMap); err != nil {
-			return nil, nil, err
-		}
+	if err := applyCreateTags(store, created.ChannelNamespaceArn, in.Tags); err != nil {
+		return nil, nil, err
 	}
 
 	return created, listTagsIfAny(store, created.ChannelNamespaceArn), nil

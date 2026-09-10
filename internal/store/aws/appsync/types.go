@@ -66,7 +66,6 @@ type Api struct {
 	Dns          map[string]string `json:"dns,omitempty"`
 	EventConfig  *EventConfig      `json:"eventConfig"`
 	OwnerContact string            `json:"ownerContact,omitempty"`
-	Tags         map[string]string `json:"tags,omitempty"`
 	WafWebAclArn string            `json:"wafWebAclArn,omitempty"`
 	XrayEnabled  bool              `json:"xrayEnabled"`
 }
@@ -74,16 +73,15 @@ type Api struct {
 // ChannelNamespace represents a channel namespace within an Event API (v2).
 // Channel paths are scoped to a namespace (e.g. /myNamespace/ch1/ch2).
 type ChannelNamespace struct {
-	ApiId               string            `json:"apiId"`
-	Name                string            `json:"name"`
-	ChannelNamespaceArn string            `json:"channelNamespaceArn"`
-	CodeHandlers        string            `json:"codeHandlers,omitempty"`
-	Created             time.Time         `json:"created"`
-	HandlerConfigs      *HandlerConfigs   `json:"handlerConfigs,omitempty"`
-	LastModified        time.Time         `json:"lastModified"`
-	PublishAuthModes    []AuthMode        `json:"publishAuthModes,omitempty"`
-	SubscribeAuthModes  []AuthMode        `json:"subscribeAuthModes,omitempty"`
-	Tags                map[string]string `json:"tags,omitempty"`
+	ApiId               string          `json:"apiId"`
+	Name                string          `json:"name"`
+	ChannelNamespaceArn string          `json:"channelNamespaceArn"`
+	CodeHandlers        string          `json:"codeHandlers,omitempty"`
+	Created             time.Time       `json:"created"`
+	HandlerConfigs      *HandlerConfigs `json:"handlerConfigs,omitempty"`
+	LastModified        time.Time       `json:"lastModified"`
+	PublishAuthModes    []AuthMode      `json:"publishAuthModes,omitempty"`
+	SubscribeAuthModes  []AuthMode      `json:"subscribeAuthModes,omitempty"`
 
 	CodeHandlersSet bool `json:"-"`
 }
@@ -129,16 +127,18 @@ type GraphqlApi struct {
 	LogConfig                         *LogConfig                         `json:"logConfig,omitempty"`
 	MergedApiExecutionRoleArn         string                             `json:"mergedApiExecutionRoleArn,omitempty"`
 	OpenIDConnectConfig               *OpenIDConnectConfig               `json:"openIDConnectConfig,omitempty"`
-	Owner                             string                             `json:"owner,omitempty"`
 	OwnerContact                      string                             `json:"ownerContact,omitempty"`
-	QueryDepthLimit                   int32                              `json:"queryDepthLimit,omitempty"`
-	ResolverCountLimit                int32                              `json:"resolverCountLimit,omitempty"`
-	Tags                              map[string]string                  `json:"tags,omitempty"`
-	Uris                              map[string]string                  `json:"uris,omitempty"`
-	UserPoolConfig                    *UserPoolConfig                    `json:"userPoolConfig,omitempty"`
-	Visibility                        string                             `json:"visibility,omitempty"`
-	WafWebAclArn                      string                             `json:"wafWebAclArn,omitempty"`
-	XrayEnabled                       bool                               `json:"xrayEnabled"`
+	// The Set flags record wire-level presence so store merges can apply
+	// an explicit zero (a valid limit value) instead of dropping it.
+	QueryDepthLimit       int32             `json:"queryDepthLimit,omitempty"`
+	QueryDepthLimitSet    bool              `json:"queryDepthLimitSet,omitempty"`
+	ResolverCountLimit    int32             `json:"resolverCountLimit,omitempty"`
+	ResolverCountLimitSet bool              `json:"resolverCountLimitSet,omitempty"`
+	Uris                  map[string]string `json:"uris,omitempty"`
+	UserPoolConfig        *UserPoolConfig   `json:"userPoolConfig,omitempty"`
+	Visibility            string            `json:"visibility,omitempty"`
+	WafWebAclArn          string            `json:"wafWebAclArn,omitempty"`
+	XrayEnabled           bool              `json:"xrayEnabled"`
 }
 
 // AdditionalAuthenticationProvider defines an extra authentication mechanism
@@ -203,7 +203,6 @@ type DataSource struct {
 	NeptuneConfig            *NeptuneDataSourceConfig            `json:"neptuneConfig,omitempty"`
 	OpenSearchServiceConfig  *OpenSearchServiceDataSourceConfig  `json:"openSearchServiceConfig,omitempty"`
 	RelationalDatabaseConfig *RelationalDatabaseDataSourceConfig `json:"relationalDatabaseConfig,omitempty"`
-	Tags                     map[string]string                   `json:"tags,omitempty"`
 }
 
 // DynamodbDataSourceConfig specifies an Amazon DynamoDB table as a data source.
@@ -294,13 +293,13 @@ type Resolver struct {
 	Kind                    string          `json:"kind,omitempty"`
 	DataSourceName          string          `json:"dataSourceName,omitempty"`
 	RequestMappingTemplate  string          `json:"requestMappingTemplate,omitempty"`
-	RequestMappingTemplateS string          `json:"requestMappingTemplateS,omitempty"`
 	ResponseMappingTemplate string          `json:"responseMappingTemplate,omitempty"`
 	PipelineConfig          *PipelineConfig `json:"pipelineConfig,omitempty"`
 	Runtime                 *AppSyncRuntime `json:"runtime,omitempty"`
 	Code                    string          `json:"code,omitempty"`
 	CachingConfig           *CachingConfig  `json:"cachingConfig,omitempty"`
 	MaxBatchSize            int32           `json:"maxBatchSize,omitempty"`
+	MaxBatchSizeSet         bool            `json:"maxBatchSizeSet,omitempty"`
 	MetricsConfig           string          `json:"metricsConfig,omitempty"`
 	SyncConfig              *SyncConfig     `json:"syncConfig,omitempty"`
 }
@@ -350,6 +349,7 @@ type FunctionConfiguration struct {
 	Runtime                 *AppSyncRuntime `json:"runtime,omitempty"`
 	Code                    string          `json:"code,omitempty"`
 	MaxBatchSize            int32           `json:"maxBatchSize,omitempty"`
+	MaxBatchSizeSet         bool            `json:"maxBatchSizeSet,omitempty"`
 	SyncConfig              *SyncConfig     `json:"syncConfig,omitempty"`
 }
 
@@ -390,13 +390,12 @@ type ApiCache struct {
 
 // DomainNameConfig represents a custom domain name for an AppSync API.
 type DomainNameConfig struct {
-	DomainName        string            `json:"domainName"`
-	AppsyncDomainName string            `json:"appsyncDomainName,omitempty"`
-	CertificateArn    string            `json:"certificateArn,omitempty"`
-	Description       string            `json:"description,omitempty"`
-	DomainNameArn     string            `json:"domainNameArn,omitempty"`
-	HostedZoneId      string            `json:"hostedZoneId,omitempty"`
-	Tags              map[string]string `json:"tags,omitempty"`
+	DomainName        string `json:"domainName"`
+	AppsyncDomainName string `json:"appsyncDomainName,omitempty"`
+	CertificateArn    string `json:"certificateArn,omitempty"`
+	Description       string `json:"description,omitempty"`
+	DomainNameArn     string `json:"domainNameArn,omitempty"`
+	HostedZoneId      string `json:"hostedZoneId,omitempty"`
 }
 
 // ApiAssociation links a domain name to a GraphQL API.
@@ -404,7 +403,6 @@ type ApiAssociation struct {
 	ApiId             string `json:"apiId,omitempty"`
 	DomainName        string `json:"domainName,omitempty"`
 	AssociationStatus string `json:"associationStatus,omitempty"`
-	DeploymentDetail  string `json:"deploymentDetail,omitempty"`
 }
 
 // Schema and environment variable types.
@@ -442,19 +440,7 @@ type SourceApiAssociation struct {
 	LastSuccessfulMergeDate          *time.Time                  `json:"lastSuccessfulMergeDate,omitempty"`
 }
 
-// SourceApiAssociationSummary is a lightweight representation used in list operations.
-type SourceApiAssociationSummary struct {
-	AssociationId  string `json:"associationId"`
-	MergedApiId    string `json:"mergedApiId"`
-	SourceApiId    string `json:"sourceApiId"`
-	AssociationArn string `json:"associationArn,omitempty"`
-	MergedApiArn   string `json:"mergedApiArn,omitempty"`
-	SourceApiArn   string `json:"sourceApiArn,omitempty"`
-	Description    string `json:"description,omitempty"`
-}
-
 // SourceApiAssociationConfig controls merge behaviour (MANUAL_MERGE or AUTO_MERGE).
 type SourceApiAssociationConfig struct {
 	MergeType string `json:"mergeType"`
-	SecretArn string `json:"secretArn"`
 }

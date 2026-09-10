@@ -3,9 +3,7 @@ package appsync
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
 
 	appsyncstore "vorpalstacks/internal/store/aws/appsync"
 
@@ -38,7 +36,7 @@ func (s *AppSyncService) executeGraphQLCore(ctx context.Context, reqCtx *request
 
 	api, err := store.GetGraphqlApiById(in.ApiId)
 	if err != nil {
-		return nil, &graphqlWireError{http.StatusNotFound, "NotFoundException", fmt.Sprintf("GraphQL API %s not found", in.ApiId)}
+		return nil, graphqlWireErrorFromStoreError(err)
 	}
 
 	// Enforce per-authentication-type access control on the data-plane
@@ -64,7 +62,18 @@ func (s *AppSyncService) executeGraphQLCore(ctx context.Context, reqCtx *request
 	}
 
 	engine := newGraphQLEngine(store, wrapBus(s.bus), &s.schemaCache)
-	return engine.Execute(ctx, reqCtx, in.ApiId, &gqlReq), nil
+	return engine.Execute(ctx, reqCtx, in.ApiId, &gqlReq, api.QueryDepthLimit, api.ResolverCountLimit), nil
+}
+
+// graphqlWireErrorFromStoreError routes a store error through the sentinel
+// mapping and adapts the typed result to the pre-execution wire error, so
+// store NotFound errors keep their typed code and status.
+func graphqlWireErrorFromStoreError(err error) *graphqlWireError {
+	ae, ok := mapStoreErrorE(err).(*AppSyncError)
+	if !ok {
+		ae = ErrInternalFailureException
+	}
+	return &graphqlWireError{ae.HTTPStatus, ae.Code, ae.Message}
 }
 
 // authorizeGraphQLRequest enforces the API's configured authentication types
@@ -110,8 +119,8 @@ func authorizeGraphQLAPIKey(store *appsyncstore.AppSyncStore, keyValue string, a
 	}
 
 	// Check expiry: AWS API keys have a 1-year default validity. Expired
-	// keys must reject the request.
-	if apiKey.Expires > 0 && time.Now().Unix() > apiKey.Expires {
+	// keys must reject the request. An Expires value of 0 never expires.
+	if apiKeyExpired(apiKey.Expires) {
 		return &graphqlWireError{http.StatusUnauthorized, "UnauthorizedException", "The API key has expired."}
 	}
 

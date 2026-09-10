@@ -17,27 +17,31 @@ func (h *AdminHandler) getStore(header http.Header) (*appsyncstore.AppSyncStore,
 	return h.service.GetStoreForRegion(region)
 }
 
-// toPbApi converts a store Api to the proto Api message.
-func toPbApi(a *appsyncstore.Api) *pb.Api {
+// toPbApi converts a store Api and its tag-store view to the proto Api
+// message. Tags are passed separately because the tag store is the single
+// tag source; the record no longer carries a copy.
+func toPbApi(a *appsyncstore.Api, tags map[string]string) *pb.Api {
 	return &pb.Api{
 		Apiid:        proto.String(a.ApiId),
 		Name:         proto.String(a.Name),
 		Apiarn:       proto.String(a.Arn),
 		Dns:          a.Dns,
-		Tags:         a.Tags,
+		Tags:         tags,
 		Xrayenabled:  proto.Bool(a.XrayEnabled),
 		Wafwebaclarn: proto.String(a.WafWebAclArn),
 	}
 }
 
-// toPbGraphqlApi converts a store GraphqlApi to the proto GraphqlApi message.
-func toPbGraphqlApi(a *appsyncstore.GraphqlApi) *pb.GraphqlApi {
+// toPbGraphqlApi converts a store GraphqlApi and its tag-store view to the
+// proto GraphqlApi message; see toPbApi for the tag handling.
+func toPbGraphqlApi(a *appsyncstore.GraphqlApi, tags map[string]string) *pb.GraphqlApi {
 	return &pb.GraphqlApi{
 		Name:         proto.String(a.Name),
 		Apiid:        proto.String(a.ApiId),
 		Arn:          proto.String(a.Arn),
+		Owner:        proto.String(ownerFromArn(a.Arn)),
 		Uris:         a.Uris,
-		Tags:         a.Tags,
+		Tags:         tags,
 		Xrayenabled:  proto.Bool(a.XrayEnabled),
 		Wafwebaclarn: proto.String(a.WafWebAclArn),
 	}

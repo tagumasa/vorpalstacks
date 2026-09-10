@@ -27,6 +27,27 @@ type resolverInput struct {
 	HasMaxBatchSize         bool
 }
 
+// resolverFromInput builds the store Resolver record from the parsed input.
+func resolverFromInput(in resolverInput) *appsyncstore.Resolver {
+	return &appsyncstore.Resolver{
+		ApiId:                   in.ApiId,
+		TypeName:                in.TypeName,
+		FieldName:               in.FieldName,
+		Kind:                    in.Kind,
+		DataSourceName:          in.DataSourceName,
+		RequestMappingTemplate:  in.RequestMappingTemplate,
+		ResponseMappingTemplate: in.ResponseMappingTemplate,
+		Runtime:                 in.Runtime,
+		Code:                    in.Code,
+		CachingConfig:           in.CachingConfig,
+		MaxBatchSize:            in.MaxBatchSize,
+		MaxBatchSizeSet:         in.HasMaxBatchSize,
+		MetricsConfig:           in.MetricsConfig,
+		PipelineConfig:          in.PipelineConfig,
+		SyncConfig:              in.SyncConfig,
+	}
+}
+
 // createResolverCore validates the request and persists a new resolver for a
 // GraphQL API type and field.
 func (s *AppSyncService) createResolverCore(store *appsyncstore.AppSyncStore, in resolverInput) (*appsyncstore.Resolver, error) {
@@ -43,22 +64,7 @@ func (s *AppSyncService) createResolverCore(store *appsyncstore.AppSyncStore, in
 		return nil, err
 	}
 
-	r := &appsyncstore.Resolver{
-		ApiId:                   in.ApiId,
-		TypeName:                in.TypeName,
-		FieldName:               in.FieldName,
-		Kind:                    in.Kind,
-		DataSourceName:          in.DataSourceName,
-		RequestMappingTemplate:  in.RequestMappingTemplate,
-		ResponseMappingTemplate: in.ResponseMappingTemplate,
-		Runtime:                 in.Runtime,
-		Code:                    in.Code,
-		CachingConfig:           in.CachingConfig,
-		MaxBatchSize:            in.MaxBatchSize,
-		MetricsConfig:           in.MetricsConfig,
-		PipelineConfig:          in.PipelineConfig,
-		SyncConfig:              in.SyncConfig,
-	}
+	r := resolverFromInput(in)
 
 	if err := validateResolverPayload(r, in.HasMaxBatchSize); err != nil {
 		return nil, err
@@ -95,22 +101,7 @@ func (s *AppSyncService) updateResolverCore(store *appsyncstore.AppSyncStore, in
 		return nil, NewBadRequestException("apiId, typeName, and fieldName are required")
 	}
 
-	r := &appsyncstore.Resolver{
-		ApiId:                   in.ApiId,
-		TypeName:                in.TypeName,
-		FieldName:               in.FieldName,
-		Kind:                    in.Kind,
-		DataSourceName:          in.DataSourceName,
-		RequestMappingTemplate:  in.RequestMappingTemplate,
-		ResponseMappingTemplate: in.ResponseMappingTemplate,
-		Runtime:                 in.Runtime,
-		Code:                    in.Code,
-		CachingConfig:           in.CachingConfig,
-		MaxBatchSize:            in.MaxBatchSize,
-		MetricsConfig:           in.MetricsConfig,
-		PipelineConfig:          in.PipelineConfig,
-		SyncConfig:              in.SyncConfig,
-	}
+	r := resolverFromInput(in)
 
 	if err := validateResolverPayload(r, in.HasMaxBatchSize); err != nil {
 		return nil, err

@@ -61,6 +61,17 @@ func (r *TestRunner) runAppSyncDomainTests(res *appsyncResources) []TestResult {
 		if resp.DomainNameConfig.Tags["env"] != "prod" {
 			return fmt.Errorf("tag not persisted: %v", resp.DomainNameConfig.Tags)
 		}
+		// Create-time tags must also be visible through the tag plane: the
+		// tag store backs both the config responses and ListTagsForResource.
+		tagResp, err := client.ListTagsForResource(ctx, &appsync.ListTagsForResourceInput{
+			ResourceArn: resp.DomainNameConfig.DomainNameArn,
+		})
+		if err != nil {
+			return err
+		}
+		if tagResp.Tags["env"] != "prod" {
+			return fmt.Errorf("create-time tags not visible to ListTagsForResource: %v", tagResp.Tags)
+		}
 		return nil
 	}))
 

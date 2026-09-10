@@ -24,7 +24,11 @@ var validAuthenticationTypes = map[string]bool{
 	"AWS_LAMBDA":                true,
 }
 
-// DataSourceType enum: smithy.api#DataSourceType
+// DataSourceType enum: smithy.api#DataSourceType. AMAZON_BEDROCK_RUNTIME is
+// part of the enum but is not servable on this platform (Bedrock is an
+// AWS-side LLM runtime), so creation rejects it up front instead of letting
+// every resolver dispatch fail; the exclusion is recorded per service in
+// docs/services.md.
 var validDataSourceTypes = map[string]bool{
 	"AWS_LAMBDA":                true,
 	"AMAZON_DYNAMODB":           true,
@@ -34,7 +38,6 @@ var validDataSourceTypes = map[string]bool{
 	"RELATIONAL_DATABASE":       true,
 	"AMAZON_OPENSEARCH_SERVICE": true,
 	"AMAZON_EVENTBRIDGE":        true,
-	"AMAZON_BEDROCK_RUNTIME":    true,
 }
 
 // ResolverKind enum: smithy.api#ResolverKind
