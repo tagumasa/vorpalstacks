@@ -15,8 +15,6 @@ import (
 	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
-var lambdaFunctionRegex = regexp.MustCompile(`functions/(.+?)/invocations`)
-
 // jsonMarshal is a convenience wrapper for JSON marshalling.
 func jsonMarshal(v interface{}) ([]byte, error) {
 	return json.Marshal(v)
@@ -118,16 +116,16 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 		return nil, &IntegrationError{
 			Message:  "Lambda client not configured",
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
-	functionRef, err := extractFunctionRefFromURI(req.URI)
-	if err != nil {
+	functionRef, ok := svcarn.ExtractAPIGatewayFunctionRef(req.URI)
+	if !ok {
 		return nil, &IntegrationError{
-			Message:  fmt.Sprintf("Invalid Lambda URI: %v", err),
+			Message:  "Invalid Lambda URI: not a Lambda invocation URI",
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -138,14 +136,15 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 	var eventJSON []byte
 	if isProxy {
 		event := e.buildLambdaProxyEvent(req)
-		eventJSON, err = json.Marshal(event)
+		marshalled, err := json.Marshal(event)
 		if err != nil {
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Failed to marshal Lambda event: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusInternalServerError,
 			}
 		}
+		eventJSON = marshalled
 	} else {
 		processed, pErr := processRequestBody(req)
 		if pErr != nil {
@@ -163,7 +162,7 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Lambda invocation failed: %v", err),
 			Type:     "IntegrationFailure",
-			HTTPCode: 502,
+			HTTPCode: http.StatusBadGateway,
 		}
 	}
 
@@ -199,7 +198,7 @@ func (e *AWSExecutor) executeLambda(ctx context.Context, req *IntegrationRequest
 						return nil, &IntegrationError{
 							Message:  fmt.Sprintf("Failed to apply response template: %v", err),
 							Type:     "InternalServerError",
-							HTTPCode: 500,
+							HTTPCode: http.StatusInternalServerError,
 						}
 					}
 					resp.Body = transformed
@@ -330,14 +329,6 @@ func applyResponseTemplate(tmpl string, responseBody []byte, req *IntegrationReq
 	}
 
 	return []byte(result), nil
-}
-
-func extractFunctionRefFromURI(uri string) (string, error) {
-	matches := lambdaFunctionRegex.FindStringSubmatch(uri)
-	if len(matches) < 2 {
-		return "", fmt.Errorf("invalid Lambda URI format")
-	}
-	return matches[1], nil
 }
 
 func parseLambdaResponse(body []byte) (*IntegrationResponse, error) {

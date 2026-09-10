@@ -220,6 +220,11 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []T
 			ResourceId: resResp.Id,
 			HttpMethod: aws.String("POST"),
 			Body:       aws.String(`{"test": "data"}`),
+			// The modelled response header members carry the integration's
+			// HTTP response — these request inputs must never echo back.
+			Headers:             map[string]string{"X-Request-Echo": "must-not-appear"},
+			PathWithQueryString: aws.String("/mock?echo=1"),
+			StageVariables:      map[string]string{"stageVar": "must-not-appear"},
 		})
 		if err != nil {
 			return err
@@ -229,6 +234,17 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []T
 		}
 		if resp.Log == nil {
 			return fmt.Errorf("log is nil")
+		}
+		if resp.Headers["Content-Type"] != "application/json" {
+			return fmt.Errorf("response headers must carry the integration result, got %v", resp.Headers)
+		}
+		if _, echoed := resp.Headers["X-Request-Echo"]; echoed {
+			return fmt.Errorf("request header echoed into the response headers: %v", resp.Headers)
+		}
+		// The mock integration's request template produces the body: the
+		// static template must surface verbatim, not the request payload.
+		if aws.ToString(resp.Body) != `{"statusCode": 200}` {
+			return fmt.Errorf("body must carry the template output, got %q", aws.ToString(resp.Body))
 		}
 		return nil
 	}))
@@ -293,6 +309,25 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []T
 		if getIntResp.TimeoutInMillis != 3000 {
 			return fmt.Errorf("timeoutInMillis mismatch, got %d", getIntResp.TimeoutInMillis)
 		}
+		// The remaining members set at creation round-trip through the read.
+		if aws.ToString(getIntResp.HttpMethod) != "POST" {
+			return fmt.Errorf("integration httpMethod mismatch, got %v", getIntResp.HttpMethod)
+		}
+		if len(getIntResp.RequestParameters) != 1 || getIntResp.RequestParameters["integration.request.header.X-Custom"] != "'static'" {
+			return fmt.Errorf("requestParameters mismatch, got %v", getIntResp.RequestParameters)
+		}
+		if len(getIntResp.RequestTemplates) != 1 || getIntResp.RequestTemplates["application/json"] != "{\"statusCode\":200}" {
+			return fmt.Errorf("requestTemplates mismatch, got %v", getIntResp.RequestTemplates)
+		}
+		if aws.ToString(getIntResp.PassthroughBehavior) != "WHEN_NO_MATCH" {
+			return fmt.Errorf("passthroughBehavior mismatch, got %v", getIntResp.PassthroughBehavior)
+		}
+		if aws.ToString(getIntResp.CacheNamespace) != "lifecycle" {
+			return fmt.Errorf("cacheNamespace mismatch, got %v", getIntResp.CacheNamespace)
+		}
+		if len(getIntResp.CacheKeyParameters) != 1 || getIntResp.CacheKeyParameters[0] != "header.Authorization" {
+			return fmt.Errorf("cacheKeyParameters mismatch, got %v", getIntResp.CacheKeyParameters)
+		}
 
 		_, err = tc.client.PutIntegrationResponse(tc.ctx, &apigateway.PutIntegrationResponseInput{
 			RestApiId:          aws.String(ownAPI),
@@ -307,6 +342,27 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []T
 			return fmt.Errorf("put integration response: %v", err)
 		}
 
+		// The created integration response reads back with every member.
+		intResp, err := tc.client.GetIntegrationResponse(tc.ctx, &apigateway.GetIntegrationResponseInput{
+			RestApiId:  aws.String(ownAPI),
+			ResourceId: resResp.Id,
+			HttpMethod: aws.String("GET"),
+			StatusCode: aws.String("200"),
+		})
+		if err != nil {
+			return fmt.Errorf("get integration response: %v", err)
+		}
+		if aws.ToString(intResp.SelectionPattern) != "2\\d{2}" {
+			return fmt.Errorf("selectionPattern mismatch, got %v", intResp.SelectionPattern)
+		}
+		if len(intResp.ResponseParameters) != 1 ||
+			intResp.ResponseParameters["method.response.header.Content-Type"] != "integration.response.header.Content-Type" {
+			return fmt.Errorf("responseParameters mismatch, got %v", intResp.ResponseParameters)
+		}
+		if len(intResp.ResponseTemplates) != 1 || intResp.ResponseTemplates["application/json"] != "$input.json('$')" {
+			return fmt.Errorf("responseTemplates mismatch, got %v", intResp.ResponseTemplates)
+		}
+
 		_, err = tc.client.PutMethodResponse(tc.ctx, &apigateway.PutMethodResponseInput{
 			RestApiId:          aws.String(ownAPI),
 			ResourceId:         resResp.Id,
@@ -317,6 +373,23 @@ func (r *TestRunner) runAPIGatewayMethodLifecycleTests(tc *apigwTestContext) []T
 		})
 		if err != nil {
 			return fmt.Errorf("put method response: %v", err)
+		}
+
+		// The created method response reads back with every member.
+		methResp, err := tc.client.GetMethodResponse(tc.ctx, &apigateway.GetMethodResponseInput{
+			RestApiId:  aws.String(ownAPI),
+			ResourceId: resResp.Id,
+			HttpMethod: aws.String("GET"),
+			StatusCode: aws.String("200"),
+		})
+		if err != nil {
+			return fmt.Errorf("get method response: %v", err)
+		}
+		if len(methResp.ResponseParameters) != 1 || !methResp.ResponseParameters["method.response.header.Content-Type"] {
+			return fmt.Errorf("method responseParameters mismatch, got %v", methResp.ResponseParameters)
+		}
+		if len(methResp.ResponseModels) != 1 || methResp.ResponseModels["application/json"] != "Empty" {
+			return fmt.Errorf("method responseModels mismatch, got %v", methResp.ResponseModels)
 		}
 
 		_, err = tc.client.DeleteMethodResponse(tc.ctx, &apigateway.DeleteMethodResponseInput{

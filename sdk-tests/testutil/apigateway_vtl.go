@@ -218,8 +218,8 @@ func (r *TestRunner) vtlTests(tc *apigwTestContext) []TestResult {
 				if !ok {
 					return fmt.Errorf("stage is not a string: %v", parsed["stage"])
 				}
-				if stage == "$context.stage" {
-					return fmt.Errorf("$context.stage was not resolved at all, raw template left: %s", stage)
+				if strings.Contains(stage, "$") {
+					return fmt.Errorf("$context.stage was not fully resolved, template variable left: %s", stage)
 				}
 				return nil
 			},

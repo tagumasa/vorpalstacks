@@ -62,9 +62,11 @@ func isApiGatewayPath(path string) bool {
 		strings.HasPrefix(path, "/usageplans") ||
 		strings.HasPrefix(path, "/domainnames") ||
 		strings.HasPrefix(path, "/vpclinks") ||
+		strings.HasPrefix(path, "/sdktypes") ||
+		strings.HasPrefix(path, "/account") ||
 		strings.HasPrefix(path, "/apis") ||
 		strings.HasPrefix(path, "/authorizers") ||
-		(strings.HasPrefix(path, "/tags/") && strings.Contains(path, "apigateway"))
+		request.TagsRouteService(path) == "apigateway"
 }
 
 // isNeptunedataPath reports whether the path matches a Neptune Data API endpoint
@@ -93,7 +95,7 @@ func lookupServiceByPath(path string) string {
 	}
 	if strings.HasPrefix(path, "/schedule-groups") ||
 		strings.HasPrefix(path, "/schedules") ||
-		strings.HasPrefix(path, "/tags/arn:aws:scheduler") {
+		request.TagsRouteService(path) == "scheduler" {
 		return "scheduler"
 	}
 	if strings.HasPrefix(path, "/v2/email/") {

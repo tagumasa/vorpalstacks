@@ -23,6 +23,9 @@ func (s *APIGatewayService) putMethodResponseCore(
 	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
 		return nil, NewBadRequestException("missing required parameters")
 	}
+	if err := validateStatusCode(statusCode); err != nil {
+		return nil, err
+	}
 
 	response := &apigateway.MethodResponse{
 		StatusCode:         statusCode,
@@ -80,6 +83,9 @@ func (s *APIGatewayService) updateMethodResponseCore(
 ) (*apigateway.MethodResponse, error) {
 	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
 		return nil, NewBadRequestException("missing required parameters")
+	}
+	if err := validateStatusCode(statusCode); err != nil {
+		return nil, err
 	}
 
 	methodResp, err := stores.restApis.GetMethodResponse(apiId, resourceId, httpMethod, statusCode)

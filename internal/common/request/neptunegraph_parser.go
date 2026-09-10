@@ -9,7 +9,7 @@ import (
 func IsNeptuneGraphPath(path string) bool {
 	return strings.HasPrefix(path, "/graphs") ||
 		strings.HasPrefix(path, "/snapshots") ||
-		strings.HasPrefix(path, "/tags/arn:aws:neptune-graph:") ||
+		TagsRouteService(path) == "neptune-graph" ||
 		strings.HasPrefix(path, "/importtasks") ||
 		strings.HasPrefix(path, "/exporttasks") ||
 		strings.HasPrefix(path, "/queries") ||
@@ -102,7 +102,7 @@ func extractNeptuneGraphOperation(r *http.Request) string {
 		return ""
 	}
 
-	if strings.HasPrefix(path, "/tags/arn:aws:neptune-graph") {
+	if TagsRouteService(path) == "neptune-graph" {
 		switch method {
 		case "GET":
 			return "ListTagsForResource"

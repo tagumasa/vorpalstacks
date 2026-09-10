@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -41,7 +42,7 @@ func (e *AWSExecutor) executeSQS(ctx context.Context, req *IntegrationRequest) (
 		return nil, &IntegrationError{
 			Message:  "SQS store not configured",
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -50,7 +51,7 @@ func (e *AWSExecutor) executeSQS(ctx context.Context, req *IntegrationRequest) (
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Invalid SQS URI: %v", err),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -73,7 +74,7 @@ func (e *AWSExecutor) executeSQS(ctx context.Context, req *IntegrationRequest) (
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Unsupported SQS action: %s", action),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 }
@@ -91,7 +92,7 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to send SQS message: %v", err),
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -110,53 +111,43 @@ func (e *AWSExecutor) executeSQSSendMessage(ctx context.Context, queueURL string
 
 	responseJSON, _ := jsonMarshal(response)
 	return &IntegrationResponse{
-		StatusCode:      200,
+		StatusCode:      http.StatusOK,
 		Headers:         map[string]string{"Content-Type": "application/json"},
 		Body:            responseJSON,
 		IsBase64Encoded: false,
 	}, nil
 }
 
+// clampedInt32 reads an SQS integration request parameter whose documented
+// contract is a clamped range: an absent or malformed value keeps the
+// documented default, and any parsed value clamps to [min, max].
+func clampedInt32(val string, def, min, max int32) int32 {
+	v := def
+	if val != "" {
+		if parsed, err := strconv.ParseInt(val, 10, 32); err == nil {
+			v = int32(parsed)
+		}
+	}
+	if v < min {
+		return min
+	}
+	if v > max {
+		return max
+	}
+	return v
+}
+
 func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL string, req *IntegrationRequest) (*IntegrationResponse, error) {
-	maxMessages := int32(1)
-	if val := req.Headers["MaxNumberOfMessages"]; val != "" {
-		_, _ = fmt.Sscanf(val, "%d", &maxMessages)
-	}
-	if maxMessages < 1 {
-		maxMessages = 1
-	}
-	if maxMessages > maxSQSReceiveMessageCount {
-		maxMessages = maxSQSReceiveMessageCount
-	}
-
-	waitTime := int32(0)
-	if val := req.Headers["WaitTimeSeconds"]; val != "" {
-		_, _ = fmt.Sscanf(val, "%d", &waitTime)
-	}
-	if waitTime < 0 {
-		waitTime = 0
-	}
-	if waitTime > maxSQSWaitTimeSeconds {
-		waitTime = maxSQSWaitTimeSeconds
-	}
-
-	visibilityTimeout := int32(30)
-	if val := req.Headers["VisibilityTimeout"]; val != "" {
-		_, _ = fmt.Sscanf(val, "%d", &visibilityTimeout)
-	}
-	if visibilityTimeout < 0 {
-		visibilityTimeout = 0
-	}
-	if visibilityTimeout > maxSQSVisibilityTimeoutSeconds {
-		visibilityTimeout = maxSQSVisibilityTimeoutSeconds
-	}
+	maxMessages := clampedInt32(req.Headers["MaxNumberOfMessages"], 1, 1, maxSQSReceiveMessageCount)
+	waitTime := clampedInt32(req.Headers["WaitTimeSeconds"], 0, 0, maxSQSWaitTimeSeconds)
+	visibilityTimeout := clampedInt32(req.Headers["VisibilityTimeout"], 30, 0, maxSQSVisibilityTimeoutSeconds)
 
 	messages, err := e.bus.SQSInvoker().ReceiveMessage(ctx, e.region, queueURL, maxMessages, &visibilityTimeout, waitTime)
 	if err != nil {
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to receive SQS messages: %v", err),
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -173,7 +164,7 @@ func (e *AWSExecutor) executeSQSReceiveMessage(ctx context.Context, queueURL str
 
 	responseJSON, _ := jsonMarshal(response)
 	return &IntegrationResponse{
-		StatusCode:      200,
+		StatusCode:      http.StatusOK,
 		Headers:         map[string]string{"Content-Type": "application/json"},
 		Body:            responseJSON,
 		IsBase64Encoded: false,
@@ -318,7 +309,7 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 		return nil, &IntegrationError{
 			Message:  "SNS store not configured",
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -327,7 +318,7 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Invalid SNS URI: %v", err),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -356,7 +347,7 @@ func (e *AWSExecutor) executeSNS(ctx context.Context, req *IntegrationRequest) (
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Unsupported SNS action: %s", action),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 }
@@ -367,7 +358,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("SNS topic not found: %s", topicArn),
 			Type:     "NotFoundException",
-			HTTPCode: 404,
+			HTTPCode: http.StatusNotFound,
 		}
 	}
 
@@ -391,7 +382,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Failed to store SNS message: %v", err),
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -415,7 +406,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Failed to publish SNS delivery event: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusInternalServerError,
 			}
 		}
 	}
@@ -433,7 +424,7 @@ func (e *AWSExecutor) executeSNSPublish(ctx context.Context, topicArn string, re
 
 	responseJSON, _ := jsonMarshal(response)
 	return &IntegrationResponse{
-		StatusCode:      200,
+		StatusCode:      http.StatusOK,
 		Headers:         map[string]string{"Content-Type": "application/json"},
 		Body:            responseJSON,
 		IsBase64Encoded: false,

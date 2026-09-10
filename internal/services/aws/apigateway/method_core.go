@@ -131,10 +131,10 @@ func (s *APIGatewayService) deleteMethodCore(stores *apiGatewayStores, apiId, re
 }
 
 // putIntegrationCore validates the input, builds an Integration struct, and
-// persists it via the store. Validation centralises the type, URI,
-// integrationHttpMethod, passthroughBehaviour, contentHandling,
-// connectionType, responseTransferMode and timeout range checks that the
-// admin handler previously skipped or duplicated.
+// persists it via the store. It is the single validation path for the
+// type, URI, integrationHttpMethod, passthroughBehaviour, contentHandling,
+// connectionType, responseTransferMode and timeout range checks on both
+// planes.
 func (s *APIGatewayService) putIntegrationCore(
 	stores *apiGatewayStores,
 	apiId, resourceId, httpMethod string,
@@ -255,6 +255,9 @@ func (s *APIGatewayService) putIntegrationResponseCore(
 	}
 	if statusCode == "" {
 		return nil, NewBadRequestException("statusCode is required")
+	}
+	if err := validateStatusCode(statusCode); err != nil {
+		return nil, err
 	}
 	if in.ContentHandling != "" && !validateContentHandling(in.ContentHandling) {
 		return nil, NewBadRequestException("Invalid contentHandling: " + in.ContentHandling)
@@ -666,6 +669,9 @@ func (s *APIGatewayService) updateIntegrationResponseCore(
 ) (*apigateway.IntegrationResponse, error) {
 	if apiId == "" || resourceId == "" || httpMethod == "" || statusCode == "" {
 		return nil, NewBadRequestException("missing required parameters")
+	}
+	if err := validateStatusCode(statusCode); err != nil {
+		return nil, err
 	}
 
 	stores.keyLocker.Lock(apiId)

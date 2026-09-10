@@ -4,29 +4,39 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
 	types "vorpalstacks/internal/common/tags"
-	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/store/aws/common"
 )
 
 // ApiKeyInput is the transport-agnostic input for creating an API key.
-// GenerateDistinctId mirrors the AWS member semantics: nil means true. When
-// false the caller-supplied Value becomes the key id and must be 20-128
-// characters; when true the store mints the id and the value is discarded.
+// GenerateDistinctId and Enabled mirror the AWS member semantics: nil means
+// true. When GenerateDistinctId is false the caller-supplied Value becomes
+// the key id and must be 20-128 characters; when true the store mints the
+// id and the value is discarded.
 type ApiKeyInput struct {
 	Name               string
 	Description        string
-	Enabled            bool
+	Enabled            *bool
 	CustomerId         string
 	Value              string
 	Id                 string
 	GenerateDistinctId *bool
 	StageKeys          []string
 	Tags               []types.Tag
+}
+
+// resolveApiKeyEnabled applies the AWS default: an API key is enabled
+// unless the caller explicitly disables it.
+func resolveApiKeyEnabled(enabled *bool) bool {
+	if enabled != nil {
+		return *enabled
+	}
+	return true
 }
 
 // UsagePlanInput is the transport-agnostic input for creating a usage plan.
@@ -68,14 +78,20 @@ type UsagePlanKeyInput struct {
 }
 
 // createApiKeyCore persists an API key. The name is optional in the API
-// Gateway model, so both planes accept an empty name; the core validates
-// the stageKey entries first and then the generateDistinctId/value
-// pairing, preserving the data-plane failure precedence.
+// Gateway model, so both planes accept an empty name, but a supplied name
+// is bounded at the documented 1024 characters; the core validates the
+// stageKey entries first, then the name bound, then the
+// generateDistinctId/value pairing, preserving the data-plane failure
+// precedence.
 func (s *APIGatewayService) createApiKeyCore(stores *apiGatewayStores, in *ApiKeyInput) (*apigateway.ApiKey, error) {
 	for _, sk := range in.StageKeys {
 		if !validateStageKey(sk) {
 			return nil, NewBadRequestException("invalid stageKey format, expected restApiId/stageName: " + sk)
 		}
+	}
+	if len(in.Name) > apigateway.ApiKeyNameMaxLength {
+		return nil, NewBadRequestException(fmt.Sprintf(
+			"name must not exceed %d characters", apigateway.ApiKeyNameMaxLength))
 	}
 	generateDistinctId := true
 	if in.GenerateDistinctId != nil {
@@ -85,8 +101,10 @@ func (s *APIGatewayService) createApiKeyCore(stores *apiGatewayStores, in *ApiKe
 		if in.Value == "" {
 			return nil, NewBadRequestException("value is required when generateDistinctId is false")
 		}
-		if len(in.Value) < 20 || len(in.Value) > 128 {
-			return nil, NewBadRequestException("value must be between 20 and 128 characters")
+		if len(in.Value) < apigateway.ApiKeyValueMinLength || len(in.Value) > apigateway.ApiKeyValueMaxLength {
+			return nil, NewBadRequestException(fmt.Sprintf(
+				"value must be between %d and %d characters",
+				apigateway.ApiKeyValueMinLength, apigateway.ApiKeyValueMaxLength))
 		}
 		in.Id = in.Value
 	} else {
@@ -96,7 +114,7 @@ func (s *APIGatewayService) createApiKeyCore(stores *apiGatewayStores, in *ApiKe
 	apiKey := &apigateway.ApiKey{
 		Name:        in.Name,
 		Description: in.Description,
-		Enabled:     in.Enabled,
+		Enabled:     resolveApiKeyEnabled(in.Enabled),
 		CustomerId:  in.CustomerId,
 		Value:       in.Value,
 		Id:          in.Id,
@@ -134,16 +152,63 @@ func (s *APIGatewayService) deleteApiKeyCore(stores *apiGatewayStores, apiKeyId 
 	return nil
 }
 
-// listApiKeysCore returns a page of API keys.
-func (s *APIGatewayService) listApiKeysCore(stores *apiGatewayStores, limit int, marker string) (*common.ListResult[apigateway.ApiKey], error) {
+// listApiKeysCore returns a page of API keys. The nameQuery and customerId
+// filters apply before pagination, so pages cover the filtered set; a
+// nameQuery matches key names case-insensitively as a substring and a
+// customerId matches exactly.
+func (s *APIGatewayService) listApiKeysCore(
+	stores *apiGatewayStores,
+	limit int, marker, nameQuery, customerId string,
+) (*common.ListResult[apigateway.ApiKey], error) {
 	resolved, err := resolvePageLimit(limit)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-	return stores.usage.ListApiKeys(common.ListOptions{
-		Marker:   marker,
-		MaxItems: resolved,
-	})
+	all, err := stores.usage.ListApiKeys(common.ListOptions{})
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	filtered := make([]*apigateway.ApiKey, 0, len(all.Items))
+	for _, key := range all.Items {
+		if nameQuery != "" && !strings.Contains(strings.ToLower(key.Name), strings.ToLower(nameQuery)) {
+			continue
+		}
+		if customerId != "" && key.CustomerId != customerId {
+			continue
+		}
+		filtered = append(filtered, key)
+	}
+	return paginateList(filtered, marker, resolved, func(k *apigateway.ApiKey) string { return k.Id })
+}
+
+// paginateList applies marker/limit pagination to a fully materialised,
+// already-filtered list, so filters and pagination compose in that order.
+// An unrecognised non-empty marker is rejected, matching the position
+// contract of the service's other list operations.
+func paginateList[T any](items []*T, marker string, limit int, idOf func(*T) string) (*common.ListResult[T], error) {
+	start := 0
+	if marker != "" {
+		found := false
+		for i, item := range items {
+			if idOf(item) == marker {
+				start = i + 1
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, NewBadRequestException("Invalid position: " + marker)
+		}
+	}
+	end := len(items)
+	if limit > 0 && start+limit < end {
+		end = start + limit
+	}
+	result := &common.ListResult[T]{Items: items[start:end], IsTruncated: end < len(items)}
+	if result.IsTruncated && len(result.Items) > 0 {
+		result.NextMarker = idOf(result.Items[len(result.Items)-1])
+	}
+	return result, nil
 }
 
 // updateApiKeyCore applies patch operations to an API key under the
@@ -172,6 +237,10 @@ func (s *APIGatewayService) updateApiKeyCore(
 			handled = true
 			if err := requirePatchOp(po, opReplace); err != nil {
 				return nil, err
+			}
+			if len(po.Value) > apigateway.ApiKeyNameMaxLength {
+				return nil, NewBadRequestException(fmt.Sprintf(
+					"name must not exceed %d characters", apigateway.ApiKeyNameMaxLength))
 			}
 			apiKey.Name = po.Value
 		case po.Path == "/description":
@@ -274,10 +343,10 @@ func (s *APIGatewayService) createUsagePlanCore(stores *apiGatewayStores, in *Us
 	for _, as := range in.ApiStages {
 		for _, t := range as.Throttle {
 			if !validateThrottleBurstLimit(t.BurstLimit) {
-				return nil, NewBadRequestException("per-stage throttle burstLimit must be between 0 and 10000")
+				return nil, NewBadRequestException(fmt.Sprintf("per-stage throttle burstLimit must be between 0 and %d", maxThrottleBurstLimit))
 			}
 			if !validateThrottleRateLimit(t.RateLimit) {
-				return nil, NewBadRequestException("per-stage throttle rateLimit must be between 0 and 10000")
+				return nil, NewBadRequestException(fmt.Sprintf("per-stage throttle rateLimit must be between 0 and %v", maxThrottleRateLimit))
 			}
 		}
 		stage := apigateway.ApiStage{
@@ -301,10 +370,10 @@ func (s *APIGatewayService) createUsagePlanCore(stores *apiGatewayStores, in *Us
 
 	if in.Throttle != nil {
 		if !validateThrottleBurstLimit(in.Throttle.BurstLimit) {
-			return nil, NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+			return nil, errThrottleBurstLimitRange()
 		}
 		if !validateThrottleRateLimit(in.Throttle.RateLimit) {
-			return nil, NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+			return nil, errThrottleRateLimitRange()
 		}
 		plan.Throttle = &apigateway.Throttle{
 			BurstLimit: in.Throttle.BurstLimit,
@@ -342,16 +411,28 @@ func (s *APIGatewayService) deleteUsagePlanCore(stores *apiGatewayStores, usageP
 	return nil
 }
 
-// listUsagePlansCore returns a page of usage plans.
-func (s *APIGatewayService) listUsagePlansCore(stores *apiGatewayStores, limit int, marker string) (*common.ListResult[apigateway.UsagePlan], error) {
+// listUsagePlansCore returns a page of usage plans. A keyId restricts the
+// page to the plans associated with that API key before pagination.
+func (s *APIGatewayService) listUsagePlansCore(
+	stores *apiGatewayStores,
+	limit int, marker, keyId string,
+) (*common.ListResult[apigateway.UsagePlan], error) {
 	resolved, err := resolvePageLimit(limit)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-	return stores.usage.ListUsagePlans(common.ListOptions{
-		Marker:   marker,
-		MaxItems: resolved,
-	})
+	if keyId != "" {
+		plans, err := stores.usage.ListUsagePlansForAPIKey(keyId)
+		if err != nil {
+			return nil, toApiGatewayError(err)
+		}
+		return paginateList(plans, marker, resolved, func(p *apigateway.UsagePlan) string { return p.Id })
+	}
+	all, err := stores.usage.ListUsagePlans(common.ListOptions{})
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	return paginateList(all.Items, marker, resolved, func(p *apigateway.UsagePlan) string { return p.Id })
 }
 
 // updateUsagePlanCore applies patch operations to a usage plan under the
@@ -460,9 +541,9 @@ func (s *APIGatewayService) updateUsagePlanCore(
 				usagePlan.Throttle = &apigateway.Throttle{}
 			}
 			if v, err := parseInt64(po.Value); err != nil {
-				return nil, NewBadRequestException("invalid throttle burstLimit: not a number")
+				return nil, errThrottleBurstLimitNotNumber()
 			} else if !validateThrottleBurstLimit(v) {
-				return nil, NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+				return nil, errThrottleBurstLimitRange()
 			} else {
 				usagePlan.Throttle.BurstLimit = v
 			}
@@ -476,9 +557,9 @@ func (s *APIGatewayService) updateUsagePlanCore(
 				usagePlan.Throttle = &apigateway.Throttle{}
 			}
 			if v, err := parseFloat64(po.Value); err != nil {
-				return nil, NewBadRequestException("invalid throttle rateLimit: not a number")
+				return nil, errThrottleRateLimitNotNumber()
 			} else if !validateThrottleRateLimit(v) {
-				return nil, NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+				return nil, errThrottleRateLimitRange()
 			} else {
 				usagePlan.Throttle.RateLimit = v
 			}
@@ -644,19 +725,19 @@ func applyApiStageThrottlePatch(stage *apigateway.ApiStage, po PatchOperation) e
 	if field == "rateLimit" {
 		v, err := parseFloat64(po.Value)
 		if err != nil {
-			return NewBadRequestException("invalid throttle rateLimit: not a number")
+			return errThrottleRateLimitNotNumber()
 		}
 		if !validateThrottleRateLimit(v) {
-			return NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+			return errThrottleRateLimitRange()
 		}
 		t.RateLimit = v
 	} else {
 		v, err := parseInt64(po.Value)
 		if err != nil {
-			return NewBadRequestException("invalid throttle burstLimit: not a number")
+			return errThrottleBurstLimitNotNumber()
 		}
 		if !validateThrottleBurstLimit(v) {
-			return NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+			return errThrottleBurstLimitRange()
 		}
 		t.BurstLimit = v
 	}
@@ -691,13 +772,13 @@ func parseApiStageThrottleValue(po PatchOperation) (map[string]*apigateway.Throt
 		t := &apigateway.Throttle{}
 		if entry.RateLimit != nil {
 			if !validateThrottleRateLimit(*entry.RateLimit) {
-				return nil, NewBadRequestException("throttle rateLimit must be between 0 and 10000")
+				return nil, errThrottleRateLimitRange()
 			}
 			t.RateLimit = *entry.RateLimit
 		}
 		if entry.BurstLimit != nil {
 			if !validateThrottleBurstLimit(*entry.BurstLimit) {
-				return nil, NewBadRequestException("throttle burstLimit must be between 0 and 10000")
+				return nil, errThrottleBurstLimitRange()
 			}
 			t.BurstLimit = *entry.BurstLimit
 		}
@@ -790,12 +871,15 @@ func (s *APIGatewayService) listUsagePlanKeysCore(stores *apiGatewayStores, usag
 	})
 }
 
-// getUsageCore returns aggregated usage data for a usage plan over a date
-// range. The caller pre-validates the date format and the 90-day range
-// because that is transport-specific.
+// getUsageCore returns the usage data of a usage plan over a date range:
+// daily [used, remaining] logs per API key, paginated over the plan's keys
+// when no specific key is requested. The wire member name of the log map is
+// "values" (jsonName override on the Usage shape).
 func (s *APIGatewayService) getUsageCore(
 	stores *apiGatewayStores,
 	usagePlanId, keyId, startDate, endDate string,
+	limit int,
+	position string,
 ) (map[string]interface{}, error) {
 	if usagePlanId == "" {
 		return nil, NewBadRequestException("usagePlanId is required")
@@ -816,57 +900,208 @@ func (s *APIGatewayService) getUsageCore(
 		return nil, NewBadRequestException("The date range must not exceed 90 days")
 	}
 
-	if _, err := stores.usage.GetUsagePlan(usagePlanId); err != nil {
+	plan, err := stores.usage.GetUsagePlan(usagePlanId)
+	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
+	quotaLimit, quotaPeriod := usageQuotaBasis(plan)
 
 	var apiKeys []string
+	nextPosition := ""
 	if keyId != "" {
 		apiKeys = []string{keyId}
 	} else {
-		// Page through the store's own listing API rather than reaching into
-		// its key space: the key schema stays an implementation detail of
-		// the UsageStore.
-		marker := ""
-		for {
-			page, err := stores.usage.ListUsagePlanKeys(usagePlanId, common.ListOptions{Marker: marker})
-			if err != nil {
-				return nil, toApiGatewayError(err)
-			}
-			for _, key := range page.Items {
-				apiKeys = append(apiKeys, key.Id)
-			}
-			if !page.IsTruncated {
-				break
-			}
-			marker = page.NextMarker
-		}
-	}
-
-	usageCounts := make(map[string]int64)
-	for _, keyId := range apiKeys {
-		records, err := stores.usage.ListUsageRecordsForAPIKey(usagePlanId, keyId, startDate, endDate)
+		resolved, err := resolvePageLimit(limit)
 		if err != nil {
-			logs.Warn("GetUsage: failed to list usage records for key", logs.String("keyId", keyId), logs.Err(err))
-			continue
+			return nil, err
 		}
-		for _, record := range records {
-			usageCounts[record.Date] += record.RequestCount
-		}
-	}
-
-	items := make([]interface{}, 0, len(usageCounts))
-	for date, count := range usageCounts {
-		items = append(items, map[string]interface{}{
-			"date":         date,
-			"requestCount": count,
+		// One page of the plan's keys; the store's own listing API keeps the
+		// key schema an implementation detail of the UsageStore.
+		page, err := stores.usage.ListUsagePlanKeys(usagePlanId, common.ListOptions{
+			Marker:   position,
+			MaxItems: resolved,
 		})
+		if err != nil {
+			return nil, toApiGatewayError(err)
+		}
+		for _, key := range page.Items {
+			apiKeys = append(apiKeys, key.Id)
+		}
+		if page.IsTruncated {
+			nextPosition = page.NextMarker
+		}
 	}
 
-	return map[string]interface{}{
+	values := make(map[string][][]int64, len(apiKeys))
+	for _, keyId := range apiKeys {
+		logs, err := s.usageDailyLogs(stores, usagePlanId, keyId, startDate, endDate, quotaLimit, quotaPeriod)
+		if err != nil {
+			return nil, err
+		}
+		values[keyId] = logs
+	}
+
+	response := map[string]interface{}{
 		"usagePlanId": usagePlanId,
 		"startDate":   startDate,
 		"endDate":     endDate,
-		"items":       items,
+		"values":      values,
+	}
+	if nextPosition != "" {
+		response["position"] = nextPosition
+	}
+	return response, nil
+}
+
+// usageQuotaBasis returns the quota limit and period a usage draw-down is
+// measured against. A plan without a quota has no entitlement to draw from,
+// so its remaining is reported against a zero limit with a DAY window.
+func usageQuotaBasis(plan *apigateway.UsagePlan) (int64, string) {
+	if plan.Quota == nil {
+		return 0, "DAY"
+	}
+	return plan.Quota.Limit, plan.Quota.Period
+}
+
+// quotaWindowStart returns the earliest date whose usage counts towards the
+// quota period containing the given date. It mirrors the counter windows of
+// the runtime authenticator: the date itself for DAY quotas, a rolling
+// seven days for WEEK, and the calendar month for MONTH.
+func quotaWindowStart(period, date string) string {
+	t, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return date
+	}
+	switch period {
+	case "WEEK":
+		return t.AddDate(0, 0, -6).Format("2006-01-02")
+	case "MONTH":
+		return time.Date(t.Year(), t.Month(), 1, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+	default:
+		return date
+	}
+}
+
+// usageDailyLogs builds the per-key usage log over the date range: one
+// [used, remaining] pair per date, where used is the date's request count
+// and remaining the quota draw-down — the quota limit minus the period's
+// cumulative usage through the date, plus any active remaining-quota
+// override — floored at zero.
+func (s *APIGatewayService) usageDailyLogs(
+	stores *apiGatewayStores,
+	usagePlanId, keyId, startDate, endDate string,
+	quotaLimit int64,
+	quotaPeriod string,
+) ([][]int64, error) {
+	records, err := stores.usage.ListUsageRecordsForAPIKey(usagePlanId, keyId, "", "")
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	counts := make(map[string]int64, len(records))
+	for _, record := range records {
+		counts[record.Date] = record.RequestCount
+	}
+
+	var logs [][]int64
+	start, _ := time.Parse("2006-01-02", startDate)
+	end, _ := time.Parse("2006-01-02", endDate)
+	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
+		date := d.Format("2006-01-02")
+		windowStart := quotaWindowStart(quotaPeriod, date)
+		var cumulative int64
+		for wd, count := range counts {
+			if wd >= windowStart && wd <= date {
+				cumulative += count
+			}
+		}
+		remaining := quotaLimit - cumulative + stores.usage.ActiveQuotaExtension(usagePlanId, keyId, date)
+		if remaining < 0 {
+			remaining = 0
+		}
+		logs = append(logs, []int64{counts[date], remaining})
+	}
+	return logs, nil
+}
+
+// updateUsageCore grants a temporary extension to the remaining quota of a
+// usage-plan key. The supported patch surface is a replace of /remaining
+// with an integer value: the granted value becomes the key's remaining
+// quota for the current quota period, stored as an offset from the natural
+// remaining so it lapses when the period rolls over. The response is the
+// Usage shape over the grant date for the patched key.
+func (s *APIGatewayService) updateUsageCore(
+	stores *apiGatewayStores,
+	usagePlanId, keyId string,
+	patches []PatchOperation,
+) (map[string]interface{}, error) {
+	if usagePlanId == "" {
+		return nil, NewBadRequestException("usagePlanId is required")
+	}
+	if keyId == "" {
+		return nil, NewBadRequestException("keyId is required")
+	}
+
+	plan, err := stores.usage.GetUsagePlan(usagePlanId)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	if _, err := stores.usage.GetUsagePlanKey(usagePlanId, keyId); err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	var remaining int64
+	granted := false
+	for _, po := range patches {
+		if po.Path != "/remaining" {
+			return nil, NewBadRequestException(fmt.Sprintf(
+				"unsupported patch path %s; usage supports replace of /remaining", po.Path))
+		}
+		if err := requirePatchOp(po, opReplace); err != nil {
+			return nil, err
+		}
+		value, err := strconv.ParseInt(po.Value, 10, 64)
+		if err != nil {
+			return nil, NewBadRequestException("the /remaining value must be an integer")
+		}
+		remaining = value
+		granted = true
+	}
+	if !granted {
+		return nil, NewBadRequestException("patchOperations must contain a replace of /remaining")
+	}
+
+	quotaLimit, quotaPeriod := usageQuotaBasis(plan)
+	today := time.Now().Format("2006-01-02")
+	records, err := stores.usage.ListUsageRecordsForAPIKey(usagePlanId, keyId, "", "")
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	windowStart := quotaWindowStart(quotaPeriod, today)
+	var cumulative int64
+	for _, record := range records {
+		if record.Date >= windowStart && record.Date <= today {
+			cumulative += record.RequestCount
+		}
+	}
+
+	if err := stores.usage.SetUsageQuotaExtension(&apigateway.UsageQuotaExtension{
+		UsagePlanID: usagePlanId,
+		APIKeyID:    keyId,
+		Period:      quotaPeriod,
+		GrantedDate: today,
+		Net:         remaining - (quotaLimit - cumulative),
+	}); err != nil {
+		return nil, toApiGatewayError(err)
+	}
+
+	logs, err := s.usageDailyLogs(stores, usagePlanId, keyId, today, today, quotaLimit, quotaPeriod)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]interface{}{
+		"usagePlanId": usagePlanId,
+		"startDate":   today,
+		"endDate":     today,
+		"values":      map[string][][]int64{keyId: logs},
 	}, nil
 }

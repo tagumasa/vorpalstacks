@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,7 +20,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 		return nil, &IntegrationError{
 			Message:  "DynamoDB invoker not configured",
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -39,7 +40,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 		return nil, &IntegrationError{
 			Message:  "DynamoDB Action not specified in integration request",
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -54,7 +55,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 		return nil, &IntegrationError{
 			Message:  "Table name not specified in DynamoDB integration URI",
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -69,7 +70,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 				return nil, &IntegrationError{
 					Message:  fmt.Sprintf("DynamoDB PutItem: failed to parse body: %v", jsonErr),
 					Type:     "BadRequestException",
-					HTTPCode: 400,
+					HTTPCode: http.StatusBadRequest,
 				}
 			}
 		}
@@ -84,7 +85,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 				return nil, &IntegrationError{
 					Message:  fmt.Sprintf("DynamoDB GetItem: failed to parse body: %v", jsonErr),
 					Type:     "BadRequestException",
-					HTTPCode: 400,
+					HTTPCode: http.StatusBadRequest,
 				}
 			}
 		}
@@ -99,7 +100,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 				return nil, &IntegrationError{
 					Message:  fmt.Sprintf("DynamoDB DeleteItem: failed to parse body: %v", jsonErr),
 					Type:     "BadRequestException",
-					HTTPCode: 400,
+					HTTPCode: http.StatusBadRequest,
 				}
 			}
 		}
@@ -158,7 +159,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Unsupported DynamoDB action: %s", action),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -166,7 +167,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("DynamoDB operation failed: %v", err),
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -184,7 +185,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 
 	responseJSON, _ := json.Marshal(map[string]interface{}{"Response": result})
 
-	statusCode := 200
+	statusCode := http.StatusOK
 	headers := map[string]string{"Content-Type": "application/json"}
 	body := responseJSON
 
@@ -202,7 +203,7 @@ func (e *AWSExecutor) executeDynamoDB(ctx context.Context, req *IntegrationReque
 						return nil, &IntegrationError{
 							Message:  fmt.Sprintf("Failed to apply response template: %v", tErr),
 							Type:     "InternalServerError",
-							HTTPCode: 500,
+							HTTPCode: http.StatusInternalServerError,
 						}
 					}
 					body = transformed
@@ -527,7 +528,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 		return nil, &IntegrationError{
 			Message:  "Kinesis invoker not configured",
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -552,7 +553,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 		return nil, &IntegrationError{
 			Message:  "Stream name not specified in Kinesis integration URI",
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 
@@ -573,7 +574,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Kinesis PutRecord failed: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusInternalServerError,
 			}
 		}
 
@@ -589,7 +590,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 			},
 		})
 		return &IntegrationResponse{
-			StatusCode:      200,
+			StatusCode:      http.StatusOK,
 			Headers:         map[string]string{"Content-Type": "application/json"},
 			Body:            responseJSON,
 			IsBase64Encoded: false,
@@ -601,7 +602,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Kinesis ListShards failed: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusInternalServerError,
 			}
 		}
 
@@ -615,7 +616,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 
 		responseJSON, _ := json.Marshal(map[string]interface{}{"Shards": shardItems})
 		return &IntegrationResponse{
-			StatusCode:      200,
+			StatusCode:      http.StatusOK,
 			Headers:         map[string]string{"Content-Type": "application/json"},
 			Body:            responseJSON,
 			IsBase64Encoded: false,
@@ -625,7 +626,7 @@ func (e *AWSExecutor) executeKinesis(ctx context.Context, req *IntegrationReques
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Unsupported Kinesis action: %s", action),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 }
@@ -653,7 +654,7 @@ func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *Integration
 		return nil, &IntegrationError{
 			Message:  "Event bus not configured",
 			Type:     "InternalServerError",
-			HTTPCode: 500,
+			HTTPCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -680,7 +681,7 @@ func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *Integration
 			return nil, &IntegrationError{
 				Message:  "State machine ARN not specified in Step Functions integration URI",
 				Type:     "BadRequestException",
-				HTTPCode: 400,
+				HTTPCode: http.StatusBadRequest,
 			}
 		}
 
@@ -702,7 +703,7 @@ func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *Integration
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Failed to construct execution ARN from state machine ARN: %s", stateMachineArn),
 				Type:     "BadRequestException",
-				HTTPCode: 400,
+				HTTPCode: http.StatusBadRequest,
 			}
 		}
 
@@ -718,7 +719,7 @@ func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *Integration
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Step Functions execution failed: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusInternalServerError,
 			}
 		}
 
@@ -733,7 +734,7 @@ func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *Integration
 			},
 		})
 		return &IntegrationResponse{
-			StatusCode:      200,
+			StatusCode:      http.StatusOK,
 			Headers:         map[string]string{"Content-Type": "application/json"},
 			Body:            responseJSON,
 			IsBase64Encoded: false,
@@ -743,7 +744,7 @@ func (e *AWSExecutor) executeStepFunctions(ctx context.Context, req *Integration
 		return nil, &IntegrationError{
 			Message:  fmt.Sprintf("Unsupported Step Functions action: %s", action),
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	}
 }

@@ -76,6 +76,123 @@ func (r *TestRunner) runAPIGatewayResourceTests(tc *apigwTestContext) []TestResu
 		if len(resp.Items) < 2 {
 			return fmt.Errorf("expected at least 2 resources, got %d", len(resp.Items))
 		}
+
+		// A forced multi-page walk: a private API whose resource tree (root
+		// plus three children) exceeds the page limit, with every page's
+		// position fed back and the created paths matched.
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("PgRes"))
+		if err != nil {
+			return fmt.Errorf("create api: %v", err)
+		}
+		defer tc.deleteAPI(ownAPI)
+		want := map[string]bool{"/": true}
+		for _, part := range []string{"pg1", "pg2", "pg3"} {
+			_, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+				RestApiId: aws.String(ownAPI),
+				ParentId:  aws.String(ownRoot),
+				PathPart:  aws.String(part),
+			})
+			if err != nil {
+				return fmt.Errorf("create resource %s: %v", part, err)
+			}
+			want["/"+part] = true
+		}
+		got := map[string]bool{}
+		var position *string
+		pages := 0
+		for {
+			page, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+				RestApiId: aws.String(ownAPI),
+				Limit:     aws.Int32(2),
+				Position:  position,
+			})
+			if err != nil {
+				return fmt.Errorf("page %d: %v", pages, err)
+			}
+			pages++
+			for _, res := range page.Items {
+				got[aws.ToString(res.Path)] = true
+			}
+			position = page.Position
+			if position == nil {
+				break
+			}
+		}
+		if pages < 2 {
+			return fmt.Errorf("expected the page limit to force multiple pages, got %d", pages)
+		}
+		if len(got) != len(want) {
+			return fmt.Errorf("walked %d paths %v, want %d %v", len(got), got, len(want), want)
+		}
+		for path := range want {
+			if !got[path] {
+				return fmt.Errorf("created path %q missing from the walk, got %v", path, got)
+			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "GetResources_EmbedMethods", func() error {
+		// embed=methods is the only modelled embed value and controls
+		// whether method summaries are part of the resource payload.
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("EmbedRes"))
+		if err != nil {
+			return fmt.Errorf("create api: %v", err)
+		}
+		defer tc.deleteAPI(ownAPI)
+		embedRes, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
+			PathPart:  aws.String("embed"),
+		})
+		if err != nil {
+			return fmt.Errorf("create resource: %v", err)
+		}
+		if _, err := tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(ownAPI),
+			ResourceId:        embedRes.Id,
+			HttpMethod:        aws.String("GET"),
+			AuthorizationType: aws.String("NONE"),
+		}); err != nil {
+			return fmt.Errorf("put method: %v", err)
+		}
+		plain, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+			RestApiId: aws.String(ownAPI),
+		})
+		if err != nil {
+			return err
+		}
+		for _, item := range plain.Items {
+			if aws.ToString(item.Path) == "/embed" && item.ResourceMethods != nil {
+				return fmt.Errorf("methods embedded without the embed parameter")
+			}
+		}
+		embedded, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+			RestApiId: aws.String(ownAPI),
+			Embed:     []string{"methods"},
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, item := range embedded.Items {
+			if aws.ToString(item.Path) == "/embed" {
+				found = true
+				if _, hasGet := item.ResourceMethods["GET"]; !hasGet {
+					return fmt.Errorf("embed=methods did not carry the GET method, got %+v", item.ResourceMethods)
+				}
+			}
+		}
+		if !found {
+			return fmt.Errorf("embed resource missing from listing")
+		}
+		_, err = tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+			RestApiId: aws.String(ownAPI),
+			Embed:     []string{"bogus"},
+		})
+		if aerr := AssertErrorContains(err, "BadRequestException"); aerr != nil {
+			return fmt.Errorf("expected BadRequestException for embed=bogus, got: %v", aerr)
+		}
 		return nil
 	}))
 
@@ -708,6 +825,17 @@ func (r *TestRunner) runAPIGatewayResourceTests(tc *apigwTestContext) []TestResu
 		}
 		if resp.ResponseModels == nil || resp.ResponseModels["application/json"] != "Empty" {
 			return fmt.Errorf("responseModels mismatch, got %v", resp.ResponseModels)
+		}
+
+		// The StatusCode shape's pattern admits three digits 100-599 only.
+		_, err = tc.client.PutMethodResponse(tc.ctx, &apigateway.PutMethodResponseInput{
+			RestApiId:  aws.String(tc.apiID),
+			ResourceId: aws.String(resourceID),
+			HttpMethod: aws.String("GET"),
+			StatusCode: aws.String("20x"),
+		})
+		if aerr := AssertErrorContains(err, "BadRequestException"); aerr != nil {
+			return fmt.Errorf("expected BadRequestException for statusCode 20x, got: %v", aerr)
 		}
 		return nil
 	}))

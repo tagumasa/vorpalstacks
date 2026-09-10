@@ -67,6 +67,16 @@ func (s *APIGatewayService) CreateDomainName(ctx context.Context, reqCtx *reques
 				}
 			}
 		}
+		if v, ok := endpointConfig["ipAddressType"].(string); ok {
+			in.EndpointIpAddressType = v
+		}
+		if ids, ok := endpointConfig["vpcEndpointIds"].([]interface{}); ok {
+			for _, id := range ids {
+				if s, ok := id.(string); ok {
+					in.EndpointVpcEndpointIds = append(in.EndpointVpcEndpointIds, s)
+				}
+			}
+		}
 	}
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
 		in.Tags = tagutil.MapInterfaceToTags(tags)
@@ -135,12 +145,13 @@ func (s *APIGatewayService) GetDomainNames(ctx context.Context, reqCtx *request.
 		return nil, err
 	}
 	marker := request.GetStringParam(req.Parameters, "position")
+	resourceOwner := request.GetStringParam(req.Parameters, "resourceOwner")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.listDomainNamesCore(stores, marker, maxItems)
+	result, err := s.listDomainNamesCore(stores, marker, maxItems, resourceOwner)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
@@ -241,6 +252,9 @@ func (s *APIGatewayService) toDomainNameResponse(d *apigateway.DomainName) map[s
 		}
 		if d.EndpointConfiguration.IpAddressType != "" {
 			endpointConfig["ipAddressType"] = d.EndpointConfiguration.IpAddressType
+		}
+		if len(d.EndpointConfiguration.VpcEndpointIds) > 0 {
+			endpointConfig["vpcEndpointIds"] = d.EndpointConfiguration.VpcEndpointIds
 		}
 		response["endpointConfiguration"] = endpointConfig
 	}

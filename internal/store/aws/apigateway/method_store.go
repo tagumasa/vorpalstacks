@@ -2,19 +2,55 @@ package apigateway
 
 import "strings"
 
+// resourceForUpdate loads the API and addressed resource for a write
+// operation; the caller must hold s.mu and persist via updateLocked.
+func (s *RestApiStore) resourceForUpdate(apiId, resourceId string) (*RestApi, *Resource, error) {
+	api, err := s.Get(apiId)
+	if err != nil {
+		return nil, nil, err
+	}
+	resource, ok := api.Resources[resourceId]
+	if !ok {
+		return nil, nil, ErrResourceNotFound
+	}
+	return api, resource, nil
+}
+
+// methodForUpdate loads the API, resource, and addressed method for a
+// write operation; the caller must hold s.mu.
+func (s *RestApiStore) methodForUpdate(apiId, resourceId, httpMethod string) (*RestApi, *Resource, *Method, error) {
+	api, resource, err := s.resourceForUpdate(apiId, resourceId)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	method, ok := resource.ResourceMethods[strings.ToUpper(httpMethod)]
+	if !ok {
+		return nil, nil, nil, ErrMethodNotFound
+	}
+	return api, resource, method, nil
+}
+
+// integrationForUpdate additionally resolves the method's integration for
+// a write operation; the caller must hold s.mu.
+func (s *RestApiStore) integrationForUpdate(apiId, resourceId, httpMethod string) (*RestApi, *Method, *Integration, error) {
+	api, _, method, err := s.methodForUpdate(apiId, resourceId, httpMethod)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if method.MethodIntegration == nil {
+		return nil, nil, nil, ErrIntegrationNotFound
+	}
+	return api, method, method.MethodIntegration, nil
+}
+
 // PutMethod creates or updates a method for an API resource.
 func (s *RestApiStore) PutMethod(apiId, resourceId string, method *Method) (*Method, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, resource, err := s.resourceForUpdate(apiId, resourceId)
 	if err != nil {
 		return nil, err
-	}
-
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return nil, ErrResourceNotFound
 	}
 
 	method.RestApiId = apiId
@@ -55,22 +91,12 @@ func (s *RestApiStore) DeleteMethod(apiId, resourceId, httpMethod string) error 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, resource, _, err := s.methodForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return err
 	}
 
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	if _, ok := resource.ResourceMethods[httpMethod]; !ok {
-		return ErrMethodNotFound
-	}
-
-	delete(resource.ResourceMethods, httpMethod)
+	delete(resource.ResourceMethods, strings.ToUpper(httpMethod))
 	return s.updateLocked(api)
 }
 
@@ -79,25 +105,14 @@ func (s *RestApiStore) PutIntegration(apiId, resourceId, httpMethod string, inte
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, method, err := s.methodForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return nil, err
 	}
 
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return nil, ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return nil, ErrMethodNotFound
-	}
-
 	integration.RestApiId = apiId
 	integration.ResourceId = resourceId
-	integration.HttpMethod = httpMethod
+	integration.HttpMethod = strings.ToUpper(httpMethod)
 	if integration.IntegrationResponses == nil {
 		integration.IntegrationResponses = make(map[string]*IntegrationResponse)
 	}
@@ -125,20 +140,9 @@ func (s *RestApiStore) DeleteIntegration(apiId, resourceId, httpMethod string) e
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, method, err := s.methodForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return err
-	}
-
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return ErrMethodNotFound
 	}
 
 	method.MethodIntegration = nil
@@ -150,29 +154,14 @@ func (s *RestApiStore) UpdateIntegration(apiId, resourceId, httpMethod string, i
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, method, _, err := s.integrationForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return err
 	}
 
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return ErrMethodNotFound
-	}
-
-	if method.MethodIntegration == nil {
-		return ErrIntegrationNotFound
-	}
-
 	integration.RestApiId = apiId
 	integration.ResourceId = resourceId
-	integration.HttpMethod = httpMethod
+	integration.HttpMethod = strings.ToUpper(httpMethod)
 	method.MethodIntegration = integration
 	return s.updateLocked(api)
 }
@@ -182,30 +171,15 @@ func (s *RestApiStore) PutIntegrationResponse(apiId, resourceId, httpMethod, sta
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, integration, err := s.integrationForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return nil, err
 	}
 
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return nil, ErrResourceNotFound
+	if integration.IntegrationResponses == nil {
+		integration.IntegrationResponses = make(map[string]*IntegrationResponse)
 	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return nil, ErrMethodNotFound
-	}
-
-	if method.MethodIntegration == nil {
-		return nil, ErrIntegrationNotFound
-	}
-
-	if method.MethodIntegration.IntegrationResponses == nil {
-		method.MethodIntegration.IntegrationResponses = make(map[string]*IntegrationResponse)
-	}
-	method.MethodIntegration.IntegrationResponses[statusCode] = response
+	integration.IntegrationResponses[statusCode] = response
 
 	return response, s.updateLocked(api)
 }
@@ -229,27 +203,12 @@ func (s *RestApiStore) DeleteIntegrationResponse(apiId, resourceId, httpMethod, 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, integration, err := s.integrationForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return err
 	}
 
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return ErrMethodNotFound
-	}
-
-	if method.MethodIntegration == nil {
-		return ErrIntegrationNotFound
-	}
-
-	delete(method.MethodIntegration.IntegrationResponses, statusCode)
+	delete(integration.IntegrationResponses, statusCode)
 	return s.updateLocked(api)
 }
 
@@ -258,31 +217,16 @@ func (s *RestApiStore) UpdateIntegrationResponse(apiId, resourceId, httpMethod, 
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, integration, err := s.integrationForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return err
 	}
 
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return ErrMethodNotFound
-	}
-
-	if method.MethodIntegration == nil {
-		return ErrIntegrationNotFound
-	}
-
-	if _, ok := method.MethodIntegration.IntegrationResponses[statusCode]; !ok {
+	if _, ok := integration.IntegrationResponses[statusCode]; !ok {
 		return ErrIntegrationResponseNotFound
 	}
 
-	method.MethodIntegration.IntegrationResponses[statusCode] = response
+	integration.IntegrationResponses[statusCode] = response
 	return s.updateLocked(api)
 }
 
@@ -291,20 +235,9 @@ func (s *RestApiStore) PutMethodResponse(apiId, resourceId, httpMethod, statusCo
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, method, err := s.methodForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return nil, err
-	}
-
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return nil, ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return nil, ErrMethodNotFound
 	}
 
 	if method.MethodResponses == nil {
@@ -345,20 +278,9 @@ func (s *RestApiStore) DeleteMethodResponse(apiId, resourceId, httpMethod, statu
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	api, err := s.Get(apiId)
+	api, _, method, err := s.methodForUpdate(apiId, resourceId, httpMethod)
 	if err != nil {
 		return err
-	}
-
-	resource, ok := api.Resources[resourceId]
-	if !ok {
-		return ErrResourceNotFound
-	}
-
-	httpMethod = strings.ToUpper(httpMethod)
-	method, ok := resource.ResourceMethods[httpMethod]
-	if !ok {
-		return ErrMethodNotFound
 	}
 
 	if _, ok := method.MethodResponses[statusCode]; !ok {

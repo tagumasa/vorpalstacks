@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -52,7 +53,7 @@ func processRequestBody(req *IntegrationRequest) ([]byte, *IntegrationError) {
 			return nil, &IntegrationError{
 				Message:  fmt.Sprintf("Failed to apply request template: %v", err),
 				Type:     "InternalServerError",
-				HTTPCode: 500,
+				HTTPCode: http.StatusInternalServerError,
 			}
 		}
 		return transformed, nil
@@ -63,14 +64,14 @@ func processRequestBody(req *IntegrationRequest) ([]byte, *IntegrationError) {
 		return nil, &IntegrationError{
 			Message:  "No matching template found and passthrough behaviour is NEVER",
 			Type:     "BadRequestException",
-			HTTPCode: 400,
+			HTTPCode: http.StatusBadRequest,
 		}
 	case "WHEN_NO_TEMPLATES":
 		if len(req.RequestTemplates) > 0 {
 			return nil, &IntegrationError{
 				Message:  "No matching template found and passthrough behaviour is WHEN_NO_TEMPLATES",
 				Type:     "BadRequestException",
-				HTTPCode: 400,
+				HTTPCode: http.StatusBadRequest,
 			}
 		}
 	}

@@ -75,6 +75,36 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestRes
 			return fmt.Errorf("test-usage-plan not found")
 		}
 		usagePlanID = *found.Id
+
+		// keyId restricts the listing to the plans associated with the key.
+		keyResp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
+			Name: aws.String(tc.uniqueName("keyid-filter-key")),
+		})
+		if err != nil {
+			return fmt.Errorf("create api key: %v", err)
+		}
+		defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: keyResp.Id})
+		ownPlan, err := tc.createOwnUsagePlan("keyid-filter-plan")
+		if err != nil {
+			return fmt.Errorf("create usage plan: %v", err)
+		}
+		defer tc.deleteUsagePlan(ownPlan)
+		if _, err := tc.client.CreateUsagePlanKey(tc.ctx, &apigateway.CreateUsagePlanKeyInput{
+			UsagePlanId: aws.String(ownPlan),
+			KeyId:       keyResp.Id,
+			KeyType:     aws.String("API_KEY"),
+		}); err != nil {
+			return fmt.Errorf("create usage plan key: %v", err)
+		}
+		byKey, err := tc.client.GetUsagePlans(tc.ctx, &apigateway.GetUsagePlansInput{
+			KeyId: keyResp.Id,
+		})
+		if err != nil {
+			return err
+		}
+		if len(byKey.Items) != 1 || aws.ToString(byKey.Items[0].Id) != ownPlan {
+			return fmt.Errorf("keyId filter did not match exactly the associated plan, got %+v", byKey.Items)
+		}
 		return nil
 	}))
 
@@ -122,6 +152,33 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestRes
 		}
 		if resp.Name == nil || *resp.Name != "updated-usage-plan" {
 			return fmt.Errorf("name not updated, got %v", resp.Name)
+		}
+
+		// The scalar rows of the official patch table: description, the
+		// plan-level throttle members, and the quota members.
+		upd, err := tc.client.UpdateUsagePlan(tc.ctx, &apigateway.UpdateUsagePlanInput{
+			UsagePlanId: aws.String(usagePlanID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/description"), Value: aws.String("scalar rows")},
+				{Op: types.OpReplace, Path: aws.String("/throttle/burstLimit"), Value: aws.String("700")},
+				{Op: types.OpReplace, Path: aws.String("/throttle/rateLimit"), Value: aws.String("800.5")},
+				{Op: types.OpReplace, Path: aws.String("/quota/limit"), Value: aws.String("500")},
+				{Op: types.OpReplace, Path: aws.String("/quota/offset"), Value: aws.String("1")},
+				{Op: types.OpReplace, Path: aws.String("/quota/period"), Value: aws.String("WEEK")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("scalar row patch: %v", err)
+		}
+		if aws.ToString(upd.Description) != "scalar rows" {
+			return fmt.Errorf("description row not applied, got %v", upd.Description)
+		}
+		if upd.Throttle == nil || upd.Throttle.BurstLimit != 700 || upd.Throttle.RateLimit != 800.5 {
+			return fmt.Errorf("throttle rows not applied, got %+v", upd.Throttle)
+		}
+		if upd.Quota == nil || upd.Quota.Limit != 500 || upd.Quota.Offset != 1 ||
+			string(upd.Quota.Period) != "WEEK" {
+			return fmt.Errorf("quota rows not applied, got %+v", upd.Quota)
 		}
 		return nil
 	}))
@@ -254,6 +311,72 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestRes
 			return fmt.Errorf("expected at least 1 usage plan key")
 		}
 
+		// A forced multi-page walk: two more keys bring the plan past a
+		// two-key page limit, and every page's position feeds back.
+		extra := make([]string, 0, 2)
+		for i := 0; i < 2; i++ {
+			extraKey, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
+				Name: aws.String(fmt.Sprintf("upk-page-key-%d", i)),
+			})
+			if err != nil {
+				return fmt.Errorf("create extra key %d: %v", i, err)
+			}
+			defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: extraKey.Id})
+			if _, err := tc.client.CreateUsagePlanKey(tc.ctx, &apigateway.CreateUsagePlanKeyInput{
+				UsagePlanId: aws.String(planID),
+				KeyId:       extraKey.Id,
+				KeyType:     aws.String("API_KEY"),
+			}); err != nil {
+				return fmt.Errorf("attach extra key %d: %v", i, err)
+			}
+			extra = append(extra, aws.ToString(extraKey.Id))
+		}
+		want := append([]string{aws.ToString(keyResp.Id)}, extra...)
+		var got []string
+		var position *string
+		pages := 0
+		for {
+			page, err := tc.client.GetUsagePlanKeys(tc.ctx, &apigateway.GetUsagePlanKeysInput{
+				UsagePlanId: aws.String(planID),
+				Limit:       aws.Int32(2),
+				Position:    position,
+			})
+			if err != nil {
+				return fmt.Errorf("page %d: %v", pages, err)
+			}
+			pages++
+			for _, k := range page.Items {
+				got = append(got, aws.ToString(k.Id))
+			}
+			position = page.Position
+			if position == nil {
+				break
+			}
+		}
+		if pages < 2 {
+			return fmt.Errorf("expected the page limit to force multiple pages, got %d", pages)
+		}
+		if len(got) != len(want) {
+			return fmt.Errorf("walked %d keys %v, want %d %v", len(got), got, len(want), want)
+		}
+		gotSet := make(map[string]bool, len(got))
+		for _, id := range got {
+			gotSet[id] = true
+		}
+		for _, id := range want {
+			if !gotSet[id] {
+				return fmt.Errorf("created key %q missing from the walk, got %v", id, got)
+			}
+		}
+		for _, id := range extra {
+			if _, err := tc.client.DeleteUsagePlanKey(tc.ctx, &apigateway.DeleteUsagePlanKeyInput{
+				UsagePlanId: aws.String(planID),
+				KeyId:       aws.String(id),
+			}); err != nil {
+				return fmt.Errorf("delete extra key association %s: %v", id, err)
+			}
+		}
+
 		_, err = tc.client.DeleteUsagePlanKey(tc.ctx, &apigateway.DeleteUsagePlanKeyInput{
 			UsagePlanId: aws.String(planID),
 			KeyId:       keyResp.Id,
@@ -265,25 +388,97 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestRes
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetUsage", func() error {
-		planID, err := tc.createOwnUsagePlan("usage-plan")
+		keyResp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
+			Name: aws.String(tc.uniqueName("usage-shape-key")),
+		})
+		if err != nil {
+			return fmt.Errorf("create api key: %v", err)
+		}
+		defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: keyResp.Id})
+
+		// The Usage shape reports a quota draw-down, so the plan carries a
+		// daily quota to draw from.
+		planResp, err := tc.client.CreateUsagePlan(tc.ctx, &apigateway.CreateUsagePlanInput{
+			Name:  aws.String(tc.uniqueName("usage-shape-plan")),
+			Quota: &types.QuotaSettings{Limit: 100, Period: types.QuotaPeriodTypeDay},
+		})
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
+		planID := *planResp.Id
 		defer tc.deleteUsagePlan(planID)
 
-		now := time.Now().UTC()
-		startDate := now.AddDate(0, -1, 0).Format("2006-01-02")
-		endDate := now.Format("2006-01-02")
+		if _, err := tc.client.CreateUsagePlanKey(tc.ctx, &apigateway.CreateUsagePlanKeyInput{
+			UsagePlanId: aws.String(planID),
+			KeyId:       keyResp.Id,
+			KeyType:     aws.String("API_KEY"),
+		}); err != nil {
+			return fmt.Errorf("create usage plan key: %v", err)
+		}
+
+		today := time.Now().Format("2006-01-02")
 		resp, err := tc.client.GetUsage(tc.ctx, &apigateway.GetUsageInput{
 			UsagePlanId: aws.String(planID),
-			StartDate:   aws.String(startDate),
-			EndDate:     aws.String(endDate),
+			StartDate:   aws.String(today),
+			EndDate:     aws.String(today),
 		})
 		if err != nil {
 			return err
 		}
 		if resp.UsagePlanId == nil || *resp.UsagePlanId != planID {
 			return fmt.Errorf("usagePlanId mismatch")
+		}
+		usage, ok := resp.Items[*keyResp.Id]
+		if !ok {
+			return fmt.Errorf("values not indexed by API key id %s: %v", *keyResp.Id, resp.Items)
+		}
+		if len(usage) != 1 || len(usage[0]) != 2 || usage[0][0] != 0 || usage[0][1] != 100 {
+			return fmt.Errorf("expected daily log [0 100] for an unused key, got %v", usage)
+		}
+
+		// A replace of /remaining with an integer is the only documented
+		// patch operation for usage.
+		upd, err := tc.client.UpdateUsage(tc.ctx, &apigateway.UpdateUsageInput{
+			UsagePlanId: aws.String(planID),
+			KeyId:       keyResp.Id,
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/remaining"), Value: aws.String("10")},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if upd.StartDate == nil || *upd.StartDate != today || upd.EndDate == nil || *upd.EndDate != today {
+			return fmt.Errorf("update usage response not scoped to the grant date, got %v..%v", upd.StartDate, upd.EndDate)
+		}
+		updUsage, ok := upd.Items[*keyResp.Id]
+		if !ok || len(updUsage) != 1 || updUsage[0][0] != 0 || updUsage[0][1] != 10 {
+			return fmt.Errorf("granted remaining 10 not reported, got %v", upd.Items)
+		}
+
+		after, err := tc.client.GetUsage(tc.ctx, &apigateway.GetUsageInput{
+			UsagePlanId: aws.String(planID),
+			KeyId:       keyResp.Id,
+			StartDate:   aws.String(today),
+			EndDate:     aws.String(today),
+		})
+		if err != nil {
+			return err
+		}
+		afterUsage, ok := after.Items[*keyResp.Id]
+		if !ok || len(afterUsage) != 1 || afterUsage[0][0] != 0 || afterUsage[0][1] != 10 {
+			return fmt.Errorf("granted override not reflected in GetUsage, got %v", after.Items)
+		}
+
+		_, err = tc.client.UpdateUsage(tc.ctx, &apigateway.UpdateUsageInput{
+			UsagePlanId: aws.String(planID),
+			KeyId:       keyResp.Id,
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/remaining"), Value: aws.String("5")},
+			},
+		})
+		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
+			return fmt.Errorf("expected BadRequestException for add on /remaining, got: %v", err)
 		}
 		return nil
 	}))
@@ -320,6 +515,7 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestRes
 		if err != nil {
 			return fmt.Errorf("create usage plan: %v", err)
 		}
+		defer tc.deleteUsagePlan(aws.ToString(upResp.Id))
 
 		getResp, err := tc.client.GetUsagePlan(tc.ctx, &apigateway.GetUsagePlanInput{
 			UsagePlanId: upResp.Id,
@@ -330,8 +526,9 @@ func (r *TestRunner) runAPIGatewayUsagePlanTests(tc *apigwTestContext) []TestRes
 		if len(getResp.ApiStages) == 0 {
 			return fmt.Errorf("expected apiStages to be set")
 		}
-
-		tc.deleteUsagePlan(aws.ToString(upResp.Id))
+		if aws.ToString(getResp.ApiStages[0].ApiId) != ownAPI || aws.ToString(getResp.ApiStages[0].Stage) != "api-stage" {
+			return fmt.Errorf("apiStage mismatch, got %+v", getResp.ApiStages)
+		}
 		return nil
 	}))
 

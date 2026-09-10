@@ -1,6 +1,7 @@
 package apigateway
 
 import (
+	"strings"
 	"testing"
 
 	"vorpalstacks/internal/store/aws/apigateway"
@@ -214,6 +215,27 @@ func TestParsePatchOperationsCopyAndFrom(t *testing.T) {
 		},
 	}); err == nil {
 		t.Fatal("move was accepted")
+	}
+}
+
+// TestParsePatchOperationsNonObjectElement pins the fail-closed parsing of
+// malformed patchOperations elements: a non-object array member rejects the
+// request instead of being silently skipped.
+func TestParsePatchOperationsNonObjectElement(t *testing.T) {
+	if _, err := parsePatchOperations(map[string]interface{}{
+		"patchOperations": []interface{}{"replace"},
+	}); err == nil {
+		t.Fatal("non-object patchOperations element was accepted")
+	}
+
+	mixed, err := parsePatchOperations(map[string]interface{}{
+		"patchOperations": []interface{}{
+			map[string]interface{}{"op": "replace", "path": "/name", "value": "x"},
+			42,
+		},
+	})
+	if err == nil {
+		t.Fatalf("non-object element in a mixed list was accepted: %+v", mixed)
 	}
 }
 
@@ -625,5 +647,30 @@ func TestMethodMapKeyMatchesStoreDerivation(t *testing.T) {
 	}
 	if got := apigateway.MethodSettingsKey("/", "GET"); got != "~1/GET" {
 		t.Fatalf("root fully-escaped key = %q, want ~1/GET", got)
+	}
+}
+
+// TestCreateStageCoreRequiresDeploymentId pins the server-side rejection
+// of a stage creation without a deployment: the SDK's typed input marks
+// DeploymentId required and rejects client-side, so the server contract
+// is unreachable through the SDK and lives here instead.
+func TestCreateStageCoreRequiresDeploymentId(t *testing.T) {
+	svc := NewAPIGatewayService("123456789012", "us-east-1")
+	fs := fakeStorage{bucket: &fakeBucket{get: func([]byte) ([]byte, error) { return nil, nil }}}
+	stores := &apiGatewayStores{restApis: apigateway.NewRestApiStore(fs, "123456789012", "us-east-1")}
+
+	_, err := svc.createStageCore(stores, "api1", &StageInput{StageName: "nostage"})
+	if err == nil {
+		t.Fatal("createStageCore accepted a stage without deploymentId")
+	}
+	apiErr, ok := err.(*ApiGatewayError)
+	if !ok {
+		t.Fatalf("error is not *ApiGatewayError: %T", err)
+	}
+	if apiErr.GetCode() != "BadRequestException" || apiErr.GetHTTPStatusCode() != 400 {
+		t.Errorf("error contract = (%q, %d), want (BadRequestException, 400)", apiErr.GetCode(), apiErr.GetHTTPStatusCode())
+	}
+	if !strings.Contains(apiErr.GetMessage(), "deploymentId is required") {
+		t.Errorf("message %q does not state the missing member", apiErr.GetMessage())
 	}
 }

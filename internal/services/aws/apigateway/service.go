@@ -22,6 +22,7 @@ type apiGatewayStores struct {
 	restApis  *apigatewaystore.RestApiStore
 	usage     *apigatewaystore.UsageStore
 	domains   *apigatewaystore.DomainStore
+	account   *apigatewaystore.AccountStore
 	keyLocker storecommon.KeyLocker
 }
 
@@ -72,6 +73,7 @@ func (s *APIGatewayService) createStores(st storage.BasicStorage, region string)
 		restApis: apigatewaystore.NewRestApiStore(st, s.accountID, region),
 		usage:    apigatewaystore.NewUsageStore(st, s.accountID, region),
 		domains:  apigatewaystore.NewDomainStore(st, s.accountID, region),
+		account:  apigatewaystore.NewAccountStore(st, s.accountID, region),
 	}
 }
 
@@ -239,6 +241,27 @@ func (s *APIGatewayService) RegisterHandlers(d handler.Registrar) {
 	d.RegisterHandlerForService("apigateway", "DeleteUsagePlanKey", s.DeleteUsagePlanKey)
 	d.RegisterHandlerForService("apigateway", "GetUsagePlanKeys", s.GetUsagePlanKeys)
 	d.RegisterHandlerForService("apigateway", "GetUsage", s.GetUsage)
+	d.RegisterHandlerForService("apigateway", "UpdateUsage", s.UpdateUsage)
+
+	d.RegisterHandlerForService("apigateway", "GetGatewayResponse", s.GetGatewayResponse)
+	d.RegisterHandlerForService("apigateway", "GetGatewayResponses", s.GetGatewayResponses)
+	d.RegisterHandlerForService("apigateway", "PutGatewayResponse", s.PutGatewayResponse)
+	d.RegisterHandlerForService("apigateway", "DeleteGatewayResponse", s.DeleteGatewayResponse)
+	d.RegisterHandlerForService("apigateway", "UpdateGatewayResponse", s.UpdateGatewayResponse)
+	d.RegisterHandlerForService("apigateway", "FlushStageCache", s.FlushStageCache)
+	d.RegisterHandlerForService("apigateway", "FlushStageAuthorizersCache", s.FlushStageAuthorizersCache)
+
+	d.RegisterHandlerForService("apigateway", "GetExport", s.GetExport)
+	d.RegisterHandlerForService("apigateway", "GetModelTemplate", s.GetModelTemplate)
+	d.RegisterHandlerForService("apigateway", "GetSdkType", s.GetSdkType)
+	d.RegisterHandlerForService("apigateway", "GetSdkTypes", s.GetSdkTypes)
+
+	d.RegisterHandlerForService("apigateway", "ImportRestApi", s.ImportRestApi)
+	d.RegisterHandlerForService("apigateway", "PutRestApi", s.PutRestApi)
+	d.RegisterHandlerForService("apigateway", "ImportApiKeys", s.ImportApiKeys)
+
+	d.RegisterHandlerForService("apigateway", "GetAccount", s.GetAccount)
+	d.RegisterHandlerForService("apigateway", "UpdateAccount", s.UpdateAccount)
 
 	d.RegisterHandlerForService("apigateway", "CreateDomainName", s.CreateDomainName)
 	d.RegisterHandlerForService("apigateway", "GetDomainName", s.GetDomainName)
@@ -254,5 +277,5 @@ func (s *APIGatewayService) RegisterHandlers(d handler.Registrar) {
 
 	d.RegisterHandlerForService("apigateway", "TagResource", s.TagResource)
 	d.RegisterHandlerForService("apigateway", "UntagResource", s.UntagResource)
-	d.RegisterHandlerForService("apigateway", "ListTagsForResource", s.ListTagsForResource)
+	d.RegisterHandlerForService("apigateway", "GetTags", s.GetTags)
 }

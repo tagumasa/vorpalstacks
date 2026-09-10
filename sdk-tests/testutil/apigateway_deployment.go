@@ -30,6 +30,55 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(tc *apigwTestContext) []TestRe
 			return fmt.Errorf("description mismatch, got %v", resp.Description)
 		}
 		deploymentID = *resp.Id
+
+		// The apiSummary member snapshots the API's method surface at
+		// deployment time: path → method → authorization/apiKey settings.
+		ownAPI, ownRoot, err := tc.createAPI(tc.uniqueName("ApiSum"))
+		if err != nil {
+			return fmt.Errorf("create api: %v", err)
+		}
+		defer tc.deleteAPI(ownAPI)
+		sumRes, err := tc.client.CreateResource(tc.ctx, &apigateway.CreateResourceInput{
+			RestApiId: aws.String(ownAPI),
+			ParentId:  aws.String(ownRoot),
+			PathPart:  aws.String("summary"),
+		})
+		if err != nil {
+			return fmt.Errorf("create resource: %v", err)
+		}
+		if _, err := tc.client.PutMethod(tc.ctx, &apigateway.PutMethodInput{
+			RestApiId:         aws.String(ownAPI),
+			ResourceId:        sumRes.Id,
+			HttpMethod:        aws.String("GET"),
+			AuthorizationType: aws.String("AWS_IAM"),
+			ApiKeyRequired:    true,
+		}); err != nil {
+			return fmt.Errorf("put method: %v", err)
+		}
+		sumDeploy, err := tc.client.CreateDeployment(tc.ctx, &apigateway.CreateDeploymentInput{
+			RestApiId: aws.String(ownAPI),
+		})
+		if err != nil {
+			return err
+		}
+		sumGet, err := tc.client.GetDeployment(tc.ctx, &apigateway.GetDeploymentInput{
+			RestApiId:    aws.String(ownAPI),
+			DeploymentId: sumDeploy.Id,
+		})
+		if err != nil {
+			return fmt.Errorf("get deployment: %v", err)
+		}
+		pathSnapshot, ok := sumGet.ApiSummary["/summary"]
+		if !ok {
+			return fmt.Errorf("apiSummary missing /summary, got %v", sumGet.ApiSummary)
+		}
+		getSnapshot, ok := pathSnapshot["GET"]
+		if !ok {
+			return fmt.Errorf("apiSummary missing GET method, got %v", pathSnapshot)
+		}
+		if getSnapshot.AuthorizationType == nil || *getSnapshot.AuthorizationType != "AWS_IAM" || !getSnapshot.ApiKeyRequired {
+			return fmt.Errorf("method snapshot mismatch, got %+v", getSnapshot)
+		}
 		return nil
 	}))
 
@@ -104,6 +153,54 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(tc *apigwTestContext) []TestRe
 		}
 		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 deployment")
+		}
+
+		// A forced multi-page walk: three deployments on a private API,
+		// page limit below the total, every page's position fed back.
+		ownAPI, _, err := tc.createOwnAPI("PgDep")
+		if err != nil {
+			return fmt.Errorf("create api: %v", err)
+		}
+		defer tc.deleteAPI(ownAPI)
+		want := make(map[string]bool)
+		for i := 0; i < 3; i++ {
+			id, err := tc.createDeployment(ownAPI, fmt.Sprintf("page-%d", i))
+			if err != nil {
+				return fmt.Errorf("create deployment %d: %v", i, err)
+			}
+			want[id] = true
+		}
+		var got []string
+		var position *string
+		pages := 0
+		for {
+			page, err := tc.client.GetDeployments(tc.ctx, &apigateway.GetDeploymentsInput{
+				RestApiId: aws.String(ownAPI),
+				Limit:     aws.Int32(2),
+				Position:  position,
+			})
+			if err != nil {
+				return fmt.Errorf("page %d: %v", pages, err)
+			}
+			pages++
+			for _, d := range page.Items {
+				got = append(got, aws.ToString(d.Id))
+			}
+			position = page.Position
+			if position == nil {
+				break
+			}
+		}
+		if pages < 2 {
+			return fmt.Errorf("expected the page limit to force multiple pages, got %d", pages)
+		}
+		if len(got) != len(want) {
+			return fmt.Errorf("walked %d deployments, want %d", len(got), len(want))
+		}
+		for _, id := range got {
+			if !want[id] {
+				return fmt.Errorf("foreign deployment %q in walk, want %v", id, want)
+			}
 		}
 		return nil
 	}))
@@ -198,7 +295,7 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(tc *apigwTestContext) []TestRe
 	}))
 
 	results = append(results, r.RunTest("apigateway", "GetStages", func() error {
-		if err := tc.require(tc.apiID); err != nil {
+		if err := tc.require(tc.apiID, deploymentID); err != nil {
 			return err
 		}
 		resp, err := tc.client.GetStages(tc.ctx, &apigateway.GetStagesInput{
@@ -209,6 +306,42 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(tc *apigwTestContext) []TestRe
 		}
 		if len(resp.Item) == 0 {
 			return fmt.Errorf("expected at least 1 stage")
+		}
+		found := false
+		for _, st := range resp.Item {
+			if aws.ToString(st.StageName) == "test" {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("created stage %q not found in list, got %d stages", "test", len(resp.Item))
+		}
+
+		// deploymentId restricts the listing to the stages deployed with it.
+		byDeployment, err := tc.client.GetStages(tc.ctx, &apigateway.GetStagesInput{
+			RestApiId:    aws.String(tc.apiID),
+			DeploymentId: aws.String(deploymentID),
+		})
+		if err != nil {
+			return err
+		}
+		if len(byDeployment.Item) == 0 {
+			return fmt.Errorf("expected the fixture deployment's stage")
+		}
+		for _, st := range byDeployment.Item {
+			if aws.ToString(st.DeploymentId) != deploymentID {
+				return fmt.Errorf("foreign deploymentId in filtered listing: %v", st.DeploymentId)
+			}
+		}
+		none, err := tc.client.GetStages(tc.ctx, &apigateway.GetStagesInput{
+			RestApiId:    aws.String(tc.apiID),
+			DeploymentId: aws.String("nonexistent-deployment"),
+		})
+		if err != nil {
+			return err
+		}
+		if len(none.Item) != 0 {
+			return fmt.Errorf("unknown deploymentId returned %d stages", len(none.Item))
 		}
 		return nil
 	}))
@@ -238,6 +371,38 @@ func (r *TestRunner) runAPIGatewayDeploymentTests(tc *apigwTestContext) []TestRe
 		}
 		if resp.Description == nil || *resp.Description != "updated stage" {
 			return fmt.Errorf("description not updated, got %v", resp.Description)
+		}
+
+		// Scalar rows beyond description: tracing, cache cluster settings,
+		// access log format, and the wildcard caching method setting.
+		scalarResp, err := tc.client.UpdateStage(tc.ctx, &apigateway.UpdateStageInput{
+			RestApiId: aws.String(tc.apiID),
+			StageName: aws.String("test"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/tracingEnabled"), Value: aws.String("true")},
+				{Op: types.OpReplace, Path: aws.String("/cacheClusterEnabled"), Value: aws.String("true")},
+				{Op: types.OpReplace, Path: aws.String("/cacheClusterSize"), Value: aws.String("0.5")},
+				{Op: types.OpReplace, Path: aws.String("/accessLogSettings/format"), Value: aws.String("JSON")},
+				{Op: types.OpReplace, Path: aws.String("/*/*/caching/enabled"), Value: aws.String("true")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("scalar row patch: %v", err)
+		}
+		if !scalarResp.TracingEnabled {
+			return fmt.Errorf("tracingEnabled not applied, got %v", scalarResp.TracingEnabled)
+		}
+		if !scalarResp.CacheClusterEnabled {
+			return fmt.Errorf("cacheClusterEnabled not applied, got %v", scalarResp.CacheClusterEnabled)
+		}
+		if string(scalarResp.CacheClusterSize) != "0.5" {
+			return fmt.Errorf("cacheClusterSize not applied, got %v", scalarResp.CacheClusterSize)
+		}
+		if scalarResp.AccessLogSettings == nil || aws.ToString(scalarResp.AccessLogSettings.Format) != "JSON" {
+			return fmt.Errorf("accessLogSettings format not applied, got %+v", scalarResp.AccessLogSettings)
+		}
+		if m, ok := scalarResp.MethodSettings["*/*"]; !ok || !m.CachingEnabled {
+			return fmt.Errorf("wildcard caching not applied, got %+v", scalarResp.MethodSettings["*/*"])
 		}
 
 		// Verify the stage variable round-trips via a fresh read.

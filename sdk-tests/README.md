@@ -21,7 +21,7 @@ which are separate services in the SDK classification used by
 | Service | Tests | Pass Rate | Status |
 |---------|--------|-----------|--------|
 | ACM | 51 | 100% | ✅ Perfect |
-| API Gateway | 152 | 100% | ✅ Perfect |
+| API Gateway | 165 | 100% | ✅ Perfect |
 | AppSync | 181 | 100% | ✅ Perfect |
 | Athena | 73 | 100% | ✅ Perfect |
 | CloudFront | 99 | 100% | ✅ Perfect |
@@ -55,7 +55,7 @@ which are separate services in the SDK classification used by
 | Timestream (Write+Query) | 53 | 100% | ✅ Perfect |
 | WAFv2 | 89 | 100% | ✅ Perfect |
 
-**Overall: 3,535/3,535 tests passing (100%) — 3,451 SDK + 67 integration + 17 WebSocket** (confirmed 2026-09-08 on main; per-session deltas live in git history)
+**Overall: 3,548/3,548 tests passing (100%) — 3,464 SDK + 67 integration + 17 WebSocket** (confirmed 2026-09-09 on main; per-session deltas live in git history)
 
 *CloudTrail audit tests require `CLOUDTRAIL_ENABLED=true` (or `ALL_SERVICES_ENABLED=true`).*
 

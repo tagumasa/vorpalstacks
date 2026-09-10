@@ -134,20 +134,7 @@ func (s *APIGatewayService) toMethodResponse(m *apigateway.Method) map[string]in
 func (s *APIGatewayService) toMethodResponsesMap(responses map[string]*apigateway.MethodResponse) map[string]interface{} {
 	result := make(map[string]interface{})
 	for statusCode, resp := range responses {
-		result[statusCode] = s.toMethodResponseSingle(resp)
-	}
-	return result
-}
-
-func (s *APIGatewayService) toMethodResponseSingle(resp *apigateway.MethodResponse) map[string]interface{} {
-	result := map[string]interface{}{
-		"statusCode": resp.StatusCode,
-	}
-	if len(resp.ResponseParameters) > 0 {
-		result["responseParameters"] = resp.ResponseParameters
-	}
-	if len(resp.ResponseModels) > 0 {
-		result["responseModels"] = resp.ResponseModels
+		result[statusCode] = s.toMethodResponseResponse(resp)
 	}
 	return result
 }

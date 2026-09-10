@@ -420,18 +420,15 @@ func (s *S3Service) listPartsCore(ctx context.Context, stores *s3Stores, input *
 		}
 	}
 
-	parts, nextPartNumberMarker, isTruncated, err := stores.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
+	result, err := stores.objects.ListParts(ctx, input.Bucket, input.Key, input.UploadId, partNumberMarker, maxParts)
 	if err != nil {
 		return nil, uploadNotFound(err)
 	}
 
-	// Initiator, Owner and StorageClass come from the upload record itself,
-	// not from a constant.
-	upload, err := stores.objects.GetMultipartUpload(input.UploadId)
-	if err != nil {
-		return nil, uploadNotFound(err)
-	}
-	initiator, owner := upload.Initiator, upload.Owner
+	// Initiator, Owner and StorageClass come from the upload record the
+	// parts were read from — one read, so an abort racing the listing can
+	// no longer flip a delivered page into NoSuchUpload.
+	initiator, owner := result.Upload.Initiator, result.Upload.Owner
 	if initiator == "" {
 		initiator = s.accountID
 	}
@@ -441,7 +438,7 @@ func (s *S3Service) listPartsCore(ctx context.Context, stores *s3Stores, input *
 
 	var outputParts []*Part
 	now := time.Now().UTC()
-	for _, p := range parts {
+	for _, p := range result.Parts {
 		lastModified := p.LastModified
 		if lastModified.IsZero() {
 			lastModified = now
@@ -462,11 +459,11 @@ func (s *S3Service) listPartsCore(ctx context.Context, stores *s3Stores, input *
 		Owner:        &Owner{ID: owner, DisplayName: owner},
 		Parts:        outputParts,
 		MaxParts:     maxParts,
-		StorageClass: string(upload.StorageClass),
-		IsTruncated:  isTruncated,
+		StorageClass: string(result.Upload.StorageClass),
+		IsTruncated:  result.IsTruncated,
 	}
-	if nextPartNumberMarker > 0 {
-		output.NextPartNumberMarker = strconv.Itoa(nextPartNumberMarker)
+	if result.NextPartNumberMarker > 0 {
+		output.NextPartNumberMarker = strconv.Itoa(result.NextPartNumberMarker)
 	}
 	return output, nil
 }

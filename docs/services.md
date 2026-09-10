@@ -21,7 +21,7 @@
 | Service | Coverage | Notes |
 |---------|----------|-------|
 | ACM | Broad | No ACME protocol |
-| API Gateway | Broad | No client certificates, documentation, SDK generation, or VpcLink |
+| API Gateway | Broad | No client certificates, documentation parts, GetSdk, VpcLink, or domain name access associations |
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
 | CloudWatch Logs | Selective | No Logs Insights queries or export |
 | Cognito IDP | Selective | No external IdP |
@@ -88,6 +88,8 @@
 Platform behaviour detail and restrictions, including where AWS leaves behaviour unspecified. The service tables above carry feature availability only.
 
 - **API Gateway — VPC_LINK connection type**: rejects at both integration create and the /connectionType replace path; a VPC_LINK integration would route through a VpcLink to a Network Load Balancer, which this platform does not provide.
+- **API Gateway — domain name access associations**: the four operations are absent because the feature exists only for VPC-endpoint-backed access — the access association source type admits VPCE as its only valid value and applies to PRIVATE custom domain names, and the platform provides no VPC-endpoint substrate (the same basis as the VpcLink exclusion).
+- **API Gateway — GetSdk**: excluded with the documentation-parts and client-certificate families; SDK package generation has no consumer on this platform, while the static SDK-type metadata operations (GetSdkType, GetSdkTypes) are implemented.
 - **Athena — TEST_MODE**: query execution history is purged at startup.
 - **CloudFront — viewer TLS serving**: SNI per distribution, from the attached ACM/IAM certificate.
 - **Cognito IDP — user-pool domains**: the four domain operations are implemented; domain entries resolve to the platform endpoint suffix (`<domain>.auth.<cognito_suffix>` with the region substituted) rather than AWS-hosted CloudFront domains, which cannot exist in an edge/on-premises deployment.

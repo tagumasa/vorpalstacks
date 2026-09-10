@@ -23,6 +23,35 @@ func getResourceId(req *request.ParsedRequest) string {
 	return resourceId
 }
 
+// parseEmbedParam reads the embed query parameter: the model supports a
+// single-valued list whose only allowed entry is "methods".
+func parseEmbedParam(params map[string]interface{}) (bool, error) {
+	raw, ok := params["embed"]
+	if !ok || raw == nil {
+		return false, nil
+	}
+	var values []string
+	switch v := raw.(type) {
+	case string:
+		values = []string{v}
+	case []interface{}:
+		for _, item := range v {
+			if s, ok := item.(string); ok {
+				values = append(values, s)
+			}
+		}
+	}
+	includeMethods := false
+	for _, value := range values {
+		if value == "methods" {
+			includeMethods = true
+			continue
+		}
+		return false, NewBadRequestException("the embed parameter supports only methods")
+	}
+	return includeMethods, nil
+}
+
 // CreateResource creates a new resource in API Gateway.
 func (s *APIGatewayService) CreateResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
@@ -40,12 +69,16 @@ func (s *APIGatewayService) CreateResource(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-	return s.toResourceResponse(created), nil
+	return s.toResourceResponse(created, false), nil
 }
 
 // GetResource retrieves a resource from API Gateway.
 func (s *APIGatewayService) GetResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId, resourceId := getApiIdAndResourceId(req)
+	includeMethods, err := parseEmbedParam(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -54,7 +87,7 @@ func (s *APIGatewayService) GetResource(ctx context.Context, reqCtx *request.Req
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
-	return s.toResourceResponse(resource), nil
+	return s.toResourceResponse(resource, includeMethods), nil
 }
 
 // DeleteResource deletes a resource from API Gateway.
@@ -78,6 +111,10 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 		return nil, err
 	}
 	position := request.GetStringParam(req.Parameters, "position")
+	includeMethods, err := parseEmbedParam(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
@@ -90,7 +127,7 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 
 	items := make([]interface{}, 0, len(resources))
 	for _, r := range resources {
-		items = append(items, s.toResourceResponse(r))
+		items = append(items, s.toResourceResponse(r, includeMethods))
 	}
 
 	page, nextPos, found := paginateItems(items, position, limit)
@@ -106,7 +143,9 @@ func (s *APIGatewayService) GetResources(ctx context.Context, reqCtx *request.Re
 	return result, nil
 }
 
-func (s *APIGatewayService) toResourceResponse(r *store.Resource) map[string]interface{} {
+// toResourceResponse renders a Resource; method summaries are only part of
+// the response when the caller asked to embed them.
+func (s *APIGatewayService) toResourceResponse(r *store.Resource, includeMethods bool) map[string]interface{} {
 	response := map[string]interface{}{
 		"id":       r.Id,
 		"parentId": r.ParentId,
@@ -114,7 +153,7 @@ func (s *APIGatewayService) toResourceResponse(r *store.Resource) map[string]int
 		"pathPart": r.PathPart,
 	}
 
-	if len(r.ResourceMethods) > 0 {
+	if includeMethods && len(r.ResourceMethods) > 0 {
 		methods := make(map[string]interface{})
 		for method, m := range r.ResourceMethods {
 			methods[method] = s.toMethodResponse(m)

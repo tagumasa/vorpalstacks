@@ -56,7 +56,7 @@ func (s *APIGatewayService) createAuthorizerCore(
 	// (cache disabled): AuthorizerResultTtlInSeconds is *int32 in the
 	// Smithy model so the optional TTL field can express the AWS
 	// "cache disabled" state, which an int32 zero value could not.
-	ttl := int32(300)
+	ttl := int32(defaultAuthorizerResultTtl)
 	if in.AuthorizerResultTtlInSeconds != nil {
 		ttl = *in.AuthorizerResultTtlInSeconds
 	}

@@ -158,6 +158,11 @@ func validateApiKeySource(source string) bool {
 	return source == "" || validApiKeySources[source]
 }
 
+// defaultDomainSecurityPolicy is the security policy AWS assigns to every
+// new custom domain when the request does not choose one; the documented
+// default for edge, regional, and private domains is TLS_1_2.
+const defaultDomainSecurityPolicy = "TLS_1_2"
+
 // validateSecurityPolicy returns true if the value is empty (optional) or
 // starts with a recognised security policy prefix.
 func validateSecurityPolicy(policy string) bool {
@@ -423,6 +428,28 @@ func validateThrottleRateLimit(v float64) bool {
 	return v >= 0 && v <= maxThrottleRateLimit
 }
 
+// The four throttle validation errors below are the single definitions of
+// their messages; every usage-plan throttle validation site reports through
+// them so the wording cannot drift between create, patch, and per-stage
+// paths.
+func errThrottleBurstLimitRange() *ApiGatewayError {
+	return NewBadRequestException(fmt.Sprintf(
+		"throttle burstLimit must be between 0 and %d", maxThrottleBurstLimit))
+}
+
+func errThrottleRateLimitRange() *ApiGatewayError {
+	return NewBadRequestException(fmt.Sprintf(
+		"throttle rateLimit must be between 0 and %v", maxThrottleRateLimit))
+}
+
+func errThrottleBurstLimitNotNumber() *ApiGatewayError {
+	return NewBadRequestException("invalid throttle burstLimit: not a number")
+}
+
+func errThrottleRateLimitNotNumber() *ApiGatewayError {
+	return NewBadRequestException("invalid throttle rateLimit: not a number")
+}
+
 // maxMinimumCompressionSize is the upper bound for minimumCompressionSize.
 const maxMinimumCompressionSize = 10485760
 
@@ -465,6 +492,10 @@ func validatePercentTraffic(v float64) bool {
 // maxAuthorizerTtl is the upper bound for the authorizer result TTL
 // (AWS: 1 hour).
 const maxAuthorizerTtl = 3600
+
+// defaultAuthorizerResultTtl is the TTL applied when the caller leaves
+// authorizerResultTtlInSeconds unset (AWS: 5 minutes).
+const defaultAuthorizerResultTtl = 300
 
 // validateAuthorizerTtl returns true if the value is within the accepted
 // range [0, maxAuthorizerTtl] for authorizer result TTL.

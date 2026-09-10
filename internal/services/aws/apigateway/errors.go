@@ -26,22 +26,12 @@ func NewApiGatewayError(code, message string, httpStatus int) *ApiGatewayError {
 	}
 }
 
-// ToJSON returns the error as a JSON string.
-func (e *ApiGatewayError) ToJSON() string {
-	return e.AWSError.ToJSONWithFormat("rest-json")
-}
-
 var (
-	ErrNotFoundException        = NewApiGatewayError("NotFoundException", "The resource specified in the request does not exist.", http.StatusNotFound)
-	ErrBadRequestException      = NewApiGatewayError("BadRequestException", "The request is not valid.", http.StatusBadRequest)
-	ErrConflictException        = NewApiGatewayError("ConflictException", "The resource already exists.", http.StatusConflict)
-	ErrTooManyRequestsException = NewApiGatewayError("TooManyRequestsException", "Too many requests have been made.", http.StatusTooManyRequests)
+	ErrNotFoundException = NewApiGatewayError("NotFoundException", "The resource specified in the request does not exist.", http.StatusNotFound)
+	ErrConflictException = NewApiGatewayError("ConflictException", "The resource already exists.", http.StatusConflict)
 	// InternalFailure is the only 500 code the API Gateway contract documents
 	// (Common Error Types); it is the service-wide internal-failure taxonomy.
 	ErrInternalFailureException = NewApiGatewayError("InternalFailure", "The request can't be processed right now because of an internal server issue.", http.StatusInternalServerError)
-	ErrAccessDeniedException    = NewApiGatewayError("AccessDeniedException", "Access denied.", http.StatusForbidden)
-	ErrUnauthorizedException    = NewApiGatewayError("UnauthorizedException", "Unauthorized.", http.StatusUnauthorized)
-	ErrLimitExceededException   = NewApiGatewayError("LimitExceededException", "The limit has been exceeded.", http.StatusTooManyRequests)
 )
 
 // NewNotFoundException creates a new not found exception with the specified resource type and name.
@@ -52,11 +42,6 @@ func NewNotFoundException(resourceType, resourceName string) *ApiGatewayError {
 // NewBadRequestException creates a new bad request exception with the specified message.
 func NewBadRequestException(message string) *ApiGatewayError {
 	return NewApiGatewayError("BadRequestException", message, http.StatusBadRequest)
-}
-
-// NewUnauthorizedException creates a new unauthorized exception with the specified message.
-func NewUnauthorizedException(message string) *ApiGatewayError {
-	return NewApiGatewayError("UnauthorizedException", message, http.StatusUnauthorized)
 }
 
 // NewConflictException creates a new conflict exception with the specified message.
@@ -83,6 +68,7 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: storeerrors.ErrStageNotFound, AWS: ErrNotFoundException},
 	{Store: storeerrors.ErrRequestValidatorNotFound, AWS: ErrNotFoundException},
 	{Store: storeerrors.ErrModelNotFound, AWS: ErrNotFoundException},
+	{Store: storeerrors.ErrGatewayResponseNotFound, AWS: ErrNotFoundException},
 	{Store: storeerrors.ErrApiKeyNotFound, AWS: ErrNotFoundException},
 	{Store: storeerrors.ErrUsagePlanNotFound, AWS: ErrNotFoundException},
 	{Store: storeerrors.ErrUsagePlanKeyNotFound, AWS: ErrNotFoundException},
@@ -106,8 +92,12 @@ var storeErrorMappings = []awserrors.StoreErrorMapping{
 	{Store: storeerrors.ErrAuthorizerAlreadyExists, AWS: ErrConflictException},
 }
 
-// GetApiGatewayError converts a generic error to an ApiGatewayError.
-func GetApiGatewayError(err error) *ApiGatewayError {
+// toApiGatewayError converts a generic error to an ApiGatewayError,
+// properly mapping store-level errors to the correct API Gateway error types.
+func toApiGatewayError(err error) *ApiGatewayError {
+	if err == nil {
+		return nil
+	}
 	if apiErr, ok := err.(*ApiGatewayError); ok {
 		return apiErr
 	}
@@ -116,13 +106,4 @@ func GetApiGatewayError(err error) *ApiGatewayError {
 		return mapped.(*ApiGatewayError)
 	}
 	return ErrInternalFailureException
-}
-
-// toApiGatewayError converts a generic error to an ApiGatewayError,
-// properly mapping store-level errors to the correct API Gateway error types.
-func toApiGatewayError(err error) *ApiGatewayError {
-	if err == nil {
-		return nil
-	}
-	return GetApiGatewayError(err)
 }

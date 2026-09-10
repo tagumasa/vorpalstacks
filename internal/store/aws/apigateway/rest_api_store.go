@@ -3,6 +3,7 @@ package apigateway
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -23,8 +24,6 @@ const maxRestApiBlobSize = 5 * 1024 * 1024 // 5 MiB
 type RestApiStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
-	accountId  string
-	region     string
 	mu         sync.Mutex
 }
 
@@ -38,8 +37,6 @@ func NewRestApiStore(store storage.BasicStorage, accountId, region string) *Rest
 	return &RestApiStore{
 		BaseStore:  common.NewBaseStore(bucket, "apigateway-restapis"),
 		arnBuilder: NewARNBuilder(accountId, region),
-		accountId:  accountId,
-		region:     region,
 	}
 }
 
@@ -388,7 +385,8 @@ func (s *RestApiStore) DeleteRequestValidator(apiId, validatorId string) error {
 	return s.updateLocked(api)
 }
 
-// ListRequestValidators returns all request validators for a REST API.
+// ListRequestValidators returns all request validators for a REST API
+// ordered by id — a deterministic total order for stable pagination.
 func (s *RestApiStore) ListRequestValidators(apiId string) ([]*RequestValidator, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
@@ -399,6 +397,7 @@ func (s *RestApiStore) ListRequestValidators(apiId string) ([]*RequestValidator,
 	for _, v := range api.RequestValidators {
 		validators = append(validators, v)
 	}
+	sort.Slice(validators, func(i, j int) bool { return validators[i].Id < validators[j].Id })
 	return validators, nil
 }
 
@@ -466,7 +465,8 @@ func (s *RestApiStore) DeleteModel(apiId, modelName string) error {
 	return s.updateLocked(api)
 }
 
-// ListModels returns all models for a REST API.
+// ListModels returns all models for a REST API ordered by name — a
+// deterministic total order for stable pagination.
 func (s *RestApiStore) ListModels(apiId string) ([]*Model, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
@@ -477,6 +477,7 @@ func (s *RestApiStore) ListModels(apiId string) ([]*Model, error) {
 	for _, m := range api.Models {
 		models = append(models, m)
 	}
+	sort.Slice(models, func(i, j int) bool { return models[i].Name < models[j].Name })
 	return models, nil
 }
 
@@ -577,7 +578,8 @@ func (s *RestApiStore) DeleteAuthorizer(apiId, authorizerId string) error {
 	return s.updateLocked(api)
 }
 
-// ListAuthorizers returns all authorizers for a REST API.
+// ListAuthorizers returns all authorizers for a REST API ordered by id — a
+// deterministic total order for stable pagination.
 func (s *RestApiStore) ListAuthorizers(apiId string) ([]*Authorizer, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
@@ -588,5 +590,6 @@ func (s *RestApiStore) ListAuthorizers(apiId string) ([]*Authorizer, error) {
 	for _, a := range api.Authorizers {
 		authorizers = append(authorizers, a)
 	}
+	sort.Slice(authorizers, func(i, j int) bool { return authorizers[i].Id < authorizers[j].Id })
 	return authorizers, nil
 }

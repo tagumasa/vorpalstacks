@@ -77,6 +77,23 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 			return fmt.Errorf("name not updated, got %v", resp.Name)
 		}
 
+		// Both toggle rows: replace flips each validation flag.
+		toggleResp, err := tc.client.UpdateRequestValidator(tc.ctx, &apigateway.UpdateRequestValidatorInput{
+			RestApiId:          aws.String(tc.apiID),
+			RequestValidatorId: aws.String(validatorID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/validateRequestBody"), Value: aws.String("true")},
+				{Op: types.OpReplace, Path: aws.String("/validateRequestParameters"), Value: aws.String("true")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("toggle rows: %v", err)
+		}
+		if !toggleResp.ValidateRequestBody || !toggleResp.ValidateRequestParameters {
+			return fmt.Errorf("toggle rows not applied, got body=%v params=%v",
+				toggleResp.ValidateRequestBody, toggleResp.ValidateRequestParameters)
+		}
+
 		// The /name row documents replace only: add rejects.
 		_, err = tc.client.UpdateRequestValidator(tc.ctx, &apigateway.UpdateRequestValidatorInput{
 			RestApiId:          aws.String(tc.apiID),
@@ -124,6 +141,15 @@ func (r *TestRunner) runAPIGatewayValidatorTests(tc *apigwTestContext) []TestRes
 		}
 		if len(items) < 2 {
 			return fmt.Errorf("expected at least 2 validators, got %d", len(items))
+		}
+		found := false
+		for _, v := range items {
+			if aws.ToString(v.Id) == validatorID {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("created validator %q not found in list", validatorID)
 		}
 		return nil
 	}))

@@ -1133,3 +1133,46 @@ func TestParseLayerVersion(t *testing.T) {
 		}
 	}
 }
+
+func TestExtractAPIGatewayFunctionRef(t *testing.T) {
+	cases := []struct {
+		name string
+		uri  string
+		ref  string
+		ok   bool
+	}{
+		{
+			name: "invocation URI with function ARN",
+			uri:  "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-fn/invocations",
+			ref:  "arn:aws:lambda:us-east-1:123456789012:function:my-fn",
+			ok:   true,
+		},
+		{
+			name: "invocation URI with function name",
+			uri:  "arn:aws:apigateway:eu-west-1:lambda:path/2015-03-31/functions/my-fn/invocations",
+			ref:  "my-fn",
+			ok:   true,
+		},
+		{
+			name: "invocation URI with qualified function ARN",
+			uri:  "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:123456789012:function:my-fn:PROD/invocations",
+			ref:  "arn:aws:lambda:us-east-1:123456789012:function:my-fn:PROD",
+			ok:   true,
+		},
+		{name: "lambda function ARN without invocation path", uri: "arn:aws:lambda:us-east-1:123456789012:function:my-fn"},
+		{name: "function path without the invocations suffix", uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/my-fn"},
+		{name: "invocations suffix with an empty function reference", uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions//invocations"},
+		{name: "apigateway URI for another service", uri: "arn:aws:apigateway:us-east-1:sqs:path/123456789012/my-queue"},
+		{name: "invocation path without lambda account", uri: "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/nonsense"},
+		{name: "empty", uri: ""},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ref, ok := ExtractAPIGatewayFunctionRef(c.uri)
+			if ok != c.ok || ref != c.ref {
+				t.Errorf("ExtractAPIGatewayFunctionRef(%q) = (%q, %v), want (%q, %v)", c.uri, ref, ok, c.ref, c.ok)
+			}
+		})
+	}
+}

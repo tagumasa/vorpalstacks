@@ -1,6 +1,8 @@
 package apigateway
 
 import (
+	"encoding/json"
+
 	"vorpalstacks/internal/store/aws/apigateway"
 )
 
@@ -190,8 +192,10 @@ func (s *APIGatewayService) createModelCore(
 	return created, nil
 }
 
-// getModelCore retrieves a model by name.
-func (s *APIGatewayService) getModelCore(stores *apiGatewayStores, apiId, modelName string) (*apigateway.Model, error) {
+// getModelCore retrieves a model by name. With flatten set, every external
+// model reference in the schema is resolved against the API's other
+// models, yielding a self-contained schema.
+func (s *APIGatewayService) getModelCore(stores *apiGatewayStores, apiId, modelName string, flatten bool) (*apigateway.Model, error) {
 	if apiId == "" {
 		return nil, NewBadRequestException("restApiId is required")
 	}
@@ -203,8 +207,71 @@ func (s *APIGatewayService) getModelCore(stores *apiGatewayStores, apiId, modelN
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}
+	if !flatten {
+		return model, nil
+	}
 
-	return model, nil
+	models, err := stores.restApis.ListModels(apiId)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	flattened := *model
+	flattened.Schema = flattenModelSchema(model.Schema, models)
+	return &flattened, nil
+}
+
+// flattenModelSchema resolves external model references in a JSON schema:
+// every {"$ref": "<ModelName>"} naming another model of the same API is
+// replaced by that model's schema, recursively, so the result is
+// self-contained. Internal JSON Pointer references and unknown names are
+// left untouched; a schema that is not valid JSON is returned unchanged.
+func flattenModelSchema(schema string, models []*apigateway.Model) string {
+	byName := make(map[string]*apigateway.Model, len(models))
+	for _, m := range models {
+		byName[m.Name] = m
+	}
+	var root interface{}
+	if err := json.Unmarshal([]byte(schema), &root); err != nil {
+		return schema
+	}
+	root = resolveSchemaRefs(root, byName, make(map[string]bool))
+	out, err := json.Marshal(root)
+	if err != nil {
+		return schema
+	}
+	return string(out)
+}
+
+// resolveSchemaRefs walks a decoded schema and inlines the schemas of
+// referenced models. The visiting set guards against reference cycles;
+// a name is released on exit so sibling references to the same model
+// still resolve.
+func resolveSchemaRefs(node interface{}, models map[string]*apigateway.Model, visiting map[string]bool) interface{} {
+	switch v := node.(type) {
+	case map[string]interface{}:
+		if ref, ok := v["$ref"].(string); ok {
+			if target, exists := models[ref]; exists && target.Schema != "" && !visiting[ref] {
+				var resolved interface{}
+				if err := json.Unmarshal([]byte(target.Schema), &resolved); err == nil {
+					visiting[ref] = true
+					inlined := resolveSchemaRefs(resolved, models, visiting)
+					delete(visiting, ref)
+					return inlined
+				}
+			}
+		}
+		for k, child := range v {
+			v[k] = resolveSchemaRefs(child, models, visiting)
+		}
+		return v
+	case []interface{}:
+		for i, child := range v {
+			v[i] = resolveSchemaRefs(child, models, visiting)
+		}
+		return v
+	default:
+		return node
+	}
 }
 
 // deleteModelCore removes a model by name.

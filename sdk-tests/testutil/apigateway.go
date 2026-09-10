@@ -75,22 +75,6 @@ func (tc *apigwTestContext) createDeployment(apiID, description string) (string,
 	return *resp.Id, nil
 }
 
-// findRootResource returns the id of the "/" resource of the given API.
-func (tc *apigwTestContext) findRootResource(apiID string) (string, error) {
-	resources, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
-		RestApiId: aws.String(apiID),
-	})
-	if err != nil {
-		return "", fmt.Errorf("get resources: %v", err)
-	}
-	for _, res := range resources.Items {
-		if res.Path != nil && *res.Path == "/" {
-			return *res.Id, nil
-		}
-	}
-	return "", fmt.Errorf("root resource not found")
-}
-
 // allRestApis walks every GetRestApis page.
 func (tc *apigwTestContext) allRestApis() ([]types.RestApi, error) {
 	return paginate(func(next *string) ([]types.RestApi, *string, error) {

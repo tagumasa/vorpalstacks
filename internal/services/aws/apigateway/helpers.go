@@ -3,10 +3,24 @@ package apigateway
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
+	"regexp"
 	"strconv"
 	"strings"
+
+	"connectrpc.com/connect"
 )
+
+// statusCodePattern pins the pattern trait of the modelled StatusCode shape:
+// a three-digit HTTP status between 100 and 599.
+var statusCodePattern = regexp.MustCompile(`^[1-5]\d\d$`)
+
+// validateStatusCode enforces the modelled StatusCode pattern on ingress.
+func validateStatusCode(statusCode string) *ApiGatewayError {
+	if !statusCodePattern.MatchString(statusCode) {
+		return NewBadRequestException("Invalid statusCode: " + statusCode + "; must be three digits between 100 and 599")
+	}
+	return nil
+}
 
 // MaxPaginationLimit is the maximum number of items returned per page,
 // matching the AWS API Gateway limit of 500.
@@ -131,7 +145,7 @@ func parsePatchOperations(params map[string]interface{}) ([]PatchOperation, erro
 	for _, op := range patchOps {
 		opMap, ok := op.(map[string]interface{})
 		if !ok {
-			continue
+			return nil, NewBadRequestException("each patchOperations element must be an object")
 		}
 		po := PatchOperation{}
 		if o, ok := opMap["op"].(string); ok {
@@ -226,15 +240,15 @@ func isIndexToken(token string) bool {
 	return err == nil
 }
 
-// applyMapPatch applies an add/remove/replace patch operation to a
-// string-valued map member: the member name is taken from the path after
-// prefix and unescaped per RFC 6902 (~1 becomes /, ~0 becomes ~); "remove"
-// deletes the entry, any other operation sets it. The documented patch
-// forms address a named entry, so a path whose key token is empty (a
-// trailing slash) is rejected with the unknown-patch-path error instead
-// of writing an empty-string key. validateName and validateValue gate the
-// entries where the target member documents constraints and may be nil.
-func applyMapPatch(target map[string]string, po PatchOperation, prefix string, validateName, validateValue func(string) bool) error {
+// applyTypedMapPatch is the shared body of the typed map-patch appliers:
+// the member name is taken from the path after prefix and unescaped per
+// RFC 6902 (~1 becomes /, ~0 becomes ~); "remove" deletes the entry, any
+// other operation sets it through convert. The documented patch forms
+// address a named entry, so a path whose key token is empty (a trailing
+// slash) is rejected with the unknown-patch-path error instead of writing
+// an empty-string key. validateName and validateValue gate the entries
+// where the target member documents constraints and may be nil.
+func applyTypedMapPatch[V any](target map[string]V, po PatchOperation, prefix string, convert func(string) V, validateName, validateValue func(string) bool) error {
 	name := unescapePointerToken(strings.TrimPrefix(po.Path, prefix))
 	if name == "" {
 		return unknownPatchPathError(po)
@@ -252,50 +266,38 @@ func applyMapPatch(target map[string]string, po PatchOperation, prefix string, v
 	if po.Op == "remove" {
 		delete(target, name)
 	} else {
-		target[name] = po.Value
+		target[name] = convert(po.Value)
 	}
 	return nil
+}
+
+// applyMapPatch applies an add/remove/replace patch operation to a
+// string-valued map member.
+func applyMapPatch(target map[string]string, po PatchOperation, prefix string, validateName, validateValue func(string) bool) error {
+	return applyTypedMapPatch(target, po, prefix, func(v string) string { return v }, validateName, validateValue)
 }
 
 // applyBoolMapPatch is applyMapPatch for bool-valued members, where the
 // patch value is the string form of the boolean.
 func applyBoolMapPatch(target map[string]bool, po PatchOperation, prefix string, validateName, validateValue func(string) bool) error {
-	name := unescapePointerToken(strings.TrimPrefix(po.Path, prefix))
-	if name == "" {
-		return unknownPatchPathError(po)
-	}
-	if po.Op != "remove" {
-		if validateName != nil && !validateName(name) {
-			return NewBadRequestException(fmt.Sprintf(
-				"Invalid patch path '%s': invalid entry name '%s'", po.Path, name))
-		}
-		if validateValue != nil && !validateValue(po.Value) {
-			return NewBadRequestException(fmt.Sprintf(
-				"Invalid patch value for '%s': invalid entry value for '%s'", po.Path, name))
-		}
-	}
-	if po.Op == "remove" {
-		delete(target, name)
-	} else {
-		target[name] = po.Value == "true"
-	}
-	return nil
+	return applyTypedMapPatch(target, po, prefix, func(v string) bool { return v == "true" }, validateName, validateValue)
 }
 
-// parseWholeStringMapValue decodes the value carried by a whole-member map
-// patch (a path naming the map itself, no key token). The official
-// PatchOperation value documentation states that updating a property of a
-// JSON value passes the JSON object in the string value, so a whole-map
-// replace carries the map as a JSON object string. Entry names must be
-// non-empty; validateName and validateValue gate the entries where the
-// target member documents constraints and may be nil.
-func parseWholeStringMapValue(po PatchOperation, validateName, validateValue func(string) bool) (map[string]string, error) {
-	var raw map[string]string
+// parseWholeMapValue decodes the value carried by a whole-member map patch
+// (a path naming the map itself, no key token). The official PatchOperation
+// value documentation states that updating a property of a JSON value
+// passes the JSON object in the string value, so a whole-map replace
+// carries the map as a JSON object string; jsonType names the expected
+// object form in the decode error. Entry names must be non-empty;
+// validateName and validateValue gate the entries where the target member
+// documents constraints and may be nil.
+func parseWholeMapValue[V any](po PatchOperation, jsonType string, validateName func(string) bool, validateValue func(V) bool) (map[string]V, error) {
+	var raw map[string]V
 	if err := json.Unmarshal([]byte(po.Value), &raw); err != nil {
 		return nil, NewBadRequestException(fmt.Sprintf(
-			"Invalid patch value for '%s': expected a JSON object of string to string", po.Path))
+			"Invalid patch value for '%s': expected a JSON object of %s", po.Path, jsonType))
 	}
-	parsed := make(map[string]string, len(raw))
+	parsed := make(map[string]V, len(raw))
 	for name, value := range raw {
 		if name == "" {
 			return nil, NewBadRequestException(fmt.Sprintf(
@@ -314,22 +316,15 @@ func parseWholeStringMapValue(po PatchOperation, validateName, validateValue fun
 	return parsed, nil
 }
 
-// parseWholeBoolMapValue is parseWholeStringMapValue for bool-valued maps.
+// parseWholeStringMapValue is parseWholeMapValue for string-valued maps.
+func parseWholeStringMapValue(po PatchOperation, validateName, validateValue func(string) bool) (map[string]string, error) {
+	return parseWholeMapValue(po, "string to string", validateName, validateValue)
+}
+
+// parseWholeBoolMapValue is parseWholeMapValue for bool-valued maps, whose
+// entries carry no documented constraints.
 func parseWholeBoolMapValue(po PatchOperation) (map[string]bool, error) {
-	var raw map[string]bool
-	if err := json.Unmarshal([]byte(po.Value), &raw); err != nil {
-		return nil, NewBadRequestException(fmt.Sprintf(
-			"Invalid patch value for '%s': expected a JSON object of string to boolean", po.Path))
-	}
-	parsed := make(map[string]bool, len(raw))
-	for name := range raw {
-		if name == "" {
-			return nil, NewBadRequestException(fmt.Sprintf(
-				"Invalid patch value for '%s': entry names must not be empty", po.Path))
-		}
-		parsed[name] = raw[name]
-	}
-	return parsed, nil
+	return parseWholeMapValue[bool](po, "string to boolean", nil, nil)
 }
 
 // parseWholeStringListValue decodes the value carried by a whole-member list
@@ -351,17 +346,17 @@ func parseWholeStringListValue(po PatchOperation) ([]string, error) {
 	return raw, nil
 }
 
-// applyWholeStringMapPatch applies a whole-member map patch for the
-// members whose official patch table rows allow add, replace and remove:
-// add and replace set the map from the JSON object value, remove clears
-// it. Any other operation is unsupported for these paths and returns the
-// unknown-patch-path error.
-func applyWholeStringMapPatch(target *map[string]string, po PatchOperation, validateName, validateValue func(string) bool) error {
+// applyWholeTypedMapPatch is the shared body of the whole-member map patch
+// appliers, for the members whose official patch table rows allow add,
+// replace and remove: add and replace set the map from the JSON object
+// value decoded by parse, remove clears it. Any other operation is
+// unsupported for these paths and returns the unknown-patch-path error.
+func applyWholeTypedMapPatch[V any](target *map[string]V, po PatchOperation, parse func(PatchOperation) (map[string]V, error)) error {
 	switch po.Op {
 	case "remove":
 		*target = nil
 	case "add", "replace":
-		parsed, err := parseWholeStringMapValue(po, validateName, validateValue)
+		parsed, err := parse(po)
 		if err != nil {
 			return err
 		}
@@ -372,26 +367,28 @@ func applyWholeStringMapPatch(target *map[string]string, po PatchOperation, vali
 	return nil
 }
 
+// applyWholeStringMapPatch applies a whole-member patch to a string-valued
+// map member.
+func applyWholeStringMapPatch(target *map[string]string, po PatchOperation, validateName, validateValue func(string) bool) error {
+	return applyWholeTypedMapPatch(target, po, func(po PatchOperation) (map[string]string, error) {
+		return parseWholeStringMapValue(po, validateName, validateValue)
+	})
+}
+
 // applyWholeBoolMapPatch is applyWholeStringMapPatch for bool-valued maps.
 func applyWholeBoolMapPatch(target *map[string]bool, po PatchOperation) error {
-	switch po.Op {
-	case "remove":
-		*target = nil
-	case "add", "replace":
-		parsed, err := parseWholeBoolMapValue(po)
-		if err != nil {
-			return err
-		}
-		*target = parsed
-	default:
-		return unknownPatchPathError(po)
-	}
-	return nil
+	return applyWholeTypedMapPatch(target, po, parseWholeBoolMapValue)
 }
 
 // paginateItems applies position-based pagination using the "id" key.
 func paginateItems(items []interface{}, position string, limit int) ([]interface{}, string, bool) {
 	return paginateItemsWithKey(items, position, limit, "id")
+}
+
+// invalidAdminPositionError is the shared error an admin listing returns
+// for a position token that matches no item.
+func invalidAdminPositionError(position string) error {
+	return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", position))
 }
 
 // paginateItemsWithKey applies position-based pagination using a custom key
@@ -428,16 +425,6 @@ func paginateItemsWithKey(items []interface{}, position string, limit int, key s
 	}
 
 	return page, nextPosition, positionFound
-}
-
-// sortedKeys returns the keys of a map in sorted order for deterministic pagination.
-func sortedKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	return keys
 }
 
 // paginateAdminList applies offset-based pagination for admin handler list

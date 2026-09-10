@@ -108,6 +108,34 @@ func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResul
 		if err := AssertErrorContains(err, "BadRequestException"); err != nil {
 			return fmt.Errorf("expected BadRequestException for add on /name, got: %v", err)
 		}
+
+		// The remaining scalar rows run on a private API: apiKeySource,
+		// policy, and disableExecuteApiEndpoint.
+		ownAPI, _, err := tc.createOwnAPI("UraRows")
+		if err != nil {
+			return fmt.Errorf("create own api: %v", err)
+		}
+		defer tc.deleteAPI(ownAPI)
+		rowResp, err := tc.client.UpdateRestApi(tc.ctx, &apigateway.UpdateRestApiInput{
+			RestApiId: aws.String(ownAPI),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/apiKeySource"), Value: aws.String("AUTHORIZER")},
+				{Op: types.OpReplace, Path: aws.String("/policy"), Value: aws.String(`{"Version":"2012-10-17"}`)},
+				{Op: types.OpReplace, Path: aws.String("/disableExecuteApiEndpoint"), Value: aws.String("true")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("scalar rows: %v", err)
+		}
+		if string(rowResp.ApiKeySource) != "AUTHORIZER" {
+			return fmt.Errorf("apiKeySource row not applied, got %v", rowResp.ApiKeySource)
+		}
+		if aws.ToString(rowResp.Policy) != `{"Version":"2012-10-17"}` {
+			return fmt.Errorf("policy row not applied, got %v", rowResp.Policy)
+		}
+		if !rowResp.DisableExecuteApiEndpoint {
+			return fmt.Errorf("disableExecuteApiEndpoint row not applied, got %v", rowResp.DisableExecuteApiEndpoint)
+		}
 		return nil
 	}))
 
@@ -346,6 +374,154 @@ func (r *TestRunner) runAPIGatewayRestApiTests(tc *apigwTestContext) []TestResul
 		}
 		if len(pgAPIs) != 5 || count != 5 {
 			return fmt.Errorf("expected 5 paginated rest apis, got %d", count)
+		}
+		return nil
+	}))
+
+	// importSwaggerDoc exercises the import surface: metadata, basePath,
+	// a path with intermediate segments, an API-key requirement, an
+	// integration extension and a definition.
+	importSwaggerDoc := `{
+		"swagger": "2.0",
+		"info": {"title": "ImportedApi", "version": "9.9.9", "description": "imported"},
+		"basePath": "/team",
+		"paths": {
+			"/orders/{id}": {
+				"get": {
+					"operationId": "GetOrder",
+					"x-amazon-apigateway-api-key-required": true,
+					"responses": {"200": {"description": "ok"}},
+					"x-amazon-apigateway-integration": {"type": "AWS_PROXY", "httpMethod": "POST", "uri": "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:imported/invocations"}
+				}
+			}
+		},
+		"definitions": {"OrderImport": {"type": "object", "properties": {"id": {"type": "string"}}}}
+	}`
+
+	results = append(results, r.RunTest("apigateway", "ImportRestApi_RoundTrip", func() error {
+		imported, err := tc.client.ImportRestApi(tc.ctx, &apigateway.ImportRestApiInput{
+			Body:       []byte(importSwaggerDoc),
+			Parameters: map[string]string{"basepath": "prepend"},
+		})
+		if err != nil {
+			return err
+		}
+		apiID := aws.ToString(imported.Id)
+		defer tc.deleteAPI(apiID)
+		if apiID == "" || aws.ToString(imported.Name) != "ImportedApi" || aws.ToString(imported.Version) != "9.9.9" {
+			return fmt.Errorf("imported metadata mismatch: %+v", imported)
+		}
+
+		resources, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+			RestApiId: aws.String(apiID), Limit: aws.Int32(500), Embed: []string{"methods"},
+		})
+		if err != nil {
+			return fmt.Errorf("get resources: %v", err)
+		}
+		byPath := make(map[string]types.Resource)
+		for _, res := range resources.Items {
+			byPath[aws.ToString(res.Path)] = res
+		}
+		team, ok := byPath["/team"]
+		if !ok {
+			return fmt.Errorf("basePath segment not imported as a resource: %v", byPath)
+		}
+		if aws.ToString(team.ParentId) != aws.ToString(byPath["/"].Id) {
+			return fmt.Errorf("basePath resource not linked to the root")
+		}
+		orders, ok := byPath["/team/orders/{id}"]
+		if !ok {
+			return fmt.Errorf("declared path not imported: %v", byPath)
+		}
+		if aws.ToString(orders.ParentId) != aws.ToString(byPath["/team/orders"].Id) {
+			return fmt.Errorf("intermediate resource not linked as parent")
+		}
+		get, ok := orders.ResourceMethods["GET"]
+		if !ok {
+			return fmt.Errorf("GET operation not imported: %v", orders.ResourceMethods)
+		}
+		if aws.ToString(get.OperationName) != "GetOrder" || !aws.ToBool(get.ApiKeyRequired) {
+			return fmt.Errorf("operation payload mismatch: %+v", get)
+		}
+		if get.MethodIntegration == nil || aws.ToString(get.MethodIntegration.HttpMethod) != "POST" {
+			return fmt.Errorf("integration not imported: %+v", get.MethodIntegration)
+		}
+		models, err := tc.allModels(apiID)
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, m := range models {
+			if aws.ToString(m.Name) == "OrderImport" {
+				found = strings.Contains(aws.ToString(m.Schema), `"id"`)
+			}
+		}
+		if !found {
+			return fmt.Errorf("definition not imported as a model: %+v", models)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "PutRestApi_MergeOverwrite", func() error {
+		imported, err := tc.client.ImportRestApi(tc.ctx, &apigateway.ImportRestApiInput{
+			Body: []byte(`{"swagger":"2.0","info":{"title":"MergeBase"},"paths":{"/orig":{"get":{"operationId":"OrigGet","responses":{"200":{"description":"ok"}}}}}}`),
+		})
+		if err != nil {
+			return err
+		}
+		apiID := aws.ToString(imported.Id)
+		defer tc.deleteAPI(apiID)
+
+		paths := func() (map[string]bool, error) {
+			resources, err := tc.client.GetResources(tc.ctx, &apigateway.GetResourcesInput{
+				RestApiId: aws.String(apiID), Limit: aws.Int32(500),
+			})
+			if err != nil {
+				return nil, err
+			}
+			found := make(map[string]bool)
+			for _, res := range resources.Items {
+				found[aws.ToString(res.Path)] = true
+			}
+			return found, nil
+		}
+
+		merged, err := tc.client.PutRestApi(tc.ctx, &apigateway.PutRestApiInput{
+			RestApiId: aws.String(apiID),
+			Mode:      types.PutModeMerge,
+			Body:      []byte(`{"swagger":"2.0","info":{"title":"OtherTitle"},"paths":{"/added":{"post":{"operationId":"AddedPost","responses":{"200":{"description":"ok"}}}}}}`),
+		})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(merged.Name) != "MergeBase" {
+			return fmt.Errorf("merge renamed the API: %v", merged.Name)
+		}
+		found, err := paths()
+		if err != nil {
+			return err
+		}
+		if !found["/orig"] || !found["/added"] {
+			return fmt.Errorf("merge did not keep both paths: %v", found)
+		}
+
+		overwritten, err := tc.client.PutRestApi(tc.ctx, &apigateway.PutRestApiInput{
+			RestApiId: aws.String(apiID),
+			Mode:      types.PutModeOverwrite,
+			Body:      []byte(`{"swagger":"2.0","info":{"title":"FreshTitle"},"paths":{"/fresh":{"get":{"operationId":"FreshGet","responses":{"200":{"description":"ok"}}}}}}`),
+		})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(overwritten.Id) != apiID {
+			return fmt.Errorf("overwrite changed the API id")
+		}
+		found, err = paths()
+		if err != nil {
+			return err
+		}
+		if found["/orig"] || found["/added"] || !found["/fresh"] {
+			return fmt.Errorf("overwrite did not replace the definition: %v", found)
 		}
 		return nil
 	}))

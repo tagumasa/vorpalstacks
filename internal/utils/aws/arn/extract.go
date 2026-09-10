@@ -199,6 +199,30 @@ func ParseStreamARN(arn string) string {
 	return ""
 }
 
+// ExtractAPIGatewayFunctionRef parses an API Gateway Lambda invocation URI
+// (arn:partition:apigateway:region:lambda:path/2015-03-31/functions/{ref}/invocations)
+// and returns the function reference between the functions path segment and
+// the invocations suffix — a function ARN, partial ARN, or function name.
+// ok is false when the URI is not an invocation URI of that grammar.
+func ExtractAPIGatewayFunctionRef(uri string) (ref string, ok bool) {
+	parsed, err := ParseARN(uri)
+	if err != nil || parsed.Service != "apigateway" {
+		return "", false
+	}
+	if parsed.AccountID != "lambda" || !strings.HasPrefix(parsed.Resource, "path/2015-03-31/functions/") {
+		return "", false
+	}
+	rest := strings.TrimPrefix(parsed.Resource, "path/2015-03-31/functions/")
+	if !strings.HasSuffix(rest, "/invocations") {
+		return "", false
+	}
+	ref = strings.TrimSuffix(rest, "/invocations")
+	if ref == "" {
+		return "", false
+	}
+	return ref, true
+}
+
 // ExtractBackupNameFromARN extracts the backup name from a DynamoDB backup
 // ARN (table/<table>/backup/<backup>).
 func ExtractBackupNameFromARN(arn string) string {

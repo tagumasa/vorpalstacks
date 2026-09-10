@@ -56,7 +56,7 @@ func (r *TestRunner) runAPIGatewayTestInvokeToSQS(ic *integClients, ts string) T
 				RestApiId: api.Id, ResourceId: resource.Id, HttpMethod: aws.String("POST"),
 				Type:                  apigwtypes.IntegrationTypeAws,
 				IntegrationHttpMethod: aws.String("POST"),
-				Uri:                   aws.String(fmt.Sprintf("arn:aws:apigateway:%s:sqs:path/000000000000/%s", ic.region, queueName)),
+				Uri:                   aws.String(fmt.Sprintf("arn:aws:apigateway:%s:sqs:path/%s/%s", ic.region, ic.accountID, queueName)),
 			})
 			return err
 		}},

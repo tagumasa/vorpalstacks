@@ -288,3 +288,73 @@ func TestListMultipartUploadsMarkerSemantics(t *testing.T) {
 		t.Fatalf("deleted-pair-marker listing = %q, want %q", got, want)
 	}
 }
+
+// ListParts returns the parts and the upload record they were read from in
+// one result, so a caller renders Initiator, Owner and StorageClass without
+// a second lookup that an interleaved abort could fail after the page was
+// already assembled. A valid uploadId under the wrong key addresses no
+// upload and reports ErrUploadNotFound.
+func TestListPartsReturnsUploadRecordAndParts(t *testing.T) {
+	store, _ := newMultipartTestStore(t)
+	upload := createTestUpload(t, store, "bkt", "key.txt")
+	for _, pn := range []int{1, 2} {
+		if _, err := store.UploadPart(context.Background(), "bkt", "key.txt", upload.UploadID, pn, strings.NewReader("x"), 0, 1, nil, nil); err != nil {
+			t.Fatalf("UploadPart(%d): %v", pn, err)
+		}
+	}
+
+	first, err := store.ListParts(context.Background(), "bkt", "key.txt", upload.UploadID, 0, 1)
+	if err != nil {
+		t.Fatalf("ListParts(first page): %v", err)
+	}
+	if first.Upload == nil {
+		t.Fatal("ListParts returned no upload record with the parts")
+	}
+	if first.Upload.UploadID != upload.UploadID || first.Upload.BucketName != "bkt" || first.Upload.Key != "key.txt" {
+		t.Fatalf("record identity = %s/%s/%s, want %s/bkt/key.txt", first.Upload.UploadID, first.Upload.BucketName, first.Upload.Key, upload.UploadID)
+	}
+	if len(first.Parts) != 1 || first.Parts[0].PartNumber != 1 {
+		t.Fatalf("first page parts = %v, want part 1 only", first.Parts)
+	}
+	if !first.IsTruncated || first.NextPartNumberMarker != 1 {
+		t.Fatalf("first page truncated = %v marker = %d, want true/1", first.IsTruncated, first.NextPartNumberMarker)
+	}
+
+	second, err := store.ListParts(context.Background(), "bkt", "key.txt", upload.UploadID, first.NextPartNumberMarker, 1)
+	if err != nil {
+		t.Fatalf("ListParts(second page): %v", err)
+	}
+	if second.Upload == nil || second.Upload.UploadID != upload.UploadID {
+		t.Fatal("second page carries no upload record")
+	}
+	if len(second.Parts) != 1 || second.Parts[0].PartNumber != 2 || second.IsTruncated {
+		t.Fatalf("second page = %v truncated = %v, want part 2 only, not truncated", second.Parts, second.IsTruncated)
+	}
+
+	if _, err := store.ListParts(context.Background(), "bkt", "other.txt", upload.UploadID, 0, 100); !errors.Is(err, ErrUploadNotFound) {
+		t.Fatalf("ListParts(wrong key) = %v, want ErrUploadNotFound", err)
+	}
+}
+
+// A missing upload is ErrUploadNotFound whatever the page size: the record
+// is resolved before the empty-page branch, so the not-found outcome does
+// not depend on the caller making a second lookup.
+func TestListPartsZeroMaxPartsMissingUploadIsNoSuchUpload(t *testing.T) {
+	store, _ := newMultipartTestStore(t)
+
+	if _, err := store.ListParts(context.Background(), "bkt", "key.txt", "no-such-upload", 0, 0); !errors.Is(err, ErrUploadNotFound) {
+		t.Fatalf("ListParts(missing upload, zero page) = %v, want ErrUploadNotFound", err)
+	}
+
+	upload := createTestUpload(t, store, "bkt", "key.txt")
+	empty, err := store.ListParts(context.Background(), "bkt", "key.txt", upload.UploadID, 0, 0)
+	if err != nil {
+		t.Fatalf("ListParts(existing upload, zero page): %v", err)
+	}
+	if len(empty.Parts) != 0 || empty.IsTruncated {
+		t.Fatalf("zero-page result = %v truncated = %v, want an empty non-truncated page", empty.Parts, empty.IsTruncated)
+	}
+	if empty.Upload == nil || empty.Upload.UploadID != upload.UploadID {
+		t.Fatal("zero-page result carries no upload record")
+	}
+}

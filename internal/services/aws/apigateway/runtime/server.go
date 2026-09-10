@@ -6,6 +6,7 @@ import (
 	cryptorand "crypto/rand"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -28,6 +29,11 @@ import (
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/utils/aws/arn"
 )
+
+// errStageRateLimit is the message API Gateway returns on the wire when a
+// stage method-settings throttle rejects a request; the sentinel keeps it
+// errors.Is-matchable.
+var errStageRateLimit = errors.New("Rate limit exceeded")
 
 // defaultMaxRequestBodyBytes is the AWS default payload limit for execute-api
 // requests (10 MiB); operators override it via the
@@ -69,12 +75,6 @@ func NewRuntimeServer(store *apigatewaystore.RestApiStore, usageStore *apigatewa
 		authenticator:    auth.NewAPIKeyAuthenticator(usageStore),
 		lambdaAuthorizer: auth.NewLambdaAuthorizer(bus, store),
 	}
-}
-
-// SetEventBus injects the event bus for cross-service delivery.
-func (s *RuntimeServer) SetEventBus(bus eventbus.ServiceBus) {
-	s.bus = bus
-	s.executorFactory.SetEventBus(bus)
 }
 
 // SetAccountID stores the AWS account ID used for access log ARN parsing.
@@ -579,7 +579,7 @@ func (s *RuntimeServer) checkStageThrottling(stage *apigatewaystore.Stage, match
 		limiter.Update(rate, burst)
 	}
 	if !limiter.Allow() {
-		return fmt.Errorf("Rate limit exceeded")
+		return errStageRateLimit
 	}
 	return nil
 }
@@ -633,15 +633,7 @@ func (s *RuntimeServer) sendError(w http.ResponseWriter, statusCode int, message
 // originates from a loopback address (i.e. a local reverse proxy such
 // as nginx). This prevents spoofing by remote clients.
 func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		// RemoteAddr may be a bare IP without a port.
-		if ip := net.ParseIP(r.RemoteAddr); ip != nil {
-			host = ip.String()
-		} else {
-			host = r.RemoteAddr
-		}
-	}
+	host := remoteAddrHost(r.RemoteAddr)
 
 	// Trust X-Forwarded-For only from loopback (local reverse proxy).
 	if isLoopback(host) {

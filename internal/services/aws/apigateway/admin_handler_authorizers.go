@@ -2,7 +2,6 @@ package apigateway
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/protobuf/proto"
 
 	"connectrpc.com/connect"
@@ -56,7 +55,7 @@ func (h *AdminHandler) GetAuthorizers(ctx context.Context, req *connect.Request[
 	limit := int(req.Msg.GetLimit())
 	start, end, nextPos, ok := paginateAdminList(len(authorizers), req.Msg.GetPosition(), limit)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.GetPosition()))
+		return nil, invalidAdminPositionError(req.Msg.GetPosition())
 	}
 
 	items := make([]*pb.Authorizer, 0, end-start)

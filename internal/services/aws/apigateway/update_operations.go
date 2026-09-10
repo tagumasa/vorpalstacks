@@ -24,7 +24,7 @@ func (s *APIGatewayService) UpdateResource(ctx context.Context, reqCtx *request.
 	if err != nil {
 		return nil, err
 	}
-	return s.toResourceResponse(resource), nil
+	return s.toResourceResponse(resource, false), nil
 }
 
 // UpdateMethod updates an existing method in API Gateway.

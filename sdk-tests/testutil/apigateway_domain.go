@@ -35,13 +35,31 @@ func (r *TestRunner) createTestCertArn(ctx context.Context) (string, error) {
 	return *resp.CertificateArn, nil
 }
 
+// deleteTestCertArn removes an ACM certificate imported for one test run,
+// so repeated runs do not accumulate imported certificates.
+func (r *TestRunner) deleteTestCertArn(ctx context.Context, arn string) {
+	if arn == "" {
+		return
+	}
+	cfg, err := config.LoadDefaultAWSConfig(config.AWSConfig{
+		Endpoint: r.endpoint,
+		Region:   r.region,
+	})
+	if err != nil {
+		return
+	}
+	_, _ = acm.NewFromConfig(cfg).DeleteCertificate(ctx, &acm.DeleteCertificateInput{
+		CertificateArn: aws.String(arn),
+	})
+}
+
 // cleanupStaleDomainNames deletes accumulated test-residue domain names from
 // previous test runs. When the test runner is interrupted (SIGKILL, timeout),
 // deferred cleanup may not execute, leaving domains behind. Over many sessions
 // these accumulate and push newly created domains beyond the first page of
 // GetDomainNames, causing false failures.
 func (r *TestRunner) cleanupStaleDomainNames(tc *apigwTestContext) {
-	prefixes := []string{"test-", "none-", "full-lifecycle-"}
+	prefixes := []string{"test-", "none-", "full-lifecycle-", "dup-"}
 	items, err := tc.allDomainNames()
 	if err != nil {
 		return
@@ -91,11 +109,17 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 			})
 		}
 	}()
+	// The imported certificate is per-run state: remove it once the domain
+	// release defer above has run (defers run last-registered-first).
+	defer r.deleteTestCertArn(ctx, certArn)
 	results = append(results, r.RunTest("apigateway", "CreateDomainName", func() error {
 		domain := fmt.Sprintf("test-%d.example.com", time.Now().UnixNano())
 		resp, err := client.CreateDomainName(ctx, &apigateway.CreateDomainNameInput{
 			DomainName:     aws.String(domain),
 			CertificateArn: aws.String(certArn),
+			EndpointConfiguration: &types.EndpointConfiguration{
+				Types: []types.EndpointType{"EDGE"},
+			},
 			Tags: map[string]string{
 				"domain": "test",
 			},
@@ -127,6 +151,41 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		return fmt.Errorf("created domain %q not found in list", domainName)
 	}))
 
+	results = append(results, r.RunTest("apigateway", "GetDomainNames_ResourceOwner", func() error {
+		if err := tc.require(domainName); err != nil {
+			return err
+		}
+		// Every domain on this single-account platform is SELF-owned;
+		// OTHER_ACCOUNTS matches none.
+		selfOwned, err := tc.client.GetDomainNames(tc.ctx, &apigateway.GetDomainNamesInput{
+			ResourceOwner: types.ResourceOwnerSelf,
+			Limit:         aws.Int32(500),
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, item := range selfOwned.Items {
+			if aws.ToString(item.DomainName) == domainName {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("SELF listing missing the created domain, got %d items", len(selfOwned.Items))
+		}
+		otherAccounts, err := tc.client.GetDomainNames(tc.ctx, &apigateway.GetDomainNamesInput{
+			ResourceOwner: types.ResourceOwnerOtherAccounts,
+			Limit:         aws.Int32(500),
+		})
+		if err != nil {
+			return err
+		}
+		if len(otherAccounts.Items) != 0 || otherAccounts.Position != nil {
+			return fmt.Errorf("OTHER_ACCOUNTS matched %d domains on a single-account platform", len(otherAccounts.Items))
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("apigateway", "GetDomainName", func() error {
 		if err := tc.require(domainName); err != nil {
 			return err
@@ -139,6 +198,19 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		}
 		if resp.DomainName == nil || *resp.DomainName != domainName {
 			return fmt.Errorf("domain name mismatch, got %v", resp.DomainName)
+		}
+		if aws.ToString(resp.CertificateArn) != certArn {
+			return fmt.Errorf("certificateArn mismatch, got %v", resp.CertificateArn)
+		}
+		if resp.Tags["domain"] != "test" {
+			return fmt.Errorf("tags mismatch, got %v", resp.Tags)
+		}
+		if resp.EndpointConfiguration == nil || len(resp.EndpointConfiguration.Types) == 0 ||
+			resp.EndpointConfiguration.Types[0] != types.EndpointTypeEdge {
+			return fmt.Errorf("edge endpointConfiguration mismatch, got %+v", resp.EndpointConfiguration)
+		}
+		if p := string(resp.SecurityPolicy); p != "TLS_1_2" {
+			return fmt.Errorf("securityPolicy must default to TLS_1_2 on creation, got %q", p)
 		}
 		return nil
 	}))
@@ -162,6 +234,57 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		}
 		if resp.CertificateName == nil || *resp.CertificateName != "updated-cert" {
 			return fmt.Errorf("certificateName not updated, got %v", resp.CertificateName)
+		}
+
+		// The securityPolicy row: replace between the documented policies.
+		spResp, err := client.UpdateDomainName(ctx, &apigateway.UpdateDomainNameInput{
+			DomainName: aws.String(domainName),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/securityPolicy"), Value: aws.String("TLS_1_2")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("securityPolicy replace: %v", err)
+		}
+		if string(spResp.SecurityPolicy) != "TLS_1_2" {
+			return fmt.Errorf("securityPolicy not applied, got %v", spResp.SecurityPolicy)
+		}
+
+		// The mutual TLS rows: truststoreUri and truststoreVersion accept
+		// add, replace and remove.
+		mtlsResp, err := client.UpdateDomainName(ctx, &apigateway.UpdateDomainNameInput{
+			DomainName: aws.String(domainName),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpAdd, Path: aws.String("/mutualTlsAuthentication/truststoreUri"), Value: aws.String("s3://my-bucket/truststore.pem")},
+				{Op: types.OpAdd, Path: aws.String("/mutualTlsAuthentication/truststoreVersion"), Value: aws.String("2")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("mutualTls add: %v", err)
+		}
+		if mtlsResp.MutualTlsAuthentication == nil ||
+			aws.ToString(mtlsResp.MutualTlsAuthentication.TruststoreUri) != "s3://my-bucket/truststore.pem" ||
+			aws.ToString(mtlsResp.MutualTlsAuthentication.TruststoreVersion) != "2" {
+			return fmt.Errorf("mutualTls rows not applied, got %+v", mtlsResp.MutualTlsAuthentication)
+		}
+		_, err = client.UpdateDomainName(ctx, &apigateway.UpdateDomainNameInput{
+			DomainName: aws.String(domainName),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpRemove, Path: aws.String("/mutualTlsAuthentication/truststoreUri")},
+				{Op: types.OpRemove, Path: aws.String("/mutualTlsAuthentication/truststoreVersion")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("mutualTls remove: %v", err)
+		}
+		mtlsGet, err := client.GetDomainName(ctx, &apigateway.GetDomainNameInput{DomainName: aws.String(domainName)})
+		if err != nil {
+			return err
+		}
+		if mtlsGet.MutualTlsAuthentication != nil &&
+			(aws.ToString(mtlsGet.MutualTlsAuthentication.TruststoreUri) != "" ||
+				aws.ToString(mtlsGet.MutualTlsAuthentication.TruststoreVersion) != "") {
+			return fmt.Errorf("mutualTls remove not applied, got %+v", mtlsGet.MutualTlsAuthentication)
 		}
 		return nil
 	}))
@@ -239,9 +362,24 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		if err != nil {
 			return err
 		}
+		// The domain was created EDGE, so adding REGIONAL follows the
+		// documented migration semantics: both types coexist until the
+		// cutover remove completes the transition.
 		if getResp.EndpointConfiguration == nil ||
-			len(getResp.EndpointConfiguration.Types) != 1 || getResp.EndpointConfiguration.Types[0] != "REGIONAL" {
-			return fmt.Errorf("endpoint types not applied, got %+v", getResp.EndpointConfiguration)
+			len(getResp.EndpointConfiguration.Types) != 2 {
+			return fmt.Errorf("endpoint types add did not append REGIONAL to EDGE, got %+v", getResp.EndpointConfiguration)
+		}
+		sawEdge, sawRegional := false, false
+		for _, t := range getResp.EndpointConfiguration.Types {
+			if t == types.EndpointTypeEdge {
+				sawEdge = true
+			}
+			if t == types.EndpointTypeRegional {
+				sawRegional = true
+			}
+		}
+		if !sawEdge || !sawRegional {
+			return fmt.Errorf("expected EDGE and REGIONAL to coexist, got %+v", getResp.EndpointConfiguration)
 		}
 		if string(getResp.EndpointConfiguration.IpAddressType) != "dualstack" {
 			return fmt.Errorf("ipAddressType not applied, got %+v", getResp.EndpointConfiguration)
@@ -300,6 +438,7 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		if err != nil {
 			return fmt.Errorf("import regional certificate: %v", err)
 		}
+		defer r.deleteTestCertArn(ctx, regionalArn)
 		_, err = client.UpdateDomainName(ctx, &apigateway.UpdateDomainNameInput{
 			DomainName: aws.String(domainName),
 			PatchOperations: []types.PatchOperation{
@@ -367,6 +506,52 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		if len(resp.Items) == 0 {
 			return fmt.Errorf("expected at least 1 base path mapping")
 		}
+
+		// A forced multi-page walk: two more mappings bring the domain past
+		// a two-mapping page limit, with every page's position fed back.
+		for _, bp := range []string{"pg1", "pg2"} {
+			if _, err := client.CreateBasePathMapping(ctx, &apigateway.CreateBasePathMappingInput{
+				DomainName: aws.String(domainName),
+				RestApiId:  aws.String(tc.apiID),
+				BasePath:   aws.String(bp),
+				Stage:      aws.String("prod"),
+			}); err != nil {
+				return fmt.Errorf("create mapping %s: %v", bp, err)
+			}
+			defer client.DeleteBasePathMapping(ctx, &apigateway.DeleteBasePathMappingInput{
+				DomainName: aws.String(domainName), BasePath: aws.String(bp),
+			})
+		}
+		want := map[string]bool{"v1": true, "pg1": true, "pg2": true}
+		got := map[string]bool{}
+		var position *string
+		pages := 0
+		for {
+			page, err := client.GetBasePathMappings(ctx, &apigateway.GetBasePathMappingsInput{
+				DomainName: aws.String(domainName),
+				Limit:      aws.Int32(2),
+				Position:   position,
+			})
+			if err != nil {
+				return fmt.Errorf("page %d: %v", pages, err)
+			}
+			pages++
+			for _, m := range page.Items {
+				got[aws.ToString(m.BasePath)] = true
+			}
+			position = page.Position
+			if position == nil {
+				break
+			}
+		}
+		if pages < 2 {
+			return fmt.Errorf("expected the page limit to force multiple pages, got %d", pages)
+		}
+		for bp := range want {
+			if !got[bp] {
+				return fmt.Errorf("created mapping %q missing from the walk, got %v", bp, got)
+			}
+		}
 		return nil
 	}))
 
@@ -425,6 +610,41 @@ func (r *TestRunner) runAPIGatewayDomainTests(tc *apigwTestContext) []TestResult
 		}
 		if aws.ToString(resp.RestApiId) != currentAPI {
 			return fmt.Errorf("restapiId replace not applied, got %v", resp.RestApiId)
+		}
+
+		// A real retarget: the documented example flow moves the mapping to
+		// another API; moving it back keeps the later tests addressing this
+		// API through "v1".
+		otherAPI, _, err := tc.createOwnAPI("BpmRetgt")
+		if err != nil {
+			return fmt.Errorf("create retarget api: %v", err)
+		}
+		defer tc.deleteAPI(otherAPI)
+		resp, err = client.UpdateBasePathMapping(ctx, &apigateway.UpdateBasePathMappingInput{
+			DomainName: aws.String(domainName),
+			BasePath:   aws.String("v1"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/restapiId"), Value: aws.String(otherAPI)},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("retarget to another api: %v", err)
+		}
+		if aws.ToString(resp.RestApiId) != otherAPI {
+			return fmt.Errorf("restapiId retarget not applied, got %v", resp.RestApiId)
+		}
+		resp, err = client.UpdateBasePathMapping(ctx, &apigateway.UpdateBasePathMappingInput{
+			DomainName: aws.String(domainName),
+			BasePath:   aws.String("v1"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/restapiId"), Value: aws.String(currentAPI)},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("retarget back: %v", err)
+		}
+		if aws.ToString(resp.RestApiId) != currentAPI {
+			return fmt.Errorf("restapiId restore not applied, got %v", resp.RestApiId)
 		}
 
 		resp, err = client.UpdateBasePathMapping(ctx, &apigateway.UpdateBasePathMappingInput{

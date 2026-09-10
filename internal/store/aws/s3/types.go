@@ -491,6 +491,18 @@ type MultipartUploadListResult struct {
 	IsTruncated        bool
 }
 
+// ListPartsResult represents the result of listing the parts of a multipart
+// upload. Upload is the record the parts were read from, so callers render
+// Initiator, Owner and StorageClass from the same read that produced the
+// parts — no second lookup that an interleaved abort could fail after the
+// page was already assembled.
+type ListPartsResult struct {
+	Upload               *MultipartUpload
+	Parts                []ObjectPart
+	NextPartNumberMarker int
+	IsTruncated          bool
+}
+
 // ObjectLockConfiguration represents the object lock configuration for an S3 bucket.
 type ObjectLockConfiguration struct {
 	ObjectLockEnabled string          `json:"object_lock_enabled,omitempty"`

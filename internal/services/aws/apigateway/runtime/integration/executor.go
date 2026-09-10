@@ -72,11 +72,6 @@ func NewExecutorFactory(bus eventbus.ServiceBus) *ExecutorFactory {
 	}
 }
 
-// SetEventBus sets the event bus for cross-service delivery.
-func (f *ExecutorFactory) SetEventBus(bus eventbus.ServiceBus) {
-	f.bus = bus
-}
-
 // SetAccountAndRegion sets the account ID and region for ARN construction.
 func (f *ExecutorFactory) SetAccountAndRegion(accountID, region string) {
 	f.accountID = accountID

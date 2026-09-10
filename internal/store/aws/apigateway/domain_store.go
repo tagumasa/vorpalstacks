@@ -19,7 +19,6 @@ var errDomainStopIteration = errors.New("stop domain iteration")
 type DomainStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
-	accountId  string
 	region     string
 	mu         sync.Mutex
 }
@@ -34,7 +33,6 @@ func NewDomainStore(store storage.BasicStorage, accountId, region string) *Domai
 	return &DomainStore{
 		BaseStore:  common.NewBaseStore(bucket, "apigateway-domains"),
 		arnBuilder: NewARNBuilder(accountId, region),
-		accountId:  accountId,
 		region:     region,
 	}
 }
@@ -70,10 +68,10 @@ func (s *DomainStore) CreateDomainName(domain *DomainName) (*DomainName, error) 
 	domain.DomainNameArn = s.arnBuilder.DomainNameArn(domain.DomainName)
 
 	domain.DistributionDomainName = fmt.Sprintf("d%s.cloudfront.net", generateId("", 22))
-	domain.DistributionHostedZoneId = "Z2FDTNDATAQYW2"
+	domain.DistributionHostedZoneId = EdgeHostedZoneID
 
 	domain.RegionalDomainName = fmt.Sprintf("d-%s.execute-api.%s.amazonaws.com", domainId, s.region)
-	domain.RegionalHostedZoneId = "Z2OJLY3DKBEYEU"
+	domain.RegionalHostedZoneId = RegionalHostedZoneID
 
 	if err := s.Put("domain#"+domain.DomainName, domain); err != nil {
 		return nil, err
@@ -105,7 +103,7 @@ func (s *DomainStore) GetDomainNameById(domainNameId string) (*DomainName, error
 		}
 		return nil
 	})
-	if err != nil && err != errDomainStopIteration {
+	if err != nil && !errors.Is(err, errDomainStopIteration) {
 		return nil, err
 	}
 	if found == nil {
@@ -290,7 +288,9 @@ func (s *DomainStore) RemoveBasePathMappingsForApi(restApiId string) error {
 	// Deletions run after the walk so the iterator never observes its own
 	// writes.
 	for _, t := range targets {
-		_ = s.DeleteBasePathMapping(t.domain, t.basePath)
+		if err := s.DeleteBasePathMapping(t.domain, t.basePath); err != nil {
+			logs.Warn("failed to delete base path mapping during cascade", logs.String("domain", t.domain), logs.String("basePath", t.basePath), logs.Err(err))
+		}
 	}
 	return nil
 }

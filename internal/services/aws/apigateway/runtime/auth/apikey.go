@@ -15,6 +15,10 @@ import (
 	storagecommon "vorpalstacks/internal/store/aws/common"
 )
 
+// usageRecordTimeout bounds a single usage-recording write so the detached
+// goroutine cannot linger indefinitely.
+const usageRecordTimeout = 10 * time.Second
+
 // AuthError represents an authentication error with HTTP details.
 type AuthError struct {
 	Message  string
@@ -82,7 +86,7 @@ func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue stri
 		}
 	}
 
-	stageKey := fmt.Sprintf("%s/%s", restAPIID, stageName)
+	stageKey := apigatewaystore.StageKey(restAPIID, stageName)
 	if !slices.Contains(apiKey.StageKeys, stageKey) {
 		return &AuthError{
 			Message:  "API Key is not authorized for this stage",
@@ -95,6 +99,9 @@ func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue stri
 		return err
 	}
 
+	// Usage recording must not race the request's completion: it runs on
+	// its own bounded context so a cancelled or disconnected request
+	// still leaves its usage accounted.
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -103,7 +110,9 @@ func (a *APIKeyAuthenticator) Authenticate(ctx context.Context, apiKeyValue stri
 					logs.Any("panic", r))
 			}
 		}()
-		a.recordUsage(ctx, apiKey, restAPIID, stageName)
+		recordCtx, cancel := context.WithTimeout(context.Background(), usageRecordTimeout)
+		defer cancel()
+		a.recordUsage(recordCtx, apiKey, restAPIID, stageName)
 	}()
 
 	return nil
@@ -128,7 +137,11 @@ func (a *APIKeyAuthenticator) checkUsageQuota(ctx context.Context, apiKey *apiga
 					HTTPCode: http.StatusTooManyRequests,
 				}
 			}
-			if totalCount >= plan.Quota.Limit {
+			// A remaining-quota override granted by UpdateUsage raises the
+			// effective limit until its quota period lapses.
+			effectiveLimit := plan.Quota.Limit + a.usageStore.ActiveQuotaExtension(
+				plan.Id, apiKey.Id, time.Now().Format("2006-01-02"))
+			if totalCount >= effectiveLimit {
 				return &AuthError{
 					Message:  "API Key quota exceeded",
 					Type:     "TooManyRequestsException",
@@ -154,53 +167,37 @@ func (a *APIKeyAuthenticator) checkUsageQuota(ctx context.Context, apiKey *apiga
 
 func (a *APIKeyAuthenticator) getQuotaUsageCount(planId, apiKeyId, period string) (int64, error) {
 	now := time.Now()
-	var totalCount int64
-
+	var dates []string
 	switch period {
 	case "DAY":
-		today := now.Format("2006-01-02")
-		usage, err := a.usageStore.GetUsage(planId, apiKeyId, today)
-		if err != nil {
-			if storagecommon.IsNotFound(err) {
-				return 0, nil
-			}
-			return 0, err
-		}
-		return usage.RequestCount, nil
-
+		dates = []string{now.Format("2006-01-02")}
 	case "WEEK":
 		for i := 0; i < 7; i++ {
-			date := now.AddDate(0, 0, -i).Format("2006-01-02")
-			usage, err := a.usageStore.GetUsage(planId, apiKeyId, date)
-			if err != nil {
-				if !storagecommon.IsNotFound(err) {
-					return 0, err
-				}
-				continue
-			}
-			totalCount += usage.RequestCount
+			dates = append(dates, now.AddDate(0, 0, -i).Format("2006-01-02"))
 		}
-		return totalCount, nil
-
 	case "MONTH":
 		year, month, _ := now.Date()
 		daysInMonth := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC).Day()
 		for day := 1; day <= daysInMonth; day++ {
-			date := time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
-			usage, err := a.usageStore.GetUsage(planId, apiKeyId, date)
-			if err != nil {
-				if !storagecommon.IsNotFound(err) {
-					return 0, err
-				}
-				continue
-			}
-			totalCount += usage.RequestCount
+			dates = append(dates, time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Format("2006-01-02"))
 		}
-		return totalCount, nil
-
 	default:
 		return 0, fmt.Errorf("unsupported quota period: %s", period)
 	}
+
+	// Days with no usage record simply contribute nothing to the count.
+	var totalCount int64
+	for _, date := range dates {
+		usage, err := a.usageStore.GetUsage(planId, apiKeyId, date)
+		if err != nil {
+			if !storagecommon.IsNotFound(err) {
+				return 0, err
+			}
+			continue
+		}
+		totalCount += usage.RequestCount
+	}
+	return totalCount, nil
 }
 
 func (a *APIKeyAuthenticator) getRateLimiter(apiKeyId string, rateLimit float64, burstLimit int64) *ratelimit.TokenBucket {

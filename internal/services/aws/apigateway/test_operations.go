@@ -65,7 +65,7 @@ func (s *APIGatewayService) TestInvokeMethod(ctx context.Context, reqCtx *reques
 	return s.testInvokeMethodCore(ctx, stores, apiId, resourceId, httpMethod, p)
 }
 
-// TestInvokeAuthorizer simulates an authoriser invocation for testing purposes.
+// TestInvokeAuthorizer simulates an authorizer invocation for testing purposes.
 func (s *APIGatewayService) TestInvokeAuthorizer(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
 	authorizerId := request.GetStringParam(req.Parameters, "authorizerId")

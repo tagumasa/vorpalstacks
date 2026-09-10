@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"errors"
+	"sort"
 	"strings"
 
 	"vorpalstacks/internal/store/aws/common"
@@ -93,7 +94,9 @@ func (s *RestApiStore) DeleteResource(apiId, resourceId string) error {
 	return s.updateLocked(api)
 }
 
-// ListResources returns all resources for a REST API.
+// ListResources returns all resources for a REST API ordered by path — a
+// deterministic total order, since pagination tokens are only meaningful
+// when successive listing calls agree on the order.
 func (s *RestApiStore) ListResources(apiId string) ([]*Resource, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
@@ -104,6 +107,7 @@ func (s *RestApiStore) ListResources(apiId string) ([]*Resource, error) {
 	for _, r := range api.Resources {
 		resources = append(resources, r)
 	}
+	sort.Slice(resources, func(i, j int) bool { return resources[i].Path < resources[j].Path })
 	return resources, nil
 }
 

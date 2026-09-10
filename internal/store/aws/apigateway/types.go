@@ -34,6 +34,19 @@ type RestApi struct {
 	RequestValidators         map[string]*RequestValidator `json:"request_validators,omitempty"`
 	Models                    map[string]*Model            `json:"models,omitempty"`
 	Authorizers               map[string]*Authorizer       `json:"authorizers,omitempty"`
+	GatewayResponses          map[string]*GatewayResponse  `json:"gateway_responses,omitempty"`
+}
+
+// GatewayResponse represents a customised gateway response of a REST API,
+// keyed by its response type.
+type GatewayResponse struct {
+	ResponseType       string            `json:"response_type"`
+	StatusCode         string            `json:"status_code,omitempty"`
+	ResponseParameters map[string]string `json:"response_parameters,omitempty"`
+	ResponseTemplates  map[string]string `json:"response_templates,omitempty"`
+	// DefaultResponse marks the platform-generated response; a response
+	// customised through the API is never the default one.
+	DefaultResponse bool `json:"default_response"`
 }
 
 // EndpointConfiguration defines the endpoint configuration for an API.
@@ -301,6 +314,12 @@ type ApiKey struct {
 	StageKeys       []string    `json:"stage_keys,omitempty"`
 	Tags            []types.Tag `json:"tags,omitempty"`
 	CustomerId      string      `json:"customer_id,omitempty"`
+}
+
+// StageKey renders the wire form of a stage key entry: the API id and the
+// stage name joined by a slash.
+func StageKey(apiId, stageName string) string {
+	return apiId + "/" + stageName
 }
 
 // UsagePlan defines a usage plan for API keys.

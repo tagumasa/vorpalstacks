@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/apigateway"
@@ -66,6 +67,41 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 		if resp.Schema == nil || *resp.Schema != `{"type":"object"}` {
 			return fmt.Errorf("schema mismatch, got %v", resp.Schema)
 		}
+
+		// flatten resolves $ref references to the API's other models into a
+		// self-contained schema.
+		if _, err := tc.client.CreateModel(tc.ctx, &apigateway.CreateModelInput{
+			RestApiId:   aws.String(tc.apiID),
+			Name:        aws.String("OrderModel"),
+			ContentType: aws.String("application/json"),
+			Schema:      aws.String(`{"type":"object","properties":{"user":{"$ref":"UserModel"}}}`),
+		}); err != nil {
+			return fmt.Errorf("create order model: %v", err)
+		}
+		defer tc.client.DeleteModel(tc.ctx, &apigateway.DeleteModelInput{
+			RestApiId: aws.String(tc.apiID), ModelName: aws.String("OrderModel"),
+		})
+		plain, err := tc.client.GetModel(tc.ctx, &apigateway.GetModelInput{
+			RestApiId: aws.String(tc.apiID),
+			ModelName: aws.String("OrderModel"),
+		})
+		if err != nil {
+			return err
+		}
+		if !strings.Contains(*plain.Schema, `"UserModel"`) {
+			return fmt.Errorf("unflattened schema lost its reference, got %v", plain.Schema)
+		}
+		flat, err := tc.client.GetModel(tc.ctx, &apigateway.GetModelInput{
+			RestApiId: aws.String(tc.apiID),
+			ModelName: aws.String("OrderModel"),
+			Flatten:   true,
+		})
+		if err != nil {
+			return err
+		}
+		if strings.Contains(*flat.Schema, `"UserModel"`) {
+			return fmt.Errorf("flattened schema still carries the reference, got %v", flat.Schema)
+		}
 		return nil
 	}))
 
@@ -89,6 +125,21 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 		}
 		if resp.Description == nil || *resp.Description != "updated model" {
 			return fmt.Errorf("description not updated, got %v", resp.Description)
+		}
+
+		// The /schema row: replace swaps the schema document.
+		schemaResp, err := tc.client.UpdateModel(tc.ctx, &apigateway.UpdateModelInput{
+			RestApiId: aws.String(tc.apiID),
+			ModelName: aws.String("UserModel"),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/schema"), Value: aws.String(`{"type":"array"}`)},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("schema row: %v", err)
+		}
+		if aws.ToString(schemaResp.Schema) != `{"type":"array"}` {
+			return fmt.Errorf("schema row not applied, got %v", schemaResp.Schema)
 		}
 
 		// The /description row documents replace only: remove rejects.
@@ -115,6 +166,15 @@ func (r *TestRunner) runAPIGatewayModelTests(tc *apigwTestContext) []TestResult 
 		}
 		if len(items) == 0 {
 			return fmt.Errorf("expected at least 1 model")
+		}
+		found := false
+		for _, m := range items {
+			if aws.ToString(m.Name) == "UserModel" {
+				found = true
+			}
+		}
+		if !found {
+			return fmt.Errorf("created model %q not found in list", "UserModel")
 		}
 		return nil
 	}))

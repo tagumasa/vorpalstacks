@@ -133,7 +133,7 @@ func (e *HTTPExecutor) Execute(ctx context.Context, req *IntegrationRequest) (*I
 						return nil, &IntegrationError{
 							Message:  fmt.Sprintf("Failed to apply response template: %v", tErr),
 							Type:     "InternalServerError",
-							HTTPCode: 500,
+							HTTPCode: http.StatusInternalServerError,
 						}
 					}
 					body = transformed

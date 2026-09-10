@@ -76,7 +76,7 @@ type ObjectStoreInterface interface {
 	CreateMultipartUpload(ctx context.Context, bucket, key, contentType string, metadata map[string]string, sseType SSEType, kmsKeyID, customerKeyMD5 string, sseMetadata *SSEObjectMetadata, plaintextDataKey []byte, storageClass ObjectStorageClass, acl *AccessControlPolicy) (*MultipartUpload, error)
 	GetMultipartUpload(uploadId string) (*MultipartUpload, error)
 	UploadPart(ctx context.Context, bucket, key, uploadId string, partNumber int, reader io.Reader, encryptedSize int64, plainSize int64, contentNonce, dataKey []byte) (*ObjectPart, error)
-	ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker, maxParts int) ([]ObjectPart, int, bool, error)
+	ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker, maxParts int) (*ListPartsResult, error)
 	CompleteMultipartUpload(ctx context.Context, bucket, key, uploadId string, parts []ObjectPart) (*Object, error)
 	AbortMultipartUpload(ctx context.Context, bucket, key, uploadId string) error
 	ListMultipartUploads(bucket, prefix, keyMarker, uploadIdMarker string, maxUploads int) (*MultipartUploadListResult, error)

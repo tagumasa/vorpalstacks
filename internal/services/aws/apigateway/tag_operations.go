@@ -25,8 +25,8 @@ func (s *APIGatewayService) UntagResource(ctx context.Context, reqCtx *request.R
 	return tagutil.HandleUntag(ctx, req, s.apiGatewayTagConfig(stores, req))
 }
 
-// ListTagsForResource lists tags for a resource in API Gateway.
-func (s *APIGatewayService) ListTagsForResource(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+// GetTags lists tags for a resource in API Gateway.
+func (s *APIGatewayService) GetTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err

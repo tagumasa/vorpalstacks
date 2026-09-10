@@ -170,7 +170,7 @@ func apiGatewayMapTagError(err error) error {
 }
 
 // apiGatewayTagConfig builds a TagHandlerConfig for the common tags framework.
-// The HTTP-path TagResource/UntagResource/ListTagsForResource handlers
+// The HTTP-path TagResource/UntagResource/GetTags handlers
 // delegate to tags.HandleTag/HandleUntag/HandleList using this config.
 func (s *APIGatewayService) apiGatewayTagConfig(stores *apiGatewayStores, req *request.ParsedRequest) tagutil.TagHandlerConfig {
 	return tagutil.TagHandlerConfig{

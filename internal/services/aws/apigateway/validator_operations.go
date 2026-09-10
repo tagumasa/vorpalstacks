@@ -163,12 +163,13 @@ func (s *APIGatewayService) GetModel(ctx context.Context, reqCtx *request.Reques
 	if modelName == "" {
 		modelName = getPathParam(req, "modelName")
 	}
+	flatten := request.GetBoolParam(req.Parameters, "flatten")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	model, err := s.getModelCore(stores, apiId, modelName)
+	model, err := s.getModelCore(stores, apiId, modelName, flatten)
 	if err != nil {
 		return nil, toApiGatewayError(err)
 	}

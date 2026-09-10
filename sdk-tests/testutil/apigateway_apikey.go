@@ -62,6 +62,65 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 			return fmt.Errorf("test-api-key not found")
 		}
 		apiKeyID = *found.Id
+
+		// nameQuery is a substring filter on key names; includeValues
+		// controls whether the response carries the key values.
+		byName, err := tc.client.GetApiKeys(tc.ctx, &apigateway.GetApiKeysInput{
+			NameQuery: aws.String("est-api-ke"),
+		})
+		if err != nil {
+			return err
+		}
+		if containsID(byName.Items, func(item *types.ApiKey) bool { return item.Id != nil && *item.Id == apiKeyID }) == nil {
+			return fmt.Errorf("nameQuery substring did not match the fixture key")
+		}
+		byMissing, err := tc.client.GetApiKeys(tc.ctx, &apigateway.GetApiKeysInput{
+			NameQuery: aws.String("no-such-key-name"),
+		})
+		if err != nil {
+			return err
+		}
+		if len(byMissing.Items) != 0 {
+			return fmt.Errorf("nameQuery with no match returned %d items", len(byMissing.Items))
+		}
+		withValues, err := tc.client.GetApiKeys(tc.ctx, &apigateway.GetApiKeysInput{
+			NameQuery:     aws.String("test-api-key"),
+			IncludeValues: aws.Bool(true),
+		})
+		if err != nil {
+			return err
+		}
+		if len(withValues.Items) == 0 || withValues.Items[0].Value == nil || *withValues.Items[0].Value != apiKeyValue {
+			return fmt.Errorf("includeValues did not return the key value, got %+v", withValues.Items)
+		}
+		withoutValues, err := tc.client.GetApiKeys(tc.ctx, &apigateway.GetApiKeysInput{
+			NameQuery: aws.String("test-api-key"),
+		})
+		if err != nil {
+			return err
+		}
+		if len(withoutValues.Items) == 0 || withoutValues.Items[0].Value != nil {
+			return fmt.Errorf("values must stay excluded without includeValues, got %+v", withoutValues.Items)
+		}
+
+		// customerId matches the key's customer identifier exactly.
+		customerResp, err := tc.client.CreateApiKey(tc.ctx, &apigateway.CreateApiKeyInput{
+			Name:       aws.String(tc.uniqueName("customer-key")),
+			CustomerId: aws.String("portal-123"),
+		})
+		if err != nil {
+			return fmt.Errorf("create customer key: %v", err)
+		}
+		defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: customerResp.Id})
+		byCustomer, err := tc.client.GetApiKeys(tc.ctx, &apigateway.GetApiKeysInput{
+			CustomerId: aws.String("portal-123"),
+		})
+		if err != nil {
+			return err
+		}
+		if len(byCustomer.Items) != 1 || byCustomer.Items[0].Id == nil || *byCustomer.Items[0].Id != *customerResp.Id {
+			return fmt.Errorf("customerId filter did not match exactly the customer key, got %+v", byCustomer.Items)
+		}
 		return nil
 	}))
 
@@ -104,6 +163,38 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 		}
 		if resp.Name == nil || *resp.Name != "updated-api-key" {
 			return fmt.Errorf("name not updated, got %v", resp.Name)
+		}
+
+		// The remaining scalar rows: description, enabled, and customerId.
+		scalarResp, err := tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/description"), Value: aws.String("row coverage")},
+				{Op: types.OpReplace, Path: aws.String("/enabled"), Value: aws.String("false")},
+				{Op: types.OpReplace, Path: aws.String("/customerId"), Value: aws.String("cust-123")},
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("scalar row patch: %v", err)
+		}
+		if aws.ToString(scalarResp.Description) != "row coverage" {
+			return fmt.Errorf("description row not applied, got %v", scalarResp.Description)
+		}
+		if scalarResp.Enabled {
+			return fmt.Errorf("enabled row not applied, got %v", scalarResp.Enabled)
+		}
+		if aws.ToString(scalarResp.CustomerId) != "cust-123" {
+			return fmt.Errorf("customerId row not applied, got %v", scalarResp.CustomerId)
+		}
+		// Re-enable the key so the later stage-association test exercises
+		// an active key.
+		if _, err := tc.client.UpdateApiKey(tc.ctx, &apigateway.UpdateApiKeyInput{
+			ApiKey: aws.String(apiKeyID),
+			PatchOperations: []types.PatchOperation{
+				{Op: types.OpReplace, Path: aws.String("/enabled"), Value: aws.String("true")},
+			},
+		}); err != nil {
+			return fmt.Errorf("re-enable: %v", err)
 		}
 
 		// The /labels row documents add and remove; ApiKey's only
@@ -247,6 +338,85 @@ func (r *TestRunner) runAPIGatewayApiKeyTests(tc *apigwTestContext) []TestResult
 
 		if !resp.Enabled {
 			return fmt.Errorf("expected enabled=true by default, got false")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("apigateway", "ImportApiKeys_CSV", func() error {
+		planID, err := tc.createOwnUsagePlan("importplan")
+		if err != nil {
+			return fmt.Errorf("create usage plan: %v", err)
+		}
+		defer tc.deleteUsagePlan(planID)
+
+		keyValue := "importedkey1234abcdefghij0123456789"
+		firstImport := "name,key,description,usageplanIds\n" +
+			"ImportedFirst," + keyValue + ",first description," + planID + "\n"
+		imported, err := tc.client.ImportApiKeys(tc.ctx, &apigateway.ImportApiKeysInput{
+			Format: types.ApiKeysFormatCsv,
+			Body:   []byte(firstImport),
+		})
+		if err != nil {
+			return err
+		}
+		defer tc.client.DeleteApiKey(tc.ctx, &apigateway.DeleteApiKeyInput{ApiKey: aws.String(keyValue)})
+		if len(imported.Ids) != 1 || imported.Ids[0] != keyValue {
+			return fmt.Errorf("imported ids = %v, want [%s]", imported.Ids, keyValue)
+		}
+
+		stored, err := tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{ApiKey: aws.String(keyValue)})
+		if err != nil {
+			return fmt.Errorf("get imported key: %v", err)
+		}
+		if aws.ToString(stored.Name) != "ImportedFirst" || aws.ToString(stored.Description) != "first description" {
+			return fmt.Errorf("imported key payload mismatch: %+v", stored)
+		}
+		keysResp, err := tc.client.GetUsagePlanKeys(tc.ctx, &apigateway.GetUsagePlanKeysInput{
+			UsagePlanId: aws.String(planID),
+		})
+		if err != nil {
+			return fmt.Errorf("get usage plan keys: %v", err)
+		}
+		associated := false
+		for _, k := range keysResp.Items {
+			if aws.ToString(k.Id) == keyValue {
+				associated = true
+			}
+		}
+		if !associated {
+			return fmt.Errorf("imported key not associated with the usage plan")
+		}
+
+		// Re-importing the same key value (re-referencing the plan)
+		// overwrites the stored key and reports the existing plan
+		// association as a warning.
+		secondImport := "name,key,description,usageplanIds\nImportedRenamed," + keyValue + ",second description," + planID + "\n"
+		reimported, err := tc.client.ImportApiKeys(tc.ctx, &apigateway.ImportApiKeysInput{
+			Format: types.ApiKeysFormatCsv,
+			Body:   []byte(secondImport),
+		})
+		if err != nil {
+			return err
+		}
+		if len(reimported.Ids) != 1 || len(reimported.Warnings) != 1 {
+			return fmt.Errorf("re-import ids/warnings = %v / %v", reimported.Ids, reimported.Warnings)
+		}
+		renamed, err := tc.client.GetApiKey(tc.ctx, &apigateway.GetApiKeyInput{ApiKey: aws.String(keyValue)})
+		if err != nil {
+			return err
+		}
+		if aws.ToString(renamed.Name) != "ImportedRenamed" || aws.ToString(renamed.Description) != "second description" {
+			return fmt.Errorf("re-import did not overwrite: %+v", renamed)
+		}
+
+		// With failonwarnings, an invalid row rejects the whole import.
+		_, err = tc.client.ImportApiKeys(tc.ctx, &apigateway.ImportApiKeysInput{
+			Format:         types.ApiKeysFormatCsv,
+			FailOnWarnings: true,
+			Body:           []byte("name,key\nGood," + keyValue + "\nBad,short\n"),
+		})
+		if aerr := AssertErrorContains(err, "BadRequestException"); aerr != nil {
+			return fmt.Errorf("expected BadRequestException with failonwarnings, got: %v", aerr)
 		}
 		return nil
 	}))

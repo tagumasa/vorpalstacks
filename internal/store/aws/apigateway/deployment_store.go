@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -20,14 +21,12 @@ func (s *RestApiStore) CreateDeployment(apiId string, deployment *Deployment) (*
 	}
 	deployment.RestApiId = apiId
 	deployment.CreatedDate = time.Now().UTC()
-	if deployment.ApiSummary == nil {
-		deployment.ApiSummary = make(map[string]interface{})
-	}
 	snapshot, err := CloneSnapshot(api)
 	if err != nil {
 		return nil, fmt.Errorf("clone snapshot: %w", err)
 	}
 	deployment.Snapshot = snapshot
+	deployment.ApiSummary = apiSummaryFromSnapshot(snapshot)
 
 	if api.Deployments == nil {
 		api.Deployments = make(map[string]*Deployment)
@@ -39,6 +38,29 @@ func (s *RestApiStore) CreateDeployment(apiId string, deployment *Deployment) (*
 	}
 
 	return deployment, nil
+}
+
+// apiSummaryFromSnapshot renders the PathToMapOfMethodSnapshot view of a
+// deployment snapshot: each resource path maps to its methods, each method
+// to the authorizationType/apiKeyRequired snapshot a deployment reader
+// inspects. The summary is derived from the same clone the deployment
+// persists, so the two can never disagree.
+func apiSummaryFromSnapshot(snapshot *DeploymentSnapshot) map[string]interface{} {
+	summary := make(map[string]interface{}, len(snapshot.Resources))
+	for _, resource := range snapshot.Resources {
+		if len(resource.ResourceMethods) == 0 {
+			continue
+		}
+		methods := make(map[string]interface{}, len(resource.ResourceMethods))
+		for verb, method := range resource.ResourceMethods {
+			methods[verb] = map[string]interface{}{
+				"authorizationType": method.AuthorizationType,
+				"apiKeyRequired":    method.ApiKeyRequired,
+			}
+		}
+		summary[resource.Path] = methods
+	}
+	return summary
 }
 
 // GetDeployment retrieves a deployment by API ID and deployment ID.
@@ -79,7 +101,10 @@ func (s *RestApiStore) DeleteDeployment(apiId, deploymentId string) error {
 	return s.updateLocked(api)
 }
 
-// ListDeployments returns all deployments for a REST API.
+// ListDeployments returns all deployments for a REST API in a deterministic
+// total order (newest first, id as the tiebreak): a page token is only
+// meaningful when two listing calls order equal-timestamp deployments the
+// same way.
 func (s *RestApiStore) ListDeployments(apiId string) ([]*Deployment, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
@@ -90,6 +115,12 @@ func (s *RestApiStore) ListDeployments(apiId string) ([]*Deployment, error) {
 	for _, d := range api.Deployments {
 		deployments = append(deployments, d)
 	}
+	sort.Slice(deployments, func(i, j int) bool {
+		if !deployments[i].CreatedDate.Equal(deployments[j].CreatedDate) {
+			return deployments[i].CreatedDate.After(deployments[j].CreatedDate)
+		}
+		return deployments[i].Id > deployments[j].Id
+	})
 	return deployments, nil
 }
 
@@ -207,7 +238,8 @@ func (s *RestApiStore) DeleteStage(apiId, stageName string) error {
 	return s.updateLocked(api)
 }
 
-// ListStages returns all stages for a REST API.
+// ListStages returns all stages for a REST API ordered by stage name — a
+// deterministic total order for stable pagination.
 func (s *RestApiStore) ListStages(apiId string) ([]*Stage, error) {
 	api, err := s.Get(apiId)
 	if err != nil {
@@ -218,5 +250,6 @@ func (s *RestApiStore) ListStages(apiId string) ([]*Stage, error) {
 	for _, st := range api.Stages {
 		stages = append(stages, st)
 	}
+	sort.Slice(stages, func(i, j int) bool { return stages[i].StageName < stages[j].StageName })
 	return stages, nil
 }

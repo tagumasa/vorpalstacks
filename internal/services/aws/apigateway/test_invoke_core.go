@@ -2,6 +2,7 @@ package apigateway
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -54,6 +55,8 @@ func (s *APIGatewayService) testInvokeMethodCore(
 
 	responseStatus := 200
 	var responseBody string
+	var responseHeaders map[string]string
+	var responseMultiValueHeaders map[string][]string
 	var logEntries []string
 
 	if method.MethodIntegration != nil {
@@ -86,6 +89,7 @@ func (s *APIGatewayService) testInvokeMethodCore(
 			Method:               httpMethod,
 			URI:                  mi.Uri,
 			Headers:              headers,
+			MultiValueHeaders:    multiValueHeaders,
 			Body:                 []byte(body),
 			PathParams:           make(map[string]string),
 			QueryParams:          make(map[string]string),
@@ -133,6 +137,8 @@ func (s *APIGatewayService) testInvokeMethodCore(
 			} else {
 				responseStatus = resp.StatusCode
 				responseBody = string(resp.Body)
+				responseHeaders = resp.Headers
+				responseMultiValueHeaders = resp.MultiValueHeaders
 				logEntries = append(logEntries, "Execution completed successfully")
 			}
 		}
@@ -153,17 +159,14 @@ func (s *APIGatewayService) testInvokeMethodCore(
 		"log":     logStr,
 		"latency": time.Since(startTime).Milliseconds(),
 	}
-	if len(headers) > 0 {
-		result["headers"] = headers
+	// The modelled header members carry the integration's HTTP response;
+	// the caller's request inputs stay on the request side of the
+	// simulation and no undeclared members are rendered.
+	if len(responseHeaders) > 0 {
+		result["headers"] = responseHeaders
 	}
-	if len(multiValueHeaders) > 0 {
-		result["multiValueHeaders"] = multiValueHeaders
-	}
-	if pathWithQueryString != "" {
-		result["pathWithQueryString"] = pathWithQueryString
-	}
-	if len(stageVariables) > 0 {
-		result["stageVariables"] = stageVariables
+	if len(responseMultiValueHeaders) > 0 {
+		result["multiValueHeaders"] = responseMultiValueHeaders
 	}
 
 	return result, nil
@@ -191,9 +194,7 @@ func (s *APIGatewayService) testInvokeAuthorizerCore(
 	}
 
 	headers := p.Headers
-	stageVariables := p.StageVariables
 	multiValueHeaders := p.MultiValueHeaders
-	additionalContext := p.AdditionalContext
 
 	result := map[string]interface{}{
 		"clientStatus": 200,
@@ -250,22 +251,47 @@ func (s *APIGatewayService) testInvokeAuthorizerCore(
 			"principalId": []string{"test-user"},
 		}
 		result["policy"] = buildTestPolicy(authorizer, apiId)
+		// Claims is the Cognito-path member: report the caller's own token
+		// claims, decoded without verification because this test-invoke path
+		// performs no user-pool validation.
+		if claims := jwtPayloadClaims(authHeader); len(claims) > 0 {
+			result["claims"] = claims
+		}
 	default:
 		result["clientStatus"] = 502
 		result["log"] = "Unsupported authorizer type: " + authorizer.Type
 	}
 
-	if len(headers) > 0 {
-		result["headers"] = headers
-	}
-	if len(stageVariables) > 0 {
-		result["stageVariables"] = stageVariables
-	}
-	if len(additionalContext) > 0 {
-		result["additionalContext"] = additionalContext
-	}
-
 	return result, nil
+}
+
+// jwtPayloadClaims extracts the claim set from a JWT's payload segment.
+// The signature is not verified: the claims report the caller's own token
+// in a diagnostic response and no authorization decision rests on them. A
+// malformed token yields nil.
+func jwtPayloadClaims(token string) map[string]string {
+	parts := strings.Split(strings.TrimSpace(token), ".")
+	if len(parts) != 3 {
+		return nil
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return nil
+	}
+	var raw map[string]interface{}
+	if err := json.Unmarshal(payload, &raw); err != nil {
+		return nil
+	}
+	claims := make(map[string]string, len(raw))
+	for k, v := range raw {
+		if s, ok := v.(string); ok {
+			claims[k] = s
+			continue
+		}
+		encoded, _ := json.Marshal(v)
+		claims[k] = string(encoded)
+	}
+	return claims
 }
 
 func buildTestPolicy(authorizer *apigateway.Authorizer, apiId string) string {

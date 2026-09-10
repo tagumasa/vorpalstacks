@@ -2,6 +2,7 @@ package request
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -10,32 +11,51 @@ func extractApiGatewayOperation(r *http.Request) string {
 	method := r.Method
 
 	if strings.HasPrefix(path, "/restapis") {
-		return extractRestApiOperation(path, method)
+		return extractRestApiOperation(path, method, r.URL.Query())
 	}
 	if strings.HasPrefix(path, "/apikeys") {
-		return extractApiKeyOperation(path, method)
+		return extractApiKeyOperation(path, method, r.URL.Query())
 	}
 	if strings.HasPrefix(path, "/usageplans") {
 		return extractUsagePlanOperation(path, method)
 	}
+	if strings.HasPrefix(path, "/sdktypes") {
+		if method == "GET" {
+			trimmed := strings.Trim(path, "/")
+			if trimmed == "sdktypes" {
+				return "GetSdkTypes"
+			}
+			return "GetSdkType"
+		}
+		return ""
+	}
 	if strings.HasPrefix(path, "/domainnames") {
 		return extractDomainNameOperation(path, method)
 	}
-	if strings.HasPrefix(path, "/tags/") {
+	if path == "/account" {
 		switch method {
-		case "POST", "PUT":
+		case "GET":
+			return "GetAccount"
+		case "PATCH":
+			return "UpdateAccount"
+		}
+		return ""
+	}
+	if TagsRouteService(path) == "apigateway" {
+		switch method {
+		case "PUT":
 			return "TagResource"
 		case "DELETE":
 			return "UntagResource"
 		case "GET":
-			return "ListTagsForResource"
+			return "GetTags"
 		}
 	}
 
 	return ""
 }
 
-func extractRestApiOperation(path, method string) string {
+func extractRestApiOperation(path, method string, query url.Values) string {
 	path = strings.TrimPrefix(path, "/restapis")
 
 	if path == "" || path == "/" {
@@ -43,6 +63,9 @@ func extractRestApiOperation(path, method string) string {
 		case "GET":
 			return "GetRestApis"
 		case "POST":
+			if query.Get("mode") == "import" {
+				return "ImportRestApi"
+			}
 			return "CreateRestApi"
 		}
 		return ""
@@ -60,6 +83,8 @@ func extractRestApiOperation(path, method string) string {
 		switch method {
 		case "GET":
 			return "GetRestApi"
+		case "PUT":
+			return "PutRestApi"
 		case "DELETE":
 			return "DeleteRestApi"
 		case "PATCH":
@@ -82,12 +107,35 @@ func extractRestApiOperation(path, method string) string {
 		return extractModelOperation(parts[2:], method)
 	case "authorizers":
 		return extractAuthorizerOperation(parts[2:], method)
+	case "gatewayresponses":
+		return extractGatewayResponseOperation(parts[2:], method)
 	case "tags":
 		if method == "GET" {
-			return "ListTagsForResource"
+			return "GetTags"
 		}
 	}
 
+	return ""
+}
+
+func extractGatewayResponseOperation(parts []string, method string) string {
+	if len(parts) == 0 || parts[0] == "" {
+		if method == "GET" {
+			return "GetGatewayResponses"
+		}
+		return ""
+	}
+
+	switch method {
+	case "GET":
+		return "GetGatewayResponse"
+	case "PUT":
+		return "PutGatewayResponse"
+	case "DELETE":
+		return "DeleteGatewayResponse"
+	case "PATCH":
+		return "UpdateGatewayResponse"
+	}
 	return ""
 }
 
@@ -210,6 +258,19 @@ func extractStageOperation(parts []string, method string) string {
 		return ""
 	}
 
+	if len(parts) == 3 && parts[1] == "cache" && method == "DELETE" {
+		switch parts[2] {
+		case "data":
+			return "FlushStageCache"
+		case "authorizers":
+			return "FlushStageAuthorizersCache"
+		}
+	}
+
+	if len(parts) == 3 && parts[1] == "exports" && method == "GET" {
+		return "GetExport"
+	}
+
 	switch method {
 	case "GET":
 		return "GetStage"
@@ -256,6 +317,10 @@ func extractModelOperation(parts []string, method string) string {
 		return ""
 	}
 
+	if len(parts) == 2 && parts[1] == "default_template" && method == "GET" {
+		return "GetModelTemplate"
+	}
+
 	switch method {
 	case "GET":
 		return "GetModel"
@@ -295,7 +360,7 @@ func extractAuthorizerOperation(parts []string, method string) string {
 	return ""
 }
 
-func extractApiKeyOperation(path, method string) string {
+func extractApiKeyOperation(path, method string, query url.Values) string {
 	path = strings.TrimPrefix(path, "/apikeys")
 
 	if path == "" || path == "/" {
@@ -303,6 +368,9 @@ func extractApiKeyOperation(path, method string) string {
 		case "GET":
 			return "GetApiKeys"
 		case "POST":
+			if query.Get("mode") == "import" {
+				return "ImportApiKeys"
+			}
 			return "CreateApiKey"
 		}
 		return ""
@@ -374,6 +442,10 @@ func extractUsagePlanOperation(path, method string) string {
 		}
 	}
 
+	if parts[1] == "keys" && len(parts) == 4 && parts[3] == "usage" && method == "PATCH" {
+		return "UpdateUsage"
+	}
+
 	if parts[1] == "usage" && method == "GET" {
 		return "GetUsage"
 	}
@@ -437,11 +509,13 @@ func isApiGatewayPath(path string) bool {
 	return strings.HasPrefix(path, "/restapis") ||
 		strings.HasPrefix(path, "/apikeys") ||
 		strings.HasPrefix(path, "/usageplans") ||
+		strings.HasPrefix(path, "/sdktypes") ||
 		strings.HasPrefix(path, "/domainnames") ||
 		strings.HasPrefix(path, "/vpclinks") ||
 		strings.HasPrefix(path, "/apis") ||
 		strings.HasPrefix(path, "/authorizers") ||
-		strings.HasPrefix(path, "/tags/")
+		strings.HasPrefix(path, "/account") ||
+		TagsRouteService(path) == "apigateway"
 }
 
 func extractApiGatewayPathParams(path string, params map[string]interface{}) {
@@ -453,7 +527,14 @@ func extractApiGatewayPathParams(path string, params map[string]interface{}) {
 		extractUsagePlanPathParams(path, params)
 	} else if strings.HasPrefix(path, "/domainnames/") {
 		extractDomainNamePathParams(path, params)
-	} else if strings.HasPrefix(path, "/tags/") {
+	} else if strings.HasPrefix(path, "/sdktypes/") {
+		id := strings.TrimPrefix(path, "/sdktypes/")
+		if id != "" && !strings.Contains(id, "/") {
+			if _, ok := params["id"]; !ok {
+				params["id"] = id
+			}
+		}
+	} else if TagsRouteService(path) == "apigateway" {
 		resourceArn := strings.TrimPrefix(path, "/tags/")
 		if _, ok := params["resourceArn"]; !ok {
 			params["resourceArn"] = resourceArn
@@ -511,6 +592,11 @@ func extractRestApiPathParams(path string, params map[string]interface{}) {
 		if _, ok := params["stageName"]; !ok {
 			params["stageName"] = parts[2]
 		}
+		if len(parts) >= 5 && parts[3] == "exports" {
+			if _, ok := params["exportType"]; !ok {
+				params["exportType"] = parts[4]
+			}
+		}
 	}
 
 	if len(parts) >= 3 && parts[1] == "requestvalidators" {
@@ -528,6 +614,12 @@ func extractRestApiPathParams(path string, params map[string]interface{}) {
 	if len(parts) >= 3 && parts[1] == "authorizers" {
 		if _, ok := params["authorizerId"]; !ok {
 			params["authorizerId"] = parts[2]
+		}
+	}
+
+	if len(parts) >= 3 && parts[1] == "gatewayresponses" {
+		if _, ok := params["responseType"]; !ok {
+			params["responseType"] = parts[2]
 		}
 	}
 }

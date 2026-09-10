@@ -127,6 +127,9 @@ func (s *APIGatewayService) toDeploymentResponse(d *apigateway.Deployment) map[s
 	if d.Description != "" {
 		response["description"] = d.Description
 	}
+	if len(d.ApiSummary) > 0 {
+		response["apiSummary"] = d.ApiSummary
+	}
 
 	return response
 }
@@ -232,17 +235,13 @@ func (s *APIGatewayService) UpdateStage(ctx context.Context, reqCtx *request.Req
 // GetStages lists all stages for the specified REST API.
 func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	apiId := getRestApiId(req)
-	limit, err := ResolvePaginationLimit(req.Parameters)
-	if err != nil {
-		return nil, err
-	}
-	position := request.GetStringParam(req.Parameters, "position")
+	deploymentId := request.GetStringParam(req.Parameters, "deploymentId")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	stages, err := s.listStagesCore(stores, apiId)
+	stages, err := s.listStagesCore(stores, apiId, deploymentId)
 	if err != nil {
 		return nil, err
 	}
@@ -251,18 +250,9 @@ func (s *APIGatewayService) GetStages(ctx context.Context, reqCtx *request.Reque
 	for _, st := range stages {
 		items = append(items, s.toStageResponse(st))
 	}
-
-	page, nextPos, found := paginateItemsWithKey(items, position, limit, "stageName")
-	if !found {
-		return nil, NewBadRequestException("Invalid position: " + position)
-	}
-	result := map[string]interface{}{
-		"item": page,
-	}
-	if nextPos != "" {
-		result["position"] = nextPos
-	}
-	return result, nil
+	return map[string]interface{}{
+		"item": items,
+	}, nil
 }
 
 // parseCanarySettingsInput extracts the canary settings from a raw

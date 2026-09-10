@@ -108,6 +108,16 @@ func (s *APIGatewayService) CreateRestApi(ctx context.Context, reqCtx *request.R
 				}
 			}
 		}
+		if v, ok := endpointConfig["ipAddressType"].(string); ok {
+			input.EndpointIpAddressType = v
+		}
+		if ids, ok := endpointConfig["vpcEndpointIds"].([]interface{}); ok {
+			for _, id := range ids {
+				if s, ok := id.(string); ok {
+					input.EndpointVpcEndpointIds = append(input.EndpointVpcEndpointIds, s)
+				}
+			}
+		}
 	}
 
 	if tags, ok := req.Parameters["tags"].(map[string]interface{}); ok {
@@ -258,6 +268,9 @@ func (s *APIGatewayService) toRestApiResponse(api *store.RestApi) map[string]int
 		}
 		if api.EndpointConfiguration.IpAddressType != "" {
 			endpointConfig["ipAddressType"] = api.EndpointConfiguration.IpAddressType
+		}
+		if len(api.EndpointConfiguration.VpcEndpointIds) > 0 {
+			endpointConfig["vpcEndpointIds"] = api.EndpointConfiguration.VpcEndpointIds
 		}
 		response["endpointConfiguration"] = endpointConfig
 	} else {

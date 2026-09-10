@@ -2,7 +2,6 @@ package apigateway
 
 import (
 	"context"
-	"fmt"
 	"google.golang.org/protobuf/proto"
 
 	"connectrpc.com/connect"
@@ -58,7 +57,7 @@ func (h *AdminHandler) GetDeployments(ctx context.Context, req *connect.Request[
 	limit := int(req.Msg.GetLimit())
 	start, end, nextPos, ok := paginateAdminList(len(deployments), req.Msg.GetPosition(), limit)
 	if !ok {
-		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid position: %s", req.Msg.GetPosition()))
+		return nil, invalidAdminPositionError(req.Msg.GetPosition())
 	}
 
 	items := make([]*pb.Deployment, 0, end-start)
@@ -136,7 +135,7 @@ func (h *AdminHandler) GetStages(ctx context.Context, req *connect.Request[pb.Ge
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	stages, err := h.service.listStagesCore(stores, req.Msg.Restapiid)
+	stages, err := h.service.listStagesCore(stores, req.Msg.Restapiid, "")
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

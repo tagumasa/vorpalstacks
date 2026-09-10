@@ -16,13 +16,12 @@ func (s *APIGatewayService) CreateApiKey(ctx context.Context, reqCtx *request.Re
 	in := &ApiKeyInput{
 		Name:        request.GetStringParam(req.Parameters, "name"),
 		Description: request.GetStringParam(req.Parameters, "description"),
-		Enabled:     true,
 		CustomerId:  request.GetStringParam(req.Parameters, "customerId"),
 		Value:       request.GetStringParam(req.Parameters, "value"),
 	}
 	if v, ok := req.Parameters["enabled"]; ok {
 		if b, ok := v.(bool); ok {
-			in.Enabled = b
+			in.Enabled = &b
 		}
 	}
 	if stageKeys, ok := req.Parameters["stageKeys"].([]interface{}); ok {
@@ -116,18 +115,24 @@ func (s *APIGatewayService) GetApiKeys(ctx context.Context, reqCtx *request.Requ
 	if err != nil {
 		return nil, err
 	}
+	// The model names the member nameQuery but binds it to the "name"
+	// query parameter.
+	nameQuery := request.GetStringParam(req.Parameters, "name")
+	customerId := request.GetStringParam(req.Parameters, "customerId")
+	includeValues := request.GetBoolParam(req.Parameters, "includeValues")
+
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.listApiKeysCore(stores, limit, request.GetStringParam(req.Parameters, "position"))
+	result, err := s.listApiKeysCore(stores, limit, request.GetStringParam(req.Parameters, "position"), nameQuery, customerId)
 	if err != nil {
 		return nil, err
 	}
 
 	items := make([]interface{}, 0, len(result.Items))
 	for _, k := range result.Items {
-		items = append(items, s.toApiKeyResponse(k))
+		items = append(items, s.toApiKeyResponseWithIncludeValue(k, includeValues))
 	}
 
 	response := map[string]interface{}{
@@ -334,7 +339,7 @@ func (s *APIGatewayService) GetUsagePlans(ctx context.Context, reqCtx *request.R
 	if err != nil {
 		return nil, err
 	}
-	result, err := s.listUsagePlansCore(stores, limit, request.GetStringParam(req.Parameters, "position"))
+	result, err := s.listUsagePlansCore(stores, limit, request.GetStringParam(req.Parameters, "position"), request.GetStringParam(req.Parameters, "keyId"))
 	if err != nil {
 		return nil, err
 	}
@@ -528,10 +533,42 @@ func (s *APIGatewayService) GetUsage(ctx context.Context, reqCtx *request.Reques
 	}
 	startDate := request.GetStringParam(req.Parameters, "startDate")
 	endDate := request.GetStringParam(req.Parameters, "endDate")
+	limit, err := ResolvePaginationLimit(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	position := request.GetStringParam(req.Parameters, "position")
 
 	stores, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	return s.getUsageCore(stores, usagePlanId, keyId, startDate, endDate)
+	return s.getUsageCore(stores, usagePlanId, keyId, startDate, endDate, limit, position)
+}
+
+// UpdateUsage grants a temporary extension to the remaining quota of a
+// usage-plan key.
+func (s *APIGatewayService) UpdateUsage(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	usagePlanId := request.GetStringParam(req.Parameters, "usagePlanId")
+	if usagePlanId == "" {
+		usagePlanId = getPathParam(req, "usagePlanId")
+	}
+	keyId := request.GetStringParam(req.Parameters, "keyId")
+	if keyId == "" {
+		keyId = getPathParam(req, "keyId")
+	}
+
+	stores, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	ops, err := parsePatchOperations(req.Parameters)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := s.updateUsageCore(stores, usagePlanId, keyId, ops)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	return resp, nil
 }

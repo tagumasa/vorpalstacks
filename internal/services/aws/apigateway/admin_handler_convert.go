@@ -1,12 +1,32 @@
 package apigateway
 
 import (
+	"strings"
+
 	"google.golang.org/protobuf/proto"
 	aws_types "vorpalstacks/internal/common/tags"
 	pb "vorpalstacks/internal/pb/aws/apigateway"
 	apigatewaystore "vorpalstacks/internal/store/aws/apigateway"
 	"vorpalstacks/internal/utils/timeutils"
 )
+
+// stageKeysFromPb renders the structured proto stage keys in their wire
+// form (api id / stage name) for the transport-agnostic ApiKeyInput.
+func stageKeysFromPb(keys []*pb.StageKey) []string {
+	var stageKeys []string
+	for _, sk := range keys {
+		if sk != nil {
+			stageKeys = append(stageKeys, apigatewaystore.StageKey(sk.GetRestapiid(), sk.GetStagename()))
+		}
+	}
+	return stageKeys
+}
+
+// toQuotaPeriodString strips the generated proto-enum prefix so the wire
+// period value reaches the Core.
+func toQuotaPeriodString(p pb.QuotaPeriodType) string {
+	return strings.TrimPrefix(p.String(), "QUOTA_PERIOD_TYPE_")
+}
 
 // apiStageInputFromPb maps a proto API stage into the transport-agnostic
 // ApiStageInput, including the per-stage throttle the HTTP plane accepts, so
@@ -432,7 +452,9 @@ func toPbApiStatus(s string) pb.ApiStatus {
 	case "FAILED":
 		return pb.ApiStatus_API_STATUS_FAILED
 	default:
-		return pb.ApiStatus_API_STATUS_AVAILABLE
+		// An unrecognised status maps to the enum zero, like the sibling
+		// enum mappings in this file.
+		return pb.ApiStatus(0)
 	}
 }
 

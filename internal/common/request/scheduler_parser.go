@@ -9,6 +9,18 @@ func extractSchedulerOperation(r *http.Request) string {
 	path := r.URL.Path
 	method := r.Method
 
+	if TagsRouteService(path) == "scheduler" {
+		switch method {
+		case http.MethodPost:
+			return "TagResource"
+		case http.MethodDelete:
+			return "UntagResource"
+		case http.MethodGet:
+			return "ListTagsForResource"
+		}
+		return ""
+	}
+
 	if !strings.HasPrefix(path, "/schedule-groups") && !strings.HasPrefix(path, "/schedules") {
 		return ""
 	}
@@ -62,6 +74,12 @@ func extractSchedulerOperation(r *http.Request) string {
 }
 
 func extractSchedulerPathParams(path string, method string, params map[string]interface{}) {
+	if TagsRouteService(path) == "scheduler" {
+		if _, ok := params["resourceArn"]; !ok {
+			params["resourceArn"] = strings.TrimPrefix(path, "/tags/")
+		}
+	}
+
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 
 	if len(parts) >= 2 && parts[0] == "schedule-groups" {
@@ -110,7 +128,8 @@ type schedulerRESTParser struct{}
 
 // MatchPath returns true if the path belongs to EventBridge Scheduler.
 func (p *schedulerRESTParser) MatchPath(path string) bool {
-	return strings.HasPrefix(path, "/schedule-groups") || strings.HasPrefix(path, "/schedules")
+	return strings.HasPrefix(path, "/schedule-groups") || strings.HasPrefix(path, "/schedules") ||
+		TagsRouteService(path) == "scheduler"
 }
 
 // ExtractOperation returns the Scheduler operation name, or empty if the path does not match.

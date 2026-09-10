@@ -71,10 +71,7 @@ func (h *AdminHandler) CreateRestApi(ctx context.Context, req *connect.Request[p
 	if req.Msg.Disableexecuteapiendpoint != nil {
 		input.DisableExecuteApiEndpoint = *req.Msg.Disableexecuteapiendpoint
 	}
-	if req.Msg.Minimumcompressionsize != nil {
-		v := *req.Msg.Minimumcompressionsize
-		input.MinimumCompressionSize = &v
-	}
+	input.MinimumCompressionSize = req.Msg.Minimumcompressionsize
 	if req.Msg.Endpointconfiguration != nil {
 		for _, t := range req.Msg.Endpointconfiguration.Types {
 			input.EndpointTypes = append(input.EndpointTypes, fromPbEndpointType(t))

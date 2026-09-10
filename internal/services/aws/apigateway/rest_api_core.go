@@ -26,8 +26,12 @@ type CreateRestApiInput struct {
 	DisableExecuteApiEndpoint bool
 	MinimumCompressionSize    *int32
 	EndpointTypes             []string
-	Tags                      []types.Tag
-	CloneFrom                 string
+	// EndpointIpAddressType and EndpointVpcEndpointIds carry the remaining
+	// modelled members of the create-time endpointConfiguration.
+	EndpointIpAddressType  string
+	EndpointVpcEndpointIds []string
+	Tags                   []types.Tag
+	CloneFrom              string
 }
 
 func (s *APIGatewayService) createRestApiCore(
@@ -47,8 +51,15 @@ func (s *APIGatewayService) createRestApiCore(
 		MinimumCompressionSize:    in.MinimumCompressionSize,
 		Tags:                      in.Tags,
 	}
-	if len(in.EndpointTypes) > 0 {
-		api.EndpointConfiguration = &apigateway.EndpointConfiguration{Types: in.EndpointTypes}
+	if len(in.EndpointTypes) > 0 || in.EndpointIpAddressType != "" || len(in.EndpointVpcEndpointIds) > 0 {
+		api.EndpointConfiguration = &apigateway.EndpointConfiguration{
+			Types:          in.EndpointTypes,
+			IpAddressType:  in.EndpointIpAddressType,
+			VpcEndpointIds: in.EndpointVpcEndpointIds,
+		}
+	}
+	if in.EndpointIpAddressType != "" && !validateIpAddressType(in.EndpointIpAddressType) {
+		return nil, NewBadRequestException("Invalid ipAddressType: must be ipv4 or dualstack")
 	}
 	cloneFrom := in.CloneFrom
 	if api.Name == "" {

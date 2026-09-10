@@ -17,64 +17,9 @@ func NewARNBuilder(accountId, region string) *ARNBuilder {
 	}
 }
 
-// RestApiArn returns the ARN for a REST API.
-func (b *ARNBuilder) RestApiArn(apiId string) string {
-	return b.builder.RestApi(apiId)
-}
-
-// ResourceArn returns the ARN for an API resource.
-func (b *ARNBuilder) ResourceArn(apiId, resourceId string) string {
-	return b.builder.Resource(apiId, resourceId)
-}
-
-// MethodArn returns the ARN for an API method.
-func (b *ARNBuilder) MethodArn(apiId, resourceId, httpMethod string) string {
-	return b.builder.Method(apiId, resourceId, httpMethod)
-}
-
-// DeploymentArn returns the ARN for an API deployment.
-func (b *ARNBuilder) DeploymentArn(apiId, deploymentId string) string {
-	return b.builder.Deployment(apiId, deploymentId)
-}
-
-// StageArn returns the ARN for an API stage.
-func (b *ARNBuilder) StageArn(apiId, stageName string) string {
-	return b.builder.Stage(apiId, stageName)
-}
-
-// ApiKeyArn returns the ARN for an API key.
-func (b *ARNBuilder) ApiKeyArn(apiKeyId string) string {
-	return b.builder.ApiKey(apiKeyId)
-}
-
-// UsagePlanArn returns the ARN for a usage plan.
-func (b *ARNBuilder) UsagePlanArn(usagePlanId string) string {
-	return b.builder.UsagePlan(usagePlanId)
-}
-
-// ModelArn returns the ARN for an API model.
-func (b *ARNBuilder) ModelArn(apiId, modelName string) string {
-	return b.builder.Model(apiId, modelName)
-}
-
-// RequestValidatorArn returns the ARN for a request validator.
-func (b *ARNBuilder) RequestValidatorArn(apiId, validatorId string) string {
-	return b.builder.RequestValidator(apiId, validatorId)
-}
-
-// AuthorizerArn returns the ARN for an authorizer.
-func (b *ARNBuilder) AuthorizerArn(apiId, authorizerId string) string {
-	return b.builder.Authorizer(apiId, authorizerId)
-}
-
 // DomainNameArn returns the ARN for a domain name.
 func (b *ARNBuilder) DomainNameArn(domainName string) string {
 	return b.builder.DomainName(domainName)
-}
-
-// BasePathMappingArn returns the ARN for a base path mapping.
-func (b *ARNBuilder) BasePathMappingArn(domainName, basePath string) string {
-	return b.builder.BasePathMapping(domainName, basePath)
 }
 
 // GenerateApiId generates a unique API ID.

@@ -128,39 +128,46 @@ func (s *ObjectStore) UploadPart(ctx context.Context, bucket, key, uploadId stri
 	return part, nil
 }
 
-// ListParts lists the parts of a multipart upload.
-func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
-	// Callers resolve the default page size; a limit of zero means an
-	// empty, non-truncated page and only negative values are clamped here.
-	if maxParts <= 0 {
-		return nil, 0, false, nil
-	}
-
+// ListParts lists the parts of a multipart upload and returns them together
+// with the upload record they were read from.
+func (s *ObjectStore) ListParts(ctx context.Context, bucket, key, uploadId string, partNumberMarker int, maxParts int) (*ListPartsResult, error) {
+	// The record is resolved before the page-limit branch so a missing or
+	// misaddressed upload reports ErrUploadNotFound whatever the page size.
 	upload, err := s.GetMultipartUpload(uploadId)
 	if err != nil {
-		return nil, 0, false, err
+		return nil, err
 	}
 
 	if upload.BucketName != bucket || upload.Key != key {
-		return nil, 0, false, ErrUploadNotFound
+		return nil, ErrUploadNotFound
+	}
+
+	// Callers resolve the default page size; a limit of zero means an
+	// empty, non-truncated page and only negative values are clamped here.
+	if maxParts <= 0 {
+		return &ListPartsResult{Upload: upload}, nil
 	}
 
 	if len(upload.Parts) == 0 {
-		return s.listPartsFromBlob(ctx, bucket, key, uploadId, partNumberMarker, maxParts)
+		return s.listPartsFromBlob(ctx, bucket, key, uploadId, upload, partNumberMarker, maxParts)
 	}
 
-	return listPartsFromUpload(upload.Parts, partNumberMarker, maxParts)
+	parts, nextPartNumberMarker, isTruncated := listPartsFromUpload(upload.Parts, partNumberMarker, maxParts)
+	return &ListPartsResult{
+		Upload:               upload,
+		Parts:                parts,
+		NextPartNumberMarker: nextPartNumberMarker,
+		IsTruncated:          isTruncated,
+	}, nil
 }
 
-func (s *ObjectStore) listPartsFromBlob(ctx context.Context, bucket, key, uploadId string, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
+func (s *ObjectStore) listPartsFromBlob(ctx context.Context, bucket, key, uploadId string, upload *MultipartUpload, partNumberMarker int, maxParts int) (*ListPartsResult, error) {
 	parts, err := s.blobStore.ListParts(ctx, bucket, key, uploadId)
 	if err != nil {
-		return nil, 0, false, err
+		return nil, err
 	}
 
-	result := make([]ObjectPart, 0)
-	nextPartNumberMarker := 0
-	isTruncated := false
+	result := &ListPartsResult{Upload: upload, Parts: make([]ObjectPart, 0)}
 	skipped := 0
 
 	for _, p := range parts {
@@ -168,24 +175,24 @@ func (s *ObjectStore) listPartsFromBlob(ctx context.Context, bucket, key, upload
 			skipped++
 			continue
 		}
-		result = append(result, ObjectPart{
+		result.Parts = append(result.Parts, ObjectPart{
 			PartNumber: p.PartNumber,
 			ETag:       p.ETag,
 			Size:       p.Size,
 		})
-		if len(result) >= maxParts {
-			if len(parts) > len(result)+skipped {
-				isTruncated = true
-				nextPartNumberMarker = result[len(result)-1].PartNumber
+		if len(result.Parts) >= maxParts {
+			if len(parts) > len(result.Parts)+skipped {
+				result.IsTruncated = true
+				result.NextPartNumberMarker = result.Parts[len(result.Parts)-1].PartNumber
 			}
 			break
 		}
 	}
 
-	return result, nextPartNumberMarker, isTruncated, nil
+	return result, nil
 }
 
-func listPartsFromUpload(parts []ObjectPart, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool, error) {
+func listPartsFromUpload(parts []ObjectPart, partNumberMarker int, maxParts int) ([]ObjectPart, int, bool) {
 	sorted := make([]ObjectPart, len(parts))
 	copy(sorted, parts)
 	sort.Slice(sorted, func(i, j int) bool {
@@ -201,12 +208,12 @@ func listPartsFromUpload(parts []ObjectPart, partNumberMarker int, maxParts int)
 		}
 		if len(result) >= maxParts {
 			nextPartNumberMarker = result[len(result)-1].PartNumber
-			return result, nextPartNumberMarker, true, nil
+			return result, nextPartNumberMarker, true
 		}
 		result = append(result, p)
 	}
 
-	return result, 0, false, nil
+	return result, 0, false
 }
 
 // CompleteMultipartUpload completes a multipart upload by assembling the parts.

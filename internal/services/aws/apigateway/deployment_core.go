@@ -3,6 +3,7 @@ package apigateway
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -286,12 +287,26 @@ func (s *APIGatewayService) deleteStageCore(stores *apiGatewayStores, apiId, sta
 	return nil
 }
 
-// listStagesCore returns all stages for an api id.
-func (s *APIGatewayService) listStagesCore(stores *apiGatewayStores, apiId string) ([]*apigateway.Stage, error) {
+// listStagesCore returns all stages for an api id; a deploymentId restricts
+// the result to the stages deployed with that deployment.
+func (s *APIGatewayService) listStagesCore(stores *apiGatewayStores, apiId, deploymentId string) ([]*apigateway.Stage, error) {
 	if apiId == "" {
 		return nil, NewBadRequestException("restApiId is required")
 	}
-	return stores.restApis.ListStages(apiId)
+	stages, err := stores.restApis.ListStages(apiId)
+	if err != nil {
+		return nil, toApiGatewayError(err)
+	}
+	if deploymentId == "" {
+		return stages, nil
+	}
+	filtered := make([]*apigateway.Stage, 0, len(stages))
+	for _, stage := range stages {
+		if stage.DeploymentId == deploymentId {
+			filtered = append(filtered, stage)
+		}
+	}
+	return filtered, nil
 }
 
 // updateStageCore applies the patch operations to a stage under the
@@ -537,13 +552,13 @@ func parseWholeMethodSettingsValue(po PatchOperation) (map[string]*apigateway.Me
 		}
 		if entry.ThrottlingBurstLimit != nil {
 			if !validateMethodSettingThrottleBurstLimit(*entry.ThrottlingBurstLimit) {
-				return nil, NewBadRequestException("throttlingBurstLimit must be between 0 and 100000")
+				return nil, NewBadRequestException(fmt.Sprintf("throttlingBurstLimit must be between 0 and %d", maxMethodSettingThrottleBurstLimit))
 			}
 			ms.ThrottlingBurstLimit = int32(*entry.ThrottlingBurstLimit)
 		}
 		if entry.ThrottlingRateLimit != nil {
 			if !validateMethodSettingThrottleRateLimit(*entry.ThrottlingRateLimit) {
-				return nil, NewBadRequestException("throttlingRateLimit must be between 0 and 100000")
+				return nil, NewBadRequestException(fmt.Sprintf("throttlingRateLimit must be between 0 and %v", maxMethodSettingThrottleRateLimit))
 			}
 			ms.ThrottlingRateLimit = *entry.ThrottlingRateLimit
 		}
@@ -652,7 +667,7 @@ func applyMethodSettingsSetting(stage *apigateway.Stage, po PatchOperation, p me
 			return NewBadRequestException("Invalid throttlingBurstLimit: not a number")
 		}
 		if !validateMethodSettingThrottleBurstLimit(v) {
-			return NewBadRequestException("throttlingBurstLimit must be between 0 and 100000")
+			return NewBadRequestException(fmt.Sprintf("throttlingBurstLimit must be between 0 and %d", maxMethodSettingThrottleBurstLimit))
 		}
 		ms.ThrottlingBurstLimit = int32(v)
 	case "throttling/rateLimit":
@@ -661,7 +676,7 @@ func applyMethodSettingsSetting(stage *apigateway.Stage, po PatchOperation, p me
 			return NewBadRequestException("Invalid throttlingRateLimit: not a number")
 		}
 		if !validateMethodSettingThrottleRateLimit(v) {
-			return NewBadRequestException("throttlingRateLimit must be between 0 and 100000")
+			return NewBadRequestException(fmt.Sprintf("throttlingRateLimit must be between 0 and %v", maxMethodSettingThrottleRateLimit))
 		}
 		ms.ThrottlingRateLimit = v
 	case "caching/enabled":

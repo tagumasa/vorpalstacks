@@ -3,7 +3,6 @@ package apigateway
 import (
 	"context"
 	"google.golang.org/protobuf/proto"
-	"strings"
 
 	"connectrpc.com/connect"
 
@@ -21,17 +20,12 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	enabled := true
-	if req.Msg.Enabled != nil {
-		enabled = *req.Msg.Enabled
-	}
-
 	in := &ApiKeyInput{
 		Name:               req.Msg.GetName(),
 		Description:        req.Msg.GetDescription(),
 		CustomerId:         req.Msg.GetCustomerid(),
 		Value:              req.Msg.GetValue(),
-		Enabled:            enabled,
+		Enabled:            req.Msg.Enabled,
 		GenerateDistinctId: req.Msg.Generatedistinctid,
 	}
 
@@ -39,11 +33,7 @@ func (h *AdminHandler) CreateApiKey(ctx context.Context, req *connect.Request[pb
 		in.Tags = tagutil.MapToTags(req.Msg.Tags)
 	}
 
-	for _, sk := range req.Msg.Stagekeys {
-		if sk != nil {
-			in.StageKeys = append(in.StageKeys, sk.GetRestapiid()+"/"+sk.GetStagename())
-		}
-	}
+	in.StageKeys = stageKeysFromPb(req.Msg.Stagekeys)
 
 	created, err := h.service.createApiKeyCore(stores, in)
 	if err != nil {
@@ -58,7 +48,7 @@ func (h *AdminHandler) GetApiKeys(ctx context.Context, req *connect.Request[pb.G
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	result, err := h.service.listApiKeysCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition())
+	result, err := h.service.listApiKeysCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition(), "", "")
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -116,11 +106,10 @@ func (h *AdminHandler) CreateUsagePlan(ctx context.Context, req *connect.Request
 		}
 	}
 	if req.Msg.Quota != nil {
-		periodStr := strings.TrimPrefix(req.Msg.Quota.Period.String(), "QUOTA_PERIOD_TYPE_")
 		in.Quota = &QuotaInput{
 			Limit:  int64(req.Msg.Quota.GetLimit()),
 			Offset: int64(req.Msg.Quota.GetOffset()),
-			Period: periodStr,
+			Period: toQuotaPeriodString(req.Msg.Quota.Period),
 		}
 	}
 	if req.Msg.Throttle != nil {
@@ -143,7 +132,7 @@ func (h *AdminHandler) GetUsagePlans(ctx context.Context, req *connect.Request[p
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
-	result, err := h.service.listUsagePlansCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition())
+	result, err := h.service.listUsagePlansCore(stores, int(req.Msg.GetLimit()), req.Msg.GetPosition(), "")
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}

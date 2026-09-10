@@ -48,19 +48,7 @@ func (ac *authCache) Close() {
 	ac.stopOnce.Do(func() { close(ac.stopCh) })
 }
 
-// NewLambdaAuthorizerWithConfig creates a new Lambda authorizer with account ID and region configuration.
-func NewLambdaAuthorizerWithConfig(bus eventbus.ServiceBus, store *apigatewaystore.RestApiStore, accountID, region string, credProvider commonauth.CredentialsProvider) *LambdaAuthorizer {
-	return &LambdaAuthorizer{
-		bus:         bus,
-		store:       store,
-		cache:       &authCache{stopCh: make(chan struct{})},
-		accountID:   accountID,
-		region:      region,
-		sigVerifier: commonauth.NewSignatureV4Verifier(credProvider),
-	}
-}
-
-// Close stops the background authorisation cache cleanup goroutine.
+// Close stops the background authorizer cache cleanup goroutine.
 func (la *LambdaAuthorizer) Close() {
 	la.cache.Close()
 }
@@ -228,7 +216,7 @@ func (la *LambdaAuthorizer) authorizeToken(ctx context.Context, authorizer *apig
 		}
 	}
 
-	functionName, err := extractFunctionNameFromURI(authorizer.AuthorizerUri)
+	functionRef, err := extractFunctionRefFromURI(authorizer.AuthorizerUri)
 	if err != nil {
 		return nil, &AuthError{
 			Message:  fmt.Sprintf("Invalid authorizer URI: %v", err),
@@ -259,7 +247,7 @@ func (la *LambdaAuthorizer) authorizeToken(ctx context.Context, authorizer *apig
 		},
 	}
 
-	result, err := la.invokeAuthorizer(ctx, functionName, event)
+	result, err := la.invokeAuthorizer(ctx, functionRef, event)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +273,7 @@ func (la *LambdaAuthorizer) authorizeRequest(ctx context.Context, authorizer *ap
 		}
 	}
 
-	functionName, err := extractFunctionNameFromURI(authorizer.AuthorizerUri)
+	functionRef, err := extractFunctionRefFromURI(authorizer.AuthorizerUri)
 	if err != nil {
 		return nil, &AuthError{
 			Message:  fmt.Sprintf("Invalid authorizer URI: %v", err),
@@ -315,7 +303,7 @@ func (la *LambdaAuthorizer) authorizeRequest(ctx context.Context, authorizer *ap
 		},
 	}
 
-	result, err := la.invokeAuthorizer(ctx, functionName, event)
+	result, err := la.invokeAuthorizer(ctx, functionRef, event)
 	if err != nil {
 		return nil, err
 	}
@@ -328,7 +316,7 @@ func (la *LambdaAuthorizer) authorizeRequest(ctx context.Context, authorizer *ap
 	return result, nil
 }
 
-func (la *LambdaAuthorizer) invokeAuthorizer(ctx context.Context, functionName string, event LambdaAuthEvent) (*AuthResult, error) {
+func (la *LambdaAuthorizer) invokeAuthorizer(ctx context.Context, functionRef string, event LambdaAuthEvent) (*AuthResult, error) {
 	if la.bus == nil || la.bus.LambdaInvoker() == nil {
 		return nil, &AuthError{
 			Message:  "Lambda invoker not configured",
@@ -346,7 +334,7 @@ func (la *LambdaAuthorizer) invokeAuthorizer(ctx context.Context, functionName s
 		}
 	}
 
-	_, payload, err := la.bus.LambdaInvoker().InvokeForGateway(ctx, functionName, eventJSON)
+	_, payload, err := la.bus.LambdaInvoker().InvokeForGateway(ctx, functionRef, eventJSON)
 	if err != nil {
 		return nil, &AuthError{
 			Message:  fmt.Sprintf("Authorizer invocation failed: %v", err),
@@ -651,24 +639,16 @@ func extractUserPoolIDFromARN(arn string) string {
 	return arn[idx+len(":userpool/"):]
 }
 
-// extractFunctionNameFromURI extracts the Lambda function name from an authorizer URI.
-func extractFunctionNameFromURI(uri string) (string, error) {
-	uri = strings.TrimPrefix(uri, "arn:aws:apigateway:")
-	parts := strings.SplitN(uri, ":", 2)
-	if len(parts) < 2 {
-		return "", fmt.Errorf("invalid URI format")
-	}
-
-	functionPath := parts[1]
-	if !strings.HasPrefix(functionPath, "lambda:path/2015-03-31/functions/") {
+// extractFunctionRefFromURI extracts the function reference an authorizer
+// URI addresses. The invocation URI grammar lives in the ARN utility
+// (ExtractAPIGatewayFunctionRef); the gateway invoker resolves full and
+// partial function ARNs and name:qualifier references itself, so the
+// reference passes through unmodified — reducing it to a single segment
+// would discard the function name of a qualified ARN reference.
+func extractFunctionRefFromURI(uri string) (string, error) {
+	ref, ok := arnutil.ExtractAPIGatewayFunctionRef(uri)
+	if !ok {
 		return "", fmt.Errorf("not a Lambda function URI")
 	}
-
-	functionPart := strings.TrimPrefix(functionPath, "lambda:path/2015-03-31/functions/")
-	functionPart = strings.TrimSuffix(functionPart, "/invocations")
-	if idx := strings.LastIndex(functionPart, ":"); idx > 0 {
-		return functionPart[idx+1:], nil
-	}
-
-	return functionPart, nil
+	return ref, nil
 }

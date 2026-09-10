@@ -36,7 +36,11 @@ type DomainNameCreateInput struct {
 	MutualTlsTruststoreVersion          string
 	HasEndpointConfiguration            bool
 	EndpointTypes                       []string
-	Tags                                []tagutil.Tag
+	// EndpointIpAddressType and EndpointVpcEndpointIds carry the remaining
+	// modelled members of the create-time endpointConfiguration.
+	EndpointIpAddressType  string
+	EndpointVpcEndpointIds []string
+	Tags                   []tagutil.Tag
 }
 
 // BasePathMappingInput carries the parsed wire members of a
@@ -101,13 +105,21 @@ func (s *APIGatewayService) createDomainNameCore(
 		return nil, NewBadRequestException("Invalid endpointAccessMode: must be BASIC or STRICT")
 	}
 
+	// Every new custom domain is assigned a default security policy, and
+	// the documented default for edge, regional, and private domains alike
+	// is TLS_1_2.
+	securityPolicy := in.SecurityPolicy
+	if securityPolicy == "" {
+		securityPolicy = defaultDomainSecurityPolicy
+	}
+
 	domain := &apigateway.DomainName{
 		DomainName:                          in.DomainName,
 		CertificateArn:                      in.CertificateArn,
 		CertificateName:                     in.CertificateName,
 		RegionalCertificateArn:              in.RegionalCertificateArn,
 		RegionalCertificateName:             in.RegionalCertificateName,
-		SecurityPolicy:                      in.SecurityPolicy,
+		SecurityPolicy:                      securityPolicy,
 		OwnershipVerificationCertificateArn: in.OwnershipVerificationCertificateArn,
 		EndpointAccessMode:                  in.EndpointAccessMode,
 		Policy:                              in.Policy,
@@ -120,7 +132,14 @@ func (s *APIGatewayService) createDomainNameCore(
 		}
 	}
 	if in.HasEndpointConfiguration {
-		domain.EndpointConfiguration = &apigateway.EndpointConfiguration{Types: in.EndpointTypes}
+		domain.EndpointConfiguration = &apigateway.EndpointConfiguration{
+			Types:          in.EndpointTypes,
+			IpAddressType:  in.EndpointIpAddressType,
+			VpcEndpointIds: in.EndpointVpcEndpointIds,
+		}
+	}
+	if in.EndpointIpAddressType != "" && !validateIpAddressType(in.EndpointIpAddressType) {
+		return nil, NewBadRequestException("Invalid ipAddressType: must be ipv4 or dualstack")
 	}
 	domain.Tags = in.Tags
 
@@ -532,8 +551,18 @@ func requireDomainCertificate(domain *apigateway.DomainName) error {
 	return nil
 }
 
-// listDomainNamesCore returns a page of domain names.
-func (s *APIGatewayService) listDomainNamesCore(stores *apiGatewayStores, marker string, maxItems int) (*storecommon.ListResult[apigateway.DomainName], error) {
+// listDomainNamesCore returns a page of domain names. The resourceOwner
+// filter selects domains by ownership of the domain name access
+// association: every domain on this single-account platform is owned by
+// the account itself (SELF), so OTHER_ACCOUNTS matches none.
+func (s *APIGatewayService) listDomainNamesCore(stores *apiGatewayStores, marker string, maxItems int, resourceOwner string) (*storecommon.ListResult[apigateway.DomainName], error) {
+	switch resourceOwner {
+	case "", "SELF":
+	case "OTHER_ACCOUNTS":
+		return &storecommon.ListResult[apigateway.DomainName]{}, nil
+	default:
+		return nil, NewBadRequestException("resourceOwner must be SELF or OTHER_ACCOUNTS")
+	}
 	return stores.domains.ListDomainNames(storecommon.ListOptions{
 		Marker:   marker,
 		MaxItems: maxItems,
@@ -696,7 +725,10 @@ func (s *APIGatewayService) updateBasePathMappingCore(
 			mapping.BasePath = oldBasePath
 			mapping.RestApiId = oldRestApiId
 			mapping.Stage = oldStage
-			_, _ = stores.domains.CreateBasePathMapping(domainName, mapping)
+			if _, restoreErr := stores.domains.CreateBasePathMapping(domainName, mapping); restoreErr != nil {
+				logs.Error("failed to restore base path mapping after rename failure",
+					logs.String("domainName", domainName), logs.String("basePath", oldBasePath), logs.Err(restoreErr))
+			}
 			return nil, err
 		}
 	} else {

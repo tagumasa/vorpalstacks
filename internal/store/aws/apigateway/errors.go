@@ -72,6 +72,10 @@ var (
 	// that already exists.
 	ErrModelAlreadyExists = errors.New("model already exists")
 
+	// ErrGatewayResponseNotFound is returned when the specified gateway
+	// response does not exist.
+	ErrGatewayResponseNotFound = errors.New("gateway response not found")
+
 	// ErrApiKeyNotFound is returned when the specified API key does not exist.
 	ErrApiKeyNotFound = errors.New("api key not found")
 

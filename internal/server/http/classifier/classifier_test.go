@@ -160,7 +160,7 @@ func TestServiceNameByPath(t *testing.T) {
 		{"lambda 2015-03-31", "/2015-03-31/functions", "lambda"},
 		{"apigateway restapis", "/restapis/abc123", "apigateway"},
 		{"apigateway apikeys", "/apikeys/abc123", "apigateway"},
-		{"apigateway tags", "/tags/arn:aws:apigateway:us-east-1:restapi", "apigateway"},
+		{"apigateway tags", "/tags/arn:aws:apigateway:us-east-1::/restapis/abc123", "apigateway"},
 		{"apigateway runtime excluded", "/restapis/abc123/stage/_user_request_/foo", ""},
 		{"scheduler schedule-groups", "/schedule-groups/default", "scheduler"},
 		{"scheduler schedules", "/schedules/my-schedule", "scheduler"},
@@ -321,6 +321,12 @@ func TestLookupServiceByPath(t *testing.T) {
 		{"/restapis/abc", "apigateway"},
 		{"/restapis/abc/stage/_user_request_/foo", ""},
 		{"/schedule-groups/x", "scheduler"},
+		// /tags/{arn} ownership follows the ARN service field: a scheduler
+		// ARN whose resource contains "apigateway" stays with scheduler,
+		// and non-aws partitions claim the same as aws ones.
+		{"/tags/arn:aws:scheduler:us-east-1:111122223333:schedule-group/apigateway-probe", "scheduler"},
+		{"/tags/arn:aws-cn:scheduler:cn-north-1:111122223333:schedule/probe", "scheduler"},
+		{"/tags/arn:aws:apigateway:us-east-1::/restapis/abc", "apigateway"},
 		{"/v2/email/config", "email"},
 		{"/2013-04-01/hostedzone", "route53"},
 		{"/2020-05-31/distribution", "cloudfront"},
@@ -378,7 +384,10 @@ func TestIsApiGatewayPath(t *testing.T) {
 		{"/vpclinks/1", true},
 		{"/apis/1", true},
 		{"/authorizers/1", true},
-		{"/tags/arn:aws:apigateway:region:restapi", true},
+		{"/tags/arn:aws:apigateway:us-east-1::/restapis/abc123", true},
+		{"/tags/arn:aws:apigateway:us-east-1::/restapis/abc", true},
+		// A scheduler ARN whose resource contains "apigateway" is not ours.
+		{"/tags/arn:aws:scheduler:us-east-1:111122223333:schedule-group/apigateway-probe", false},
 		{"/restapis/abc/stage/_user_request_/foo", false},
 		{"/unknown", false},
 	}

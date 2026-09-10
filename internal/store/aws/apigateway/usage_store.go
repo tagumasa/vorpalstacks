@@ -17,8 +17,6 @@ import (
 type UsageStore struct {
 	*common.BaseStore
 	arnBuilder *ARNBuilder
-	accountId  string
-	region     string
 	keyLocker  common.KeyLocker
 	mu         sync.Mutex
 }
@@ -33,8 +31,6 @@ func NewUsageStore(store storage.BasicStorage, accountId, region string) *UsageS
 	return &UsageStore{
 		BaseStore:  common.NewBaseStore(bucket, "apigateway-usage"),
 		arnBuilder: NewARNBuilder(accountId, region),
-		accountId:  accountId,
-		region:     region,
 	}
 }
 
@@ -49,7 +45,9 @@ func (s *UsageStore) deleteUsagePlanKeyLocked(usagePlanId, keyId string) error {
 		logs.Warn("failed to delete usage records for usage plan key", logs.String("usagePlanId", usagePlanId), logs.String("keyId", keyId), logs.Err(err))
 	}
 	// Delete reverse index entry (apikeyplan#apiKeyId#planId).
-	_ = s.BaseStore.Delete("apikeyplan#" + keyId + "#" + usagePlanId)
+	if err := s.BaseStore.Delete("apikeyplan#" + keyId + "#" + usagePlanId); err != nil {
+		logs.Warn("failed to delete usage plan key reverse index entry", logs.String("usagePlanId", usagePlanId), logs.String("keyId", keyId), logs.Err(err))
+	}
 	return s.BaseStore.Delete(keyKey)
 }
 
@@ -309,9 +307,23 @@ type UsageRecord struct {
 	RequestCount int64  `json:"requestCount"`
 }
 
-// ListUsagePlansForAPIKey returns all usage plans associated with an API key.
-// Uses the reverse index (apikeyplan#apiKeyId#planId) for O(keys) lookup
-// instead of the previous O(plans × keys/plan) nested scan.
+// UsageQuotaExtension records a temporary remaining-quota override granted
+// by UpdateUsage. Net holds the granted remaining minus the natural
+// remaining (quota limit minus period usage) at grant time, so the override
+// stays a fixed offset while usage accrues and lapses when the grant's
+// quota period rolls over.
+type UsageQuotaExtension struct {
+	UsagePlanID string `json:"usagePlanId"`
+	APIKeyID    string `json:"apiKeyId"`
+	Period      string `json:"period"`
+	GrantedDate string `json:"grantedDate"`
+	Net         int64  `json:"net"`
+}
+
+// ListUsagePlansForAPIKey returns all usage plans associated with an API
+// key. Membership reads go through the reverse index
+// (apikeyplan#apiKeyId#planId) so the cost stays proportional to the
+// key's plan count rather than the store's total plan count.
 func (s *UsageStore) ListUsagePlansForAPIKey(apiKeyId string) ([]*UsagePlan, error) {
 	prefix := "apikeyplan#" + apiKeyId + "#"
 
@@ -383,13 +395,56 @@ func (s *UsageStore) RecordUsage(record *UsageRecord) error {
 	defer s.keyLocker.Unlock(key)
 
 	existing, err := s.GetUsage(record.UsagePlanID, record.APIKeyID, record.Date)
-	if err != nil {
-		record.RequestCount = 1
-	} else {
+	switch {
+	case err == nil:
 		record.RequestCount = existing.RequestCount + 1
+	case common.IsNotFound(err):
+		// Only a missing record means "no prior usage"; any other read
+		// failure must propagate rather than silently reset the counter
+		// and destroy the accumulated count.
+		record.RequestCount = 1
+	default:
+		return err
 	}
 
 	return s.Put(key, record)
+}
+
+// SetUsageQuotaExtension stores the temporary remaining-quota override for
+// a usage-plan key, replacing any earlier grant.
+func (s *UsageStore) SetUsageQuotaExtension(ext *UsageQuotaExtension) error {
+	return s.Put("usageext#"+ext.UsagePlanID+"#"+ext.APIKeyID, ext)
+}
+
+// ActiveQuotaExtension returns the net remaining-quota override active on
+// the given date, or 0 when no grant exists or its period has lapsed. The
+// active range mirrors the enforcement counter windows: DAY covers the
+// grant date only, WEEK the seven days starting at the grant date, MONTH
+// the grant date's calendar month.
+func (s *UsageStore) ActiveQuotaExtension(usagePlanId, apiKeyId, date string) int64 {
+	var ext UsageQuotaExtension
+	if err := s.BaseStore.Get("usageext#"+usagePlanId+"#"+apiKeyId, &ext); err != nil {
+		return 0
+	}
+	granted, err := time.Parse("2006-01-02", ext.GrantedDate)
+	if err != nil || date < ext.GrantedDate {
+		return 0
+	}
+	switch ext.Period {
+	case "DAY":
+		if date != ext.GrantedDate {
+			return 0
+		}
+	case "WEEK":
+		if date > granted.AddDate(0, 0, 6).Format("2006-01-02") {
+			return 0
+		}
+	case "MONTH":
+		if date > time.Date(granted.Year(), granted.Month()+1, 0, 0, 0, 0, 0, time.UTC).Format("2006-01-02") {
+			return 0
+		}
+	}
+	return ext.Net
 }
 
 // TagApiKey adds or updates tags on an API key.
