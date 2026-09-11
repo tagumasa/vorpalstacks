@@ -41,7 +41,7 @@ func (s *IAMService) getLoginProfileCore(store *iamstore.IAMStore, userName stri
 
 	profile, err := store.LoginProfiles().Get(userName)
 	if err != nil {
-		return nil, NewNoSuchLoginProfileError(userName)
+		return nil, storeReadError(err, iamstore.ErrLoginProfileNotFound, NewNoSuchLoginProfileError(userName))
 	}
 	return profile, nil
 }

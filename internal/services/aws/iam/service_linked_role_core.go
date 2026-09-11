@@ -31,7 +31,7 @@ func (s *IAMService) createServiceLinkedRoleCore(store *iamstore.IAMStore, input
 	// Smithy customSuffixType: length 1-64, pattern ^[\w+=,.@-]+$.
 	// An empty suffix is allowed (no suffix appended to the role name).
 	if input.CustomSuffix != "" && !validateCustomSuffix(input.CustomSuffix) {
-		return nil, NewInvalidInputError("CustomSuffix", "must match pattern ^[\\w+=,.@-]+$ and be 1-64 characters")
+		return nil, NewInvalidInputError("CustomSuffix", fmt.Sprintf("must match pattern ^[\\w+=,.@-]+$ and be 1-%d characters", MaxCustomSuffixLength))
 	}
 
 	// Service-linked role names combine a service-provided prefix with the
@@ -47,8 +47,8 @@ func (s *IAMService) createServiceLinkedRoleCore(store *iamstore.IAMStore, input
 	if input.CustomSuffix != "" {
 		roleName = roleName + "-" + input.CustomSuffix
 	}
-	if len(roleName) > 64 {
-		return nil, NewInvalidInputError("RoleName", "derived role name exceeds the 64-character limit (service prefix + custom suffix)")
+	if len(roleName) > MaxRoleNameLength {
+		return nil, NewInvalidInputError("RoleName", fmt.Sprintf("derived role name exceeds the %d-character limit (service prefix + custom suffix)", MaxRoleNameLength))
 	}
 	path := "/aws-service-role/" + input.AWSServiceName + "/"
 
@@ -73,7 +73,7 @@ func (s *IAMService) createServiceLinkedRoleCore(store *iamstore.IAMStore, input
 		return nil, err
 	}
 
-	role, err := store.Roles().Create(roleName, path, s.accountID, string(trustPolicyJSON), input.Description, 3600, nil)
+	role, err := store.Roles().Create(roleName, path, store.AccountID(), string(trustPolicyJSON), input.Description, iamstore.DefaultRoleSessionDuration, nil, nil)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrRoleAlreadyExists) {
 			return nil, NewRoleAlreadyExistsError(roleName)
@@ -95,16 +95,12 @@ func (s *IAMService) deleteServiceLinkedRoleCore(store *iamstore.IAMStore, roleN
 		return "", NewValidationError("RoleName")
 	}
 
-	if !store.Roles().Exists(roleName) {
-		return "", NewNoSuchRoleError(roleName)
-	}
-
 	// Verify the role is actually a service-linked role. Service-linked roles
 	// are created with a path under /aws-service-role/. Non-service-linked
 	// roles must be deleted via DeleteRole instead.
 	role, err := store.Roles().Get(roleName)
 	if err != nil {
-		return "", NewNoSuchRoleError(roleName)
+		return "", storeReadError(err, iamstore.ErrRoleNotFound, NewNoSuchRoleError(roleName))
 	}
 	if !strings.HasPrefix(role.Path, "/aws-service-role/") {
 		return "", NewDeleteConflictError("Cannot delete role " + roleName + " with DeleteServiceLinkedRole. Use DeleteRole instead.")
@@ -207,7 +203,7 @@ func (s *IAMService) getServiceLinkedRoleDeletionStatusCore(store *iamstore.IAMS
 	}
 	task, err := store.SLRoleDeletionTasks().Get(taskID)
 	if err != nil {
-		return nil, NewNoSuchEntityError("deletion task", taskID)
+		return nil, storeReadError(err, nil, NewNoSuchEntityError("deletion task", taskID))
 	}
 	return task, nil
 }

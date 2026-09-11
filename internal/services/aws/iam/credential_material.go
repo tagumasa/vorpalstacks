@@ -1,9 +1,8 @@
-// Package iam provides IAM service operations for vorpalstacks.
-//
+package iam
+
 // This file holds the credential-material parsing shared by the signing
 // certificate, server certificate and SSH public key operations: X.509
 // parsing, certificate fingerprints and key-pair matching.
-package iam
 
 import (
 	"crypto"

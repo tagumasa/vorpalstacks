@@ -208,9 +208,6 @@ func (s *IAMService) GenerateServiceLastAccessedDetails(_ context.Context, reqCt
 // pagination via Marker and MaxItems over the service list.
 func (s *IAMService) GetServiceLastAccessedDetails(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	jobID := request.GetStringParam(req.Parameters, "JobId")
-	if jobID == "" {
-		jobID = request.GetStringParam(req.Parameters, "jobId")
-	}
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)
 
@@ -303,9 +300,6 @@ func serialiseServicesLastAccessed(services []iamstore.ServiceLastAccessed) []ma
 // MaxItems.
 func (s *IAMService) GetServiceLastAccessedDetailsWithEntities(_ context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	jobID := request.GetStringParam(req.Parameters, "JobId")
-	if jobID == "" {
-		jobID = request.GetStringParam(req.Parameters, "jobId")
-	}
 	serviceNamespace := request.GetStringParam(req.Parameters, "ServiceNamespace")
 	marker := request.GetStringParam(req.Parameters, "Marker")
 	maxItems := pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems)

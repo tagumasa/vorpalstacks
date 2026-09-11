@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -59,6 +60,46 @@ func (s *IAMService) SetSecurityTokenServicePreferences(ctx context.Context, req
 		return nil, err
 	}
 	if err := s.setSecurityTokenServicePreferencesCore(store, request.GetStringParam(req.Parameters, "GlobalEndpointTokenVersion")); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
+}
+
+// GetAccountProperties retrieves the account-level properties for the
+// account (Namespace/PropertyName key-value pairs).
+func (s *IAMService) GetAccountProperties(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	properties, err := s.getAccountPropertiesCore(store)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"Properties": properties,
+	}, nil
+}
+
+// PutAccountProperties sets account-level properties for the account. The
+// wire format is Properties.entry.N.key / Properties.entry.N.value pairs.
+func (s *IAMService) PutAccountProperties(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	properties := map[string]string{}
+	for i := 1; ; i++ {
+		key := request.GetStringParam(req.Parameters, fmt.Sprintf("Properties.entry.%d.key", i))
+		if key == "" {
+			break
+		}
+		properties[key] = request.GetStringParam(req.Parameters, fmt.Sprintf("Properties.entry.%d.value", i))
+	}
+
+	if err := s.putAccountPropertiesCore(store, properties); err != nil {
 		return nil, err
 	}
 	return response.EmptyResponse(), nil

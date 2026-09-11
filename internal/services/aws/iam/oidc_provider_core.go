@@ -5,6 +5,7 @@ package iam
 
 import (
 	"errors"
+	"fmt"
 	"unicode/utf8"
 
 	"vorpalstacks/internal/common/tags"
@@ -42,8 +43,8 @@ func (s *IAMService) createOpenIDConnectProviderCore(store *iamstore.IAMStore, i
 	}
 	// OpenIDConnectProviderUrlType @length(1,255) counts Unicode characters
 	// (the shape carries no pattern).
-	if utf8.RuneCountInString(input.Url) > 255 {
-		return "", NewInvalidInputError("Url", "must be 1 to 255 characters")
+	if utf8.RuneCountInString(input.Url) > MaxOIDCProviderURLLength {
+		return "", NewInvalidInputError("Url", fmt.Sprintf("must be 1 to %d characters", MaxOIDCProviderURLLength))
 	}
 
 	for _, tp := range input.ThumbprintList {
@@ -53,7 +54,7 @@ func (s *IAMService) createOpenIDConnectProviderCore(store *iamstore.IAMStore, i
 	}
 	for _, cid := range input.ClientIDList {
 		if !validateClientID(cid) {
-			return "", NewInvalidInputError("ClientIDList", "each client ID must be 1 to 255 characters")
+			return "", NewInvalidInputError("ClientIDList", fmt.Sprintf("each client ID must be 1 to %d characters", MaxClientIDLength))
 		}
 	}
 	if err := validateNewTags(input.Tags); err != nil {
@@ -81,7 +82,7 @@ func (s *IAMService) getOpenIDConnectProviderCore(store *iamstore.IAMStore, prov
 	}
 	provider, err := store.OpenIDConnectProviders().Get(providerArn)
 	if err != nil {
-		return nil, NewNoSuchEntityError("OpenID Connect provider", providerArn)
+		return nil, storeReadError(err, iamstore.ErrOpenIDConnectProviderNotFound, NewNoSuchEntityError("OpenID Connect provider", providerArn))
 	}
 	return provider, nil
 }

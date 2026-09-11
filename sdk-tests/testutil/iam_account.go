@@ -45,6 +45,30 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		if resp.UserDetailList == nil {
 			return fmt.Errorf("user detail list is nil")
 		}
+
+		// The LocalManagedPolicy section lists customer managed policies
+		// only; walk every page (the shared account accumulates entities
+		// from other suites) and reject any AWS managed arn.
+		const awsManagedPrefix = "arn:aws:iam::aws:policy/"
+		var marker *string
+		for {
+			pages, err := tc.client.GetAccountAuthorizationDetails(tc.ctx, &iam.GetAccountAuthorizationDetailsInput{
+				Filter: []types.EntityType{types.EntityTypeLocalManagedPolicy},
+				Marker: marker,
+			})
+			if err != nil {
+				return err
+			}
+			for _, p := range pages.Policies {
+				if strings.HasPrefix(aws.ToString(p.Arn), awsManagedPrefix) {
+					return fmt.Errorf("LocalManagedPolicy section returned AWS managed policy %s", aws.ToString(p.Arn))
+				}
+			}
+			if !pages.IsTruncated {
+				break
+			}
+			marker = pages.Marker
+		}
 		return nil
 	}))
 
@@ -716,6 +740,83 @@ func (r *TestRunner) iamAccountTests(tc *iamTestContext) []TestResult {
 		}
 		if !isInvalidInputError(err) {
 			return fmt.Errorf("invalid token version: got %v, want InvalidInput", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "GetAccountProperties", func() error {
+		resp, err := tc.client.GetAccountProperties(tc.ctx, &iam.GetAccountPropertiesInput{})
+		if err != nil {
+			return err
+		}
+		if resp.Properties == nil {
+			return fmt.Errorf("properties map is nil")
+		}
+		// RoleManager/Enabled is the one documented property; its value is
+		// always reported, so only presence and boolean form are stable
+		// across repeated runs against the persistent account.
+		value, ok := resp.Properties["RoleManager/Enabled"]
+		if !ok {
+			return fmt.Errorf("RoleManager/Enabled missing from properties")
+		}
+		if value != "true" && value != "false" {
+			return fmt.Errorf("RoleManager/Enabled: got %q, want true or false", value)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "PutAccountProperties", func() error {
+		if _, err := tc.client.PutAccountProperties(tc.ctx, &iam.PutAccountPropertiesInput{
+			Properties: map[string]string{"RoleManager/Enabled": "true"},
+		}); err != nil {
+			return err
+		}
+		got, err := tc.client.GetAccountProperties(tc.ctx, &iam.GetAccountPropertiesInput{})
+		if err != nil {
+			return err
+		}
+		if got.Properties["RoleManager/Enabled"] != "true" {
+			return fmt.Errorf("RoleManager/Enabled after enable: got %q, want true", got.Properties["RoleManager/Enabled"])
+		}
+
+		// Restore the disabled state.
+		if _, err := tc.client.PutAccountProperties(tc.ctx, &iam.PutAccountPropertiesInput{
+			Properties: map[string]string{"RoleManager/Enabled": "false"},
+		}); err != nil {
+			return err
+		}
+
+		// A boolean property rejects non-boolean values.
+		_, err = tc.client.PutAccountProperties(tc.ctx, &iam.PutAccountPropertiesInput{
+			Properties: map[string]string{"RoleManager/Enabled": "maybe"},
+		})
+		if err == nil {
+			return fmt.Errorf("a non-boolean value for a boolean property must be rejected")
+		}
+		if !isInvalidInputError(err) {
+			return fmt.Errorf("non-boolean value: got %v, want InvalidInput", err)
+		}
+
+		// An unrecognized property key is rejected.
+		_, err = tc.client.PutAccountProperties(tc.ctx, &iam.PutAccountPropertiesInput{
+			Properties: map[string]string{"Unknown/Namespace": "value"},
+		})
+		if err == nil {
+			return fmt.Errorf("an unrecognized property key must be rejected")
+		}
+		if !isInvalidInputError(err) {
+			return fmt.Errorf("unrecognized property key: got %v, want InvalidInput", err)
+		}
+
+		// Keys from two namespaces in one request are rejected.
+		_, err = tc.client.PutAccountProperties(tc.ctx, &iam.PutAccountPropertiesInput{
+			Properties: map[string]string{"RoleManager/Enabled": "true", "Other/Property": "value"},
+		})
+		if err == nil {
+			return fmt.Errorf("properties from two namespaces in one request must be rejected")
+		}
+		if !isInvalidInputError(err) {
+			return fmt.Errorf("mixed namespaces: got %v, want InvalidInput", err)
 		}
 		return nil
 	}))

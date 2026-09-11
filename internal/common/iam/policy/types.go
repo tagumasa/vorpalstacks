@@ -79,6 +79,24 @@ type ConditionKeyValue map[string]ConditionValue
 // ConditionValue represents condition values.
 type ConditionValue []string
 
+// UnmarshalJSON implements custom JSON unmarshalling for ConditionValue.
+// A condition value is a single string or a list of strings on the wire;
+// the scalar form is normalised to a one-element list.
+func (cv *ConditionValue) UnmarshalJSON(data []byte) error {
+	var single string
+	if err := json.Unmarshal(data, &single); err == nil {
+		*cv = ConditionValue{single}
+		return nil
+	}
+
+	var multi []string
+	if err := json.Unmarshal(data, &multi); err != nil {
+		return err
+	}
+	*cv = ConditionValue(multi)
+	return nil
+}
+
 // ParseDocument parses a JSON policy document and returns a Document struct.
 func ParseDocument(jsonStr string) (*Document, error) {
 	var doc Document

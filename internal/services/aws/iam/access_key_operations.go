@@ -1,4 +1,3 @@
-// Package iam provides IAM service operations for vorpalstacks.
 package iam
 
 import (

@@ -82,6 +82,71 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		if aws.ToString(matched.Arn) != tc.policyArn {
 			return fmt.Errorf("policy arn mismatch in list")
 		}
+
+		// Scope=Local lists customer managed policies only: the AWS managed
+		// catalogue is seeded at startup, so any leak is visible here. The
+		// count is not asserted — only the arn prefix membership.
+		const awsManagedPrefix = "arn:aws:iam::aws:policy/"
+		for i := range policies {
+			if strings.HasPrefix(aws.ToString(policies[i].Arn), awsManagedPrefix) {
+				return fmt.Errorf("Local listing returned AWS managed policy %s", aws.ToString(policies[i].Arn))
+			}
+		}
+
+		// An omitted Scope defaults to All: the listing contains both the
+		// customer managed policies and the AWS managed catalogue seeded at
+		// startup.
+		defaultScoped, err := iamPaginate(func(marker *string) ([]types.Policy, *string, error) {
+			resp, err := tc.client.ListPolicies(tc.ctx, &iam.ListPoliciesInput{
+				Marker: marker,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			return resp.Policies, resp.Marker, nil
+		})
+		if err != nil {
+			return err
+		}
+		hasAWSManaged, hasCustomer := false, false
+		for i := range defaultScoped {
+			arn := aws.ToString(defaultScoped[i].Arn)
+			if strings.HasPrefix(arn, awsManagedPrefix) {
+				hasAWSManaged = true
+			}
+			if arn == aws.ToString(matched.Arn) {
+				hasCustomer = true
+			}
+		}
+		if !hasAWSManaged {
+			return fmt.Errorf("default-scope listing returned no AWS managed policies")
+		}
+		if !hasCustomer {
+			return fmt.Errorf("default-scope listing omitted the customer managed policy %s", aws.ToString(matched.Arn))
+		}
+
+		// Scope=AWS lists only the AWS managed catalogue.
+		awsScoped, err := iamPaginate(func(marker *string) ([]types.Policy, *string, error) {
+			resp, err := tc.client.ListPolicies(tc.ctx, &iam.ListPoliciesInput{
+				Scope:  types.PolicyScopeTypeAws,
+				Marker: marker,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			return resp.Policies, resp.Marker, nil
+		})
+		if err != nil {
+			return err
+		}
+		if len(awsScoped) == 0 {
+			return fmt.Errorf("AWS listing returned no policies")
+		}
+		for i := range awsScoped {
+			if !strings.HasPrefix(aws.ToString(awsScoped[i].Arn), awsManagedPrefix) {
+				return fmt.Errorf("AWS listing returned non-AWS managed policy %s", aws.ToString(awsScoped[i].Arn))
+			}
+		}
 		return nil
 	}))
 
@@ -683,6 +748,267 @@ func (r *TestRunner) iamPolicyTests(tc *iamTestContext) []TestResult {
 		}
 		if decisions["dynamodb:ListTables"] == "allowed" {
 			return fmt.Errorf("dynamodb:ListTables must not be allowed")
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "SimulatePrincipalPolicy_ResourceSpecificResults", func() error {
+		user := fmt.Sprintf("SimRsr-%s", tc.ts)
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
+			return err
+		}
+		defer cleanupUser()
+
+		userArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, user)
+		allowDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket"],"Resource":["arn:aws:s3:::bucket-a"]}]}`
+		resp, err := tc.client.SimulatePrincipalPolicy(tc.ctx, &iam.SimulatePrincipalPolicyInput{
+			PolicySourceArn: aws.String(userArn),
+			ActionNames:     []string{"s3:ListBucket"},
+			ResourceArns:    []string{"arn:aws:s3:::bucket-a", "arn:aws:s3:::bucket-b"},
+			PolicyInputList: []string{allowDoc},
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.EvaluationResults) != 1 {
+			return fmt.Errorf("evaluation results: got %d, want 1 (one per action)", len(resp.EvaluationResults))
+		}
+		ev := resp.EvaluationResults[0]
+		if string(ev.EvalDecision) != "implicitDeny" {
+			return fmt.Errorf("aggregate decision: got %s, want implicitDeny (bucket-b denies)", ev.EvalDecision)
+		}
+		if aws.ToString(ev.EvalResourceName) != "*" {
+			return fmt.Errorf("top-level resource name: got %s, want * (the ARN-template slot)", aws.ToString(ev.EvalResourceName))
+		}
+		if len(ev.ResourceSpecificResults) != 2 {
+			return fmt.Errorf("resource-specific results: got %d, want 2", len(ev.ResourceSpecificResults))
+		}
+		rsr := ev.ResourceSpecificResults[0]
+		if aws.ToString(rsr.EvalResourceName) != "arn:aws:s3:::bucket-a" || string(rsr.EvalResourceDecision) != "allowed" {
+			return fmt.Errorf("bucket-a resource result: got %s/%s", aws.ToString(rsr.EvalResourceName), rsr.EvalResourceDecision)
+		}
+		if len(rsr.MatchedStatements) != 1 || aws.ToString(rsr.MatchedStatements[0].SourcePolicyId) != "PolicyInputList.1" {
+			return fmt.Errorf("bucket-a matched statements: %+v", rsr.MatchedStatements)
+		}
+		if rsr2 := ev.ResourceSpecificResults[1]; string(rsr2.EvalResourceDecision) != "implicitDeny" {
+			return fmt.Errorf("bucket-b resource decision: got %s, want implicitDeny", rsr2.EvalResourceDecision)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "SimulatePrincipalPolicy_Pagination", func() error {
+		user := fmt.Sprintf("SimPage-%s", tc.ts)
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
+			return err
+		}
+		defer cleanupUser()
+
+		userArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, user)
+		page1, err := tc.client.SimulatePrincipalPolicy(tc.ctx, &iam.SimulatePrincipalPolicyInput{
+			PolicySourceArn: aws.String(userArn),
+			ActionNames:     []string{"s3:ListBucket", "sqs:ListQueues"},
+			MaxItems:        aws.Int32(1),
+		})
+		if err != nil {
+			return err
+		}
+		if len(page1.EvaluationResults) != 1 || !page1.IsTruncated || aws.ToString(page1.Marker) == "" {
+			return fmt.Errorf("first page: got %d results, truncated=%v, marker=%q", len(page1.EvaluationResults), page1.IsTruncated, aws.ToString(page1.Marker))
+		}
+		if got := aws.ToString(page1.EvaluationResults[0].EvalActionName); got != "s3:ListBucket" {
+			return fmt.Errorf("first page action: got %s, want s3:ListBucket", got)
+		}
+		page2, err := tc.client.SimulatePrincipalPolicy(tc.ctx, &iam.SimulatePrincipalPolicyInput{
+			PolicySourceArn: aws.String(userArn),
+			ActionNames:     []string{"s3:ListBucket", "sqs:ListQueues"},
+			MaxItems:        aws.Int32(1),
+			Marker:          page1.Marker,
+		})
+		if err != nil {
+			return err
+		}
+		if len(page2.EvaluationResults) != 1 || page2.IsTruncated {
+			return fmt.Errorf("second page: got %d results, truncated=%v", len(page2.EvaluationResults), page2.IsTruncated)
+		}
+		if got := aws.ToString(page2.EvaluationResults[0].EvalActionName); got != "sqs:ListQueues" {
+			return fmt.Errorf("second page action: got %s, want sqs:ListQueues", got)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "SimulatePrincipalPolicy_ResourcePolicyAndExclusions", func() error {
+		user := fmt.Sprintf("SimRp-%s", tc.ts)
+		cleanupUser, err := tc.createUser(user)
+		if err != nil {
+			return err
+		}
+		defer cleanupUser()
+
+		userArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, user)
+		rpDoc := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"%s"},"Action":["s3:PutObject"],"Resource":["arn:aws:s3:::mary/*"]}]}`, userArn)
+		allowAll := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:*"],"Resource":["*"]}]}`
+		identityArn, cleanupIdentity, err := tc.createPolicy(fmt.Sprintf("SimRpPol-%s", tc.ts), allowAll)
+		if err != nil {
+			return err
+		}
+		defer cleanupIdentity()
+		if _, err := tc.client.AttachUserPolicy(tc.ctx, &iam.AttachUserPolicyInput{
+			UserName:  aws.String(user),
+			PolicyArn: aws.String(identityArn),
+		}); err != nil {
+			return err
+		}
+		defer tc.client.DetachUserPolicy(tc.ctx, &iam.DetachUserPolicyInput{
+			UserName:  aws.String(user),
+			PolicyArn: aws.String(identityArn),
+		})
+
+		// Same account: the resource policy alone allows.
+		resp, err := tc.client.SimulatePrincipalPolicy(tc.ctx, &iam.SimulatePrincipalPolicyInput{
+			PolicySourceArn: aws.String(userArn),
+			ActionNames:     []string{"s3:PutObject"},
+			ResourceArns:    []string{"arn:aws:s3:::mary/Test"},
+			ResourcePolicy:  aws.String(rpDoc),
+		})
+		if err != nil {
+			return err
+		}
+		if string(resp.EvaluationResults[0].EvalDecision) != "allowed" {
+			return fmt.Errorf("same-account resource policy decision: got %s, want allowed", resp.EvaluationResults[0].EvalDecision)
+		}
+		// Per-resource matched statements carry every matched statement:
+		// the attached identity policy's allow and the resource policy's.
+		rsr := resp.EvaluationResults[0].ResourceSpecificResults[0]
+		byType := map[string]int{}
+		for _, st := range rsr.MatchedStatements {
+			byType[string(st.SourcePolicyType)]++
+		}
+		if byType["user-managed"] != 1 || byType["resource"] != 1 {
+			return fmt.Errorf("same-account matched statements: %+v", rsr.MatchedStatements)
+		}
+
+		// Cross account with an identity allow: intersection allows; the
+		// decision details name every policy type.
+		cross, err := tc.client.SimulatePrincipalPolicy(tc.ctx, &iam.SimulatePrincipalPolicyInput{
+			PolicySourceArn: aws.String(userArn),
+			ActionNames:     []string{"s3:PutObject"},
+			ResourceArns:    []string{"arn:aws:s3:::mary/Test"},
+			ResourcePolicy:  aws.String(rpDoc),
+			ResourceOwner:   aws.String("999999999999"),
+		})
+		if err != nil {
+			return err
+		}
+		ev := cross.EvaluationResults[0]
+		if string(ev.EvalDecision) != "allowed" {
+			return fmt.Errorf("cross-account decision: got %s, want allowed", ev.EvalDecision)
+		}
+		if v, ok := ev.EvalDecisionDetails["Resource Policy"]; !ok || string(v) != "allowed" {
+			return fmt.Errorf("cross-account decision details: %v", ev.EvalDecisionDetails)
+		}
+
+		// Excluding the attached identity policy (the exclusion list
+		// addresses the principal's gathered policies, never the
+		// caller-supplied input documents) leaves the cross-account
+		// intersection denied.
+		excluded, err := tc.client.SimulatePrincipalPolicy(tc.ctx, &iam.SimulatePrincipalPolicyInput{
+			PolicySourceArn: aws.String(userArn),
+			ActionNames:     []string{"s3:PutObject"},
+			ResourceArns:    []string{"arn:aws:s3:::mary/Test"},
+			ResourcePolicy:  aws.String(rpDoc),
+			ResourceOwner:   aws.String("999999999999"),
+			PolicyExclusionList: []types.PolicyIdentifier{&types.PolicyIdentifierMemberPolicyType{
+				Value: types.PolicyIdentifierPolicyTypeUserManaged,
+			}},
+		})
+		if err != nil {
+			return err
+		}
+		if string(excluded.EvaluationResults[0].EvalDecision) != "implicitDeny" {
+			return fmt.Errorf("excluded identity decision: got %s, want implicitDeny", excluded.EvaluationResults[0].EvalDecision)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "SimulateCustomPolicy", func() error {
+		allowDoc := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket"],"Resource":["*"]}]}`
+		resp, err := tc.client.SimulateCustomPolicy(tc.ctx, &iam.SimulateCustomPolicyInput{
+			PolicyInputList: []string{allowDoc},
+			ActionNames:     []string{"s3:ListBucket", "sqs:ListQueues"},
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.EvaluationResults) != 2 {
+			return fmt.Errorf("evaluation results: got %d, want 2", len(resp.EvaluationResults))
+		}
+		decisions := map[string]string{}
+		for _, ev := range resp.EvaluationResults {
+			decisions[aws.ToString(ev.EvalActionName)] = string(ev.EvalDecision)
+		}
+		if decisions["s3:ListBucket"] != "allowed" || decisions["sqs:ListQueues"] != "implicitDeny" {
+			return fmt.Errorf("custom decisions: got %v", decisions)
+		}
+
+		// An empty PolicyInputList is rejected client-side; a malformed
+		// document is rejected server-side.
+		if _, err := tc.client.SimulateCustomPolicy(tc.ctx, &iam.SimulateCustomPolicyInput{
+			PolicyInputList: []string{"{not a policy document"},
+			ActionNames:     []string{"s3:ListBucket"},
+		}); err == nil {
+			return fmt.Errorf("a malformed custom policy document must be rejected")
+		}
+
+		// An ordered organisation policy list is a hierarchy of levels, each
+		// carrying SCP documents. A level that omits the action caps the
+		// decision and is reported through the organisation decision detail;
+		// cross-account, the SCP deny also suppresses the decision details.
+		scpUser := fmt.Sprintf("SimCustScp-%s", tc.ts)
+		cleanupScpUser, err := tc.createUser(scpUser)
+		if err != nil {
+			return err
+		}
+		defer cleanupScpUser()
+		scpUserArn := fmt.Sprintf("arn:aws:iam::%s:user/%s", tc.accountID, scpUser)
+		allowBoth := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:ListBucket","sqs:ListQueues"],"Resource":["*"]}]}`
+		allowSQS := `{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["sqs:*"],"Resource":["*"]}]}`
+		rpDoc := fmt.Sprintf(`{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"AWS":"%s"},"Action":["s3:ListBucket"],"Resource":["arn:aws:s3:::bucket"]}]}`, scpUserArn)
+		cross, err := tc.client.SimulateCustomPolicy(tc.ctx, &iam.SimulateCustomPolicyInput{
+			PolicyInputList: []string{allowBoth},
+			OrderedOrganizationPolicyInputList: []types.OrderedOrganizationPolicyType{
+				{ServiceControlPolicyInputList: []string{allowSQS}},
+			},
+			ActionNames:    []string{"s3:ListBucket", "sqs:ListQueues"},
+			CallerArn:      aws.String(scpUserArn),
+			ResourceArns:   []string{"arn:aws:s3:::bucket"},
+			ResourcePolicy: aws.String(rpDoc),
+			ResourceOwner:  aws.String("999999999999"),
+		})
+		if err != nil {
+			return err
+		}
+		byAction := map[string]types.EvaluationResult{}
+		for _, ev := range cross.EvaluationResults {
+			byAction[aws.ToString(ev.EvalActionName)] = ev
+		}
+		capped := byAction["s3:ListBucket"]
+		if string(capped.EvalDecision) != "implicitDeny" {
+			return fmt.Errorf("SCP-capped decision: got %s, want implicitDeny", capped.EvalDecision)
+		}
+		if capped.OrganizationsDecisionDetail == nil || capped.OrganizationsDecisionDetail.AllowedByOrganizations {
+			return fmt.Errorf("SCP-capped org detail: %+v, want AllowedByOrganizations=false", capped.OrganizationsDecisionDetail)
+		}
+		if len(capped.EvalDecisionDetails) != 0 {
+			return fmt.Errorf("SCP-denied decision details must be suppressed, got %v", capped.EvalDecisionDetails)
+		}
+		inList := byAction["sqs:ListQueues"]
+		if inList.OrganizationsDecisionDetail == nil || !inList.OrganizationsDecisionDetail.AllowedByOrganizations {
+			return fmt.Errorf("in-list org detail: %+v, want AllowedByOrganizations=true", inList.OrganizationsDecisionDetail)
+		}
+		if len(inList.EvalDecisionDetails) == 0 {
+			return fmt.Errorf("cross-account decision details without an SCP deny must be reported")
 		}
 		return nil
 	}))

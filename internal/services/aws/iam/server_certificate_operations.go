@@ -129,30 +129,61 @@ func (s *IAMService) ListServerCertificates(ctx context.Context, reqCtx *request
 	return resp, nil
 }
 
-var serverCertificateTagOps = tagOps[*iamstore.ServerCertificate]{
-	paramName:  "ServerCertificateName",
-	emptyErr:   NewValidationError("ServerCertificateName"),
-	notFoundFn: func(n string) error { return NewNoSuchEntityError("server certificate", n) },
-	getFn: func(s *iamstore.IAMStore, n string) (*iamstore.ServerCertificate, error) {
-		return s.ServerCertificates().Get(n)
-	},
-	putFn:  func(s *iamstore.IAMStore, r *iamstore.ServerCertificate) error { return s.ServerCertificates().Put(r) },
-	tagsFn: func(r *iamstore.ServerCertificate) *[]tags.Tag { return &r.Tags },
-}
-
 // TagServerCertificate adds tags to a server certificate.
 func (s *IAMService) TagServerCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagResource(ctx, s, reqCtx, req, serverCertificateTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &TagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "ServerCertificateName"),
+		Tags:         tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	if err := tagResourceCore(store, serverCertificateTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // UntagServerCertificate removes tags from a server certificate.
 func (s *IAMService) UntagServerCertificate(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return untagResource(ctx, s, reqCtx, req, serverCertificateTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &UntagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "ServerCertificateName"),
+		TagKeys:      tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"),
+	}
+	if err := untagResourceCore(store, serverCertificateTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // ListServerCertificateTags lists the tags attached to a server certificate.
 func (s *IAMService) ListServerCertificateTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return listResourceTags(ctx, s, reqCtx, req, serverCertificateTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &ListResourceTagsInput{
+		ResourceName: request.GetStringParam(req.Parameters, "ServerCertificateName"),
+		Marker:       request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:     pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
+	}
+	result, err := listResourceTagsCore(store, serverCertificateTagOps, input)
+	if err != nil {
+		return nil, err
+	}
+	resp := map[string]interface{}{
+		"Tags":        tags.ToResponse(result.Tags),
+		"IsTruncated": result.IsTruncated,
+	}
+	if result.Marker != "" {
+		resp["Marker"] = result.Marker
+	}
+	return resp, nil
 }
 
 func serverCertificateMetadataToResponse(cert *iamstore.ServerCertificate) map[string]interface{} {

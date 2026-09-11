@@ -2,8 +2,10 @@
 package iam
 
 import (
+	"errors"
 	"sync"
 
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/core/storage"
 )
 
@@ -25,15 +27,42 @@ const (
 	// the AWS quota tables (only the per-user quota of 8 is listed); the
 	// value keeps the historical GetAccountSummary display.
 	QuotaMFADevicesPerAccount = 500
+
+	// MaxPolicyVersions is the AWS-enforced maximum number of versions per
+	// policy.
+	MaxPolicyVersions = 5
+
+	// MaxRoleTemplateReplacementEntries is the AWS-enforced maximum number
+	// of AcquireRole ReplacementValues entries.
+	MaxRoleTemplateReplacementEntries = 30
+
+	// MinRoleTemplateReplacementValues and MaxRoleTemplateReplacementValues
+	// are the AWS-enforced length bounds of one AcquireRole
+	// ReplacementValues entry's value list.
+	MinRoleTemplateReplacementValues = 1
+	MaxRoleTemplateReplacementValues = 20
+
+	// MaxAccountPropertyKeyLength and MaxAccountPropertyValueLength are the
+	// AWS-enforced length bounds of one account property key (Namespace/
+	// PropertyName) and value.
+	MaxAccountPropertyKeyLength   = 50
+	MaxAccountPropertyValueLength = 1024
 )
 
-// globalIAMStore ensures a single IAMStore instance per (storage, accountID) pair.
-// All services (IAM, STS, admin_auth, IAM admin handler) must use this
-// to avoid duplicate store instances and redundant AWS managed policy seeding.
+// DefaultRoleSessionDuration is the MaxSessionDuration applied to a role
+// created without an explicit value: one hour, the documented default of
+// the MaxSessionDuration parameter. It is the single definition shared by
+// the store's defaulting and the service layer's create paths.
+const DefaultRoleSessionDuration = 3600
+
+// globalStores caches one IAMStore per accountID (the cache key; the
+// storage handle is used only when creating the entry). All services
+// (IAM, STS, admin_auth, IAM admin handler) must use this to avoid
+// duplicate store instances and redundant AWS managed policy seeding.
 var globalStores sync.Map
 
-// GetOrCreateGlobalStore returns the cached IAMStore for the given storage and
-// accountID, creating and seeding it on first access.
+// GetOrCreateGlobalStore returns the cached IAMStore for accountID, creating
+// and seeding it from the given storage on first access.
 func GetOrCreateGlobalStore(store storage.BasicStorage, accountID string) *IAMStore {
 	if cached, ok := globalStores.Load(accountID); ok {
 		if typed, ok := cached.(*IAMStore); ok {
@@ -67,6 +96,8 @@ type IAMStore struct {
 	samlProviders        *SAMLProviderStore
 	oidcProviders        *OpenIDConnectProviderStore
 	accountSettings      *AccountSettingsStore
+	accountProperties    *AccountPropertiesStore
+	roleTemplates        *RoleTemplateStore
 	serviceLastAccessed  *ServiceLastAccessedDetailsJobStore
 	slRoleDeletionTasks  *SLRoleDeletionTaskStore
 	arnBuilder           *ARNBuilder
@@ -96,6 +127,8 @@ func NewIAMStore(store storage.BasicStorage, accountID string) *IAMStore {
 		samlProviders:        NewSAMLProviderStore(store, accountID),
 		oidcProviders:        NewOpenIDConnectProviderStore(store, accountID),
 		accountSettings:      NewAccountSettingsStore(store),
+		accountProperties:    NewAccountPropertiesStore(store),
+		roleTemplates:        NewRoleTemplateStore(),
 		serviceLastAccessed:  NewServiceLastAccessedDetailsJobStore(store),
 		slRoleDeletionTasks:  NewSLRoleDeletionTaskStore(store),
 		arnBuilder:           NewARNBuilder(accountID),
@@ -236,7 +269,12 @@ func (s *IAMStore) initializeAWSManagedPolicies() {
 	}
 
 	for _, p := range awsPolicies {
-		_ = s.policies.CreateAWSManagedPolicy(p)
+		// Store construction must not fail on a seed write; the Warn keeps
+		// a missing AWS managed policy observable instead of silently
+		// degrading the account's attachable policy set.
+		if err := s.policies.CreateAWSManagedPolicy(p); err != nil {
+			logs.Warn("iam: failed to seed an AWS managed policy", logs.String("policy", p.PolicyName), logs.Err(err))
+		}
 	}
 }
 
@@ -350,6 +388,16 @@ func (s *IAMStore) AccountSettings() *AccountSettingsStore {
 	return s.accountSettings
 }
 
+// AccountProperties returns the account properties store.
+func (s *IAMStore) AccountProperties() *AccountPropertiesStore {
+	return s.accountProperties
+}
+
+// RoleTemplates returns the role template catalogue store.
+func (s *IAMStore) RoleTemplates() *RoleTemplateStore {
+	return s.roleTemplates
+}
+
 // ServiceLastAccessed returns the service last accessed details job store.
 func (s *IAMStore) ServiceLastAccessed() *ServiceLastAccessedDetailsJobStore {
 	return s.serviceLastAccessed
@@ -454,15 +502,28 @@ func (s *IAMStore) RenameUser(oldName, newName, newPath string) error {
 			}
 
 			if migrateErr != nil {
+				// Reverse the completed steps in reverse order. A reverse
+				// failure leaves resources split between the two names, so
+				// it is logged and joined into the returned error rather
+				// than discarded — the caller must see the unreverted state.
+				rollbackErrs := []error{migrateErr}
 				for i := completed - 1; i >= 0; i-- {
-					_ = steps[i].reverse()
+					if err := steps[i].reverse(); err != nil {
+						logs.Warn("iam: reverse migration step failed during user rename rollback",
+							logs.String("oldName", oldName), logs.String("newName", newName), logs.Err(err))
+						rollbackErrs = append(rollbackErrs, err)
+					}
 				}
-				return migrateErr
+				return errors.Join(rollbackErrs...)
 			}
 
-			// Phase 2: Swap user records.  All resources already point to
-			// newName, so we atomically create the new record and delete
-			// the old one.
+			// Phase 2: Swap user records. All resources already point to
+			// newName, so the new record is written first and the old one
+			// deleted after — two separate writes, not a transaction; a
+			// failure or crash between them leaves both records. Recovery
+			// from that split state is to delete the stale old-name record
+			// (its resources already moved), after which creation under
+			// either name succeeds again.
 			if err := s.users.Put(user); err != nil {
 				return err
 			}
@@ -481,7 +542,8 @@ func (s *IAMStore) RenameUser(oldName, newName, newPath string) error {
 
 // RenameGroup changes a group's name and/or path, migrating all associated
 // resources (user-group memberships, inline/attached policies) to the new
-// name. The old group key is deleted after successful migration.
+// name. A mid-migration failure reverses the completed migration steps in
+// reverse order; the old group key is deleted after successful migration.
 func (s *IAMStore) RenameGroup(oldName, newName, newPath string) error {
 	if newName == "" {
 		newName = oldName
@@ -509,39 +571,71 @@ func (s *IAMStore) RenameGroup(oldName, newName, newPath string) error {
 		}
 
 		if needsRename {
-			if err := s.groups.Put(group); err != nil {
-				return err
-			}
-
-			migrateErr := func() error {
-				users, err := s.userGroups.ListUsersInGroup(oldName)
+			// A membership is moved add-first under the user's membership
+			// lock (MigrateUserGroup), so a failure between the two
+			// writes leaves the member in both groups — which the reverse
+			// step resolves — rather than in neither, and the pair is
+			// atomic against the per-user quota check.
+			migrateMemberships := func(from, to string) error {
+				users, err := s.userGroups.ListUsersInGroup(from)
 				if err != nil {
 					return err
 				}
 				for _, userName := range users {
-					if err := s.userGroups.RemoveUserFromGroup(userName, oldName); err != nil {
+					if err := s.userGroups.MigrateUserGroup(userName, from, to); err != nil {
 						return err
 					}
-					if err := s.userGroups.AddUserToGroup(userName, newName); err != nil {
-						return err
-					}
-				}
-
-				if err := s.inlinePolicies.MigratePrincipal(oldName, newName, "group"); err != nil {
-					return err
-				}
-
-				if err := s.attachedPolicies.MigratePrincipal(oldName, newName, "group"); err != nil {
-					return err
 				}
 				return nil
-			}()
-
-			if migrateErr != nil {
-				_ = s.groups.Delete(newName)
-				return migrateErr
 			}
 
+			type migrationStep struct {
+				forward func() error
+				reverse func() error
+			}
+
+			steps := []migrationStep{
+				{func() error { return migrateMemberships(oldName, newName) }, func() error { return migrateMemberships(newName, oldName) }},
+				{func() error { return s.inlinePolicies.MigratePrincipal(oldName, newName, "group") }, func() error { return s.inlinePolicies.MigratePrincipal(newName, oldName, "group") }},
+				{func() error { return s.attachedPolicies.MigratePrincipal(oldName, newName, "group") }, func() error { return s.attachedPolicies.MigratePrincipal(newName, oldName, "group") }},
+			}
+
+			var migrateErr error
+			completed := 0
+			for i, step := range steps {
+				if err := step.forward(); err != nil {
+					migrateErr = err
+					break
+				}
+				completed = i + 1
+			}
+
+			if migrateErr != nil {
+				// Reverse the completed steps in reverse order. A reverse
+				// failure leaves resources split between the two names, so
+				// it is logged and joined into the returned error rather
+				// than discarded — the caller must see the unreverted state.
+				rollbackErrs := []error{migrateErr}
+				for i := completed - 1; i >= 0; i-- {
+					if err := steps[i].reverse(); err != nil {
+						logs.Warn("iam: reverse migration step failed during group rename rollback",
+							logs.String("oldName", oldName), logs.String("newName", newName), logs.Err(err))
+						rollbackErrs = append(rollbackErrs, err)
+					}
+				}
+				return errors.Join(rollbackErrs...)
+			}
+
+			// Swap group records. All resources already point to newName,
+			// so the new record is written first and the old one deleted
+			// after — two separate writes, not a transaction; a failure or
+			// crash between them leaves both records. Recovery from that
+			// split state is to delete the stale old-name record (its
+			// resources already moved), after which creation under either
+			// name succeeds again.
+			if err := s.groups.Put(group); err != nil {
+				return err
+			}
 			if err := s.groups.Delete(oldName); err != nil {
 				return err
 			}

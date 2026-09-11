@@ -62,6 +62,24 @@ func TestValidateClientIDUnicodeLengths(t *testing.T) {
 	}
 }
 
+// TestValidateServiceNamespaceUnicodeLengths pins that serviceNamespaceType
+// @length(1,64) is counted in Unicode characters, matching the file-wide
+// @length convention; a 64-character multibyte namespace is legal input
+// even though its byte length exceeds 64.
+func TestValidateServiceNamespaceUnicodeLengths(t *testing.T) {
+	cjk := "\u65e5" // one CJK character, 3 bytes
+
+	if !validateServiceNamespace(strings.Repeat(cjk, 64)) {
+		t.Error("64-character CJK service namespace rejected")
+	}
+	if validateServiceNamespace(strings.Repeat(cjk, 65)) {
+		t.Error("65-character CJK service namespace accepted")
+	}
+	if validateServiceNamespace("") {
+		t.Error("empty service namespace accepted")
+	}
+}
+
 // TestGetEntityCoresRejectEmptyName pins the shared empty-identifier
 // rejection in the user/role/policy/group get cores: an omitted member is
 // a client error on both planes, reported before any store access.

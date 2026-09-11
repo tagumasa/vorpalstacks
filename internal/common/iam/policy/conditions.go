@@ -97,15 +97,13 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 
 		if op == ConditionForAllValuesStringEquals {
 			for key, values := range keyValues {
-				resolvedKey := context.ResolveVariable(key)
-				if resolvedKey == "" {
+				contextValues := context.ContextValues(key)
+				if len(contextValues) == 0 {
 					// Vacuous truth: an empty multi-valued key has zero
 					// values, so all of them match.
 					continue
 				}
-				contextValues := strings.Split(resolvedKey, ",")
 				for _, cv := range contextValues {
-					cv = strings.TrimSpace(cv)
 					matched := false
 					for _, pv := range values {
 						if cv == pv {
@@ -123,13 +121,11 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 
 		if op == ConditionForAllValuesStringNotEquals {
 			for key, values := range keyValues {
-				resolvedKey := context.ResolveVariable(key)
-				if resolvedKey == "" {
+				contextValues := context.ContextValues(key)
+				if len(contextValues) == 0 {
 					continue
 				}
-				contextValues := strings.Split(resolvedKey, ",")
 				for _, cv := range contextValues {
-					cv = strings.TrimSpace(cv)
 					matched := false
 					for _, pv := range values {
 						if cv != pv {
@@ -147,14 +143,12 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 
 		if op == ConditionForAnyValueStringEquals {
 			for key, values := range keyValues {
-				resolvedKey := context.ResolveVariable(key)
-				contextValues := strings.Split(resolvedKey, ",")
+				contextValues := context.ContextValues(key)
 				if len(contextValues) == 0 {
 					return false
 				}
 				anyMatch := false
 				for _, cv := range contextValues {
-					cv = strings.TrimSpace(cv)
 					for _, pv := range values {
 						if cv == pv {
 							anyMatch = true
@@ -174,14 +168,12 @@ func (ce *ConditionEvaluator) Evaluate(conditions ConditionMap, context *Evaluat
 
 		if op == ConditionForAnyValueStringNotEquals {
 			for key, values := range keyValues {
-				resolvedKey := context.ResolveVariable(key)
-				contextValues := strings.Split(resolvedKey, ",")
+				contextValues := context.ContextValues(key)
 				if len(contextValues) == 0 {
 					return false
 				}
 				anyMatch := false
 				for _, cv := range contextValues {
-					cv = strings.TrimSpace(cv)
 					for _, pv := range values {
 						if cv != pv {
 							anyMatch = true

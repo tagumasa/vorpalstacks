@@ -90,7 +90,7 @@ func (v *IAMValidator) ValidateRoleExists(roleArn string) error {
 		return nil
 	}
 
-	if !v.roleProvider.RoleExists(parsed.RoleName) {
+	if !v.roleProvider.Exists(parsed.RoleName) {
 		return NewLambdaRoleNotFoundError(roleArn)
 	}
 

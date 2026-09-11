@@ -3,6 +3,8 @@ package iam
 import (
 	"context"
 
+	iamstore "vorpalstacks/internal/store/aws/iam"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/logs"
 )
@@ -61,17 +63,24 @@ func (s *IAMService) GetServiceLinkedRoleDeletionStatus(ctx context.Context, req
 		return nil, err
 	}
 
+	return deletionStatusToResponse(task), nil
+}
+
+// deletionStatusToResponse serialises a deletion task into the
+// GetServiceLinkedRoleDeletionStatus response shape. The modelled Reason
+// member targets DeletionTaskFailureReasonType, a structure whose members
+// are the string Reason and RoleUsageList; usage tracking does not exist on
+// this platform, so only the string member is populated on failure.
+func deletionStatusToResponse(task *iamstore.SLRoleDeletionTask) map[string]interface{} {
 	resp := map[string]interface{}{
 		"Status": task.Status,
 	}
 	if task.DeletionFailed {
 		resp["Reason"] = map[string]interface{}{
-			"ReasonCode":    "DeleteConflict",
-			"ReasonMessage": task.ErrorReason,
+			"Reason": task.ErrorReason,
 		}
 	}
-
-	return resp, nil
+	return resp
 }
 
 // RecoverOrphanedSLRoleDeletionTasks marks any IN_PROGRESS tasks as

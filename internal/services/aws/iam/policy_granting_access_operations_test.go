@@ -1,11 +1,9 @@
 package iam
 
 import (
-	"context"
 	"testing"
 
 	"vorpalstacks/internal/common/iam/policy"
-	"vorpalstacks/internal/common/request"
 )
 
 func TestPolicyGrantsServiceNamespace(t *testing.T) {
@@ -45,20 +43,17 @@ func TestPolicyGrantsServiceNamespace(t *testing.T) {
 }
 
 // The SDK rejects inputs missing required members client-side, so the
-// server-side required-parameter checks are pinned here.
+// server-side required-parameter checks are pinned here against the Core
+// function that performs them.
 func TestListPoliciesGrantingServiceAccessRequiredParams(t *testing.T) {
 	s := &IAMService{}
 
-	if _, err := s.ListPoliciesGrantingServiceAccess(context.Background(), nil, &request.ParsedRequest{
-		Parameters: map[string]interface{}{},
-	}); err == nil {
+	if _, err := s.listPoliciesGrantingServiceAccessCore(nil, &ListPoliciesGrantingServiceAccessInput{}); err == nil {
 		t.Error("a missing Arn must be rejected")
 	}
 
-	if _, err := s.ListPoliciesGrantingServiceAccess(context.Background(), nil, &request.ParsedRequest{
-		Parameters: map[string]interface{}{
-			"Arn": "arn:aws:iam::000000000000:user/nobody",
-		},
+	if _, err := s.listPoliciesGrantingServiceAccessCore(nil, &ListPoliciesGrantingServiceAccessInput{
+		Arn: "arn:aws:iam::000000000000:user/nobody",
 	}); err == nil {
 		t.Error("a missing ServiceNamespaces list must be rejected")
 	}

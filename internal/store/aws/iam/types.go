@@ -1,4 +1,3 @@
-// Package iam provides AWS IAM store functionality for vorpalstacks.
 package iam
 
 import (
@@ -112,6 +111,14 @@ type Role struct {
 	PermissionsBoundary      *PermissionsBoundary `json:"permissions_boundary,omitempty"`
 	Tags                     []types.Tag          `json:"tags,omitempty"`
 	RoleLastUsed             *RoleLastUsed        `json:"role_last_used,omitempty"`
+	SourceRoleTemplate       *SourceRoleTemplate  `json:"source_role_template,omitempty"`
+}
+
+// SourceRoleTemplate records the role template a role was created from:
+// the Role SourceRoleTemplate member, set by the AcquireRole path.
+type SourceRoleTemplate struct {
+	TemplateArn          string `json:"template_arn"`
+	TemplateMinorVersion int    `json:"template_minor_version"`
 }
 
 // RoleLastUsed represents information about when the role was last used.
@@ -144,13 +151,6 @@ type InstanceProfileListResult struct {
 	InstanceProfiles []*InstanceProfile
 	IsTruncated      bool
 	Marker           string
-}
-
-// RolePolicy represents an inline policy attached to an IAM role.
-type RolePolicy struct {
-	RoleName       string `json:"role_name"`
-	PolicyName     string `json:"policy_name"`
-	PolicyDocument string `json:"policy_document"`
 }
 
 // AttachedPolicy represents a managed policy attached to an IAM entity.
@@ -220,7 +220,6 @@ type VirtualMFADevice struct {
 	FriendlyName     string             `json:"friendly_name"`
 	AccountId        string             `json:"account_id"`
 	Base32StringSeed string             `json:"base32_string_seed,omitempty"`
-	QRCodePNG        []byte             `json:"qr_code_png,omitempty"`
 	EnableDate       *time.Time         `json:"enable_date,omitempty"`
 	UserAssignment   *MFAUserAssignment `json:"user_assignment,omitempty"`
 	Tags             []types.Tag        `json:"tags,omitempty"`

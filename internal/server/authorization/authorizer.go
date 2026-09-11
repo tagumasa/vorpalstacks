@@ -628,12 +628,12 @@ func (a *Authorizer) buildSessionEvaluationContext(
 		parsedReq.GetRegion(),
 	)
 
-	sessionContext := make(map[string]string, len(sessionCreds.Tags)+1)
+	sessionContext := make(map[string][]string, len(sessionCreds.Tags)+1)
 	for k, v := range sessionCreds.Tags {
-		sessionContext["aws:PrincipalTag/"+k] = v
+		sessionContext["aws:PrincipalTag/"+k] = []string{v}
 	}
 	if sessionCreds.SourceIdentity != "" {
-		sessionContext["sts:SourceIdentity"] = sessionCreds.SourceIdentity
+		sessionContext["sts:SourceIdentity"] = []string{sessionCreds.SourceIdentity}
 	}
 
 	return &policy.EvaluationContext{

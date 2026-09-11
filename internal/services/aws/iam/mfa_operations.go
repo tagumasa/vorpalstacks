@@ -1,4 +1,3 @@
-// Package iam provides IAM service operations for vorpalstacks.
 package iam
 
 import (
@@ -316,33 +315,66 @@ func (s *IAMService) DeleteAccountPasswordPolicy(ctx context.Context, reqCtx *re
 	return response.EmptyResponse(), nil
 }
 
-var mfaDeviceTagOps = tagOps[*iamstore.VirtualMFADevice]{
-	paramName:  "SerialNumber",
-	emptyErr:   ErrNoSuchMFADevice,
-	notFoundFn: func(n string) error { return NewNoSuchMFADeviceError(n) },
-	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.VirtualMFADevice, error) { return s.MFADevices().Get(n) },
-	putFn:      func(s *iamstore.IAMStore, r *iamstore.VirtualMFADevice) error { return s.MFADevices().Put(r) },
-	tagsFn:     func(r *iamstore.VirtualMFADevice) *[]tags.Tag { return &r.Tags },
-}
-
 // TagMFADevice adds tags to a virtual MFA device.
 // SerialNumber is required.
 // Tags are provided as a list of key-value pairs.
 func (s *IAMService) TagMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagResource(ctx, s, reqCtx, req, mfaDeviceTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &TagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "SerialNumber"),
+		Tags:         tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	if err := tagResourceCore(store, mfaDeviceTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // UntagMFADevice removes tags from a virtual MFA device.
 // SerialNumber is required.
 // TagKeys specifies which tags to remove.
 func (s *IAMService) UntagMFADevice(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return untagResource(ctx, s, reqCtx, req, mfaDeviceTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &UntagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "SerialNumber"),
+		TagKeys:      tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"),
+	}
+	if err := untagResourceCore(store, mfaDeviceTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // ListMFADeviceTags lists the tags attached to a virtual MFA device.
 // SerialNumber is required.
 func (s *IAMService) ListMFADeviceTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return listResourceTags(ctx, s, reqCtx, req, mfaDeviceTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &ListResourceTagsInput{
+		ResourceName: request.GetStringParam(req.Parameters, "SerialNumber"),
+		Marker:       request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:     pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
+	}
+	result, err := listResourceTagsCore(store, mfaDeviceTagOps, input)
+	if err != nil {
+		return nil, err
+	}
+	resp := map[string]interface{}{
+		"Tags":        tags.ToResponse(result.Tags),
+		"IsTruncated": result.IsTruncated,
+	}
+	if result.Marker != "" {
+		resp["Marker"] = result.Marker
+	}
+	return resp, nil
 }
 
 func mfaDeviceToResponse(device *iamstore.VirtualMFADevice, user *iamstore.User, includeSecret bool) map[string]interface{} {

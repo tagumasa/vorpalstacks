@@ -76,39 +76,19 @@ func (s *IAMService) createUserCore(store *iamstore.IAMStore, input *CreateUserI
 }
 
 // attachUserPermissionsBoundaryCore atomically sets a permissions boundary
-// on an already-resolved IAM user.  It validates the ARN, checks the policy
-// exists, handles old-boundary decrement and same-ARN idempotency, persists
-// the user, and increments the new policy's usage count.
+// on an already-resolved IAM user: the shared attach sequence in
+// attachPermissionsBoundaryCore, parameterised over the user's boundary
+// field and the user store's persistence.
 //
 // Used by both createUserCore (when PermissionsBoundaryArn is specified
 // at creation time) and the putUserPermissionsBoundaryCore operation Core.
 // Consolidating the logic here prevents the create-time vs update-time
 // drift that previously existed.
 func attachUserPermissionsBoundaryCore(store *iamstore.IAMStore, user *iamstore.User, pbArn string) error {
-	if err := validateIAMPolicyArn(pbArn); err != nil {
-		return err
-	}
-	if !store.Policies().Exists(pbArn) {
-		return NewNoSuchPolicyError(pbArn)
-	}
-	// Idempotent: same ARN already set — nothing to do.
-	if user.PermissionsBoundary != nil && user.PermissionsBoundary.PermissionsBoundaryArn == pbArn {
-		return nil
-	}
-	// Decrement the previous boundary's usage count, if any.  At create
-	// time user.PermissionsBoundary is nil so this is a no-op there.
-	if user.PermissionsBoundary != nil && user.PermissionsBoundary.PermissionsBoundaryArn != "" {
-		_ = store.Policies().DecrementPermissionsBoundaryUsageCount(user.PermissionsBoundary.PermissionsBoundaryArn)
-	}
-	user.PermissionsBoundary = &iamstore.PermissionsBoundary{
-		PermissionsBoundaryType: "Policy",
-		PermissionsBoundaryArn:  pbArn,
-	}
-	if err := store.Users().Put(user); err != nil {
-		return err
-	}
-	_ = store.Policies().IncrementPermissionsBoundaryUsageCount(pbArn)
-	return nil
+	return attachPermissionsBoundaryCore(store, user, pbArn,
+		func(u *iamstore.User) **iamstore.PermissionsBoundary { return &u.PermissionsBoundary },
+		store.Users().Put,
+	)
 }
 
 // putUserPermissionsBoundaryCore is the operation Core for the
@@ -139,7 +119,7 @@ func (s *IAMService) getUserCore(store *iamstore.IAMStore, userName string) (*ia
 	}
 	user, err := store.Users().Get(userName)
 	if err != nil {
-		return nil, NewNoSuchUserError(userName)
+		return nil, storeReadError(err, iamstore.ErrUserNotFound, NewNoSuchUserError(userName))
 	}
 	return user, nil
 }
@@ -152,38 +132,13 @@ func (s *IAMService) listUsersCore(store *iamstore.IAMStore, pathPrefix, marker 
 // updateUserCore validates input and renames/repaths an IAM user.
 // Returns the updated user or an IAM-formatted error.
 func (s *IAMService) updateUserCore(store *iamstore.IAMStore, input *UpdateUserInput) (*iamstore.User, error) {
-	if input.UserName == "" {
-		return nil, NewValidationError("UserName")
-	}
-
-	if input.NewPath == "" && input.NewUserName == "" {
-		return nil, NewInvalidInputError("UpdateUser", "at least one of NewPath or NewUserName must be specified")
-	}
-	if input.NewPath != "" && !validatePath(input.NewPath) {
-		return nil, NewInvalidInputError("NewPath", "must be a valid path starting and ending with /")
-	}
-	if input.NewUserName != "" {
-		if err := validateEntityName(input.NewUserName, "NewUserName"); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := store.RenameUser(input.UserName, input.NewUserName, input.NewPath); err != nil {
-		if errors.Is(err, iamstore.ErrUserAlreadyExists) {
-			return nil, ErrUserAlreadyExists
-		}
-		return nil, err
-	}
-
-	targetName := input.UserName
-	if input.NewUserName != "" {
-		targetName = input.NewUserName
-	}
-	user, err := store.Users().Get(targetName)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+	return updateEntityCore("User", input.UserName, input.NewPath, input.NewUserName,
+		func() error { return store.RenameUser(input.UserName, input.NewUserName, input.NewPath) },
+		iamstore.ErrUserAlreadyExists,
+		func(name string) error { return NewUserAlreadyExistsError(name) },
+		validateEntityName,
+		store.Users().Get,
+	)
 }
 
 // deleteUserCore validates input and deletes an IAM user.
@@ -197,8 +152,12 @@ func (s *IAMService) deleteUserCore(store *iamstore.IAMStore, input *DeleteUserI
 	if input.UserName == "" {
 		return NewValidationError("UserName")
 	}
-	if !store.Users().Exists(input.UserName) {
-		return NewNoSuchUserError(input.UserName)
+	// The user is resolved rather than probed: the resolved read keeps an
+	// outage from masquerading as a missing user, and the resolved record
+	// carries the permissions boundary the deletion must decrement.
+	user, err := store.Users().Get(input.UserName)
+	if err != nil {
+		return storeReadError(err, iamstore.ErrUserNotFound, NewNoSuchUserError(input.UserName))
 	}
 
 	if input.Cascade {
@@ -275,15 +234,8 @@ func (s *IAMService) deleteUserCore(store *iamstore.IAMStore, input *DeleteUserI
 	}
 
 	// Decrement permissions boundary usage count before the user record is
-	// removed. AWS allows deleting an entity that still has a permissions
-	// boundary attached (it is not a deletion prerequisite), so the policy
-	// counter must be adjusted here to avoid drift. Best-effort, matching the
-	// PutUserPermissionsBoundary / DeleteUserPermissionsBoundary pattern.
-	if user, gErr := store.Users().Get(input.UserName); gErr == nil {
-		if user.PermissionsBoundary != nil && user.PermissionsBoundary.PermissionsBoundaryArn != "" {
-			_ = store.Policies().DecrementPermissionsBoundaryUsageCount(user.PermissionsBoundary.PermissionsBoundaryArn)
-		}
-	}
+	// removed (see decrementBoundaryUsageCount).
+	decrementBoundaryUsageCount(store, user.PermissionsBoundary)
 
 	return store.Users().Delete(input.UserName)
 }
@@ -299,23 +251,29 @@ func (s *IAMService) deleteUserPermissionsBoundaryCore(store *iamstore.IAMStore,
 	}
 	user, err := store.Users().Get(userName)
 	if err != nil {
-		return NewNoSuchUserError(userName)
+		return storeReadError(err, iamstore.ErrUserNotFound, NewNoSuchUserError(userName))
 	}
-
-	if user.PermissionsBoundary != nil && user.PermissionsBoundary.PermissionsBoundaryArn != "" {
-		_ = store.Policies().DecrementPermissionsBoundaryUsageCount(user.PermissionsBoundary.PermissionsBoundaryArn)
-	}
-
-	user.PermissionsBoundary = nil
-	return store.Users().Put(user)
+	return deletePermissionsBoundaryCore(store, user,
+		func(u *iamstore.User) **iamstore.PermissionsBoundary { return &u.PermissionsBoundary },
+		store.Users().Put,
+	)
 }
 
 // listGroupsForUserCore retrieves the list of groups that a user
 // belongs to.  Consolidates the store-direct logic so that both the
-// HTTP API and future admin-handler paths delegate here.
+// HTTP API and future admin-handler paths delegate here. An empty user
+// name is rejected as a validation error; a membership whose group
+// cannot be read — an infrastructure fault, or a group that vanished
+// between the membership listing and the read — fails the listing
+// instead of silently omitting the group.
 func (s *IAMService) listGroupsForUserCore(store *iamstore.IAMStore, userName string) ([]*iamstore.Group, error) {
-	if !store.Users().Exists(userName) {
-		return nil, NewNoSuchUserError(userName)
+	if userName == "" {
+		return nil, NewValidationError("UserName")
+	}
+	// The user is resolved rather than probed: the resolved read keeps an
+	// outage from masquerading as a missing user.
+	if _, err := store.Users().Get(userName); err != nil {
+		return nil, storeReadError(err, iamstore.ErrUserNotFound, NewNoSuchUserError(userName))
 	}
 
 	groupNames, err := store.UserGroups().ListGroupsForUser(userName)
@@ -325,9 +283,11 @@ func (s *IAMService) listGroupsForUserCore(store *iamstore.IAMStore, userName st
 
 	groups := make([]*iamstore.Group, 0, len(groupNames))
 	for _, groupName := range groupNames {
-		if group, err := store.Groups().Get(groupName); err == nil {
-			groups = append(groups, group)
+		group, err := store.Groups().Get(groupName)
+		if err != nil {
+			return nil, storeListError(err)
 		}
+		groups = append(groups, group)
 	}
 	return groups, nil
 }

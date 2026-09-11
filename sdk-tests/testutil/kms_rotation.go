@@ -43,20 +43,48 @@ func (r *TestRunner) runKMSRotationTests(tc *kmsTestContext) []TestResult {
 		if err := tc.requireKeyID(); err != nil {
 			return err
 		}
-		resp, err := tc.client.ListKeyRotations(tc.ctx, &kms.ListKeyRotationsInput{
-			KeyId: aws.String(tc.keyID),
-		})
-		if err != nil {
-			return err
+		// Two on-demand rotations back to back land within the same second,
+		// so a rotation-date-keyed marker would rewind onto the first
+		// page's entry; the walk must deliver each rotation exactly once.
+		for i := 0; i < 2; i++ {
+			if _, err := tc.client.RotateKeyOnDemand(tc.ctx, &kms.RotateKeyOnDemandInput{
+				KeyId: aws.String(tc.keyID),
+			}); err != nil {
+				return err
+			}
 		}
-		if resp.Rotations == nil {
-			return fmt.Errorf("rotations is nil")
+		seen := map[string]int{}
+		var marker *string
+		for pages := 0; ; pages++ {
+			if pages > 4 {
+				return fmt.Errorf("rotation pagination did not terminate")
+			}
+			resp, err := tc.client.ListKeyRotations(tc.ctx, &kms.ListKeyRotationsInput{
+				KeyId:  aws.String(tc.keyID),
+				Limit:  aws.Int32(1),
+				Marker: marker,
+			})
+			if err != nil {
+				return err
+			}
+			if resp.Rotations == nil {
+				return fmt.Errorf("rotations is nil")
+			}
+			for _, rotation := range resp.Rotations {
+				seen[aws.ToString(rotation.KeyMaterialId)]++
+			}
+			if !resp.Truncated || resp.NextMarker == nil {
+				break
+			}
+			marker = resp.NextMarker
 		}
-		// No actual rotation has been performed on the test key, so the
-		// rotation history should be empty. AWS returns an empty list for
-		// keys that have never been rotated.
-		if len(resp.Rotations) != 0 {
-			return fmt.Errorf("expected 0 rotations, got %d", len(resp.Rotations))
+		if len(seen) != 2 {
+			return fmt.Errorf("expected exactly 2 rotations, got %d", len(seen))
+		}
+		for material, count := range seen {
+			if count != 1 {
+				return fmt.Errorf("rotation %s delivered %d times, want exactly once", material, count)
+			}
 		}
 		return nil
 	}))

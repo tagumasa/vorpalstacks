@@ -3,7 +3,7 @@ module vorpalstacks-sdk-tests
 go 1.25.13
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.46.0
+	github.com/aws/aws-sdk-go-v2 v1.47.0
 	github.com/aws/aws-sdk-go-v2/config v1.32.30
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.29
 	github.com/aws/aws-sdk-go-v2/service/acm v1.42.1
@@ -20,7 +20,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/dynamodbstreams v1.36.6
 	github.com/aws/aws-sdk-go-v2/service/ec2 v1.316.1
 	github.com/aws/aws-sdk-go-v2/service/eventbridge v1.47.1
-	github.com/aws/aws-sdk-go-v2/service/iam v1.55.1
+	github.com/aws/aws-sdk-go-v2/service/iam v1.64.0
 	github.com/aws/aws-sdk-go-v2/service/iot v1.76.1
 	github.com/aws/aws-sdk-go-v2/service/iotdataplane v1.34.1
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.45.1
@@ -52,8 +52,8 @@ require (
 require (
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.30 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.2 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.5.3 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.31 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.19 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.23 // indirect

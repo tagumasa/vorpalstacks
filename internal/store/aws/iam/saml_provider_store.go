@@ -26,14 +26,7 @@ func NewSAMLProviderStore(store storage.BasicStorage, accountID string) *SAMLPro
 
 // Get retrieves a SAML provider by its ARN.
 func (s *SAMLProviderStore) Get(arn string) (*SAMLProvider, error) {
-	var provider SAMLProvider
-	if err := s.BaseStore.Get(arn, &provider); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_saml_provider", ErrSAMLProviderNotFound)
-		}
-		return nil, NewStoreError("get_saml_provider", err)
-	}
-	return &provider, nil
+	return getByKey[SAMLProvider](s.BaseStore, arn, "get_saml_provider", ErrSAMLProviderNotFound)
 }
 
 // Put stores a SAML provider, keyed by its ARN.
@@ -141,14 +134,4 @@ func (s *SAMLProviderStore) List() (*SAMLProviderListResult, error) {
 		return nil, NewStoreError("list_saml_providers", err)
 	}
 	return &SAMLProviderListResult{SAMLProviders: items}, nil
-}
-
-// GetByArn retrieves a SAML provider by its ARN.
-func (s *SAMLProviderStore) GetByArn(arn string) (*SAMLProvider, error) {
-	return s.Get(arn)
-}
-
-// ListByPrefix returns SAML providers whose ARNs match the given prefix.
-func (s *SAMLProviderStore) ListByPrefix(prefix string) ([]*SAMLProvider, error) {
-	return listEntitiesByPrefix(s.BaseStore, prefix, func(p *SAMLProvider) string { return p.Arn })
 }

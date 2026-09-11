@@ -14,7 +14,6 @@ import (
 type inlinePolicyOps struct {
 	paramName         string
 	principalType     string
-	emptyErr          error
 	responseParamName string
 }
 
@@ -22,19 +21,16 @@ var (
 	userInlinePolicyOps = inlinePolicyOps{
 		paramName:         "UserName",
 		principalType:     PrincipalTypeUser,
-		emptyErr:          ErrNoSuchUser,
 		responseParamName: "UserName",
 	}
 	groupInlinePolicyOps = inlinePolicyOps{
 		paramName:         "GroupName",
 		principalType:     PrincipalTypeGroup,
-		emptyErr:          ErrNoSuchGroup,
 		responseParamName: "GroupName",
 	}
 	roleInlinePolicyOps = inlinePolicyOps{
 		paramName:         "RoleName",
 		principalType:     PrincipalTypeRole,
-		emptyErr:          ErrNoSuchRole,
 		responseParamName: "RoleName",
 	}
 )

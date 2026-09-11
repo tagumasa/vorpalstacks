@@ -382,6 +382,23 @@ func (tc *athenaTestContext) testValidation() []TestResult {
 		if resp.NextToken == nil {
 			return fmt.Errorf("expected NextToken at MaxResults=1 with 2-row result set")
 		}
+		// Walking the continuation must deliver the remaining row exactly
+		// once and close the walk — result rows carry no unique key, so
+		// the token walks positions.
+		next, err := client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
+			QueryExecutionId: aws.String(queryExecutionId),
+			MaxResults:       aws.Int32(1),
+			NextToken:        resp.NextToken,
+		})
+		if err != nil {
+			return fmt.Errorf("continuation page should be accepted: %w", err)
+		}
+		if len(next.ResultSet.Rows) != 1 {
+			return fmt.Errorf("continuation page: expected the single remaining row, got %d", len(next.ResultSet.Rows))
+		}
+		if next.NextToken != nil {
+			return fmt.Errorf("continuation page must close the walk, got token %q", *next.NextToken)
+		}
 
 		resp, err = client.GetQueryResults(ctx, &athena.GetQueryResultsInput{
 			QueryExecutionId: aws.String(queryExecutionId),

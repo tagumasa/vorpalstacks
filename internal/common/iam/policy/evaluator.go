@@ -19,9 +19,25 @@ const (
 
 // Decision represents the result of policy evaluation.
 type Decision struct {
-	Effect     DecisionEffect
-	MatchedSid string
-	Reason     string
+	Effect DecisionEffect
+	Reason string
+	// Matched holds the statements that determined the effect, each
+	// identified by the index of its policy in the Evaluate argument
+	// slice: when any matched statement denies, only the denying
+	// statements appear (an explicit deny overrides every allow);
+	// otherwise every matched allow statement appears. Callers that know
+	// the identity of each evaluated document map the index to the
+	// statement's source policy.
+	Matched []MatchedStatement
+}
+
+// MatchedStatement identifies one statement that determined a Decision.
+type MatchedStatement struct {
+	// PolicyIndex is the position of the matched statement's document in
+	// the policy slice passed to Evaluate.
+	PolicyIndex int
+	// Effect is the matched statement's own Effect (Allow or Deny).
+	Effect DecisionEffect
 }
 
 // EvaluationContext holds the context information for policy evaluation.
@@ -39,10 +55,15 @@ type EvaluationContext struct {
 	SecureTransport        bool
 	TokenIssueTime         time.Time
 	MultiFactorAuthPresent bool
-	SessionContext         map[string]string
-	EncryptionContext      map[string]string
-	ServiceContext         map[string]string
-	Variables              map[string]string
+	// SessionContext maps a (lowercase) condition key to its full value
+	// list: a single-valued key carries a one-element list, a multivalued
+	// key carries every value as its own element. Values are verbatim —
+	// a value that itself contains a comma stays one value, so set
+	// operators must consume ContextValues, never split a joined string.
+	SessionContext    map[string][]string
+	EncryptionContext map[string]string
+	ServiceContext    map[string]string
+	Variables         map[string]string
 }
 
 // ResolveVariable resolves a variable in an IAM policy condition key.
@@ -121,7 +142,12 @@ func (ctx *EvaluationContext) resolveKMSVariable(key string) string {
 	return ""
 }
 
-// GetContextValue retrieves a context value by key from the evaluation context.
+// GetContextValue retrieves a context value by key from the evaluation
+// context as a single string: a multivalued key resolves to its values
+// joined with commas, which serves scalar comparisons and the Null
+// operator's presence check. Set operators (ForAnyValue:/ForAllValues:)
+// must use ContextValues instead, so a value containing a comma is never
+// mistaken for two values.
 func (ctx *EvaluationContext) GetContextValue(key string) string {
 	key = strings.ToLower(key)
 
@@ -142,7 +168,7 @@ func (ctx *EvaluationContext) GetContextValue(key string) string {
 
 	if ctx.SessionContext != nil {
 		if val, ok := ctx.SessionContext[key]; ok {
-			return val
+			return strings.Join(val, ",")
 		}
 	}
 
@@ -153,6 +179,18 @@ func (ctx *EvaluationContext) GetContextValue(key string) string {
 	}
 
 	return ""
+}
+
+// ContextValues returns the full value list a condition key carries in the
+// session context, verbatim and in supplied order; a key absent from the
+// session context yields nil. The key is lowercased to match the
+// session-context convention.
+func (ctx *EvaluationContext) ContextValues(key string) []string {
+	key = strings.ToLower(key)
+	if ctx.SessionContext == nil {
+		return nil
+	}
+	return ctx.SessionContext[key]
 }
 
 // PolicyEvaluator evaluates IAM policies against an evaluation context.
@@ -169,34 +207,27 @@ func NewPolicyEvaluator() *PolicyEvaluator {
 
 // Evaluate evaluates IAM policies against an evaluation context and returns a decision.
 func (e *PolicyEvaluator) Evaluate(ctx *EvaluationContext, policies []*Document) *Decision {
-	explicitDeny := false
-	hasAllow := false
-	var matchedAllowSid string
+	var matchedAllows, matchedDenies []MatchedStatement
 
-	for _, policy := range policies {
-		decision := e.evaluatePolicy(ctx, policy)
-		if decision.Effect == DecisionEffectDeny {
-			explicitDeny = true
-		} else if decision.Effect == DecisionEffectAllow {
-			hasAllow = true
-			if matchedAllowSid == "" {
-				matchedAllowSid = decision.MatchedSid
-			}
+	for i, policy := range policies {
+		allows, denies := e.evaluatePolicy(ctx, policy, i)
+		matchedAllows = append(matchedAllows, allows...)
+		matchedDenies = append(matchedDenies, denies...)
+	}
+
+	if len(matchedDenies) > 0 {
+		return &Decision{
+			Effect:  DecisionEffectDeny,
+			Reason:  "Explicit deny in policy",
+			Matched: matchedDenies,
 		}
 	}
 
-	if explicitDeny {
+	if len(matchedAllows) > 0 {
 		return &Decision{
-			Effect: DecisionEffectDeny,
-			Reason: "Explicit deny in policy",
-		}
-	}
-
-	if hasAllow {
-		return &Decision{
-			Effect:     DecisionEffectAllow,
-			MatchedSid: matchedAllowSid,
-			Reason:     "Allowed by policy",
+			Effect:  DecisionEffectAllow,
+			Reason:  "Allowed by policy",
+			Matched: matchedAllows,
 		}
 	}
 
@@ -206,45 +237,25 @@ func (e *PolicyEvaluator) Evaluate(ctx *EvaluationContext, policies []*Document)
 	}
 }
 
-func (e *PolicyEvaluator) evaluatePolicy(ctx *EvaluationContext, policy *Document) *Decision {
-	// Scan ALL statements so that an explicit Deny always wins over an
-	// Allow within the same policy, regardless of statement order. Returning
-	// on the first match would let an earlier Allow short-circuit a later
-	// Deny for the same (principal, action, resource) tuple.
-	hasAllow := false
-	hasDeny := false
-	var matchedAllowSid string
+// evaluatePolicy returns the statements of one document that matched the
+// context, split by their own effect. It scans ALL statements so that an
+// explicit Deny always wins over an Allow within the same policy,
+// regardless of statement order; the caller keeps only the matched denies
+// when any exist, which is where that override is applied across
+// documents. policyIndex stamps each returned statement with the
+// document's position in the Evaluate argument slice.
+func (e *PolicyEvaluator) evaluatePolicy(ctx *EvaluationContext, policy *Document, policyIndex int) (allows, denies []MatchedStatement) {
 	for _, stmt := range policy.Statement {
 		if !e.statementMatches(ctx, &stmt) {
 			continue
 		}
 		if stmt.Effect == EffectDeny {
-			hasDeny = true
+			denies = append(denies, MatchedStatement{PolicyIndex: policyIndex, Effect: DecisionEffectDeny})
 		} else {
-			hasAllow = true
-			if matchedAllowSid == "" {
-				matchedAllowSid = stmt.Sid
-			}
+			allows = append(allows, MatchedStatement{PolicyIndex: policyIndex, Effect: DecisionEffectAllow})
 		}
 	}
-	switch {
-	case hasDeny:
-		return &Decision{
-			Effect: DecisionEffectDeny,
-			Reason: "Explicit deny",
-		}
-	case hasAllow:
-		return &Decision{
-			Effect:     DecisionEffectAllow,
-			MatchedSid: matchedAllowSid,
-			Reason:     "Allowed by statement",
-		}
-	default:
-		return &Decision{
-			Effect: DecisionEffectDefaultDeny,
-			Reason: "No matching statement",
-		}
-	}
+	return allows, denies
 }
 
 func (e *PolicyEvaluator) statementMatches(ctx *EvaluationContext, stmt *Statement) bool {

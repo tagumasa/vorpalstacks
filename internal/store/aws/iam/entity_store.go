@@ -64,6 +64,21 @@ func getEntityByID[T any](store *common.BaseStore, id string, getID func(*T) str
 	return found, nil
 }
 
+// getByKey reads and unmarshals a singly-keyed record, mapping a missing key
+// to the calling store's not-found sentinel and every other failure to a
+// wrapped store error — the read shape shared by the stores that keep their
+// own BaseStore rather than riding entityStore.
+func getByKey[T any](store *common.BaseStore, key, op string, notFound error) (*T, error) {
+	var item T
+	if err := store.Get(key, &item); err != nil {
+		if common.IsNotFound(err) {
+			return nil, NewStoreError(op, notFound)
+		}
+		return nil, NewStoreError(op, err)
+	}
+	return &item, nil
+}
+
 func listEntitiesWithPathPrefix[T any](store *common.BaseStore, pathPrefix, marker string, maxItems int, getPath func(*T) string) ([]*T, bool, string, error) {
 	var filter common.FilterFunc[T]
 	if pathPrefix != "" {
@@ -74,21 +89,4 @@ func listEntitiesWithPathPrefix[T any](store *common.BaseStore, pathPrefix, mark
 		return nil, false, "", err
 	}
 	return result.Items, result.IsTruncated, result.NextMarker, nil
-}
-
-func listEntitiesByPrefix[T any](store *common.BaseStore, prefix string, getField func(*T) string) ([]*T, error) {
-	items, err := common.ListAll[T](store)
-	if err != nil {
-		return nil, err
-	}
-	if prefix == "" {
-		return items, nil
-	}
-	var filtered []*T
-	for _, item := range items {
-		if strings.HasPrefix(getField(item), prefix) {
-			filtered = append(filtered, item)
-		}
-	}
-	return filtered, nil
 }

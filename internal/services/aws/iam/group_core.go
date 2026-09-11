@@ -67,7 +67,7 @@ func (s *IAMService) getGroupCore(store *iamstore.IAMStore, groupName string) (*
 	}
 	group, err := store.Groups().Get(groupName)
 	if err != nil {
-		return nil, NewNoSuchGroupError(groupName)
+		return nil, storeReadError(err, iamstore.ErrGroupNotFound, NewNoSuchGroupError(groupName))
 	}
 	return group, nil
 }
@@ -78,7 +78,9 @@ func (s *IAMService) listGroupsCore(store *iamstore.IAMStore, pathPrefix, marker
 }
 
 // listUsersInGroupCore returns the member users of a group in membership
-// order; users that disappear mid-walk are skipped.
+// order. A membership whose user cannot be read — an infrastructure fault,
+// or a user that vanished between the membership listing and the read —
+// fails the listing instead of silently omitting the user.
 func (s *IAMService) listUsersInGroupCore(store *iamstore.IAMStore, groupName string) ([]*iamstore.User, error) {
 	userNames, err := store.UserGroups().ListUsersInGroup(groupName)
 	if err != nil {
@@ -86,9 +88,11 @@ func (s *IAMService) listUsersInGroupCore(store *iamstore.IAMStore, groupName st
 	}
 	users := make([]*iamstore.User, 0, len(userNames))
 	for _, userName := range userNames {
-		if user, err := store.Users().Get(userName); err == nil {
-			users = append(users, user)
+		user, err := store.Users().Get(userName)
+		if err != nil {
+			return nil, storeListError(err)
 		}
+		users = append(users, user)
 	}
 	return users, nil
 }
@@ -96,38 +100,13 @@ func (s *IAMService) listUsersInGroupCore(store *iamstore.IAMStore, groupName st
 // updateGroupCore validates input and renames/repaths an IAM group.
 // Returns the updated group or an IAM-formatted error.
 func (s *IAMService) updateGroupCore(store *iamstore.IAMStore, input *UpdateGroupInput) (*iamstore.Group, error) {
-	if input.GroupName == "" {
-		return nil, NewValidationError("GroupName")
-	}
-
-	if input.NewPath == "" && input.NewGroupName == "" {
-		return nil, NewInvalidInputError("UpdateGroup", "at least one of NewPath or NewGroupName must be specified")
-	}
-	if input.NewPath != "" && !validatePath(input.NewPath) {
-		return nil, NewInvalidInputError("NewPath", "must be a valid path starting and ending with /")
-	}
-	if input.NewGroupName != "" {
-		if err := validateEntityName128(input.NewGroupName, "NewGroupName"); err != nil {
-			return nil, err
-		}
-	}
-
-	if err := store.RenameGroup(input.GroupName, input.NewGroupName, input.NewPath); err != nil {
-		if errors.Is(err, iamstore.ErrGroupAlreadyExists) {
-			return nil, ErrGroupAlreadyExists
-		}
-		return nil, err
-	}
-
-	targetName := input.GroupName
-	if input.NewGroupName != "" {
-		targetName = input.NewGroupName
-	}
-	group, err := store.Groups().Get(targetName)
-	if err != nil {
-		return nil, err
-	}
-	return group, nil
+	return updateEntityCore("Group", input.GroupName, input.NewPath, input.NewGroupName,
+		func() error { return store.RenameGroup(input.GroupName, input.NewGroupName, input.NewPath) },
+		iamstore.ErrGroupAlreadyExists,
+		func(name string) error { return NewGroupAlreadyExistsError(name) },
+		validateEntityName128,
+		store.Groups().Get,
+	)
 }
 
 // deleteGroupCore validates input and deletes an IAM group.
@@ -137,10 +116,12 @@ func (s *IAMService) updateGroupCore(store *iamstore.IAMStore, input *UpdateGrou
 // remains.
 func (s *IAMService) deleteGroupCore(store *iamstore.IAMStore, input *DeleteGroupInput) error {
 	if input.GroupName == "" {
-		return ErrNoSuchGroup
+		return NewValidationError("GroupName")
 	}
-	if !store.Groups().Exists(input.GroupName) {
-		return NewNoSuchGroupError(input.GroupName)
+	// The group is resolved rather than probed: the resolved read keeps an
+	// outage from masquerading as a missing group.
+	if _, err := store.Groups().Get(input.GroupName); err != nil {
+		return storeReadError(err, iamstore.ErrGroupNotFound, NewNoSuchGroupError(input.GroupName))
 	}
 
 	if input.Cascade {
@@ -148,7 +129,10 @@ func (s *IAMService) deleteGroupCore(store *iamstore.IAMStore, input *DeleteGrou
 	}
 
 	// Conflict detection — AWS API path.
-	userCount := store.UserGroups().CountUsersInGroup(input.GroupName)
+	userCount, err := store.UserGroups().CountUsersInGroup(input.GroupName)
+	if err != nil {
+		return err
+	}
 	if userCount > 0 {
 		return NewDeleteGroupConflictError("Cannot delete entity, must remove users from group first.")
 	}

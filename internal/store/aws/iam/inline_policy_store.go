@@ -43,14 +43,7 @@ func (s *InlinePolicyStore) Put(principalType, principalName, policyName, docume
 
 // Get retrieves an inline policy by principal type, name, and policy name.
 func (s *InlinePolicyStore) Get(principalType, principalName, policyName string) (*InlinePolicy, error) {
-	var policy InlinePolicy
-	if err := s.pk.BaseStore.Get(s.policyKey(principalType, principalName, policyName), &policy); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_inline_policy", ErrPolicyNotFound)
-		}
-		return nil, NewStoreError("get_inline_policy", err)
-	}
-	return &policy, nil
+	return getByKey[InlinePolicy](s.pk.BaseStore, s.policyKey(principalType, principalName, policyName), "get_inline_policy", ErrPolicyNotFound)
 }
 
 // Delete removes an inline policy.
@@ -78,12 +71,6 @@ func (s *InlinePolicyStore) List(principalType, principalName string) ([]string,
 // DeleteAllForPrincipal removes all inline policies for a principal.
 func (s *InlinePolicyStore) DeleteAllForPrincipal(principalType, principalName string) error {
 	return s.pk.deleteAllForPrincipal(principalType, principalName, "delete_all_inline_policies")
-}
-
-// Count returns the number of inline policies for a principal.
-func (s *InlinePolicyStore) Count(principalType, principalName string) int {
-	policyNames, _ := s.List(principalType, principalName)
-	return len(policyNames)
 }
 
 // MigratePrincipal re-keys all inline policies when a principal is renamed.

@@ -52,7 +52,7 @@ func (s *IAMService) createInstanceProfileCore(store *iamstore.IAMStore, input *
 		return nil, err
 	}
 
-	profile, err := store.InstanceProfiles().Create(input.InstanceProfileName, path, s.accountID, input.Tags)
+	profile, err := store.InstanceProfiles().Create(input.InstanceProfileName, path, store.AccountID(), input.Tags)
 	if err != nil {
 		if errors.Is(err, iamstore.ErrInstanceProfileAlreadyExists) {
 			return nil, NewInstanceProfileAlreadyExistsError(input.InstanceProfileName)
@@ -83,7 +83,7 @@ func (s *IAMService) getInstanceProfileCore(store *iamstore.IAMStore, instancePr
 	}
 	profile, err := store.InstanceProfiles().Get(instanceProfileName)
 	if err != nil {
-		return nil, NewNoSuchInstanceProfileError(instanceProfileName)
+		return nil, storeReadError(err, iamstore.ErrInstanceProfileNotFound, NewNoSuchInstanceProfileError(instanceProfileName))
 	}
 	return &InstanceProfileWithRoles{
 		Profile: profile,
@@ -99,7 +99,7 @@ func (s *IAMService) deleteInstanceProfileCore(store *iamstore.IAMStore, instanc
 	}
 	profile, err := store.InstanceProfiles().Get(instanceProfileName)
 	if err != nil {
-		return NewNoSuchInstanceProfileError(instanceProfileName)
+		return storeReadError(err, iamstore.ErrInstanceProfileNotFound, NewNoSuchInstanceProfileError(instanceProfileName))
 	}
 
 	if len(profile.Roles) > 0 {
@@ -210,7 +210,7 @@ func (s *IAMService) removeRoleFromInstanceProfileCore(store *iamstore.IAMStore,
 	}
 
 	if err := store.InstanceProfiles().RemoveRole(instanceProfileName, roleName); err != nil {
-		return NewRoleNotInInstanceProfileError(roleName, instanceProfileName)
+		return storeReadError(err, iamstore.ErrRoleNotInInstanceProfile, NewRoleNotInInstanceProfileError(roleName, instanceProfileName))
 	}
 	return nil
 }

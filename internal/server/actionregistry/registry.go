@@ -109,9 +109,11 @@ var defaultIAMActions = []string{
 	"CreateServiceLinkedRole", "DeleteServiceLinkedRole", "GetServiceLinkedRoleDeletionStatus",
 	"EnableOutboundWebIdentityFederation", "DisableOutboundWebIdentityFederation",
 	"GetOutboundWebIdentityFederationInfo", "SetSecurityTokenServicePreferences",
+	"GetAccountProperties", "PutAccountProperties",
+	"AcquireRole", "GetRoleTemplateVersion",
 	"GenerateServiceLastAccessedDetails",
 	"GetServiceLastAccessedDetails", "GetServiceLastAccessedDetailsWithEntities",
-	"SimulatePrincipalPolicy",
+	"SimulatePrincipalPolicy", "SimulateCustomPolicy",
 	"ListPoliciesGrantingServiceAccess",
 }
 

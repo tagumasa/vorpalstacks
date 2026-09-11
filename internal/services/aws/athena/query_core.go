@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -356,7 +355,7 @@ func (s *AthenaService) batchGetQueryExecutionCore(reqCtx *request.RequestContex
 
 // getQueryResultsCore fetches a succeeded execution's result set, enforces
 // the documented MaxResults window (1-1000) at the position the original
-// handler read the member and pages the rows by index.
+// handler read the member and pages the rows positionally.
 func (s *AthenaService) getQueryResultsCore(reqCtx *request.RequestContext, input GetQueryResultsInput) (*GetQueryResultsResult, error) {
 	if input.QueryExecutionId == "" {
 		return nil, ErrInvalidRequestException
@@ -400,12 +399,9 @@ func (s *AthenaService) getQueryResultsCore(reqCtx *request.RequestContext, inpu
 		return &GetQueryResultsResult{EmptyResultSet: true}, nil
 	}
 
-	type indexedRow struct {
-		idx int
-		row map[string]interface{}
-	}
-
-	allRows := make([]indexedRow, len(result.ResultSet.Rows))
+	// Result rows carry no unique natural key — identical rows are normal
+	// query output — so the pages walk positions with an opaque marker.
+	allRows := make([]map[string]interface{}, len(result.ResultSet.Rows))
 	for i, row := range result.ResultSet.Rows {
 		var data []map[string]interface{}
 		for _, datum := range row.Data {
@@ -413,23 +409,13 @@ func (s *AthenaService) getQueryResultsCore(reqCtx *request.RequestContext, inpu
 				"VarCharValue": datum.VarCharValue,
 			})
 		}
-		allRows[i] = indexedRow{
-			idx: i,
-			row: map[string]interface{}{"Data": data},
-		}
+		allRows[i] = map[string]interface{}{"Data": data}
 	}
 
-	pageResult := pagination.PaginateSlice(allRows, input.NextToken, maxRows, func(item indexedRow) string {
-		return strconv.Itoa(item.idx)
-	})
-
-	rows := make([]map[string]interface{}, len(pageResult.Items))
-	for i, item := range pageResult.Items {
-		rows[i] = item.row
-	}
+	pageResult := pagination.PaginateSliceByPosition(allRows, input.NextToken, maxRows)
 
 	return &GetQueryResultsResult{
-		PageRows:   rows,
+		PageRows:   pageResult.Items,
 		NextMarker: pageResult.NextMarker,
 		Result:     result,
 	}, nil

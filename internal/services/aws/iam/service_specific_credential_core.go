@@ -4,6 +4,8 @@
 package iam
 
 import (
+	"fmt"
+
 	"vorpalstacks/internal/common/pagination"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
@@ -57,7 +59,7 @@ func (s *IAMService) createServiceSpecificCredentialCore(store *iamstore.IAMStor
 		return nil, NewValidationError("ServiceName")
 	}
 	if !validateServiceNamespace(serviceName) {
-		return nil, NewInvalidInputError("ServiceName", "must be 1 to 64 characters: alphanumeric or hyphens only")
+		return nil, NewInvalidInputError("ServiceName", fmt.Sprintf("must be 1 to %d characters", MaxServiceNamespaceLength))
 	}
 	// Only services that support service-specific credentials accept them;
 	// any other service name fails with NotSupportedService.
@@ -65,13 +67,13 @@ func (s *IAMService) createServiceSpecificCredentialCore(store *iamstore.IAMStor
 		return nil, ErrNotSupportedService
 	}
 
-	// CredentialAgeDays (Smithy range [1, 36600]). When not specified the
+	// CredentialAgeDays (documented range [1, 36600]). When not specified the
 	// credential does not expire.
 	credentialAgeDays := 0
 	if input.CredentialAgeDays != nil {
 		credentialAgeDays = *input.CredentialAgeDays
-		if credentialAgeDays < 1 || credentialAgeDays > 36600 {
-			return nil, NewInvalidInputError("CredentialAgeDays", "must be between 1 and 36600")
+		if credentialAgeDays < MinCredentialAgeDays || credentialAgeDays > MaxCredentialAgeDays {
+			return nil, NewInvalidInputError("CredentialAgeDays", fmt.Sprintf("must be between %d and %d", MinCredentialAgeDays, MaxCredentialAgeDays))
 		}
 	}
 
@@ -95,7 +97,7 @@ func (s *IAMService) deleteServiceSpecificCredentialCore(store *iamstore.IAMStor
 	}
 	cred, err := store.ServiceSpecificCredentials().Get(credentialId)
 	if err != nil {
-		return NewNoSuchEntityError("service-specific credential", credentialId)
+		return storeReadError(err, iamstore.ErrServiceSpecificCredentialNotFound, NewNoSuchEntityError("service-specific credential", credentialId))
 	}
 	// A named user that does not own the credential yields NoSuchEntity.
 	if userName != "" && cred.UserName != userName {
@@ -150,7 +152,7 @@ func (s *IAMService) resetServiceSpecificCredentialCore(store *iamstore.IAMStore
 	}
 	cred, err := store.ServiceSpecificCredentials().Get(credentialId)
 	if err != nil {
-		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
+		return nil, storeReadError(err, iamstore.ErrServiceSpecificCredentialNotFound, NewNoSuchEntityError("service-specific credential", credentialId))
 	}
 	// A named user that does not own the credential yields NoSuchEntity.
 	if userName != "" && cred.UserName != userName {
@@ -159,7 +161,7 @@ func (s *IAMService) resetServiceSpecificCredentialCore(store *iamstore.IAMStore
 
 	cred, err = store.ServiceSpecificCredentials().ResetPassword(credentialId)
 	if err != nil {
-		return nil, NewNoSuchEntityError("service-specific credential", credentialId)
+		return nil, storeReadError(err, iamstore.ErrServiceSpecificCredentialNotFound, NewNoSuchEntityError("service-specific credential", credentialId))
 	}
 	return cred, nil
 }
@@ -186,7 +188,7 @@ func (s *IAMService) updateServiceSpecificCredentialCore(store *iamstore.IAMStor
 	}
 	cred, err := store.ServiceSpecificCredentials().Get(credentialId)
 	if err != nil {
-		return NewNoSuchEntityError("service-specific credential", credentialId)
+		return storeReadError(err, iamstore.ErrServiceSpecificCredentialNotFound, NewNoSuchEntityError("service-specific credential", credentialId))
 	}
 	// A named user that does not own the credential yields NoSuchEntity.
 	if userName != "" && cred.UserName != userName {

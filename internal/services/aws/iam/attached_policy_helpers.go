@@ -14,24 +14,20 @@ import (
 type attachOps struct {
 	paramName     string
 	principalType string
-	emptyErr      error
 }
 
 var (
 	userAttachOps = attachOps{
 		paramName:     "UserName",
 		principalType: PrincipalTypeUser,
-		emptyErr:      ErrNoSuchUser,
 	}
 	groupAttachOps = attachOps{
 		paramName:     "GroupName",
 		principalType: PrincipalTypeGroup,
-		emptyErr:      ErrNoSuchGroup,
 	}
 	roleAttachOps = attachOps{
 		paramName:     "RoleName",
 		principalType: PrincipalTypeRole,
-		emptyErr:      ErrNoSuchRole,
 	}
 )
 

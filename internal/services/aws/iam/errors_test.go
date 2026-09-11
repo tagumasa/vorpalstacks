@@ -1,31 +1,28 @@
 package iam
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"net/http"
+	"os"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
 )
 
 func TestIAMErrors(t *testing.T) {
 	t.Run("predefined errors", func(t *testing.T) {
-		assert.Equal(t, "NoSuchEntity: The user with name {UserName} cannot be found.", ErrNoSuchUser.Error())
-		assert.Equal(t, http.StatusNotFound, ErrNoSuchUser.GetHTTPStatusCode())
-
-		assert.Equal(t, "EntityAlreadyExists: User {UserName} already exists.", ErrUserAlreadyExists.Error())
-		assert.Equal(t, http.StatusConflict, ErrUserAlreadyExists.GetHTTPStatusCode())
-
 		assert.Equal(t, "LimitExceeded: Cannot exceed quota for AccessKeysPerUser: 2.", ErrAccessKeyLimitExceeded.Error())
 		assert.Equal(t, http.StatusConflict, ErrAccessKeyLimitExceeded.GetHTTPStatusCode())
 
 		assert.Equal(t, "PasswordPolicyViolation: The password does not meet the password policy requirements.", ErrPasswordPolicyViolation.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrPasswordPolicyViolation.GetHTTPStatusCode())
-
-		assert.Equal(t, "DeleteConflict: Cannot delete entity, must delete access keys first.", ErrDeleteConflict.Error())
-		assert.Equal(t, http.StatusConflict, ErrDeleteConflict.GetHTTPStatusCode())
-
-		assert.Equal(t, "LimitExceeded: Cannot exceed quota for Users: 5000.", ErrLimitExceeded.Error())
-		assert.Equal(t, http.StatusConflict, ErrLimitExceeded.GetHTTPStatusCode())
 
 		assert.Equal(t, "MalformedPolicyDocument: This policy contains invalid JSON.", ErrMalformedPolicyDocument.Error())
 		assert.Equal(t, http.StatusBadRequest, ErrMalformedPolicyDocument.GetHTTPStatusCode())
@@ -180,4 +177,125 @@ func TestIAMErrors(t *testing.T) {
 		assert.Equal(t, "InvalidInput: The input parameter RoleName is invalid: invalid characters", err.Error())
 		assert.Equal(t, http.StatusBadRequest, err.GetHTTPStatusCode())
 	})
+}
+
+// resolveUserName interpolates the caller's principal when an omitted
+// UserName cannot be defaulted — no placeholder text reaches the wire.
+func TestResolveUserNameInterpolatesPrincipal(t *testing.T) {
+	_, err := resolveUserName(&request.RequestContext{
+		PrincipalType: request.PrincipalTypeRole,
+		Principal:     "arn:aws:sts::123456789012:assumed-role/deploy/session",
+	}, "")
+	if err == nil {
+		t.Fatal("a non-user caller with no UserName must be rejected")
+	}
+	awsErr, ok := err.(*awserrors.AWSError)
+	if !ok {
+		t.Fatalf("expected *awserrors.AWSError, got %T", err)
+	}
+	assert.Equal(t, http.StatusNotFound, awsErr.GetHTTPStatusCode())
+	assert.Contains(t, awsErr.Error(), "arn:aws:sts::123456789012:assumed-role/deploy/session")
+	assert.NotContains(t, awsErr.Error(), "{")
+}
+
+// The empty-required-parameter paths are InvalidInput-class validation
+// errors naming the missing member (each swapped member is required in the
+// Smithy model) — a wire-visible class change from the former NoSuchEntity
+// sentinels, pinned per site. The SDK's client-side validation makes these
+// server-side paths unreachable through the AWS SDK, so they are pinned as
+// unit tests.
+func TestRequiredParameterErrorsAreValidationClass(t *testing.T) {
+	validationErr := func(t *testing.T, err error, param string) {
+		t.Helper()
+		awsErr, ok := err.(*awserrors.AWSError)
+		if !ok {
+			t.Fatalf("%s: expected *awserrors.AWSError, got %T", param, err)
+		}
+		assert.Equal(t, http.StatusBadRequest, awsErr.GetHTTPStatusCode(), param)
+		assert.Equal(t, "InvalidInput: Required parameter "+param+" is missing.", awsErr.Error())
+	}
+
+	t.Run("principalNameRequiredError", func(t *testing.T) {
+		validationErr(t, principalNameRequiredError(PrincipalTypeUser), "UserName")
+		validationErr(t, principalNameRequiredError(PrincipalTypeGroup), "GroupName")
+		validationErr(t, principalNameRequiredError(PrincipalTypeRole), "RoleName")
+		validationErr(t, principalNameRequiredError("openid-provider"), "PrincipalName")
+	})
+
+	// The empty-name branch returns before any store access, so a nil store
+	// keeps these calls hermetic.
+	t.Run("deleteGroupCore", func(t *testing.T) {
+		s := &IAMService{}
+		validationErr(t, s.deleteGroupCore(nil, &DeleteGroupInput{}), "GroupName")
+	})
+
+	t.Run("deleteRoleCore", func(t *testing.T) {
+		s := &IAMService{}
+		validationErr(t, s.deleteRoleCore(nil, &DeleteRoleInput{}), "RoleName")
+	})
+
+	t.Run("createVirtualMFADeviceCore", func(t *testing.T) {
+		s := &IAMService{}
+		_, err := s.createVirtualMFADeviceCore(nil, &CreateVirtualMFADeviceInput{})
+		validationErr(t, err, "VirtualMFADeviceName")
+	})
+}
+
+// TestAWSErrorMessagesCarryNoPlaceholders is the gate for the single
+// error-construction system: no error-constructor call in the package may
+// embed a curly-brace placeholder in a string argument. The error message
+// is the final wire text — an unsubstituted "{Placeholder}" would reach
+// the client verbatim.
+func TestAWSErrorMessagesCarryNoPlaceholders(t *testing.T) {
+	constructorName := regexp.MustCompile(`^New\w*(Error|Exception)$`)
+	entries, err := os.ReadDir(".")
+	if err != nil {
+		t.Fatalf("read package directory: %v", err)
+	}
+	fset := token.NewFileSet()
+	checked := 0
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fset, entry.Name(), nil, 0)
+		if err != nil {
+			t.Fatalf("parse %s: %v", entry.Name(), err)
+		}
+		ast.Inspect(file, func(n ast.Node) bool {
+			call, ok := n.(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+			var name string
+			switch fn := call.Fun.(type) {
+			case *ast.Ident:
+				name = fn.Name
+			case *ast.SelectorExpr:
+				name = fn.Sel.Name
+			default:
+				return true
+			}
+			if !constructorName.MatchString(name) {
+				return true
+			}
+			checked++
+			for _, arg := range call.Args {
+				ast.Inspect(arg, func(m ast.Node) bool {
+					lit, ok := m.(*ast.BasicLit)
+					if !ok || lit.Kind != token.STRING {
+						return true
+					}
+					if strings.Contains(lit.Value, "{") {
+						t.Errorf("%s: %s argument %s embeds a placeholder", fset.Position(call.Pos()), name, lit.Value)
+					}
+					return true
+				})
+			}
+			return true
+		})
+	}
+	if checked == 0 {
+		t.Fatal("no error-constructor calls found — the gate is not scanning the package")
+	}
 }

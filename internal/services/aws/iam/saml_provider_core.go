@@ -75,8 +75,8 @@ func (s *IAMService) createSAMLProviderCore(store *iamstore.IAMStore, input *Cre
 	}
 	// SAMLMetadataDocumentType @length(1000,10000000) counts Unicode
 	// characters (no pattern — XML metadata may carry multibyte text).
-	if n := utf8.RuneCountInString(input.SAMLMetadataDocument); n < 1000 || n > 10000000 {
-		return "", NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
+	if n := utf8.RuneCountInString(input.SAMLMetadataDocument); n < MinSAMLMetadataDocumentLength || n > MaxSAMLMetadataDocumentLength {
+		return "", NewInvalidInputError("SAMLMetadataDocument", fmt.Sprintf("must be between %d and %d characters", MinSAMLMetadataDocumentLength, MaxSAMLMetadataDocumentLength))
 	}
 
 	if err := validateNewTags(input.Tags); err != nil {
@@ -116,7 +116,7 @@ func (s *IAMService) getSAMLProviderCore(store *iamstore.IAMStore, providerArn s
 	}
 	provider, err := store.SAMLProviders().Get(providerArn)
 	if err != nil {
-		return nil, NewNoSuchEntityError("SAML provider", providerArn)
+		return nil, storeReadError(err, iamstore.ErrSAMLProviderNotFound, NewNoSuchEntityError("SAML provider", providerArn))
 	}
 	return provider, nil
 }
@@ -142,8 +142,8 @@ func (s *IAMService) updateSAMLProviderCore(store *iamstore.IAMStore, input *Upd
 	if input.SAMLMetadataDocument != "" {
 		// SAMLMetadataDocumentType @length(1000,10000000) counts Unicode
 		// characters.
-		if n := utf8.RuneCountInString(input.SAMLMetadataDocument); n < 1000 || n > 10000000 {
-			return "", NewInvalidInputError("SAMLMetadataDocument", "must be between 1000 and 10000000 characters")
+		if n := utf8.RuneCountInString(input.SAMLMetadataDocument); n < MinSAMLMetadataDocumentLength || n > MaxSAMLMetadataDocumentLength {
+			return "", NewInvalidInputError("SAMLMetadataDocument", fmt.Sprintf("must be between %d and %d characters", MinSAMLMetadataDocumentLength, MaxSAMLMetadataDocumentLength))
 		}
 	}
 
@@ -158,8 +158,8 @@ func (s *IAMService) updateSAMLProviderCore(store *iamstore.IAMStore, input *Upd
 	// RemovePrivateKey is a privateKeyIdType (Smithy: length [22,64],
 	// pattern ^[A-Z0-9]+$) identifying the key to remove.
 	if input.RemovePrivateKey != "" {
-		if len(input.RemovePrivateKey) < 22 || len(input.RemovePrivateKey) > 64 {
-			return "", NewInvalidInputError("RemovePrivateKey", "must be 22 to 64 characters")
+		if len(input.RemovePrivateKey) < MinPrivateKeyIdLength || len(input.RemovePrivateKey) > MaxPrivateKeyIdLength {
+			return "", NewInvalidInputError("RemovePrivateKey", fmt.Sprintf("must be %d to %d characters", MinPrivateKeyIdLength, MaxPrivateKeyIdLength))
 		}
 		if err := validateSAMLPrivateKeyId(input.RemovePrivateKey); err != nil {
 			return "", err

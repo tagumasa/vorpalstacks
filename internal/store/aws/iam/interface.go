@@ -12,12 +12,11 @@ type RoleStoreInterface interface {
 	Put(role *Role) error
 	Delete(roleName string) error
 	Exists(roleName string) bool
-	Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag) (*Role, error)
+	Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag, sourceRoleTemplate *SourceRoleTemplate) (*Role, error)
 	Update(role *Role) error
 	UpdateRoleLastUsed(roleName, region string) error
 	Count() int
 	GetAssumeRolePolicyDocument(roleName string) (string, error)
-	RoleExists(roleName string) bool
 }
 
 // AccessKeyStoreInterface defines operations for managing IAM access keys.
@@ -68,13 +67,15 @@ type UserStoreInterface interface {
 // UserGroupStoreInterface defines operations for managing IAM user-group memberships.
 type UserGroupStoreInterface interface {
 	AddUserToGroup(userName, groupName string) error
+	AddUserToGroupWithLimit(userName, groupName string, maxGroups int) error
 	RemoveUserFromGroup(userName, groupName string) error
+	MigrateUserGroup(userName, fromGroup, toGroup string) error
 	IsUserInGroup(userName, groupName string) bool
 	ListGroupsForUser(userName string) ([]string, error)
 	ListUsersInGroup(groupName string) ([]string, error)
 	RemoveAllGroupsForUser(userName string) error
 	RemoveAllUsersFromGroup(groupName string) error
-	CountUsersInGroup(groupName string) int
+	CountUsersInGroup(groupName string) (int, error)
 	MigrateUser(oldUserName, newUserName string) error
 }
 
@@ -87,15 +88,12 @@ type AttachedPolicyStoreInterface interface {
 	ListPrincipalsForPolicy(policyArn string) ([]AttachedPolicyRef, error)
 	DetachAllForPrincipal(principalType, principalName string) error
 	DetachAllForPolicy(policyArn string) error
-	CountAttachedPolicies(principalType, principalName string) int
 	MigratePrincipal(oldName, newName, principalType string) error
 }
 
 // GroupStoreInterface defines operations for managing IAM groups.
 type GroupStoreInterface interface {
 	Get(groupName string) (*Group, error)
-	GetByArn(arn string) (*Group, error)
-	GetByPath(pathPrefix string) ([]*Group, error)
 	List(pathPrefix string, marker string, maxItems int) (*GroupListResult, error)
 	Put(group *Group) error
 	Delete(groupName string) error
@@ -124,7 +122,6 @@ type InstanceProfileStoreInterface interface {
 // PolicyStoreInterface defines operations for managing IAM policies.
 type PolicyStoreInterface interface {
 	Get(policyArn string) (*Policy, error)
-	GetByPathAndName(path, policyName string) (*Policy, error)
 	List(scope, pathPrefix string, onlyAttached bool, marker string, maxItems int) (*PolicyListResult, error)
 	Put(policy *Policy) error
 	Delete(policyArn string) error
@@ -154,7 +151,6 @@ type InlinePolicyStoreInterface interface {
 	Put(principalType, principalName, policyName, document string) error
 	Delete(principalType, principalName, policyName string) error
 	Exists(principalType, principalName, policyName string) bool
-	Count(principalType, principalName string) int
 	DeleteAllForPrincipal(principalType, principalName string) error
 	MigratePrincipal(oldName, newName, principalType string) error
 }
@@ -167,6 +163,7 @@ type MFADeviceStoreInterface interface {
 	Exists(serialNumber string) bool
 	Create(accountId string, deviceName string, tags []types.Tag) (*VirtualMFADevice, error)
 	EnableForUser(serialNumber, userName string) error
+	EnableForUserWithLimit(serialNumber, userName string, maxDevices int) error
 	Deactivate(serialNumber string) error
 	ListForUser(userName string, marker string, maxItems int) (*MFADeviceListResult, error)
 	ListVirtual(assignmentStatus, marker string, maxItems int) (*MFADeviceListResult, error)
@@ -187,7 +184,14 @@ type PasswordPolicyStoreInterface interface {
 	ParameterDefaults() *AccountPasswordPolicy
 }
 
-// IAMStoreInterface defines access to all IAM stores.
+// IAMStoreInterface is the cross-package IAM store contract: the STS cores
+// and the server wiring (dispatcher, authoriser, HTTP assembly, optional
+// apps) hold this interface instead of the concrete *IAMStore. It covers
+// the store domains those consumers reach plus AccountID; the later
+// domains (account aliases, certificates, providers, settings and the
+// service-linked-role tasks) have no cross-package consumer and are
+// reached on the concrete type — widening the facade ahead of a consumer
+// only forks it.
 type IAMStoreInterface interface {
 	Users() UserStoreInterface
 	AccessKeys() AccessKeyStoreInterface

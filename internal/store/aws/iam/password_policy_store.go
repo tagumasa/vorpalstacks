@@ -21,14 +21,7 @@ func NewPasswordPolicyStore(store storage.BasicStorage) *PasswordPolicyStore {
 
 // Get retrieves the account password policy.
 func (s *PasswordPolicyStore) Get() (*AccountPasswordPolicy, error) {
-	var policy AccountPasswordPolicy
-	if err := s.BaseStore.Get("default", &policy); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_password_policy", ErrPasswordPolicyNotFound)
-		}
-		return nil, NewStoreError("get_password_policy", err)
-	}
-	return &policy, nil
+	return getByKey[AccountPasswordPolicy](s.BaseStore, "default", "get_password_policy", ErrPasswordPolicyNotFound)
 }
 
 // Put stores the account password policy.

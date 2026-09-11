@@ -103,9 +103,6 @@ func (s *InstanceProfileStore) AddRole(instanceProfileName, roleName string) err
 			}
 		}
 
-		// Enforce the one-role-per-instance-profile limit inside the
-		// lock so concurrent requests for different roles cannot both
-		// succeed.
 		if len(profile.Roles) >= 1 {
 			return NewStoreError("add_role_to_instance_profile", ErrInstanceProfileRoleLimit)
 		}

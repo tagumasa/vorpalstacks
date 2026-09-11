@@ -1,7 +1,6 @@
 package iam
 
 import (
-	"strings"
 	"time"
 
 	"vorpalstacks/internal/core/storage"
@@ -21,38 +20,6 @@ func NewGroupStore(store storage.BasicStorage, accountId string) *GroupStore {
 		entityStore: newEntityStore[Group](store, groupBucketName),
 		arnBuilder:  NewARNBuilder(accountId),
 	}
-}
-
-// GetByArn retrieves a group by its ARN.
-func (s *GroupStore) GetByArn(arn string) (*Group, error) {
-	result, err := s.List("", "", 1000)
-	if err != nil {
-		return nil, err
-	}
-	for _, g := range result.Groups {
-		if g.Arn == arn {
-			return g, nil
-		}
-	}
-	return nil, NewStoreError("get_group_by_arn", ErrGroupNotFound)
-}
-
-// GetByPath retrieves all groups with a given path prefix.
-func (s *GroupStore) GetByPath(pathPrefix string) ([]*Group, error) {
-	result, err := s.List("", "", 1000)
-	if err != nil {
-		return nil, err
-	}
-	if pathPrefix == "" {
-		return result.Groups, nil
-	}
-	var filtered []*Group
-	for _, g := range result.Groups {
-		if strings.HasPrefix(g.Path, pathPrefix) {
-			filtered = append(filtered, g)
-		}
-	}
-	return filtered, nil
 }
 
 // Put stores a group.

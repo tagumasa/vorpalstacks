@@ -314,3 +314,36 @@ func TestMatchArnPattern(t *testing.T) {
 		})
 	}
 }
+
+// A condition value is a single string or a list of strings on the wire;
+// the scalar form is normalised to a one-element list.
+func TestParseDocumentScalarConditionValue(t *testing.T) {
+	doc, err := ParseDocument(`{
+		"Version": "2012-10-17",
+		"Statement": [{
+			"Effect": "Allow",
+			"Action": ["s3:ListBucket"],
+			"Resource": ["*"],
+			"Condition": {"StringEquals": {"simsample:Team": "eng"}}
+		}]
+	}`)
+	if err != nil {
+		t.Fatalf("scalar condition value must parse: %v", err)
+	}
+	values := doc.Statement[0].Condition["StringEquals"]["simsample:Team"]
+	if len(values) != 1 || values[0] != "eng" {
+		t.Fatalf("scalar condition value: got %v, want [eng]", values)
+	}
+
+	if _, err := ParseDocument(`{
+		"Version": "2012-10-17",
+		"Statement": [{
+			"Effect": "Allow",
+			"Action": ["s3:ListBucket"],
+			"Resource": ["*"],
+			"Condition": {"StringEquals": {"simsample:Team": 42}}
+		}]
+	}`); err == nil {
+		t.Fatal("a numeric condition value must still be rejected")
+	}
+}

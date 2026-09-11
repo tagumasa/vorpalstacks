@@ -121,7 +121,7 @@ func (s *IAMService) updateSigningCertificateCore(reqCtx *request.RequestContext
 
 	cert, err := store.SigningCertificates().Get(input.CertificateId)
 	if err != nil {
-		return NewNoSuchEntityError("signing certificate", input.CertificateId)
+		return storeReadError(err, iamstore.ErrSigningCertificateNotFound, NewNoSuchEntityError("signing certificate", input.CertificateId))
 	}
 	if cert.UserName != owner {
 		return NewNoSuchEntityError("signing certificate", input.CertificateId)
@@ -147,7 +147,7 @@ func (s *IAMService) deleteSigningCertificateCore(reqCtx *request.RequestContext
 
 	cert, err := store.SigningCertificates().Get(certificateId)
 	if err != nil {
-		return NewNoSuchEntityError("signing certificate", certificateId)
+		return storeReadError(err, iamstore.ErrSigningCertificateNotFound, NewNoSuchEntityError("signing certificate", certificateId))
 	}
 	if cert.UserName != userName {
 		return NewNoSuchEntityError("signing certificate", certificateId)

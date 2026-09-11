@@ -1,10 +1,10 @@
-// Package iam provides AWS IAM store functionality for vorpalstacks.
 package iam
 
 import (
+	"cmp"
 	"encoding/json"
-	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -36,53 +36,29 @@ func NewPolicyStore(store storage.BasicStorage, accountId string) *PolicyStore {
 
 // Get retrieves a policy by its ARN.
 func (s *PolicyStore) Get(policyArn string) (*Policy, error) {
-	var policy Policy
-	if err := s.BaseStore.Get(policyArn, &policy); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_policy", ErrPolicyNotFound)
-		}
-		return nil, NewStoreError("get_policy", err)
-	}
-	return &policy, nil
-}
-
-// GetByPathAndName retrieves a policy by its path and name.
-func (s *PolicyStore) GetByPathAndName(path, policyName string) (*Policy, error) {
-	found, err := common.FindFirst[Policy](s.BaseStore, func(p *Policy) bool {
-		return p.Path == path && p.PolicyName == policyName
-	})
-	if err != nil {
-		return nil, NewStoreError("get_policy_by_name", err)
-	}
-	return found, nil
+	return getByKey[Policy](s.BaseStore, policyArn, "get_policy", ErrPolicyNotFound)
 }
 
 // List retrieves policies with optional filtering by scope, path prefix, and attachment status.
+// Scope follows the ListPolicies contract: "AWS" lists only AWS managed
+// policies (AccountId "aws"), "Local" only customer managed policies, and
+// "All" (or any other value) everything.
 func (s *PolicyStore) List(scope, pathPrefix string, onlyAttached bool, marker string, maxItems int) (*PolicyListResult, error) {
-	var filter common.FilterFunc[Policy]
-	if scope == "AWS" {
-		filter = func(p *Policy) bool {
-			if p.AccountId != "aws" {
-				return false
-			}
-			if pathPrefix != "" && !strings.HasPrefix(p.Path, pathPrefix) {
-				return false
-			}
-			if onlyAttached && p.AttachmentCount == 0 {
-				return false
-			}
-			return true
+	awsManagedOnly, customerManagedOnly := scope == "AWS", scope == "Local"
+	filter := func(p *Policy) bool {
+		if awsManagedOnly && p.AccountId != "aws" {
+			return false
 		}
-	} else {
-		filter = func(p *Policy) bool {
-			if pathPrefix != "" && !strings.HasPrefix(p.Path, pathPrefix) {
-				return false
-			}
-			if onlyAttached && p.AttachmentCount == 0 {
-				return false
-			}
-			return true
+		if customerManagedOnly && p.AccountId == "aws" {
+			return false
 		}
+		if pathPrefix != "" && !strings.HasPrefix(p.Path, pathPrefix) {
+			return false
+		}
+		if onlyAttached && p.AttachmentCount == 0 {
+			return false
+		}
+		return true
 	}
 
 	result, err := common.List[Policy](s.BaseStore, common.ListOptions{Marker: marker, MaxItems: maxItems}, filter)
@@ -171,60 +147,47 @@ func (s *PolicyStore) Create(policyName, path, accountId, document, description 
 	return policy, nil
 }
 
-// IncrementAttachmentCount increments the attachment count for a policy.
-func (s *PolicyStore) IncrementAttachmentCount(policyArn string) error {
+// adjustUsageCount applies a signed adjustment to one of the policy's usage
+// counters inside the policy lock scope: read-modify-write under WithLock so
+// concurrent attach/detach or boundary changes cannot lose an update. A
+// decrement never drops below zero (the counters are usage tallies, not
+// reference counts with phantom ownership).
+func (s *PolicyStore) adjustUsageCount(policyArn string, counter func(*Policy) *int, delta int) error {
 	return s.kl.WithLock(policyArn, func() error {
 		policy, err := s.Get(policyArn)
 		if err != nil {
 			return err
 		}
-		policy.AttachmentCount++
+		value := counter(policy)
+		if delta > 0 || *value > 0 {
+			*value += delta
+		}
 		return s.Put(policy)
 	})
 }
 
+// IncrementAttachmentCount increments the attachment count for a policy.
+func (s *PolicyStore) IncrementAttachmentCount(policyArn string) error {
+	return s.adjustUsageCount(policyArn, func(p *Policy) *int { return &p.AttachmentCount }, 1)
+}
+
 // DecrementAttachmentCount decrements the attachment count for a policy.
 func (s *PolicyStore) DecrementAttachmentCount(policyArn string) error {
-	return s.kl.WithLock(policyArn, func() error {
-		policy, err := s.Get(policyArn)
-		if err != nil {
-			return err
-		}
-		if policy.AttachmentCount > 0 {
-			policy.AttachmentCount--
-		}
-		return s.Put(policy)
-	})
+	return s.adjustUsageCount(policyArn, func(p *Policy) *int { return &p.AttachmentCount }, -1)
 }
 
 // IncrementPermissionsBoundaryUsageCount increments the permissions boundary
 // usage count for a policy. Called when a user or role's permissions boundary
 // is set to this policy.
 func (s *PolicyStore) IncrementPermissionsBoundaryUsageCount(policyArn string) error {
-	return s.kl.WithLock(policyArn, func() error {
-		policy, err := s.Get(policyArn)
-		if err != nil {
-			return err
-		}
-		policy.PermissionsBoundaryUsageCount++
-		return s.Put(policy)
-	})
+	return s.adjustUsageCount(policyArn, func(p *Policy) *int { return &p.PermissionsBoundaryUsageCount }, 1)
 }
 
 // DecrementPermissionsBoundaryUsageCount decrements the permissions boundary
 // usage count for a policy. Called when a user or role's permissions boundary
 // is removed or changed away from this policy.
 func (s *PolicyStore) DecrementPermissionsBoundaryUsageCount(policyArn string) error {
-	return s.kl.WithLock(policyArn, func() error {
-		policy, err := s.Get(policyArn)
-		if err != nil {
-			return err
-		}
-		if policy.PermissionsBoundaryUsageCount > 0 {
-			policy.PermissionsBoundaryUsageCount--
-		}
-		return s.Put(policy)
-	})
+	return s.adjustUsageCount(policyArn, func(p *Policy) *int { return &p.PermissionsBoundaryUsageCount }, -1)
 }
 
 // Count returns the total number of policies.
@@ -243,15 +206,7 @@ func (s *PolicyStore) PutVersion(version *PolicyVersion) error {
 
 // GetVersion retrieves a specific version of a policy.
 func (s *PolicyStore) GetVersion(policyArn, versionId string) (*PolicyVersion, error) {
-	key := policyArn + ":" + versionId
-	var version PolicyVersion
-	if err := s.versionStore.Get(key, &version); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_policy_version", ErrPolicyNotFound)
-		}
-		return nil, NewStoreError("get_policy_version", err)
-	}
-	return &version, nil
+	return getByKey[PolicyVersion](s.versionStore, policyArn+":"+versionId, "get_policy_version", ErrPolicyNotFound)
 }
 
 // DeleteVersion removes a specific version of a policy.
@@ -260,16 +215,19 @@ func (s *PolicyStore) DeleteVersion(policyArn, versionId string) error {
 	return s.versionStore.Delete(key)
 }
 
-// ListVersions retrieves all versions of a policy.
+// ListVersions retrieves all versions of a policy, newest first. AWS does
+// not contractually guarantee an order; its documented example lists the
+// newest version first (v3, v2, v1), and the numeric comparison is what
+// keeps the sequence sensible: bucket key order is lexicographic, which
+// would list v10 before v6 once cumulative numbering passes nine
+// versions, breaking any numeric expectation callers build on the
+// v-identifiers and the marker pagination that follows them.
 func (s *PolicyStore) ListVersions(policyArn string, marker string, maxItems int) (*PolicyVersionListResult, error) {
 	if maxItems <= 0 {
 		maxItems = 100
 	}
 
-	var versions []*PolicyVersion
-	count := 0
-	started := marker == ""
-	hasMore := false
+	var all []*PolicyVersion
 	prefix := policyArn + ":"
 
 	err := s.versionStore.ForEach(func(k string, v []byte) error {
@@ -281,25 +239,35 @@ func (s *PolicyStore) ListVersions(policyArn string, marker string, maxItems int
 		if err := json.Unmarshal(v, &version); err != nil {
 			return err
 		}
-
-		if !started {
-			if version.VersionId == marker {
-				started = true
-			}
-			return nil
-		}
-
-		if count < maxItems {
-			versions = append(versions, &version)
-			count++
-		} else {
-			hasMore = true
-		}
+		all = append(all, &version)
 		return nil
 	})
 
 	if err != nil {
 		return nil, NewStoreError("list_policy_versions", err)
+	}
+
+	slices.SortFunc(all, func(a, b *PolicyVersion) int {
+		return cmp.Compare(extractVersionNumber(b.VersionId), extractVersionNumber(a.VersionId))
+	})
+
+	var versions []*PolicyVersion
+	started := marker == ""
+	hasMore := false
+	for _, version := range all {
+		if !started {
+			if version.VersionId == marker {
+				started = true
+			}
+			continue
+		}
+
+		if len(versions) < maxItems {
+			versions = append(versions, version)
+		} else {
+			hasMore = true
+			break
+		}
 	}
 
 	result := &PolicyVersionListResult{
@@ -359,14 +327,6 @@ func (s *PolicyStore) setDefaultVersionUnlocked(policyArn, versionId string) err
 	policy.DefaultVersionId = versionId
 	return s.Put(policy)
 }
-
-// ErrPolicyVersionLimitExceeded is returned when a policy already has
-// the maximum allowed number of versions (5 per AWS spec).
-var ErrPolicyVersionLimitExceeded = errors.New("cannot exceed quota for PolicyVersions")
-
-// MaxPolicyVersions is the AWS-enforced maximum number of versions per
-// policy.
-const MaxPolicyVersions = 5
 
 // CreateVersion atomically creates a new policy version inside the
 // policy lock scope, enforcing the MaxPolicyVersions quota and

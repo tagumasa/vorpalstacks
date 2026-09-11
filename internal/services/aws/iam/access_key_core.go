@@ -52,7 +52,7 @@ func (s *IAMService) deleteAccessKeyCore(store *iamstore.IAMStore, accessKeyId, 
 
 	key, err := store.AccessKeys().Get(accessKeyId)
 	if err != nil {
-		return NewNoSuchAccessKeyError(accessKeyId)
+		return storeReadError(err, iamstore.ErrAccessKeyNotFound, NewNoSuchAccessKeyError(accessKeyId))
 	}
 
 	if userName != "" && key.UserName != userName {
@@ -94,7 +94,7 @@ func (s *IAMService) getAccessKeyLastUsedCore(store *iamstore.IAMStore, accessKe
 
 	key, err := store.AccessKeys().Get(accessKeyId)
 	if err != nil {
-		return nil, NewNoSuchAccessKeyError(accessKeyId)
+		return nil, storeReadError(err, iamstore.ErrAccessKeyNotFound, NewNoSuchAccessKeyError(accessKeyId))
 	}
 	return key, nil
 }
@@ -109,7 +109,7 @@ func (s *IAMService) updateAccessKeyCore(store *iamstore.IAMStore, input *Update
 
 	key, err := store.AccessKeys().Get(input.AccessKeyId)
 	if err != nil {
-		return NewNoSuchAccessKeyError(input.AccessKeyId)
+		return storeReadError(err, iamstore.ErrAccessKeyNotFound, NewNoSuchAccessKeyError(input.AccessKeyId))
 	}
 
 	if input.UserName != "" && key.UserName != input.UserName {

@@ -28,6 +28,7 @@ type IAMService struct {
 	credentialReportState string
 	credentialReportData  string
 	credentialReportTime  time.Time
+	credentialReportErr   string
 }
 
 // NewIAMService creates a new IAM service instance for the given account.
@@ -224,6 +225,10 @@ var iamHandlerMethods = map[string]func(*IAMService, context.Context, *request.R
 	"DisableOutboundWebIdentityFederation":      (*IAMService).DisableOutboundWebIdentityFederation,
 	"GetOutboundWebIdentityFederationInfo":      (*IAMService).GetOutboundWebIdentityFederationInfo,
 	"SetSecurityTokenServicePreferences":        (*IAMService).SetSecurityTokenServicePreferences,
+	"GetAccountProperties":                      (*IAMService).GetAccountProperties,
+	"PutAccountProperties":                      (*IAMService).PutAccountProperties,
+	"AcquireRole":                               (*IAMService).AcquireRole,
+	"GetRoleTemplateVersion":                    (*IAMService).GetRoleTemplateVersion,
 	"GetAccountAuthorizationDetails":            (*IAMService).GetAccountAuthorizationDetails,
 	"ListEntitiesForPolicy":                     (*IAMService).ListEntitiesForPolicy,
 	"GenerateCredentialReport":                  (*IAMService).GenerateCredentialReport,
@@ -235,6 +240,7 @@ var iamHandlerMethods = map[string]func(*IAMService, context.Context, *request.R
 	"GetServiceLastAccessedDetails":             (*IAMService).GetServiceLastAccessedDetails,
 	"GetServiceLastAccessedDetailsWithEntities": (*IAMService).GetServiceLastAccessedDetailsWithEntities,
 	"SimulatePrincipalPolicy":                   (*IAMService).SimulatePrincipalPolicy,
+	"SimulateCustomPolicy":                      (*IAMService).SimulateCustomPolicy,
 	"ListPoliciesGrantingServiceAccess":         (*IAMService).ListPoliciesGrantingServiceAccess,
 }
 

@@ -36,11 +36,15 @@ func (s *IAMService) addUserToGroupCore(store *iamstore.IAMStore, input *UserGro
 	}
 
 	// The store sentinel covers concurrent duplicate additions racing past
-	// the pre-check.
+	// the pre-check; the quota-checked write counts the user's memberships
+	// inside the same user-scoped lock.
 	if !store.UserGroups().IsUserInGroup(input.UserName, input.GroupName) {
-		if err := store.UserGroups().AddUserToGroup(input.UserName, input.GroupName); err != nil {
+		if err := store.UserGroups().AddUserToGroupWithLimit(input.UserName, input.GroupName, iamstore.MaxIAMGroupsPerUser); err != nil {
 			if errors.Is(err, iamstore.ErrUserAlreadyInGroup) {
 				return nil
+			}
+			if errors.Is(err, iamstore.ErrUserGroupLimitExceeded) {
+				return ErrLimitExceededGroupsPerUser
 			}
 			return err
 		}

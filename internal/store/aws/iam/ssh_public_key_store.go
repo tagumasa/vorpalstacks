@@ -15,45 +15,40 @@ const sshPublicKeyBucketName = "iam_ssh_public_keys"
 
 // SSHPublicKeyStore provides storage operations for IAM SSH public keys.
 type SSHPublicKeyStore struct {
-	*common.BaseStore
-	kl common.KeyLocker
+	uk userKeyed[SSHPublicKey]
 }
 
 // NewSSHPublicKeyStore creates a new SSHPublicKeyStore instance.
 func NewSSHPublicKeyStore(store storage.BasicStorage) *SSHPublicKeyStore {
 	return &SSHPublicKeyStore{
-		BaseStore: common.NewBaseStore(store.Bucket(sshPublicKeyBucketName), "iam"),
+		uk: newUserKeyed[SSHPublicKey](
+			common.NewBaseStore(store.Bucket(sshPublicKeyBucketName), "iam"),
+			func(k *SSHPublicKey) string { return k.SSHPublicKeyId },
+			func(k *SSHPublicKey) string { return k.UserName },
+		),
 	}
 }
 
 // Get retrieves an SSH public key by its key ID.
 func (s *SSHPublicKeyStore) Get(keyId string) (*SSHPublicKey, error) {
-	var key SSHPublicKey
-	if err := s.BaseStore.Get(keyId, &key); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_ssh_public_key", ErrSSHPublicKeyNotFound)
-		}
-		return nil, NewStoreError("get_ssh_public_key", err)
-	}
-	return &key, nil
+	return getByKey[SSHPublicKey](s.uk.BaseStore, keyId, "get_ssh_public_key", ErrSSHPublicKeyNotFound)
 }
 
 // Put stores an SSH public key, keyed by its key ID.
 func (s *SSHPublicKeyStore) Put(key *SSHPublicKey) error {
-	return s.BaseStore.Put(key.SSHPublicKeyId, key)
+	return s.uk.BaseStore.Put(key.SSHPublicKeyId, key)
 }
 
 // Delete removes an SSH public key by its key ID.
 func (s *SSHPublicKeyStore) Delete(keyId string) error {
-	return s.BaseStore.Delete(keyId)
+	return s.uk.BaseStore.Delete(keyId)
 }
 
 // Exists reports whether an SSH public key exists with the given key ID.
 func (s *SSHPublicKeyStore) Exists(keyId string) bool {
-	return s.BaseStore.Exists(keyId)
+	return s.uk.BaseStore.Exists(keyId)
 }
 
-// Upload uploads a new SSH public key for the given user.
 // MaxSSHPublicKeysPerUser is the AWS-enforced quota of SSH public keys per
 // IAM user.
 const MaxSSHPublicKeysPerUser = 5
@@ -65,7 +60,7 @@ const MaxSSHPublicKeysPerUser = 5
 // not hide a duplicate.
 func (s *SSHPublicKeyStore) UploadWithGuards(userName, sshPublicKeyBody string) (*SSHPublicKey, error) {
 	var created *SSHPublicKey
-	err := s.kl.WithLock("ssh-key:"+userName, func() error {
+	err := s.uk.kl.WithLock("ssh-key:"+userName, func() error {
 		existing, err := s.ListByUserName(userName)
 		if err != nil {
 			return err
@@ -80,7 +75,7 @@ func (s *SSHPublicKeyStore) UploadWithGuards(userName, sshPublicKeyBody string) 
 			return NewStoreError("upload_ssh_public_key", ErrSSHPublicKeyLimitExceeded)
 		}
 
-		id, err := generateSSHPublicKeyID()
+		id, err := GenerateSSHPublicKeyID()
 		if err != nil {
 			return NewStoreError("generate_ssh_public_key_id", err)
 		}
@@ -102,94 +97,35 @@ func (s *SSHPublicKeyStore) UploadWithGuards(userName, sshPublicKeyBody string) 
 
 // UpdateStatus changes the status of an SSH public key (e.g. Active/Inactive).
 func (s *SSHPublicKeyStore) UpdateStatus(keyId, status string) error {
-	return s.kl.WithLock(keyId, func() error {
-		key, err := s.Get(keyId)
-		if err != nil {
-			return err
-		}
-		key.Status = status
-		return s.Put(key)
-	})
+	return s.uk.updateStatus(keyId, status, s.Get, func(k *SSHPublicKey, status string) { k.Status = status })
 }
 
 // ListByUserName returns all SSH public keys belonging to the given user.
 func (s *SSHPublicKeyStore) ListByUserName(userName string) ([]*SSHPublicKey, error) {
-	var keys []*SSHPublicKey
-	err := s.ForEach(func(k string, v []byte) error {
-		var key SSHPublicKey
-		if err := json.Unmarshal(v, &key); err != nil {
-			return err
-		}
-		if key.UserName == userName {
-			keys = append(keys, &key)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, NewStoreError("list_ssh_public_keys", err)
-	}
-	return keys, nil
+	return s.uk.listByUserName(userName, "list_ssh_public_keys")
 }
 
 // DeleteAllForUser removes all SSH public keys belonging to the given user.
 func (s *SSHPublicKeyStore) DeleteAllForUser(userName string) error {
-	var toDelete []string
-	err := s.ForEach(func(k string, v []byte) error {
-		var key SSHPublicKey
-		if err := json.Unmarshal(v, &key); err != nil {
-			return err
-		}
-		if key.UserName == userName {
-			toDelete = append(toDelete, key.SSHPublicKeyId)
-		}
-		return nil
-	})
-	if err != nil {
-		return NewStoreError("delete_user_ssh_public_keys", err)
-	}
-	for _, id := range toDelete {
-		if err := s.Delete(id); err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.uk.deleteAllForUser(userName, "delete_user_ssh_public_keys")
 }
 
 // MigrateUser updates the UserName field on all SSH public keys from
 // oldUserName to newUserName. Called during IAM user rename operations.
 func (s *SSHPublicKeyStore) MigrateUser(oldUserName, newUserName string) error {
-	var toUpdate []*SSHPublicKey
-	err := s.ForEach(func(k string, v []byte) error {
-		var key SSHPublicKey
-		if err := json.Unmarshal(v, &key); err != nil {
-			return err
-		}
-		if key.UserName == oldUserName {
-			toUpdate = append(toUpdate, &key)
-		}
-		return nil
-	})
-	if err != nil {
-		return NewStoreError("migrate_ssh_public_keys", err)
-	}
-	for _, key := range toUpdate {
-		key.UserName = newUserName
-		if err := s.Put(key); err != nil {
-			return err
-		}
-	}
-	return nil
+	return s.uk.migrateUser(oldUserName, newUserName, "migrate_ssh_public_keys",
+		func(k *SSHPublicKey, newName string) { k.UserName = newName })
 }
 
 // Count returns the total number of SSH public keys.
 func (s *SSHPublicKeyStore) Count() int {
-	return s.BaseStore.Count()
+	return s.uk.BaseStore.Count()
 }
 
 // CountByUserName returns the number of SSH public keys belonging to the given user.
 func (s *SSHPublicKeyStore) CountByUserName(userName string) (int, error) {
 	count := 0
-	err := s.ForEach(func(k string, v []byte) error {
+	err := s.uk.ForEach(func(k string, v []byte) error {
 		var key SSHPublicKey
 		if err := json.Unmarshal(v, &key); err != nil {
 			return err
@@ -219,12 +155,4 @@ func computeFingerprint(publicKeyBody string) string {
 	}
 	h := sha256.Sum256(keyData)
 	return base64.StdEncoding.EncodeToString(h[:])
-}
-
-func generateSSHPublicKeyID() (string, error) {
-	return generateID("APKA")
-}
-
-func generateSigningCertificateID() (string, error) {
-	return generateID("CERT")
 }

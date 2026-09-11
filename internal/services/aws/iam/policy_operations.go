@@ -1,18 +1,13 @@
-// Package iam provides IAM service operations for vorpalstacks.
 package iam
 
 import (
 	"context"
-	"fmt"
-	"time"
 
-	"vorpalstacks/internal/common/iam/policy"
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	awsarn "vorpalstacks/internal/utils/aws/arn"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -81,18 +76,13 @@ func (s *IAMService) DeletePolicy(ctx context.Context, reqCtx *request.RequestCo
 }
 
 // ListPolicies lists managed policies.
-// Scope filters by policy scope (Local, AWS, All). Defaults to "Local".
+// Scope filters by policy scope (All, AWS, Local); an omitted Scope
+// defaults to All.
 // PathPrefix filters by path prefix.
 // OnlyAttached filters to only attached policies.
 // Supports pagination via Marker and MaxItems.
 func (s *IAMService) ListPolicies(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	scope := request.GetStringParam(req.Parameters, "Scope")
-	if scope == "" {
-		scope = "Local"
-	}
-	if !validatePolicyScope(scope) {
-		return nil, NewInvalidInputError("Scope", "must be one of: All, AWS, Local")
-	}
 	pathPrefix := request.GetStringParam(req.Parameters, "PathPrefix")
 	onlyAttached := request.GetBoolParam(req.Parameters, "OnlyAttached")
 	marker := request.GetStringParam(req.Parameters, "Marker")
@@ -156,10 +146,6 @@ func (s *IAMService) GetPolicyVersion(ctx context.Context, reqCtx *request.Reque
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -181,10 +167,6 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -202,9 +184,6 @@ func (s *IAMService) DeletePolicyVersion(ctx context.Context, reqCtx *request.Re
 // Supports pagination via Marker and MaxItems.
 func (s *IAMService) ListPolicyVersions(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {
@@ -243,10 +222,6 @@ func (s *IAMService) SetDefaultPolicyVersion(ctx context.Context, reqCtx *reques
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
 	versionId := request.GetStringParam(req.Parameters, "VersionId")
 
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
-
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
@@ -259,42 +234,71 @@ func (s *IAMService) SetDefaultPolicyVersion(ctx context.Context, reqCtx *reques
 	return response.EmptyResponse(), nil
 }
 
-var policyTagOps = tagOps[*iamstore.Policy]{
-	paramName:  "PolicyArn",
-	emptyErr:   ErrNoSuchPolicy,
-	notFoundFn: func(n string) error { return NewNoSuchPolicyError(n) },
-	getFn:      func(s *iamstore.IAMStore, n string) (*iamstore.Policy, error) { return s.Policies().Get(n) },
-	putFn:      func(s *iamstore.IAMStore, r *iamstore.Policy) error { return s.Policies().Put(r) },
-	tagsFn:     func(r *iamstore.Policy) *[]tags.Tag { return &r.Tags },
-}
-
 // TagPolicy adds tags to a managed policy.
 // PolicyArn is required.
 // Tags are provided as a list of key-value pairs.
 func (s *IAMService) TagPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagResource(ctx, s, reqCtx, req, policyTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &TagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "PolicyArn"),
+		Tags:         tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	if err := tagResourceCore(store, policyTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // UntagPolicy removes tags from a managed policy.
 // PolicyArn is required.
 // TagKeys specifies which tags to remove.
 func (s *IAMService) UntagPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return untagResource(ctx, s, reqCtx, req, policyTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &UntagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "PolicyArn"),
+		TagKeys:      tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"),
+	}
+	if err := untagResourceCore(store, policyTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // ListPolicyTags lists the tags attached to a managed policy.
 // PolicyArn is required.
 func (s *IAMService) ListPolicyTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return listResourceTags(ctx, s, reqCtx, req, policyTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &ListResourceTagsInput{
+		ResourceName: request.GetStringParam(req.Parameters, "PolicyArn"),
+		Marker:       request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:     pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
+	}
+	result, err := listResourceTagsCore(store, policyTagOps, input)
+	if err != nil {
+		return nil, err
+	}
+	resp := map[string]interface{}{
+		"Tags":        tags.ToResponse(result.Tags),
+		"IsTruncated": result.IsTruncated,
+	}
+	if result.Marker != "" {
+		resp["Marker"] = result.Marker
+	}
+	return resp, nil
 }
 
 // ListEntitiesForPolicy lists all IAM users, groups, and roles that the specified managed policy is attached to.
 func (s *IAMService) ListEntitiesForPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	policyArn := request.GetStringParam(req.Parameters, "PolicyArn")
-	if policyArn == "" {
-		return nil, NewValidationError("PolicyArn")
-	}
-
 	entityFilter := request.GetStringParam(req.Parameters, "EntityFilter")
 
 	store, err := s.store(reqCtx)
@@ -357,169 +361,219 @@ func (s *IAMService) policyVersionToResponse(version *iamstore.PolicyVersion) ma
 
 // SimulatePrincipalPolicy simulates the effects of IAM policies on a principal.
 func (s *IAMService) SimulatePrincipalPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	policySourceArn := request.GetStringParam(req.Parameters, "PolicySourceArn")
-	if policySourceArn == "" {
-		return nil, NewValidationError("PolicySourceArn")
+	input := &SimulatePrincipalPolicyInput{
+		PolicySourceArn:                    request.GetStringParam(req.Parameters, "PolicySourceArn"),
+		ActionNames:                        request.GetStringList(req.Parameters, "ActionNames"),
+		ResourceArns:                       request.GetStringList(req.Parameters, "ResourceArns"),
+		PolicyInputList:                    request.GetStringList(req.Parameters, "PolicyInputList"),
+		PermissionsBoundaryPolicyInputList: request.GetStringList(req.Parameters, "PermissionsBoundaryPolicyInputList"),
+		ContextEntries:                     buildSimulationContextEntries(req.Parameters),
+		PolicyExclusionList:                buildSimulationPolicyIdentifiers(req.Parameters),
+		ResourcePolicy:                     request.GetStringParam(req.Parameters, "ResourcePolicy"),
+		ResourceOwner:                      request.GetStringParam(req.Parameters, "ResourceOwner"),
+		CallerArn:                          request.GetStringParam(req.Parameters, "CallerArn"),
+		ResourceHandlingOption:             request.GetStringParam(req.Parameters, "ResourceHandlingOption"),
 	}
 
-	actionNames := request.GetStringList(req.Parameters, "ActionNames")
-	if len(actionNames) == 0 {
-		return nil, NewValidationError("ActionNames")
-	}
-
-	resourceArns := request.GetStringList(req.Parameters, "ResourceArns")
-	resources := resourceArns
-	if len(resources) == 0 {
-		resources = []string{"*"}
-	}
-
-	// Gather all applicable policies for the principal.
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
 	}
-	policyDocs, err := s.gatherPrincipalPoliciesCore(store, policySourceArn)
+	result, err := s.simulatePrincipalPolicyCore(store, input)
 	if err != nil {
 		return nil, err
 	}
+	return simulationResponse(result.Evaluations, req.Parameters), nil
+}
 
-	// Add PolicyInputList (additional inline policy documents).
-	policyInputList := request.GetStringList(req.Parameters, "PolicyInputList")
-	for _, pDoc := range policyInputList {
-		doc, pErr := policy.ParseDocument(pDoc)
-		if pErr != nil {
-			return nil, NewInvalidInputError("PolicyInputList", "contains a malformed policy document")
-		}
-		policyDocs = append(policyDocs, doc)
+// SimulateCustomPolicy simulates the effects of caller-supplied policy
+// documents, without gathering any principal's policies.
+func (s *IAMService) SimulateCustomPolicy(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	input := &SimulateCustomPolicyInput{
+		PolicyInputList:                    request.GetStringList(req.Parameters, "PolicyInputList"),
+		PermissionsBoundaryPolicyInputList: request.GetStringList(req.Parameters, "PermissionsBoundaryPolicyInputList"),
+		OrderedOrganizationPolicyInputList: buildOrderedOrganizationPolicies(req.Parameters),
+		ActionNames:                        request.GetStringList(req.Parameters, "ActionNames"),
+		ResourceArns:                       request.GetStringList(req.Parameters, "ResourceArns"),
+		ResourcePolicy:                     request.GetStringParam(req.Parameters, "ResourcePolicy"),
+		ResourceOwner:                      request.GetStringParam(req.Parameters, "ResourceOwner"),
+		CallerArn:                          request.GetStringParam(req.Parameters, "CallerArn"),
+		ContextEntries:                     buildSimulationContextEntries(req.Parameters),
+		ResourceHandlingOption:             request.GetStringParam(req.Parameters, "ResourceHandlingOption"),
 	}
 
-	// Permissions boundary — if present, it limits the maximum permissions.
-	boundaryInputList := request.GetStringList(req.Parameters, "PermissionsBoundaryPolicyInputList")
-	var boundaryDocs []*policy.Document
-	for _, bDoc := range boundaryInputList {
-		doc, bErr := policy.ParseDocument(bDoc)
-		if bErr != nil {
-			return nil, NewInvalidInputError("PermissionsBoundaryPolicyInputList", "contains a malformed policy document")
-		}
-		boundaryDocs = append(boundaryDocs, doc)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
 	}
+	result, err := s.simulateCustomPolicyCore(store, input)
+	if err != nil {
+		return nil, err
+	}
+	return simulationResponse(result.Evaluations, req.Parameters), nil
+}
 
-	// Build context entries from request.
-	sessionCtx := buildSimulationContextEntries(req.Parameters)
-	principalName := extractPrincipalNameFromARN(policySourceArn)
-	principalAccount := extractAccountFromARN(policySourceArn)
+// buildOrderedOrganizationPolicies reads the ordered organisation policy
+// levels: each list member is one level of the Organizations hierarchy
+// carrying its own list of SCP documents. Every document of every level
+// bounds the evaluation, so the levels flatten to their documents in wire
+// order.
+func buildOrderedOrganizationPolicies(params map[string]interface{}) []string {
+	var documents []string
+	for _, level := range request.GetListParam(params, "OrderedOrganizationPolicyInputList") {
+		documents = append(documents, request.GetStringList(level, "ServiceControlPolicyInputList")...)
+	}
+	return documents
+}
 
-	evaluator := policy.NewPolicyEvaluator()
+// buildSimulationPolicyIdentifiers parses the flattened
+// PolicyExclusionList into PolicyIdentifier union entries; each member
+// names exactly one of PolicyType, PolicyArn, or the inline-policy
+// identifier's fields.
+func buildSimulationPolicyIdentifiers(params map[string]interface{}) []SimulationPolicyIdentifier {
+	var identifiers []SimulationPolicyIdentifier
+	for _, entry := range request.GetListParam(params, "PolicyExclusionList") {
+		id := SimulationPolicyIdentifier{
+			PolicyType:           request.GetStringParam(entry, "PolicyType"),
+			PolicyArn:            request.GetStringParam(entry, "PolicyArn"),
+			InlinePolicyName:     request.GetStringParam(entry, "InlinePolicyIdentifier.PolicyName"),
+			InlineAttachmentType: request.GetStringParam(entry, "InlinePolicyIdentifier.AttachmentType"),
+			InlineAttachmentName: request.GetStringParam(entry, "InlinePolicyIdentifier.AttachmentName"),
+		}
+		if id.PolicyType == "" && id.PolicyArn == "" && id.InlinePolicyName == "" {
+			continue
+		}
+		identifiers = append(identifiers, id)
+	}
+	return identifiers
+}
 
-	evaluationResults := make([]interface{}, 0, len(actionNames)*len(resources))
-	for _, action := range actionNames {
-		for _, resource := range resources {
-			evalCtx := &policy.EvaluationContext{
-				Principal:        policySourceArn,
-				PrincipalAccount: principalAccount,
-				Action:           action,
-				Resource:         resource,
-				RequestTime:      time.Now(),
-				UserName:         principalName,
-				SessionContext:   sessionCtx,
+// simulationDecisionDetailsToResponse renders the per-policy-type
+// decisions as the EvalDecisionDetails map.
+func simulationDecisionDetailsToResponse(details []simulationDecisionDetail) map[string]string {
+	if details == nil {
+		return nil
+	}
+	out := make(map[string]string, len(details))
+	for _, d := range details {
+		out[d.PolicyType] = d.Decision
+	}
+	return out
+}
+
+// simulationStatementsToResponse renders matched statements in the wire
+// Statement shape: the source policy's identifier and type. A policy
+// without a type (an input-list document) omits the SourcePolicyType
+// member.
+func simulationStatementsToResponse(matched []simulationSourcePolicy) []interface{} {
+	statements := make([]interface{}, 0, len(matched))
+	for _, source := range matched {
+		entry := map[string]interface{}{
+			"SourcePolicyId": source.PolicyId,
+		}
+		if source.PolicyType != "" {
+			entry["SourcePolicyType"] = source.PolicyType
+		}
+		statements = append(statements, entry)
+	}
+	return statements
+}
+
+// simulationResponse serialises the per-action evaluations, paginated over
+// actions by Marker/MaxItems.
+func simulationResponse(evaluations []SimulationEvaluation, params map[string]interface{}) map[string]interface{} {
+	marker := request.GetStringParam(params, "Marker")
+	maxItems := pagination.GetMaxItems(params, pagination.DefaultMaxItems)
+
+	evaluationResults := make([]interface{}, 0, len(evaluations))
+	for _, evaluation := range evaluations {
+		resourceSpecific := make([]interface{}, 0, len(evaluation.ResourceSpecificResults))
+		for _, resource := range evaluation.ResourceSpecificResults {
+			entry := map[string]interface{}{
+				"EvalResourceName":     resource.EvalResourceName,
+				"EvalResourceDecision": resource.EvalResourceDecision,
+				"MatchedStatements":    simulationStatementsToResponse(resource.MatchedStatements),
+				"MissingContextValues": stringListToResponse(resource.MissingContextValues),
 			}
-
-			// Evaluate identity-based policies.
-			decision := evaluator.Evaluate(evalCtx, policyDocs)
-
-			effect := decision.Effect
-			matchedStatements := []interface{}{}
-			if decision.MatchedSid != "" {
-				matchedStatements = append(matchedStatements, map[string]interface{}{
-					"SourcePolicyId": policySourceArn,
-					"StatementIds":   []interface{}{decision.MatchedSid},
-				})
-			}
-
-			// If allowed by identity policies, check permissions boundary.
-			allowedByBoundary := true
-			if effect == policy.DecisionEffectAllow && len(boundaryDocs) > 0 {
-				boundaryDecision := evaluator.Evaluate(evalCtx, boundaryDocs)
-				if boundaryDecision.Effect != policy.DecisionEffectAllow {
-					effect = policy.DecisionEffectDefaultDeny
-					matchedStatements = []interface{}{}
-					allowedByBoundary = false
+			if evaluation.HasBoundary {
+				entry["PermissionsBoundaryDecisionDetail"] = map[string]interface{}{
+					"AllowedByPermissionsBoundary": resource.AllowedByBoundary,
 				}
 			}
-
-			evalDecision := "implicitDeny"
-			switch effect {
-			case policy.DecisionEffectAllow:
-				evalDecision = "allowed"
-			case policy.DecisionEffectDeny:
-				evalDecision = "explicitDeny"
+			if details := simulationDecisionDetailsToResponse(resource.EvalDecisionDetails); details != nil {
+				entry["EvalDecisionDetails"] = details
 			}
-
-			resultEntry := map[string]interface{}{
-				"EvalActionName":       action,
-				"EvalResourceName":     resource,
-				"EvalDecision":         evalDecision,
-				"MatchedStatements":    matchedStatements,
-				"MissingContextValues": []interface{}{},
-				"OrganizationsDecisionDetail": map[string]interface{}{
-					"AllowedByOrganizations": false,
-				},
-			}
-			if len(boundaryDocs) > 0 {
-				resultEntry["PermissionsBoundaryDecisionDetail"] = map[string]interface{}{
-					"AllowedByPermissionsBoundary": allowedByBoundary,
-				}
-			}
-			evaluationResults = append(evaluationResults, resultEntry)
+			resourceSpecific = append(resourceSpecific, entry)
 		}
+
+		resultEntry := map[string]interface{}{
+			"EvalActionName":          evaluation.EvalActionName,
+			"EvalResourceName":        evaluation.EvalResourceName,
+			"EvalDecision":            evaluation.EvalDecision,
+			"MatchedStatements":       simulationStatementsToResponse(evaluation.MatchedStatements),
+			"MissingContextValues":    stringListToResponse(evaluation.MissingContextValues),
+			"ResourceSpecificResults": resourceSpecific,
+		}
+		if evaluation.HasBoundary {
+			resultEntry["PermissionsBoundaryDecisionDetail"] = map[string]interface{}{
+				"AllowedByPermissionsBoundary": evaluation.AllowedByBoundary,
+			}
+		}
+		// The organisation decision detail exists only at the top level;
+		// the per-resource shape carries no such member.
+		if evaluation.HasOrgPolicies {
+			resultEntry["OrganizationsDecisionDetail"] = map[string]interface{}{
+				"AllowedByOrganizations": evaluation.AllowedByOrganizations,
+			}
+		}
+		if details := simulationDecisionDetailsToResponse(evaluation.EvalDecisionDetails); details != nil {
+			resultEntry["EvalDecisionDetails"] = details
+		}
+		evaluationResults = append(evaluationResults, resultEntry)
 	}
 
-	return map[string]interface{}{
-		"EvaluationResults": evaluationResults,
-		"IsTruncated":       false,
-		"Marker":            "",
-	}, nil
-}
+	// Evaluation results carry no unique natural key — a request may repeat
+	// an action name — so the pages walk positions with an opaque marker.
+	paged := pagination.PaginateSliceByPosition(evaluationResults, marker, maxItems)
 
-func extractPrincipalNameFromARN(arn string) string {
-	_, name := parseIAMARNResource(arn)
-	return name
-}
-
-func extractAccountFromARN(arn string) string {
-	_, _, _, accountID, _ := awsarn.SplitARN(arn)
-	return accountID
-}
-
-func buildSimulationContextEntries(params map[string]interface{}) map[string]string {
-	result := make(map[string]string)
-	i := 1
-	for {
-		nameKey := fmt.Sprintf("ContextEntries.member.%d.ContextKeyName", i)
-		nameVal, ok := params[nameKey]
-		if !ok {
-			nameKey2 := fmt.Sprintf("ContextEntries.%d.ContextKeyName", i)
-			nameVal, ok = params[nameKey2]
-			if !ok {
-				break
-			}
-		}
-		ctxKey, _ := nameVal.(string)
-		if ctxKey == "" {
-			break
-		}
-		valKey := fmt.Sprintf("ContextEntries.member.%d.ContextKeyValues.member.1", i)
-		valKeyAlt := fmt.Sprintf("ContextEntries.%d.ContextKeyValues.1", i)
-		if v, ok := params[valKey]; ok {
-			if s, ok := v.(string); ok {
-				result[ctxKey] = s
-			}
-		} else if v, ok := params[valKeyAlt]; ok {
-			if s, ok := v.(string); ok {
-				result[ctxKey] = s
-			}
-		}
-		i++
+	resp := map[string]interface{}{
+		"EvaluationResults": paged.Items,
+		"IsTruncated":       paged.IsTruncated,
 	}
-	return result
+	if paged.NextMarker != "" {
+		resp["Marker"] = paged.NextMarker
+	}
+	return resp
+}
+
+// stringListToResponse renders a string slice as the wire list, with an
+// empty slice (not nil) for an absent member value.
+func stringListToResponse(values []string) []interface{} {
+	out := make([]interface{}, 0, len(values))
+	for _, v := range values {
+		out = append(out, v)
+	}
+	return out
+}
+
+// buildSimulationContextEntries parses the flattened ContextEntries
+// parameter into structured entries, collecting every value of each
+// (possibly multi-valued) context key.
+func buildSimulationContextEntries(params map[string]interface{}) []SimulationContextEntry {
+	var entries []SimulationContextEntry
+	for _, entry := range request.GetListParam(params, "ContextEntries") {
+		name, _ := entry["ContextKeyName"].(string)
+		if name == "" {
+			continue
+		}
+		values := request.GetStringList(entry, "ContextKeyValues")
+		if len(values) == 0 {
+			continue
+		}
+		entries = append(entries, SimulationContextEntry{
+			ContextKeyName:   name,
+			ContextKeyValues: values,
+		})
+	}
+	return entries
 }

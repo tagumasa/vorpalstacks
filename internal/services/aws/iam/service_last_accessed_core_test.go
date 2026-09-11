@@ -1,8 +1,12 @@
 package iam
 
 import (
+	"errors"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 
 	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/storage"
@@ -103,7 +107,7 @@ func TestReportPrincipalsGroupAndPolicy(t *testing.T) {
 		t.Fatalf("group principals: got %+v, want the member user only", groupPrincipals)
 	}
 
-	if _, err := store.Roles().Create("policy-user-role", "/", "123456789012", "{}", "", 3600, nil); err != nil {
+	if _, err := store.Roles().Create("policy-user-role", "/", "123456789012", "{}", "", 3600, nil, nil); err != nil {
 		t.Fatalf("create role: %v", err)
 	}
 	policyArn := "arn:aws:iam::123456789012:policy/report-policy"
@@ -145,5 +149,43 @@ func TestGetServiceLastAccessedDetailsWithEntitiesCoreNamespaceValidation(t *tes
 		if awsErr.Code != "InvalidInput" {
 			t.Fatalf("ServiceNamespace %q: got code %q, want InvalidInput", ns, awsErr.Code)
 		}
+	}
+}
+
+// The background completion write must not be discarded: when it fails,
+// the job transitions to FAILED carrying the write failure instead of
+// staying IN_PROGRESS forever, and the FAILED state is observable through
+// the Get path the poller uses.
+func TestServiceLastAccessedCompletionFailureSurfacesFailed(t *testing.T) {
+	s, store := faultTestStore(t, "iam_service_last_accessed_jobs", &readFault{
+		failPutOnAttempt: 2, // 1st = pending IN_PROGRESS, 2nd = completion
+		err:              errors.New("simulated job completion write failure"),
+	})
+
+	pending, err := s.generateServiceLastAccessedDetailsCore("us-east-1", store, &GenerateServiceLastAccessedDetailsInput{
+		Arn: "arn:aws:iam::123456789012:user/sla-user",
+	})
+	require.NoError(t, err)
+	if pending.JobStatus != "IN_PROGRESS" {
+		t.Fatalf("pending job status: got %s, want IN_PROGRESS", pending.JobStatus)
+	}
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		job, err := s.getServiceLastAccessedDetailsCore(store, pending.JobID)
+		require.NoError(t, err)
+		if job.JobStatus != "IN_PROGRESS" {
+			if job.JobStatus != "FAILED" {
+				t.Fatalf("job status after failed completion write: got %s, want FAILED", job.JobStatus)
+			}
+			if !strings.Contains(job.Error, "simulated job completion write failure") {
+				t.Fatalf("FAILED job reason: got %q, want the write failure", job.Error)
+			}
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("job stayed IN_PROGRESS after a failed completion write")
+		}
+		time.Sleep(5 * time.Millisecond)
 	}
 }

@@ -20,6 +20,10 @@ type CreateRoleInput struct {
 	MaxSessionDuration       int
 	PermissionsBoundaryArn   string
 	Tags                     []tags.Tag
+	// SourceRoleTemplate records the template the role is created from;
+	// set only by the AcquireRole path (the Role SourceRoleTemplate
+	// member).
+	SourceRoleTemplate *iamstore.SourceRoleTemplate
 }
 
 // UpdateRoleInput holds the parameters for updating an IAM role's
@@ -42,53 +46,8 @@ type DeleteRoleInput struct {
 // createRoleCore validates input and creates an IAM role in the store.
 // Returns the created role or an IAM-formatted error.
 func (s *IAMService) createRoleCore(store *iamstore.IAMStore, input *CreateRoleInput) (*iamstore.Role, error) {
-	if input.RoleName == "" {
-		return nil, NewInvalidInputError("RoleName", "cannot be empty")
-	}
-	if err := validateEntityName(input.RoleName, "RoleName"); err != nil {
-		return nil, err
-	}
-
-	path := input.Path
-	if path == "" {
-		path = "/"
-	}
-	if !validatePath(path) {
-		return nil, NewInvalidInputError("Path", "must be a valid path starting and ending with /")
-	}
-
-	if input.AssumeRolePolicyDocument == "" {
-		return nil, ErrMalformedPolicyDocument
-	}
-	if !validateTrustPolicyDocument(input.AssumeRolePolicyDocument) {
-		return nil, ErrMalformedPolicyDocument
-	}
-
-	if !validateRoleDescription(input.Description) {
-		return nil, NewInvalidInputError("Description", "must be 0 to 1000 characters; allowed: tab, LF, CR, printable ASCII, Latin-1 supplement")
-	}
-
-	maxSessionDuration := input.MaxSessionDuration
-	if maxSessionDuration == 0 {
-		maxSessionDuration = defaultRoleSessionDuration
-	}
-	if !validateRoleMaxSessionDuration(maxSessionDuration) {
-		return nil, NewInvalidInputError("MaxSessionDuration", fmt.Sprintf("must be between %d and %d seconds", minRoleSessionDuration, maxRoleSessionDuration))
-	}
-
-	if err := validateNewTags(input.Tags); err != nil {
-		return nil, err
-	}
-
-	role, err := store.Roles().Create(
-		input.RoleName, path, store.AccountID(),
-		input.AssumeRolePolicyDocument, input.Description,
-		maxSessionDuration, input.Tags,
-	)
+	role, err := createValidatedRole(store, input, apiRoleCreationMessages)
 	if err != nil {
-		if errors.Is(err, iamstore.ErrRoleAlreadyExists) {
-			return nil, NewRoleAlreadyExistsError(input.RoleName)
-		}
 		return nil, err
 	}
 
@@ -103,34 +62,100 @@ func (s *IAMService) createRoleCore(store *iamstore.IAMStore, input *CreateRoleI
 	return role, nil
 }
 
+// roleCreationMessages carries the creation-failure shapes that differ
+// between the operation surfaces: CreateRole reports against the API
+// members and maps a name collision to EntityAlreadyExists, while the
+// AcquireRole template path reports against the template's pattern members
+// and maps a collision to NameConflict, per each operation's modelled
+// errors. Every other failure shape is shared.
+type roleCreationMessages struct {
+	pathInvalid        error
+	descriptionInvalid error
+	durationInvalid    error
+	alreadyExists      func(roleName string) error
+}
+
+var apiRoleCreationMessages = roleCreationMessages{
+	pathInvalid:        NewInvalidInputError("Path", "must be a valid path starting and ending with /"),
+	descriptionInvalid: NewInvalidInputError("Description", "must be 0 to 1000 characters; allowed: tab, LF, CR, printable ASCII, Latin-1 supplement"),
+	durationInvalid:    NewInvalidInputError("MaxSessionDuration", fmt.Sprintf("must be between %d and %d seconds", minRoleSessionDuration, maxRoleSessionDuration)),
+	alreadyExists:      func(roleName string) error { return NewRoleAlreadyExistsError(roleName) },
+}
+
+var templateRoleCreationMessages = roleCreationMessages{
+	pathInvalid:        NewInvalidInputError("RolePathPattern", "template resolves to a path that must start and end with /"),
+	descriptionInvalid: NewInvalidInputError("RoleDescriptionPattern", "template resolves to a description that must be 0 to 1000 characters; allowed: tab, LF, CR, printable ASCII, Latin-1 supplement"),
+	durationInvalid:    NewInvalidInputError("MaxSessionDuration", "template carries a maximum session duration outside the supported range"),
+	alreadyExists:      func(roleName string) error { return NewNameConflictError(roleName) },
+}
+
+// createValidatedRole is the role-creation sequence shared by CreateRole
+// and the AcquireRole template path: field validation, the documented
+// defaults (path "/", one-hour session duration) and the store create with
+// the already-exists mapping. Role name, trust-policy and tag failures are
+// identical on every path and shaped here; the members that the two
+// surfaces report differently arrive in msgs.
+func createValidatedRole(store *iamstore.IAMStore, input *CreateRoleInput, msgs roleCreationMessages) (*iamstore.Role, error) {
+	if input.RoleName == "" {
+		return nil, NewInvalidInputError("RoleName", "cannot be empty")
+	}
+	if err := validateEntityName(input.RoleName, "RoleName"); err != nil {
+		return nil, err
+	}
+
+	path := input.Path
+	if path == "" {
+		path = "/"
+	}
+	if !validatePath(path) {
+		return nil, msgs.pathInvalid
+	}
+
+	if !validateTrustPolicyDocument(input.AssumeRolePolicyDocument) {
+		return nil, ErrMalformedPolicyDocument
+	}
+
+	if !validateRoleDescription(input.Description) {
+		return nil, msgs.descriptionInvalid
+	}
+
+	maxSessionDuration := input.MaxSessionDuration
+	if maxSessionDuration == 0 {
+		maxSessionDuration = iamstore.DefaultRoleSessionDuration
+	}
+	if !validateRoleMaxSessionDuration(maxSessionDuration) {
+		return nil, msgs.durationInvalid
+	}
+
+	if err := validateNewTags(input.Tags); err != nil {
+		return nil, err
+	}
+
+	role, err := store.Roles().Create(
+		input.RoleName, path, store.AccountID(),
+		input.AssumeRolePolicyDocument, input.Description,
+		maxSessionDuration, input.Tags, input.SourceRoleTemplate,
+	)
+	if err != nil {
+		if errors.Is(err, iamstore.ErrRoleAlreadyExists) {
+			return nil, msgs.alreadyExists(input.RoleName)
+		}
+		return nil, err
+	}
+	return role, nil
+}
+
 // attachRolePermissionsBoundaryCore attaches a permissions boundary to an
-// already-resolved role.  It validates the policy ARN, checks the policy
-// exists, handles old-boundary decrement and same-ARN idempotency, persists
-// the role, and increments the policy's usage count.  The operation-level
-// member validation (RoleName and PermissionsBoundary required, name first)
-// lives in putRolePermissionsBoundaryCore.
+// already-resolved role: the shared attach sequence in
+// attachPermissionsBoundaryCore, parameterised over the role's boundary
+// field and the role store's persistence.  The operation-level member
+// validation (RoleName and PermissionsBoundary required, name first) lives
+// in putRolePermissionsBoundaryCore.
 func attachRolePermissionsBoundaryCore(store *iamstore.IAMStore, role *iamstore.Role, pbArn string) error {
-	if err := validateIAMPolicyArn(pbArn); err != nil {
-		return err
-	}
-	if !store.Policies().Exists(pbArn) {
-		return NewNoSuchPolicyError(pbArn)
-	}
-	if role.PermissionsBoundary != nil && role.PermissionsBoundary.PermissionsBoundaryArn == pbArn {
-		return nil
-	}
-	if role.PermissionsBoundary != nil && role.PermissionsBoundary.PermissionsBoundaryArn != "" {
-		_ = store.Policies().DecrementPermissionsBoundaryUsageCount(role.PermissionsBoundary.PermissionsBoundaryArn)
-	}
-	role.PermissionsBoundary = &iamstore.PermissionsBoundary{
-		PermissionsBoundaryType: "Policy",
-		PermissionsBoundaryArn:  pbArn,
-	}
-	if err := store.Roles().Put(role); err != nil {
-		return err
-	}
-	_ = store.Policies().IncrementPermissionsBoundaryUsageCount(pbArn)
-	return nil
+	return attachPermissionsBoundaryCore(store, role, pbArn,
+		func(r *iamstore.Role) **iamstore.PermissionsBoundary { return &r.PermissionsBoundary },
+		store.Roles().Put,
+	)
 }
 
 // putRolePermissionsBoundaryCore is the operation Core for the
@@ -160,7 +185,7 @@ func (s *IAMService) getRoleCore(store *iamstore.IAMStore, roleName string) (*ia
 	}
 	role, err := store.Roles().Get(roleName)
 	if err != nil {
-		return nil, NewNoSuchRoleError(roleName)
+		return nil, storeReadError(err, iamstore.ErrRoleNotFound, NewNoSuchRoleError(roleName))
 	}
 	return role, nil
 }
@@ -224,10 +249,14 @@ func (s *IAMService) updateRoleCore(store *iamstore.IAMStore, input *UpdateRoleI
 // best-effort before the role record is removed.
 func (s *IAMService) deleteRoleCore(store *iamstore.IAMStore, input *DeleteRoleInput) error {
 	if input.RoleName == "" {
-		return ErrNoSuchRole
+		return NewValidationError("RoleName")
 	}
-	if !store.Roles().Exists(input.RoleName) {
-		return NewNoSuchRoleError(input.RoleName)
+	// The role is resolved rather than probed: the resolved read keeps an
+	// outage from masquerading as a missing role, and the resolved record
+	// carries the permissions boundary the deletion must decrement.
+	role, err := store.Roles().Get(input.RoleName)
+	if err != nil {
+		return storeReadError(err, iamstore.ErrRoleNotFound, NewNoSuchRoleError(input.RoleName))
 	}
 
 	if input.Cascade {
@@ -260,15 +289,8 @@ func (s *IAMService) deleteRoleCore(store *iamstore.IAMStore, input *DeleteRoleI
 	}
 
 	// Decrement permissions boundary usage count before the role record is
-	// removed. AWS allows deleting an entity that still has a permissions
-	// boundary attached (it is not a deletion prerequisite), so the policy
-	// counter must be adjusted here to avoid drift. Best-effort, matching the
-	// PutRolePermissionsBoundary / DeleteRolePermissionsBoundary pattern.
-	if role, gErr := store.Roles().Get(input.RoleName); gErr == nil {
-		if role.PermissionsBoundary != nil && role.PermissionsBoundary.PermissionsBoundaryArn != "" {
-			_ = store.Policies().DecrementPermissionsBoundaryUsageCount(role.PermissionsBoundary.PermissionsBoundaryArn)
-		}
-	}
+	// removed (see decrementBoundaryUsageCount).
+	decrementBoundaryUsageCount(store, role.PermissionsBoundary)
 
 	return store.Roles().Delete(input.RoleName)
 }
@@ -282,13 +304,10 @@ func (s *IAMService) deleteRolePermissionsBoundaryCore(store *iamstore.IAMStore,
 	}
 	role, err := store.Roles().Get(roleName)
 	if err != nil {
-		return NewNoSuchRoleError(roleName)
+		return storeReadError(err, iamstore.ErrRoleNotFound, NewNoSuchRoleError(roleName))
 	}
-
-	if role.PermissionsBoundary != nil && role.PermissionsBoundary.PermissionsBoundaryArn != "" {
-		_ = store.Policies().DecrementPermissionsBoundaryUsageCount(role.PermissionsBoundary.PermissionsBoundaryArn)
-	}
-
-	role.PermissionsBoundary = nil
-	return store.Roles().Put(role)
+	return deletePermissionsBoundaryCore(store, role,
+		func(r *iamstore.Role) **iamstore.PermissionsBoundary { return &r.PermissionsBoundary },
+		store.Roles().Put,
+	)
 }

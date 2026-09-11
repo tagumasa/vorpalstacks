@@ -1,4 +1,3 @@
-// Package iam provides IAM service operations for vorpalstacks.
 package iam
 
 import (
@@ -75,7 +74,7 @@ var pathTypePattern = regexp.MustCompile(`^(/)|(/[!-~]+/)$`)
 // validatePath checks that a path conforms to the Smithy pathType trait:
 // pattern ^(\u002F)|(\u002F[\u0021-\u007E]+\u002F)$ and length 1-512.
 func validatePath(path string) bool {
-	if len(path) < 1 || len(path) > 512 {
+	if len(path) < 1 || len(path) > MaxPathLength {
 		return false
 	}
 	return pathTypePattern.MatchString(path)
@@ -102,7 +101,7 @@ func validateThumbprint(tp string) bool {
 // length 1-255 counted in Unicode characters (the shape carries no pattern).
 func validateClientID(id string) bool {
 	n := utf8.RuneCountInString(id)
-	return n >= 1 && n <= 255
+	return n >= 1 && n <= MaxClientIDLength
 }
 
 // ---------------------------------------------------------------------------
@@ -115,7 +114,8 @@ func validateClientID(id string) bool {
 // include dots (e.g. "codecommit.amazonaws.com") which the pattern
 // would reject.
 func validateServiceNamespace(ns string) bool {
-	return len(ns) >= 1 && len(ns) <= 64
+	n := utf8.RuneCountInString(ns)
+	return n >= 1 && n <= MaxServiceNamespaceLength
 }
 
 // ---------------------------------------------------------------------------
@@ -129,7 +129,7 @@ var customSuffixPattern = regexp.MustCompile(`^[\w+=,.@-]+$`)
 // validateCustomSuffix checks that a custom suffix conforms to
 // Smithy customSuffixType: length 1-64, pattern ^[\w+=,.@-]+$.
 func validateCustomSuffix(suffix string) bool {
-	if len(suffix) < 1 || len(suffix) > 64 {
+	if len(suffix) < 1 || len(suffix) > MaxCustomSuffixLength {
 		return false
 	}
 	return customSuffixPattern.MatchString(suffix)
@@ -168,13 +168,46 @@ func validateARNParameter(parameter, value string) error {
 	return nil
 }
 
+// Smithy @length bounds of the parameter types validated in this file, each
+// defined once and referenced by name at every enforcement site. The
+// entity-name, provider-name, thumbprint and tag-key regular expressions
+// embed their own bounds and are the definition sites for those
+// constraints.
+const (
+	// MaxPathLength is the pathType @length maximum.
+	MaxPathLength = 512
+	// MaxClientIDLength is the clientIDType @length maximum.
+	MaxClientIDLength = 255
+	// MaxOIDCProviderURLLength is the maximum length of an OpenID Connect
+	// provider URL.
+	MaxOIDCProviderURLLength = 255
+	// MaxServiceNamespaceLength is the serviceNamespaceType @length maximum.
+	MaxServiceNamespaceLength = 64
+	// MaxServiceNamespaces is the serviceNamespaceListType @length maximum:
+	// the number of service namespaces one
+	// ListPoliciesGrantingServiceAccess request may carry.
+	MaxServiceNamespaces = 200
+	// MaxCustomSuffixLength is the customSuffixType @length maximum.
+	MaxCustomSuffixLength = 64
+	// MaxRoleNameLength is the roleNameType @length maximum; the
+	// entityNamePattern regex embeds the same bound for pattern validation.
+	MaxRoleNameLength = 64
+	// MinPrivateKeyIdLength and MaxPrivateKeyIdLength are the privateKeyIdType
+	// @length bounds.
+	MinPrivateKeyIdLength = 22
+	MaxPrivateKeyIdLength = 64
+	// MinAccountAliasLength and MaxAccountAliasLength are the accountAliasType
+	// @length bounds.
+	MinAccountAliasLength = 3
+	MaxAccountAliasLength = 63
+)
+
 // Role MaxSessionDuration bounds per Smithy roleMaxSessionDurationType
 // (@range 3600-43200). The default applied when the field is unset is
-// DefaultRoleSessionDuration (one hour, the AWS default).
+// iamstore.DefaultRoleSessionDuration (one hour, the AWS default).
 const (
-	minRoleSessionDuration     = 3600
-	maxRoleSessionDuration     = 43200
-	defaultRoleSessionDuration = 3600
+	minRoleSessionDuration = 3600
+	maxRoleSessionDuration = 43200
 	// maxRoleDescriptionLength is the roleDescriptionType @length maximum,
 	// counted in Unicode characters like every @length trait; the shape's
 	// pattern admits Latin-1 supplement characters (2 bytes in UTF-8).
@@ -183,6 +216,26 @@ const (
 	// maximum, counted in Unicode characters; the shape carries no
 	// pattern, so multibyte descriptions are valid input.
 	maxPolicyDescriptionLength = 1000
+)
+
+// Documented parameter ranges of the account password policy, the
+// service-specific credential expiry and the SAML metadata document. The
+// Smithy shapes carry no range or length traits for these members, so the
+// IAM API reference is the source: MinimumPasswordLength 6-128,
+// MaxPasswordAge 1-1095, PasswordReusePrevention 1-24 (the maximum lives
+// in the store package, where the password history window is capped),
+// CredentialAgeDays 1-36600, and SAMLMetadataDocument 1000-10000000
+// Unicode characters. Each bound is defined once in this block and
+// referenced by name at every enforcement site.
+const (
+	MinPasswordLength             = 6
+	MaxPasswordLength             = 128
+	MinPasswordAgeDays            = 1
+	MaxPasswordAgeDays            = 1095
+	MinCredentialAgeDays          = 1
+	MaxCredentialAgeDays          = 36600
+	MinSAMLMetadataDocumentLength = 1000
+	MaxSAMLMetadataDocumentLength = 10000000
 )
 
 // validateRoleMaxSessionDuration checks that a MaxSessionDuration value
@@ -259,7 +312,7 @@ func validatePasswordAgainstPolicy(password string, policy *iamstore.AccountPass
 	// pattern so lengths count Unicode characters) applies regardless of any
 	// custom policy.
 	n := utf8.RuneCountInString(password)
-	if n < 1 || n > 128 {
+	if n < 1 || n > MaxPasswordLength {
 		return false
 	}
 
@@ -596,8 +649,8 @@ func validateAttachPolicyArn(arn string) error {
 // validateAccountAlias checks the Smithy accountAliasType pattern.
 // Length 3-63 is enforced here (not in the regex).
 func validateAccountAlias(alias string) error {
-	if len(alias) < 3 || len(alias) > 63 || !accountAliasPattern.MatchString(alias) {
-		return NewInvalidInputError("AccountAlias", "must be 3 to 63 characters; lowercase letters, digits, and hyphens; no consecutive hyphens")
+	if len(alias) < MinAccountAliasLength || len(alias) > MaxAccountAliasLength || !accountAliasPattern.MatchString(alias) {
+		return NewInvalidInputError("AccountAlias", fmt.Sprintf("must be %d to %d characters; lowercase letters, digits, and hyphens; no consecutive hyphens", MinAccountAliasLength, MaxAccountAliasLength))
 	}
 	return nil
 }

@@ -50,13 +50,13 @@ func (s *RoleStore) Put(role *Role) error {
 		role.Path = "/"
 	}
 	if role.MaxSessionDuration == 0 {
-		role.MaxSessionDuration = 3600
+		role.MaxSessionDuration = DefaultRoleSessionDuration
 	}
 	return s.BaseStore.Put(role.RoleName, role)
 }
 
 // Create creates a new IAM role in the store.
-func (s *RoleStore) Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag) (*Role, error) {
+func (s *RoleStore) Create(roleName, path, accountId, assumeRolePolicyDocument, description string, maxSessionDuration int, tags []types.Tag, sourceRoleTemplate *SourceRoleTemplate) (*Role, error) {
 	var role *Role
 	err := s.kl.WithLock(roleName, func() error {
 		if s.Exists(roleName) {
@@ -78,6 +78,7 @@ func (s *RoleStore) Create(roleName, path, accountId, assumeRolePolicyDocument, 
 			Description:              description,
 			MaxSessionDuration:       maxSessionDuration,
 			Tags:                     tags,
+			SourceRoleTemplate:       sourceRoleTemplate,
 		}
 		role.Arn = s.arnBuilder.RoleARN(path, roleName)
 
@@ -117,9 +118,4 @@ func (s *RoleStore) GetAssumeRolePolicyDocument(roleName string) (string, error)
 		return "", err
 	}
 	return role.AssumeRolePolicyDocument, nil
-}
-
-// RoleExists checks if a role exists.
-func (s *RoleStore) RoleExists(roleName string) bool {
-	return s.Exists(roleName)
 }

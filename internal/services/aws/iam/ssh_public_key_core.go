@@ -104,7 +104,7 @@ func (s *IAMService) getSSHPublicKeyCore(store *iamstore.IAMStore, input *GetSSH
 
 	key, err := store.SSHPublicKeys().Get(input.SSHPublicKeyId)
 	if err != nil {
-		return nil, NewNoSuchEntityError("SSH public key", input.SSHPublicKeyId)
+		return nil, storeReadError(err, iamstore.ErrSSHPublicKeyNotFound, NewNoSuchEntityError("SSH public key", input.SSHPublicKeyId))
 	}
 	// The key is retrieved scoped to the named user; a key owned by
 	// another user is reported as not existing.
@@ -138,7 +138,7 @@ func (s *IAMService) updateSSHPublicKeyCore(store *iamstore.IAMStore, input *Upd
 	}
 	key, err := store.SSHPublicKeys().Get(input.SSHPublicKeyId)
 	if err != nil {
-		return NewNoSuchEntityError("SSH public key", input.SSHPublicKeyId)
+		return storeReadError(err, iamstore.ErrSSHPublicKeyNotFound, NewNoSuchEntityError("SSH public key", input.SSHPublicKeyId))
 	}
 	// The named user must own the key; otherwise the operation reports the
 	// key as not existing for that user.
@@ -188,7 +188,7 @@ func (s *IAMService) deleteSSHPublicKeyCore(store *iamstore.IAMStore, input *Upd
 	}
 	key, err := store.SSHPublicKeys().Get(input.SSHPublicKeyId)
 	if err != nil {
-		return NewNoSuchEntityError("SSH public key", input.SSHPublicKeyId)
+		return storeReadError(err, iamstore.ErrSSHPublicKeyNotFound, NewNoSuchEntityError("SSH public key", input.SSHPublicKeyId))
 	}
 	// The named user must own the key; otherwise the operation reports the
 	// key as not existing for that user.

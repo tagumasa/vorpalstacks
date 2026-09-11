@@ -77,6 +77,26 @@ func (s *MFADeviceStore) EnableForUser(serialNumber, userName string) error {
 	})
 }
 
+// EnableForUserWithLimit atomically checks the per-user MFA-device quota
+// and assigns the device inside a single user-scoped lock, preventing the
+// race condition where concurrent enables of different devices could both
+// observe a count below the limit and both succeed. The device write keeps
+// its own device-scoped lock (nested inside the user lock; no path takes
+// the two locks in the opposite order).
+func (s *MFADeviceStore) EnableForUserWithLimit(serialNumber, userName string, maxDevices int) error {
+	return s.kl.WithLock("user:"+userName, func() error {
+		count, err := s.CountForUser(userName)
+		if err != nil {
+			return err
+		}
+		if count >= maxDevices {
+			return NewStoreError("enable_mfa_device", ErrMFADeviceLimitExceeded)
+		}
+
+		return s.EnableForUser(serialNumber, userName)
+	})
+}
+
 // Deactivate removes the user assignment from an MFA device.
 func (s *MFADeviceStore) Deactivate(serialNumber string) error {
 	return s.kl.WithLock(serialNumber, func() error {
@@ -108,7 +128,6 @@ func (s *MFADeviceStore) ListForUser(userName string, marker string, maxItems in
 	}, nil
 }
 
-// ListVirtual returns all virtual MFA devices.
 // ListVirtual returns virtual MFA devices filtered by assignment status
 // ("Assigned", "Unassigned", or "Any"/empty for no filtering) with the
 // filter applied before pagination.
@@ -146,18 +165,6 @@ func (s *MFADeviceStore) Resync(serialNumber string) error {
 		device.Base32StringSeed = base32Seed
 		return s.Put(device)
 	})
-}
-
-// GenerateMFADeviceSerialNumber generates a unique serial number for an MFA device.
-func GenerateMFADeviceSerialNumber() (string, error) {
-	seed, err := GenerateBase32Seed()
-	if err != nil {
-		return "", err
-	}
-	if len(seed) < 16 {
-		return "", fmt.Errorf("generated seed too short: %d < 16", len(seed))
-	}
-	return seed[:16], nil
 }
 
 // GenerateBase32Seed generates a random base32-encoded seed for MFA.

@@ -23,7 +23,7 @@ func (s *IAMService) enableOutboundWebIdentityFederationCore(store *iamstore.IAM
 		return "", ErrFeatureEnabled
 	}
 
-	issuerIdentifier := deriveOIDCIssuer(s.accountID)
+	issuerIdentifier := deriveOIDCIssuer(store.AccountID())
 
 	settings.OutboundWebIdentityFederationEnabled = true
 	settings.IssuerIdentifier = issuerIdentifier

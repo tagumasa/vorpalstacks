@@ -1,8 +1,5 @@
 package iam
 
-// Package iam provides IAM (Identity and Access Management) data store implementations
-// for vorpalstacks.
-
 import (
 	"crypto/rand"
 	"encoding/base32"
@@ -26,10 +23,13 @@ const (
 	InstanceProfileIDPrefix = "AIPA"
 	// ServerCertificateIDPrefix is the prefix for IAM server certificate IDs.
 	ServerCertificateIDPrefix = "ASCA"
-	// SAMLProviderIDPrefix is the prefix for IAM SAML provider IDs.
-	SAMLProviderIDPrefix = "ARPA"
-	// OpenIDConnectProviderIDPrefix is the prefix for IAM OIDC provider IDs.
-	OpenIDConnectProviderIDPrefix = "AROA"
+	// SSHPublicKeyIDPrefix is the prefix for IAM SSH public key IDs (the
+	// IAM identifiers table: APKA = public key).
+	SSHPublicKeyIDPrefix = "APKA"
+	// ServiceSpecificCredentialIDPrefix is the prefix for IAM
+	// service-specific credential IDs (the IAM identifiers table:
+	// ACCA = context-specific credential).
+	ServiceSpecificCredentialIDPrefix = "ACCA"
 )
 
 var base32Encoder = base32.NewEncoding("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567").WithPadding(base32.NoPadding)
@@ -69,16 +69,6 @@ func GenerateServerCertificateID() (string, error) {
 	return generateID(ServerCertificateIDPrefix)
 }
 
-// GenerateSAMLProviderID generates a unique IAM SAML provider ID.
-func GenerateSAMLProviderID() (string, error) {
-	return generateID(SAMLProviderIDPrefix)
-}
-
-// GenerateOpenIDConnectProviderID generates a unique IAM OIDC provider ID.
-func GenerateOpenIDConnectProviderID() (string, error) {
-	return generateID(OpenIDConnectProviderIDPrefix)
-}
-
 // GenerateSecretAccessKey generates a secure random secret access key.
 func GenerateSecretAccessKey() (string, error) {
 	bytes := make([]byte, 30)
@@ -112,4 +102,24 @@ func generatePrivateKeyID() (string, error) {
 		return "", err
 	}
 	return base32Encoder.EncodeToString(bytes), nil
+}
+
+// GenerateSSHPublicKeyID generates a unique IAM SSH public key ID.
+func GenerateSSHPublicKeyID() (string, error) {
+	return generateID(SSHPublicKeyIDPrefix)
+}
+
+// GenerateSigningCertificateID generates a unique IAM signing certificate
+// ID. AWS documents no unique-ID prefix for signing certificates — the IAM
+// identifiers table's ASCA row covers server certificates, and the
+// documented UploadSigningCertificate response carries an unprefixed
+// base32-style certificate ID — so the ID is minted without a prefix.
+func GenerateSigningCertificateID() (string, error) {
+	return generateID("")
+}
+
+// GenerateServiceSpecificCredentialID generates a unique IAM
+// service-specific credential ID.
+func GenerateServiceSpecificCredentialID() (string, error) {
+	return generateID(ServiceSpecificCredentialIDPrefix)
 }

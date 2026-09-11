@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
@@ -482,12 +481,10 @@ func (s *KMSService) ListKeyRotations(ctx context.Context, reqCtx *request.Reque
 		})
 	}
 
-	result := pagination.PaginateSlice(rotations, marker, maxItems, func(item map[string]interface{}) string {
-		if ts, ok := item["RotationDate"].(int64); ok {
-			return fmt.Sprintf("%d", ts)
-		}
-		return ""
-	})
+	// Rotation dates carry second granularity, so two rotations can share
+	// one; the pages walk positions with an opaque marker instead of a
+	// date key that would rewind onto already-served entries.
+	result := pagination.PaginateSliceByPosition(rotations, marker, maxItems)
 
 	response := map[string]interface{}{
 		"Rotations": result.Items,

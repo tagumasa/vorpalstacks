@@ -266,11 +266,16 @@ func (h *AdminHandler) ListPolicies(ctx context.Context, req *connect.Request[pb
 	}
 	maxItems := defaultMaxItems(req.Msg.GetMaxitems())
 
-	scope := "Local"
-	if req.Msg.Scope == pb.PolicyScopeType_POLICY_SCOPE_TYPE_AWS {
+	// The proto enum's zero value means the scope is unspecified, which
+	// the Core defaults to All — the same contract as the AWS API plane.
+	scope := ""
+	switch req.Msg.Scope {
+	case pb.PolicyScopeType_POLICY_SCOPE_TYPE_AWS:
 		scope = "AWS"
-	} else if req.Msg.Scope == pb.PolicyScopeType_POLICY_SCOPE_TYPE_ALL {
+	case pb.PolicyScopeType_POLICY_SCOPE_TYPE_ALL:
 		scope = "All"
+	case pb.PolicyScopeType_POLICY_SCOPE_TYPE_LOCAL:
+		scope = "Local"
 	}
 
 	result, err := h.service.listPoliciesCore(stores, scope, req.Msg.GetPathprefix(), req.Msg.GetMarker(), req.Msg.GetOnlyattached(), maxItems)

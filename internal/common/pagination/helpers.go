@@ -188,6 +188,60 @@ func PaginateSlice[T any](items []T, marker string, maxItems int, keyExtractor K
 	}
 }
 
+// PaginateSliceByPosition paginates a slice with an opaque positional
+// marker: the token encodes the index of the last served item, and the
+// walk resumes after it. Natural-key markers require unique keys — a list
+// whose items repeat their key rewinds the first-match marker search onto
+// already-served items, so such lists paginate positionally. An unusable
+// token yields an empty page, mirroring PaginateSlice's unknown-marker
+// behaviour.
+func PaginateSliceByPosition[T any](items []T, marker string, maxItems int) SliceResult[T] {
+	if len(items) == 0 {
+		return SliceResult[T]{
+			Items:       []T{},
+			NextMarker:  "",
+			IsTruncated: false,
+		}
+	}
+
+	startIdx := 0
+	if marker != "" {
+		lastServed, err := ParseOffsetToken(marker, len(items))
+		if err != nil {
+			return SliceResult[T]{
+				Items:       []T{},
+				NextMarker:  "",
+				IsTruncated: false,
+			}
+		}
+		startIdx = lastServed + 1
+	}
+
+	endIdx := startIdx + maxItems
+	if endIdx > len(items) {
+		endIdx = len(items)
+	}
+
+	var resultItems []T
+	if startIdx < len(items) {
+		resultItems = items[startIdx:endIdx]
+	} else {
+		resultItems = []T{}
+	}
+
+	isTruncated := endIdx < len(items)
+	var nextMarker string
+	if isTruncated && len(resultItems) > 0 {
+		nextMarker = strconv.Itoa(endIdx - 1)
+	}
+
+	return SliceResult[T]{
+		Items:       resultItems,
+		NextMarker:  nextMarker,
+		IsTruncated: isTruncated,
+	}
+}
+
 // PaginateOffsetMaps paginates a slice of maps using integer-offset tokens.
 // The offset is read from the "nextToken" parameter (case-insensitive)
 // and the page size from "maxResults". The response map uses the given key

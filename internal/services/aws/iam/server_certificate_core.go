@@ -118,7 +118,7 @@ func (s *IAMService) getServerCertificateCore(store *iamstore.IAMStore, name str
 	}
 	cert, err := store.ServerCertificates().Get(name)
 	if err != nil {
-		return nil, NewNoSuchEntityError("server certificate", name)
+		return nil, storeReadError(err, iamstore.ErrServerCertificateNotFound, NewNoSuchEntityError("server certificate", name))
 	}
 	return cert, nil
 }
@@ -137,7 +137,7 @@ func (s *IAMService) ServerCertificateMaterial(ctx context.Context, serverCertif
 	}
 	cert, err := store.ServerCertificates().GetByID(serverCertificateId)
 	if err != nil {
-		return invokers.TLSCertificateMaterial{}, NewNoSuchEntityError("server certificate", serverCertificateId)
+		return invokers.TLSCertificateMaterial{}, storeReadError(err, iamstore.ErrServerCertificateNotFound, NewNoSuchEntityError("server certificate", serverCertificateId))
 	}
 	if cert.CertificateBody == "" || cert.PrivateKey == "" {
 		return invokers.TLSCertificateMaterial{}, fmt.Errorf("server certificate %s does not have serving material available", serverCertificateId)

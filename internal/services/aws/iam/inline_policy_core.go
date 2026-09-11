@@ -17,16 +17,17 @@ type PutInlinePolicyInput struct {
 	PolicyDocument string
 }
 
-// principalNameRequiredError maps the principal type to the error returned
-// when the principal name parameter is missing.
+// principalNameRequiredError maps the principal type to the wire parameter
+// named in the validation error returned when the principal name (a
+// required member on every inline-policy request) is missing.
 func principalNameRequiredError(principalType string) error {
 	switch principalType {
 	case PrincipalTypeUser:
-		return ErrNoSuchUser
+		return NewValidationError("UserName")
 	case PrincipalTypeGroup:
-		return ErrNoSuchGroup
+		return NewValidationError("GroupName")
 	case PrincipalTypeRole:
-		return ErrNoSuchRole
+		return NewValidationError("RoleName")
 	}
 	return NewValidationError("PrincipalName")
 }
@@ -96,7 +97,7 @@ func (s *IAMService) getInlinePolicyCore(store *iamstore.IAMStore, principalType
 
 	policy, err := store.InlinePolicies().Get(principalType, principalName, policyName)
 	if err != nil {
-		return nil, NewNoSuchPolicyError(policyName)
+		return nil, storeReadError(err, iamstore.ErrPolicyNotFound, NewNoSuchPolicyError(policyName))
 	}
 	return policy, nil
 }

@@ -1,27 +1,144 @@
-// Transport-agnostic Core functions for the IAM credential report: store
-// aggregation shared by the AWS-compatible HTTP API handlers and any admin
-// plane paths (the xxxCore pattern).
+// Transport-agnostic Core functions for the IAM credential report: the
+// generation state machine and the store aggregation shared by the
+// AWS-compatible HTTP API handlers and any admin plane paths (the xxxCore
+// pattern).
 package iam
 
 import (
 	"bytes"
 	"cmp"
+	stderrors "errors"
 	"fmt"
+	"net/http"
 	"slices"
 	"strings"
+	"time"
 
+	"vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/core/logs"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
-func generateReportContentFromStore(store *iamstore.IAMStore) string {
+const reportExpiry = 4 * time.Hour
+
+var (
+	// ErrReportNotPresent indicates that no credential report has been generated yet.
+	ErrReportNotPresent = errors.NewAWSError("ReportNotPresent", "Credential report not present. Use GenerateCredentialReport to generate one.", http.StatusGone)
+	// ErrReportInProgress indicates that a credential report generation is already in progress.
+	ErrReportInProgress = errors.NewAWSError("ReportInProgress", "Credential report is in progress. Please try again later.", http.StatusNotFound)
+)
+
+// generateCredentialReportCore starts a credential report generation, or
+// reports the state of an existing one. It returns the wire state:
+// "STARTED" when a generation task has been launched, "INPROGRESS" when a
+// generation is already running (a second Generate reports the running
+// task instead of starting another one), "COMPLETE" when the existing
+// report is still fresh and no generation was started. The generation
+// itself runs on a background goroutine; this call returns as soon as the
+// state machine has moved to STARTED, without waiting for the report
+// content. The state mutex guards state transitions only — the content
+// build runs outside it — so a GetCredentialReport arriving during a
+// generation observes STARTED and receives the ReportInProgress fault
+// instead of blocking until the build finishes. A generation whose store
+// reads fail moves the state to FAILED with the reason (surfaced by
+// getCredentialReportCore, and never a silently partial report); the next
+// GenerateCredentialReport restarts from FAILED as from any non-COMPLETE
+// state.
+func (s *IAMService) generateCredentialReportCore(store *iamstore.IAMStore) (string, error) {
+	s.credentialReportMu.Lock()
+	defer s.credentialReportMu.Unlock()
+
+	if s.credentialReportState == "COMPLETE" && s.credentialReportTime.Add(reportExpiry).After(time.Now().UTC()) {
+		return "COMPLETE", nil
+	}
+	if s.credentialReportState == "STARTED" {
+		return "INPROGRESS", nil
+	}
+
+	s.credentialReportState = "STARTED"
+
+	s.reportWg.Add(1)
+	go func() {
+		defer s.reportWg.Done()
+		defer func() {
+			if r := recover(); r != nil {
+				logs.Error("PANIC in IAM credential report generation", logs.Any("panic", r))
+				s.credentialReportMu.Lock()
+				s.credentialReportState = ""
+				s.credentialReportMu.Unlock()
+			}
+		}()
+
+		content, err := generateReportContentFromStore(store)
+
+		s.credentialReportMu.Lock()
+		defer s.credentialReportMu.Unlock()
+		if err != nil {
+			logs.Error("IAM credential report generation failed", logs.Err(err))
+			s.credentialReportState = "FAILED"
+			s.credentialReportErr = err.Error()
+			s.credentialReportData = ""
+			return
+		}
+		s.credentialReportState = "COMPLETE"
+		s.credentialReportErr = ""
+		s.credentialReportTime = time.Now().UTC()
+		s.credentialReportData = content
+	}()
+
+	return "STARTED", nil
+}
+
+// getCredentialReportCore returns the completed report content and its
+// generation time. No report yet (or an empty one) maps to
+// ErrReportNotPresent; a still-running generation maps to
+// ErrReportInProgress; a failed generation maps to a ServiceFailure
+// carrying the generation failure reason (the operations' modelled
+// server-fault vocabulary); a completed report older than the four-hour
+// validity window maps to ErrReportExpired.
+func (s *IAMService) getCredentialReportCore() (string, time.Time, error) {
+	s.credentialReportMu.RLock()
+	state := s.credentialReportState
+	data := s.credentialReportData
+	genTime := s.credentialReportTime
+	failReason := s.credentialReportErr
+	s.credentialReportMu.RUnlock()
+
+	switch state {
+	case "":
+		return "", time.Time{}, ErrReportNotPresent
+	case "STARTED":
+		return "", time.Time{}, ErrReportInProgress
+	case "FAILED":
+		return "", time.Time{}, NewServiceFailureException("Credential report generation failed: " + failReason)
+	case "COMPLETE":
+		if data == "" {
+			return "", time.Time{}, ErrReportNotPresent
+		}
+		// A report is valid for four hours; an older one is expired and
+		// the caller must regenerate (GenerateCredentialReport restarts
+		// from an expired COMPLETE state).
+		if !genTime.Add(reportExpiry).After(time.Now().UTC()) {
+			return "", time.Time{}, ErrReportExpired
+		}
+	}
+
+	return data, genTime, nil
+}
+
+// generateReportContentFromStore builds the account-wide report CSV. Every
+// store read failure fails the generation — the credential report is a
+// security-audit artefact and must never be silently partial: a truncated
+// user list or an unreadable credential listing is reported as a generation
+// failure, not emitted as if it were the account's true state.
+func generateReportContentFromStore(store *iamstore.IAMStore) (string, error) {
 	var allUsers []*iamstore.User
 	marker := ""
 	for {
 		result, err := store.Users().List("", marker, 1000)
 		if err != nil {
-			break
+			return "", fmt.Errorf("list users: %w", err)
 		}
 		allUsers = append(allUsers, result.Users...)
 		if !result.IsTruncated {
@@ -48,7 +165,7 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 	for _, user := range allUsers {
 		mfaCount, err := store.MFADevices().CountForUser(user.UserName)
 		if err != nil {
-			logs.Warn("failed to count MFA devices for credential report", logs.String("user", user.UserName), logs.Err(err))
+			return "", fmt.Errorf("count MFA devices for user %s: %w", user.UserName, err)
 		}
 		mfaActive := "FALSE"
 		if mfaCount > 0 {
@@ -57,7 +174,7 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 
 		keys, err := store.AccessKeys().ListByUserName(user.UserName)
 		if err != nil {
-			logs.Warn("failed to list access keys for credential report", logs.String("user", user.UserName), logs.Err(err))
+			return "", fmt.Errorf("list access keys for user %s: %w", user.UserName, err)
 		}
 		slices.SortFunc(keys, func(a, b *iamstore.AccessKey) int { return cmp.Compare(a.AccessKeyId, b.AccessKeyId) })
 
@@ -106,22 +223,28 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 		passwordEnabled := "FALSE"
 		passwordLastUsed := "no_information"
 		passwordLastChanged := "N/A"
-		if store.LoginProfiles().Exists(user.UserName) {
+		// One resolved read per row: not-found means the user has no
+		// login profile; any other failure aborts the report.
+		var profile *iamstore.LoginProfile
+		if p, err := store.LoginProfiles().Get(user.UserName); err == nil {
+			profile = p
 			passwordEnabled = "TRUE"
-			passwordLastUsed = "no_information"
 			if user.PasswordLastUsed != nil {
 				passwordLastUsed = user.PasswordLastUsed.Format(timeutils.ISO8601SimpleFormat)
 			}
-			if profile, err := store.LoginProfiles().Get(user.UserName); err == nil {
-				if !profile.PasswordChangedAt.IsZero() {
-					passwordLastChanged = profile.PasswordChangedAt.Format(timeutils.ISO8601SimpleFormat)
-				} else {
-					passwordLastChanged = profile.CreateDate.Format(timeutils.ISO8601SimpleFormat)
-				}
+			if !profile.PasswordChangedAt.IsZero() {
+				passwordLastChanged = profile.PasswordChangedAt.Format(timeutils.ISO8601SimpleFormat)
+			} else {
+				passwordLastChanged = profile.CreateDate.Format(timeutils.ISO8601SimpleFormat)
 			}
+		} else if !stderrors.Is(err, iamstore.ErrLoginProfileNotFound) {
+			return "", fmt.Errorf("read login profile for user %s: %w", user.UserName, err)
 		}
 
-		certs, _ := store.SigningCertificates().ListByUserName(user.UserName)
+		certs, err := store.SigningCertificates().ListByUserName(user.UserName)
+		if err != nil {
+			return "", fmt.Errorf("list signing certificates for user %s: %w", user.UserName, err)
+		}
 		cert1Active := "FALSE"
 		cert1LastRotated := "N/A"
 		if len(certs) > 0 {
@@ -140,17 +263,15 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 		}
 
 		passwordNextRotation := "N/A"
-		if passwordEnabled == "TRUE" {
+		if profile != nil {
 			policy := store.PasswordPolicy().GetOrDefault()
 			if policy.MaxPasswordAge > 0 {
-				if profile, err := store.LoginProfiles().Get(user.UserName); err == nil {
-					base := profile.PasswordChangedAt
-					if base.IsZero() {
-						base = profile.CreateDate
-					}
-					nextRotation := base.AddDate(0, 0, policy.MaxPasswordAge)
-					passwordNextRotation = nextRotation.Format(timeutils.ISO8601SimpleFormat)
+				base := profile.PasswordChangedAt
+				if base.IsZero() {
+					base = profile.CreateDate
 				}
+				nextRotation := base.AddDate(0, 0, policy.MaxPasswordAge)
+				passwordNextRotation = nextRotation.Format(timeutils.ISO8601SimpleFormat)
 			}
 		}
 
@@ -182,7 +303,7 @@ func generateReportContentFromStore(store *iamstore.IAMStore) string {
 	}
 
 	report := strings.TrimRight(buf.String(), "\n")
-	return report
+	return report, nil
 }
 
 func csvEscape(s string) string {

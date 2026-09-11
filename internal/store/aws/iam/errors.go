@@ -1,4 +1,3 @@
-// Package iam provides AWS IAM store functionality for vorpalstacks.
 package iam
 
 import (
@@ -54,6 +53,10 @@ var (
 	// a group they are already a member of.
 	ErrUserAlreadyInGroup = errors.New("user already in group")
 
+	// ErrUserGroupLimitExceeded is returned when the user is already a
+	// member of the maximum allowed number of groups (10 per AWS spec).
+	ErrUserGroupLimitExceeded = errors.New("cannot exceed quota for GroupsPerUser")
+
 	// ErrDuplicateSigningCertificate is returned when the certificate being
 	// uploaded is already registered for the user.
 	ErrDuplicateSigningCertificate = errors.New("duplicate signing certificate")
@@ -76,6 +79,14 @@ var (
 	// ErrRoleAlreadyExists is returned when attempting to create a role
 	// that already exists.
 	ErrRoleAlreadyExists = errors.New("role already exists")
+
+	// ErrRoleTemplateNotFound is returned when the requested role template
+	// ARN is absent from the catalogue.
+	ErrRoleTemplateNotFound = errors.New("role template not found")
+
+	// ErrRoleTemplateVersionNotFound is returned when the role template
+	// exists but has no version with the requested minor version.
+	ErrRoleTemplateVersionNotFound = errors.New("role template version not found")
 
 	// ErrInstanceProfileNotFound is returned when the specified instance
 	// profile does not exist.
@@ -105,9 +116,17 @@ var (
 	// that already exists.
 	ErrPolicyAlreadyExists = errors.New("policy already exists")
 
+	// ErrPolicyVersionLimitExceeded is returned when a policy already has
+	// the maximum allowed number of versions (MaxPolicyVersions).
+	ErrPolicyVersionLimitExceeded = errors.New("cannot exceed quota for PolicyVersions")
+
 	// ErrMFADeviceNotFound is returned when the specified MFA device
 	// does not exist for the user.
 	ErrMFADeviceNotFound = errors.New("mfa device not found")
+
+	// ErrMFADeviceLimitExceeded is returned when the user already has the
+	// maximum allowed number of MFA devices assigned (8 per AWS spec).
+	ErrMFADeviceLimitExceeded = errors.New("cannot exceed quota for MFADevicesPerUser")
 
 	// ErrPasswordPolicyNotFound is returned when the account does not have
 	// a password policy configured.

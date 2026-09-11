@@ -23,7 +23,7 @@ func (f fakeRoleProvider) GetAssumeRolePolicyDocument(roleName string) (string, 
 	return f.trustDoc, nil
 }
 
-func (f fakeRoleProvider) RoleExists(roleName string) bool { return !f.missing }
+func (f fakeRoleProvider) Exists(roleName string) bool { return !f.missing }
 
 // lambdaTrustDoc allows exactly the Lambda service principal to assume the
 // role, the minimum a valid execution role needs.

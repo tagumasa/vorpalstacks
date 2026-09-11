@@ -1,4 +1,3 @@
-// Package iam provides IAM service operations for vorpalstacks.
 package iam
 
 import (
@@ -147,9 +146,6 @@ func (s *IAMService) ListGroups(ctx context.Context, reqCtx *request.RequestCont
 // ListGroupsForUser lists IAM groups for a user.
 func (s *IAMService) ListGroupsForUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userName := request.GetStringParam(req.Parameters, "UserName")
-	if userName == "" {
-		return nil, NewValidationError("UserName")
-	}
 
 	store, err := s.store(reqCtx)
 	if err != nil {

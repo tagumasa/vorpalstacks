@@ -1,73 +1,43 @@
-// Package iam provides IAM service operations for vorpalstacks.
 package iam
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	awserrors "vorpalstacks/internal/common/errors"
+	storecommon "vorpalstacks/internal/store/aws/common"
 	iamstore "vorpalstacks/internal/store/aws/iam"
 )
 
-// ErrNoSuchUser is returned when a user with the specified name cannot be found.
+// Fixed-message AWS error values. Every parameterised error class is built
+// by the New* constructors below, which interpolate the entity name into
+// the message; pre-baked sentinels carrying placeholder text are not
+// permitted (their unsubstituted "{Placeholder}" text would reach the
+// wire verbatim).
 var (
-	// ErrNoSuchUser is returned when a user with the specified name cannot be found.
-	ErrNoSuchUser = awserrors.NewAWSError("NoSuchEntity", "The user with name {UserName} cannot be found.", http.StatusNotFound)
-	// ErrUserAlreadyExists is returned when attempting to create a user that already exists.
-	ErrUserAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "User {UserName} already exists.", http.StatusConflict)
-	// ErrNoSuchAccessKey is returned when an access key with the specified ID cannot be found.
-	ErrNoSuchAccessKey = awserrors.NewAWSError("NoSuchEntity", "The Access Key with id {AccessKeyId} cannot be found.", http.StatusNotFound)
 	// ErrAccessKeyLimitExceeded is returned when the user has reached the maximum number of access keys.
 	ErrAccessKeyLimitExceeded = awserrors.NewAWSError("LimitExceeded", fmt.Sprintf("Cannot exceed quota for AccessKeysPerUser: %d.", iamstore.MaxAccessKeysPerUser), http.StatusConflict)
-	// ErrNoSuchLoginProfile is returned when a login profile for the specified user does not exist.
-	ErrNoSuchLoginProfile = awserrors.NewAWSError("NoSuchEntity", "Login profile for user {UserName} does not exist.", http.StatusNotFound)
-	// ErrLoginProfileAlreadyExists is returned when a login profile for the user already exists.
-	ErrLoginProfileAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Login profile for user {UserName} already exists.", http.StatusConflict)
+	// ErrLimitExceededGroupsPerUser is returned when the user is already a
+	// member of the maximum number of IAM groups.
+	ErrLimitExceededGroupsPerUser = awserrors.NewAWSError("LimitExceeded", fmt.Sprintf("Cannot exceed quota for GroupsPerUser: %d.", iamstore.MaxIAMGroupsPerUser), http.StatusConflict)
+	// ErrLimitExceededMFADevicesPerUser is returned when the user already
+	// has the maximum number of MFA devices configured.
+	ErrLimitExceededMFADevicesPerUser = awserrors.NewAWSError("LimitExceeded", fmt.Sprintf("Cannot exceed quota for MFADevicesPerUser: %d.", iamstore.MaxMFADevicesPerUser), http.StatusConflict)
 	// ErrPasswordPolicyViolation is returned when the password does not meet policy requirements.
 	ErrPasswordPolicyViolation = awserrors.NewAWSError("PasswordPolicyViolation", "The password does not meet the password policy requirements.", http.StatusBadRequest)
-	// ErrDeleteConflict is returned when an entity cannot be deleted due to dependencies.
-	ErrDeleteConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete entity, must delete access keys first.", http.StatusConflict)
-	// ErrInvalidUserPath is returned when the specified user path is invalid.
-	ErrInvalidUserPath = awserrors.NewAWSError("InvalidInput", "The specified value for path is invalid.", http.StatusBadRequest)
-	// ErrInvalidInput is returned when an input parameter is invalid.
-	ErrInvalidInput = awserrors.NewAWSError("InvalidInput", "The input parameter {Parameter} is invalid.", http.StatusBadRequest)
-	// ErrLimitExceeded is returned when the user quota has been exceeded.
-	ErrLimitExceeded = awserrors.NewAWSError("LimitExceeded", fmt.Sprintf("Cannot exceed quota for Users: %d.", iamstore.QuotaUsersPerAccount), http.StatusConflict)
 	// ErrInstanceProfileRoleLimit is returned when attempting to add a second
 	// role to an instance profile (AWS allows only one role per profile).
 	ErrInstanceProfileRoleLimit = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for RolesPerInstanceProfile: 1.", http.StatusConflict)
-	// ErrNoSuchGroup is returned when a group with the specified name cannot be found.
-	ErrNoSuchGroup = awserrors.NewAWSError("NoSuchEntity", "The group with name {GroupName} cannot be found.", http.StatusNotFound)
-	// ErrGroupAlreadyExists is returned when attempting to create a group that already exists.
-	ErrGroupAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Group {GroupName} already exists.", http.StatusConflict)
-	// ErrDeleteGroupConflict is returned when a group cannot be deleted due to dependencies.
-	ErrDeleteGroupConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete entity, must remove users from group first.", http.StatusConflict)
-	// ErrUserNotInGroup is returned when the specified user is not a member of the group.
-	ErrUserNotInGroup = awserrors.NewAWSError("NoSuchEntity", "User {UserName} is not in group {GroupName}.", http.StatusNotFound)
-	// ErrNoSuchRole is returned when a role with the specified name cannot be found.
-	ErrNoSuchRole = awserrors.NewAWSError("NoSuchEntity", "The role with name {RoleName} cannot be found.", http.StatusNotFound)
-	// ErrRoleAlreadyExists is returned when attempting to create a role that already exists.
-	ErrRoleAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Role {RoleName} already exists.", http.StatusConflict)
-	// ErrDeleteRoleConflict is returned when a role cannot be deleted due to dependencies.
-	ErrDeleteRoleConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete entity, must detach all policies first.", http.StatusConflict)
-	// ErrNoSuchInstanceProfile is returned when an instance profile with the specified name cannot be found.
-	ErrNoSuchInstanceProfile = awserrors.NewAWSError("NoSuchEntity", "Instance Profile {InstanceProfileName} does not exist.", http.StatusNotFound)
-	// ErrInstanceProfileAlreadyExists is returned when attempting to create an instance profile that already exists.
-	ErrInstanceProfileAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "Instance Profile {InstanceProfileName} already exists.", http.StatusConflict)
-	// ErrRoleNotInInstanceProfile is returned when the role is not associated with the instance profile.
-	ErrRoleNotInInstanceProfile = awserrors.NewAWSError("NoSuchEntity", "Role {RoleName} not in instance profile {InstanceProfileName}.", http.StatusNotFound)
-	// ErrRoleAlreadyInInstanceProfile is returned when the role is already associated with an instance profile.
-	ErrRoleAlreadyInInstanceProfile = awserrors.NewAWSError("LimitExceeded", "Cannot exceed quota for InstanceProfilesPerRole: 1. Already associated with instance profile {InstanceProfileName}.", http.StatusConflict)
 	// ErrMalformedPolicyDocument is returned when a policy document contains invalid JSON.
 	ErrMalformedPolicyDocument = awserrors.NewAWSError("MalformedPolicyDocument", "This policy contains invalid JSON.", http.StatusBadRequest)
-	// ErrNoSuchPolicy is returned when a policy with the specified ARN cannot be found.
-	ErrNoSuchPolicy = awserrors.NewAWSError("NoSuchEntity", "The policy with ARN {PolicyArn} does not exist.", http.StatusNotFound)
-	// ErrPolicyAlreadyExists is returned when attempting to create a policy that already exists.
-	ErrPolicyAlreadyExists = awserrors.NewAWSError("EntityAlreadyExists", "A policy with the name {PolicyName} already exists.", http.StatusConflict)
-	// ErrDeletePolicyConflict is returned when a policy cannot be deleted due to attachments.
-	ErrDeletePolicyConflict = awserrors.NewAWSError("DeleteConflict", "Cannot delete policy {PolicyArn}, there are attachments.", http.StatusConflict)
-	// ErrNoSuchPolicyVersion is returned when a policy version with the specified ID cannot be found.
-	ErrNoSuchPolicyVersion = awserrors.NewAWSError("NoSuchEntity", "Policy version {VersionId} does not exist.", http.StatusNotFound)
+	// ErrReportExpired reports that the most recent credential report is
+	// older than the four-hour validity window; a new one must be
+	// generated. The fault and its code are the operation's modelled
+	// CredentialReportExpiredException.
+	ErrReportExpired = awserrors.NewAWSError("ReportExpired",
+		"The request was rejected because the most recent credential report has expired. To generate a new credential report, use GenerateCredentialReport.",
+		http.StatusGone)
 	// ErrMalformedCertificate is returned when a certificate body cannot be
 	// parsed as X.509.
 	ErrMalformedCertificate = awserrors.NewAWSError("MalformedCertificate", "The certificate is malformed or invalid.", http.StatusBadRequest)
@@ -110,16 +80,8 @@ var (
 
 	// ErrLimitExceededPolicyVersions is returned when the policy has reached the maximum number of versions.
 	ErrLimitExceededPolicyVersions = awserrors.NewAWSError("LimitExceeded", fmt.Sprintf("Cannot exceed quota for PolicyVersions: %d.", iamstore.MaxPolicyVersions), http.StatusConflict)
-	// ErrNoSuchMFADevice is returned when an MFA device with the specified serial number cannot be found.
-	ErrNoSuchMFADevice = awserrors.NewAWSError("NoSuchEntity", "MFA Device {SerialNumber} does not exist.", http.StatusNotFound)
-	// ErrMFADeviceAlreadyAssigned is returned when the MFA device is already assigned to a user.
-	ErrMFADeviceAlreadyAssigned = awserrors.NewAWSError("EntityAlreadyExists", "MFA Device {SerialNumber} is already assigned to a user.", http.StatusConflict)
-	// ErrNoSuchPasswordPolicy is returned when a password policy cannot be found.
-	ErrNoSuchPasswordPolicy = awserrors.NewAWSError("NoSuchEntity", "The Password Policy with domain name {Domain} cannot be found.", http.StatusNotFound)
 	// ErrInvalidAuthenticationCode is returned when the MFA authentication code is invalid.
 	ErrInvalidAuthenticationCode = awserrors.NewAWSError("InvalidAuthenticationCode", "Invalid authentication code.", http.StatusBadRequest)
-	// ErrPolicyNotAttached is returned when the policy is not attached to the principal.
-	ErrPolicyNotAttached = awserrors.NewAWSError("NoSuchEntity", "The policy with ARN {PolicyArn} is not attached to the principal.", http.StatusNotFound)
 )
 
 // NewNoSuchUserError creates a new error indicating that a user with the specified name cannot be found.
@@ -175,6 +137,25 @@ func NewUserNotInGroupError(userName, groupName string) *awserrors.AWSError {
 // NewNoSuchRoleError creates a new error indicating that a role with the specified name cannot be found.
 func NewNoSuchRoleError(roleName string) *awserrors.AWSError {
 	return awserrors.NewNoSuchEntityException("role", roleName)
+}
+
+// NewNoSuchRoleTemplateError creates a new error indicating that a role
+// template with the specified ARN cannot be found in the catalogue.
+func NewNoSuchRoleTemplateError(templateArn string) *awserrors.AWSError {
+	return awserrors.NewNoSuchEntityException("Role template", templateArn)
+}
+
+// NewRoleTemplateDisabledError creates a new error indicating that the role
+// template (or the addressed template version) is disabled and cannot be
+// used to create roles.
+func NewRoleTemplateDisabledError(templateArn string) *awserrors.AWSError {
+	return awserrors.NewAWSError("RoleTemplateDisabled", "The role template "+templateArn+" is disabled and cannot be used to create new roles.", http.StatusBadRequest)
+}
+
+// NewNameConflictError creates a new error indicating that the role name a
+// template resolves to conflicts with an existing role in the account.
+func NewNameConflictError(roleName string) *awserrors.AWSError {
+	return awserrors.NewAWSError("NameConflict", "The request was rejected because the resulting role name "+roleName+" conflicts with an existing role in the account.", http.StatusConflict)
 }
 
 // NewRoleAlreadyExistsError creates a new error indicating that a role with the specified name already exists.
@@ -267,9 +248,6 @@ func NewEntityAlreadyExistsError(entity string) *awserrors.AWSError {
 	return awserrors.NewEntityAlreadyExistsException(entity)
 }
 
-// ErrValidationRequiredParameter is returned when a required parameter is missing.
-var ErrValidationRequiredParameter = awserrors.NewAWSError("InvalidInput", "Required parameter {Parameter} is missing.", http.StatusBadRequest)
-
 // ErrNotAuthorized is returned when authentication fails.
 var ErrNotAuthorized = awserrors.NewAWSError("NotAuthorized", "Not authorized to perform this operation.", http.StatusForbidden)
 
@@ -282,4 +260,36 @@ func NewValidationError(parameter string) *awserrors.AWSError {
 // NewInvalidInputError creates a new error indicating that an input parameter is invalid.
 func NewInvalidInputError(parameter string, message string) *awserrors.AWSError {
 	return awserrors.NewInvalidInputException("The input parameter " + parameter + " is invalid: " + message)
+}
+
+// storeReadError maps a failed store read to its AWS wire form: notFound
+// when the store signalled that the entity is absent (the common
+// ErrNotFound sentinel from the generic entity stores, or the IAM family
+// sentinel from the specialised stores), and an InternalFailure carrying
+// the cause otherwise — an infrastructure fault must not surface as
+// NoSuchEntity. notFoundSentinel may be nil for stores that signal
+// absence only through the common sentinel.
+func storeReadError(err, notFoundSentinel error, notFound *awserrors.AWSError) *awserrors.AWSError {
+	if storecommon.IsNotFound(err) || errors.Is(err, notFoundSentinel) {
+		return notFound
+	}
+	return awserrors.NewInternalFailureException("Failed to read from the IAM store: " + err.Error())
+}
+
+// storeListError maps the failure of an unkeyed store walk to a 5xx: a
+// listing, or the read of an item that the walk itself returned. Unlike a
+// keyed read there is no not-found outcome for the caller — every failure is
+// an infrastructure fault, or a store inconsistency such as an item that
+// vanished between the listing and its read — so the cause is carried in the
+// message instead of being mapped to the NoSuchEntity vocabulary.
+func storeListError(err error) *awserrors.AWSError {
+	return awserrors.NewInternalFailureException("Failed to read from the IAM store: " + err.Error())
+}
+
+// NewServiceFailureException builds the ServiceFailure error shape the
+// credential-report operations model for their server faults: an unknown
+// processing failure on GenerateCredentialReport or GetCredentialReport
+// carries this code, not the platform-wide InternalFailure vocabulary.
+func NewServiceFailureException(message string) *awserrors.AWSError {
+	return awserrors.NewAWSError("ServiceFailure", message, http.StatusInternalServerError)
 }

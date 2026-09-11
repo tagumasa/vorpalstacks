@@ -118,12 +118,6 @@ func (s *AttachedPolicyStore) DetachAllForPolicy(policyArn string) error {
 	})
 }
 
-// CountAttachedPolicies returns the number of policies attached to a principal.
-func (s *AttachedPolicyStore) CountAttachedPolicies(principalType, principalName string) int {
-	arns, _ := s.ListAttachedPolicies(principalType, principalName)
-	return len(arns)
-}
-
 // MigratePrincipal moves all policy attachments from one principal name to another.
 func (s *AttachedPolicyStore) MigratePrincipal(oldName, newName, principalType string) error {
 	return s.pk.migratePrincipal(oldName, newName, principalType, "migrate_principal")

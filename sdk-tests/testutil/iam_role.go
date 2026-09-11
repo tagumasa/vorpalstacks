@@ -12,6 +12,11 @@ import (
 func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 	var results []TestResult
 
+	// exampleRoleTemplateArn addresses the Example role template — the one
+	// catalogue entry whose full content AWS documents (API Reference
+	// examples of GetRoleTemplateVersion and AcquireRole).
+	const exampleRoleTemplateArn = "arn:aws:iam::aws:role-template/awsserviceprincipal/Example:1"
+
 	results = append(results, r.RunTest("iam", "CreateRole", func() error {
 		resp, err := tc.client.CreateRole(tc.ctx, &iam.CreateRoleInput{
 			RoleName:                 aws.String(tc.role),
@@ -374,6 +379,150 @@ func (r *TestRunner) iamRoleTests(tc *iamTestContext) []TestResult {
 		})
 		if err != nil {
 			return fmt.Errorf("cleanup DeleteServiceLinkedRole: %w", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "GetRoleTemplateVersion", func() error {
+		resp, err := tc.client.GetRoleTemplateVersion(tc.ctx, &iam.GetRoleTemplateVersionInput{
+			TemplateArn: aws.String(exampleRoleTemplateArn),
+		})
+		if err != nil {
+			return err
+		}
+		template := resp.RoleTemplateVersion
+		if template == nil {
+			return fmt.Errorf("role template version is nil")
+		}
+		if aws.ToString(template.TemplateName) != "Example" {
+			return fmt.Errorf("template name: got %s, want Example", aws.ToString(template.TemplateName))
+		}
+		if aws.ToInt32(template.MajorVersion) != 1 || aws.ToInt32(template.MinorVersion) != 1 || aws.ToInt32(template.DefaultMinorVersion) != 1 {
+			return fmt.Errorf("template versions: got major %d minor %d default %d, want 1/1/1",
+				aws.ToInt32(template.MajorVersion), aws.ToInt32(template.MinorVersion), aws.ToInt32(template.DefaultMinorVersion))
+		}
+		if !template.Enabled {
+			return fmt.Errorf("template Enabled: got false, want true")
+		}
+		if aws.ToString(template.RoleNamePattern) != "Example-@{Department}" {
+			return fmt.Errorf("role name pattern: got %s", aws.ToString(template.RoleNamePattern))
+		}
+		if aws.ToString(template.RolePathPattern) != "/awsserviceprincipal/" {
+			return fmt.Errorf("role path pattern: got %s", aws.ToString(template.RolePathPattern))
+		}
+		if !strings.Contains(aws.ToString(template.AssumeRolePolicyDocumentTemplate), "ec2.amazonaws.com") {
+			return fmt.Errorf("trust policy template does not grant ec2.amazonaws.com: %s", aws.ToString(template.AssumeRolePolicyDocumentTemplate))
+		}
+		if len(template.ParametersDefinition) != 1 || aws.ToString(template.ParametersDefinition[0].Name) != "Department" {
+			return fmt.Errorf("parameters definition: got %v, want one Department parameter", template.ParametersDefinition)
+		}
+
+		// An unknown template ARN is rejected with NoSuchEntity.
+		_, err = tc.client.GetRoleTemplateVersion(tc.ctx, &iam.GetRoleTemplateVersionInput{
+			TemplateArn: aws.String("arn:aws:iam::aws:role-template/awsserviceprincipal/Absent:1"),
+		})
+		if err == nil {
+			return fmt.Errorf("an unknown template ARN must be rejected")
+		}
+		if !containsErrorCode(err, "NoSuchEntity") {
+			return fmt.Errorf("unknown template ARN: got %v, want NoSuchEntity", err)
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("iam", "AcquireRole", func() error {
+		resp, err := tc.client.AcquireRole(tc.ctx, &iam.AcquireRoleInput{
+			TemplateArn: aws.String(exampleRoleTemplateArn),
+			ReplacementValues: map[string]types.ReplacementValueEntry{
+				"Department": {Values: []string{"Engineering"}},
+			},
+		})
+		if err != nil {
+			return err
+		}
+		// The acquired role must not outlive the test: every assertion
+		// failure below returns early, and a leaked Example-Engineering
+		// makes the retry collide before the assertions run.
+		defer tc.client.DeleteRole(tc.ctx, &iam.DeleteRoleInput{
+			RoleName: aws.String("Example-Engineering"),
+		})
+		role := resp.Role
+		if role == nil {
+			return fmt.Errorf("role is nil")
+		}
+		if aws.ToString(role.RoleName) != "Example-Engineering" {
+			return fmt.Errorf("acquired role name: got %s, want Example-Engineering", aws.ToString(role.RoleName))
+		}
+		if aws.ToString(role.Path) != "/awsserviceprincipal/" {
+			return fmt.Errorf("acquired role path: got %s, want /awsserviceprincipal/", aws.ToString(role.Path))
+		}
+		if !strings.Contains(aws.ToString(role.AssumeRolePolicyDocument), "ec2.amazonaws.com") {
+			return fmt.Errorf("acquired trust policy does not grant ec2.amazonaws.com: %s", aws.ToString(role.AssumeRolePolicyDocument))
+		}
+		if role.SourceRoleTemplate == nil {
+			return fmt.Errorf("the acquired role must record its source template")
+		}
+		if aws.ToString(role.SourceRoleTemplate.TemplateArn) != exampleRoleTemplateArn {
+			return fmt.Errorf("source template arn: got %s", aws.ToString(role.SourceRoleTemplate.TemplateArn))
+		}
+		if aws.ToInt32(role.SourceRoleTemplate.TemplateMinorVersion) != 1 {
+			return fmt.Errorf("source template minor version: got %d, want 1 (the resolved default)", aws.ToInt32(role.SourceRoleTemplate.TemplateMinorVersion))
+		}
+		got, err := tc.client.GetRole(tc.ctx, &iam.GetRoleInput{RoleName: aws.String("Example-Engineering")})
+		if err != nil {
+			return err
+		}
+		if got.Role == nil || got.Role.SourceRoleTemplate == nil {
+			return fmt.Errorf("GetRole must return the recorded source template")
+		}
+		if aws.ToString(got.Role.SourceRoleTemplate.TemplateArn) != exampleRoleTemplateArn {
+			return fmt.Errorf("GetRole source template arn: got %s", aws.ToString(got.Role.SourceRoleTemplate.TemplateArn))
+		}
+
+		// A replacement value list beyond the documented bound of 20 is
+		// rejected.
+		many := make([]string, 21)
+		for i := range many {
+			many[i] = "v"
+		}
+		_, err = tc.client.AcquireRole(tc.ctx, &iam.AcquireRoleInput{
+			TemplateArn: aws.String(exampleRoleTemplateArn),
+			ReplacementValues: map[string]types.ReplacementValueEntry{
+				"Department": {Values: []string{"Overflow"}},
+				"Other":      {Values: many},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("a 21-value replacement list must be rejected")
+		}
+		if !isInvalidInputError(err) {
+			return fmt.Errorf("over-length replacement list: got %v, want InvalidInput", err)
+		}
+
+		// Acquiring the same template with the same parameter again
+		// collides with the existing role name.
+		_, err = tc.client.AcquireRole(tc.ctx, &iam.AcquireRoleInput{
+			TemplateArn: aws.String(exampleRoleTemplateArn),
+			ReplacementValues: map[string]types.ReplacementValueEntry{
+				"Department": {Values: []string{"Engineering"}},
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("a role name collision must be rejected")
+		}
+		if !containsErrorCode(err, "NameConflict") {
+			return fmt.Errorf("role name collision: got %v, want NameConflict", err)
+		}
+
+		// A required template parameter must be supplied.
+		_, err = tc.client.AcquireRole(tc.ctx, &iam.AcquireRoleInput{
+			TemplateArn: aws.String(exampleRoleTemplateArn),
+		})
+		if err == nil {
+			return fmt.Errorf("a missing required template parameter must be rejected")
+		}
+		if !isInvalidInputError(err) {
+			return fmt.Errorf("missing template parameter: got %v, want InvalidInput", err)
 		}
 		return nil
 	}))

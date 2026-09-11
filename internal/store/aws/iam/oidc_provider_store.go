@@ -26,14 +26,7 @@ func NewOpenIDConnectProviderStore(store storage.BasicStorage, accountID string)
 
 // Get retrieves an OpenID Connect provider by its ARN.
 func (s *OpenIDConnectProviderStore) Get(arn string) (*OpenIDConnectProvider, error) {
-	var provider OpenIDConnectProvider
-	if err := s.BaseStore.Get(arn, &provider); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_oidc_provider", ErrOpenIDConnectProviderNotFound)
-		}
-		return nil, NewStoreError("get_oidc_provider", err)
-	}
-	return &provider, nil
+	return getByKey[OpenIDConnectProvider](s.BaseStore, arn, "get_oidc_provider", ErrOpenIDConnectProviderNotFound)
 }
 
 // Put stores an OpenID Connect provider, keyed by its ARN.
@@ -95,16 +88,6 @@ func (s *OpenIDConnectProviderStore) List() (*OpenIDConnectProviderListResult, e
 		return nil, NewStoreError("list_oidc_providers", err)
 	}
 	return &OpenIDConnectProviderListResult{OpenIDConnectProviderList: items}, nil
-}
-
-// GetByArn retrieves an OpenID Connect provider by its ARN.
-func (s *OpenIDConnectProviderStore) GetByArn(arn string) (*OpenIDConnectProvider, error) {
-	return s.Get(arn)
-}
-
-// ListByPrefix returns OpenID Connect providers whose ARNs match the given prefix.
-func (s *OpenIDConnectProviderStore) ListByPrefix(prefix string) ([]*OpenIDConnectProvider, error) {
-	return listEntitiesByPrefix(s.BaseStore, prefix, func(p *OpenIDConnectProvider) string { return p.Arn })
 }
 
 // AddClientID atomically appends a client ID to the provider's

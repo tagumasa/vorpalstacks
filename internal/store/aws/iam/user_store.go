@@ -1,4 +1,3 @@
-// Package iam provides AWS IAM store functionality for vorpalstacks.
 package iam
 
 import (

@@ -3,10 +3,10 @@ package iam
 import (
 	"context"
 
+	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/common/tags"
-	iamstore "vorpalstacks/internal/store/aws/iam"
 	"vorpalstacks/internal/utils/timeutils"
 )
 
@@ -154,30 +154,59 @@ func (s *IAMService) DeleteOpenIDConnectProvider(ctx context.Context, reqCtx *re
 	return response.EmptyResponse(), nil
 }
 
-var oidcProviderTagOps = tagOps[*iamstore.OpenIDConnectProvider]{
-	paramName:  "OpenIDConnectProviderArn",
-	emptyErr:   NewValidationError("OpenIDConnectProviderArn"),
-	notFoundFn: func(n string) error { return NewNoSuchEntityError("OpenID Connect provider", n) },
-	getFn: func(s *iamstore.IAMStore, n string) (*iamstore.OpenIDConnectProvider, error) {
-		return s.OpenIDConnectProviders().Get(n)
-	},
-	putFn: func(s *iamstore.IAMStore, r *iamstore.OpenIDConnectProvider) error {
-		return s.OpenIDConnectProviders().Put(r)
-	},
-	tagsFn: func(r *iamstore.OpenIDConnectProvider) *[]tags.Tag { return &r.Tags },
-}
-
 // TagOpenIDConnectProvider adds tags to an OpenID Connect (OIDC) provider.
 func (s *IAMService) TagOpenIDConnectProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return tagResource(ctx, s, reqCtx, req, oidcProviderTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &TagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "OpenIDConnectProviderArn"),
+		Tags:         tags.ParseTagsWithQueryFallback(req.Parameters, "Tags"),
+	}
+	if err := tagResourceCore(store, oidcProviderTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // UntagOpenIDConnectProvider removes tags from an OpenID Connect (OIDC) provider.
 func (s *IAMService) UntagOpenIDConnectProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return untagResource(ctx, s, reqCtx, req, oidcProviderTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &UntagResourceInput{
+		ResourceName: request.GetStringParam(req.Parameters, "OpenIDConnectProviderArn"),
+		TagKeys:      tags.ParseTagKeysWithQueryFallback(req.Parameters, "TagKeys"),
+	}
+	if err := untagResourceCore(store, oidcProviderTagOps, input); err != nil {
+		return nil, err
+	}
+	return response.EmptyResponse(), nil
 }
 
 // ListOpenIDConnectProviderTags lists the tags attached to an OpenID Connect (OIDC) provider.
 func (s *IAMService) ListOpenIDConnectProviderTags(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return listResourceTags(ctx, s, reqCtx, req, oidcProviderTagOps)
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+	input := &ListResourceTagsInput{
+		ResourceName: request.GetStringParam(req.Parameters, "OpenIDConnectProviderArn"),
+		Marker:       request.GetStringParam(req.Parameters, "Marker"),
+		MaxItems:     pagination.GetMaxItems(req.Parameters, pagination.DefaultMaxItems),
+	}
+	result, err := listResourceTagsCore(store, oidcProviderTagOps, input)
+	if err != nil {
+		return nil, err
+	}
+	resp := map[string]interface{}{
+		"Tags":        tags.ToResponse(result.Tags),
+		"IsTruncated": result.IsTruncated,
+	}
+	if result.Marker != "" {
+		resp["Marker"] = result.Marker
+	}
+	return resp, nil
 }

@@ -13,6 +13,12 @@ const loginProfileBucketName = "iam_login_profiles"
 
 const bcryptCost = 12
 
+// MaxPasswordReusePrevention is the documented maximum of the password
+// policy's PasswordReusePrevention parameter (valid range 1-24). The
+// retained password history is capped at the same value so the policy
+// window and the service-layer validator cannot drift apart.
+const MaxPasswordReusePrevention = 24
+
 // LoginProfileStore manages IAM login profile data in persistent storage.
 type LoginProfileStore struct {
 	*common.BaseStore
@@ -28,14 +34,7 @@ func NewLoginProfileStore(store storage.BasicStorage) *LoginProfileStore {
 
 // Get retrieves a login profile by username.
 func (s *LoginProfileStore) Get(userName string) (*LoginProfile, error) {
-	var profile LoginProfile
-	if err := s.BaseStore.Get(userName, &profile); err != nil {
-		if common.IsNotFound(err) {
-			return nil, NewStoreError("get_login_profile", ErrLoginProfileNotFound)
-		}
-		return nil, NewStoreError("get_login_profile", err)
-	}
-	return &profile, nil
+	return getByKey[LoginProfile](s.BaseStore, userName, "get_login_profile", ErrLoginProfileNotFound)
 }
 
 // Put stores a login profile.
@@ -99,8 +98,8 @@ func (s *LoginProfileStore) UpdatePassword(userName, password string) error {
 		}
 
 		profile.PasswordHistory = append(profile.PasswordHistory, profile.PasswordHash)
-		if len(profile.PasswordHistory) > 24 {
-			profile.PasswordHistory = profile.PasswordHistory[len(profile.PasswordHistory)-24:]
+		if len(profile.PasswordHistory) > MaxPasswordReusePrevention {
+			profile.PasswordHistory = profile.PasswordHistory[len(profile.PasswordHistory)-MaxPasswordReusePrevention:]
 		}
 
 		profile.PasswordHash = string(passwordHash)

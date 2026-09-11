@@ -11,7 +11,6 @@ import (
 	"vorpalstacks/internal/common/pagination"
 	"vorpalstacks/internal/core/logs"
 	iamstore "vorpalstacks/internal/store/aws/iam"
-	awsarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // Granularity values for the service last accessed report.  AWS defines
@@ -96,7 +95,28 @@ func (s *IAMService) generateServiceLastAccessedDetailsCore(reqCtxRegion string,
 		}()
 		completedJob := s.generateLastAccessedReport(store, input.Arn, granularity, "SERVICE_LAST_ACCESSED", reqCtxRegion)
 		completedJob.JobID = jobID
-		_ = store.ServiceLastAccessed().Put(completedJob)
+		if err := store.ServiceLastAccessed().Put(completedJob); err != nil {
+			// A discarded failure here leaves the persisted job
+			// IN_PROGRESS forever — the poller could never distinguish a
+			// slow job from a dead one. Surface the failure: warn, then
+			// persist a FAILED job the same completion-write path can
+			// still reach, carrying the write failure as the reason.
+			logs.Warn("iam: ServiceLastAccessed completion write failed; persisting the job as FAILED",
+				logs.String("jobId", jobID), logs.Err(err))
+			failedJob := &iamstore.ServiceLastAccessedJob{
+				JobID:           jobID,
+				Arn:             input.Arn,
+				JobType:         "SERVICE_LAST_ACCESSED",
+				JobStatus:       "FAILED",
+				JobCreationTime: pendingJob.JobCreationTime,
+				Granularity:     granularity,
+				Error:           "job completion write failed: " + err.Error(),
+			}
+			if failErr := store.ServiceLastAccessed().Put(failedJob); failErr != nil {
+				logs.Error("iam: ServiceLastAccessed FAILED-state write failed; the job stays IN_PROGRESS",
+					logs.String("jobId", jobID), logs.Err(failErr))
+			}
+		}
 	}()
 
 	return pendingJob, nil
@@ -131,12 +151,12 @@ func (s *IAMService) getServiceLastAccessedDetailsWithEntitiesCore(store *iamsto
 	if serviceNamespace == "" {
 		return nil, NewValidationError("ServiceNamespace")
 	}
-	if len(serviceNamespace) > 64 {
-		return nil, NewInvalidInputError("ServiceNamespace", "must be 1-64 characters matching [\\w-]")
+	if len(serviceNamespace) > MaxServiceNamespaceLength {
+		return nil, NewInvalidInputError("ServiceNamespace", fmt.Sprintf("must be 1-%d characters matching [\\w-]", MaxServiceNamespaceLength))
 	}
 	for _, r := range serviceNamespace {
 		if !isServiceNamespaceRune(r) {
-			return nil, NewInvalidInputError("ServiceNamespace", "must be 1-64 characters matching [\\w-]")
+			return nil, NewInvalidInputError("ServiceNamespace", fmt.Sprintf("must be 1-%d characters matching [\\w-]", MaxServiceNamespaceLength))
 		}
 	}
 
@@ -250,12 +270,16 @@ type reportPrincipal struct {
 // a policy report covers the users and roles the policy is attached to.
 func reportPrincipals(store *iamstore.IAMStore, arn string) []reportPrincipal {
 	entityType, entityName := parseIAMARNResource(arn)
-	partition, _, _, accountID, _ := awsarn.SplitARN(arn)
+	// The closures defer the store dereference so they stay defined ahead of
+	// the nil-store guards below; each branch invokes them only after its
+	// guard. Member ARNs come from the store's ARN builder — the single
+	// mechanism behind every IAM ARN — so report principals can never drift
+	// from the format the rest of IAM mints.
 	userARN := func(name string) string {
-		return fmt.Sprintf("arn:%s:iam::%s:user/%s", partition, accountID, name)
+		return store.ARNBuilder().UserARN("", name)
 	}
 	roleARN := func(name string) string {
-		return fmt.Sprintf("arn:%s:iam::%s:role/%s", partition, accountID, name)
+		return store.ARNBuilder().RoleARN("", name)
 	}
 
 	switch entityType {

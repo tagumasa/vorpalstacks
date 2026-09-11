@@ -825,7 +825,7 @@ func (r *TestRunner) iamAdvancedTests(tc *iamTestContext) []TestResult {
 		if err != nil {
 			return err
 		}
-		if resp.State != types.ReportStateTypeComplete && resp.State != types.ReportStateTypeStarted {
+		if resp.State != types.ReportStateTypeComplete && resp.State != types.ReportStateTypeStarted && resp.State != types.ReportStateTypeInprogress {
 			return fmt.Errorf("unexpected report state: %v", resp.State)
 		}
 		return nil

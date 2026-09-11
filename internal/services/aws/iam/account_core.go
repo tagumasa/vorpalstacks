@@ -58,14 +58,25 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(reqCtx *request.RequestC
 				"Arn":        user.Arn,
 				"CreateDate": user.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 			}
-			groupNames, _ := store.UserGroups().ListGroupsForUser(user.UserName)
+			groupNames, err := store.UserGroups().ListGroupsForUser(user.UserName)
+			if err != nil {
+				return nil, storeListError(err)
+			}
 			groupList := make([]interface{}, 0, len(groupNames))
 			for _, gn := range groupNames {
 				groupList = append(groupList, gn)
 			}
 			detail["GroupList"] = groupList
-			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeUser, user.UserName)
-			detail["UserPolicyList"] = buildInlinePolicyList(store, PrincipalTypeUser, user.UserName)
+			attached, err := buildAttachedManagedPolicies(store, PrincipalTypeUser, user.UserName)
+			if err != nil {
+				return nil, err
+			}
+			detail["AttachedManagedPolicies"] = attached
+			inline, err := buildInlinePolicyList(store, PrincipalTypeUser, user.UserName)
+			if err != nil {
+				return nil, err
+			}
+			detail["UserPolicyList"] = inline
 			if user.PermissionsBoundary != nil {
 				detail["PermissionsBoundary"] = map[string]interface{}{
 					"PermissionsBoundaryType": user.PermissionsBoundary.PermissionsBoundaryType,
@@ -97,8 +108,16 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(reqCtx *request.RequestC
 				"Arn":        group.Arn,
 				"CreateDate": group.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 			}
-			detail["GroupPolicyList"] = buildInlinePolicyList(store, PrincipalTypeGroup, group.GroupName)
-			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeGroup, group.GroupName)
+			groupInline, err := buildInlinePolicyList(store, PrincipalTypeGroup, group.GroupName)
+			if err != nil {
+				return nil, err
+			}
+			detail["GroupPolicyList"] = groupInline
+			groupAttached, err := buildAttachedManagedPolicies(store, PrincipalTypeGroup, group.GroupName)
+			if err != nil {
+				return nil, err
+			}
+			detail["AttachedManagedPolicies"] = groupAttached
 			items = append(items, detail)
 		}
 		sections = append(sections, section{
@@ -122,8 +141,16 @@ func (s *IAMService) getAccountAuthorizationDetailsCore(reqCtx *request.RequestC
 				"CreateDate":               role.CreateDate.Format(timeutils.ISO8601SimpleFormat),
 				"AssumeRolePolicyDocument": role.AssumeRolePolicyDocument,
 			}
-			detail["RolePolicyList"] = buildInlinePolicyList(store, PrincipalTypeRole, role.RoleName)
-			detail["AttachedManagedPolicies"] = buildAttachedManagedPolicies(store, PrincipalTypeRole, role.RoleName)
+			roleInline, err := buildInlinePolicyList(store, PrincipalTypeRole, role.RoleName)
+			if err != nil {
+				return nil, err
+			}
+			detail["RolePolicyList"] = roleInline
+			roleAttached, err := buildAttachedManagedPolicies(store, PrincipalTypeRole, role.RoleName)
+			if err != nil {
+				return nil, err
+			}
+			detail["AttachedManagedPolicies"] = roleAttached
 			if role.PermissionsBoundary != nil {
 				detail["PermissionsBoundary"] = map[string]interface{}{
 					"PermissionsBoundaryType": role.PermissionsBoundary.PermissionsBoundaryType,

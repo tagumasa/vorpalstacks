@@ -445,3 +445,112 @@ func TestConditionEvaluator_BinaryEquals(t *testing.T) {
 		})
 	}
 }
+
+// TestConditionEvaluator_SetOperatorsStructuredValues pins the multivalued
+// context-key semantics: a key's SessionContext entry is its verbatim value
+// list, so a value containing a comma stays one value and an absent key has
+// no values at all — ForAnyValue is then false, ForAllValues vacuously true.
+func TestConditionEvaluator_SetOperatorsStructuredValues(t *testing.T) {
+	evaluator := NewConditionEvaluator()
+
+	tests := []struct {
+		name       string
+		operator   ConditionOperator
+		policyVals []string
+		session    map[string][]string
+		expected   bool
+	}{
+		{
+			name:       "comma inside a value matches that whole value only",
+			operator:   ConditionForAnyValueStringEquals,
+			policyVals: []string{"a,b"},
+			session:    map[string][]string{"aws:principaltag/team": {"a,b"}},
+			expected:   true,
+		},
+		{
+			name:       "comma inside a value does not become two values",
+			operator:   ConditionForAnyValueStringEquals,
+			policyVals: []string{"a"},
+			session:    map[string][]string{"aws:principaltag/team": {"a,b"}},
+			expected:   false,
+		},
+		{
+			name:       "each list element participates",
+			operator:   ConditionForAnyValueStringEquals,
+			policyVals: []string{"dev"},
+			session:    map[string][]string{"aws:tagkeys": {"prod", "dev"}},
+			expected:   true,
+		},
+		{
+			name:       "for all values requires every element",
+			operator:   ConditionForAllValuesStringEquals,
+			policyVals: []string{"prod"},
+			session:    map[string][]string{"aws:tagkeys": {"prod", "dev"}},
+			expected:   false,
+		},
+		{
+			name:       "for all values satisfied by both elements",
+			operator:   ConditionForAllValuesStringEquals,
+			policyVals: []string{"prod", "dev"},
+			session:    map[string][]string{"aws:tagkeys": {"prod", "dev"}},
+			expected:   true,
+		},
+		{
+			name:       "absent key fails for any value",
+			operator:   ConditionForAnyValueStringEquals,
+			policyVals: []string{"prod"},
+			session:    nil,
+			expected:   false,
+		},
+		{
+			name:       "absent key fails for any value not equals",
+			operator:   ConditionForAnyValueStringNotEquals,
+			policyVals: []string{"prod"},
+			session:    nil,
+			expected:   false,
+		},
+		{
+			name:       "absent key is vacuously true for all values",
+			operator:   ConditionForAllValuesStringEquals,
+			policyVals: []string{"prod"},
+			session:    nil,
+			expected:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			conditions := ConditionMap{string(tt.operator): {"aws:TagKeys": tt.policyVals}}
+			if tt.session != nil {
+				// Each case exercises the key its session map carries.
+				for k := range tt.session {
+					conditions = ConditionMap{string(tt.operator): {k: tt.policyVals}}
+					break
+				}
+			}
+			ctx := &EvaluationContext{SessionContext: tt.session}
+			if got := evaluator.Evaluate(conditions, ctx); got != tt.expected {
+				t.Errorf("%s: expected %v, got %v", tt.name, tt.expected, got)
+			}
+		})
+	}
+}
+
+// TestEvaluationContextGetContextValueJoinsMultivaluedKey pins the scalar
+// resolution of a multivalued key: GetContextValue joins the list, and
+// ContextValues returns it verbatim.
+func TestEvaluationContextGetContextValueJoinsMultivaluedKey(t *testing.T) {
+	ctx := &EvaluationContext{SessionContext: map[string][]string{
+		"aws:tagkeys": {"prod", "dev"},
+	}}
+	if got := ctx.GetContextValue("aws:TagKeys"); got != "prod,dev" {
+		t.Errorf("GetContextValue: got %q, want %q", got, "prod,dev")
+	}
+	values := ctx.ContextValues("aws:TagKeys")
+	if len(values) != 2 || values[0] != "prod" || values[1] != "dev" {
+		t.Errorf("ContextValues: got %v, want [prod dev]", values)
+	}
+	if got := ctx.ContextValues("aws:Unknown"); got != nil {
+		t.Errorf("ContextValues on an absent key: got %v, want nil", got)
+	}
+}

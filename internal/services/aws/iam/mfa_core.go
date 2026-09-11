@@ -1,6 +1,8 @@
 package iam
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 
 	"vorpalstacks/internal/common/tags"
@@ -68,12 +70,12 @@ type VirtualMFADeviceListResult struct {
 // device.
 func (s *IAMService) createVirtualMFADeviceCore(store *iamstore.IAMStore, input *CreateVirtualMFADeviceInput) (*iamstore.VirtualMFADevice, error) {
 	if input.VirtualMFADeviceName == "" {
-		return nil, ErrInvalidInput
+		return nil, NewValidationError("VirtualMFADeviceName")
 	}
 	if err := validateNewTags(input.Tags); err != nil {
 		return nil, err
 	}
-	return store.MFADevices().Create(s.accountID, input.VirtualMFADeviceName, input.Tags)
+	return store.MFADevices().Create(store.AccountID(), input.VirtualMFADeviceName, input.Tags)
 }
 
 // deleteVirtualMFADeviceCore validates input and deletes an unassigned
@@ -114,7 +116,7 @@ func (s *IAMService) enableMFADeviceCore(store *iamstore.IAMStore, input *Enable
 
 	device, err := store.MFADevices().Get(input.SerialNumber)
 	if err != nil {
-		return NewNoSuchMFADeviceError(input.SerialNumber)
+		return storeReadError(err, iamstore.ErrMFADeviceNotFound, NewNoSuchMFADeviceError(input.SerialNumber))
 	}
 
 	if device.UserAssignment != nil {
@@ -133,7 +135,15 @@ func (s *IAMService) enableMFADeviceCore(store *iamstore.IAMStore, input *Enable
 		return ErrInvalidAuthenticationCode
 	}
 
-	return store.MFADevices().EnableForUser(input.SerialNumber, input.UserName)
+	// The quota-checked write counts the user's assigned devices inside a
+	// user-scoped lock, so concurrent enables cannot both pass the count.
+	if err := store.MFADevices().EnableForUserWithLimit(input.SerialNumber, input.UserName, iamstore.MaxMFADevicesPerUser); err != nil {
+		if errors.Is(err, iamstore.ErrMFADeviceLimitExceeded) {
+			return ErrLimitExceededMFADevicesPerUser
+		}
+		return err
+	}
+	return nil
 }
 
 // deactivateMFADeviceCore validates input and deactivates the MFA device
@@ -148,7 +158,7 @@ func (s *IAMService) deactivateMFADeviceCore(store *iamstore.IAMStore, userName,
 
 	device, err := store.MFADevices().Get(serialNumber)
 	if err != nil {
-		return NewNoSuchMFADeviceError(serialNumber)
+		return storeReadError(err, iamstore.ErrMFADeviceNotFound, NewNoSuchMFADeviceError(serialNumber))
 	}
 
 	if device.UserAssignment == nil || device.UserAssignment.UserName != userName {
@@ -213,7 +223,7 @@ func (s *IAMService) getMFADeviceCore(store *iamstore.IAMStore, serialNumber str
 	}
 	device, err := store.MFADevices().Get(serialNumber)
 	if err != nil {
-		return nil, NewNoSuchMFADeviceError(serialNumber)
+		return nil, storeReadError(err, iamstore.ErrMFADeviceNotFound, NewNoSuchMFADeviceError(serialNumber))
 	}
 	return device, nil
 }
@@ -234,7 +244,7 @@ func (s *IAMService) resyncMFADeviceCore(store *iamstore.IAMStore, input *Resync
 
 	device, err := store.MFADevices().Get(input.SerialNumber)
 	if err != nil {
-		return NewNoSuchMFADeviceError(input.SerialNumber)
+		return storeReadError(err, iamstore.ErrMFADeviceNotFound, NewNoSuchMFADeviceError(input.SerialNumber))
 	}
 
 	if device.UserAssignment == nil || device.UserAssignment.UserName != input.UserName {
@@ -264,8 +274,8 @@ func (s *IAMService) updateAccountPasswordPolicyCore(store *iamstore.IAMStore, i
 	policy := store.PasswordPolicy().ParameterDefaults()
 
 	if input.MinimumPasswordLength != 0 {
-		if input.MinimumPasswordLength < 6 || input.MinimumPasswordLength > 128 {
-			return NewInvalidInputError("MinimumPasswordLength", "must be between 6 and 128")
+		if input.MinimumPasswordLength < MinPasswordLength || input.MinimumPasswordLength > MaxPasswordLength {
+			return NewInvalidInputError("MinimumPasswordLength", fmt.Sprintf("must be between %d and %d", MinPasswordLength, MaxPasswordLength))
 		}
 		policy.MinimumPasswordLength = input.MinimumPasswordLength
 	}
@@ -289,14 +299,14 @@ func (s *IAMService) updateAccountPasswordPolicyCore(store *iamstore.IAMStore, i
 		policy.HardExpiry = *input.HardExpiry
 	}
 	if input.MaxPasswordAge != nil {
-		if *input.MaxPasswordAge < 1 || *input.MaxPasswordAge > 1095 {
-			return NewInvalidInputError("MaxPasswordAge", "must be between 1 and 1095")
+		if *input.MaxPasswordAge < MinPasswordAgeDays || *input.MaxPasswordAge > MaxPasswordAgeDays {
+			return NewInvalidInputError("MaxPasswordAge", fmt.Sprintf("must be between %d and %d", MinPasswordAgeDays, MaxPasswordAgeDays))
 		}
 		policy.MaxPasswordAge = *input.MaxPasswordAge
 	}
 	if input.PasswordReusePrevention != nil {
-		if *input.PasswordReusePrevention < 1 || *input.PasswordReusePrevention > 24 {
-			return NewInvalidInputError("PasswordReusePrevention", "must be between 1 and 24")
+		if *input.PasswordReusePrevention < 1 || *input.PasswordReusePrevention > iamstore.MaxPasswordReusePrevention {
+			return NewInvalidInputError("PasswordReusePrevention", fmt.Sprintf("must be between 1 and %d", iamstore.MaxPasswordReusePrevention))
 		}
 		policy.PasswordReusePrevention = *input.PasswordReusePrevention
 	}
