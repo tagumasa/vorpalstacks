@@ -75,11 +75,13 @@ func (r *TestRunner) RunCognitoTests() []TestResult {
 		results = append(results, r.cognitoClientTests(tc)...)
 		results = append(results, r.cognitoGroupTests(tc)...)
 		results = append(results, r.cognitoUserTests(tc)...)
+		results = append(results, r.cognitoMFATests(tc)...)
 		results = append(results, r.cognitoWebAuthnTests(tc)...)
 		results = append(results, r.cognitoIDPTests(tc)...)
 		results = append(results, r.cognitoResourceServerTests(tc)...)
 		results = append(results, r.cognitoSRPTests(tc)...)
 		results = append(results, r.cognitoReplicaTermsBrandingTests(tc)...)
+		results = append(results, r.cognitoLogDeliveryTests(tc)...)
 
 		userPoolID := tc.userPoolID
 		results = append(results, r.RunTest("cognito", "DeleteUserPool", func() error {

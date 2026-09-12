@@ -2,9 +2,6 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
@@ -96,12 +93,4 @@ func formatUserImportJob(job *cognitostore.UserImportJob) map[string]interface{}
 		result["CompletionMessage"] = job.CompletionMessage
 	}
 	return result
-}
-
-func generateID() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", fmt.Errorf("failed to generate random ID: %w", err)
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }

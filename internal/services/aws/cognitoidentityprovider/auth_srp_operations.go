@@ -16,11 +16,10 @@ import (
 // hash. The returned saltHex and verifierHex are lowercase hex strings suitable
 // for direct assignment to User.SrpSalt and User.SrpVerifier.
 func computeSrpVerifier(userPoolID, username, password string) (saltHex, verifierHex string, err error) {
-	idx := strings.Index(userPoolID, "_")
-	if idx < 0 || idx == len(userPoolID)-1 {
+	poolName, ok := poolNameFromID(userPoolID)
+	if !ok {
 		return "", "", fmt.Errorf("invalid user pool ID %q: missing region prefix", userPoolID)
 	}
-	poolName := userPoolID[idx+1:]
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
 		return "", "", err

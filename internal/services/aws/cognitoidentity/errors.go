@@ -27,13 +27,16 @@ var (
 	// ErrLimitExceeded is returned when the total number of identity pools
 	// has exceeded the per-account limit.
 	ErrLimitExceeded = awserrors.NewAWSError("LimitExceededException", "Limit exceeded", http.StatusBadRequest)
+	// ErrResourceConflict is returned when a login is already linked to
+	// another identity; the model documents ResourceConflictException with
+	// HTTP 409 for "a login which is already linked to another account".
+	ErrResourceConflict = awserrors.NewAWSError("ResourceConflictException", "A login is already linked to another account", http.StatusConflict)
 )
 
-// mapStoreError maps a store-layer error to the appropriate service-layer
-// error. If the error matches the notFoundSentinel via errors.Is, it returns
-// ErrResourceNotFound; otherwise it returns ErrInternalError. This replaces
-// the previous pattern of unconditionally mapping all store errors to
-// ErrResourceNotFound, which masked genuine internal errors.
+// mapStoreError maps a store-layer error to the service-layer error: an
+// error matching the notFoundSentinel via errors.Is becomes
+// ErrResourceNotFound, and every other store error becomes ErrInternalError
+// — a storage failure is never masked as a client-facing not-found.
 func mapStoreError(err error, notFoundSentinel error) error {
 	if errors.Is(err, notFoundSentinel) {
 		return ErrResourceNotFound
@@ -52,6 +55,8 @@ type CredentialResult struct {
 // CredentialIssuer creates temporary STS-backed sessions for the enhanced
 // authflow (GetCredentialsForIdentity). Implemented by an adapter wrapping
 // the STS SessionStore, injected at server startup via SetCredentialIssuer.
+// The tags parameter carries the principal-tag attribute map's session tags
+// (nil when the pool configures none).
 type CredentialIssuer interface {
-	IssueSession(roleArn, roleSessionName string, durationSeconds int) (*CredentialResult, error)
+	IssueSession(roleArn, roleSessionName string, durationSeconds int, tags map[string]string) (*CredentialResult, error)
 }

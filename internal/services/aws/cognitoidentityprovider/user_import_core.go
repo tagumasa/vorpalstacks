@@ -82,7 +82,7 @@ func (s *CognitoService) createUserImportJobCore(ctx context.Context, reqCtx *re
 		return nil, ErrResourceNotFound
 	}
 
-	id, err := generateID()
+	id, err := generateImportJobID()
 	if err != nil {
 		logs.Error("failed to generate import job ID", logs.Err(err))
 		return nil, ErrInternalError
@@ -179,7 +179,7 @@ func (s *CognitoService) listUserImportJobsCore(reqCtx *request.RequestContext, 
 	}
 
 	// Smithy PoolQueryLimitType: range {min: 1, max: 60}
-	maxResults, err := parseStrictListLimit(in.Params, "MaxResults", 60)
+	maxResults, err := parseStrictListLimit(in.Params, "MaxResults", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +188,7 @@ func (s *CognitoService) listUserImportJobsCore(reqCtx *request.RequestContext, 
 	// created." The store lists by key, so the full set is collected,
 	// sorted by creation date, and paginated here.
 	var all []*cognitostore.UserImportJob
-	opts := storecommon.ListOptions{MaxItems: 1000}
+	opts := storecommon.ListOptions{MaxItems: cognitostore.ScanPageSize}
 	for {
 		result, err := store.ListUserImportJobsPaginated(in.UserPoolID, opts)
 		if err != nil {

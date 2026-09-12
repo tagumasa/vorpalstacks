@@ -3,31 +3,22 @@ package cognitoidentityprovider
 import (
 	"context"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha1"
 	"crypto/subtle"
 	"encoding/base32"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 )
 
-const totpSecretSize = 20
-
 // totpCodeModulus is 10^totpCodeDigits, used to truncate the HMAC to the
-// fixed six-digit code length.
-const totpCodeModulus uint32 = 1_000_000
-
-func generateTOTPSecret() (string, error) {
-	secret := make([]byte, totpSecretSize)
-	if _, err := rand.Read(secret); err != nil {
-		return "", fmt.Errorf("failed to generate TOTP secret: %w", err)
-	}
-	return base32.StdEncoding.EncodeToString(secret), nil
-}
+// fixed six-digit code length. It is derived from the digit count so the
+// two cannot drift apart.
+var totpCodeModulus = uint32(math.Pow(10, totpCodeDigits))
 
 // totpCodeAt derives the six-digit TOTP code for the given 30-second step
 // from the decoded secret key.
@@ -81,5 +72,14 @@ func (s *CognitoService) VerifySoftwareToken(ctx context.Context, reqCtx *reques
 		AccessToken: req.GetParam("AccessToken"),
 		UserCode:    req.GetParam("UserCode"),
 		Session:     req.GetParam("Session"),
+	})
+}
+
+// AdminDeleteSoftwareToken deletes a user's registered TOTP MFA factor.
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminDeleteSoftwareToken.html
+func (s *CognitoService) AdminDeleteSoftwareToken(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	return s.adminDeleteSoftwareTokenCore(reqCtx, AdminDeleteSoftwareTokenInput{
+		UserPoolID: req.GetParam("UserPoolId"),
+		Username:   req.GetParam("Username"),
 	})
 }

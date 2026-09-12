@@ -2,6 +2,7 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ func newChallengeTestEnv(t *testing.T) *challengeTestEnv {
 	}
 	reqCtx := request.NewRequestContext(context.Background(), mgr, "000000000000", "us-east-1")
 	svc := NewCognitoService("000000000000", "us-east-1")
+	svc.SetStorageManager(mgr)
 	store, err := svc.store(reqCtx)
 	if err != nil {
 		t.Fatal(err)
@@ -59,6 +61,20 @@ func newChallengeTestEnv(t *testing.T) *challengeTestEnv {
 	}
 
 	return &challengeTestEnv{svc: svc, reqCtx: reqCtx, store: store, pool: pool, user: user}
+}
+
+// updatePool persists a pool mutation through the store's read-modify-write
+// path and re-points env.pool at the persisted record, so fixture writes take
+// the same serialised mutation the production cores use.
+func (env *challengeTestEnv) updatePool(t *testing.T, mutate func(*cognitostore.UserPool)) {
+	t.Helper()
+	if err := env.store.UpdateUserPoolFunc(env.pool.ID, func(p *cognitostore.UserPool) error {
+		mutate(p)
+		env.pool = p
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func challengeReq(params map[string]interface{}) *request.ParsedRequest {
@@ -171,6 +187,52 @@ func TestNewPasswordChallengeRejectsDisabledUser(t *testing.T) {
 	}
 }
 
+// The pool policy's PasswordHistorySize forbids reuse of a remembered
+// password on every native password write; the NEW_PASSWORD_REQUIRED
+// challenge is one such write. With a depth of two, the seeded password and
+// its successor are both rejected while fresh, and the seeded password
+// becomes reusable again once two newer passwords have evicted it.
+func TestNewPasswordRequiredEnforcesPasswordHistory(t *testing.T) {
+	env := newChallengeTestEnv(t)
+	if err := env.store.UpdateUserPoolFunc(env.pool.ID, func(p *cognitostore.UserPool) error {
+		p.PasswordPolicy = &cognitostore.PasswordPolicy{MinimumLength: 8, PasswordHistorySize: 2}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	rotate := func(newPassword string) error {
+		sess, err := mintChallengeSession(env.store, env.pool.ID, challengeTestClientID, "victim", "NEW_PASSWORD_REQUIRED", 5*time.Minute)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = respondToNewPassword(env, sess, newPassword)
+		return err
+	}
+
+	if err := rotate("NewPass456!"); err != nil {
+		t.Fatalf("first rotation: %v", err)
+	}
+	if err := rotate("OldPass123!"); !errors.Is(err, ErrPasswordHistoryViolation) {
+		t.Fatalf("reuse of the seeded password: err = %v, want ErrPasswordHistoryViolation", err)
+	}
+	if err := rotate("NewPass789!"); err != nil {
+		t.Fatalf("second rotation: %v", err)
+	}
+	// Two newer passwords (456, 789) now precede the seeded one, so with a
+	// depth of two the seeded password has been evicted and is reusable —
+	// while the rotation to it leaves 789 as the remembered predecessor.
+	if err := rotate("OldPass123!"); err != nil {
+		t.Fatalf("rotation after eviction: %v", err)
+	}
+	if err := rotate("NewPass789!"); !errors.Is(err, ErrPasswordHistoryViolation) {
+		t.Fatalf("reuse of the remembered predecessor: err = %v, want ErrPasswordHistoryViolation", err)
+	}
+	if err := rotate("NewPass456!"); err != nil {
+		t.Fatalf("password evicted by two newer rotations must be reusable: %v", err)
+	}
+}
+
 // MFA challenges must be answered with a session of the matching type, not
 // with a selector session or a bare USERNAME.
 func TestMfaChallengeRequiresTypedSession(t *testing.T) {
@@ -213,7 +275,10 @@ func TestMfaChallengeRequiresTypedSession(t *testing.T) {
 func TestSelectChallengeMintsTypedSessionAndBoundedOTP(t *testing.T) {
 	env := newChallengeTestEnv(t)
 
-	env.user.ConfirmationCode = "123456"
+	// An outstanding sign-up code must not answer the OTP challenge: the
+	// OTP is generated with the session and bound to it alone.
+	env.user.SignUpCode = "123456"
+	env.user.PasswordResetCode = "654321"
 	if err := env.store.UpdateUser(env.user); err != nil {
 		t.Fatal(err)
 	}
@@ -223,11 +288,13 @@ func TestSelectChallengeMintsTypedSessionAndBoundedOTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	resp, err := env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
-		"ClientId":           challengeTestClientID,
-		"ChallengeName":      "SELECT_CHALLENGE",
-		"Session":            sel,
-		"USERNAME":           "victim",
-		"SELECTED_CHALLENGE": "SMS_OTP",
+		"ClientId":      challengeTestClientID,
+		"ChallengeName": "SELECT_CHALLENGE",
+		"Session":       sel,
+		"ChallengeResponses": map[string]interface{}{
+			"USERNAME": "victim",
+			"ANSWER":   "SMS_OTP",
+		},
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -244,14 +311,36 @@ func TestSelectChallengeMintsTypedSessionAndBoundedOTP(t *testing.T) {
 	if err != nil || cs.ChallengeName != "SMS_OTP" {
 		t.Fatalf("minted session not typed SMS_OTP: %v %+v", err, cs)
 	}
+	if cs.OTPCode == "" {
+		t.Fatal("SMS_OTP session carries no one-time code")
+	}
 
-	// Correct code completes authentication.
+	// Codes issued for other purposes never answer the OTP challenge.
+	for _, foreign := range []string{"123456", "654321"} {
+		_, err = env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
+			"ClientId":      challengeTestClientID,
+			"ChallengeName": "SMS_OTP",
+			"Session":       typedSession,
+			"ChallengeResponses": map[string]interface{}{
+				"USERNAME":     "victim",
+				"SMS_OTP_CODE": foreign,
+			},
+		}))
+		if err == nil {
+			t.Fatalf("sign-up/reset code %q answered the SMS_OTP challenge", foreign)
+		}
+	}
+
+	// The session's own code completes authentication under the challenge's
+	// own documented answer key.
 	resp, err = env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
 		"ClientId":      challengeTestClientID,
 		"ChallengeName": "SMS_OTP",
 		"Session":       typedSession,
-		"USERNAME":      "victim",
-		"SMS_MFA_CODE":  "123456",
+		"ChallengeResponses": map[string]interface{}{
+			"USERNAME":     "victim",
+			"SMS_OTP_CODE": cs.OTPCode,
+		},
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -265,13 +354,23 @@ func TestSelectChallengeMintsTypedSessionAndBoundedOTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	budgetCS, err := env.store.GetChallengeSession(budgetSess)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrongCode := "000000"
+	if budgetCS.OTPCode == wrongCode {
+		wrongCode = "111111"
+	}
 	for i := 0; i < maxChallengeAttempts; i++ {
 		_, err = env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
 			"ClientId":      challengeTestClientID,
 			"ChallengeName": "SMS_OTP",
 			"Session":       budgetSess,
-			"USERNAME":      "victim",
-			"SMS_MFA_CODE":  "000000",
+			"ChallengeResponses": map[string]interface{}{
+				"USERNAME":     "victim",
+				"SMS_OTP_CODE": wrongCode,
+			},
 		}))
 		if err == nil {
 			t.Fatalf("wrong code accepted on attempt %d", i+1)
@@ -354,7 +453,107 @@ func TestRefreshTokenRejectsForeignPool(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := env.svc.refreshAuthToken(env.reqCtx, otherPool.ID, "rt-test-value"); err == nil {
+	// The client matches the token's own binding, so the foreign user pool
+	// is the mismatch that must refuse the refresh.
+	if _, err := env.svc.refreshAuthToken(env.reqCtx, otherPool.ID, challengeTestClientID, "rt-test-value", "", true); err == nil {
 		t.Fatal("refresh token accepted for a foreign user pool")
+	}
+}
+
+// saveFailingChallengeStore drops every challenge-session save, standing in
+// for a store whose writes fail.
+type saveFailingChallengeStore struct {
+	cognitostore.CognitoStoreInterface
+	deleted []string
+}
+
+func (f *saveFailingChallengeStore) SaveChallengeSession(cs *cognitostore.ChallengeSession) error {
+	return errors.New("simulated save failure")
+}
+
+func (f *saveFailingChallengeStore) DeleteChallengeSession(id string) error {
+	f.deleted = append(f.deleted, id)
+	return nil
+}
+
+// A session whose failure state cannot be persisted is invalidated on the
+// spot: the attempt budget must never weaken because the store dropped a
+// write.
+func TestRecordChallengeFailureInvalidatesSessionWhenSaveFails(t *testing.T) {
+	env := newChallengeTestEnv(t)
+	fake := &saveFailingChallengeStore{CognitoStoreInterface: env.store}
+	cs := &cognitostore.ChallengeSession{SessionID: "sess-save-fail", FailedAttempts: 2}
+	recordChallengeFailure(fake, cs)
+	if cs.FailedAttempts != 3 {
+		t.Fatalf("expected 3 failed attempts, got %d", cs.FailedAttempts)
+	}
+	if len(fake.deleted) != 1 || fake.deleted[0] != "sess-save-fail" {
+		t.Fatalf("expected the session invalidated after the save failure, deleted=%v", fake.deleted)
+	}
+}
+
+// The session VerifySoftwareToken returns satisfies the MFA_SETUP
+// challenge: once the user holds a verified software token, presenting the
+// session completes the sign-in; before enrolment the challenge shell is
+// re-issued for the client to enrol first.
+func TestMfaSetupSessionCompletesSignInAfterEnrolment(t *testing.T) {
+	env := newChallengeTestEnv(t)
+
+	sess, err := mintChallengeSession(env.store, env.pool.ID, challengeTestClientID, "victim", "MFA_SETUP", 5*time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	answer := map[string]interface{}{
+		"ClientId":      challengeTestClientID,
+		"ChallengeName": "MFA_SETUP",
+		"Session":       sess,
+		"ChallengeResponses": map[string]interface{}{
+			"USERNAME": "victim",
+		},
+	}
+
+	resp, err := env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(answer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if m := resp.(map[string]interface{}); m["ChallengeName"] != "MFA_SETUP" {
+		t.Fatalf("pre-enrolment answer returned %#v, want the MFA_SETUP shell", m["ChallengeName"])
+	}
+
+	// VerifySoftwareToken's success marks the token verified; the same
+	// session then completes the authentication.
+	env.user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{
+		Enabled:   true,
+		SecretKey: "SEEDSECRET",
+		Verified:  true,
+	}
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+	resp, err = env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(answer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := resp.(map[string]interface{})["AuthenticationResult"]; !ok {
+		t.Fatalf("post-enrolment MFA_SETUP answer returned %#v, want AuthenticationResult", resp)
+	}
+}
+
+// The delivery record for an OTP challenge names the challenge and its
+// medium; challenges without a one-time code record nothing.
+func TestChallengeDeliveryMessage(t *testing.T) {
+	for name, want := range map[string]string{
+		"SMS_MFA":   "SMS_MFA challenge code delivery via SMS",
+		"SMS_OTP":   "SMS_OTP challenge code delivery via SMS",
+		"EMAIL_OTP": "EMAIL_OTP challenge code delivery via EMAIL",
+	} {
+		m, ok := challengeDeliveryMessage(name)
+		if !ok || m != want {
+			t.Fatalf("%s delivery message = %q, %v; want %q", name, m, ok, want)
+		}
+	}
+	if m, ok := challengeDeliveryMessage("PASSWORD"); ok {
+		t.Fatalf("PASSWORD challenge carries no one-time code, got delivery message %q", m)
 	}
 }

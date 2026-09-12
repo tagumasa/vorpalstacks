@@ -175,6 +175,9 @@ func (a *App) initCognito(st *serviceState) error {
 		a.cfg.Region,
 		"",
 	))
+	if iamStore := a.server.IAMStore(); iamStore != nil {
+		st.cognitoService.SetRoleProvider(iamStore.Roles())
+	}
 	st.cognitoService.RegisterHandlers(a.server.Dispatcher())
 	a.server.RegisterJWKSHandler(http.HandlerFunc(st.cognitoService.JWKSHandler))
 	a.addShutdown("cognito", func(ctx context.Context) error {

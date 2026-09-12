@@ -1,6 +1,7 @@
 package cognitoidentityprovider
 
 import (
+	"context"
 	"errors"
 
 	"vorpalstacks/internal/common/request"
@@ -45,10 +46,7 @@ func (s *CognitoService) listUsersCore(region string, in ListUsersInput) (*ListU
 		return nil, ErrResourceNotFound
 	}
 
-	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > listLimitMax {
-		maxResults = listLimitMax
-	}
+	maxResults := applyListLimitDefaults(in.MaxResults)
 
 	var filterFunc func(*cognitostore.User) bool
 	if in.Filter != "" {
@@ -118,35 +116,54 @@ func (s *CognitoService) adminDeleteUserCore(region, userPoolID, username string
 
 // adminEnableUserCore enables a user.
 func (s *CognitoService) adminEnableUserCore(region, userPoolID, username string) error {
-	return s.setUserEnabledCore(region, userPoolID, username, true)
+	_, err := s.setUserEnabledCore(region, userPoolID, username, true)
+	return err
 }
 
-// adminDisableUserCore disables a user.
+// adminDisableUserCore disables a user and revokes every token minted for
+// them — the model documents AdminDisableUser as deactivating the profile
+// "and revokes all access tokens for the user", so a disabled user's
+// existing tokens and refresh grants stop working immediately.
 func (s *CognitoService) adminDisableUserCore(region, userPoolID, username string) error {
-	return s.setUserEnabledCore(region, userPoolID, username, false)
+	user, err := s.setUserEnabledCore(region, userPoolID, username, false)
+	if err != nil {
+		return err
+	}
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return err
+	}
+	if err := store.DeleteUserTokens(userPoolID, user.ID); err != nil {
+		return ErrInternalError
+	}
+	return nil
 }
 
-// setUserEnabledCore sets the Enabled flag on a user and persists the change.
-func (s *CognitoService) setUserEnabledCore(region, userPoolID, username string, enabled bool) error {
+// setUserEnabledCore sets the Enabled flag on a user, persists the change
+// and returns the updated record.
+func (s *CognitoService) setUserEnabledCore(region, userPoolID, username string, enabled bool) (*cognitostore.User, error) {
 	if userPoolID == "" || username == "" {
-		return ErrInvalidParameter
+		return nil, ErrInvalidParameter
 	}
 
 	store, err := s.GetStoreForRegion(region)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	user, err := store.GetUser(userPoolID, username)
 	if err != nil {
 		if errors.Is(err, cognitostore.ErrUserNotFound) {
-			return ErrUserNotFound
+			return nil, ErrUserNotFound
 		}
-		return err
+		return nil, err
 	}
 
 	user.Enabled = enabled
-	return store.UpdateUser(user)
+	if err := store.UpdateUser(user); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 // userByAccessToken resolves the caller's user record from an access token:
@@ -170,12 +187,13 @@ func (s *CognitoService) userByAccessToken(reqCtx *request.RequestContext, acces
 	if err != nil {
 		return nil, ErrUserNotFound
 	}
+	// A disabled user keeps appearing in listings but their tokens no
+	// longer authenticate — validateAccessTokenRecord already rejects the
+	// token, so this guards callers that resolve the user by other means.
+	if !user.Enabled {
+		return nil, ErrNotAuthorized
+	}
 	return user, nil
-}
-
-// getUserByAccessTokenCore resolves the caller for GetUser.
-func (s *CognitoService) getUserByAccessTokenCore(reqCtx *request.RequestContext, accessToken string) (*cognitostore.User, error) {
-	return s.userByAccessToken(reqCtx, accessToken)
 }
 
 // deleteUserByAccessTokenCore removes the caller's user record and every
@@ -190,10 +208,13 @@ func (s *CognitoService) deleteUserByAccessTokenCore(reqCtx *request.RequestCont
 	if err != nil {
 		return err
 	}
-	if err := store.DeleteUser(user.UserPoolID, user.Username); err != nil {
+	// Tokens are the dependent record: they go first, so a failed user
+	// delete can never leave live credentials behind (the order the admin
+	// delete path uses).
+	if err := store.DeleteUserTokens(user.UserPoolID, user.ID); err != nil {
 		return ErrInternalError
 	}
-	if err := store.DeleteUserTokens(user.UserPoolID, user.ID); err != nil {
+	if err := store.DeleteUser(user.UserPoolID, user.Username); err != nil {
 		return ErrInternalError
 	}
 	return nil
@@ -228,7 +249,7 @@ func (s *CognitoService) deleteUserAttributesByAccessTokenCore(reqCtx *request.R
 
 // updateUserAttributesByAccessTokenCore merges the supplied attributes into
 // the caller's record.
-func (s *CognitoService) updateUserAttributesByAccessTokenCore(reqCtx *request.RequestContext, accessToken string, attrs map[string]string) error {
+func (s *CognitoService) updateUserAttributesByAccessTokenCore(ctx context.Context, reqCtx *request.RequestContext, accessToken string, attrs map[string]string) error {
 	user, err := s.userByAccessToken(reqCtx, accessToken)
 	if err != nil {
 		return err
@@ -239,6 +260,15 @@ func (s *CognitoService) updateUserAttributesByAccessTokenCore(reqCtx *request.R
 		return err
 	}
 
+	userPool, err := store.GetUserPool(user.UserPoolID)
+	if err != nil {
+		return ErrInternalError
+	}
+
+	if err := validateUserAttributesAgainstSchema(userPool, attrs, false); err != nil {
+		return ErrInvalidParameter
+	}
+
 	if user.Attributes == nil {
 		user.Attributes = make(map[string]string)
 	}
@@ -247,7 +277,17 @@ func (s *CognitoService) updateUserAttributesByAccessTokenCore(reqCtx *request.R
 		user.Attributes[k] = v
 	}
 
+	// An updated email/phone_number enters the verification round: the flag
+	// drops, a VerifyUserAttribute code is minted and the CustomMessage
+	// UpdateUserAttribute trigger fires.
+	if err := issueAttributeUpdateVerification(ctx, s, user, userPool, attrs); err != nil {
+		return err
+	}
+
 	if err := store.UpdateUser(user); err != nil {
+		if errors.Is(err, cognitostore.ErrAliasExists) {
+			return ErrAliasExists
+		}
 		return ErrInternalError
 	}
 	return nil

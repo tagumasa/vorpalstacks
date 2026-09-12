@@ -20,6 +20,22 @@ type CreateIdentityProviderInput struct {
 	IdpIdentifiers   []string
 }
 
+// UpdateIdentityProviderInput carries the update members of
+// UpdateIdentityProvider. The model's UpdateIdentityProviderRequest members
+// are AttributeMapping, IdpIdentifiers, ProviderDetails, ProviderName and
+// UserPoolId — ProviderType is not an update member, so it has no field
+// here. nil maps keep the stored value; non-nil maps replace it. Presence,
+// not length, decides for IdpIdentifiers: IdpIdentifiersProvided=true with
+// an empty list clears the stored identifiers.
+type UpdateIdentityProviderInput struct {
+	UserPoolID             string
+	ProviderName           string
+	ProviderDetails        map[string]string
+	AttributeMapping       map[string]string
+	IdpIdentifiers         []string
+	IdpIdentifiersProvided bool
+}
+
 // ListIdentityProvidersInput carries pagination parameters.
 type ListIdentityProvidersInput struct {
 	UserPoolID string
@@ -38,7 +54,8 @@ type ListIdentityProvidersResult struct {
 // ---------------------------------------------------------------------------
 
 // createIdentityProviderFromInputCore creates an identity provider from
-// transport-agnostic input. Used by the admin handler.
+// transport-agnostic input. It is the shared create path of the admin
+// console handler and the HTTP CreateIdentityProvider operation.
 func (s *CognitoService) createIdentityProviderFromInputCore(region string, in CreateIdentityProviderInput) (*cognitostore.IdentityProvider, error) {
 	if in.UserPoolID == "" || in.ProviderName == "" || in.ProviderType == "" {
 		return nil, ErrInvalidParameter
@@ -117,10 +134,7 @@ func (s *CognitoService) listIdentityProvidersCore(region string, in ListIdentit
 		return nil, err
 	}
 
-	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > listLimitMax {
-		maxResults = listLimitMax
-	}
+	maxResults := applyListLimitDefaults(in.MaxResults)
 
 	result, err := store.ListIdentityProvidersPaginated(in.UserPoolID, storecommon.ListOptions{
 		MaxItems: maxResults,
@@ -136,15 +150,65 @@ func (s *CognitoService) listIdentityProvidersCore(region string, in ListIdentit
 	}, nil
 }
 
-// updateIdentityProviderCore persists updates to an identity provider.
-func (s *CognitoService) updateIdentityProviderCore(region string, ip *cognitostore.IdentityProvider) error {
+// updateIdentityProviderCore applies the update members onto the stored
+// identity provider and persists it, returning the updated record for
+// response serialisation. Members absent from the input keep their stored
+// value; present members replace it.
+func (s *CognitoService) updateIdentityProviderCore(region string, in UpdateIdentityProviderInput) (*cognitostore.IdentityProvider, error) {
+	if in.UserPoolID == "" || in.ProviderName == "" {
+		return nil, ErrInvalidParameter
+	}
+
 	store, err := s.GetStoreForRegion(region)
 	if err != nil {
-		return err
+		return nil, err
+	}
+
+	ip, err := store.GetIdentityProvider(in.UserPoolID, in.ProviderName)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	if in.ProviderDetails != nil {
+		ip.ProviderDetails = in.ProviderDetails
+	}
+	if in.AttributeMapping != nil {
+		ip.AttributeMapping = in.AttributeMapping
+	}
+	if in.IdpIdentifiersProvided {
+		ip.IdpIdentifiers = in.IdpIdentifiers
 	}
 
 	if err := store.UpdateIdentityProvider(ip); err != nil {
-		return ErrInternalError
+		return nil, ErrInternalError
 	}
-	return nil
+	return ip, nil
+}
+
+// getIdentityProviderByIdentifierCore resolves the identity provider that
+// declares the given IdpIdentifier.
+func (s *CognitoService) getIdentityProviderByIdentifierCore(region, userPoolID, idpIdentifier string) (*cognitostore.IdentityProvider, error) {
+	if userPoolID == "" || idpIdentifier == "" {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+
+	providers, err := store.ListIdentityProviders(userPoolID)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	for _, idp := range providers {
+		for _, ident := range idp.IdpIdentifiers {
+			if ident == idpIdentifier {
+				return idp, nil
+			}
+		}
+	}
+
+	return nil, ErrResourceNotFound
 }

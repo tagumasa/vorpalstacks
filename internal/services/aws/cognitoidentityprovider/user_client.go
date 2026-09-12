@@ -26,19 +26,17 @@ func (s *CognitoService) DeleteUserAttributes(ctx context.Context, reqCtx *reque
 
 // GetUser returns the user attributes for the authenticated user.
 func (s *CognitoService) GetUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	user, err := s.getUserByAccessTokenCore(reqCtx, getAccessToken(req))
+	user, err := s.userByAccessToken(reqCtx, getAccessToken(req))
 	if err != nil {
 		return nil, err
 	}
 
-	result := formatUser(user)
-	result["UserAttributes"] = formatUserAttributes(user.Attributes)
-	return result, nil
+	return formatGetUserResponse(user), nil
 }
 
 // UpdateUserAttributes updates the user attributes for the authenticated user.
 func (s *CognitoService) UpdateUserAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.updateUserAttributesByAccessTokenCore(reqCtx, getAccessToken(req), parseUserAttributes(req)); err != nil {
+	if err := s.updateUserAttributesByAccessTokenCore(ctx, reqCtx, getAccessToken(req), parseUserAttributes(req)); err != nil {
 		return nil, err
 	}
 

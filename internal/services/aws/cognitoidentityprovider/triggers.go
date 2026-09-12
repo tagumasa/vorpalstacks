@@ -56,6 +56,12 @@ const TokenGenerationRefreshTokens = "TokenGeneration_RefreshTokens"
 // PreTokenGeneration Lambda trigger fired during hosted UI authentication.
 const TokenGenerationHostedAuth = "TokenGeneration_HostedAuth"
 
+// TokenGenerationClientCredentials is the trigger source constant for the
+// PreTokenGeneration Lambda trigger fired after a machine-to-machine client
+// credentials grant. The user pool sends this event only when the trigger is
+// configured at event version V3_0.
+const TokenGenerationClientCredentials = "TokenGeneration_ClientCredentials"
+
 // CustomMessageSignUp is the trigger source constant for the CustomMessage
 // Lambda trigger fired during user self-registration.
 const CustomMessageSignUp = "CustomMessage_SignUp"
@@ -153,6 +159,18 @@ func classifyMigrationFailure(err error) error {
 	return ErrInternalError
 }
 
+// classifyTriggerFailure maps an authentication-path trigger failure onto
+// the AWS contract: a Lambda function that raises an error fails the
+// authentication with UserLambdaValidationException, while an
+// invocation-transport failure is an infrastructure error.
+func classifyTriggerFailure(err error) error {
+	var fnErr *lambdaFunctionError
+	if errors.As(err, &fnErr) {
+		return ErrUserLambdaValidation
+	}
+	return ErrInternalError
+}
+
 // invokeTrigger is the core trigger invocation function. It builds the
 // AWS Cognito trigger payload, publishes a CognitoTriggerEvent via
 // bus.PublishSync, and returns the Lambda response. When blocking is
@@ -240,7 +258,10 @@ func (s *CognitoService) invokeTrigger(
 	var response map[string]interface{}
 	if err := json.Unmarshal(result.Payload, &response); err != nil {
 		if blocking {
-			return nil, err
+			// A response that is not a JSON object is malformed trigger
+			// output: the documented InvalidLambdaResponseException, not a
+			// raw encoding error that maps onto an internal failure.
+			return nil, ErrInvalidLambdaResponse
 		}
 		logs.Error("cognito trigger: failed to unmarshal trigger response",
 			logs.String("trigger_source", triggerSource),
@@ -270,6 +291,13 @@ func resolveTriggerARN(config *cognitostore.LambdaConfig, triggerSource string) 
 	case PostAuthentication:
 		return config.PostAuthentication
 	case TokenGenerationAuthentication, TokenGenerationRefreshTokens, TokenGenerationHostedAuth:
+		return config.PreTokenGeneration
+	case TokenGenerationClientCredentials:
+		// The M2M source is configured through the versioned trigger form:
+		// resolve its ARN first, falling back to the plain-ARN member.
+		if config.PreTokenGenerationConfig != nil && config.PreTokenGenerationConfig.LambdaArn != "" {
+			return config.PreTokenGenerationConfig.LambdaArn
+		}
 		return config.PreTokenGeneration
 	case CustomMessageSignUp, CustomMessageForgotPassword, CustomMessageResendCode,
 		CustomMessageAdminCreateUser, CustomMessageVerifyUserAttribute, CustomMessageUpdateUserAttribute:
@@ -350,36 +378,36 @@ func invokePreSignUp(
 	}
 
 	if attrs, ok := response["userAttributes"].(map[string]interface{}); ok {
-		merged := make(map[string]string)
-		for k, v := range userAttrs {
-			merged[k] = v
-		}
+		// Only the trigger's own overrides travel here; the caller merges
+		// them onto the validated client map so the two attribute sources
+		// stay distinguishable.
+		merged := make(map[string]string, len(attrs))
 		for k, v := range attrs {
 			if vs, ok := v.(string); ok {
 				merged[k] = vs
 			}
 		}
 		result.UserAttributes = merged
-	} else {
-		result.UserAttributes = userAttrs
 	}
 
 	return result, nil
 }
 
 // invokePostConfirmation invokes the PostConfirmation Lambda trigger. This
-// trigger is non-blocking: errors are logged but do not prevent the
-// operation from succeeding.
+// trigger is non-blocking by contract: every failure is logged inside
+// invokeTrigger and never prevents the confirmed operation from succeeding,
+// so the invoker returns nothing — there is no error to guard on at the
+// call sites.
 func invokePostConfirmation(
 	ctx context.Context,
 	s *CognitoService,
 	triggerSource, userPoolID, username, clientID string,
 	config *cognitostore.LambdaConfig,
 	userAttrs map[string]string,
-) error {
+) {
 	lambdaARN := resolveTriggerARN(config, triggerSource)
 	if lambdaARN == "" {
-		return nil
+		return
 	}
 
 	request := map[string]interface{}{
@@ -387,13 +415,14 @@ func invokePostConfirmation(
 		"clientMetadata": nil,
 	}
 
-	_, err := s.invokeTrigger(ctx, triggerSource, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, false)
-	return err
+	s.invokeTrigger(ctx, triggerSource, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, false)
 }
 
 // invokePreAuthentication invokes the PreAuthentication Lambda trigger
-// before user authentication. This trigger is non-blocking: errors are
-// logged but do not prevent authentication from proceeding.
+// before user authentication. The trigger is blocking: raising an error is
+// the documented way to deny the sign-in, so a function-level failure fails
+// the authentication with UserLambdaValidationException and a transport
+// failure with InternalErrorException.
 func invokePreAuthentication(
 	ctx context.Context,
 	s *CognitoService,
@@ -411,8 +440,11 @@ func invokePreAuthentication(
 		"clientMetadata": clientMetadata,
 	}
 
-	_, err := s.invokeTrigger(ctx, PreAuthentication, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, false)
-	return err
+	_, err := s.invokeTrigger(ctx, PreAuthentication, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, true)
+	if err != nil {
+		return classifyTriggerFailure(err)
+	}
+	return nil
 }
 
 // invokePostAuthentication invokes the PostAuthentication Lambda trigger
@@ -436,8 +468,11 @@ func invokePostAuthentication(
 		"clientMetadata": clientMetadata,
 	}
 
-	_, err := s.invokeTrigger(ctx, PostAuthentication, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, false)
-	return err
+	_, err := s.invokeTrigger(ctx, PostAuthentication, userPoolID, username, clientID, lambdaARN, request, map[string]interface{}{}, true)
+	if err != nil {
+		return classifyTriggerFailure(err)
+	}
+	return nil
 }
 
 // preTokenGenerationResult carries the parsed response from a
@@ -589,14 +624,19 @@ func invokeCustomMessage(
 }
 
 // userMigrationResult carries the parsed response from a UserMigration
-// Lambda trigger, containing the migrated user attributes and desired
-// initial state.
+// Lambda trigger. FinalUserStatus and DesiredDeliveryMediums arrive already
+// resolved to their documented defaults (RESET_REQUIRED and SMS); an empty
+// MessageAction means the welcome message is sent. Only members the
+// migration path consumes are parsed: delivery mediums name the welcome
+// message's channel and alias-creation semantics belong to the alias
+// machinery, carried for it.
 type userMigrationResult struct {
 	UserAttributes         map[string]string
 	FinalUserStatus        string
 	MessageAction          string
-	DesiredDeliveryMediums []string
 	ForceAliasCreation     bool
+	DesiredDeliveryMediums []string
+	EnableSMSMFA           bool
 }
 
 // invokeUserMigration invokes the UserMigration Lambda trigger
@@ -622,11 +662,7 @@ func invokeUserMigration(
 	}
 
 	responseDefaults := map[string]interface{}{
-		"userAttributes":         nil,
-		"finalUserStatus":        "CONFIRMED",
-		"messageAction":          "SUPPRESS",
-		"desiredDeliveryMediums": nil,
-		"forceAliasCreation":     false,
+		"userAttributes": nil,
 	}
 
 	response, err := s.invokeTrigger(ctx, UserMigrationAuthentication, userPoolID, username, clientID, lambdaARN, request, responseDefaults, true)
@@ -638,10 +674,47 @@ func invokeUserMigration(
 		FinalUserStatus:    stringFromMap(response, "finalUserStatus"),
 		MessageAction:      stringFromMap(response, "messageAction"),
 		ForceAliasCreation: boolFromMap(response, "forceAliasCreation"),
+		EnableSMSMFA:       boolFromMap(response, "enableSMSMFA"),
 	}
 
+	// finalUserStatus and messageAction carry fixed vocabularies: the
+	// documented migration statuses are CONFIRMED, RESET_REQUIRED and
+	// FORCE_CHANGE_PASSWORD, and the message actions are SUPPRESS and
+	// RESEND. Anything else is a malformed trigger response — a stray
+	// value must never become a stored user status.
+	switch result.FinalUserStatus {
+	case "", "CONFIRMED", "RESET_REQUIRED", "FORCE_CHANGE_PASSWORD":
+	default:
+		return nil, ErrInvalidLambdaResponse
+	}
+	switch result.MessageAction {
+	case "", "SUPPRESS", "RESEND":
+	default:
+		return nil, ErrInvalidLambdaResponse
+	}
+
+	// The documented defaults: an omitted finalUserStatus resolves to
+	// RESET_REQUIRED ("If you don't set this attribute to CONFIRMED, it's
+	// set to RESET_REQUIRED") and an omitted desiredDeliveryMediums sends
+	// the welcome message by SMS.
 	if result.FinalUserStatus == "" {
-		result.FinalUserStatus = "CONFIRMED"
+		result.FinalUserStatus = "RESET_REQUIRED"
+	}
+	if raw, ok := response["desiredDeliveryMediums"].([]interface{}); ok {
+		if len(raw) == 0 {
+			return nil, ErrInvalidLambdaResponse
+		}
+		mediums := make([]string, 0, len(raw))
+		for _, v := range raw {
+			s, isString := v.(string)
+			if !isString || (s != "EMAIL" && s != "SMS") {
+				return nil, ErrInvalidLambdaResponse
+			}
+			mediums = append(mediums, s)
+		}
+		result.DesiredDeliveryMediums = mediums
+	} else {
+		result.DesiredDeliveryMediums = []string{"SMS"}
 	}
 
 	if ua, ok := response["userAttributes"].(map[string]interface{}); ok {
@@ -652,10 +725,6 @@ func invokeUserMigration(
 			}
 		}
 		result.UserAttributes = m
-	}
-
-	if ddm, ok := response["desiredDeliveryMediums"].([]interface{}); ok {
-		result.DesiredDeliveryMediums = interfaceSliceToStrings(ddm)
 	}
 
 	return result, nil

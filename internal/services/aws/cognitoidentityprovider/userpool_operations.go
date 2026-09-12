@@ -4,34 +4,13 @@ import (
 	"context"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
-	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
 // CreateUserPool creates a new Cognito user pool.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_CreateUserPool.html
 func (s *CognitoService) CreateUserPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	poolName := req.GetParam("PoolName")
-
-	userPool, err := s.newUserPoolCore(poolName, reqCtx.GetRegion())
-	if err != nil {
-		return nil, err
-	}
-	// CreateUserPool is the only operation that carries the Schema member;
-	// apply it before the shared update path so the whole-pool validation
-	// still sees the schema definitions.
-	userPool.SchemaAttributes = parseSchemaAttributes(req)
-	if err := applyUserPoolUpdates(userPool, req); err != nil {
-		return nil, err
-	}
-
-	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags"))
-
-	created, err := s.createUserPoolCore(CreateUserPoolInput{
-		Pool:   userPool,
-		Region: reqCtx.GetRegion(),
-		Tags:   tags,
-	})
+	created, err := s.createUserPoolFromRequestCore(reqCtx.GetRegion(), req.GetParam("PoolName"), req)
 	if err != nil {
 		return nil, err
 	}
@@ -72,17 +51,15 @@ func (s *CognitoService) DeleteUserPool(ctx context.Context, reqCtx *request.Req
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_UpdateUserPool.html
 func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	userPoolID := getUserPoolID(req)
-
-	userPool, err := s.getUserPoolCore(reqCtx.GetRegion(), userPoolID)
-	if err != nil {
-		return nil, err
+	if userPoolID == "" {
+		return nil, ErrInvalidParameter
 	}
 
-	if err := applyUserPoolUpdates(userPool, req); err != nil {
-		return nil, err
-	}
-
-	if err := s.updateUserPoolPersistCore(reqCtx.GetRegion(), userPool); err != nil {
+	if err := s.updateUserPoolCore(UpdateUserPoolInput{
+		Region:     reqCtx.GetRegion(),
+		UserPoolID: userPoolID,
+		Req:        req,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -93,7 +70,7 @@ func (s *CognitoService) UpdateUserPool(ctx context.Context, reqCtx *request.Req
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPools.html
 func (s *CognitoService) ListUserPools(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	// Smithy PoolQueryLimitType: range {min: 1, max: 60}
-	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", 60)
+	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -165,6 +142,21 @@ func (s *CognitoService) SetUserPoolMfaConfig(ctx context.Context, reqCtx *reque
 	}
 
 	return formatMfaConfigResponse(userPool), nil
+}
+
+// AddCustomAttributes adds custom schema attributes to a user pool.
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AddCustomAttributes.html
+func (s *CognitoService) AddCustomAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	var attrs []interface{}
+	if v, ok := req.Parameters["CustomAttributes"].([]interface{}); ok {
+		attrs = v
+	}
+
+	if err := s.addCustomAttributesCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), attrs); err != nil {
+		return nil, err
+	}
+
+	return response.EmptyResponse(), nil
 }
 
 func formatMfaConfigResponse(pool *cognitostore.UserPool) map[string]interface{} {

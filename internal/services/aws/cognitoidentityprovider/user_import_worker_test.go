@@ -2,6 +2,7 @@ package cognitoidentityprovider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -106,8 +107,10 @@ func newImportTestPool(t *testing.T, store cognitostore.CognitoStoreInterface, s
 	if err != nil {
 		t.Fatalf("create pool: %v", err)
 	}
-	pool.AutoVerifiedAttributes = []string{"email"}
-	if err := store.UpdateUserPool(pool); err != nil {
+	if err := store.UpdateUserPoolFunc(pool.ID, func(p *cognitostore.UserPool) error {
+		p.AutoVerifiedAttributes = []string{"email"}
+		return nil
+	}); err != nil {
 		t.Fatalf("update pool: %v", err)
 	}
 	job := &cognitostore.UserImportJob{
@@ -163,6 +166,29 @@ func TestRunUserImportJobHappyPath(t *testing.T) {
 	}
 }
 
+// The worker batches its progress writes on the status-check cadence; a
+// run spanning several cadence batches must still land the exact counters
+// through the in-loop flushes and the final flush after the loop.
+func TestRunUserImportJobCountersExactAcrossCadenceBatches(t *testing.T) {
+	svc, store, s3 := newImportTestService(t)
+	const rows = 3*importStatusCheckRows + 50
+	var csv strings.Builder
+	csv.WriteString("cognito:username,email,email_verified\n")
+	for i := 0; i < rows; i++ {
+		fmt.Fprintf(&csv, "user%04d,user%04d@example.com,TRUE\n", i, i)
+	}
+	poolID, jobID := newImportTestPool(t, store, s3, csv.String())
+
+	job := runImportToCompletion(t, svc, store, poolID, jobID)
+
+	if job.Status != importJobStatusSucceeded {
+		t.Fatalf("status = %q, want Succeeded (message %q)", job.Status, job.CompletionMessage)
+	}
+	if job.ImportedUsers != rows || job.SkippedUsers != 0 || job.FailedUsers != 0 {
+		t.Fatalf("counters = %d/%d/%d, want %d/0/0", job.ImportedUsers, job.SkippedUsers, job.FailedUsers, rows)
+	}
+}
+
 // Usernames differing only in case are duplicates when the pool has not
 // opted into case-sensitive usernames: the second row is skipped.
 func TestRunUserImportJobCaseInsensitiveDuplicate(t *testing.T) {
@@ -215,22 +241,22 @@ func TestRunUserImportJobUnknownHeaderColumnFailsJob(t *testing.T) {
 	}
 }
 
-// Deleting the user pool before the worker runs fails the job with the
-// documented pool-deleted message.
-func TestRunUserImportJobDeletedPoolFailsJob(t *testing.T) {
+// Deleting the user pool removes the job record with it, so a worker that
+// runs afterwards finds no job and leaves nothing behind to finalise.
+func TestRunUserImportJobDeletedPoolRemovesJob(t *testing.T) {
 	svc, store, s3 := newImportTestService(t)
 	poolID, jobID := newImportTestPool(t, store, s3, importHappyCSV)
 	if err := store.DeleteUserPool(poolID); err != nil {
 		t.Fatalf("delete pool: %v", err)
 	}
 
-	job := runImportToCompletion(t, svc, store, poolID, jobID)
+	svc.runUserImportJob("us-east-1", poolID, jobID)
 
-	if job.Status != importJobStatusFailed {
-		t.Fatalf("status = %q, want Failed", job.Status)
+	if _, err := store.GetUserImportJob(poolID, jobID); err == nil {
+		t.Fatal("job record must be gone with the deleted pool")
 	}
-	if !strings.Contains(job.CompletionMessage, "user pool was deleted") {
-		t.Fatalf("completion message = %q", job.CompletionMessage)
+	if _, ok := s3.objects[importBucketName+"/"+importObjectKey(poolID, jobID)]; ok {
+		t.Fatal("uploaded CSV must be removed when the pool is deleted before the worker runs")
 	}
 }
 
@@ -351,6 +377,162 @@ func TestEnsureTerminalImportStateStoppedJobDeletesCSV(t *testing.T) {
 	}
 	if _, ok := s3.objects[importBucketName+"/"+importObjectKey(pool, jobID)]; ok {
 		t.Fatal("uploaded CSV must be deleted when the guard stops a job")
+	}
+}
+
+// A stop request that lands between the terminal guard's read of the job
+// and its finalisation write must win: finaliseImportJob goes through the
+// status-guarded transition, so a stale InProgress snapshot yields a
+// tolerated conflict instead of overwriting the already-Stopped state
+// with Failed. The CSV still goes, because the job is terminal either way.
+func TestFinaliseImportJobDoesNotOverwriteConcurrentStop(t *testing.T) {
+	svc, store, s3 := newImportTestService(t)
+	pool, jobID := newImportTestPool(t, store, s3, importHappyCSV)
+	seed, err := store.GetUserImportJob(pool, jobID)
+	if err != nil {
+		t.Fatalf("load job: %v", err)
+	}
+	seed.Status = importJobStatusInProgress
+	if err := store.UpdateUserImportJob(seed); err != nil {
+		t.Fatalf("seed in progress: %v", err)
+	}
+
+	// The snapshot the guard read before the stop request landed.
+	snapshot, err := store.GetUserImportJob(pool, jobID)
+	if err != nil {
+		t.Fatalf("snapshot job: %v", err)
+	}
+
+	// The concurrent stop: the developer stops the job after the guard
+	// read its snapshot but before the guard writes.
+	if _, err := store.TransitionUserImportJobStatus(pool, jobID, importJobStatusInProgress, importJobStatusStopping, nil); err != nil {
+		t.Fatalf("stop to Stopping: %v", err)
+	}
+	if _, err := store.TransitionUserImportJobStatus(pool, jobID, importJobStatusStopping, importJobStatusStopped, func(j *cognitostore.UserImportJob) {
+		j.CompletionMessage = stoppedImportCompletionMessage
+	}); err != nil {
+		t.Fatalf("finalise Stopped: %v", err)
+	}
+
+	svc.finaliseImportJob(store, "us-east-1", snapshot)
+
+	final, err := store.GetUserImportJob(pool, jobID)
+	if err != nil {
+		t.Fatalf("reload job: %v", err)
+	}
+	if final.Status != importJobStatusStopped {
+		t.Fatalf("status = %q, want Stopped (the concurrent stop must not be overwritten)", final.Status)
+	}
+	if final.CompletionMessage != stoppedImportCompletionMessage {
+		t.Fatalf("completion message = %q, want the developer-stopped message", final.CompletionMessage)
+	}
+	if _, ok := s3.objects[importBucketName+"/"+importObjectKey(pool, jobID)]; ok {
+		t.Fatal("uploaded CSV must be deleted once the job is terminal")
+	}
+}
+
+// The startup finaliser sweeps every job a previous process left in a
+// non-terminal state to its terminal state, deletes the orphaned CSVs, and
+// leaves terminal and never-started jobs untouched — after the sweep, the
+// one-active-job start guard accepts a new import again.
+func TestFinaliseStaleImportJobs(t *testing.T) {
+	svc, store, s3 := newImportTestService(t)
+	pool, err := store.CreateUserPool(cognitostore.NewUserPool("stale-pool", "us-east-1"))
+	if err != nil {
+		t.Fatalf("create pool: %v", err)
+	}
+
+	seed := func(jobID, status string) {
+		t.Helper()
+		job := &cognitostore.UserImportJob{
+			JobID:        jobID,
+			JobName:      "stale",
+			UserPoolID:   pool.ID,
+			Status:       status,
+			CreationDate: time.Now().UTC(),
+		}
+		if err := store.CreateUserImportJob(job); err != nil {
+			t.Fatalf("create job %s: %v", jobID, err)
+		}
+		s3.objects[importBucketName+"/"+importObjectKey(pool.ID, jobID)] = []byte("stale csv")
+	}
+	seed("stale-inprogress", importJobStatusInProgress)
+	seed("stale-pending", importJobStatusPending)
+	seed("stale-stopping", importJobStatusStopping)
+	seed("stale-created", importJobStatusCreated)
+	terminal := &cognitostore.UserImportJob{
+		JobID:      "stale-succeeded",
+		JobName:    "done",
+		UserPoolID: pool.ID,
+		Status:     importJobStatusSucceeded,
+	}
+	if err := store.CreateUserImportJob(terminal); err != nil {
+		t.Fatalf("create terminal job: %v", err)
+	}
+
+	svc.finaliseStaleImportJobs("us-east-1", store)
+
+	for _, jobID := range []string{"stale-inprogress", "stale-pending"} {
+		final, err := store.GetUserImportJob(pool.ID, jobID)
+		if err != nil {
+			t.Fatalf("load %s: %v", jobID, err)
+		}
+		if final.Status != importJobStatusFailed {
+			t.Fatalf("%s status = %q, want Failed", jobID, final.Status)
+		}
+		if final.CompletionMessage != "The import job terminated before completion." {
+			t.Fatalf("%s completion message = %q", jobID, final.CompletionMessage)
+		}
+		if final.CompletionDate.IsZero() {
+			t.Fatalf("%s completion date not set", jobID)
+		}
+	}
+	stopped, err := store.GetUserImportJob(pool.ID, "stale-stopping")
+	if err != nil {
+		t.Fatalf("load stale-stopping: %v", err)
+	}
+	if stopped.Status != importJobStatusStopped || stopped.CompletionMessage != stoppedImportCompletionMessage {
+		t.Fatalf("stale-stopping = %q / %q", stopped.Status, stopped.CompletionMessage)
+	}
+	for _, jobID := range []string{"stale-inprogress", "stale-pending", "stale-stopping"} {
+		if _, ok := s3.objects[importBucketName+"/"+importObjectKey(pool.ID, jobID)]; ok {
+			t.Fatalf("CSV of %s must be deleted with the sweep", jobID)
+		}
+	}
+
+	// The never-started and already-terminal records keep their state.
+	created, err := store.GetUserImportJob(pool.ID, "stale-created")
+	if err != nil {
+		t.Fatalf("load stale-created: %v", err)
+	}
+	if created.Status != importJobStatusCreated {
+		t.Fatalf("stale-created status = %q, want Created", created.Status)
+	}
+	succeeded, err := store.GetUserImportJob(pool.ID, "stale-succeeded")
+	if err != nil {
+		t.Fatalf("load stale-succeeded: %v", err)
+	}
+	if succeeded.Status != importJobStatusSucceeded {
+		t.Fatalf("stale-succeeded status = %q, want Succeeded", succeeded.Status)
+	}
+
+	// With the orphans finalised, a new job passes the start guard.
+	fresh := &cognitostore.UserImportJob{
+		JobID:        "stale-fresh",
+		JobName:      "fresh",
+		UserPoolID:   pool.ID,
+		Status:       importJobStatusCreated,
+		CreationDate: time.Now().UTC(),
+	}
+	if err := store.CreateUserImportJob(fresh); err != nil {
+		t.Fatalf("create fresh job: %v", err)
+	}
+	started, err := store.StartUserImportJobIfEligible(pool.ID, "stale-fresh")
+	if err != nil {
+		t.Fatalf("start after sweep: %v", err)
+	}
+	if started.Status != importJobStatusPending {
+		t.Fatalf("fresh job status = %q, want Pending", started.Status)
 	}
 }
 
@@ -476,7 +658,7 @@ func TestSetNativePasswordCredentialsClearsImportedFlag(t *testing.T) {
 	user.PasswordHash = "$2b$10$CtA.Rcu/szzn9U00wpUjOuN3vrgJRZycv4aOzcP3GzqzO8UDPEFq6"
 	user.PasswordHashAlgo = "BCRYPT"
 
-	if err := setNativePasswordCredentials(user, "us-east-1_pool", "johndoe", "NewPassword1!"); err != nil {
+	if err := setNativePasswordCredentials(user, nil, "NewPassword1!"); err != nil {
 		t.Fatalf("set native credentials: %v", err)
 	}
 	if user.PasswordHashAlgo != "" {
@@ -484,5 +666,58 @@ func TestSetNativePasswordCredentialsClearsImportedFlag(t *testing.T) {
 	}
 	if user.PasswordHash == "" || user.SrpSalt == "" || user.SrpVerifier == "" {
 		t.Fatal("native hash and SRP material must be populated")
+	}
+}
+
+// PasswordHistorySize governs what the native write retains and forbids: a
+// depth of zero retains nothing and forbids nothing, a depth of one forbids
+// only the password being replaced, and an imported hash never enters the
+// remembered set because it was not generated by this platform.
+func TestSetNativePasswordCredentialsHistoryBoundaries(t *testing.T) {
+	unrestricted := cognitostore.NewUser("us-east-1_pool", "alice")
+	noHistory := &cognitostore.PasswordPolicy{PasswordHistorySize: 0}
+	if err := setNativePasswordCredentials(unrestricted, noHistory, "FirstPass1!"); err != nil {
+		t.Fatalf("first write with no history configured: %v", err)
+	}
+	if err := setNativePasswordCredentials(unrestricted, noHistory, "FirstPass1!"); err != nil {
+		t.Fatalf("rewrite with no history configured: %v", err)
+	}
+	if len(unrestricted.PasswordHistory) != 0 {
+		t.Fatalf("history retained with PasswordHistorySize 0: %d entries", len(unrestricted.PasswordHistory))
+	}
+
+	// A depth of one forbids only the password being replaced: the
+	// immediate rewrite is rejected, while an older password becomes
+	// reusable once a newer one has superseded it.
+	depthOne := cognitostore.NewUser("us-east-1_pool", "carol")
+	oneDeep := &cognitostore.PasswordPolicy{PasswordHistorySize: 1}
+	if err := setNativePasswordCredentials(depthOne, oneDeep, "FirstPass1!"); err != nil {
+		t.Fatalf("first write at depth one: %v", err)
+	}
+	if err := setNativePasswordCredentials(depthOne, oneDeep, "FirstPass1!"); !errors.Is(err, ErrPasswordHistoryViolation) {
+		t.Fatalf("rewrite of the current password at depth one: err = %v, want ErrPasswordHistoryViolation", err)
+	}
+	if err := setNativePasswordCredentials(depthOne, oneDeep, "SecondPass2!"); err != nil {
+		t.Fatalf("rotation at depth one: %v", err)
+	}
+	if err := setNativePasswordCredentials(depthOne, oneDeep, "FirstPass1!"); err != nil {
+		t.Fatalf("superseded password must be reusable at depth one: %v", err)
+	}
+
+	// The imported hash is excluded from the remembered set, so the first
+	// native write after an import is never compared against it; the
+	// resulting native hash itself is remembered from then on.
+	imported := cognitostore.NewUser("us-east-1_pool", "bob")
+	imported.PasswordHash = "$2b$10$CtA.Rcu/szzn9U00wpUjOuN3vrgJRZycv4aOzcP3GzqzO8UDPEFq6"
+	imported.PasswordHashAlgo = "BCRYPT"
+	twoDeep := &cognitostore.PasswordPolicy{PasswordHistorySize: 2}
+	if err := setNativePasswordCredentials(imported, twoDeep, "NewPassword1!"); err != nil {
+		t.Fatalf("first native write after import: %v", err)
+	}
+	if len(imported.PasswordHistory) != 0 {
+		t.Fatalf("imported hash must not enter the remembered set: %d entries", len(imported.PasswordHistory))
+	}
+	if err := setNativePasswordCredentials(imported, twoDeep, "NewPassword1!"); !errors.Is(err, ErrPasswordHistoryViolation) {
+		t.Fatalf("rewrite of the current native password after import: err = %v, want ErrPasswordHistoryViolation", err)
 	}
 }

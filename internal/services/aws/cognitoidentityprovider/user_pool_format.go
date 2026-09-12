@@ -68,9 +68,10 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 		schema = append(schema, entry)
 	}
 	result["SchemaAttributes"] = schema
-	if pool.PasswordPolicy != nil {
-		result["Policies"] = map[string]interface{}{
-			"PasswordPolicy": map[string]interface{}{
+	if pool.PasswordPolicy != nil || (pool.SignInPolicy != nil && len(pool.SignInPolicy.AllowedFirstAuthFactors) > 0) {
+		policies := map[string]interface{}{}
+		if pool.PasswordPolicy != nil {
+			policies["PasswordPolicy"] = map[string]interface{}{
 				"MinimumLength":                 pool.PasswordPolicy.MinimumLength,
 				"RequireUppercase":              pool.PasswordPolicy.RequireUppercase,
 				"RequireLowercase":              pool.PasswordPolicy.RequireLowercase,
@@ -78,8 +79,14 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 				"RequireSymbols":                pool.PasswordPolicy.RequireSymbols,
 				"TemporaryPasswordValidityDays": pool.PasswordPolicy.TemporaryPasswordValidityDays,
 				"PasswordHistorySize":           pool.PasswordPolicy.PasswordHistorySize,
-			},
+			}
 		}
+		if pool.SignInPolicy != nil && len(pool.SignInPolicy.AllowedFirstAuthFactors) > 0 {
+			policies["SignInPolicy"] = map[string]interface{}{
+				"AllowedFirstAuthFactors": pool.SignInPolicy.AllowedFirstAuthFactors,
+			}
+		}
+		result["Policies"] = policies
 	}
 	if pool.LambdaConfig != nil {
 		result["LambdaConfig"] = formatLambdaConfig(pool.LambdaConfig)
@@ -124,9 +131,15 @@ func formatUserPool(pool *cognitostore.UserPool) map[string]interface{} {
 		}
 	}
 	if pool.UserPoolAddOns != nil {
-		result["UserPoolAddOns"] = map[string]interface{}{
+		addOns := map[string]interface{}{
 			"AdvancedSecurityMode": pool.UserPoolAddOns.AdvancedSecurityMode,
 		}
+		if fl := pool.UserPoolAddOns.AdvancedSecurityAdditionalFlows; fl != nil {
+			addOns["AdvancedSecurityAdditionalFlows"] = map[string]interface{}{
+				"CustomAuthMode": fl.CustomAuthMode,
+			}
+		}
+		result["UserPoolAddOns"] = addOns
 	}
 	if pool.AccountRecoverySetting != nil && len(pool.AccountRecoverySetting.RecoveryMechanisms) > 0 {
 		mechanisms := make([]map[string]interface{}, 0, len(pool.AccountRecoverySetting.RecoveryMechanisms))
@@ -203,6 +216,31 @@ func formatSmsConfiguration(config *cognitostore.SmsConfiguration) map[string]in
 	}
 	if config.SnsRegion != "" {
 		result["SnsRegion"] = config.SnsRegion
+	}
+	if config.EumsSms != nil {
+		eums := map[string]interface{}{}
+		if config.EumsSms.CallerArn != "" {
+			eums["CallerArn"] = config.EumsSms.CallerArn
+		}
+		if config.EumsSms.ExternalId != "" {
+			eums["ExternalId"] = config.EumsSms.ExternalId
+		}
+		if config.EumsSms.OriginationIdentity != "" {
+			eums["OriginationIdentity"] = config.EumsSms.OriginationIdentity
+		}
+		if config.EumsSms.ConfigurationSetName != "" {
+			eums["ConfigurationSetName"] = config.EumsSms.ConfigurationSetName
+		}
+		if config.EumsSms.InEntityId != "" {
+			eums["InEntityId"] = config.EumsSms.InEntityId
+		}
+		if config.EumsSms.InTemplateId != "" {
+			eums["InTemplateId"] = config.EumsSms.InTemplateId
+		}
+		if config.EumsSms.Region != "" {
+			eums["Region"] = config.EumsSms.Region
+		}
+		result["EumsSms"] = eums
 	}
 	return result
 }
@@ -311,14 +349,7 @@ func formatUser(user *cognitostore.User) map[string]interface{} {
 	}
 
 	if user.Attributes != nil {
-		attrs := make([]map[string]string, 0)
-		for name, value := range user.Attributes {
-			attrs = append(attrs, map[string]string{
-				"Name":  name,
-				"Value": value,
-			})
-		}
-		result["Attributes"] = attrs
+		result["Attributes"] = userAttributeList(user)
 	}
 
 	if len(user.MFAOptions) > 0 {
@@ -332,6 +363,115 @@ func formatUser(user *cognitostore.User) map[string]interface{} {
 		result["MFAOptions"] = mfaOpts
 	}
 
+	return result
+}
+
+// formatMFAOptions projects the legacy MFA options list (MFAOptionType:
+// DeliveryMedium/AttributeName) shared by the user responses.
+func formatMFAOptions(user *cognitostore.User) []map[string]interface{} {
+	mfaOpts := make([]map[string]interface{}, 0, len(user.MFAOptions))
+	for _, opt := range user.MFAOptions {
+		mfaOpts = append(mfaOpts, map[string]interface{}{
+			"DeliveryMedium": opt.DeliveryMedium,
+			"AttributeName":  opt.AttributeName,
+		})
+	}
+	return mfaOpts
+}
+
+// userMFAPreferences derives the activated-MFA names the model documents for
+// UserMFASettingList — SMS_MFA, EMAIL_OTP and SOFTWARE_TOKEN_MFA — together
+// with the user's preferred setting. A software token counts as activated
+// only once enrolled and verified, matching the sign-in challenge
+// selection. The legacy MFAOptions SMS delivery counts as SMS_MFA.
+func userMFAPreferences(user *cognitostore.User) (preferred string, settings []string) {
+	has := func(name string) bool {
+		for _, s := range settings {
+			if s == name {
+				return true
+			}
+		}
+		return false
+	}
+	add := func(name string) {
+		if !has(name) {
+			settings = append(settings, name)
+		}
+	}
+
+	software := user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Enabled && user.SoftwareTokenMfa.Verified
+	sms := user.SmsMfa != nil && user.SmsMfa.Enabled
+	email := user.EmailMfa != nil && user.EmailMfa.Enabled
+
+	if software {
+		add("SOFTWARE_TOKEN_MFA")
+		if preferred == "" && user.SoftwareTokenMfa.PreferredMfa {
+			preferred = "SOFTWARE_TOKEN_MFA"
+		}
+	}
+	if sms {
+		add("SMS_MFA")
+		if preferred == "" && user.SmsMfa.PreferredMfa {
+			preferred = "SMS_MFA"
+		}
+	}
+	if email {
+		add("EMAIL_OTP")
+		if preferred == "" && user.EmailMfa.PreferredMfa {
+			preferred = "EMAIL_OTP"
+		}
+	}
+	for _, opt := range user.MFAOptions {
+		if opt.DeliveryMedium == "SMS" {
+			add("SMS_MFA")
+		}
+	}
+	return preferred, settings
+}
+
+// formatGetUserResponse projects the GetUser response: the model defines
+// Username, UserAttributes, MFAOptions, PreferredMfaSetting and
+// UserMFASettingList — the UserType status members do not belong here.
+func formatGetUserResponse(user *cognitostore.User) map[string]interface{} {
+	result := map[string]interface{}{
+		"Username":       user.Username,
+		"UserAttributes": userAttributeList(user),
+	}
+	if len(user.MFAOptions) > 0 {
+		result["MFAOptions"] = formatMFAOptions(user)
+	}
+	preferred, settings := userMFAPreferences(user)
+	if preferred != "" {
+		result["PreferredMfaSetting"] = preferred
+	}
+	if len(settings) > 0 {
+		result["UserMFASettingList"] = settings
+	}
+	return result
+}
+
+// formatAdminGetUserResponse projects the AdminGetUser response: the model
+// defines the UserType status members plus UserAttributes,
+// PreferredMfaSetting and UserMFASettingList.
+func formatAdminGetUserResponse(user *cognitostore.User) map[string]interface{} {
+	result := map[string]interface{}{
+		"Username":             user.Username,
+		"Enabled":              user.Enabled,
+		"UserStatus":           user.UserStatus,
+		"UserCreateDate":       user.CreatedDate.Unix(),
+		"UserLastModifiedDate": user.LastModifiedDate.Unix(),
+		"UserAttributes":       userAttributeList(user),
+	}
+	if len(user.MFAOptions) > 0 {
+		result["MFAOptions"] = formatMFAOptions(user)
+	}
+	preferred, settings := userMFAPreferences(user)
+	if preferred != "" {
+		result["PreferredMfaSetting"] = preferred
+	}
+	if len(settings) > 0 {
+		result["UserMFASettingList"] = settings
+	}
 	return result
 }
 

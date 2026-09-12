@@ -2,32 +2,9 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"crypto/rand"
-	"fmt"
 
 	"vorpalstacks/internal/common/request"
 )
-
-func generateConfirmationCode() (string, error) {
-	const maxCode = 1000000
-	const limit = (1 << 24) / maxCode * maxCode
-	for {
-		b := make([]byte, 3)
-		if _, err := rand.Read(b); err != nil {
-			return "", err
-		}
-		n := int(b[0])<<16 | int(b[1])<<8 | int(b[2])
-		if n < limit {
-			return fmt.Sprintf("%06d", n%maxCode), nil
-		}
-	}
-}
-
-// SignOut signs out a user.
-// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_SignOut.html
-func (s *CognitoService) SignOut(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.signOutCore(reqCtx, SignOutInput{AccessToken: getAccessToken(req)})
-}
 
 // GlobalSignOut signs out a user from all devices.
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GlobalSignOut.html

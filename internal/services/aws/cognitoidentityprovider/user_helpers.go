@@ -1,9 +1,11 @@
 package cognitoidentityprovider
 
 import (
+	"context"
 	"crypto/rand"
 	"math/big"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -15,7 +17,7 @@ import (
 // suppressed. Length is the policy minimum (at least eight characters, per
 // the AWS default policy floor) plus random padding up to that minimum.
 func generateTemporaryPassword(policy *cognitostore.PasswordPolicy) (string, error) {
-	length := 8
+	length := cognitostore.DefaultPasswordMinimumLength
 	requireUpper, requireLower, requireNumber, requireSymbol := true, true, true, true
 	if policy != nil {
 		if policy.MinimumLength > length {
@@ -81,17 +83,44 @@ func generateTemporaryPassword(policy *cognitostore.PasswordPolicy) (string, err
 
 // setNativePasswordCredentials installs the native bcrypt+SRP credential
 // pair for a password and clears the imported-hash format flag: every flow
-// that writes a native password (administrative set/reset, self-service
-// change and confirmation, and the post-verification migration) makes the
-// native hash authoritative, and a lingering imported-algorithm flag would
-// send subsequent sign-ins down the imported-hash verification path
-// against the wrong hash format.
-func setNativePasswordCredentials(user *cognitostore.User, userPoolID, username, password string) error {
+// that writes a native password (administrative set, self-service change and
+// reset, sign-up, the NEW_PASSWORD_REQUIRED challenge, and the
+// post-verification migration) makes the native hash authoritative, and a
+// lingering imported-algorithm flag would send subsequent sign-ins down the
+// imported-hash verification path against the wrong hash format. The pool
+// policy's PasswordHistorySize is enforced at this single password-write
+// site: a password that reuses one of the remembered previous passwords is
+// rejected, and the superseded set is retained for the next change.
+func setNativePasswordCredentials(user *cognitostore.User, policy *cognitostore.PasswordPolicy, password string) error {
+	historySize := 0
+	if policy != nil {
+		historySize = policy.PasswordHistorySize
+	}
+	// remembered is the reuse-forbidden set, most recent first: the current
+	// native hash plus up to PasswordHistorySize-1 stored predecessors —
+	// together the pool's configured number of previous passwords. Imported
+	// CSV hashes predate the native credentials and never enter the set,
+	// because only hashes this platform generated are known-comparable.
+	var remembered []string
+	if historySize > 0 {
+		remembered = user.PasswordHistory
+		if len(remembered) > historySize-1 {
+			remembered = remembered[:historySize-1]
+		}
+		if user.PasswordHash != "" && user.PasswordHashAlgo == "" {
+			remembered = append([]string{user.PasswordHash}, remembered...)
+		}
+		for _, prev := range remembered {
+			if bcrypt.CompareHashAndPassword([]byte(prev), []byte(password)) == nil {
+				return ErrPasswordHistoryViolation
+			}
+		}
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
-	saltHex, verifierHex, err := computeSrpVerifier(userPoolID, username, password)
+	saltHex, verifierHex, err := computeSrpVerifier(user.UserPoolID, user.Username, password)
 	if err != nil {
 		return err
 	}
@@ -99,6 +128,10 @@ func setNativePasswordCredentials(user *cognitostore.User, userPoolID, username,
 	user.PasswordHashAlgo = ""
 	user.SrpSalt = saltHex
 	user.SrpVerifier = verifierHex
+	// With no history configured nothing is retained; otherwise the set
+	// computed above is exactly what the next change must hold alongside
+	// the hash it is about to replace.
+	user.PasswordHistory = remembered
 	return nil
 }
 
@@ -138,8 +171,54 @@ func isAttributeVerified(attrs map[string]string, name string) bool {
 	return attrs[name] != "" && attrs[name+"_verified"] == "true"
 }
 
-func formatUserAttributes(attrs map[string]string) []map[string]string {
-	result := make([]map[string]string, 0)
+// issueAttributeUpdateVerification handles the verification round an
+// email/phone_number attribute update enters: the new value's verified flag
+// is dropped, a fresh code is minted for VerifyUserAttribute, and the
+// CustomMessage UpdateUserAttribute trigger fires carrying that code. An
+// attribute in the update set is treated as changed — the update writes the
+// value, so it must be (re-)verified regardless of what was stored before.
+func issueAttributeUpdateVerification(
+	ctx context.Context,
+	s *CognitoService,
+	user *cognitostore.User,
+	pool *cognitostore.UserPool,
+	attrs map[string]string,
+) error {
+	for _, name := range []string{"email", "phone_number"} {
+		if _, updated := attrs[name]; !updated || user.Attributes[name] == "" {
+			continue
+		}
+		delete(user.Attributes, name+"_verified")
+		code, err := generateConfirmationCode()
+		if err != nil {
+			return ErrInternalError
+		}
+		if user.AttributeVerificationCodes == nil {
+			user.AttributeVerificationCodes = make(map[string]*cognitostore.AttributeVerification)
+		}
+		user.AttributeVerificationCodes[name] = &cognitostore.AttributeVerification{
+			Code:   code,
+			Expiry: time.Now().UTC().Add(verificationCodeTTL),
+		}
+		_, _ = invokeCustomMessage(ctx, s, CustomMessageUpdateUserAttribute, pool.ID, user.Username, "", pool.LambdaConfig, code, userAttributesMap(user), nil)
+	}
+	return nil
+}
+
+// userAttributeList is the single projection of a user's attributes as the
+// wire AttributeType list (Name/Value pairs). The schema declares sub a
+// required attribute of every user, so the user's immutable identifier is
+// materialised into the list even for records whose stored attribute map
+// predates that materialisation.
+func userAttributeList(user *cognitostore.User) []map[string]string {
+	attrs := make(map[string]string, len(user.Attributes)+1)
+	for k, v := range user.Attributes {
+		attrs[k] = v
+	}
+	if attrs["sub"] == "" {
+		attrs["sub"] = user.ID
+	}
+	result := make([]map[string]string, 0, len(attrs))
 	for k, v := range attrs {
 		result = append(result, map[string]string{
 			"Name":  k,
@@ -209,4 +288,99 @@ func validatePassword(password string, policy *cognitostore.PasswordPolicy) erro
 	}
 
 	return nil
+}
+
+// determineDeliveryMedium picks the appropriate delivery medium and attribute
+// name for confirmation codes, based on the pool's AutoVerifiedAttributes and
+// the user's contact information.
+func determineDeliveryMedium(pool *cognitostore.UserPool, user *cognitostore.User) (medium, attrName string) {
+	// Check AutoVerifiedAttributes first — these take priority
+	for _, attr := range pool.AutoVerifiedAttributes {
+		if attr == "phone_number" {
+			if phone, ok := user.Attributes["phone_number"]; ok && phone != "" {
+				return "SMS", "phone_number"
+			}
+		}
+		if attr == "email" {
+			if email, ok := user.Attributes["email"]; ok && email != "" {
+				return "EMAIL", "email"
+			}
+		}
+	}
+	// Fallback: use any available contact attribute
+	if email, ok := user.Attributes["email"]; ok && email != "" {
+		return "EMAIL", "email"
+	}
+	if phone, ok := user.Attributes["phone_number"]; ok && phone != "" {
+		return "SMS", "phone_number"
+	}
+	// Default to EMAIL when the user has neither phone nor email — this
+	// matches Cognito behaviour which always returns a delivery medium
+	// rather than an empty CodeDeliveryDetails.
+	return "EMAIL", "email"
+}
+
+// computeUserAuthFactors builds the auth factors response for a user, shared
+// by GetUserAuthFactors (access-token based) and AdminGetUserAuthFactors
+// (admin based). ConfiguredUserAuthFactors carries the AuthFactorType names;
+// PreferredMfaSetting and UserMFASettingList use the activated-MFA names the
+// model documents for UserMFASettingList.
+func computeUserAuthFactors(user *cognitostore.User) map[string]interface{} {
+	result := map[string]interface{}{
+		"Username": user.Username,
+	}
+
+	var configuredFactors []string
+
+	if user.PasswordHash != "" {
+		configuredFactors = append(configuredFactors, "PASSWORD")
+	}
+
+	if user.SmsMfa != nil && user.SmsMfa.Enabled {
+		configuredFactors = append(configuredFactors, "SMS_OTP")
+	}
+
+	if user.EmailMfa != nil && user.EmailMfa.Enabled {
+		configuredFactors = append(configuredFactors, "EMAIL_OTP")
+	}
+
+	if user.SoftwareTokenMfa != nil && user.SoftwareTokenMfa.Enabled {
+		configuredFactors = append(configuredFactors, "SOFTWARE_TOKEN")
+	}
+
+	if user.WebAuthnMfaEnabled {
+		configuredFactors = append(configuredFactors, "WEB_AUTHN")
+	}
+
+	if len(user.MFAOptions) > 0 {
+		for _, opt := range user.MFAOptions {
+			if opt.DeliveryMedium == "SMS" {
+				alreadyHas := false
+				for _, f := range configuredFactors {
+					if f == "SMS_OTP" {
+						alreadyHas = true
+						break
+					}
+				}
+				if !alreadyHas {
+					configuredFactors = append(configuredFactors, "SMS_OTP")
+				}
+			}
+		}
+	}
+
+	preferred, settings := userMFAPreferences(user)
+	if preferred != "" {
+		result["PreferredMfaSetting"] = preferred
+	}
+	if len(settings) > 0 {
+		result["UserMFASettingList"] = settings
+	}
+
+	if len(configuredFactors) == 0 {
+		configuredFactors = []string{}
+	}
+	result["ConfiguredUserAuthFactors"] = configuredFactors
+
+	return result
 }

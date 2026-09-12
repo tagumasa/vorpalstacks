@@ -17,8 +17,8 @@ func (s *CognitoStore) ListGroupsPaginated(userPoolID string, opts common.ListOp
 
 // CreateGroup creates a new Cognito group.
 func (s *CognitoStore) CreateGroup(group *Group) error {
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
 	if group.Name == "" {
 		return ErrInvalidGroupName
 	}
@@ -40,13 +40,44 @@ func (s *CognitoStore) GetGroup(userPoolID, groupName string) (*Group, error) {
 	key := userPoolGroupKey(userPoolID, groupName)
 	var group Group
 	if err := s.groupsStore.Get(key, &group); err != nil {
-		return nil, ErrGroupNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrGroupNotFound
+		}
+		return nil, err
 	}
 	return &group, nil
 }
 
-// UpdateGroup updates an existing Cognito group.
+// UpdateGroup updates an existing Cognito group, serialised with the
+// membership operations so a whole-record write cannot lose a concurrent
+// membership change.
 func (s *CognitoStore) UpdateGroup(group *Group) error {
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
+	return s.updateGroupUnlocked(group)
+}
+
+// UpdateGroupFunc reads the group, applies mutate and persists the result as
+// one serialised read-modify-write under recordMu: the mutation sees the
+// freshest stored membership, so an attribute update cannot overwrite a
+// concurrent AddUserToGroup/RemoveUserFromGroup with a stale member list. A
+// mutate error aborts without writing.
+func (s *CognitoStore) UpdateGroupFunc(userPoolID, groupName string, mutate func(*Group) error) error {
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
+	group, err := s.GetGroup(userPoolID, groupName)
+	if err != nil {
+		return err
+	}
+	if err := mutate(group); err != nil {
+		return err
+	}
+	return s.updateGroupUnlocked(group)
+}
+
+// updateGroupUnlocked stamps and persists a group record; the caller must
+// hold recordMu.
+func (s *CognitoStore) updateGroupUnlocked(group *Group) error {
 	key := userPoolGroupKey(group.UserPoolID, group.Name)
 	if !s.groupsStore.Exists(key) {
 		return ErrGroupNotFound
@@ -57,8 +88,8 @@ func (s *CognitoStore) UpdateGroup(group *Group) error {
 
 // DeleteGroup deletes a Cognito group.
 func (s *CognitoStore) DeleteGroup(userPoolID, groupName string) error {
-	s.groupMu.Lock()
-	defer s.groupMu.Unlock()
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
 	key := userPoolGroupKey(userPoolID, groupName)
 	if !s.groupsStore.Exists(key) {
 		return ErrGroupNotFound
@@ -111,8 +142,8 @@ func (s *CognitoStore) ListGroups(userPoolID string) ([]*Group, error) {
 // the same user share one entry, matching the case-insensitive username
 // resolution used by every other user lookup.
 func (s *CognitoStore) AddUserToGroup(userPoolID, groupName, username string) error {
-	s.groupMu.Lock()
-	defer s.groupMu.Unlock()
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
 	group, err := s.GetGroup(userPoolID, groupName)
 	if err != nil {
 		return err
@@ -131,7 +162,9 @@ func (s *CognitoStore) AddUserToGroup(userPoolID, groupName, username string) er
 	}
 
 	group.Members = append(group.Members, canonical)
-	if err := s.UpdateGroup(group); err != nil {
+	// The membership write stays on the unlocked variant: the caller already
+	// holds recordMu, which UpdateGroup would retake.
+	if err := s.updateGroupUnlocked(group); err != nil {
 		return err
 	}
 
@@ -142,15 +175,19 @@ func (s *CognitoStore) AddUserToGroup(userPoolID, groupName, username string) er
 	}
 
 	user.Groups = append(user.Groups, groupName)
-	return s.UpdateUser(user)
+	user.LastModifiedDate = time.Now().UTC()
+	// A membership-only change writes the record the caller read inside
+	// this critical section directly; UpdateUser would refresh the
+	// membership from the stored record and undo the append.
+	return s.usersStore.Put(userPoolUserKey(userPoolID, user.Username), user)
 }
 
 // RemoveUserFromGroup removes a user from a Cognito group. Like the add
 // path, the username is resolved to its canonical form first so a
 // differently-cased spelling still matches the stored membership.
 func (s *CognitoStore) RemoveUserFromGroup(userPoolID, groupName, username string) error {
-	s.groupMu.Lock()
-	defer s.groupMu.Unlock()
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
 	group, err := s.GetGroup(userPoolID, groupName)
 	if err != nil {
 		return err
@@ -172,7 +209,9 @@ func (s *CognitoStore) RemoveUserFromGroup(userPoolID, groupName, username strin
 	}
 
 	group.Members = newMembers
-	if err := s.UpdateGroup(group); err != nil {
+	// The membership write stays on the unlocked variant: the caller already
+	// holds recordMu, which UpdateGroup would retake.
+	if err := s.updateGroupUnlocked(group); err != nil {
 		return err
 	}
 
@@ -189,7 +228,11 @@ func (s *CognitoStore) RemoveUserFromGroup(userPoolID, groupName, username strin
 	}
 
 	user.Groups = newGroups
-	return s.UpdateUser(user)
+	user.LastModifiedDate = time.Now().UTC()
+	// A membership-only change writes the record the caller read inside
+	// this critical section directly; UpdateUser would refresh the
+	// membership from the stored record and undo the removal.
+	return s.usersStore.Put(userPoolUserKey(userPoolID, user.Username), user)
 }
 
 // ListGroupsForUser lists all groups for a Cognito user.
@@ -244,7 +287,7 @@ func (s *CognitoStore) ListUsersInGroupPaginated(userPoolID, groupName string, o
 
 	limit := opts.MaxItems
 	if limit <= 0 {
-		limit = 60
+		limit = MaxListLimit
 	}
 
 	end := start + limit
@@ -288,7 +331,7 @@ func (s *CognitoStore) ListGroupsForUserPaginated(userPoolID, username string, o
 
 	limit := opts.MaxItems
 	if limit <= 0 {
-		limit = 60
+		limit = MaxListLimit
 	}
 
 	end := start + limit

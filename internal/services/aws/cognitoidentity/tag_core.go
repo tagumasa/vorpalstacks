@@ -67,7 +67,24 @@ func cognitoIdentityTagConfig(store cognitoidentitystore.CognitoIdentityStoreInt
 			return nil
 		},
 		TagFunc: func(ctx context.Context, resourceKey string, tags []tagutil.Tag) error {
-			if err := store.Tag(resourceKey, tagutil.ToMap(tags)); err != nil {
+			// The platform-wide per-resource tag quota: the merged set of
+			// existing and newly tagged keys stays within
+			// MaxTagsPerResource.
+			existing, err := store.List(resourceKey)
+			if err != nil {
+				return ErrInternalError
+			}
+			incoming := tagutil.ToMap(tags)
+			nonOverwritten := 0
+			for k := range existing {
+				if _, ok := incoming[k]; !ok {
+					nonOverwritten++
+				}
+			}
+			if nonOverwritten+len(incoming) > tagutil.MaxTagsPerResource {
+				return ErrInvalidParameter
+			}
+			if err := store.Tag(resourceKey, incoming); err != nil {
 				return ErrInternalError
 			}
 			return nil

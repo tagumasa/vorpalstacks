@@ -56,6 +56,15 @@ func (r *TestRunner) cognitoResourceServerTests(tc *cognitoIDPContext) []TestRes
 		if !found {
 			return fmt.Errorf("resource server %s not found in ListResourceServers", identifier)
 		}
+		// The Limit shape ranges 1-50; an over-maximum value is rejected,
+		// not clamped to the maximum.
+		_, err = tc.client.ListResourceServers(tc.ctx, &cognitoidentityprovider.ListResourceServersInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			MaxResults: aws.Int32(51),
+		})
+		if err := AssertErrorContains(err, "InvalidParameterException"); err != nil {
+			return err
+		}
 		return nil
 	}))
 

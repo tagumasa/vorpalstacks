@@ -5,8 +5,6 @@ import (
 	"time"
 
 	types "vorpalstacks/internal/common/tags"
-
-	"github.com/google/uuid"
 )
 
 // UserPool represents a Cognito user pool.
@@ -23,6 +21,7 @@ type UserPool struct {
 	SchemaAttributes              []SchemaAttributeType        `json:"schemaAttributes,omitempty"`
 	MfaConfiguration              string                       `json:"mfaConfiguration,omitempty"`
 	PasswordPolicy                *PasswordPolicy              `json:"passwordPolicy,omitempty"`
+	SignInPolicy                  *SignInPolicy                `json:"signInPolicy,omitempty"`
 	LambdaConfig                  *LambdaConfig                `json:"lambdaConfig,omitempty"`
 	Tags                          []types.Tag                  `json:"tags,omitempty"`
 	EstimatedNumberOfUsers        int64                        `json:"estimatedNumberOfUsers,omitempty"`
@@ -53,6 +52,28 @@ type UserPool struct {
 }
 
 // PasswordPolicy represents the password policy for a Cognito user pool.
+// DefaultPasswordMinimumLength is the minimum length of AWS's documented
+// default password policy.
+const DefaultPasswordMinimumLength = 8
+
+// DefaultTemporaryPasswordValidityDays is the temporary-password validity
+// of AWS's documented default password policy.
+const DefaultTemporaryPasswordValidityDays = 7
+
+// DefaultPasswordPolicy returns AWS's documented default password policy —
+// the single definition of the default values a pool without an explicit
+// policy receives.
+func DefaultPasswordPolicy() PasswordPolicy {
+	return PasswordPolicy{
+		MinimumLength:                 DefaultPasswordMinimumLength,
+		RequireUppercase:              true,
+		RequireLowercase:              true,
+		RequireNumbers:                true,
+		RequireSymbols:                true,
+		TemporaryPasswordValidityDays: DefaultTemporaryPasswordValidityDays,
+	}
+}
+
 type PasswordPolicy struct {
 	MinimumLength                 int  `json:"minimumLength,omitempty"`
 	RequireUppercase              bool `json:"requireUppercase,omitempty"`
@@ -61,7 +82,13 @@ type PasswordPolicy struct {
 	RequireSymbols                bool `json:"requireSymbols,omitempty"`
 	TemporaryPasswordValidityDays int  `json:"temporaryPasswordValidityDays,omitempty"`
 	PasswordHistorySize           int  `json:"passwordHistorySize,omitempty"`
-	MaxPasswordAge                int  `json:"maxPasswordAge,omitempty"`
+}
+
+// SignInPolicy represents the sign-in policy of a user pool: the first
+// authentication factors choice-based sign-in may offer. A nil policy
+// imposes no restriction.
+type SignInPolicy struct {
+	AllowedFirstAuthFactors []string `json:"allowedFirstAuthFactors,omitempty"`
 }
 
 // EmailConfiguration represents the email configuration for a user pool.
@@ -75,9 +102,23 @@ type EmailConfiguration struct {
 
 // SmsConfiguration represents the SMS configuration for a user pool.
 type SmsConfiguration struct {
-	SnsCallerArn string `json:"snsCallerArn,omitempty"`
-	ExternalId   string `json:"externalId,omitempty"`
-	SnsRegion    string `json:"snsRegion,omitempty"`
+	SnsCallerArn string                `json:"snsCallerArn,omitempty"`
+	ExternalId   string                `json:"externalId,omitempty"`
+	SnsRegion    string                `json:"snsRegion,omitempty"`
+	EumsSms      *EumsSmsConfiguration `json:"eumsSms,omitempty"`
+}
+
+// EumsSmsConfiguration is the End User Messaging SMS delivery
+// configuration, the documented alternative to the SNS configuration —
+// a pool carries SnsCallerArn or this structure, never both.
+type EumsSmsConfiguration struct {
+	CallerArn            string `json:"callerArn,omitempty"`
+	ExternalId           string `json:"externalId,omitempty"`
+	OriginationIdentity  string `json:"originationIdentity,omitempty"`
+	ConfigurationSetName string `json:"configurationSetName,omitempty"`
+	InEntityId           string `json:"inEntityId,omitempty"`
+	InTemplateId         string `json:"inTemplateId,omitempty"`
+	Region               string `json:"region,omitempty"`
 }
 
 // AdminCreateUserConfig represents the admin create user configuration for a user pool.
@@ -107,6 +148,16 @@ type VerificationMessageTemplate struct {
 // UserPoolAddOns represents advanced security configuration for a user pool.
 type UserPoolAddOns struct {
 	AdvancedSecurityMode string `json:"advancedSecurityMode,omitempty"`
+	// AdvancedSecurityAdditionalFlows holds the threat-protection
+	// configuration for authentication types beyond the standard flows,
+	// starting with custom authentication.
+	AdvancedSecurityAdditionalFlows *AdvancedSecurityAdditionalFlows `json:"advancedSecurityAdditionalFlows,omitempty"`
+}
+
+// AdvancedSecurityAdditionalFlows carries CustomAuthMode, the operating
+// mode of threat protection in custom authentication challenges.
+type AdvancedSecurityAdditionalFlows struct {
+	CustomAuthMode string `json:"customAuthMode,omitempty"`
 }
 
 // AccountRecoverySetting represents the account recovery setting for a user pool.
@@ -212,16 +263,34 @@ type User struct {
 	// CSV user import and cleared once the credentials migrate to the
 	// native bcrypt+SRP pair at first successful sign-in.
 	PasswordHashAlgo string `json:"passwordHashAlgo,omitempty"`
+	// PasswordHistory holds the bcrypt hashes of the user's previous
+	// passwords, most recent first, kept to the pool policy's
+	// PasswordHistorySize depth. The current password's hash lives in
+	// PasswordHash and heads the reuse check at password-set time.
+	PasswordHistory []string `json:"passwordHistory,omitempty"`
 	// SrpSalt is the hex-encoded 16-byte random salt used to derive the SRP
 	// verifier. It is sent to clients in the SALT ChallengeParameter.
 	SrpSalt string `json:"srpSalt,omitempty"`
 	// SrpVerifier is the hex-encoded SRP verifier v = g^x mod N. It is a
 	// long-term secret stored at password-set time and never sent to clients.
-	SrpVerifier                string                            `json:"srpVerifier,omitempty"`
-	Groups                     []string                          `json:"groups,omitempty"`
-	MFAOptions                 []*MFAOptionType                  `json:"mfaOptions,omitempty"`
-	ConfirmationCode           string                            `json:"confirmationCode,omitempty"`
-	ConfirmationCodeExpiry     time.Time                         `json:"confirmationCodeExpiry,omitempty"`
+	SrpVerifier string           `json:"srpVerifier,omitempty"`
+	Groups      []string         `json:"groups,omitempty"`
+	MFAOptions  []*MFAOptionType `json:"mfaOptions,omitempty"`
+	// Per-purpose verification codes: sign-up confirmation and password
+	// reset are independent flows, so each purpose owns its slot — a code
+	// issued for one flow can never satisfy another. Attribute verification
+	// keeps its own per-attribute map below.
+	SignUpCode          string    `json:"signUpCode,omitempty"`
+	SignUpCodeExpiry    time.Time `json:"signUpCodeExpiry,omitempty"`
+	PasswordResetCode   string    `json:"passwordResetCode,omitempty"`
+	PasswordResetExpiry time.Time `json:"passwordResetExpiry,omitempty"`
+	// MigratedAwaitingReset marks a user whose sign-ins must surface
+	// PasswordResetRequiredException until the forgot-password flow completes
+	// the reset: set by the UserMigration trigger's RESET_REQUIRED
+	// resolution and by AdminResetUserPassword, which deactivates every
+	// user's credentials — a CSV-imported user's any-password first sign-in
+	// takes the NEW_PASSWORD_REQUIRED challenge only until a reset.
+	MigratedAwaitingReset      bool                              `json:"migratedAwaitingReset,omitempty"`
 	SoftwareTokenMfa           *SoftwareTokenMfaSettings         `json:"softwareTokenMfa,omitempty"`
 	SmsMfa                     *SmsMfaSettings                   `json:"smsMfa,omitempty"`
 	EmailMfa                   *EmailMfaSettings                 `json:"emailMfa,omitempty"`
@@ -265,14 +334,26 @@ func (u *User) GetEmail() string {
 	return ""
 }
 
+// GetEmailVerified reports whether the user's email address is verified.
+// The stored attribute carries the string "true" when it is — the same
+// source the ID token's email_verified claim is derived from.
+func (u *User) GetEmailVerified() bool {
+	return u.Attributes != nil && u.Attributes["email_verified"] == "true"
+}
+
 // GetCustomClaims returns custom claims for JWT token generation.
 func (u *User) GetCustomClaims() map[string]interface{} {
 	claims := make(map[string]interface{})
 	if u.Attributes != nil {
 		for k, v := range u.Attributes {
-			if k != "email" && k != "sub" {
-				claims[k] = v
+			// email and sub travel as structured claims (GetEmail, Subject),
+			// and the verified flags are boolean-typed claim members — the
+			// stored attribute strings ("true"/"false") must not pass
+			// through, or the strict claims decoder rejects the token.
+			if k == "email" || k == "sub" || k == "email_verified" || k == "phone_number_verified" {
+				continue
 			}
+			claims[k] = v
 		}
 	}
 	return claims
@@ -290,6 +371,11 @@ type SoftwareTokenMfaSettings struct {
 	PreferredMfa bool   `json:"preferredMfa"`
 	SecretKey    string `json:"secretKey,omitempty"`
 	Verified     bool   `json:"verified,omitempty"`
+	// FailedAttempts counts wrong enrolment verification codes accepted for
+	// this registration. The access-token VerifySoftwareToken path carries
+	// no challenge session to budget on, so the registration itself holds
+	// the bound; a successful verification resets it.
+	FailedAttempts int `json:"failedAttempts,omitempty"`
 }
 
 // SmsMfaSettings represents SMS-based MFA settings for a user.
@@ -411,7 +497,7 @@ func NewUserPool(name string, region string) *UserPool {
 	return &UserPool{
 		ID:                     generateUserPoolID(region),
 		Name:                   name,
-		Status:                 "ACTIVE",
+		Status:                 UserPoolStatusEnabled,
 		CreationDate:           now,
 		LastModifiedDate:       now,
 		AliasAttributes:        []string{},
@@ -460,6 +546,11 @@ const (
 	DefaultRefreshTokenValidityDays   = 30
 )
 
+// UserPoolStatusEnabled is the single value a pool's Status member carries:
+// the model's StatusType enum offers Enabled | Disabled, pools are created
+// enabled, and no modelled operation transitions the value.
+const UserPoolStatusEnabled = "Enabled"
+
 // NewUserPoolClient creates a new Cognito user pool client for the specified user pool.
 func NewUserPoolClient(userPoolID, clientName string) *UserPoolClient {
 	now := time.Now().UTC()
@@ -469,20 +560,15 @@ func NewUserPoolClient(userPoolID, clientName string) *UserPoolClient {
 		ClientName:           clientName,
 		ClientSecret:         generateClientSecret(),
 		RefreshTokenValidity: DefaultRefreshTokenValidityDays,
-		AccessTokenValidity:  60,
+		AccessTokenValidity:  DefaultAccessTokenValidityMinutes,
 		IDTokenValidity:      DefaultIDTokenValidityMinutes,
 		ExplicitAuthFlows:    []string{"ALLOW_USER_SRP_AUTH", "ALLOW_REFRESH_TOKEN_AUTH"},
-		CreationDate:         now,
-		LastModifiedDate:     now,
+		// Token revocation is active on new app clients unless the create
+		// request explicitly deactivates it.
+		EnableTokenRevocation: true,
+		CreationDate:          now,
+		LastModifiedDate:      now,
 	}
-}
-
-func generateClientID() string {
-	return uuid.New().String()
-}
-
-func generateClientSecret() string {
-	return uuid.New().String() + uuid.New().String()
 }
 
 // NewRefreshToken creates a new Cognito refresh token.
@@ -528,15 +614,6 @@ func NewAccessToken(userPoolID, userID, clientID, scope string, expires time.Tim
 	}
 }
 
-func generateUserPoolID(region string) string {
-	id := uuid.New().String()
-	return region + "_" + id[:8]
-}
-
-func generateID() string {
-	return uuid.New().String()
-}
-
 // ChallengeSession represents a Cognito auth challenge session.
 type ChallengeSession struct {
 	SessionID     string    `json:"sessionId"`
@@ -560,18 +637,29 @@ type ChallengeSession struct {
 	// WEB_AUTHN_REGISTRATION: the WebAuthn challenge that the client must sign
 	// with their authenticator).
 	ChallengeData string `json:"challengeData,omitempty"`
+	// OTPCode is the one-time code generated when an SMS_MFA, SMS_OTP or
+	// EMAIL_OTP session is minted: the challenge answer is compared against
+	// this code alone, and the code dies with the session. It is never
+	// disclosed to clients — delivery travels the platform's message channel.
+	OTPCode string `json:"otpCode,omitempty"`
 	// RelyingPartyID stores the user pool relying party id under which a
 	// WEB_AUTHN_REGISTRATION challenge was issued, so the completion verifies
 	// origin and rpIdHash against the exact value offered at Start.
 	RelyingPartyID string `json:"relyingPartyId,omitempty"`
+	// DeviceKey binds a DEVICE_SRP_AUTH or DEVICE_PASSWORD_VERIFIER session
+	// to the tracked device the challenge was issued for, so the device
+	// verifier answer cannot be replayed against another device's session.
+	DeviceKey string `json:"deviceKey,omitempty"`
+	// ChallengeRole records whether the session was issued as the sign-in's
+	// second factor by the MFA machinery ("MFA") or as a client-selected
+	// primary challenge (""). WEB_AUTHN can play both roles; its answer
+	// applies the pool's MFA configuration only in the primary role, since
+	// in the MFA role the assertion itself is the second factor.
+	ChallengeRole string `json:"challengeRole,omitempty"`
 	// FailedAttempts counts wrong verification answers accepted for this
 	// session. Sessions exceeding the attempt budget are invalidated so
 	// short numeric codes cannot be brute-forced within one session.
 	FailedAttempts int `json:"failedAttempts,omitempty"`
-}
-
-func generateToken() string {
-	return uuid.New().String() + uuid.New().String()
 }
 
 // UserPoolDomain represents a custom domain assigned to a Cognito user pool.
@@ -678,10 +766,14 @@ type ChallengeResponsePair struct {
 }
 
 // ClientSecretDescriptor represents a client secret in multi-secret support.
+// Generated records whether the service minted the value (true) or the
+// caller supplied it (false) — the response shape reveals the value only on
+// the Add response of a generated secret.
 type ClientSecretDescriptor struct {
 	ClientSecretID         string    `json:"clientSecretId"`
 	ClientSecretValue      string    `json:"clientSecretValue"`
 	ClientSecretCreateDate time.Time `json:"clientSecretCreateDate"`
+	Generated              bool      `json:"generated,omitempty"`
 }
 
 // LogDeliveryConfiguration stores Cognito log delivery settings for a user pool.
@@ -797,15 +889,14 @@ type UserImportJob struct {
 
 // WebAuthnCredential represents a registered FIDO2/WebAuthn credential.
 type WebAuthnCredential struct {
-	CredentialID            string    `json:"credentialId"`
-	FriendlyName            string    `json:"friendlyName,omitempty"`
-	UserPoolID              string    `json:"userPoolId"`
-	UserID                  string    `json:"userId"`
-	PublicKey               string    `json:"publicKey"`
-	SignCount               uint32    `json:"signCount"`
-	RelyingPartyID          string    `json:"relyingPartyId,omitempty"`
-	AuthenticatorAttachment string    `json:"authenticatorAttachment,omitempty"`
-	CreatedAt               time.Time `json:"createdAt"`
+	CredentialID   string    `json:"credentialId"`
+	FriendlyName   string    `json:"friendlyName,omitempty"`
+	UserPoolID     string    `json:"userPoolId"`
+	UserID         string    `json:"userId"`
+	PublicKey      string    `json:"publicKey"`
+	SignCount      uint32    `json:"signCount"`
+	RelyingPartyID string    `json:"relyingPartyId,omitempty"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 // ManagedLoginBranding stores branding configuration for managed login.

@@ -19,6 +19,7 @@ package vsjwt
 import (
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"testing"
 	"time"
 
@@ -26,17 +27,19 @@ import (
 )
 
 type testUser struct {
-	id           string
-	username     string
-	groups       []string
-	email        string
-	customClaims map[string]interface{}
+	id            string
+	username      string
+	groups        []string
+	email         string
+	emailVerified bool
+	customClaims  map[string]interface{}
 }
 
 func (u *testUser) GetID() string                           { return u.id }
 func (u *testUser) GetUsername() string                     { return u.username }
 func (u *testUser) GetGroups() []string                     { return u.groups }
 func (u *testUser) GetEmail() string                        { return u.email }
+func (u *testUser) GetEmailVerified() bool                  { return u.emailVerified }
 func (u *testUser) GetCustomClaims() map[string]interface{} { return u.customClaims }
 
 func TestGenerateAndValidateAccessToken(t *testing.T) {
@@ -46,7 +49,7 @@ func TestGenerateAndValidateAccessToken(t *testing.T) {
 	}
 
 	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test"
-	manager := MustNewManager(privateKey, "test-key-id", issuer)
+	manager := mustNewManager(privateKey, "test-key-id", issuer)
 
 	user := &testUser{
 		id:       "user-123",
@@ -71,7 +74,7 @@ func TestGenerateAndValidateAccessToken(t *testing.T) {
 	if claims.Username != user.username {
 		t.Errorf("expected username %s, got %s", user.username, claims.Username)
 	}
-	if !claims.IsAccessToken() {
+	if claims.TokenUse != "access" {
 		t.Error("expected access token")
 	}
 }
@@ -83,7 +86,7 @@ func TestGenerateAndValidateIDToken(t *testing.T) {
 	}
 
 	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test"
-	manager := MustNewManager(privateKey, "test-key-id", issuer)
+	manager := mustNewManager(privateKey, "test-key-id", issuer)
 
 	user := &testUser{
 		id:       "user-123",
@@ -105,11 +108,49 @@ func TestGenerateAndValidateIDToken(t *testing.T) {
 	if claims.Subject != user.id {
 		t.Errorf("expected subject %s, got %s", user.id, claims.Subject)
 	}
-	if !claims.IsIDToken() {
+	if claims.TokenUse != "id" {
 		t.Error("expected ID token")
 	}
 	if !claims.HasAudience("client-456") {
 		t.Error("expected audience client-456")
+	}
+}
+
+// The ID token's email_verified claim follows the principal's email
+// state rather than defaulting to true: a verified email yields true,
+// an unverified one yields false (serialised as the claim's absence
+// under the omitempty encoding).
+func TestGenerateIDTokenEmailVerifiedDerivation(t *testing.T) {
+	privateKey, err := GenerateRSAKeyPair()
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+	manager := mustNewManager(privateKey, "test-key-id", "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test")
+
+	verified := &testUser{id: "u1", username: "verified", email: "v@example.com", emailVerified: true}
+	token, err := manager.GenerateIDToken(verified, "client", 3600)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+	claims, err := manager.ValidateToken(token)
+	if err != nil {
+		t.Fatalf("failed to validate token: %v", err)
+	}
+	if !claims.EmailVerified {
+		t.Error("verified principal's ID token lost email_verified")
+	}
+
+	unverified := &testUser{id: "u2", username: "unverified", email: "u@example.com", emailVerified: false}
+	token, err = manager.GenerateIDToken(unverified, "client", 3600)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+	claims, err = manager.ValidateToken(token)
+	if err != nil {
+		t.Fatalf("failed to validate token: %v", err)
+	}
+	if claims.EmailVerified {
+		t.Error("unverified principal's ID token claimed email_verified")
 	}
 }
 
@@ -120,7 +161,7 @@ func TestValidateWithWrongAudience(t *testing.T) {
 	}
 
 	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test"
-	manager := MustNewManager(privateKey, "test-key-id", issuer)
+	manager := mustNewManager(privateKey, "test-key-id", issuer)
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 
@@ -138,12 +179,12 @@ func TestValidateWithWrongIssuer(t *testing.T) {
 		t.Fatalf("failed to generate key: %v", err)
 	}
 
-	manager := MustNewManager(privateKey, "test-key-id", "https://correct-issuer.com")
+	manager := mustNewManager(privateKey, "test-key-id", "https://correct-issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	token, _ := manager.GenerateAccessToken(user, "client", 3600)
 
-	wrongManager := MustNewManagerWithPublicKey(&privateKey.PublicKey, "test-key-id", "https://wrong-issuer.com")
+	wrongManager := mustNewManagerWithPublicKey(&privateKey.PublicKey, "test-key-id", "https://wrong-issuer.com")
 
 	_, err = wrongManager.ValidateToken(token)
 	if err != ErrInvalidIssuer {
@@ -153,7 +194,7 @@ func TestValidateWithWrongIssuer(t *testing.T) {
 
 func TestCustomClaims(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManager(privateKey, "key-id", "https://issuer.com")
+	manager := mustNewManager(privateKey, "key-id", "https://issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	custom := map[string]interface{}{
@@ -181,7 +222,7 @@ func TestCustomClaims(t *testing.T) {
 
 func TestClockSkew(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManager(privateKey, "key-id", "https://issuer.com", WithClockSkew(5*time.Minute))
+	manager := mustNewManager(privateKey, "key-id", "https://issuer.com", WithClockSkew(5*time.Minute))
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	token, _ := manager.GenerateAccessToken(user, "client", 3600)
@@ -194,7 +235,7 @@ func TestClockSkew(t *testing.T) {
 
 func TestRefreshToken(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManager(privateKey, "key-id", "https://issuer.com")
+	manager := mustNewManager(privateKey, "key-id", "https://issuer.com")
 
 	token := manager.GenerateRefreshToken()
 	if len(token) < 30 {
@@ -204,7 +245,7 @@ func TestRefreshToken(t *testing.T) {
 
 func TestJWKS(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManager(privateKey, "my-key-id", "https://issuer.com")
+	manager := mustNewManager(privateKey, "my-key-id", "https://issuer.com")
 
 	jwks := manager.GetJWKS()
 	if len(jwks.Keys) != 1 {
@@ -258,7 +299,7 @@ func TestPEMEncoding(t *testing.T) {
 
 func TestNoPrivateKey(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManagerWithPublicKey(&privateKey.PublicKey, "key-id", "https://issuer.com")
+	manager := mustNewManagerWithPublicKey(&privateKey.PublicKey, "key-id", "https://issuer.com")
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	_, err := manager.GenerateAccessToken(user, "client", 3600)
@@ -274,72 +315,12 @@ func TestNewManagerWithPublicKeyNilKey(t *testing.T) {
 	}
 }
 
-func TestManagerGetters(t *testing.T) {
-	privateKey, _ := GenerateRSAKeyPair()
-	expectedIssuer := "https://issuer.com"
-	expectedKeyID := "my-key-id"
-	expectedClockSkew := 5 * time.Second
-
-	manager := MustNewManager(privateKey, expectedKeyID, expectedIssuer, WithClockSkew(expectedClockSkew))
-
-	if kid := manager.GetKeyID(); kid != expectedKeyID {
-		t.Errorf("expected keyID %s, got %s", expectedKeyID, kid)
-	}
-	if iss := manager.GetIssuer(); iss != expectedIssuer {
-		t.Errorf("expected issuer %s, got %s", expectedIssuer, iss)
-	}
-	if cs := manager.GetClockSkew(); cs != expectedClockSkew {
-		t.Errorf("expected clockSkew %v, got %v", expectedClockSkew, cs)
-	}
-}
-
-func TestGetTokenUse(t *testing.T) {
-	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManager(privateKey, "key-id", "https://issuer.com")
-
-	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
-
-	accessToken, _ := manager.GenerateAccessToken(user, "client", 3600)
-	accessClaims, _ := manager.ValidateToken(accessToken)
-	if use := accessClaims.GetTokenUse(); use != "access" {
-		t.Errorf("expected token use 'access', got %s", use)
-	}
-
-	idToken, _ := manager.GenerateIDToken(user, "client", 3600)
-	idClaims, _ := manager.ValidateToken(idToken)
-	if use := idClaims.GetTokenUse(); use != "id" {
-		t.Errorf("expected token use 'id', got %s", use)
-	}
-}
-
-func TestGetJWKSMap(t *testing.T) {
-	privateKey, _ := GenerateRSAKeyPair()
-	manager := MustNewManager(privateKey, "my-key-id", "https://issuer.com")
-
-	jwksMap := manager.GetJWKSMap()
-	keys, ok := jwksMap["keys"].([]map[string]interface{})
-	if !ok || len(keys) != 1 {
-		t.Fatalf("expected 1 key in map, got %v", keys)
-	}
-
-	key := keys[0]
-	if key["kid"] != "my-key-id" {
-		t.Errorf("expected kid=my-key-id, got %v", key["kid"])
-	}
-	if key["alg"] != "RS256" {
-		t.Errorf("expected alg=RS256, got %v", key["alg"])
-	}
-	if key["use"] != "sig" {
-		t.Errorf("expected use=sig, got %v", key["use"])
-	}
-}
-
 // --- Regression: token without exp must be rejected ---
 
 func TestValidateRejectsMissingExp(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
 	issuer := "https://issuer.com"
-	manager := MustNewManager(privateKey, "key-id", issuer)
+	manager := mustNewManager(privateKey, "key-id", issuer)
 
 	now := time.Now().UTC()
 	claims := &CognitoClaims{
@@ -370,7 +351,7 @@ func TestValidateRejectsMissingExp(t *testing.T) {
 func TestValidateRejectsNonRS256(t *testing.T) {
 	privateKey, _ := GenerateRSAKeyPair()
 	issuer := "https://issuer.com"
-	manager := MustNewManager(privateKey, "key-id", issuer)
+	manager := mustNewManager(privateKey, "key-id", issuer)
 
 	user := &testUser{id: "user-1", username: "test", groups: nil, email: ""}
 	token, err := manager.GenerateAccessToken(user, "client", 3600)
@@ -378,7 +359,7 @@ func TestValidateRejectsNonRS256(t *testing.T) {
 		t.Fatalf("failed to generate token: %v", err)
 	}
 
-	pubManager := MustNewManagerWithPublicKey(&privateKey.PublicKey, "key-id", issuer)
+	pubManager := mustNewManagerWithPublicKey(&privateKey.PublicKey, "key-id", issuer)
 
 	claims := &CognitoClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -431,5 +412,55 @@ func TestDecodeInvalidPEM(t *testing.T) {
 	_, err := DecodePrivateKeyFromPEM("not a PEM string")
 	if err != ErrInvalidPEMBlock {
 		t.Errorf("expected ErrInvalidPEMBlock, got %v", err)
+	}
+}
+
+func TestGenerateAccessTokenWithScopeCarriesScopeClaim(t *testing.T) {
+	privateKey, err := GenerateRSAKeyPair()
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+	manager := mustNewManager(privateKey, "test-key-id", "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test")
+
+	user := &testUser{id: "user-123", username: "alice"}
+	token, err := manager.GenerateAccessTokenWithScope(user, "client-123", "openid profile", 3600)
+	if err != nil {
+		t.Fatalf("failed to generate token: %v", err)
+	}
+
+	claims, err := manager.ValidateTokenForUse(token, "access", "")
+	if err != nil {
+		t.Fatalf("failed to validate token: %v", err)
+	}
+	if claims.Scope != "openid profile" {
+		t.Errorf("expected scope %q, got %q", "openid profile", claims.Scope)
+	}
+	if claims.TokenUse != "access" {
+		t.Error("expected access token")
+	}
+}
+
+func TestValidateTokenForUseRejectsTokenTypeConfusion(t *testing.T) {
+	privateKey, err := GenerateRSAKeyPair()
+	if err != nil {
+		t.Fatalf("failed to generate key: %v", err)
+	}
+	manager := mustNewManager(privateKey, "test-key-id", "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_test")
+
+	user := &testUser{id: "user-123", username: "alice"}
+	idToken, err := manager.GenerateIDToken(user, "client-123", 3600)
+	if err != nil {
+		t.Fatalf("failed to generate ID token: %v", err)
+	}
+
+	if _, err := manager.ValidateTokenForUse(idToken, "access", ""); !errors.Is(err, ErrUnexpectedTokenUse) {
+		t.Fatalf("expected ErrUnexpectedTokenUse, got %v", err)
+	}
+
+	if _, err := manager.ValidateTokenForUse(idToken, "id", "client-123"); err != nil {
+		t.Fatalf("expected ID token to validate for use id with matching audience: %v", err)
+	}
+	if _, err := manager.ValidateTokenForUse(idToken, "id", "other-client"); !errors.Is(err, ErrInvalidAudience) {
+		t.Fatalf("expected ErrInvalidAudience, got %v", err)
 	}
 }

@@ -1,6 +1,6 @@
 # Implemented Services
 
-**Last Updated**: 2026-09-09
+**Last Updated**: 2026-09-12
 **Total**: 35 AWS services — single source of truth for the supported-service count, per the AWS SDK service classification (Timestream Write and Timestream Query are separate SDK services)
 **SDK Tests**: over 3,000 passing (Go SDK, cross-service integration, and WebSocket suites; exact counts live in `sdk-tests/README.md`)
 
@@ -24,8 +24,8 @@
 | API Gateway | Broad | No client certificates, documentation parts, GetSdk, VpcLink, or domain name access associations |
 | CloudWatch Metrics | Broad | No metric streams or anomaly detection |
 | CloudWatch Logs | Selective | No Logs Insights queries or export |
-| Cognito IDP | Selective | No external IdP |
-| Cognito Identity | Selective | Identity pools only |
+| Cognito IDP | Selective | No external IdP; no Firehose log-delivery export |
+| Cognito Identity | Selective | Identity pools only; no external-IdP role-mapping claims |
 | DynamoDB | Broad | No ION import/export |
 | EventBridge | Broad | No global endpoints or partner event sources |
 | IAM | Broad | No policy-simulator family beyond `SimulatePrincipalPolicy` and `ListPoliciesGrantingServiceAccess`; no organisations integration, GetHumanReadableSummary, or delegation request APIs |
@@ -96,6 +96,10 @@ Platform behaviour detail and restrictions, including where AWS leaves behaviour
 - **Athena — TEST_MODE**: query execution history is purged at startup.
 - **CloudFront — viewer TLS serving**: SNI per distribution, from the attached ACM/IAM certificate.
 - **Cognito IDP — user-pool domains**: the four domain operations are implemented; domain entries resolve to the platform endpoint suffix (`<domain>.auth.<cognito_suffix>` with the region substituted) rather than AWS-hosted CloudFront domains, which cannot exist in an edge/on-premises deployment.
+- **Cognito IDP — imported users and SRP sign-in**: CSV-imported users carry an imported password hash and no SRP verifier; USER_SRP_AUTH rejects them with NotAuthorizedException until native credentials exist, while USER_PASSWORD_AUTH verifies the imported hash and transparently migrates the account to native bcrypt+SRP credentials. RESET_REQUIRED imports without a hash complete the migration through the NEW_PASSWORD_REQUIRED challenge or the forgot-password flow. AdminResetUserPassword deactivates imported credentials as well — every post-reset sign-in answers PasswordResetRequiredException until the forgot-password flow completes.
+- **Cognito IDP — log delivery destinations**: SetLogDeliveryConfiguration accepts all three destination members (CloudWatch Logs, S3, Firehose) and both event sources (userAuthEvents, userNotification) with the AWS contract enforced — the log level is bound to the event source (userNotification at ERROR, userAuthEvents at INFO), each configuration names exactly one destination, and userNotification goes to CloudWatch Logs alone. userAuthEvents records export to the CloudWatch Logs destination and to the S3 destination as per-event JSON objects under `AWSLogs/<account>/cognito-idp/<region>/<poolID>/`; userNotification records (message-delivery notifications on code delivery) export to the CloudWatch Logs destination alone. The Firehose destination is accepted and stored with delivery pending the platform Firehose service (the service is unimplemented — a missing-substrate carryover; delivery lands together with that service).
+- **Cognito IDP — machine-to-machine authorisation configuration**: the `ALLOW_CLIENT_TOKEN_AUTH` explicit authentication flow (required by GetClientToken) is accepted on the AWS API plane, where it must be the client's only flow; the admin console's generated proto predates the value and does not project it, so an M2M app client is configured through the AWS API plane alone.
+- **Cognito Identity — role-mapping claim source**: role mappings read claims from linked platform user-pool ID tokens — Logins keys of the issuer form `cognito-idp.<region>.amazonaws.com/<poolID>`, validated by signature, issuer and token_use; the ID token derives its `cognito:roles` and `cognito:preferred_role` claims from the IAM roles of the user's groups (highest precedence nominates the preferred role). A login under any other provider name belongs to an external identity provider, which the platform does not implement: it carries no verifiable token, contributes no claims, and the mapping's AmbiguousRoleResolution governs (fail-closed under Deny). Principal-tag attribute maps feed session tags on the issued credentials — custom mappings take their values from the mapped ID-token claims, and UseDefaults applies the aud and sub defaults (app client ID and user ID) — and do not feed role resolution.
 - **DynamoDB — Streams and Global Tables**: implemented with multi-active replication.
 - **IAM — GetHumanReadableSummary**: excluded; the summary requires external LLM generation.
 - **Kinesis — SubscribeToShard heartbeat interval**: 15 s (provisional; AWS does not document the exact value).

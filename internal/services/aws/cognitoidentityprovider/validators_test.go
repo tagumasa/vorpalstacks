@@ -205,6 +205,91 @@ func TestValidateArnType(t *testing.T) {
 	}
 }
 
+// TestParseListLimitsPerShapeBoundaries pins the unified list-limit
+// handling: both parsers carry the per-shape maximum, treat an absent
+// member as the documented default (which equals the shape maximum), and
+// reject out-of-range values. The strict form additionally rejects an
+// explicit zero; the lenient form reads zero as the default.
+func TestParseListLimitsPerShapeBoundaries(t *testing.T) {
+	lenient := []struct {
+		name    string
+		params  map[string]interface{}
+		want    int
+		wantErr bool
+	}{
+		{"absent selects the maximum", nil, listLimitMax, false},
+		{"explicit zero selects the default", map[string]interface{}{"Limit": 0}, listLimitMax, false},
+		{"boundary value accepted", map[string]interface{}{"Limit": listLimitMax}, listLimitMax, false},
+		{"above the shape maximum rejected", map[string]interface{}{"Limit": listLimitMax + 1}, 0, true},
+		{"negative rejected", map[string]interface{}{"Limit": -1}, 0, true},
+	}
+	for _, tc := range lenient {
+		got, err := parseListLimit(tc.params, "Limit", listLimitMax)
+		if tc.wantErr != (err != nil) {
+			t.Errorf("parseListLimit %s: err = %v, want error %v", tc.name, err, tc.wantErr)
+			continue
+		}
+		if !tc.wantErr && got != tc.want {
+			t.Errorf("parseListLimit %s: got %d, want %d", tc.name, got, tc.want)
+		}
+	}
+
+	strict := []struct {
+		name    string
+		params  map[string]interface{}
+		want    int
+		wantErr bool
+	}{
+		{"absent selects the maximum", nil, listLimitMax, false},
+		{"lower boundary accepted", map[string]interface{}{"MaxResults": 1}, 1, false},
+		{"boundary value accepted", map[string]interface{}{"MaxResults": listLimitMax}, listLimitMax, false},
+		{"explicit zero rejected", map[string]interface{}{"MaxResults": 0}, 0, true},
+		{"above the shape maximum rejected", map[string]interface{}{"MaxResults": listLimitMax + 1}, 0, true},
+		{"negative rejected", map[string]interface{}{"MaxResults": -1}, 0, true},
+	}
+	for _, tc := range strict {
+		got, err := parseStrictListLimit(tc.params, "MaxResults", listLimitMax)
+		if tc.wantErr != (err != nil) {
+			t.Errorf("parseStrictListLimit %s: err = %v, want error %v", tc.name, err, tc.wantErr)
+			continue
+		}
+		if !tc.wantErr && got != tc.want {
+			t.Errorf("parseStrictListLimit %s: got %d, want %d", tc.name, got, tc.want)
+		}
+	}
+
+	// A shape with a smaller maximum enforces its own bound, not the
+	// shared one (WebAuthnCredentialsQueryLimitType vs ListResourceServersLimitType).
+	if got, err := parseListLimit(map[string]interface{}{"MaxResults": maxWebAuthnCredentialListLimit}, "MaxResults", maxWebAuthnCredentialListLimit); err != nil || got != maxWebAuthnCredentialListLimit {
+		t.Errorf("parseListLimit at the WebAuthn maximum: got %d, err %v", got, err)
+	}
+	if _, err := parseListLimit(map[string]interface{}{"MaxResults": maxWebAuthnCredentialListLimit + 1}, "MaxResults", maxWebAuthnCredentialListLimit); err == nil {
+		t.Error("parseListLimit accepted a value above the WebAuthn maximum")
+	}
+	if got, err := parseStrictListLimit(map[string]interface{}{"MaxResults": maxResourceServersListLimit}, "MaxResults", maxResourceServersListLimit); err != nil || got != maxResourceServersListLimit {
+		t.Errorf("parseStrictListLimit at the resource-server maximum: got %d, err %v", got, err)
+	}
+	if _, err := parseStrictListLimit(map[string]interface{}{"MaxResults": maxResourceServersListLimit + 1}, "MaxResults", maxResourceServersListLimit); err == nil {
+		t.Error("parseStrictListLimit accepted a value above the resource-server maximum")
+	}
+}
+
+// TestValidateDeviceRememberedStatus pins the Smithy
+// DeviceRememberedStatusType enum: exactly the two lowercase wire values
+// are accepted.
+func TestValidateDeviceRememberedStatus(t *testing.T) {
+	for _, s := range []string{"remembered", "not_remembered"} {
+		if !validateDeviceRememberedStatus(s) {
+			t.Errorf("%q rejected", s)
+		}
+	}
+	for _, s := range []string{"", "REMEMBERED", "Remembered", "not-remembered", "forgotten"} {
+		if validateDeviceRememberedStatus(s) {
+			t.Errorf("%q accepted", s)
+		}
+	}
+}
+
 // TestValidatePasswordSymbolClassification pins that the symbol requirement
 // is satisfied only by the special characters AWS documents (plus
 // non-leading, non-trailing spaces), while non-basic-Latin letters satisfy

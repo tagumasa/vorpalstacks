@@ -60,7 +60,7 @@ func seedMergeFixture(t *testing.T, store *cognitoidentitystore.CognitoIdentityS
 		{DeveloperUserIdentifier: fixture.sourceUser, DeveloperProviderName: fixture.provider, IdentityPoolID: pool.ID, IdentityID: sourceIdentity.ID},
 		{DeveloperUserIdentifier: fixture.destUser, DeveloperProviderName: fixture.provider, IdentityPoolID: pool.ID, IdentityID: destIdentity.ID},
 	} {
-		if err := store.LinkDeveloperIdentity(link); err != nil {
+		if _, err := store.EnsureDeveloperIdentity(link.IdentityPoolID, link.DeveloperProviderName, link.DeveloperUserIdentifier, link.IdentityID); err != nil {
 			t.Fatalf("link developer identity: %v", err)
 		}
 	}
@@ -72,6 +72,7 @@ func seedMergeFixture(t *testing.T, store *cognitoidentitystore.CognitoIdentityS
 func TestGetOpenIdTokenForDeveloperIdentityConcurrentSingleIdentity(t *testing.T) {
 	svc, real := newMergeTestService(t)
 	pool := cognitoidentitystore.NewIdentityPool("dev-pool", false, "us-east-1")
+	pool.DeveloperProviderName = "login.example.com"
 	if _, err := real.CreateIdentityPool(pool); err != nil {
 		t.Fatalf("create pool: %v", err)
 	}
@@ -188,5 +189,124 @@ func TestLookupDeveloperIdentityResultCarriesOnlyModelMembers(t *testing.T) {
 	}
 	if bare["NextToken"] != "next" {
 		t.Fatalf("NextToken mismatch: %v", bare["NextToken"])
+	}
+}
+
+// A Logins key that does not match the pool's configured developer provider
+// domain is rejected with InvalidParameterException.
+func TestGetOpenIdTokenForDeveloperIdentityMismatchedProviderName(t *testing.T) {
+	svc, real := newMergeTestService(t)
+	pool := cognitoidentitystore.NewIdentityPool("domain-pool", false, "us-east-1")
+	pool.DeveloperProviderName = "login.example.com"
+	if _, err := real.CreateIdentityPool(pool); err != nil {
+		t.Fatalf("create pool: %v", err)
+	}
+
+	_, err := svc.GetOpenIdTokenForDeveloperIdentity(context.Background(),
+		&request.RequestContext{Region: "us-east-1"},
+		&request.ParsedRequest{Parameters: map[string]interface{}{
+			"IdentityPoolId": pool.ID,
+			"Logins":         map[string]interface{}{"other.example.com": "user-1"},
+		}})
+	if !errors.Is(err, ErrInvalidParameter) {
+		t.Fatalf("mismatched developer provider name returned %v, want InvalidParameterException", err)
+	}
+
+	// A pool without a configured developer provider domain rejects the call
+	// the same way: no developer entry can match.
+	bare := cognitoidentitystore.NewIdentityPool("bare-pool", false, "us-east-1")
+	if _, err := real.CreateIdentityPool(bare); err != nil {
+		t.Fatalf("create bare pool: %v", err)
+	}
+	_, err = svc.GetOpenIdTokenForDeveloperIdentity(context.Background(),
+		&request.RequestContext{Region: "us-east-1"},
+		&request.ParsedRequest{Parameters: map[string]interface{}{
+			"IdentityPoolId": bare.ID,
+			"Logins":         map[string]interface{}{"login.example.com": "user-1"},
+		}})
+	if !errors.Is(err, ErrInvalidParameter) {
+		t.Fatalf("pool without a developer provider returned %v, want InvalidParameterException", err)
+	}
+}
+
+// Public-provider logins supplied alongside the developer entry are linked
+// to the resolved identity — the implicit linked account of the model's
+// multiple-logins contract.
+func TestGetOpenIdTokenForDeveloperIdentityMixedLoginsLinkPublicProviders(t *testing.T) {
+	svc, real := newMergeTestService(t)
+	pool := cognitoidentitystore.NewIdentityPool("mixed-pool", false, "us-east-1")
+	pool.DeveloperProviderName = "login.example.com"
+	if _, err := real.CreateIdentityPool(pool); err != nil {
+		t.Fatalf("create pool: %v", err)
+	}
+
+	resp, err := svc.GetOpenIdTokenForDeveloperIdentity(context.Background(),
+		&request.RequestContext{Region: "us-east-1"},
+		&request.ParsedRequest{Parameters: map[string]interface{}{
+			"IdentityPoolId": pool.ID,
+			"Logins": map[string]interface{}{
+				"login.example.com":  "mixed-user",
+				"graph.facebook.com": "fb-token",
+			},
+		}})
+	if err != nil {
+		t.Fatalf("GetOpenIdTokenForDeveloperIdentity with mixed logins: %v", err)
+	}
+	mapped, ok := resp.(map[string]interface{})
+	if !ok {
+		t.Fatal("unexpected response shape")
+	}
+	identityID, _ := mapped["IdentityId"].(string)
+	if identityID == "" {
+		t.Fatal("response carries no IdentityId")
+	}
+	identity, err := real.GetIdentity(pool.ID, identityID)
+	if err != nil {
+		t.Fatalf("resolved identity vanished: %v", err)
+	}
+	if identity.Logins["graph.facebook.com"] != "fb-token" {
+		t.Fatalf("public login was not linked to the identity: %v", identity.Logins)
+	}
+}
+
+// DeleteIdentities reports every failure with the model's ErrorCode enum: a
+// missing identity is AccessDenied, and an identity that deletes cleanly
+// never appears in the list.
+func TestDeleteIdentitiesUnprocessedCarriesErrorCode(t *testing.T) {
+	svc, real := newMergeTestService(t)
+	pool, err := real.CreateIdentityPool(cognitoidentitystore.NewIdentityPool("delete-errors", false, "us-east-1"))
+	if err != nil {
+		t.Fatalf("create pool: %v", err)
+	}
+	identity := cognitoidentitystore.NewIdentity(pool.ID)
+	if err := real.CreateIdentity(identity); err != nil {
+		t.Fatalf("create identity: %v", err)
+	}
+	const unknownID = "us-east-1:0123456789abcdef0123456789abcdef01234567"
+
+	unprocessed, err := svc.deleteIdentitiesCore(&request.RequestContext{Region: "us-east-1"}, DeleteIdentitiesInput{
+		IdentityIDs: []string{identity.ID, unknownID},
+	})
+	if err != nil {
+		t.Fatalf("DeleteIdentities: %v", err)
+	}
+	if len(unprocessed) != 1 {
+		t.Fatalf("want exactly the unknown identity unprocessed, got %#v", unprocessed)
+	}
+	if unprocessed[0].IdentityID != unknownID || unprocessed[0].ErrorCode != "AccessDenied" {
+		t.Fatalf("unprocessed entry = %#v, want ErrorCode AccessDenied for the unknown identity", unprocessed[0])
+	}
+}
+
+// An unknown pool surfaces as GetOpenIdTokenForDeveloperIdentity's
+// ResourceNotFoundException, never as an internal error.
+func TestGetOpenIdTokenForDeveloperIdentityUnknownPoolIsResourceNotFound(t *testing.T) {
+	svc, _ := newMergeTestService(t)
+	_, err := svc.getOpenIdTokenForDeveloperIdentityCore(&request.RequestContext{Region: "us-east-1"}, GetOpenIdTokenForDeveloperIdentityInput{
+		IdentityPoolID: "us-east-1:0123456789abcdef0123456789abcdef01234567",
+		Logins:         map[string]string{"login.example.com": "user-token"},
+	})
+	if !errors.Is(err, ErrResourceNotFound) {
+		t.Fatalf("unknown pool returned %v, want ResourceNotFoundException", err)
 	}
 }

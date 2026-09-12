@@ -57,3 +57,8 @@ var ErrNotRSAPublicKey = errors.New("PEM block does not contain an RSA public ke
 // ErrInvalidKeySize is returned when an RSA key has fewer than 2048 bits,
 // which is below the minimum required for RS256 signing per AWS Cognito spec.
 var ErrInvalidKeySize = errors.New("RSA key must be at least 2048 bits")
+
+// ErrUnexpectedTokenUse is returned when the token's token_use claim does
+// not match the use the validation entry point was asked to enforce, e.g.
+// an ID token presented where an access token is required.
+var ErrUnexpectedTokenUse = errors.New("unexpected token use")

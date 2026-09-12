@@ -102,13 +102,3 @@ func defaultIfEmpty(val, def string) string {
 	}
 	return val
 }
-
-// isValidAccountTakeoverAction validates against the Smithy enum
-// AccountTakeoverEventActionType: BLOCK, MFA_IF_CONFIGURED, MFA_REQUIRED, NO_ACTION.
-func isValidAccountTakeoverAction(action string) bool {
-	switch action {
-	case "BLOCK", "MFA_IF_CONFIGURED", "MFA_REQUIRED", "NO_ACTION":
-		return true
-	}
-	return false
-}

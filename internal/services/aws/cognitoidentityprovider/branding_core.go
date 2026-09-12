@@ -2,6 +2,7 @@ package cognitoidentityprovider
 
 import (
 	"encoding/base64"
+	"errors"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -66,9 +67,22 @@ func (s *CognitoService) createManagedLoginBrandingCore(reqCtx *request.RequestC
 	if _, err := store.GetUserPool(in.UserPoolID); err != nil {
 		return nil, ErrResourceNotFound
 	}
+	// The branded client must reference an existing app client: the model
+	// reports an unknown ClientId as ResourceNotFoundException.
+	if _, err := store.GetUserPoolClient(in.UserPoolID, in.ClientID); err != nil {
+		if errors.Is(err, cognitostore.ErrClientNotFound) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalError
+	}
 
-	// An app client can only ever have one assigned branding style.
-	if _, err := store.GetManagedLoginBrandingByClient(in.UserPoolID, in.ClientID); err == nil {
+	// An app client can only ever have one assigned branding style; only a
+	// clean not-found reads as absence — a storage failure fails closed.
+	existing, err := store.GetManagedLoginBrandingByClient(in.UserPoolID, in.ClientID)
+	if err != nil && !errors.Is(err, cognitostore.ErrNotFound) {
+		return nil, ErrInternalError
+	}
+	if existing != nil {
 		return nil, ErrManagedLoginBrandingExists
 	}
 
@@ -132,7 +146,10 @@ func (s *CognitoService) describeManagedLoginBrandingByClientCore(reqCtx *reques
 
 	b, err := store.GetManagedLoginBrandingByClient(in.UserPoolID, in.ClientID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		if errors.Is(err, cognitostore.ErrNotFound) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalError
 	}
 
 	return map[string]interface{}{"ManagedLoginBranding": formatManagedLoginBranding(b)}, nil
@@ -175,7 +192,9 @@ func (s *CognitoService) updateManagedLoginBrandingCore(reqCtx *request.RequestC
 }
 
 // deleteManagedLoginBrandingCore deletes a managed login branding
-// configuration.
+// configuration. The operation's error surface reports a missing style as
+// ResourceNotFoundException, so the delete is guarded by an existence check
+// instead of silently succeeding on an absent record.
 func (s *CognitoService) deleteManagedLoginBrandingCore(reqCtx *request.RequestContext, in DeleteManagedLoginBrandingInput) (interface{}, error) {
 	if in.UserPoolID == "" || in.ManagedLoginBrandingID == "" {
 		return nil, ErrInvalidParameter
@@ -184,6 +203,10 @@ func (s *CognitoService) deleteManagedLoginBrandingCore(reqCtx *request.RequestC
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	if _, err := store.GetManagedLoginBranding(in.UserPoolID, in.ManagedLoginBrandingID); err != nil {
+		return nil, ErrResourceNotFound
 	}
 
 	if err := store.DeleteManagedLoginBranding(in.UserPoolID, in.ManagedLoginBrandingID); err != nil {
@@ -213,7 +236,6 @@ var assetMagicBytes = map[string][]byte{
 	"PNG":  {0x89, 0x50, 0x4E, 0x47},
 	"JPEG": {0xFF, 0xD8, 0xFF},
 	"ICO":  {0x00, 0x00, 0x01, 0x00},
-	"GIF":  {0x47, 0x49, 0x46, 0x38},
 }
 
 func parseBrandingAssets(params map[string]interface{}, b *cognitostore.ManagedLoginBranding) error {
@@ -222,7 +244,7 @@ func parseBrandingAssets(params map[string]interface{}, b *cognitostore.ManagedL
 		for _, a := range rawAssets {
 			m, ok := a.(map[string]interface{})
 			if !ok {
-				continue
+				return ErrInvalidParameter
 			}
 			category := getStringParam(m, "Category")
 			extension := getStringParam(m, "Extension")
@@ -241,12 +263,16 @@ func parseBrandingAssets(params map[string]interface{}, b *cognitostore.ManagedL
 			bytesVal := getStringParam(m, "Bytes")
 			if bytesVal != "" && extension != "" {
 				if magic, ok := assetMagicBytes[extension]; ok {
+					// An undecodable payload, or one shorter than the
+					// extension's magic bytes, is a malformed asset — the
+					// entry is rejected rather than silently carried.
 					decoded, err := base64.StdEncoding.DecodeString(bytesVal)
-					if err == nil && len(decoded) >= len(magic) {
-						for i, b := range magic {
-							if decoded[i] != b {
-								return ErrInvalidParameter
-							}
+					if err != nil || len(decoded) < len(magic) {
+						return ErrInvalidParameter
+					}
+					for i, b := range magic {
+						if decoded[i] != b {
+							return ErrInvalidParameter
 						}
 					}
 				}

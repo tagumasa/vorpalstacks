@@ -15,16 +15,17 @@ func (s *CognitoStore) ListUserPoolClientsPaginated(userPoolID string, opts comm
 
 // CreateUserPoolClient creates a new Cognito user pool client.
 func (s *CognitoStore) CreateUserPoolClient(client *UserPoolClient) error {
-	s.createMu.Lock()
-	defer s.createMu.Unlock()
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
 	if client.ClientName == "" {
 		return ErrInvalidParameter
 	}
 
+	// The client ID is generated at construction, so the record key is
+	// unique by construction; duplicate client names remain addressable
+	// alongside each other, exactly as the create operation's modelled
+	// error surface defines no duplicate rejection.
 	key := userPoolClientKey(client.UserPoolID, client.ClientID)
-	if s.clientsStore.Exists(key) {
-		return ErrClientAlreadyExists
-	}
 
 	now := time.Now().UTC()
 	client.CreationDate = now
@@ -43,7 +44,10 @@ func (s *CognitoStore) GetUserPoolClient(userPoolID, clientID string) (*UserPool
 	key := userPoolClientKey(userPoolID, clientID)
 	var client UserPoolClient
 	if err := s.clientsStore.Get(key, &client); err != nil {
-		return nil, ErrClientNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrClientNotFound
+		}
+		return nil, err
 	}
 	return &client, nil
 }
@@ -71,14 +75,39 @@ func (s *CognitoStore) GetUserPoolClientByName(userPoolID, clientName string) (*
 	return found, nil
 }
 
-// UpdateUserPoolClient updates an existing Cognito user pool client.
+// UpdateUserPoolClient updates an existing Cognito user pool client,
+// serialised with the client's other record writes.
 func (s *CognitoStore) UpdateUserPoolClient(client *UserPoolClient) error {
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
 	key := userPoolClientKey(client.UserPoolID, client.ClientID)
 	if !s.clientsStore.Exists(key) {
 		return ErrClientNotFound
 	}
 	client.LastModifiedDate = time.Now().UTC()
 	return s.clientsStore.Put(key, client)
+}
+
+// UpdateUserPoolClientFunc reads the client, applies mutate and persists the
+// result as one serialised mutation: concurrent mutations of the same client
+// (secret additions, configuration updates) cannot lose each other's
+// changes. A mutate error aborts without writing.
+func (s *CognitoStore) UpdateUserPoolClientFunc(userPoolID, clientID string, mutate func(*UserPoolClient) error) error {
+	s.recordMu.Lock()
+	defer s.recordMu.Unlock()
+	key := userPoolClientKey(userPoolID, clientID)
+	var client UserPoolClient
+	if err := s.clientsStore.Get(key, &client); err != nil {
+		if common.IsNotFound(err) {
+			return ErrClientNotFound
+		}
+		return err
+	}
+	if err := mutate(&client); err != nil {
+		return err
+	}
+	client.LastModifiedDate = time.Now().UTC()
+	return s.clientsStore.Put(key, &client)
 }
 
 // DeleteUserPoolClient deletes a Cognito user pool client.
@@ -110,32 +139,15 @@ func (s *CognitoStore) ListUserPoolClients(userPoolID string) ([]*UserPoolClient
 	return clients, nil
 }
 
-// GetUserPoolByClientID retrieves the user pool associated with a client ID.
+// GetUserPoolByClientID retrieves the user pool associated with a client ID
+// through the client index written at creation.
 func (s *CognitoStore) GetUserPoolByClientID(clientID string) (*UserPool, error) {
-	// Use secondary index for O(1) lookup.
 	var poolID string
-	if err := s.clientsStore.Get(clientIndexKey(clientID), &poolID); err == nil && poolID != "" {
-		return s.GetUserPool(poolID)
-	}
-	// Fallback: full scan for legacy clients without index
-	pools, err := s.ListUserPools()
-	if err != nil {
+	if err := s.clientsStore.Get(clientIndexKey(clientID), &poolID); err != nil {
+		if common.IsNotFound(err) {
+			return nil, ErrClientNotFound
+		}
 		return nil, err
 	}
-
-	for _, pool := range pools {
-		clients, err := s.ListUserPoolClients(pool.ID)
-		if err != nil {
-			continue
-		}
-		for _, client := range clients {
-			if client.ClientID == clientID {
-				// Backfill index
-				_ = s.clientsStore.Put(clientIndexKey(clientID), pool.ID)
-				return pool, nil
-			}
-		}
-	}
-
-	return nil, ErrClientNotFound
+	return s.GetUserPool(poolID)
 }

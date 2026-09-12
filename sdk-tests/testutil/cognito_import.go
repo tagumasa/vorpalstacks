@@ -236,6 +236,9 @@ func (r *TestRunner) runUserImportFlowTest(tc *cognitoIDPContext) error {
 	for _, a := range userResp.UserAttributes {
 		attrs[aws.ToString(a.Name)] = aws.ToString(a.Value)
 	}
+	if attrs["sub"] == "" {
+		return fmt.Errorf("imported user carries no sub attribute")
+	}
 	if attrs["custom:rank"] != "gold" {
 		return fmt.Errorf("custom:rank = %q, want gold", attrs["custom:rank"])
 	}

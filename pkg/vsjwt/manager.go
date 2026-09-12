@@ -73,23 +73,22 @@ func NewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...Manage
 	return m, nil
 }
 
-// MustNewManager is a convenience wrapper around NewManager that panics on
-// error.  It is intended for use in tests and initialisation code where a
-// failure indicates a programming error.
-func MustNewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...ManagerOption) *Manager {
+// mustNewManager wraps NewManager, panicking on error; it serves the
+// package's own tests, where a construction failure is a programming error.
+func mustNewManager(privateKey *rsa.PrivateKey, keyID, issuer string, opts ...ManagerOption) *Manager {
 	m, err := NewManager(privateKey, keyID, issuer, opts...)
 	if err != nil {
-		panic(fmt.Sprintf("vsjwt: MustNewManager: %v", err))
+		panic(fmt.Sprintf("vsjwt: mustNewManager: %v", err))
 	}
 	return m
 }
 
-// MustNewManagerWithPublicKey is a convenience wrapper around
-// NewManagerWithPublicKey that panics on error.
-func MustNewManagerWithPublicKey(publicKey *rsa.PublicKey, keyID, issuer string, opts ...ManagerOption) *Manager {
+// mustNewManagerWithPublicKey wraps NewManagerWithPublicKey, panicking on
+// error; it serves the package's own tests.
+func mustNewManagerWithPublicKey(publicKey *rsa.PublicKey, keyID, issuer string, opts ...ManagerOption) *Manager {
 	m, err := NewManagerWithPublicKey(publicKey, keyID, issuer, opts...)
 	if err != nil {
-		panic(fmt.Sprintf("vsjwt: MustNewManagerWithPublicKey: %v", err))
+		panic(fmt.Sprintf("vsjwt: mustNewManagerWithPublicKey: %v", err))
 	}
 	return m
 }
@@ -123,6 +122,18 @@ func (m *Manager) GenerateAccessToken(user JWTUser, clientID string, expiresIn i
 
 // GenerateAccessTokenWithClaims generates an access token with additional custom claims.
 func (m *Manager) GenerateAccessTokenWithClaims(user JWTUser, clientID string, expiresIn int64, customClaims map[string]interface{}) (string, error) {
+	return m.generateAccessToken(user, clientID, expiresIn, "", customClaims)
+}
+
+// GenerateAccessTokenWithScope generates an access token carrying the
+// standard scope claim. The scope is the space-joined set of scopes granted
+// to the client, the value the AWS token endpoint returns on the access
+// token's scope claim for the app client's enabled scopes.
+func (m *Manager) GenerateAccessTokenWithScope(user JWTUser, clientID, scope string, expiresIn int64) (string, error) {
+	return m.generateAccessToken(user, clientID, expiresIn, scope, nil)
+}
+
+func (m *Manager) generateAccessToken(user JWTUser, clientID string, expiresIn int64, scope string, customClaims map[string]interface{}) (string, error) {
 	if m.privateKey == nil {
 		return "", ErrNoPrivateKey
 	}
@@ -149,6 +160,7 @@ func (m *Manager) GenerateAccessTokenWithClaims(user JWTUser, clientID string, e
 		Username: user.GetUsername(),
 		Groups:   user.GetGroups(),
 		ClientID: clientID,
+		Scope:    scope,
 		TokenUse: "access",
 		AuthTime: now.Unix(),
 		custom:   mergedClaims,
@@ -196,11 +208,13 @@ func (m *Manager) GenerateIDTokenWithClaims(user JWTUser, clientID string, expir
 			ID:        uuid.New().String(),
 			Audience:  jwt.ClaimStrings{clientID},
 		},
-		Username:      user.GetUsername(),
-		Groups:        user.GetGroups(),
-		TokenUse:      "id",
-		AuthTime:      now.Unix(),
-		EmailVerified: true,
+		Username: user.GetUsername(),
+		Groups:   user.GetGroups(),
+		TokenUse: "id",
+		AuthTime: now.Unix(),
+		// The verified flag derives from the principal's email state —
+		// AWS derives the ID token's claim from the user's attribute.
+		EmailVerified: user.GetEmailVerified(),
 		custom:        mergedClaims,
 	}
 
@@ -253,6 +267,22 @@ func (m *Manager) ValidateTokenWithAudience(tokenString, expectedAudience string
 	return claims, nil
 }
 
+// ValidateTokenForUse validates a JWT token and enforces the expected
+// token_use claim, plus the audience when expectedAudience is non-empty.
+// Token-type confusion - an ID token accepted where an access token is
+// required - is prevented here at the package boundary instead of by
+// per-consumer re-checks.
+func (m *Manager) ValidateTokenForUse(tokenString, expectedTokenUse, expectedAudience string) (*CognitoClaims, error) {
+	claims, err := m.ValidateTokenWithAudience(tokenString, expectedAudience)
+	if err != nil {
+		return nil, err
+	}
+	if claims.TokenUse != expectedTokenUse {
+		return nil, ErrUnexpectedTokenUse
+	}
+	return claims, nil
+}
+
 func (m *Manager) validateClaims(claims *CognitoClaims, expectedAudience string) error {
 	if claims.Issuer != m.issuer {
 		return ErrInvalidIssuer
@@ -269,19 +299,4 @@ func (m *Manager) validateClaims(claims *CognitoClaims, expectedAudience string)
 	}
 
 	return nil
-}
-
-// GetKeyID returns the key ID (kid) used in the JWT header.
-func (m *Manager) GetKeyID() string {
-	return m.keyID
-}
-
-// GetIssuer returns the issuer (iss) claim value.
-func (m *Manager) GetIssuer() string {
-	return m.issuer
-}
-
-// GetClockSkew returns the configured clock skew duration.
-func (m *Manager) GetClockSkew() time.Duration {
-	return m.clockSkew
 }

@@ -29,6 +29,7 @@ type JWTUser interface {
 	GetUsername() string
 	GetGroups() []string
 	GetEmail() string
+	GetEmailVerified() bool
 	GetCustomClaims() map[string]interface{}
 }
 
@@ -131,6 +132,18 @@ func (c *CognitoClaims) GetCustomClaimString(key string) string {
 	return ""
 }
 
+// CustomClaims returns the claim set outside the standard and Cognito
+// members — the attributes a consumer such as identity-pool role mapping
+// matches against. The returned map is a copy; the caller may not modify the
+// claims through it.
+func (c *CognitoClaims) CustomClaims() map[string]interface{} {
+	out := make(map[string]interface{}, len(c.custom))
+	for k, v := range c.custom {
+		out[k] = v
+	}
+	return out
+}
+
 // HasAudience checks if the given audience is in the token's audience claim.
 func (c *CognitoClaims) HasAudience(aud string) bool {
 	for _, a := range c.Audience {
@@ -139,19 +152,4 @@ func (c *CognitoClaims) HasAudience(aud string) bool {
 		}
 	}
 	return false
-}
-
-// GetTokenUse returns the token type (access, id, or refresh).
-func (c *CognitoClaims) GetTokenUse() string {
-	return c.TokenUse
-}
-
-// IsAccessToken returns true if the token is an access token.
-func (c *CognitoClaims) IsAccessToken() bool {
-	return c.TokenUse == "access"
-}
-
-// IsIDToken returns true if the token is an ID token.
-func (c *CognitoClaims) IsIDToken() bool {
-	return c.TokenUse == "id"
 }

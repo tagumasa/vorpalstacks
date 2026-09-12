@@ -99,15 +99,10 @@ func (s *CognitoIdentityService) getOpenIdTokenForDeveloperIdentityCore(reqCtx *
 		return nil, ErrInvalidParameter
 	}
 
-	if len(in.Logins) == 0 {
+	if !validateMapSize(len(in.Logins), maxLoginsPerRequest) || !validateLoginsKeys(in.Logins) {
 		return nil, ErrInvalidParameter
 	}
 	if !validateLoginsValues(in.Logins) {
-		return nil, ErrInvalidParameter
-	}
-
-	// AWS expects exactly one Login entry per request (1 developer user).
-	if len(in.Logins) != 1 {
 		return nil, ErrInvalidParameter
 	}
 
@@ -116,8 +111,28 @@ func (s *CognitoIdentityService) getOpenIdTokenForDeveloperIdentityCore(reqCtx *
 		return nil, err
 	}
 
-	if _, err := store.GetIdentityPool(in.IdentityPoolID); err != nil {
+	pool, err := store.GetIdentityPool(in.IdentityPoolID)
+	if err != nil {
 		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
+	}
+
+	// The model documents Logins as public-provider pairs plus exactly one
+	// developer-provider pair keyed by the pool's configured domain ("You
+	// can only specify one developer provider as part of the Logins map,
+	// which is linked to the identity pool"), so the domain must be
+	// configured and present among the logins.
+	if pool.DeveloperProviderName == "" {
+		return nil, ErrInvalidParameter
+	}
+	devUserID, isDeveloper := in.Logins[pool.DeveloperProviderName]
+	if !isDeveloper {
+		return nil, ErrInvalidParameter
+	}
+	publicLogins := make(map[string]string, len(in.Logins)-1)
+	for provider, token := range in.Logins {
+		if provider != pool.DeveloperProviderName {
+			publicLogins[provider] = token
+		}
 	}
 
 	identityID := in.IdentityID
@@ -125,7 +140,7 @@ func (s *CognitoIdentityService) getOpenIdTokenForDeveloperIdentityCore(reqCtx *
 		return nil, ErrInvalidParameter
 	}
 
-	// TokenDuration controls token expiry (range 1-86400 seconds per AWS spec).
+	// TokenDuration controls token expiry (Smithy TokenDuration range).
 	tokenDuration := int64(developerTokenDefaultTTLSeconds)
 	if in.TokenDurationProvided {
 		td := int64(in.TokenDuration)
@@ -140,7 +155,7 @@ func (s *CognitoIdentityService) getOpenIdTokenForDeveloperIdentityCore(reqCtx *
 	var principalTags map[string]string
 	if in.PrincipalTagsProvided {
 		if ptMap, ok := in.PrincipalTagsRaw.(map[string]interface{}); ok {
-			if !validateMapSize(len(ptMap), 50) {
+			if !validateMapSize(len(ptMap), maxPrincipalTags) {
 				return nil, ErrInvalidParameter
 			}
 			principalTags = make(map[string]string, len(ptMap))
@@ -157,22 +172,39 @@ func (s *CognitoIdentityService) getOpenIdTokenForDeveloperIdentityCore(reqCtx *
 		}
 	}
 
-	for providerName, devUserID := range in.Logins {
-		// The store resolves the developer identity under its key lock: an
-		// existing link is reused (a differing supplied IdentityId maps to
-		// DeveloperUserAlreadyRegisteredException), otherwise a fresh identity
-		// is created and linked in one critical section.
-		resolved, err := store.EnsureDeveloperIdentity(in.IdentityPoolID, providerName, devUserID, identityID)
-		if err != nil {
-			if errors.Is(err, cognitoidentitystore.ErrDeveloperIdentityConflict) {
-				return nil, ErrDeveloperUserAlreadyRegistered
+	// The store resolves the developer identity under its key lock: an
+	// existing link is reused (a differing supplied IdentityId maps to
+	// DeveloperUserAlreadyRegisteredException), otherwise a fresh identity
+	// is created and linked in one critical section.
+	resolved, err := store.EnsureDeveloperIdentity(in.IdentityPoolID, pool.DeveloperProviderName, devUserID, identityID)
+	if err != nil {
+		if errors.Is(err, cognitoidentitystore.ErrDeveloperIdentityConflict) {
+			return nil, ErrDeveloperUserAlreadyRegistered
+		}
+		// Both a missing pool and a missing identity surface as the
+		// operation's ResourceNotFoundException; anything else is a storage
+		// failure.
+		if errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) ||
+			errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalError
+	}
+	identityID = resolved
+
+	// Public-provider entries are linked to the resolved identity — the
+	// implicit linked account the model documents for multiple logins. A
+	// login already linked to another identity is a conflict.
+	if len(publicLogins) > 0 {
+		if err := store.LinkLogins(in.IdentityPoolID, identityID, publicLogins); err != nil {
+			if errors.Is(err, cognitoidentitystore.ErrLoginConflict) {
+				return nil, ErrResourceConflict
 			}
 			if errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) {
 				return nil, ErrResourceNotFound
 			}
 			return nil, ErrInternalError
 		}
-		identityID = resolved
 	}
 
 	token, err := s.tokenMgr.generateOpenIdToken(identityID, in.IdentityPoolID, tokenDuration, nil, principalTags)
@@ -259,10 +291,7 @@ func (s *CognitoIdentityService) mergeDeveloperIdentitiesCore(reqCtx *request.Re
 	// identity link moving before any identity record is destroyed.
 	destIdentityID, err := store.MergeDeveloperIdentities(in.IdentityPoolID, in.DeveloperProviderName, in.SourceUserIdentifier, in.DestinationUserIdentifier)
 	if err != nil {
-		if errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) {
-			return "", mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
-		}
-		return "", ErrInternalError
+		return "", mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 	}
 
 	return destIdentityID, nil
@@ -357,7 +386,7 @@ func (s *CognitoIdentityService) setPrincipalTagAttributeMapCore(reqCtx *request
 	}
 
 	if len(in.PrincipalTags) > 0 {
-		if !validateMapSize(len(in.PrincipalTags), 50) {
+		if !validateMapSize(len(in.PrincipalTags), maxPrincipalTags) {
 			return nil, ErrInvalidParameter
 		}
 		for k, v := range in.PrincipalTags {

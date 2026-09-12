@@ -73,6 +73,12 @@ func (s *CognitoStore) GetWebAuthnCredential(userPoolID, userID, credID string) 
 	return &c, nil
 }
 
+// UpdateWebAuthnCredential persists credential state changes — the assertion
+// signature counter that advances with every verified authentication.
+func (s *CognitoStore) UpdateWebAuthnCredential(c *WebAuthnCredential) error {
+	return s.webauthnStore.Put(webauthnKey(c.UserPoolID, c.UserID, c.CredentialID), c)
+}
+
 func (s *CognitoStore) DeleteWebAuthnCredential(userPoolID, userID, credID string) error {
 	return s.webauthnStore.Delete(webauthnKey(userPoolID, userID, credID))
 }

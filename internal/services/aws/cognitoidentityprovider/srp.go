@@ -25,6 +25,7 @@ import (
 	"errors"
 	"math/big"
 	"strings"
+	"time"
 )
 
 // cognitoSrpNHex is the hex-encoded 2048-bit safe prime N from RFC 5054.
@@ -155,6 +156,37 @@ func VerifyClaim(K []byte, poolName, userID string, secretBlock []byte, timestam
 	mac.Write(secretBlock)
 	mac.Write([]byte(timestamp))
 	return mac.Sum(nil)
+}
+
+// srpTimestampLayout is the layout every AWS SDK renders the TIMESTAMP claim
+// with: amazon-cognito-identity-js's DateHelper and the Go SDK's SRP helper
+// both produce "Mon Jan 2 15:04:05 UTC 2006" — day-of-month unpadded, 24-hour
+// clock, timezone abbreviation.
+const srpTimestampLayout = "Mon Jan 2 15:04:05 MST 2006"
+
+// srpTimestampWindow bounds how far the claim timestamp may sit from the
+// server clock. The model states the PASSWORD_VERIFIER contract as "Amazon
+// Cognito requires that your application respond to this challenge within a
+// few seconds. When the response time exceeds this period, your user pool
+// returns a NotAuthorizedException error." The SDKs sign with the client's
+// local clock, so the window is symmetric and matches the 30-second skew
+// allowance the platform's JWT validation applies.
+const srpTimestampWindow = 30 * time.Second
+
+// freshSrpTimestamp reports whether the claim timestamp parses in the SDK
+// layout and falls inside the freshness window around now. A malformed
+// timestamp fails closed: a value that cannot be parsed cannot be shown to
+// be fresh.
+func freshSrpTimestamp(timestamp string, now time.Time) bool {
+	ts, err := time.Parse(srpTimestampLayout, timestamp)
+	if err != nil {
+		return false
+	}
+	delta := now.Sub(ts)
+	if delta < 0 {
+		delta = -delta
+	}
+	return delta <= srpTimestampWindow
 }
 
 // calculateU computes the SRP scrambling parameter u = H(padHex(A) || padHex(B)).

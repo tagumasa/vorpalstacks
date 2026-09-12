@@ -1,6 +1,11 @@
 package cognitoidentityprovider
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+	"unicode/utf8"
+
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
@@ -126,6 +131,89 @@ func schemaAttributesForDescribe(pool *cognitostore.UserPool) []cognitostore.Sch
 		result = append(result, entry)
 	}
 	return result
+}
+
+// validateUserAttributesAgainstSchema is the single Core validation every
+// user-attribute write passes: each supplied name must exist in the pool's
+// schema (a custom: or dev: attribute must be defined by the pool), each
+// value must satisfy its attribute's data type and constraints, update
+// paths (isCreate=false) reject immutable attributes, and creation paths
+// require a non-empty value for every attribute the pool marks required.
+// sub is assigned by the service, never by a client: creation paths must
+// strip it before calling, and on update paths it fails as immutable.
+func validateUserAttributesAgainstSchema(pool *cognitostore.UserPool, attrs map[string]string, isCreate bool) error {
+	ordered := schemaAttributesForDescribe(pool)
+	schema := make(map[string]cognitostore.SchemaAttributeType, len(ordered))
+	for _, sa := range ordered {
+		schema[sa.Name] = sa
+	}
+	for name, value := range attrs {
+		sa, ok := schema[name]
+		if !ok {
+			return fmt.Errorf("attribute %s does not exist in the pool schema", name)
+		}
+		if !isCreate && !sa.Mutable {
+			return fmt.Errorf("attribute %s is immutable", name)
+		}
+		if err := validateAttributeValueAgainstType(sa, value); err != nil {
+			return err
+		}
+	}
+	if !isCreate {
+		return nil
+	}
+	for _, sa := range ordered {
+		if !sa.Required || sa.Name == "sub" {
+			continue
+		}
+		if attrs[sa.Name] == "" {
+			return fmt.Errorf("required attribute %s must have a value", sa.Name)
+		}
+	}
+	return nil
+}
+
+// validateAttributeValueAgainstType checks one attribute value against its
+// schema definition's data type and constraints.
+func validateAttributeValueAgainstType(sa cognitostore.SchemaAttributeType, value string) error {
+	switch sa.AttributeDataType {
+	case "Boolean":
+		if lower := strings.ToLower(value); lower != "true" && lower != "false" {
+			return fmt.Errorf("attribute %s must be true or false", sa.Name)
+		}
+	case "Number":
+		num, numErr := strconv.ParseFloat(value, 64)
+		if numErr != nil {
+			return fmt.Errorf("attribute %s must be a number", sa.Name)
+		}
+		if c := sa.NumberAttributeConstraints; c != nil {
+			if c.MinValue != "" {
+				if min, minErr := strconv.ParseFloat(c.MinValue, 64); minErr == nil && num < min {
+					return fmt.Errorf("attribute %s must be at least %s", sa.Name, c.MinValue)
+				}
+			}
+			if c.MaxValue != "" {
+				if max, maxErr := strconv.ParseFloat(c.MaxValue, 64); maxErr == nil && num > max {
+					return fmt.Errorf("attribute %s must be at most %s", sa.Name, c.MaxValue)
+				}
+			}
+		}
+	case "String":
+		length := utf8.RuneCountInString(value)
+		if c := sa.StringAttributeConstraints; c != nil {
+			if c.MinLength != "" {
+				if min, minErr := strconv.Atoi(c.MinLength); minErr == nil && length < min {
+					return fmt.Errorf("attribute %s must be at least %s characters long", sa.Name, c.MinLength)
+				}
+			}
+			if c.MaxLength != "" {
+				if max, maxErr := strconv.Atoi(c.MaxLength); maxErr == nil && length > max {
+					return fmt.Errorf("attribute %s must be at most %s characters long", sa.Name, c.MaxLength)
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // csvHeaderBase is the header row Amazon Cognito returns for a user pool

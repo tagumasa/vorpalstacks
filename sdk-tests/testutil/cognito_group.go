@@ -115,6 +115,25 @@ func (r *TestRunner) cognitoGroupTests(tc *cognitoIDPContext) []TestResult {
 		if resp.Group.Precedence == nil || *resp.Group.Precedence != 10 {
 			return fmt.Errorf("Precedence not set: got %v, want 10", resp.Group.Precedence)
 		}
+		// An explicitly empty description clears the stored one.
+		_, err = tc.client.UpdateGroup(tc.ctx, &cognitoidentityprovider.UpdateGroupInput{
+			GroupName:   aws.String(ugGroupName),
+			UserPoolId:  aws.String(tc.userPoolID),
+			Description: aws.String(""),
+		})
+		if err != nil {
+			return fmt.Errorf("UpdateGroup clearing description failed: %v", err)
+		}
+		resp, err = tc.client.GetGroup(tc.ctx, &cognitoidentityprovider.GetGroupInput{
+			GroupName:  aws.String(ugGroupName),
+			UserPoolId: aws.String(tc.userPoolID),
+		})
+		if err != nil {
+			return fmt.Errorf("GetGroup after clearing failed: %v", err)
+		}
+		if resp.Group.Description != nil && *resp.Group.Description != "" {
+			return fmt.Errorf("description not cleared: got %q", *resp.Group.Description)
+		}
 		return nil
 	}))
 

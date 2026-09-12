@@ -31,14 +31,9 @@ func NewAdminHandler(svc *CognitoService) *AdminHandler {
 	return &AdminHandler{service: svc}
 }
 
-// getRegionFromHeaders extracts the AWS region from the gRPC-Web metadata.
-func (h *AdminHandler) getRegionFromHeaders(headers http.Header) string {
-	return defaults.GetRegionFromHeader(headers)
-}
-
 // ListUserPools lists user pools in Cognito Identity Provider with pagination.
 func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[pb.ListUserPoolsRequest]) (*connect.Response[pb.ListUserPoolsResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	result, err := h.service.listUserPoolsCore(region, ListUserPoolsInput{
 		MaxResults: int(req.Msg.GetMaxresults()),
@@ -71,7 +66,7 @@ func (h *AdminHandler) ListUserPools(ctx context.Context, req *connect.Request[p
 
 // CreateUserPool creates a new Cognito user pool via the admin console.
 func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[pb.CreateUserPoolRequest]) (*connect.Response[pb.CreateUserPoolResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	autoVerifiedAttrs := make([]string, 0, len(req.Msg.GetAutoverifiedattributes()))
 	for _, attr := range req.Msg.GetAutoverifiedattributes() {
@@ -115,7 +110,7 @@ func (h *AdminHandler) CreateUserPool(ctx context.Context, req *connect.Request[
 
 // DeleteUserPool deletes a Cognito user pool via the admin console.
 func (h *AdminHandler) DeleteUserPool(ctx context.Context, req *connect.Request[pb.DeleteUserPoolRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deleteUserPoolCore(region, req.Msg.GetUserpoolid()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -126,7 +121,7 @@ func (h *AdminHandler) DeleteUserPool(ctx context.Context, req *connect.Request[
 
 // DescribeUserPool retrieves the full configuration of a Cognito user pool.
 func (h *AdminHandler) DescribeUserPool(ctx context.Context, req *connect.Request[pb.DescribeUserPoolRequest]) (*connect.Response[pb.DescribeUserPoolResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	pool, err := h.service.describeUserPoolCore(region, req.Msg.GetUserpoolid())
 	if err != nil {
@@ -140,7 +135,7 @@ func (h *AdminHandler) DescribeUserPool(ctx context.Context, req *connect.Reques
 
 // ListUserPoolClients lists the user pool clients for a given pool.
 func (h *AdminHandler) ListUserPoolClients(ctx context.Context, req *connect.Request[pb.ListUserPoolClientsRequest]) (*connect.Response[pb.ListUserPoolClientsResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	result, err := h.service.listUserPoolClientsCore(region, ListUserPoolClientsInput{
 		UserPoolID: req.Msg.GetUserpoolid(),
@@ -168,7 +163,7 @@ func (h *AdminHandler) ListUserPoolClients(ctx context.Context, req *connect.Req
 
 // DescribeUserPoolClient retrieves the full configuration of a user pool client.
 func (h *AdminHandler) DescribeUserPoolClient(ctx context.Context, req *connect.Request[pb.DescribeUserPoolClientRequest]) (*connect.Response[pb.DescribeUserPoolClientResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	client, err := h.service.describeUserPoolClientCore(region, req.Msg.GetUserpoolid(), req.Msg.GetClientid())
 	if err != nil {
@@ -182,7 +177,7 @@ func (h *AdminHandler) DescribeUserPoolClient(ctx context.Context, req *connect.
 
 // DeleteUserPoolClient deletes a user pool client.
 func (h *AdminHandler) DeleteUserPoolClient(ctx context.Context, req *connect.Request[pb.DeleteUserPoolClientRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deleteUserPoolClientCore(region, req.Msg.GetUserpoolid(), req.Msg.GetClientid()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -193,7 +188,7 @@ func (h *AdminHandler) DeleteUserPoolClient(ctx context.Context, req *connect.Re
 
 // ListGroups lists the groups in a Cognito user pool.
 func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.ListGroupsRequest]) (*connect.Response[pb.ListGroupsResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	result, err := h.service.listGroupsCore(region, ListGroupsInput{
 		UserPoolID: req.Msg.GetUserpoolid(),
@@ -217,7 +212,7 @@ func (h *AdminHandler) ListGroups(ctx context.Context, req *connect.Request[pb.L
 
 // CreateGroup creates a new Cognito group.
 func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.CreateGroupRequest]) (*connect.Response[pb.CreateGroupResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	input := CreateGroupInput{
 		UserPoolID:  req.Msg.GetUserpoolid(),
@@ -230,7 +225,7 @@ func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.
 		input.Precedence = &p
 	}
 
-	group, err := h.service.createGroupFromInputCore(region, input)
+	group, err := h.service.createGroupValidatedCore(ctx, region, input)
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
@@ -242,7 +237,7 @@ func (h *AdminHandler) CreateGroup(ctx context.Context, req *connect.Request[pb.
 
 // DeleteGroup deletes a Cognito group.
 func (h *AdminHandler) DeleteGroup(ctx context.Context, req *connect.Request[pb.DeleteGroupRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deleteGroupCore(region, req.Msg.GetUserpoolid(), req.Msg.GetGroupname()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -253,7 +248,7 @@ func (h *AdminHandler) DeleteGroup(ctx context.Context, req *connect.Request[pb.
 
 // ListTagsForResource lists all tags assigned to a Cognito resource.
 func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Request[pb.ListTagsForResourceRequest]) (*connect.Response[pb.ListTagsForResourceResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	tags, err := h.service.listTagsForResourceCore(region, req.Msg.GetResourcearn())
 	if err != nil {
@@ -267,7 +262,7 @@ func (h *AdminHandler) ListTagsForResource(ctx context.Context, req *connect.Req
 
 // TagResource adds or overwrites tags on a Cognito resource.
 func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.TagResourceRequest]) (*connect.Response[pb.TagResourceResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.tagResourceCore(region, req.Msg.GetResourcearn(), req.Msg.GetTags()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -278,7 +273,7 @@ func (h *AdminHandler) TagResource(ctx context.Context, req *connect.Request[pb.
 
 // UntagResource removes tags from a Cognito resource.
 func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[pb.UntagResourceRequest]) (*connect.Response[pb.UntagResourceResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.untagResourceCore(region, req.Msg.GetResourcearn(), req.Msg.GetTagkeys()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -289,7 +284,7 @@ func (h *AdminHandler) UntagResource(ctx context.Context, req *connect.Request[p
 
 // ListUsers lists users in a Cognito user pool.
 func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.ListUsersRequest]) (*connect.Response[pb.ListUsersResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	result, err := h.service.listUsersCore(region, ListUsersInput{
 		UserPoolID: req.Msg.GetUserpoolid(),
@@ -314,25 +309,35 @@ func (h *AdminHandler) ListUsers(ctx context.Context, req *connect.Request[pb.Li
 
 // AdminGetUser retrieves a user by username.
 func (h *AdminHandler) AdminGetUser(ctx context.Context, req *connect.Request[pb.AdminGetUserRequest]) (*connect.Response[pb.AdminGetUserResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	user, err := h.service.adminGetUserCore(region, req.Msg.GetUserpoolid(), req.Msg.GetUsername())
 	if err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
 	}
 
-	return connect.NewResponse(&pb.AdminGetUserResponse{
+	resp := &pb.AdminGetUserResponse{
 		Username:             user.Username,
 		Userstatus:           userStatusToProto(user.UserStatus),
 		Enabled:              proto.Bool(user.Enabled),
 		Usercreatedate:       proto.String(user.CreatedDate.Format(timeutils.ISO8601UTCFormat)),
 		Userlastmodifieddate: proto.String(user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat)),
-	}), nil
+		Userattributes:       userAttributesToProto(user),
+		Mfaoptions:           mfaOptionsToProto(user),
+	}
+	preferred, settings := userMFAPreferences(user)
+	if preferred != "" {
+		resp.Preferredmfasetting = proto.String(preferred)
+	}
+	if len(settings) > 0 {
+		resp.Usermfasettinglist = settings
+	}
+	return connect.NewResponse(resp), nil
 }
 
 // AdminDeleteUser deletes a user from a Cognito user pool.
 func (h *AdminHandler) AdminDeleteUser(ctx context.Context, req *connect.Request[pb.AdminDeleteUserRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.adminDeleteUserCore(region, req.Msg.GetUserpoolid(), req.Msg.GetUsername()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -343,7 +348,7 @@ func (h *AdminHandler) AdminDeleteUser(ctx context.Context, req *connect.Request
 
 // AdminEnableUser enables a user.
 func (h *AdminHandler) AdminEnableUser(ctx context.Context, req *connect.Request[pb.AdminEnableUserRequest]) (*connect.Response[pb.AdminEnableUserResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.adminEnableUserCore(region, req.Msg.GetUserpoolid(), req.Msg.GetUsername()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -354,7 +359,7 @@ func (h *AdminHandler) AdminEnableUser(ctx context.Context, req *connect.Request
 
 // AdminDisableUser disables a user.
 func (h *AdminHandler) AdminDisableUser(ctx context.Context, req *connect.Request[pb.AdminDisableUserRequest]) (*connect.Response[pb.AdminDisableUserResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.adminDisableUserCore(region, req.Msg.GetUserpoolid(), req.Msg.GetUsername()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)
@@ -365,7 +370,7 @@ func (h *AdminHandler) AdminDisableUser(ctx context.Context, req *connect.Reques
 
 // ListIdentityProviders lists identity providers in a user pool.
 func (h *AdminHandler) ListIdentityProviders(ctx context.Context, req *connect.Request[pb.ListIdentityProvidersRequest]) (*connect.Response[pb.ListIdentityProvidersResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	result, err := h.service.listIdentityProvidersCore(region, ListIdentityProvidersInput{
 		UserPoolID: req.Msg.GetUserpoolid(),
@@ -389,7 +394,7 @@ func (h *AdminHandler) ListIdentityProviders(ctx context.Context, req *connect.R
 
 // DescribeIdentityProvider retrieves an identity provider by name.
 func (h *AdminHandler) DescribeIdentityProvider(ctx context.Context, req *connect.Request[pb.DescribeIdentityProviderRequest]) (*connect.Response[pb.DescribeIdentityProviderResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	ip, err := h.service.describeIdentityProviderCore(region, req.Msg.GetUserpoolid(), req.Msg.GetProvidername())
 	if err != nil {
@@ -403,7 +408,7 @@ func (h *AdminHandler) DescribeIdentityProvider(ctx context.Context, req *connec
 
 // CreateIdentityProvider creates a new identity provider.
 func (h *AdminHandler) CreateIdentityProvider(ctx context.Context, req *connect.Request[pb.CreateIdentityProviderRequest]) (*connect.Response[pb.CreateIdentityProviderResponse], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	ip, err := h.service.createIdentityProviderFromInputCore(region, CreateIdentityProviderInput{
 		UserPoolID:       req.Msg.GetUserpoolid(),
@@ -424,7 +429,7 @@ func (h *AdminHandler) CreateIdentityProvider(ctx context.Context, req *connect.
 
 // DeleteIdentityProvider deletes an identity provider.
 func (h *AdminHandler) DeleteIdentityProvider(ctx context.Context, req *connect.Request[pb.DeleteIdentityProviderRequest]) (*connect.Response[pbcommon.Empty], error) {
-	region := h.getRegionFromHeaders(req.Header())
+	region := defaults.GetRegionFromHeader(req.Header())
 
 	if err := h.service.deleteIdentityProviderCore(region, req.Msg.GetUserpoolid(), req.Msg.GetProvidername()); err != nil {
 		return nil, svcerrors.AWSErrorToGRPC(err)

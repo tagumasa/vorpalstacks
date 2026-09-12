@@ -50,8 +50,11 @@ func verifiedAttributeToProto(s string) pb.VerifiedAttributeType {
 	}
 }
 
+// statusToProto maps the stored pool Status — the model's StatusType enum
+// value Enabled — onto the proto enum; every other value renders as the
+// Disabled variant.
 func statusToProto(s string) pb.StatusType {
-	if s == "ENABLED" {
+	if s == cognitostore.UserPoolStatusEnabled {
 		return pb.StatusType_STATUS_TYPE_ENABLED
 	}
 	return pb.StatusType_STATUS_TYPE_DISABLED
@@ -278,14 +281,45 @@ func userToProto(user *cognitostore.User) *pb.UserType {
 	if !user.LastModifiedDate.IsZero() {
 		u.Userlastmodifieddate = proto.String(user.LastModifiedDate.Format(timeutils.ISO8601UTCFormat))
 	}
-	if len(user.Attributes) > 0 {
-		attrs := make([]*pb.AttributeType, 0, len(user.Attributes))
-		for k, v := range user.Attributes {
-			attrs = append(attrs, &pb.AttributeType{Name: k, Value: proto.String(v)})
-		}
-		u.Attributes = attrs
-	}
+	u.Attributes = userAttributesToProto(user)
 	return u
+}
+
+// userAttributesToProto converts a store-level User's attributes to the
+// proto AttributeType list, with the required sub attribute materialised
+// from the user's identifier exactly as the AWS-plane projection does.
+func userAttributesToProto(user *cognitostore.User) []*pb.AttributeType {
+	attrs := make([]*pb.AttributeType, 0, len(user.Attributes)+1)
+	for k, v := range user.Attributes {
+		attrs = append(attrs, &pb.AttributeType{Name: k, Value: proto.String(v)})
+	}
+	if user.Attributes["sub"] == "" {
+		attrs = append(attrs, &pb.AttributeType{Name: "sub", Value: proto.String(user.ID)})
+	}
+	return attrs
+}
+
+// mfaOptionsToProto converts the legacy MFA options to the proto
+// MFAOptionType list.
+func mfaOptionsToProto(user *cognitostore.User) []*pb.MFAOptionType {
+	opts := make([]*pb.MFAOptionType, 0, len(user.MFAOptions))
+	for _, opt := range user.MFAOptions {
+		entry := &pb.MFAOptionType{
+			Deliverymedium: deliveryMediumToProto(opt.DeliveryMedium),
+		}
+		if opt.AttributeName != "" {
+			entry.Attributename = proto.String(opt.AttributeName)
+		}
+		opts = append(opts, entry)
+	}
+	return opts
+}
+
+func deliveryMediumToProto(s string) pb.DeliveryMediumType {
+	if s == "SMS" {
+		return pb.DeliveryMediumType_DELIVERY_MEDIUM_TYPE_SMS
+	}
+	return pb.DeliveryMediumType_DELIVERY_MEDIUM_TYPE_EMAIL
 }
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/iam"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -68,13 +69,62 @@ type CreateGroupInput struct {
 	Precedence  *int
 }
 
-// createGroupFromInputCore creates a group from transport-agnostic input.
-func (s *CognitoService) createGroupFromInputCore(region string, in CreateGroupInput) (*cognitostore.Group, error) {
+// UpdateGroupInput carries the update members of UpdateGroup. A nil
+// Description keeps the stored description (a non-nil empty string clears
+// it); a non-empty RoleArn replaces the stored role (an empty string cannot
+// clear it); a nil Precedence keeps the stored value.
+type UpdateGroupInput struct {
+	UserPoolID  string
+	GroupName   string
+	Description *string
+	RoleArn     string
+	Precedence  *int
+}
+
+// createGroupValidatedCore is the single create path for Cognito groups,
+// shared by the HTTP API and the admin console: the required members, the
+// group-name pattern, the precedence range and the IAM role trust validation
+// for the group role, followed by the shared persistence path. The IAM
+// validator is obtained inside the Core, so both planes validate
+// identically.
+func (s *CognitoService) createGroupValidatedCore(ctx context.Context, region string, in CreateGroupInput) (*cognitostore.Group, error) {
+	if in.UserPoolID == "" || in.GroupName == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !validateUsernamePattern(in.GroupName) {
+		return nil, ErrInvalidParameter
+	}
+
 	group := cognitostore.NewGroup(in.UserPoolID, in.GroupName)
 	group.Description = in.Description
 	group.RoleArn = in.RoleArn
 	group.Precedence = in.Precedence
+	if in.Precedence != nil && !validatePrecedence(*in.Precedence) {
+		return nil, ErrInvalidParameter
+	}
+
+	if in.RoleArn != "" {
+		if err := s.validateGroupRoleArn(ctx, in.RoleArn); err != nil {
+			return nil, err
+		}
+	}
+
 	return s.createGroupCore(region, group)
+}
+
+// validateGroupRoleArn validates the group role's trust policy for the
+// Cognito service principal. Without an injected role provider the trust
+// check is skipped, matching the scheduler Core's nil handling.
+func (s *CognitoService) validateGroupRoleArn(ctx context.Context, roleArn string) error {
+	validator := s.iamValidator()
+	if validator == nil {
+		return nil
+	}
+	return validator.ValidateRoleForServiceWithErrors(ctx, roleArn, iam.ServicePrincipalCognito, &iam.RoleErrorFactories{
+		RoleNotFoundError:        iam.NewCognitoRoleError,
+		RoleCannotBeAssumedError: iam.NewCognitoRoleError,
+		InvalidArnError:          iam.NewCognitoRoleError,
+	})
 }
 
 // createGroupCore creates a new Cognito group. The caller is responsible for
@@ -112,7 +162,10 @@ func (s *CognitoService) getGroupCore(region, userPoolID, groupName string) (*co
 
 	group, err := store.GetGroup(userPoolID, groupName)
 	if err != nil {
-		return nil, ErrGroupNotFound
+		if errors.Is(err, cognitostore.ErrGroupNotFound) {
+			return nil, ErrGroupNotFound
+		}
+		return nil, ErrInternalError
 	}
 	return group, nil
 }
@@ -145,10 +198,7 @@ func (s *CognitoService) listGroupsCore(region string, in ListGroupsInput) (*Lis
 		return nil, err
 	}
 
-	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > listLimitMax {
-		maxResults = listLimitMax
-	}
+	maxResults := applyListLimitDefaults(in.MaxResults)
 
 	result, err := store.ListGroupsPaginated(in.UserPoolID, storecommon.ListOptions{
 		MaxItems: maxResults,
@@ -164,18 +214,65 @@ func (s *CognitoService) listGroupsCore(region string, in ListGroupsInput) (*Lis
 	}, nil
 }
 
-// updateGroupCore persists updates to a group. The caller is responsible for
-// any IAM role validation prior to calling this method.
-func (s *CognitoService) updateGroupCore(region string, group *cognitostore.Group) error {
-	store, err := s.GetStoreForRegion(region)
-	if err != nil {
-		return err
+// updateGroupCore applies the update members onto the stored group and
+// persists it, returning the updated group for response serialisation. The
+// required members, the precedence range and the IAM role trust validation
+// for the group role all live here, so both planes validate identically.
+func (s *CognitoService) updateGroupCore(ctx context.Context, region string, in UpdateGroupInput) (*cognitostore.Group, error) {
+	if in.UserPoolID == "" || in.GroupName == "" {
+		return nil, ErrInvalidParameter
 	}
 
-	if err := store.UpdateGroup(group); err != nil {
-		return ErrInternalError
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
 	}
-	return nil
+
+	// The existence read keeps the ResourceNotFoundException precedence and
+	// the role trust validation stays outside the store's critical section;
+	// the field application itself is a serialised read-modify-write so a
+	// concurrent membership change cannot be overwritten by a stale member
+	// list.
+	if _, err := store.GetGroup(in.UserPoolID, in.GroupName); err != nil {
+		if errors.Is(err, cognitostore.ErrGroupNotFound) {
+			return nil, ErrGroupNotFound
+		}
+		return nil, ErrInternalError
+	}
+	if in.RoleArn != "" {
+		if err := s.validateGroupRoleArn(ctx, in.RoleArn); err != nil {
+			return nil, err
+		}
+	}
+
+	var updated *cognitostore.Group
+	err = store.UpdateGroupFunc(in.UserPoolID, in.GroupName, func(g *cognitostore.Group) error {
+		if in.Description != nil {
+			g.Description = *in.Description
+		}
+		if in.RoleArn != "" {
+			g.RoleArn = in.RoleArn
+		}
+		if in.Precedence != nil {
+			if !validatePrecedence(*in.Precedence) {
+				return ErrInvalidParameter
+			}
+			g.Precedence = in.Precedence
+		}
+		updated = g
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, cognitostore.ErrGroupNotFound) {
+			return nil, ErrGroupNotFound
+		}
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, err
+		}
+		return nil, ErrInternalError
+	}
+	return updated, nil
 }
 
 // adminAddUserToGroupCore adds a user to a group.
@@ -235,10 +332,7 @@ func (s *CognitoService) listUsersInGroupCore(region string, in ListUsersInGroup
 		return nil, err
 	}
 
-	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > listLimitMax {
-		maxResults = listLimitMax
-	}
+	maxResults := applyListLimitDefaults(in.MaxResults)
 
 	result, err := store.ListUsersInGroupPaginated(in.UserPoolID, in.GroupName, storecommon.ListOptions{
 		Marker:   in.NextToken,
@@ -265,10 +359,7 @@ func (s *CognitoService) adminListGroupsForUserCore(region string, in AdminListG
 		return nil, err
 	}
 
-	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > listLimitMax {
-		maxResults = listLimitMax
-	}
+	maxResults := applyListLimitDefaults(in.MaxResults)
 
 	result, err := store.ListGroupsForUserPaginated(in.UserPoolID, in.Username, storecommon.ListOptions{
 		Marker:   in.NextToken,
@@ -282,38 +373,4 @@ func (s *CognitoService) adminListGroupsForUserCore(region string, in AdminListG
 		Groups:    result.Items,
 		NextToken: result.NextMarker,
 	}, nil
-}
-
-// createGroupValidatedCore reproduces the HTTP CreateGroup contract: the
-// required members, the group-name pattern, the precedence range and the IAM
-// role validation for the group role, followed by the shared create path.
-// The admin plane keeps createGroupFromInputCore, which applies none of
-// these validations.
-func (s *CognitoService) createGroupValidatedCore(ctx context.Context, region string, in CreateGroupInput, iamValidator *iam.IAMValidator) (*cognitostore.Group, error) {
-	if in.UserPoolID == "" || in.GroupName == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateUsernamePattern(in.GroupName) {
-		return nil, ErrInvalidParameter
-	}
-
-	group := cognitostore.NewGroup(in.UserPoolID, in.GroupName)
-	group.Description = in.Description
-	group.RoleArn = in.RoleArn
-	group.Precedence = in.Precedence
-	if in.Precedence != nil && !validatePrecedence(*in.Precedence) {
-		return nil, ErrInvalidParameter
-	}
-
-	if in.RoleArn != "" {
-		if err := iamValidator.ValidateRoleForServiceWithErrors(ctx, in.RoleArn, iam.ServicePrincipalCognito, &iam.RoleErrorFactories{
-			RoleNotFoundError:        iam.NewCognitoRoleError,
-			RoleCannotBeAssumedError: iam.NewCognitoRoleError,
-			InvalidArnError:          iam.NewCognitoRoleError,
-		}); err != nil {
-			return nil, err
-		}
-	}
-
-	return s.createGroupCore(region, group)
 }

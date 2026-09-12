@@ -1,10 +1,16 @@
 package cognitoidentityprovider
 
 import (
+	"errors"
+	"fmt"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
+	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
+	"vorpalstacks/pkg/vsjwt"
 )
 
 // ---------------------------------------------------------------------------
@@ -85,10 +91,7 @@ func (s *CognitoService) listUserPoolsCore(region string, in ListUserPoolsInput)
 		return nil, err
 	}
 
-	maxResults := in.MaxResults
-	if maxResults <= 0 || maxResults > listLimitMax {
-		maxResults = listLimitMax
-	}
+	maxResults := applyListLimitDefaults(in.MaxResults)
 
 	result, err := store.ListUserPoolsPaginated(storecommon.ListOptions{
 		MaxItems: maxResults,
@@ -114,6 +117,33 @@ func (s *CognitoService) listUserPoolsCore(region string, in ListUserPoolsInput)
 		UserPools: pools,
 		NextToken: result.NextMarker,
 	}, nil
+}
+
+// getJWKSCore returns the JSON Web Key Set for a user pool. The JWKS route
+// serves external verifiers, so the pool's key material is decoded and the
+// key set built here, in Core; the transport serves the result as-is.
+func (s *CognitoService) getJWKSCore(region, userPoolID string) (interface{}, error) {
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return nil, err
+	}
+
+	userPool, err := store.GetUserPool(userPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	privateKey, err := vsjwt.DecodePrivateKeyFromPEM(userPool.JwtPrivateKey)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+
+	issuer := fmt.Sprintf("https://%s/%s", cognitoIdpHost(region), userPoolID)
+	jwtManager, err := vsjwt.NewManager(privateKey, userPool.JwtKeyID, issuer)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	return jwtManager.GetJWKS(), nil
 }
 
 // createUserPoolCore creates a new Cognito user pool. Validation, password
@@ -172,6 +202,36 @@ func (s *CognitoService) createUserPoolFromAdmin(in AdminCreateUserPoolInput) (*
 		Pool:   pool,
 		Region: in.Region,
 		Tags:   in.Tags,
+	})
+}
+
+// createUserPoolFromRequestCore is the Core entry point for the HTTP
+// CreateUserPool operation: it builds the store-level UserPool from the raw
+// wire request (identity, create-only members, configuration members and
+// tags) and delegates to createUserPoolCore, so validation and persistence
+// follow the single code path shared with the admin console.
+func (s *CognitoService) createUserPoolFromRequestCore(region, poolName string, req *request.ParsedRequest) (*cognitostore.UserPool, error) {
+	pool, err := s.newUserPoolCore(poolName, region)
+	if err != nil {
+		return nil, err
+	}
+	// CreateUserPool is the only operation that carries the Schema member;
+	// apply it before the shared member application so the whole-pool
+	// validation still sees the schema definitions.
+	schema, err := parseSchemaAttributes(req)
+	if err != nil {
+		return nil, err
+	}
+	pool.SchemaAttributes = schema
+	if err := applyCreateUserPoolRequest(pool, req, region); err != nil {
+		return nil, err
+	}
+
+	tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(req.Parameters, "UserPoolTags"))
+	return s.createUserPoolCore(CreateUserPoolInput{
+		Pool:   pool,
+		Region: region,
+		Tags:   tags,
 	})
 }
 
@@ -250,13 +310,52 @@ func (s *CognitoService) newUserPoolCore(poolName, region string) (*cognitostore
 	return cognitostore.NewUserPool(poolName, region), nil
 }
 
-// updateUserPoolPersistCore persists an already-mutated user pool record.
-func (s *CognitoService) updateUserPoolPersistCore(region string, userPool *cognitostore.UserPool) error {
-	store, err := s.GetStoreForRegion(region)
+// UpdateUserPoolInput carries an UpdateUserPool request in the format the
+// Core needs: the region for store resolution, the target pool and the
+// parsed wire request whose present members replace the pool configuration.
+type UpdateUserPoolInput struct {
+	Region     string
+	UserPoolID string
+	Req        *request.ParsedRequest
+}
+
+// updateUserPoolCore applies the model's UpdateUserPool reset contract as
+// one serialised pool mutation: the request rebuilds the pool configuration
+// with omitted members at their defaults, UserPoolTags replaces the tag set
+// (its default is an untagged pool), and a pool deleted before or during the
+// mutation surfaces ResourceNotFoundException instead of an internal error.
+func (s *CognitoService) updateUserPoolCore(in UpdateUserPoolInput) error {
+	if in.UserPoolID == "" {
+		return ErrInvalidParameter
+	}
+
+	store, err := s.GetStoreForRegion(in.Region)
 	if err != nil {
 		return err
 	}
-	if err := store.UpdateUserPool(userPool); err != nil {
+
+	err = store.UpdateUserPoolFunc(in.UserPoolID, func(pool *cognitostore.UserPool) error {
+		rebuilt, rerr := rebuildUserPoolFromUpdate(pool, in.Req, in.Region)
+		if rerr != nil {
+			return rerr
+		}
+		*pool = *rebuilt
+		// The reset contract governs tags like every other member: a
+		// request that omits UserPoolTags leaves the pool untagged (the
+		// default), a request that carries it replaces the whole set.
+		tags := tagutil.ToMap(tagutil.ParseTagsWithQueryFallback(in.Req.Parameters, "UserPoolTags"))
+		return store.Replace(pool.Arn, tags)
+	})
+	if err != nil {
+		if errors.Is(err, cognitostore.ErrUserPoolNotFound) {
+			return ErrResourceNotFound
+		}
+		// Validation rejections from the rebuild are already wire-shaped
+		// service errors; everything else is a storage failure.
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return err
+		}
 		return ErrInternalError
 	}
 	return nil
@@ -275,7 +374,8 @@ type SetUserPoolMfaConfigInput struct {
 }
 
 // setUserPoolMfaConfigCore applies the MFA configuration members onto the
-// stored pool and returns the updated record for response serialisation.
+// stored pool as one serialised pool mutation and returns the updated record
+// for response serialisation.
 func (s *CognitoService) setUserPoolMfaConfigCore(in SetUserPoolMfaConfigInput) (*cognitostore.UserPool, error) {
 	if in.UserPoolID == "" {
 		return nil, ErrInvalidParameter
@@ -285,69 +385,167 @@ func (s *CognitoService) setUserPoolMfaConfigCore(in SetUserPoolMfaConfigInput) 
 	if err != nil {
 		return nil, err
 	}
-	userPool, err := store.GetUserPool(in.UserPoolID)
+
+	var updated *cognitostore.UserPool
+	err = store.UpdateUserPoolFunc(in.UserPoolID, func(userPool *cognitostore.UserPool) error {
+		updated = userPool
+		if in.MfaConfiguration != "" {
+			if !validateUserPoolMfaConfig(in.MfaConfiguration) {
+				return ErrInvalidParameter
+			}
+			userPool.MfaConfiguration = in.MfaConfiguration
+		}
+
+		if m := in.SmsMfaConfiguration; m != nil {
+			smsMfa := &cognitostore.SmsMfaConfig{}
+			if v, ok := m["SmsAuthenticationMessage"].(string); ok {
+				smsMfa.SmsAuthenticationMessage = v
+			}
+			if smsConfig, ok := m["SmsConfiguration"].(map[string]interface{}); ok {
+				poolSmsConfig := &cognitostore.SmsConfiguration{}
+				if v, ok := smsConfig["SnsCallerArn"].(string); ok {
+					poolSmsConfig.SnsCallerArn = v
+				}
+				if v, ok := smsConfig["ExternalId"].(string); ok {
+					poolSmsConfig.ExternalId = v
+				}
+				if v, ok := smsConfig["SnsRegion"].(string); ok {
+					poolSmsConfig.SnsRegion = v
+				}
+				smsMfa.SmsConfiguration = poolSmsConfig
+			}
+			userPool.MfaConfigurationSms = smsMfa
+		}
+		if m := in.SoftwareTokenMfaConfiguration; m != nil {
+			swMfa := &cognitostore.MfaConfigurationType{}
+			if enabled, ok := m["Enabled"].(bool); ok {
+				swMfa.Enabled = enabled
+			}
+			userPool.MfaConfigurationSoftwareToken = swMfa
+		}
+		if m := in.EmailMfaConfiguration; m != nil {
+			emailMfa := &cognitostore.EmailMfaConfig{}
+			if v, ok := m["Message"].(string); ok {
+				emailMfa.Message = v
+			}
+			if v, ok := m["Subject"].(string); ok {
+				emailMfa.Subject = v
+			}
+			userPool.EmailMfaConfig = emailMfa
+		}
+		if m := in.WebAuthnConfiguration; m != nil {
+			wa := &cognitostore.WebAuthnConfiguration{}
+			if v, ok := m["RelyingPartyId"].(string); ok {
+				wa.RelyingPartyId = v
+			}
+			if v, ok := m["UserVerification"].(string); ok {
+				wa.UserVerification = v
+			}
+			userPool.WebAuthnConfiguration = wa
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, ErrResourceNotFound
-	}
-
-	if in.MfaConfiguration != "" {
-		if !validateUserPoolMfaConfig(in.MfaConfiguration) {
-			return nil, ErrInvalidParameter
+		if errors.Is(err, cognitostore.ErrUserPoolNotFound) {
+			return nil, ErrResourceNotFound
 		}
-		userPool.MfaConfiguration = in.MfaConfiguration
-	}
-
-	if m := in.SmsMfaConfiguration; m != nil {
-		smsMfa := &cognitostore.SmsMfaConfig{}
-		if v, ok := m["SmsAuthenticationMessage"].(string); ok {
-			smsMfa.SmsAuthenticationMessage = v
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, err
 		}
-		if smsConfig, ok := m["SmsConfiguration"].(map[string]interface{}); ok {
-			poolSmsConfig := &cognitostore.SmsConfiguration{}
-			if v, ok := smsConfig["SnsCallerArn"].(string); ok {
-				poolSmsConfig.SnsCallerArn = v
-			}
-			if v, ok := smsConfig["ExternalId"].(string); ok {
-				poolSmsConfig.ExternalId = v
-			}
-			if v, ok := smsConfig["SnsRegion"].(string); ok {
-				poolSmsConfig.SnsRegion = v
-			}
-			smsMfa.SmsConfiguration = poolSmsConfig
-		}
-		userPool.MfaConfigurationSms = smsMfa
-	}
-	if m := in.SoftwareTokenMfaConfiguration; m != nil {
-		swMfa := &cognitostore.MfaConfigurationType{}
-		if enabled, ok := m["Enabled"].(bool); ok {
-			swMfa.Enabled = enabled
-		}
-		userPool.MfaConfigurationSoftwareToken = swMfa
-	}
-	if m := in.EmailMfaConfiguration; m != nil {
-		emailMfa := &cognitostore.EmailMfaConfig{}
-		if v, ok := m["Message"].(string); ok {
-			emailMfa.Message = v
-		}
-		if v, ok := m["Subject"].(string); ok {
-			emailMfa.Subject = v
-		}
-		userPool.EmailMfaConfig = emailMfa
-	}
-	if m := in.WebAuthnConfiguration; m != nil {
-		wa := &cognitostore.WebAuthnConfiguration{}
-		if v, ok := m["RelyingPartyId"].(string); ok {
-			wa.RelyingPartyId = v
-		}
-		if v, ok := m["UserVerification"].(string); ok {
-			wa.UserVerification = v
-		}
-		userPool.WebAuthnConfiguration = wa
-	}
-
-	if err := store.UpdateUserPool(userPool); err != nil {
 		return nil, ErrInternalError
 	}
 
-	return userPool, nil
+	return updated, nil
+}
+
+// addCustomAttributesCore appends the requested custom attribute schemas to
+// the pool as one serialised pool mutation, rejecting a list outside the
+// CustomAttributesListType bounds, invalid names, non-member data types,
+// non-map entries and duplicates of existing schema attributes.
+func (s *CognitoService) addCustomAttributesCore(region, userPoolID string, customAttributes []interface{}) error {
+	if userPoolID == "" {
+		return ErrInvalidParameter
+	}
+	if len(customAttributes) < cognitostore.MinCustomAttributesPerAdd ||
+		len(customAttributes) > cognitostore.MaxCustomAttributesPerAdd {
+		return ErrInvalidParameter
+	}
+
+	store, err := s.GetStoreForRegion(region)
+	if err != nil {
+		return err
+	}
+
+	err = store.UpdateUserPoolFunc(userPoolID, func(pool *cognitostore.UserPool) error {
+		for _, a := range customAttributes {
+			m, ok := a.(map[string]interface{})
+			if !ok {
+				return ErrInvalidParameter
+			}
+			attrName := getStringParam(m, "Name")
+			attrType := getStringParam(m, "AttributeDataType")
+			if attrName == "" || attrType == "" {
+				return ErrInvalidParameter
+			}
+			if err := validateCustomAttributeName(attrName); err != nil {
+				return err
+			}
+			if !validateAttributeDataType(attrType) {
+				return ErrInvalidParameter
+			}
+			for _, existing := range pool.SchemaAttributes {
+				if existing.Name == attrName {
+					return ErrInvalidParameter
+				}
+			}
+			newAttr := cognitostore.SchemaAttributeType{
+				Name:              attrName,
+				AttributeDataType: attrType,
+			}
+			if dev, ok := m["DeveloperOnlyAttribute"].(bool); ok {
+				newAttr.DeveloperOnlyAttribute = dev
+			}
+			if mut, ok := m["Mutable"].(bool); ok {
+				newAttr.Mutable = mut
+			}
+			if reqVal, ok := m["Required"].(bool); ok {
+				newAttr.Required = reqVal
+			}
+			if nac, ok := m["NumberAttributeConstraints"].(map[string]interface{}); ok {
+				nc := &cognitostore.NumberAttributeConstraints{}
+				if v, ok := nac["MinValue"].(string); ok {
+					nc.MinValue = v
+				}
+				if v, ok := nac["MaxValue"].(string); ok {
+					nc.MaxValue = v
+				}
+				newAttr.NumberAttributeConstraints = nc
+			}
+			if sac, ok := m["StringAttributeConstraints"].(map[string]interface{}); ok {
+				sc := &cognitostore.StringAttributeConstraints{}
+				if v, ok := sac["MinLength"].(string); ok {
+					sc.MinLength = v
+				}
+				if v, ok := sac["MaxLength"].(string); ok {
+					sc.MaxLength = v
+				}
+				newAttr.StringAttributeConstraints = sc
+			}
+			pool.SchemaAttributes = append(pool.SchemaAttributes, newAttr)
+		}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, cognitostore.ErrUserPoolNotFound) {
+			return ErrResourceNotFound
+		}
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return err
+		}
+		return ErrInternalError
+	}
+
+	return nil
 }

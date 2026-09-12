@@ -1,8 +1,6 @@
 package cognitoidentityprovider
 
 import (
-	"strings"
-
 	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
@@ -13,25 +11,20 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 	if base != nil {
 		*policy = *base
 	} else {
-		policy.MinimumLength = 8
-		policy.RequireUppercase = true
-		policy.RequireLowercase = true
-		policy.RequireNumbers = true
-		policy.RequireSymbols = true
-		policy.TemporaryPasswordValidityDays = 7
+		*policy = cognitostore.DefaultPasswordPolicy()
 	}
 
 	if policiesMap, ok := req.Parameters["Policies"].(map[string]interface{}); ok {
 		if ppMap, ok := policiesMap["PasswordPolicy"].(map[string]interface{}); ok {
+			// Every member is read at its awsJson1_1 shape — a typed JSON
+			// value under its PascalCase name. A present member of any
+			// other form is a wire-shape violation and rejected outright.
 			if val, ok := ppMap["MinimumLength"]; ok {
-				switch v := val.(type) {
-				case int:
-					policy.MinimumLength = v
-				case float64:
-					policy.MinimumLength = int(v)
-				case string:
-					policy.MinimumLength = parseInt(v)
+				n, numeric := parseJSONInt(val)
+				if !numeric {
+					return nil, ErrInvalidParameter
 				}
+				policy.MinimumLength = n
 				// The member was explicitly present, so zero is a rejected
 				// out-of-range value, not the "unset" marker the
 				// stored-policy check tolerates.
@@ -44,60 +37,54 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 				hasPolicy = true
 			}
 			if val, ok := ppMap["RequireUppercase"]; ok {
-				if b, ok := val.(bool); ok {
-					policy.RequireUppercase = b
-				} else if s, ok := val.(string); ok {
-					policy.RequireUppercase = strings.ToLower(s) == "true"
+				b, isBool := val.(bool)
+				if !isBool {
+					return nil, ErrInvalidParameter
 				}
+				policy.RequireUppercase = b
 				hasPolicy = true
 			}
 			if val, ok := ppMap["RequireLowercase"]; ok {
-				if b, ok := val.(bool); ok {
-					policy.RequireLowercase = b
-				} else if s, ok := val.(string); ok {
-					policy.RequireLowercase = strings.ToLower(s) == "true"
+				b, isBool := val.(bool)
+				if !isBool {
+					return nil, ErrInvalidParameter
 				}
+				policy.RequireLowercase = b
 				hasPolicy = true
 			}
 			if val, ok := ppMap["RequireNumbers"]; ok {
-				if b, ok := val.(bool); ok {
-					policy.RequireNumbers = b
-				} else if s, ok := val.(string); ok {
-					policy.RequireNumbers = strings.ToLower(s) == "true"
+				b, isBool := val.(bool)
+				if !isBool {
+					return nil, ErrInvalidParameter
 				}
+				policy.RequireNumbers = b
 				hasPolicy = true
 			}
 			if val, ok := ppMap["RequireSymbols"]; ok {
-				if b, ok := val.(bool); ok {
-					policy.RequireSymbols = b
-				} else if s, ok := val.(string); ok {
-					policy.RequireSymbols = strings.ToLower(s) == "true"
+				b, isBool := val.(bool)
+				if !isBool {
+					return nil, ErrInvalidParameter
 				}
+				policy.RequireSymbols = b
 				hasPolicy = true
 			}
 			if val, ok := ppMap["TemporaryPasswordValidityDays"]; ok {
-				switch v := val.(type) {
-				case int:
-					policy.TemporaryPasswordValidityDays = v
-				case float64:
-					policy.TemporaryPasswordValidityDays = int(v)
-				case string:
-					policy.TemporaryPasswordValidityDays = parseInt(v)
+				n, numeric := parseJSONInt(val)
+				if !numeric {
+					return nil, ErrInvalidParameter
 				}
+				policy.TemporaryPasswordValidityDays = n
 				if err := validatePasswordPolicyRanges(policy); err != nil {
 					return nil, err
 				}
 				hasPolicy = true
 			}
 			if val, ok := ppMap["PasswordHistorySize"]; ok {
-				switch v := val.(type) {
-				case int:
-					policy.PasswordHistorySize = v
-				case float64:
-					policy.PasswordHistorySize = int(v)
-				case string:
-					policy.PasswordHistorySize = parseInt(v)
+				n, numeric := parseJSONInt(val)
+				if !numeric {
+					return nil, ErrInvalidParameter
 				}
+				policy.PasswordHistorySize = n
 				if err := validatePasswordPolicyRanges(policy); err != nil {
 					return nil, err
 				}
@@ -106,58 +93,10 @@ func parsePasswordPolicyWithBase(req *request.ParsedRequest, base *cognitostore.
 		}
 	}
 
-	if val := req.GetParam("Policies.PasswordPolicy.MinimumLength"); val != "" {
-		policy.MinimumLength = parseInt(val)
-		// The member was explicitly present, so zero is a rejected
-		// out-of-range value, not the "unset" marker the stored-policy
-		// check tolerates.
-		if err := validateExplicitMinimumLength(policy.MinimumLength); err != nil {
-			return nil, err
-		}
-		if err := validatePasswordPolicyRanges(policy); err != nil {
-			return nil, err
-		}
-		hasPolicy = true
-	}
-	if val := req.GetParam("Policies.PasswordPolicy.RequireUppercase"); val != "" {
-		policy.RequireUppercase = strings.ToLower(val) == "true"
-		hasPolicy = true
-	}
-	if val := req.GetParam("Policies.PasswordPolicy.RequireLowercase"); val != "" {
-		policy.RequireLowercase = strings.ToLower(val) == "true"
-		hasPolicy = true
-	}
-	if val := req.GetParam("Policies.PasswordPolicy.RequireNumbers"); val != "" {
-		policy.RequireNumbers = strings.ToLower(val) == "true"
-		hasPolicy = true
-	}
-	if val := req.GetParam("Policies.PasswordPolicy.RequireSymbols"); val != "" {
-		policy.RequireSymbols = strings.ToLower(val) == "true"
-		hasPolicy = true
-	}
-	if val := req.GetParam("Policies.PasswordPolicy.PasswordHistorySize"); val != "" {
-		policy.PasswordHistorySize = parseInt(val)
-		if err := validatePasswordPolicyRanges(policy); err != nil {
-			return nil, err
-		}
-		hasPolicy = true
-	}
-	if val := req.GetParam("Policies.PasswordPolicy.TemporaryPasswordValidityDays"); val != "" {
-		policy.TemporaryPasswordValidityDays = parseInt(val)
-		if err := validatePasswordPolicyRanges(policy); err != nil {
-			return nil, err
-		}
-		hasPolicy = true
-	}
-
 	if !hasPolicy {
 		return nil, nil
 	}
 	return policy, nil
-}
-
-func parseLambdaConfig(req *request.ParsedRequest) *cognitostore.LambdaConfig {
-	return parseLambdaConfigWithBase(req, nil)
 }
 
 func parseLambdaConfigWithBase(req *request.ParsedRequest, base *cognitostore.LambdaConfig) *cognitostore.LambdaConfig {
@@ -230,28 +169,6 @@ func parseLambdaConfigWithBase(req *request.ParsedRequest, base *cognitostore.La
 		}
 	}
 
-	fields := []struct {
-		param string
-		field *string
-	}{
-		{"LambdaConfig.PreSignUp", &config.PreSignUp},
-		{"LambdaConfig.CustomMessage", &config.CustomMessage},
-		{"LambdaConfig.PostConfirmation", &config.PostConfirmation},
-		{"LambdaConfig.PreAuthentication", &config.PreAuthentication},
-		{"LambdaConfig.PostAuthentication", &config.PostAuthentication},
-		{"LambdaConfig.DefineAuthChallenge", &config.DefineAuthChallenge},
-		{"LambdaConfig.CreateAuthChallenge", &config.CreateAuthChallenge},
-		{"LambdaConfig.VerifyAuthChallengeResponse", &config.VerifyAuthChallengeResponse},
-		{"LambdaConfig.PreTokenGeneration", &config.PreTokenGeneration},
-		{"LambdaConfig.UserMigration", &config.UserMigration},
-		{"LambdaConfig.KMSKeyID", &config.KMSKeyID},
-	}
-	for _, f := range fields {
-		if val := req.GetParam(f.param); val != "" {
-			*f.field = val
-			hasConfig = true
-		}
-	}
 	if !hasConfig {
 		return nil
 	}
@@ -296,7 +213,7 @@ func parseEmailConfiguration(req *request.ParsedRequest) *cognitostore.EmailConf
 	return config
 }
 
-func parseSmsConfiguration(req *request.ParsedRequest) *cognitostore.SmsConfiguration {
+func parseSmsConfiguration(req *request.ParsedRequest, poolRegion string) (*cognitostore.SmsConfiguration, error) {
 	hasConfig := false
 	config := &cognitostore.SmsConfiguration{}
 	if m, ok := req.Parameters["SmsConfiguration"].(map[string]interface{}); ok {
@@ -312,11 +229,77 @@ func parseSmsConfiguration(req *request.ParsedRequest) *cognitostore.SmsConfigur
 			config.SnsRegion = v
 			hasConfig = true
 		}
+		if eums, ok := m["EumsSms"].(map[string]interface{}); ok {
+			// The End User Messaging SMS configuration is the documented
+			// alternative to SNS delivery: a pool carries SnsCallerArn or
+			// this structure, never both, and the structure itself always
+			// names the role Cognito assumes (CallerArn is required). Its
+			// Region, when present, must be the pool's own Region.
+			if config.SnsCallerArn != "" {
+				return nil, ErrInvalidParameter
+			}
+			eumsCfg := &cognitostore.EumsSmsConfiguration{
+				CallerArn:            getStringParam(eums, "CallerArn"),
+				ExternalId:           getStringParam(eums, "ExternalId"),
+				OriginationIdentity:  getStringParam(eums, "OriginationIdentity"),
+				ConfigurationSetName: getStringParam(eums, "ConfigurationSetName"),
+				InEntityId:           getStringParam(eums, "InEntityId"),
+				InTemplateId:         getStringParam(eums, "InTemplateId"),
+				Region:               getStringParam(eums, "Region"),
+			}
+			if eumsCfg.CallerArn == "" {
+				return nil, ErrInvalidParameter
+			}
+			if eumsCfg.Region != "" && eumsCfg.Region != poolRegion {
+				return nil, ErrInvalidParameter
+			}
+			config.EumsSms = eumsCfg
+			hasConfig = true
+		}
 	}
 	if !hasConfig {
-		return nil
+		return nil, nil
 	}
-	return config
+	return config, nil
+}
+
+// parseSignInPolicy reads the Policies.SignInPolicy member: the first
+// authentication factors the pool permits under choice-based sign-in.
+// A present list must hold only AuthFactorType values within the model's
+// length bounds; SOFTWARE_TOKEN is excluded because the model documents
+// it as unsupported as a first factor.
+func parseSignInPolicy(req *request.ParsedRequest) (*cognitostore.SignInPolicy, error) {
+	policiesMap, ok := req.Parameters["Policies"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	signInMap, ok := policiesMap["SignInPolicy"].(map[string]interface{})
+	if !ok {
+		return nil, nil
+	}
+	rawFactors, ok := signInMap["AllowedFirstAuthFactors"].([]interface{})
+	if !ok {
+		// Absence leaves the policy empty; a present member of the wrong
+		// type is malformed and must not fail open to an all-factors
+		// policy.
+		if _, present := signInMap["AllowedFirstAuthFactors"]; present {
+			return nil, ErrInvalidParameter
+		}
+		return &cognitostore.SignInPolicy{}, nil
+	}
+	factors := make([]string, 0, len(rawFactors))
+	for _, v := range rawFactors {
+		s, isString := v.(string)
+		if !isString || !validateAuthFactor(s) {
+			return nil, ErrInvalidParameter
+		}
+		factors = append(factors, s)
+	}
+	if len(factors) < cognitostore.MinSignInPolicyFirstAuthFactors ||
+		len(factors) > cognitostore.MaxSignInPolicyFirstAuthFactors {
+		return nil, ErrInvalidParameter
+	}
+	return &cognitostore.SignInPolicy{AllowedFirstAuthFactors: factors}, nil
 }
 
 func parseAdminCreateUserConfig(req *request.ParsedRequest) *cognitostore.AdminCreateUserConfig {
@@ -426,6 +409,11 @@ func parseUserPoolAddOns(req *request.ParsedRequest) *cognitostore.UserPoolAddOn
 	if v, ok := m["AdvancedSecurityMode"].(string); ok {
 		addOns.AdvancedSecurityMode = v
 	}
+	if v, ok := m["AdvancedSecurityAdditionalFlows"].(map[string]interface{}); ok {
+		addOns.AdvancedSecurityAdditionalFlows = &cognitostore.AdvancedSecurityAdditionalFlows{
+			CustomAuthMode: getStringParam(v, "CustomAuthMode"),
+		}
+	}
 	return addOns
 }
 
@@ -448,6 +436,12 @@ func parseAccountRecoverySetting(req *request.ParsedRequest) *cognitostore.Accou
 				setting.RecoveryMechanisms = append(setting.RecoveryMechanisms, rm)
 			}
 		}
+	}
+	// Like every sibling parser, a member present but carrying no mechanisms
+	// parses as "not set" — it must not overwrite the stored setting with an
+	// empty one.
+	if len(setting.RecoveryMechanisms) == 0 {
+		return nil
 	}
 	return setting
 }
@@ -479,13 +473,21 @@ func parseDeviceConfiguration(req *request.ParsedRequest) *cognitostore.DeviceCo
 	return cfg
 }
 
-func parseSchemaAttributes(req *request.ParsedRequest) []cognitostore.SchemaAttributeType {
+// parseSchemaAttributes reads the create-only Schema member. A present list
+// must sit inside the SchemaAttributesListType bounds and every member must
+// be a well-formed attribute definition; an absent member leaves the schema
+// empty (the standard attributes apply).
+func parseSchemaAttributes(req *request.ParsedRequest) ([]cognitostore.SchemaAttributeType, error) {
 	var result []cognitostore.SchemaAttributeType
 	if rawList, ok := req.Parameters["Schema"].([]interface{}); ok {
+		if len(rawList) < cognitostore.MinSchemaAttributesPerPool ||
+			len(rawList) > cognitostore.MaxSchemaAttributesPerPool {
+			return nil, ErrInvalidParameter
+		}
 		for _, item := range rawList {
 			m, ok := item.(map[string]interface{})
 			if !ok {
-				continue
+				return nil, ErrInvalidParameter
 			}
 			name := getStringParam(m, "Name")
 			// A standard attribute definition starts from the documented
@@ -526,5 +528,5 @@ func parseSchemaAttributes(req *request.ParsedRequest) []cognitostore.SchemaAttr
 			}
 		}
 	}
-	return result
+	return result, nil
 }

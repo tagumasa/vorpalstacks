@@ -5,14 +5,22 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
-	"strings"
 	"unicode/utf8"
 
 	awserrors "vorpalstacks/internal/common/errors"
-	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
+
+// applyListLimitDefaults clamps an already-parsed list limit to the
+// service's defaulting rule: an omitted or out-of-range value lists at the
+// maximum page size.
+func applyListLimitDefaults(maxResults int) int {
+	if maxResults <= 0 || maxResults > listLimitMax {
+		return listLimitMax
+	}
+	return maxResults
+}
 
 // validators.go — input validation functions derived from Smithy model traits.
 // All validators return bool (true = valid) following the API Gateway pattern.
@@ -82,16 +90,6 @@ var validProviderTypes = map[string]bool{
 	"OIDC":            true,
 }
 
-// validAuthFactors is the set of Smithy AuthFactorType enum values (5 total).
-// Used by GetUserAuthFactors response (ConfiguredUserAuthFactors field).
-var validAuthFactors = map[string]bool{
-	"PASSWORD":       true,
-	"EMAIL_OTP":      true,
-	"SMS_OTP":        true,
-	"WEB_AUTHN":      true,
-	"SOFTWARE_TOKEN": true,
-}
-
 // validDeliveryMediums is the set of Smithy DeliveryMediumType enum values.
 var validDeliveryMediums = map[string]bool{
 	"SMS":   true,
@@ -134,32 +132,25 @@ func validateImageFileSize(data []byte) bool {
 
 // ---------------------------------------------------------------------------
 // Tag validation — Smithy ArnType, TagKeysType, TagValueType constraints.
-// Shared by both the Core layer (tag_core.go, admin handler path) and the
-// HTTP tag handler (tag_operations.go, via tagutil callbacks).
+// Applied by the tag Cores (tag_core.go) on both the admin and the HTTP
+// plane. The ArnType length and pattern constraints are enforced by
+// validateArnType further down in this file.
 // Reference: cognito-identity-provider-2016-04-18.json shapes ArnType
 // (@length(min=20, max=2048)), TagKeysType (@length(min=1, max=128)),
 // TagValueType (@length(min=0, max=256)).
 // ---------------------------------------------------------------------------
 
-// validateCognitoResourceArn validates the ResourceArn parameter against the
-// Smithy ArnType length constraint [20, 2048] and the @required trait.
-func validateCognitoResourceArn(arn string) error {
-	if arn == "" {
-		return ErrInvalidParameter
-	}
-	if len(arn) < 20 || len(arn) > 2048 {
-		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("ResourceArn length must be 20-2048: got %d", len(arn)))
-	}
-	return nil
-}
+// minTagKeyLength is the TagKeysType length minimum; the tag-shape maxima
+// live in the shared cross-service tag limits, which the validators below
+// reference rather than duplicating.
+const minTagKeyLength = 1
 
 // validateCognitoTagKey validates a single tag key against the Smithy
 // TagKeysType length constraint [1, 128] (counted in Unicode characters).
 func validateCognitoTagKey(key string) error {
-	if n := utf8.RuneCountInString(key); n < 1 || n > 128 {
+	if n := utf8.RuneCountInString(key); n < minTagKeyLength || n > tagutil.MaxTagKeyLength {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Tag key length must be 1-128: got %d", n))
+			fmt.Sprintf("Tag key length must be %d-%d: got %d", minTagKeyLength, tagutil.MaxTagKeyLength, n))
 	}
 	return nil
 }
@@ -167,9 +158,30 @@ func validateCognitoTagKey(key string) error {
 // validateCognitoTagValue validates a single tag value against the Smithy
 // TagValueType length constraint [0, 256] (counted in Unicode characters).
 func validateCognitoTagValue(value string) error {
-	if n := utf8.RuneCountInString(value); n > 256 {
+	if n := utf8.RuneCountInString(value); n > tagutil.MaxTagValueLength {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Tag value length must not exceed 256: got %d", n))
+			fmt.Sprintf("Tag value length must not exceed %d: got %d", tagutil.MaxTagValueLength, n))
+	}
+	return nil
+}
+
+// cognitoTagViolation maps a tag-limit check verdict onto the Cognito
+// InvalidParameterException shape. Both tag entry points — the map form and
+// the HTTP tag-handler slice form — adjudicate through here so the two
+// surfaces cannot drift apart in error semantics or message texts. The
+// offender finders are lazy: only the verdict's own finder runs.
+func cognitoTagViolation(v tagutil.Violation, firstKeyErr, firstValueErr func() error) error {
+	switch v {
+	case tagutil.TooManyTags:
+		return awserrors.NewInvalidParameterException(
+			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
+	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+		return firstKeyErr()
+	case tagutil.TagValueTooLong:
+		return firstValueErr()
+	case tagutil.ReservedTagKey:
+		return awserrors.NewInvalidParameterException(
+			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
 	}
 	return nil
 }
@@ -179,19 +191,10 @@ func validateCognitoTagValue(value string) error {
 // values of at most 256 characters and the aws: key prefix reserved for AWS
 // use.
 func validateCognitoTags(tags map[string]string) error {
-	switch v, _ := tagutil.CheckStringTags(tags, tagutil.StandardLimits()); v {
-	case tagutil.TooManyTags:
-		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
-	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
-		return cognitoTagKeyError(tags)
-	case tagutil.TagValueTooLong:
-		return cognitoTagValueError(tags)
-	case tagutil.ReservedTagKey:
-		return awserrors.NewInvalidParameterException(
-			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
-	}
-	return nil
+	v, _ := tagutil.CheckStringTags(tags, tagutil.StandardLimits())
+	return cognitoTagViolation(v,
+		func() error { return cognitoTagKeyError(tags) },
+		func() error { return cognitoTagValueError(tags) })
 }
 
 // cognitoTagKeyError reports the first key outside the 1-128 range in the
@@ -243,29 +246,24 @@ func validateCognitoTagKeys(keys []string) error {
 // the same limits as the map form (count, aws: reservation, key and value
 // lengths) so both entry points enforce one contract.
 func validateCognitoTagsFromTypes(tagList []tagutil.Tag) error {
-	switch v, _ := tagutil.CheckTags(tagList, tagutil.StandardLimits()); v {
-	case tagutil.TooManyTags:
-		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Number of tags must not exceed %d", tagutil.MaxTagsPerResource))
-	case tagutil.TagKeyTooShort, tagutil.TagKeyTooLong:
+	v, _ := tagutil.CheckTags(tagList, tagutil.StandardLimits())
+	firstKey := func() error {
 		for _, t := range tagList {
 			if err := validateCognitoTagKey(t.Key); err != nil {
 				return err
 			}
 		}
 		return nil
-	case tagutil.TagValueTooLong:
+	}
+	firstValue := func() error {
 		for _, t := range tagList {
 			if err := validateCognitoTagValue(t.Value); err != nil {
 				return err
 			}
 		}
 		return nil
-	case tagutil.ReservedTagKey:
-		return awserrors.NewInvalidParameterException(
-			"Tag keys cannot start with 'aws:' because the prefix is reserved for AWS use")
 	}
-	return nil
+	return cognitoTagViolation(v, firstKey, firstValue)
 }
 
 // ---------------------------------------------------------------------------
@@ -298,6 +296,19 @@ func validateUpdateReplicaStatus(status string) bool {
 	return validUpdateReplicaStatuses[status]
 }
 
+// validDeviceRememberedStatuses is the Smithy DeviceRememberedStatusType
+// enum (lowercase wire values).
+var validDeviceRememberedStatuses = map[string]bool{
+	"remembered":     true,
+	"not_remembered": true,
+}
+
+// validateDeviceRememberedStatus returns true if the value is a recognised
+// Smithy DeviceRememberedStatusType enum value.
+func validateDeviceRememberedStatus(status string) bool {
+	return validDeviceRememberedStatuses[status]
+}
+
 // validAttributeDataTypes is the set of Smithy AttributeDataType enum values
 // (wire format is PascalCase: String/Number/DateTime/Boolean).
 var validAttributeDataTypes = map[string]bool{
@@ -313,22 +324,31 @@ func validateAttributeDataType(t string) bool {
 	return validAttributeDataTypes[t]
 }
 
+// Token-validity bounds from the Smithy model: AccessTokenValidityType and
+// IdTokenValidityType share the maximum 86400; RefreshTokenValidityType
+// maxes at 315360000.
+const (
+	maxTokenValidity        = 86400
+	maxRefreshTokenValidity = 315360000
+)
+
 // validateAccessTokenValidity returns true if the value is within the Smithy
-// AccessTokenValidityType range [0, 86400].
+// AccessTokenValidityType range [1, 86400].
 func validateAccessTokenValidity(v int) bool {
-	return v >= 0 && v <= 86400
+	return v >= 1 && v <= maxTokenValidity
 }
 
 // validateIdTokenValidity returns true if the value is within the Smithy
-// IdTokenValidityType range [0, 86400].
+// IdTokenValidityType range [1, 86400].
 func validateIdTokenValidity(v int) bool {
-	return v >= 0 && v <= 86400
+	return v >= 1 && v <= maxTokenValidity
 }
 
 // validateRefreshTokenValidity returns true if the value is within the Smithy
-// RefreshTokenValidityType range [0, 315360000].
+// RefreshTokenValidityType range [0, 315360000] — the only validity member
+// whose minimum is 0.
 func validateRefreshTokenValidity(v int) bool {
-	return v >= 0 && v <= 315360000
+	return v >= 0 && v <= maxRefreshTokenValidity
 }
 
 // validatePrecedence returns true if the value satisfies the Smithy
@@ -361,14 +381,21 @@ var standardSchemaAttributeNames = map[string]bool{
 // ^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$
 var customAttributeNamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
 
+// CustomAttributeNameType length range from the Smithy model.
+const (
+	minCustomAttributeNameLength = 1
+	maxCustomAttributeNameLength = 20
+)
+
 // validateCustomAttributeName validates a custom attribute name against the
 // Smithy CustomAttributeNameType length [1, 20] (counted in Unicode
 // characters — the pattern admits multibyte categories) and pattern
 // constraints.
 func validateCustomAttributeName(name string) error {
-	if n := utf8.RuneCountInString(name); n < 1 || n > 20 {
+	if n := utf8.RuneCountInString(name); n < minCustomAttributeNameLength || n > maxCustomAttributeNameLength {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("Custom attribute name length must be 1-20: got %d", n))
+			fmt.Sprintf("Custom attribute name length must be %d-%d: got %d",
+				minCustomAttributeNameLength, maxCustomAttributeNameLength, n))
 	}
 	if !customAttributeNamePattern.MatchString(name) {
 		return awserrors.NewInvalidParameterException(
@@ -377,8 +404,8 @@ func validateCustomAttributeName(name string) error {
 	return nil
 }
 
-// totpCodePattern matches 6-digit TOTP codes per RFC 6238.
-var totpCodePattern = regexp.MustCompile(`^[0-9]{6}$`)
+// totpCodePattern matches totpCodeDigits-digit TOTP codes per RFC 6238.
+var totpCodePattern = regexp.MustCompile(fmt.Sprintf(`^[0-9]{%d}$`, totpCodeDigits))
 
 // validateMFADeliveryMedium returns true if the value is a recognised Smithy
 // DeliveryMediumType enum value (SMS/EMAIL).
@@ -386,12 +413,18 @@ func validateMFADeliveryMedium(m string) bool {
 	return validDeliveryMediums[m]
 }
 
+// RegionNameType length range from the Smithy model.
+const (
+	minRegionNameLength = 5
+	maxRegionNameLength = 32
+)
+
 // validateRegionName validates a region name against the Smithy
 // RegionNameType length constraint [5, 32] counted in Unicode characters.
 func validateRegionName(name string) error {
-	if n := utf8.RuneCountInString(name); n < 5 || n > 32 {
+	if n := utf8.RuneCountInString(name); n < minRegionNameLength || n > maxRegionNameLength {
 		return awserrors.NewInvalidParameterException(
-			fmt.Sprintf("RegionName length must be 5-32: got %d", n))
+			fmt.Sprintf("RegionName length must be %d-%d: got %d", minRegionNameLength, maxRegionNameLength, n))
 	}
 	return nil
 }
@@ -443,7 +476,10 @@ var validUserPoolTiers = map[string]bool{
 
 func validateUserPoolTier(v string) bool { return validUserPoolTiers[v] }
 
-// validExplicitAuthFlows is the Smithy ExplicitAuthFlowsType enum (9 values).
+// validExplicitAuthFlows is the ExplicitAuthFlowsType enum. Nine values come
+// from the Smithy model; ALLOW_CLIENT_TOKEN_AUTH is recorded by the AWS
+// developer guide's machine-to-machine authorisation pages — the vendored
+// model enum lags the documented value — and is accepted on the wire.
 var validExplicitAuthFlows = map[string]bool{
 	"ADMIN_NO_SRP_AUTH":              true,
 	"CUSTOM_AUTH_FLOW_ONLY":          true,
@@ -454,6 +490,7 @@ var validExplicitAuthFlows = map[string]bool{
 	"ALLOW_USER_SRP_AUTH":            true,
 	"ALLOW_REFRESH_TOKEN_AUTH":       true,
 	"ALLOW_USER_AUTH":                true,
+	"ALLOW_CLIENT_TOKEN_AUTH":        true,
 }
 
 func validateExplicitAuthFlow(v string) bool { return validExplicitAuthFlows[v] }
@@ -482,6 +519,25 @@ var validAdvancedSecurityModes = map[string]bool{
 }
 
 func validateAdvancedSecurityMode(v string) bool { return validAdvancedSecurityModes[v] }
+
+// validCustomAuthModes is the Smithy AdvancedSecurityEnabledModeType enum
+// (the CustomAuthMode member of AdvancedSecurityAdditionalFlows) — unlike
+// AdvancedSecurityModeType it carries no OFF value.
+var validCustomAuthModes = map[string]bool{
+	"AUDIT": true, "ENFORCED": true,
+}
+
+func validateCustomAuthMode(v string) bool { return validCustomAuthModes[v] }
+
+// validAuthFactors is the Smithy AuthFactorType enum less SOFTWARE_TOKEN:
+// the model documents SOFTWARE_TOKEN as not currently supported as a
+// first authentication factor ("Do not include this value in
+// AllowedFirstAuthFactors").
+var validAuthFactors = map[string]bool{
+	"PASSWORD": true, "EMAIL_OTP": true, "SMS_OTP": true, "WEB_AUTHN": true,
+}
+
+func validateAuthFactor(v string) bool { return validAuthFactors[v] }
 
 // validDefaultEmailOptions is the Smithy DefaultEmailOptionType enum.
 var validDefaultEmailOptions = map[string]bool{
@@ -572,6 +628,14 @@ var validVerifiedAttributes = map[string]bool{
 
 func validateVerifiedAttribute(v string) bool { return validVerifiedAttributes[v] }
 
+// Length bounds of the name-shaped string types, which all carry the
+// Smithy length range [1, 128]: UsernameType and GroupNameType (validated
+// by validateUsernamePattern), UserPoolNameType, and ClientNameType.
+const (
+	minNameLength = 1
+	maxNameLength = 128
+)
+
 // usernamePattern is the Smithy pattern for UsernameType and GroupNameType:
 // ^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$ (length 1-128).
 var usernamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
@@ -581,7 +645,7 @@ var usernamePattern = regexp.MustCompile(`^[\p{L}\p{M}\p{S}\p{N}\p{P}]+$`)
 // UsernameType / GroupNameType.
 func validateUsernamePattern(v string) bool {
 	n := utf8.RuneCountInString(v)
-	return n >= 1 && n <= 128 && usernamePattern.MatchString(v)
+	return n >= minNameLength && n <= maxNameLength && usernamePattern.MatchString(v)
 }
 
 // userPoolNamePattern is the Smithy pattern for UserPoolNameType:
@@ -591,7 +655,7 @@ var userPoolNamePattern = regexp.MustCompile(`^[\w\s+=,.@-]+$`)
 // validateUserPoolNamePattern returns true if the value matches the Smithy
 // pattern and length constraint (1-128) for UserPoolNameType.
 func validateUserPoolNamePattern(v string) bool {
-	return len(v) >= 1 && len(v) <= 128 && userPoolNamePattern.MatchString(v)
+	return len(v) >= minNameLength && len(v) <= maxNameLength && userPoolNamePattern.MatchString(v)
 }
 
 // Password-policy range bounds from the Smithy model:
@@ -633,8 +697,14 @@ func validatePasswordHistorySize(v int) bool {
 // ClientNameType constraints (length 1-128, pattern ^[\w\s+=,.@-]+$, which is
 // shared with UserPoolNameType).
 func validateClientNamePattern(v string) bool {
-	return len(v) >= 1 && len(v) <= 128 && userPoolNamePattern.MatchString(v)
+	return len(v) >= minNameLength && len(v) <= maxNameLength && userPoolNamePattern.MatchString(v)
 }
+
+// ArnType length range from the Smithy model.
+const (
+	minArnLength = 20
+	maxArnLength = 2048
+)
 
 // arnTypePattern is the Smithy ArnType pattern.
 var arnTypePattern = regexp.MustCompile(`^arn:[\w+=/,.@-]+:[\w+=/,.@-]+:([\w+=/,.@-]*)?:[0-9]+:[\w+=/,.@-]+(:[\w+=/,.@-]+)?(:[\w+=/,.@-]+)?$`)
@@ -642,7 +712,7 @@ var arnTypePattern = regexp.MustCompile(`^arn:[\w+=/,.@-]+:[\w+=/,.@-]+:([\w+=/,
 // validateArnType returns true if the value matches the Smithy ArnType
 // constraints (length 20-2048 plus the generic ARN pattern).
 func validateArnType(v string) bool {
-	return len(v) >= 20 && len(v) <= 2048 && arnTypePattern.MatchString(v)
+	return len(v) >= minArnLength && len(v) <= maxArnLength && arnTypePattern.MatchString(v)
 }
 
 // validateExplicitMinimumLength checks the Smithy
@@ -772,60 +842,75 @@ func validateUserPoolConfig(pool *cognitostore.UserPool) error {
 
 // listLimitMax is the upper bound shared by the Cognito list-limit shapes
 // (QueryLimitType, PoolQueryLimitType, QueryLimit — all Smithy max 60).
-const listLimitMax = 60
+// The store package owns the value; this alias is the package-local name
+// the parsers and Core defaults reference.
+const listLimitMax = cognitostore.MaxListLimit
 
 // parseListLimit extracts a list-limit parameter typed QueryLimitType in the
-// Smithy model (range 0-60, e.g. ListUsers.Limit). Absent or zero selects
-// defaultValue, matching the AWS behaviour of returning the documented
-// default; an explicitly provided value outside 0-60 is rejected.
-func parseListLimit(params map[string]interface{}, key string, defaultValue int) (int, error) {
-	if err := rejectNonNumericLimit(params, key, "0"); err != nil {
+// Smithy model (min 0, e.g. ListUsers.Limit). Absent or zero selects
+// maxValue as the page size — the AWS-documented default equals the shape
+// maximum; an explicitly provided value outside 0-maxValue is rejected.
+func parseListLimit(params map[string]interface{}, key string, maxValue int) (int, error) {
+	if err := rejectNonNumericLimit(params, key, "0", maxValue); err != nil {
 		return 0, err
 	}
-	v, present := request.GetIntParamCaseInsensitive(params, key)
-	if !present || v == 0 {
-		return defaultValue, nil
+	raw, present := params[key]
+	if !present {
+		return maxValue, nil
 	}
-	if v < 0 || v > listLimitMax {
+	v, _ := parseJSONInt(raw)
+	if v == 0 {
+		return maxValue, nil
+	}
+	if v < 0 || v > maxValue {
 		return 0, awserrors.NewAWSError("InvalidParameterException",
-			fmt.Sprintf("%s must be between 0 and %d", key, listLimitMax), http.StatusBadRequest)
+			fmt.Sprintf("%s must be between 0 and %d", key, maxValue), http.StatusBadRequest)
 	}
 	return v, nil
 }
 
 // parseStrictListLimit extracts a list-limit parameter whose Smithy shape
-// has a minimum of 1 (PoolQueryLimitType / QueryLimit, e.g. ListUserPools,
-// ListUserPoolClients). Absent selects defaultValue; an explicitly provided
-// value outside 1-60 is rejected, including an explicit zero.
-func parseStrictListLimit(params map[string]interface{}, key string, defaultValue int) (int, error) {
-	if err := rejectNonNumericLimit(params, key, "1"); err != nil {
+// has a minimum of 1 (PoolQueryLimitType / QueryLimit /
+// ListResourceServersLimitType, e.g. ListUserPools, ListUserPoolClients,
+// ListResourceServers). Absent selects maxValue as the page size — the
+// AWS-documented default equals the shape maximum; an explicitly provided
+// value outside 1-maxValue is rejected, including an explicit zero.
+func parseStrictListLimit(params map[string]interface{}, key string, maxValue int) (int, error) {
+	if err := rejectNonNumericLimit(params, key, "1", maxValue); err != nil {
 		return 0, err
 	}
-	v, present := request.GetIntParamCaseInsensitive(params, key)
+	raw, present := params[key]
 	if !present {
-		return defaultValue, nil
+		return maxValue, nil
 	}
-	if v < 1 || v > listLimitMax {
+	v, _ := parseJSONInt(raw)
+	if v < 1 || v > maxValue {
 		return 0, awserrors.NewAWSError("InvalidParameterException",
-			fmt.Sprintf("%s must be between 1 and %d", key, listLimitMax), http.StatusBadRequest)
+			fmt.Sprintf("%s must be between 1 and %d", key, maxValue), http.StatusBadRequest)
 	}
 	return v, nil
 }
 
 // rejectNonNumericLimit fails closed when a limit parameter is present but
-// cannot be interpreted as an integer. GetIntParamCaseInsensitive cannot
-// distinguish that case from an absent parameter, so presence is checked
-// against the key variants directly.
-func rejectNonNumericLimit(params map[string]interface{}, key, lowerBound string) error {
-	for _, k := range []string{key, request.LowerFirst(key), strings.ToLower(key)} {
-		if _, ok := params[k]; !ok {
-			continue
-		}
-		if _, isInt := request.GetIntParamCaseInsensitive(params, key); !isInt {
+// cannot be read as a JSON number. Presence at the exact awsJson1_1 member
+// name is the only form the parser recognises, so an uninterpretable value
+// is a wire-shape violation, never a silently omitted member.
+func rejectNonNumericLimit(params map[string]interface{}, key, lowerBound string, maxValue int) error {
+	if v, ok := params[key]; ok {
+		if _, isInt := parseJSONInt(v); !isInt {
 			return awserrors.NewAWSError("InvalidParameterException",
-				fmt.Sprintf("%s must be a number between %s and %d", key, lowerBound, listLimitMax), http.StatusBadRequest)
+				fmt.Sprintf("%s must be a number between %s and %d", key, lowerBound, maxValue), http.StatusBadRequest)
 		}
-		break
 	}
 	return nil
+}
+
+// validateAccountTakeoverAction validates against the Smithy enum
+// AccountTakeoverEventActionType: BLOCK, MFA_IF_CONFIGURED, MFA_REQUIRED, NO_ACTION.
+func validateAccountTakeoverAction(action string) bool {
+	switch action {
+	case "BLOCK", "MFA_IF_CONFIGURED", "MFA_REQUIRED", "NO_ACTION":
+		return true
+	}
+	return false
 }

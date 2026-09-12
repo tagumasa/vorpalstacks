@@ -1,41 +1,49 @@
 package cognitoidentityprovider
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
+	"strings"
 	"time"
 
 	"vorpalstacks/internal/store/aws/common"
 )
 
-func findTokenByValue[T any](store *common.BaseStore, tokenValue string, getToken func(*T) string, getExpires func(*T) time.Time) (*T, error) {
-	var found *T
-	var foundKey string
-	err := store.ForEach(func(key string, value []byte) error {
-		var t T
-		if err := json.Unmarshal(value, &t); err != nil {
-			return err
-		}
-		if getToken(&t) == tokenValue {
-			cp := t
-			found = &cp
-			foundKey = key
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	if found == nil {
+// findTokenByValue resolves a token value through the token-value index and
+// loads the record it points at: one index read plus one record read, with
+// no bucket scan. An index miss means the value identifies no token — the
+// index is written together with the record, so a record without an index
+// entry is not resurrected by scanning. An index entry whose record is gone
+// is dropped. An expired record takes its index entry with it.
+func findTokenByValue[T any](store *common.BaseStore, tokenValue string, getExpires func(*T) time.Time) (*T, error) {
+	var key string
+	if err := store.Get(tokenIndexKey(tokenValue), &key); err != nil {
 		return nil, ErrTokenNotFound
 	}
-	if time.Now().After(getExpires(found)) {
-		_ = store.Delete(foundKey)
+	var t T
+	if err := store.Get(key, &t); err != nil {
+		_ = store.Delete(tokenIndexKey(tokenValue))
+		return nil, ErrTokenNotFound
+	}
+	if time.Now().After(getExpires(&t)) {
+		_ = store.Delete(key)
+		_ = store.Delete(tokenIndexKey(tokenValue))
 		return nil, ErrTokenExpired
 	}
-	return found, nil
+	return &t, nil
+}
+
+// deleteTokenEntry removes a token record and its value-index entry in one
+// step. Scan-driven deletions (per-user token sweeps and the pool cascade)
+// receive the record's bytes, from which the index key derives; a value
+// that cannot be parsed still loses its record key.
+func deleteTokenEntry(store *common.BaseStore, key string, value []byte) error {
+	var rec struct {
+		Token string
+	}
+	if err := json.Unmarshal(value, &rec); err == nil && rec.Token != "" {
+		_ = store.Delete(tokenIndexKey(rec.Token))
+	}
+	return store.Delete(key)
 }
 
 func userPoolBucketName(region string) string {
@@ -176,6 +184,23 @@ func tokenKey(userPoolID, userID, token string) string {
 	return userPoolID + "#" + userID + "#" + token
 }
 
+// tokenIndexKey is the token-value index: it maps a token's opaque value to
+// the record's primary key, so value lookups (every authenticated operation
+// resolves its access token this way) cost one read instead of a full-bucket
+// scan. One index lives in each token bucket, scoped to that token family
+// exactly like the records it points at.
+func tokenIndexKey(tokenValue string) string {
+	return "tokenidx:" + tokenValue
+}
+
+// activeImportJobKey is the region's active-import marker: it holds the
+// primary key ("<poolID>#<jobID>") of the import job that currently owns
+// the single active slot, letting the one-active-job start guard answer
+// from one read instead of walking every job in the bucket. The referenced
+// job record remains the authority: a marker whose job is gone or terminal
+// is stale and is taken over by the next start.
+const activeImportJobKey = "importjob-active"
+
 func userIndexKey(userID string) string {
 	return "useridx:" + userID
 }
@@ -186,27 +211,6 @@ func providerIndexKey(userPoolID, providerName, providerAttrValue string) string
 
 func clientIndexKey(clientID string) string {
 	return "clientidx:" + clientID
-}
-
-func encodePrivateKeyToPEM(key *rsa.PrivateKey) string {
-	der := x509.MarshalPKCS1PrivateKey(key)
-	block := &pem.Block{
-		Type:  "RSA PRIVATE KEY",
-		Bytes: der,
-	}
-	return string(pem.EncodeToMemory(block))
-}
-
-func encodePublicKeyToPEM(key *rsa.PublicKey) string {
-	der, err := x509.MarshalPKIXPublicKey(key)
-	if err != nil {
-		return ""
-	}
-	block := &pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: der,
-	}
-	return string(pem.EncodeToMemory(block))
 }
 
 func resourceServerKey(userPoolID, identifier string) string {
@@ -225,6 +229,14 @@ func identityProviderPrefix(userPoolID string) string {
 	return "identityprovider:" + userPoolID + "#"
 }
 
+// domainKey folds the domain to lowercase: the production router
+// lowercases the Host header before domain extraction, so storage, lookup
+// and deletion all fold the same way and a mixed-case domain cannot
+// resolve differently per mount path.
 func domainKey(domain string) string {
-	return "domain:" + domain
+	return "domain:" + strings.ToLower(domain)
+}
+
+func provisionedLimitKey(category string) string {
+	return "provisionedlimit:" + category
 }

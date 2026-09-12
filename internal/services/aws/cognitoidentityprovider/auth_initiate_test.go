@@ -14,7 +14,9 @@ func initiateUserAuth(env *challengeTestEnv, username string) (interface{}, erro
 	return env.svc.InitiateAuth(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
 		"AuthFlow": "USER_AUTH",
 		"ClientId": challengeTestClientID,
-		"Username": username,
+		"AuthParameters": map[string]interface{}{
+			"USERNAME": username,
+		},
 	}))
 }
 
@@ -47,11 +49,13 @@ func TestUserAuthSelectChallengeRejectsMfaChallenges(t *testing.T) {
 	// Rejected selections must not consume the selector session.
 	for _, selected := range []string{"MFA_SETUP", "SOFTWARE_TOKEN_MFA", "SMS_MFA", "CUSTOM_CHALLENGE"} {
 		_, err := env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
-			"ClientId":           challengeTestClientID,
-			"ChallengeName":      "SELECT_CHALLENGE",
-			"Session":            selector,
-			"USERNAME":           "victim",
-			"SELECTED_CHALLENGE": selected,
+			"ClientId":      challengeTestClientID,
+			"ChallengeName": "SELECT_CHALLENGE",
+			"Session":       selector,
+			"ChallengeResponses": map[string]interface{}{
+				"USERNAME": "victim",
+				"ANSWER":   selected,
+			},
 		}))
 		if err == nil {
 			t.Fatalf("SELECT_CHALLENGE accepted non-selectable challenge %q", selected)
@@ -59,11 +63,13 @@ func TestUserAuthSelectChallengeRejectsMfaChallenges(t *testing.T) {
 	}
 
 	resp, err = env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
-		"ClientId":           challengeTestClientID,
-		"ChallengeName":      "SELECT_CHALLENGE",
-		"Session":            selector,
-		"USERNAME":           "victim",
-		"SELECTED_CHALLENGE": "PASSWORD",
+		"ClientId":      challengeTestClientID,
+		"ChallengeName": "SELECT_CHALLENGE",
+		"Session":       selector,
+		"ChallengeResponses": map[string]interface{}{
+			"USERNAME": "victim",
+			"ANSWER":   "PASSWORD",
+		},
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -121,7 +127,10 @@ func TestPasswordAuthForceChangePasswordRequiresPassword(t *testing.T) {
 	}
 }
 
-// SELECT_MFA_TYPE keeps its own answer set: SMS_MFA and SOFTWARE_TOKEN_MFA.
+// SELECT_MFA_TYPE keeps its own answer set: the documented ANSWER
+// vocabulary SMS_MFA|EMAIL_MFA|SOFTWARE_TOKEN_MFA. The selection key is
+// ANSWER inside ChallengeResponses; the legacy top-level MFA_TYPE read is
+// gone.
 func TestSelectMfaTypeAcceptsMfaChoices(t *testing.T) {
 	env := newChallengeTestEnv(t)
 
@@ -142,13 +151,116 @@ func TestSelectMfaTypeAcceptsMfaChoices(t *testing.T) {
 		"ClientId":      challengeTestClientID,
 		"ChallengeName": "SELECT_MFA_TYPE",
 		"Session":       sel,
-		"USERNAME":      "victim",
-		"MFA_TYPE":      "SOFTWARE_TOKEN_MFA",
+		"ChallengeResponses": map[string]interface{}{
+			"USERNAME": "victim",
+			"ANSWER":   "SOFTWARE_TOKEN_MFA",
+		},
 	}))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if resp.(map[string]interface{})["ChallengeName"] != "SOFTWARE_TOKEN_MFA" {
 		t.Fatalf("expected SOFTWARE_TOKEN_MFA session mint, got %#v", resp)
+	}
+
+	// EMAIL_MFA is the documented answer for the email factor; the challenge
+	// it selects is EMAIL_OTP, carrying its one-time code.
+	sel, err = mintChallengeSession(env.store, env.pool.ID, challengeTestClientID, "victim", "SELECT_MFA_TYPE", 5*time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err = env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
+		"ClientId":      challengeTestClientID,
+		"ChallengeName": "SELECT_MFA_TYPE",
+		"Session":       sel,
+		"ChallengeResponses": map[string]interface{}{
+			"USERNAME": "victim",
+			"ANSWER":   "EMAIL_MFA",
+		},
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	m := resp.(map[string]interface{})
+	if m["ChallengeName"] != "EMAIL_OTP" {
+		t.Fatalf("EMAIL_MFA selection minted %#v, want an EMAIL_OTP challenge", m["ChallengeName"])
+	}
+	emailSession, err := env.store.GetChallengeSession(m["Session"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if emailSession.ChallengeName != "EMAIL_OTP" || emailSession.OTPCode == "" {
+		t.Fatalf("expected an OTP-carrying EMAIL_OTP session, got %#v", emailSession)
+	}
+
+	// A fresh selector: the legacy MFA_TYPE form must not answer either.
+	sel, err = mintChallengeSession(env.store, env.pool.ID, challengeTestClientID, "victim", "SELECT_MFA_TYPE", 5*time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
+		"ClientId":      challengeTestClientID,
+		"ChallengeName": "SELECT_MFA_TYPE",
+		"Session":       sel,
+		"MFA_TYPE":      "SOFTWARE_TOKEN_MFA",
+	})); err == nil {
+		t.Fatal("legacy top-level MFA_TYPE selection accepted")
+	}
+}
+
+// The wire protocol is awsJson1_1: a query-form body carries the
+// credentials as flat top-level members instead of the AuthParameters
+// map, and must not authenticate.
+func TestInitiateAuthRejectsQueryFormBody(t *testing.T) {
+	env := newChallengeTestEnv(t)
+
+	_, err := env.svc.InitiateAuth(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
+		"AuthFlow": "USER_PASSWORD_AUTH",
+		"ClientId": challengeTestClientID,
+		"USERNAME": "victim",
+		"PASSWORD": "OldPass123!",
+	}))
+	if err == nil {
+		t.Fatal("query-form body accepted: sign-in without the AuthParameters map")
+	}
+}
+
+// A password a password reset has deactivated cannot complete a sign-in:
+// AdminResetUserPassword keeps the stored hash but the sign-in surfaces
+// PasswordResetRequiredException — whichever password is presented, since
+// the reset deactivated it. The FORCE_CHANGE_PASSWORD and CSV-import flows
+// keep their NEW_PASSWORD_REQUIRED paths.
+func TestResetRequiredSignInReturnsPasswordResetRequired(t *testing.T) {
+	env := newChallengeTestEnv(t)
+
+	env.user.UserStatus = "RESET_REQUIRED"
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := env.svc.InitiateAuth(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
+		"AuthFlow": "USER_PASSWORD_AUTH",
+		"ClientId": challengeTestClientID,
+		"AuthParameters": map[string]interface{}{
+			"USERNAME": "victim",
+			"PASSWORD": "OldPass123!",
+		},
+	}))
+	if err != ErrPasswordResetRequired {
+		t.Fatalf("reset-required sign-in with the old password returned %v, want PasswordResetRequiredException", err)
+	}
+
+	// The deactivated password is not merely wrong — a wrong password is
+	// indistinguishable, the reset error dominates.
+	_, err = env.svc.InitiateAuth(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
+		"AuthFlow": "USER_PASSWORD_AUTH",
+		"ClientId": challengeTestClientID,
+		"AuthParameters": map[string]interface{}{
+			"USERNAME": "victim",
+			"PASSWORD": "NotTheOldPass123!",
+		},
+	}))
+	if err != ErrPasswordResetRequired {
+		t.Fatalf("reset-required sign-in with a wrong password returned %v, want PasswordResetRequiredException", err)
 	}
 }

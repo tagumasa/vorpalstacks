@@ -96,6 +96,20 @@ const (
 	openIdTokenTTLSeconds            = 600
 	developerTokenDefaultTTLSeconds  = 900
 	credentialSessionDurationSeconds = 3600
+
+	// Smithy TokenDuration @range max (seconds).
+	maxTokenDurationSeconds = 86400
+	// Smithy LoginsMap @length max — the Logins member of GetId,
+	// GetCredentialsForIdentity, GetOpenIdToken and UnlinkIdentity.
+	maxLoginsPerRequest = 10
+	// Smithy IdentityProviders @length max — the map behind an identity
+	// pool's SupportedLoginProviders.
+	maxLoginProviders = 10
+	// Smithy RoleMappingMap @length max for SetIdentityPoolRoles.
+	maxRoleMappingsPerPool = 10
+	// Smithy PrincipalTags @length max for the principal-tag members of
+	// GetOpenIdTokenForDeveloperIdentity and SetPrincipalTagAttributeMap.
+	maxPrincipalTags = 50
 )
 
 // ---------------------------------------------------------------------------
@@ -248,9 +262,10 @@ func validateAccountId(id string) bool {
 	return accountIdPattern.MatchString(id)
 }
 
-// validateTokenDuration enforces the Smithy TokenDuration range [1, 86400].
+// validateTokenDuration enforces the Smithy TokenDuration range
+// [1, maxTokenDurationSeconds].
 func validateTokenDuration(d int64) bool {
-	return d >= 1 && d <= 86400
+	return d >= 1 && d <= maxTokenDurationSeconds
 }
 
 // validateClaimValue enforces the Smithy ClaimValue constraints: length

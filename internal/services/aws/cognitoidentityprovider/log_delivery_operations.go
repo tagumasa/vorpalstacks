@@ -3,14 +3,16 @@ package cognitoidentityprovider
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
 	"vorpalstacks/internal/common/request"
+	"vorpalstacks/internal/core/logs"
 	"vorpalstacks/internal/eventbus"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // SetLogDeliveryConfiguration configures log delivery for a user pool.
@@ -56,13 +58,12 @@ func (s *CognitoService) GetLogDeliveryConfiguration(ctx context.Context, reqCtx
 	}, nil
 }
 
-// publishAuthEventLog checks whether userAuthEvents logging is configured and
-// publishes the event to the appropriate delivery targets via EventBus.
-func (s *CognitoService) publishAuthEventLog(reqCtx *request.RequestContext, userPoolID string, event *cognitostore.AuthEvent) {
-	s.publishAuthEventLogCore(reqCtx, userPoolID, event)
-}
-
-func (s *CognitoService) publishToCloudWatchLogs(logGroupArn, userPoolID, message string) {
+// publishToCloudWatchLogs publishes a log-delivery record to a CloudWatch
+// Logs destination through the service bus. The event carries the region
+// and account: the logs handler routes to its regional store on those
+// fields, so an event without them lands outside every region the API
+// serves.
+func (s *CognitoService) publishToCloudWatchLogs(logGroupArn, region, userPoolID, message string) {
 	if s.bus == nil {
 		return
 	}
@@ -82,19 +83,55 @@ func (s *CognitoService) publishToCloudWatchLogs(logGroupArn, userPoolID, messag
 			},
 		},
 	}
+	evt.Region = region
+	evt.AccountID = s.accountID
 	if err := s.bus.Publish(context.Background(), evt); err != nil {
-		log.Printf("warning: failed to deliver auth event to CloudWatch Logs for pool %s: %v", userPoolID, err)
+		logs.Warn("cognito auth event delivery to cloudwatch logs failed", logs.String("pool", userPoolID), logs.Err(err))
 	}
 }
 
-func extractLogGroupName(arn string) string {
-	parts := strings.SplitN(arn, ":", 6)
-	if len(parts) < 6 {
+// publishToS3 delivers a log record to the destination bucket as one JSON
+// object under the AWSLogs prefix — the folder structure AWS's vended logs
+// create in the destination bucket.
+func (s *CognitoService) publishToS3(bucketArn, region, userPoolID, eventID, message string) {
+	if s.bus == nil {
+		return
+	}
+	bucket := extractBucketName(bucketArn)
+	if bucket == "" {
+		return
+	}
+	invoker := s.bus.S3Invoker()
+	if invoker == nil {
+		return
+	}
+	key := fmt.Sprintf("AWSLogs/%s/cognito-idp/%s/%s/%d-%s.json",
+		s.accountID, region, userPoolID, time.Now().UnixMilli(), eventID)
+	if err := invoker.PutObject(context.Background(), region, bucket, key, []byte(message), "application/json"); err != nil {
+		logs.Warn("cognito auth event delivery to s3 failed", logs.String("pool", userPoolID), logs.Err(err))
+	}
+}
+
+// extractBucketName reads the bucket name out of an S3 bucket ARN, whose
+// resource segment is the bucket name alone.
+func extractBucketName(arn string) string {
+	parsed, err := svcarn.ParseARN(arn)
+	if err != nil {
 		return ""
 	}
-	resource := parts[5]
-	if strings.HasPrefix(resource, "log-group:") {
-		return strings.TrimPrefix(resource, "log-group:")
+	return parsed.Resource
+}
+
+// extractLogGroupName reads the log-group name out of a CloudWatch Logs log
+// group ARN. The resource segment of the ARN carries it under the
+// log-group: prefix; an ARN of any other resource shape names no group.
+func extractLogGroupName(arn string) string {
+	parsed, err := svcarn.ParseARN(arn)
+	if err != nil {
+		return ""
+	}
+	if strings.HasPrefix(parsed.Resource, "log-group:") {
+		return strings.TrimPrefix(parsed.Resource, "log-group:")
 	}
 	return ""
 }
@@ -192,11 +229,4 @@ func formatLogDeliveryConfiguration(cfg *cognitostore.LogDeliveryConfiguration) 
 		"UserPoolId":        cfg.UserPoolID,
 		"LogConfigurations": configs,
 	}
-}
-
-func getStringParam(m map[string]interface{}, key string) string {
-	if v, ok := m[key].(string); ok {
-		return v
-	}
-	return ""
 }

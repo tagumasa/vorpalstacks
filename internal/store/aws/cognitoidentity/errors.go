@@ -25,4 +25,8 @@ var (
 	// ErrDeveloperIdentityConflict is returned when a developer user identifier
 	// is already linked to a different identity than the one supplied.
 	ErrDeveloperIdentityConflict = errors.New("developer identity conflict")
+	// ErrLoginConflict is returned when a login is already linked to another
+	// identity of the pool; the model documents ResourceConflictException
+	// (HTTP 409) for "a login which is already linked to another account".
+	ErrLoginConflict = errors.New("login already linked to another identity")
 )

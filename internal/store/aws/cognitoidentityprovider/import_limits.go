@@ -30,6 +30,12 @@ const (
 	// iteration count is not a legitimate hash (RFC 9106 requires at
 	// least one round and one thread for Argon2id).
 	MinImportHashParamValue = 1
+	// MinImportHashBcryptCost is the bcrypt cost floor. The AWS guide
+	// documents only the maximum of 12; the floor is a consumption
+	// constraint — the bcrypt verifier refuses to parse hashes with a
+	// cost below 4, so an imported hash under it could never verify and
+	// would leave a permanently unloginable CONFIRMED user.
+	MinImportHashBcryptCost = 4
 	// MaxImportHashBcryptCost is the maximum bcrypt cost factor.
 	MaxImportHashBcryptCost = 12
 	// MaxImportHashScryptN is the maximum scrypt CPU/memory cost.

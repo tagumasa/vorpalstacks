@@ -55,24 +55,6 @@ func (m *Manager) GetJWKS() *JWKS {
 	}
 }
 
-// GetJWKSMap returns the JWKS as a map for compatibility with existing code.
-// Deprecated: Use GetJWKS() for typed access.
-func (m *Manager) GetJWKSMap() map[string]interface{} {
-	jwks := m.GetJWKS()
-	return map[string]interface{}{
-		"keys": []map[string]interface{}{
-			{
-				"alg": jwks.Keys[0].Alg,
-				"kty": jwks.Keys[0].Kty,
-				"use": jwks.Keys[0].Use,
-				"kid": jwks.Keys[0].Kid,
-				"n":   jwks.Keys[0].N,
-				"e":   jwks.Keys[0].E,
-			},
-		},
-	}
-}
-
 func encodeExponent(e int) []byte {
 	buf := make([]byte, 4)
 	for i := 0; i < 4; i++ {

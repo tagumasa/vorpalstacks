@@ -15,6 +15,7 @@ import (
 	"vorpalstacks/internal/common/waflimits"
 	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	svcarn "vorpalstacks/internal/utils/aws/arn"
 )
 
 // wafEnforcement holds the injected WAF request-inspection entry point
@@ -44,32 +45,14 @@ func (s *CognitoService) SetWebACLInspector(inspector waf.WebACLInspector) {
 	s.waf.setInspector(inspector)
 }
 
-// wafInspectedOperations lists the user pools API operations whose
+// wafInspectedOperations reports the user pools API operations whose
 // requests AWS WAF inspects: those that do not require authentication
 // with AWS credentials (unauthenticated, or authorized with a session
 // string or access token). Management operations authenticated with AWS
-// credentials are not inspected.
-var wafInspectedOperations = map[string]bool{
-	"SignUp":                           true,
-	"ConfirmSignUp":                    true,
-	"ResendConfirmationCode":           true,
-	"InitiateAuth":                     true,
-	"RespondToAuthChallenge":           true,
-	"ForgotPassword":                   true,
-	"ConfirmForgotPassword":            true,
-	"GetUser":                          true,
-	"UpdateUserAttributes":             true,
-	"DeleteUser":                       true,
-	"DeleteUserAttributes":             true,
-	"GlobalSignOut":                    true,
-	"ChangePassword":                   true,
-	"GetUserAttributeVerificationCode": true,
-	"VerifyUserAttribute":              true,
-	"AssociateSoftwareToken":           true,
-	"VerifySoftwareToken":              true,
-	"SetUserMFAPreference":             true,
-	"RevokeToken":                      true,
-}
+// credentials are not inspected. The set is derived from the registration
+// table, so it always matches the registrations that carry the
+// enforcement wrapper.
+var wafInspectedOperations = buildWafInspectedOperations()
 
 // cognitoOperationHandler is the dispatcher handler signature for the
 // Cognito user pools API.
@@ -241,7 +224,14 @@ func (s *CognitoService) enforceWAFOnHostedUI(w http.ResponseWriter, r *http.Req
 	}
 	inspHeaders := waf.RequestHeadersWithHost(r.Header, r.Host)
 	headerOrder, _ := headerorder.FromContext(r.Context(), inspHeaders)
-	result, err := inspector.InspectWebACLRequest(r.Context(), s.region, poolARN, waf.BuildWebACLInspectionRequest(
+	// The inspection is regional to the pool the WebACL scopes to, so the
+	// region comes from the pool ARN itself, not the service's constructor
+	// region.
+	region := s.region
+	if parsed, err := svcarn.ParseARN(poolARN); err == nil && parsed.Region != "" {
+		region = parsed.Region
+	}
+	result, err := inspector.InspectWebACLRequest(r.Context(), region, poolARN, waf.BuildWebACLInspectionRequest(
 		r.Method, r.URL.Path, r.URL.RawQuery, remoteAddrHostOf(r.RemoteAddr), r.Proto,
 		inspHeaders, headerOrder, nil, false,
 	))

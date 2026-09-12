@@ -124,6 +124,25 @@ func TestApplyImportRowMFAEnabled(t *testing.T) {
 	if len(got.MFAOptions) != 1 || got.MFAOptions[0].DeliveryMedium != "SMS" || got.MFAOptions[0].AttributeName != "phone_number" {
 		t.Fatalf("MFAOptions = %v", got.MFAOptions)
 	}
+	if !got.SmsMfaEnabled {
+		t.Fatal("cognito:mfa_enabled=true did not enable the modern SmsMfa factor the sign-in decision challenges with")
+	}
+}
+
+// The developer guide records that imported users may hold the MFA-enabled
+// state without a valid factor: a row that sets the flag but carries no
+// phone number imports successfully — no SMS factor exists to configure,
+// and the user cannot complete a second-factor challenge until they
+// configure an email attribute, phone number, or TOTP.
+func TestApplyImportRowMFAEnabledWithoutPhone(t *testing.T) {
+	header := []string{"cognito:username", "email", "email_verified", "cognito:mfa_enabled"}
+	got, err := applyImportRow(importTestPool(), "", header, []string{"janedoe", "j@example.com", "true", "true"})
+	if err != nil {
+		t.Fatalf("row with the MFA flag and no phone number must import: %v", err)
+	}
+	if got.SmsMfaEnabled || len(got.MFAOptions) != 0 {
+		t.Fatalf("no SMS factor can be configured without a phone number: %+v", got)
+	}
 }
 
 func TestApplyImportRowRejections(t *testing.T) {
@@ -198,6 +217,12 @@ func TestValidateImportCSVHeader(t *testing.T) {
 		header := []string{"cognito:username", "not_an_attribute"}
 		if err := validateImportCSVHeader(importTestPool(), header); err == nil || !strings.Contains(err.Error(), "not_an_attribute") {
 			t.Fatalf("want unknown-column error, got %v", err)
+		}
+	})
+	t.Run("duplicate column", func(t *testing.T) {
+		header := []string{"cognito:username", "email", "email_verified", "email"}
+		if err := validateImportCSVHeader(importTestPool(), header); err == nil || !strings.Contains(err.Error(), "more than once") {
+			t.Fatalf("want duplicate-column error, got %v", err)
 		}
 	})
 	t.Run("standard and custom columns accepted", func(t *testing.T) {
@@ -370,7 +395,11 @@ func TestValidateImportedHashParamsBounds(t *testing.T) {
 		{"argon2 parallelism over", "ARGON2ID", fmtArgon2("pw", 19456, 2, 2, salt), false},
 		{"pbkdf2 in bounds", "PBKDF2_SHA256", fmtPbkdf2("pw", 1000, salt), true},
 		{"pbkdf2 iterations over", "PBKDF2_SHA256", fmtPbkdf2("pw", 600001, salt), false},
-		{"bcrypt cost over", "BCRYPT", "$2b$13$CtA.Rcu/szzn9U00wpUjOuN3vrgJRZycv4aOzcP3GzqzO8UDPEFq", false},
+		{"bcrypt cost over", "BCRYPT", "$2b$13$CtA.Rcu/szzn9U00wpUjOuN3vrgJRZycv4aOzcP3GzqzO8UDPEFq6", false},
+		{"bcrypt cost under floor", "BCRYPT", "$2b$03$CtA.Rcu/szzn9U00wpUjOuN3vrgJRZycv4aOzcP3GzqzO8UDPEFq6", false},
+		{"argon2 version other than 19", "ARGON2ID", "$argon2id$v=18$m=19456,t=2,p=1$c2FsdA$aGFzaA", false},
+		{"argon2 padded salt", "ARGON2ID", "$argon2id$v=19$m=19456,t=2,p=1$c2FsdA=$aGFzaA", false},
+		{"pbkdf2 padded salt", "PBKDF2_SHA256", "$pbkdf2-sha256$1000$c2FsdA=$aGFzaA", false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -451,6 +480,26 @@ func TestParseImportCSVRowLengthLimit(t *testing.T) {
 	_, _, err := parseImportCSV([]byte(overLimit))
 	if err == nil {
 		t.Fatal("row over the character limit must be rejected")
+	}
+}
+
+// A whitespace-only line is blank whatever its length: it carries no data
+// row, so the skip runs before the row-length ceiling and a long blank
+// separator cannot fail the whole job. The blank line keeps its position
+// in the per-user line numbering.
+func TestParseImportCSVLongBlankLineSkipped(t *testing.T) {
+	data := "cognito:username,email,email_verified\n" +
+		strings.Repeat(" ", cognitostore.MaxImportCSVRowLengthChars+10) + "\n" +
+		"johndoe,j@example.com,TRUE\n"
+	header, rows, err := parseImportCSV([]byte(data))
+	if err != nil {
+		t.Fatalf("long blank line must be skipped, not fail the job: %v", err)
+	}
+	if len(header) != 3 || len(rows) != 1 {
+		t.Fatalf("header = %v, rows = %v", header, rows)
+	}
+	if rows[0].LineNumber != 3 {
+		t.Fatalf("data row line number = %d, want 3 (the blank line keeps its position)", rows[0].LineNumber)
 	}
 }
 

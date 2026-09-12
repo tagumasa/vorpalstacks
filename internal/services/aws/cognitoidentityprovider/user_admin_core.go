@@ -3,7 +3,9 @@ package cognitoidentityprovider
 import (
 	"context"
 	"errors"
+	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	"vorpalstacks/internal/core/logs"
@@ -89,21 +91,47 @@ func (s *CognitoService) adminCreateUserCore(ctx context.Context, reqCtx *reques
 		return nil, ErrResourceNotFound
 	}
 
+	// sub is assigned by the service, never supplied by the client, and the
+	// schema validation would otherwise hold the client's placeholder
+	// against sub's non-empty minimum length.
 	userAttrs := in.UserAttributes
+	delete(userAttrs, "sub")
+	if err := validateUserAttributesAgainstSchema(userPool, userAttrs, true); err != nil {
+		return nil, ErrInvalidParameter
+	}
 	userAttrs["sub"] = ""
 
 	preSignUpResult, err := invokePreSignUp(ctx, s, PreSignUpAdminCreateUser, in.UserPoolID, in.Username, "", userPool.LambdaConfig, userAttrs, in.ValidationData, in.ClientMetadata)
 	if err != nil {
-		return nil, ErrInternalError
+		// A Lambda that raises an error is the documented way to reject the
+		// creation; a transport failure is an infrastructure error.
+		return nil, classifyTriggerFailure(err)
 	}
 
-	if preSignUpResult.UserAttributes != nil {
-		userAttrs = preSignUpResult.UserAttributes
-	}
 	delete(userAttrs, "sub")
+	if preSignUpResult.UserAttributes != nil {
+		// The trigger's overrides are screened before merging: the
+		// verified-claim keys are stripped — the auto-verify flags below
+		// are the only sanctioned way for a trigger to mark a contact
+		// attribute verified, and the request's own verified claims (which
+		// pair with ForceAliasCreation) stay untouched — and the merged map
+		// re-runs the schema gate.
+		delete(preSignUpResult.UserAttributes, "email_verified")
+		delete(preSignUpResult.UserAttributes, "phone_number_verified")
+		for k, v := range preSignUpResult.UserAttributes {
+			userAttrs[k] = v
+		}
+		if err := validateUserAttributesAgainstSchema(userPool, userAttrs, true); err != nil {
+			return nil, ErrInvalidLambdaResponse
+		}
+	}
 
 	user := cognitostore.NewUser(in.UserPoolID, in.Username)
 	user.Attributes = userAttrs
+	// Every user's record carries its immutable identifier as the required
+	// sub attribute, so projections and filters read it from the attribute
+	// map like every other attribute.
+	user.Attributes["sub"] = user.ID
 	user.UserStatus = "FORCE_CHANGE_PASSWORD"
 
 	tempPassword := in.TemporaryPassword
@@ -121,7 +149,10 @@ func (s *CognitoService) adminCreateUserCore(ctx context.Context, reqCtx *reques
 		if err := validatePassword(tempPassword, userPool.PasswordPolicy); err != nil {
 			return nil, ErrPasswordPolicyViolation
 		}
-		if err := setNativePasswordCredentials(user, in.UserPoolID, in.Username, tempPassword); err != nil {
+		if err := setNativePasswordCredentials(user, userPool.PasswordPolicy, tempPassword); err != nil {
+			if errors.Is(err, ErrPasswordHistoryViolation) {
+				return nil, ErrPasswordHistoryViolation
+			}
 			return nil, ErrInternalError
 		}
 	}
@@ -129,8 +160,16 @@ func (s *CognitoService) adminCreateUserCore(ctx context.Context, reqCtx *reques
 	if preSignUpResult.AutoConfirmUser {
 		user.UserStatus = "CONFIRMED"
 		markAutoVerifiedAttributes(user, userPool)
-	} else if in.ForceAliasCreation {
-		markAutoVerifiedAttributes(user, userPool)
+	}
+
+	// The PreSignUp response's auto-verify flags mark the matching
+	// attribute verified at creation, independent of the pool-wide
+	// AutoVerifiedAttributes marking.
+	if preSignUpResult.AutoVerifyEmail && user.Attributes["email"] != "" {
+		user.Attributes["email_verified"] = "true"
+	}
+	if preSignUpResult.AutoVerifyPhone && user.Attributes["phone_number"] != "" {
+		user.Attributes["phone_number_verified"] = "true"
 	}
 
 	// DesiredDeliveryMediums controls how the invitation is delivered.
@@ -141,8 +180,24 @@ func (s *CognitoService) adminCreateUserCore(ctx context.Context, reqCtx *reques
 		}
 	}
 
-	if err := store.CreateUser(user); err != nil {
-		if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
+	// ForceAliasCreation applies only when the request also activates a
+	// contact alias (email_verified or phone_number_verified true) — the
+	// model documents the parameter as "used only if the
+	// phone_number_verified or email_verified attribute is set to True.
+	// Otherwise, it is ignored" — and then migrates a claimed alias value
+	// from its previous holder instead of rejecting the conflict.
+	var createErr error
+	if in.ForceAliasCreation &&
+		(user.Attributes["email_verified"] == "true" || user.Attributes["phone_number_verified"] == "true") {
+		createErr = store.CreateUserMigrateAliasClaims(user)
+	} else {
+		createErr = store.CreateUser(user)
+	}
+	if createErr != nil {
+		if errors.Is(createErr, cognitostore.ErrAliasExists) {
+			return nil, ErrAliasExists
+		}
+		if errors.Is(createErr, cognitostore.ErrUserAlreadyExists) {
 			return nil, ErrUserAlreadyExists
 		}
 		return nil, ErrInternalError
@@ -150,9 +205,7 @@ func (s *CognitoService) adminCreateUserCore(ctx context.Context, reqCtx *reques
 
 	attrs := userAttributesMap(user)
 	if preSignUpResult.AutoConfirmUser || in.MessageAction == "SUPPRESS" {
-		if err := invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, in.UserPoolID, in.Username, "", userPool.LambdaConfig, attrs); err != nil {
-			logs.Warn("PostConfirmation trigger failed", logs.Err(err))
-		}
+		invokePostConfirmation(ctx, s, PostConfirmationAdminCreateUser, in.UserPoolID, in.Username, "", userPool.LambdaConfig, attrs)
 	} else {
 		code := "####"
 		if tempPassword != "" {
@@ -170,7 +223,7 @@ func (s *CognitoService) adminCreateUserCore(ctx context.Context, reqCtx *reques
 
 // adminUpdateUserAttributesCore updates the specified user's attributes in
 // the user pool.
-func (s *CognitoService) adminUpdateUserAttributesCore(reqCtx *request.RequestContext, in AdminUpdateUserAttributesInput) (interface{}, error) {
+func (s *CognitoService) adminUpdateUserAttributesCore(ctx context.Context, reqCtx *request.RequestContext, in AdminUpdateUserAttributesInput) (interface{}, error) {
 	if in.UserPoolID == "" || in.Username == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -179,9 +232,17 @@ func (s *CognitoService) adminUpdateUserAttributesCore(reqCtx *request.RequestCo
 	if err != nil {
 		return nil, err
 	}
+	userPool, err := store.GetUserPool(in.UserPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
 	user, err := store.GetUser(in.UserPoolID, in.Username)
 	if err != nil {
 		return nil, ErrUserNotFound
+	}
+
+	if err := validateUserAttributesAgainstSchema(userPool, in.UserAttributes, false); err != nil {
+		return nil, ErrInvalidParameter
 	}
 
 	if user.Attributes == nil {
@@ -192,7 +253,17 @@ func (s *CognitoService) adminUpdateUserAttributesCore(reqCtx *request.RequestCo
 		user.Attributes[k] = v
 	}
 
+	// An updated email/phone_number enters the verification round: the flag
+	// drops, a VerifyUserAttribute code is minted and the CustomMessage
+	// UpdateUserAttribute trigger fires.
+	if err := issueAttributeUpdateVerification(ctx, s, user, userPool, in.UserAttributes); err != nil {
+		return nil, err
+	}
+
 	if err := store.UpdateUser(user); err != nil {
+		if errors.Is(err, cognitostore.ErrAliasExists) {
+			return nil, ErrAliasExists
+		}
 		return nil, ErrInternalError
 	}
 
@@ -250,8 +321,35 @@ func (s *CognitoService) adminResetUserPasswordCore(ctx context.Context, reqCtx 
 		return nil, ErrUserNotFound
 	}
 
-	user.UserStatus = "RESET_REQUIRED"
-	if err := store.UpdateUser(user); err != nil {
+	// The model documents the operation as sending the user "a password-reset
+	// code" that their next sign-in must "complete the reset by confirming";
+	// the code is stored on the purpose-bound reset field so a follow-up
+	// ConfirmForgotPassword can verify it.
+	confirmationCode, err := generateConfirmationCode()
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	codeExpiry := time.Now().UTC().Add(verificationCodeTTL)
+	// The status transition, the code and the credential deactivation run as
+	// one serialised write against the fresh record. The reset deactivates
+	// every user's credentials: an import hash dies with the reset so it can
+	// never verify again, and the reset marker routes every next sign-in to
+	// PasswordResetRequiredException — the hash-less CSV-import class
+	// included, whose any-password first-sign-in flow the reset supersedes.
+	if err := store.UpdateUserFunc(in.UserPoolID, in.Username, func(u *cognitostore.User) error {
+		u.UserStatus = "RESET_REQUIRED"
+		if u.PasswordHashAlgo != "" {
+			u.PasswordHash = ""
+			u.PasswordHashAlgo = ""
+		}
+		u.MigratedAwaitingReset = true
+		u.PasswordResetCode = confirmationCode
+		u.PasswordResetExpiry = codeExpiry
+		return nil
+	}); err != nil {
+		if errors.Is(err, cognitostore.ErrUserNotFound) {
+			return nil, ErrUserNotFound
+		}
 		return nil, ErrInternalError
 	}
 
@@ -282,8 +380,9 @@ func (s *CognitoService) adminSetUserPasswordCore(reqCtx *request.RequestContext
 		return nil, ErrResourceNotFound
 	}
 
-	user, err := store.GetUser(in.UserPoolID, in.Username)
-	if err != nil {
+	// The existence read keeps the UserNotFoundException precedence; the
+	// authoritative write below runs against the fresh record.
+	if _, err := store.GetUser(in.UserPoolID, in.Username); err != nil {
 		return nil, ErrUserNotFound
 	}
 
@@ -291,17 +390,28 @@ func (s *CognitoService) adminSetUserPasswordCore(reqCtx *request.RequestContext
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	if err := setNativePasswordCredentials(user, in.UserPoolID, in.Username, in.Password); err != nil {
-		return nil, ErrInternalError
-	}
-
-	if in.Permanent {
-		user.UserStatus = "CONFIRMED"
-	} else {
-		user.UserStatus = "FORCE_CHANGE_PASSWORD"
-	}
-
-	if err := store.UpdateUser(user); err != nil {
+	// The credential rewrite and the status transition run as one serialised
+	// read-modify-write, so a concurrent writer's password history cannot be
+	// overwritten by a stale snapshot of the record.
+	err = store.UpdateUserFunc(in.UserPoolID, in.Username, func(u *cognitostore.User) error {
+		if err := setNativePasswordCredentials(u, userPool.PasswordPolicy, in.Password); err != nil {
+			return err
+		}
+		if in.Permanent {
+			u.UserStatus = "CONFIRMED"
+		} else {
+			u.UserStatus = "FORCE_CHANGE_PASSWORD"
+		}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, ErrPasswordHistoryViolation) {
+			return nil, ErrPasswordHistoryViolation
+		}
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, err
+		}
 		return nil, ErrInternalError
 	}
 

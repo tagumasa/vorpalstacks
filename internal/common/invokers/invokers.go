@@ -442,3 +442,13 @@ type IAMServerCertificateProvider interface {
 type CognitoTokenValidator interface {
 	ValidateTokenForPool(ctx context.Context, region, userPoolID, accessToken string) (subject string, err error)
 }
+
+// CognitoIDTokenClaimResolver validates a Cognito user-pool ID token for a
+// specific pool and returns the token's string claims — the claim set
+// identity-pool role mappings resolve against (cognito:roles,
+// cognito:preferred_role and the custom: attributes Rules match). Consumers
+// call this instead of parsing the token themselves: signature, issuer,
+// expiry and token_use validation stay with the token-issuing service.
+type CognitoIDTokenClaimResolver interface {
+	IDTokenClaimsForPool(ctx context.Context, region, userPoolID, idToken string) (claims map[string]string, err error)
+}

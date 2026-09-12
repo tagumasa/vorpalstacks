@@ -19,10 +19,6 @@ const (
 // verification codes.
 const verificationCodeTTL = 24 * time.Hour
 
-// defaultProvisionedLimit is the fallback value reported by
-// GetProvisionedLimit when no explicit limit has been set.
-const defaultProvisionedLimit = 400000
-
 // TOTP parameters for software token MFA (RFC 6238 defaults).
 const (
 	totpCodeDigits   = 6
@@ -33,3 +29,12 @@ const (
 // maxWebAuthnCredentialListLimit is the Smithy
 // WebAuthnCredentialsQueryLimitType upper bound (range {0, 20}).
 const maxWebAuthnCredentialListLimit = 20
+
+// maxResourceServersListLimit is the Smithy ListResourceServersLimitType
+// upper bound (range {1, 50}).
+const maxResourceServersListLimit = 50
+
+// maxClientSecretsPerPage is the server-chosen page size for listing a
+// client's secret descriptors — an operation without a Limit parameter —
+// and reuses the standard list bound.
+const maxClientSecretsPerPage = listLimitMax

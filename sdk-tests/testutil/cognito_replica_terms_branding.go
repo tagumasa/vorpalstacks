@@ -34,8 +34,25 @@ func (r *TestRunner) cognitoReplicaTermsBrandingTests(tc *cognitoIDPContext) []T
 	results = append(results, r.RunTest("cognito", "Terms_MissingRequiredMembersRejected", func() error {
 		return r.runTermsNegativeTest(tc)
 	}))
+	results = append(results, r.RunTest("cognito", "Terms_DeleteUnknownNotFound", func() error {
+		_, err := tc.client.DeleteTerms(tc.ctx, &cognitoidentityprovider.DeleteTermsInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			TermsId:    aws.String("6f9619ff-8b86-d011-b42d-00c04fc964ff"),
+		})
+		return expectAWSErrorCode(err, "ResourceNotFoundException")
+	}))
+	results = append(results, r.RunTest("cognito", "DescribeTermsByClient_ReturnsClientTerms", func() error {
+		return r.runDescribeTermsByClientTest(tc)
+	}))
 	results = append(results, r.RunTest("cognito", "ManagedLoginBranding_RequiredClientAndUUIDId", func() error {
 		return r.runBrandingConformanceTest(tc)
+	}))
+	results = append(results, r.RunTest("cognito", "ManagedLoginBranding_DeleteUnknownNotFound", func() error {
+		_, err := tc.client.DeleteManagedLoginBranding(tc.ctx, &cognitoidentityprovider.DeleteManagedLoginBrandingInput{
+			UserPoolId:             aws.String(tc.userPoolID),
+			ManagedLoginBrandingId: aws.String("6f9619ff-8b86-d011-b42d-00c04fc964ff"),
+		})
+		return expectAWSErrorCode(err, "ResourceNotFoundException")
 	}))
 	results = append(results, r.RunTest("cognito", "ManagedLoginBranding_MissingClientIdRejected", func() error {
 		return r.runBrandingNegativeTest(tc)
@@ -231,6 +248,74 @@ func (r *TestRunner) runTermsConformanceTest(tc *cognitoIDPContext) error {
 		TermsName:  aws.String("privacy-policy"),
 	})
 	return expectAWSErrorCode(err, "TermsExistsException")
+}
+
+// runDescribeTermsByClientTest pins the client-keyed terms lookup: the
+// terms document an app client holds under a name describes with its full
+// TermsType projection, and a client holding no such document reports
+// ResourceNotFoundException.
+func (r *TestRunner) runDescribeTermsByClientTest(tc *cognitoIDPContext) error {
+	clientID, cleanup, err := tc.createPoolClient(tc.userPoolID, tc.unique("terms-byclient"))
+	if err != nil {
+		return err
+	}
+	defer cleanup()
+
+	created, err := tc.client.CreateTerms(tc.ctx, &cognitoidentityprovider.CreateTermsInput{
+		UserPoolId:  aws.String(tc.userPoolID),
+		ClientId:    aws.String(clientID),
+		TermsName:   aws.String("privacy-policy"),
+		TermsSource: types.TermsSourceTypeLink,
+		Enforcement: types.TermsEnforcementTypeNone,
+		Links: map[string]string{
+			"cognito:default": "https://example.com/privacy/",
+		},
+	})
+	if err != nil {
+		return err
+	}
+	termsID := *created.Terms.TermsId
+	defer tc.deleteTerms(termsID)
+
+	resp, err := tc.client.DescribeTermsByClient(tc.ctx, &cognitoidentityprovider.DescribeTermsByClientInput{
+		UserPoolId: aws.String(tc.userPoolID),
+		ClientId:   aws.String(clientID),
+		TermsName:  aws.String("privacy-policy"),
+	})
+	if err != nil {
+		return err
+	}
+	terms := resp.Terms
+	if terms == nil {
+		return fmt.Errorf("Terms is nil")
+	}
+	if terms.TermsId == nil || *terms.TermsId != termsID {
+		return fmt.Errorf("DescribeTermsByClient TermsId: got %v, want %s", terms.TermsId, termsID)
+	}
+	if terms.ClientId == nil || *terms.ClientId != clientID {
+		return fmt.Errorf("DescribeTermsByClient ClientId: got %v, want %s", terms.ClientId, clientID)
+	}
+	if terms.TermsName == nil || *terms.TermsName != "privacy-policy" {
+		return fmt.Errorf("DescribeTermsByClient TermsName: got %v, want privacy-policy", terms.TermsName)
+	}
+	if terms.TermsSource != types.TermsSourceTypeLink {
+		return fmt.Errorf("DescribeTermsByClient TermsSource: got %q, want LINK", terms.TermsSource)
+	}
+	if terms.Links["cognito:default"] != "https://example.com/privacy/" {
+		return fmt.Errorf("DescribeTermsByClient Links: got %v", terms.Links)
+	}
+
+	otherClient, cleanupOther, err := tc.createPoolClient(tc.userPoolID, tc.unique("terms-byclient-none"))
+	if err != nil {
+		return err
+	}
+	defer cleanupOther()
+	_, err = tc.client.DescribeTermsByClient(tc.ctx, &cognitoidentityprovider.DescribeTermsByClientInput{
+		UserPoolId: aws.String(tc.userPoolID),
+		ClientId:   aws.String(otherClient),
+		TermsName:  aws.String("privacy-policy"),
+	})
+	return expectAWSErrorCode(err, "ResourceNotFoundException")
 }
 
 func (r *TestRunner) runTermsNegativeTest(tc *cognitoIDPContext) error {

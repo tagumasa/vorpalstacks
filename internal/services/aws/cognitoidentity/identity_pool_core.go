@@ -2,8 +2,11 @@ package cognitoidentity
 
 import (
 	"errors"
+	"fmt"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
+	tagutil "vorpalstacks/internal/common/tags"
 	"vorpalstacks/internal/core/logs"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
 	storecommon "vorpalstacks/internal/store/aws/common"
@@ -120,11 +123,14 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 		}
 	}
 
-	if !validateMapSize(len(in.SupportedLoginProviders), 10) {
+	// SupportedLoginProviders carries the model's IdentityProviders map
+	// with its @length max of 10.
+	if !validateMapSize(len(in.SupportedLoginProviders), maxLoginProviders) {
 		return nil, ErrInvalidParameter
 	}
 	if in.TagsProvided && len(in.Tags) > 0 {
-		if !validateTagKeys(in.Tags) || !validateTagValues(in.Tags) {
+		if !validateTagKeys(in.Tags) || !validateTagValues(in.Tags) ||
+			!validateMapSize(len(in.Tags), tagutil.MaxTagsPerResource) {
 			return nil, ErrInvalidParameter
 		}
 	}
@@ -179,6 +185,10 @@ func (s *CognitoIdentityService) createIdentityPoolCore(store cognitoidentitysto
 			logs.Error("Failed to tag identity pool, attempting cleanup", logs.String("poolId", created.ID), logs.Err(err))
 			if delErr := store.DeleteIdentityPool(created.ID); delErr != nil {
 				logs.Error("Failed to cleanup identity pool after tag failure", logs.String("poolId", created.ID), logs.Err(delErr))
+				// The compensating delete failed: an untagged pool remains,
+				// and the caller must see it rather than retry the create
+				// into ResourceInUse.
+				return nil, fmt.Errorf("%w: identity pool %s was created but the tag write and its rollback both failed; the pool remains", ErrInternalError, created.ID)
 			}
 			return nil, ErrInternalError
 		}
@@ -245,7 +255,11 @@ func (s *CognitoIdentityService) describeIdentityPoolCore(store cognitoidentitys
 	if err != nil {
 		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
-	tags, _ := store.List(pool.Arn)
+	tags, err := store.List(pool.Arn)
+	if err != nil {
+		logs.Error("Failed to list identity pool tags", logs.String("poolId", pool.ID), logs.Err(err))
+		return nil, ErrInternalError
+	}
 	if len(tags) > 0 {
 		pool.Tags = tags
 	}
@@ -276,6 +290,10 @@ type UpdateIdentityPoolInput struct {
 }
 
 // updateIdentityPoolCore is the single entry point for identity pool updates.
+// The whole read-validate-merge-write cycle runs inside the store's pool-lock
+// callback, so two concurrent updates serialise instead of losing the earlier
+// caller's field changes, and a pool deleted mid-flight maps to
+// ResourceNotFoundException instead of InternalErrorException.
 func (s *CognitoIdentityService) updateIdentityPoolCore(reqCtx *request.RequestContext, in UpdateIdentityPoolInput) (*IdentityPoolOut, error) {
 	if !validateIdentityPoolId(in.IdentityPoolID) {
 		return nil, ErrInvalidParameter
@@ -286,93 +304,117 @@ func (s *CognitoIdentityService) updateIdentityPoolCore(reqCtx *request.RequestC
 		return nil, err
 	}
 
-	pool, err := store.GetIdentityPool(in.IdentityPoolID)
-	if err != nil {
-		return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
-	}
-
-	// IdentityPoolName is @required in the Smithy IdentityPool shape.
-	if in.PoolName == "" {
-		return nil, ErrInvalidParameter
-	}
-	if !validateIdentityPoolName(in.PoolName) {
-		return nil, ErrInvalidParameter
-	}
-	pool.Name = in.PoolName
-
-	// AllowUnauthenticatedIdentities is @required in the Smithy shape.
-	if !in.AllowUnauthProvided {
-		return nil, ErrInvalidParameter
-	}
-	if b, ok := in.AllowUnauthRaw.(bool); ok {
-		pool.AllowUnauthenticatedIdentities = b
-	} else {
-		return nil, ErrInvalidParameter
-	}
-
-	if in.AllowClassicProvided {
-		b, ok := in.AllowClassicRaw.(bool)
-		if !ok {
-			return nil, ErrInvalidParameter
+	var updated *cognitoidentitystore.IdentityPool
+	err = store.UpdateIdentityPoolFunc(in.IdentityPoolID, func(pool *cognitoidentitystore.IdentityPool) error {
+		// IdentityPoolName is @required in the Smithy IdentityPool shape.
+		if in.PoolName == "" {
+			return ErrInvalidParameter
 		}
-		pool.AllowClassicFlow = b
-	}
-	if in.DeveloperProviderName != "" {
-		if !validateDeveloperProviderName(in.DeveloperProviderName) {
-			return nil, ErrInvalidParameter
+		if !validateIdentityPoolName(in.PoolName) {
+			return ErrInvalidParameter
+		}
+		pool.Name = in.PoolName
+
+		// AllowUnauthenticatedIdentities is @required in the Smithy shape.
+		if !in.AllowUnauthProvided {
+			return ErrInvalidParameter
+		}
+		if b, ok := in.AllowUnauthRaw.(bool); ok {
+			pool.AllowUnauthenticatedIdentities = b
+		} else {
+			return ErrInvalidParameter
+		}
+
+		if in.AllowClassicProvided {
+			b, ok := in.AllowClassicRaw.(bool)
+			if !ok {
+				return ErrInvalidParameter
+			}
+			pool.AllowClassicFlow = b
+		} else {
+			pool.AllowClassicFlow = false
+		}
+		// The model's UpdateIdentityPool contract resets every omitted member
+		// to its default value ("If you don't provide a value for a
+		// parameter, Amazon Cognito sets it to its default value."), so an
+		// absent member and an explicitly empty member both clear the stored
+		// value; only the @required members above must be present.
+		if in.DeveloperProviderName != "" {
+			if !validateDeveloperProviderName(in.DeveloperProviderName) {
+				return ErrInvalidParameter
+			}
 		}
 		pool.DeveloperProviderName = in.DeveloperProviderName
-	}
-	if providers, err := parseCognitoIdentityProviders(in.ProvidersRaw); err != nil {
-		return nil, err
-	} else if len(providers) > 0 {
-		pool.CognitoIdentityProviders = providerOutsToStore(providers)
-	}
-	if len(in.SupportedLoginProviders) > 0 {
-		if !validateMapSize(len(in.SupportedLoginProviders), 10) {
-			return nil, ErrInvalidParameter
+		providers, err := parseCognitoIdentityProviders(in.ProvidersRaw)
+		if err != nil {
+			return err
 		}
-		pool.SupportedLoginProviders = in.SupportedLoginProviders
-	}
-	if len(in.OpenIdConnectProviderARNs) > 0 {
+		pool.CognitoIdentityProviders = providerOutsToStore(providers)
+		// SupportedLoginProviders carries the model's IdentityProviders
+		// map with its @length max of 10.
+		if !validateMapSize(len(in.SupportedLoginProviders), maxLoginProviders) {
+			return ErrInvalidParameter
+		}
+		if in.SupportedLoginProviders == nil {
+			pool.SupportedLoginProviders = make(map[string]string)
+		} else {
+			pool.SupportedLoginProviders = in.SupportedLoginProviders
+		}
 		for _, arn := range in.OpenIdConnectProviderARNs {
 			if !validateRoleARN(arn) {
-				return nil, ErrInvalidParameter
+				return ErrInvalidParameter
 			}
 		}
 		pool.OpenIdConnectProviderARNs = in.OpenIdConnectProviderARNs
-	}
-	if len(in.SamlProviderARNs) > 0 {
 		for _, arn := range in.SamlProviderARNs {
 			if !validateRoleARN(arn) {
-				return nil, ErrInvalidParameter
+				return ErrInvalidParameter
 			}
 		}
 		pool.SamlProviderARNs = in.SamlProviderARNs
-	}
 
-	var updatedTags map[string]string
-	if in.TagsProvided {
-		if !validateTagKeys(in.Tags) || !validateTagValues(in.Tags) {
-			return nil, ErrInvalidParameter
+		if in.TagsProvided {
+			if !validateTagKeys(in.Tags) || !validateTagValues(in.Tags) ||
+				!validateMapSize(len(in.Tags), tagutil.MaxTagsPerResource) {
+				return ErrInvalidParameter
+			}
+			pool.Tags = in.Tags
+		} else {
+			tags, err := store.List(pool.Arn)
+			if err != nil {
+				return err
+			}
+			pool.Tags = tags
 		}
-		updatedTags = in.Tags
-		// A single replace write swaps the whole tag set under the tag
-		// store's lock, so a failure cannot leave a partially-untagged
-		// resource and no rollback path is needed.
-		if err := store.Replace(pool.Arn, updatedTags); err != nil {
-			return nil, ErrInternalError
-		}
-	} else {
-		updatedTags, _ = store.List(pool.Arn)
-	}
 
-	if err := store.UpdateIdentityPool(pool); err != nil {
+		updated = pool
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, cognitoidentitystore.ErrIdentityPoolNotFound) {
+			return nil, ErrResourceNotFound
+		}
+		// Validation failures raised inside the callback are service errors
+		// and pass through unchanged; anything else is a storage failure.
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, err
+		}
 		return nil, ErrInternalError
 	}
 
-	pool.Tags = updatedTags
-	return poolToOut(pool), nil
+	// The tag store follows the pool record, not the other way round: with
+	// the replace inside the mutation a pool write that later failed would
+	// have left the new tag set applied to an update that never landed. A
+	// single replace write swaps the whole set under the tag store's lock,
+	// so a failure here leaves no partially-untagged resource behind.
+	if in.TagsProvided {
+		if err := store.Replace(updated.Arn, in.Tags); err != nil {
+			return nil, ErrInternalError
+		}
+	}
+
+	return poolToOut(updated), nil
 }
 
 // GetIdentityPoolRolesResult is the transport-agnostic role configuration of
@@ -468,7 +510,7 @@ func (s *CognitoIdentityService) setIdentityPoolRolesCore(reqCtx *request.Reques
 	if err != nil {
 		return err
 	}
-	if !validateMapSize(len(mappingDTOs), 10) {
+	if !validateMapSize(len(mappingDTOs), maxRoleMappingsPerPool) {
 		return ErrInvalidParameter
 	}
 

@@ -121,6 +121,9 @@ func (r *TestRunner) cognitoIdentityPoolTests(tc *cognitoIdentityContext) []Test
 			IdentityPoolId:                 aws.String(tc.poolID),
 			IdentityPoolName:               aws.String(newName),
 			AllowUnauthenticatedIdentities: false,
+			// The developer provider domain is part of the pool the later
+			// tests rely on, so the update carries it forward.
+			DeveloperProviderName: aws.String("my-dev-provider"),
 		})
 		if err != nil {
 			return err
@@ -184,6 +187,62 @@ func (r *TestRunner) cognitoIdentityPoolTests(tc *cognitoIdentityContext) []Test
 		}
 		if len(descResp.IdentityPoolTags) != 2 {
 			return fmt.Errorf("expected 2 tags after replacement, got %d", len(descResp.IdentityPoolTags))
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito-identity", "UpdateIdentityPool_ClearsOmittedMembers", func() error {
+		name := tc.unique("test-idpool-clear")
+		clearPoolID, cleanupClearPool, err := tc.createIdPool(name,
+			func(input *cognitoidentity.CreateIdentityPoolInput) {
+				input.DeveloperProviderName = aws.String("my-dev-provider")
+				input.OpenIdConnectProviderARNs = []string{fmt.Sprintf("arn:aws:iam::%s:oidc-provider/example.com", r.accountID)}
+				input.SamlProviderARNs = []string{fmt.Sprintf("arn:aws:iam::%s:saml-provider/example.com", r.accountID)}
+				input.CognitoIdentityProviders = []types.CognitoIdentityProvider{
+					{
+						ProviderName:         aws.String(fmt.Sprintf("cognito-idp.%s.amazonaws.com/%s_xxxxx", r.region, r.region)),
+						ClientId:             aws.String("abc123"),
+						ServerSideTokenCheck: aws.Bool(true),
+					},
+				}
+				input.SupportedLoginProviders = map[string]string{
+					"graph.facebook.com": "1234567890",
+				}
+			})
+		if err != nil {
+			return err
+		}
+		defer cleanupClearPool()
+
+		_, err = tc.client.UpdateIdentityPool(tc.ctx, &cognitoidentity.UpdateIdentityPoolInput{
+			IdentityPoolId:                 aws.String(clearPoolID),
+			IdentityPoolName:               aws.String(name + "-v2"),
+			AllowUnauthenticatedIdentities: false,
+		})
+		if err != nil {
+			return err
+		}
+
+		descResp, err := tc.client.DescribeIdentityPool(tc.ctx, &cognitoidentity.DescribeIdentityPoolInput{
+			IdentityPoolId: aws.String(clearPoolID),
+		})
+		if err != nil {
+			return err
+		}
+		if descResp.DeveloperProviderName != nil && *descResp.DeveloperProviderName != "" {
+			return fmt.Errorf("DeveloperProviderName should be cleared on omission, got %s", *descResp.DeveloperProviderName)
+		}
+		if len(descResp.OpenIdConnectProviderARNs) != 0 {
+			return fmt.Errorf("OpenIdConnectProviderARNs should be cleared on omission, got %d entries", len(descResp.OpenIdConnectProviderARNs))
+		}
+		if len(descResp.SamlProviderARNs) != 0 {
+			return fmt.Errorf("SamlProviderARNs should be cleared on omission, got %d entries", len(descResp.SamlProviderARNs))
+		}
+		if len(descResp.CognitoIdentityProviders) != 0 {
+			return fmt.Errorf("CognitoIdentityProviders should be cleared on omission, got %d entries", len(descResp.CognitoIdentityProviders))
+		}
+		if len(descResp.SupportedLoginProviders) != 0 {
+			return fmt.Errorf("SupportedLoginProviders should be cleared on omission, got %d entries", len(descResp.SupportedLoginProviders))
 		}
 		return nil
 	}))

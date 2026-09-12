@@ -2,8 +2,6 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -18,8 +16,14 @@ func (s *CognitoService) AddUserPoolClientSecret(ctx context.Context, reqCtx *re
 		return nil, err
 	}
 
+	formatted := formatClientSecretDescriptor(descriptor)
+	// The actual value is returned only when creating a secret the service
+	// generated; a caller-supplied secret is never echoed.
+	if descriptor.Generated {
+		formatted["ClientSecretValue"] = descriptor.ClientSecretValue
+	}
 	return map[string]interface{}{
-		"ClientSecretDescriptor": formatClientSecretDescriptor(descriptor),
+		"ClientSecretDescriptor": formatted,
 	}, nil
 }
 
@@ -33,11 +37,9 @@ func (s *CognitoService) DeleteUserPoolClientSecret(ctx context.Context, reqCtx 
 	return response.EmptyResponse(), nil
 }
 
-const maxClientSecretsPerPage = 60
-
 // ListUserPoolClientSecrets lists secrets for a user pool client.
 // The AWS API does not expose a Limit parameter for this operation; page
-// size is controlled server-side.
+// size is controlled server-side (maxClientSecretsPerPage, durations.go).
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPoolClientSecrets.html
 func (s *CognitoService) ListUserPoolClientSecrets(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	result, err := s.listUserPoolClientSecretsCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), req.GetParam("ClientId"), req.GetParam("NextToken"))
@@ -57,26 +59,13 @@ func (s *CognitoService) ListUserPoolClientSecrets(ctx context.Context, reqCtx *
 	return resp, nil
 }
 
+// formatClientSecretDescriptor renders a descriptor's non-secret members.
+// The stored value is never disclosed here: the list response never reveals
+// it, and the Add response includes it only for service-generated secrets,
+// which the Add handler adds separately.
 func formatClientSecretDescriptor(d cognitostore.ClientSecretDescriptor) map[string]interface{} {
 	return map[string]interface{}{
 		"ClientSecretId":         d.ClientSecretID,
-		"ClientSecretValue":      d.ClientSecretValue,
 		"ClientSecretCreateDate": d.ClientSecretCreateDate.Unix(),
 	}
-}
-
-func generateSecretID() (string, error) {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-func generateSecretValue() (string, error) {
-	b := make([]byte, 40)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
 }

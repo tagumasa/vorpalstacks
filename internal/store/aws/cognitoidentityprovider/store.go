@@ -25,12 +25,36 @@ type CognitoStore struct {
 	userImportJobsStore    *common.BaseStore
 	webauthnStore          *common.BaseStore
 	*common.TagStore
-	arnBuilder  *svcarn.ARNBuilder
-	accountID   string
-	region      string
-	groupMu     sync.Mutex
-	createMu    sync.Mutex
+	arnBuilder *svcarn.ARNBuilder
+	accountID  string
+	region     string
+	// recordMu serialises every user- and group-record write — creation,
+	// attribute updates, deletion, group-membership maintenance and app
+	// client creation. One record family, one guard: user records are
+	// rewritten whole by writers entering from several operations, and two
+	// writers on different mutexes would silently overwrite each other's
+	// changes. The lock order against the pool lock is fixed:
+	// poolKeyLocker → recordMu (pool deletion takes both, in that order).
+	recordMu    sync.Mutex
 	importJobMu sync.Mutex
+	// domainMu serialises user-pool domain mutations. The domain binding
+	// rules (a domain string belongs to at most one pool, a pool owns at
+	// most one domain) are check-then-write sequences over the shared
+	// "domain:" key space, so concurrent creates, updates and deletes must
+	// not interleave.
+	domainMu sync.Mutex
+	// poolKeyLocker serialises mutations of a single user-pool record
+	// (updates, MFA configuration, schema additions, deletion) so that
+	// read-modify-write cycles cannot lose each other's changes and a
+	// deleted pool cannot be resurrected by a racing writer.
+	poolKeyLocker common.KeyLocker
+	// usernameCaseCache memoises each pool's username-case sensitivity —
+	// a bool consulted before every username-keyed store call (user reads,
+	// writes, deletes, group membership). The full pool record it derives
+	// from is orders of magnitude costlier to decode than the flag is to
+	// consult, so the flag is cached and kept exact by the pool-record write
+	// paths: an update stores the fresh value, a deletion evicts the entry.
+	usernameCaseCache sync.Map
 }
 
 // NewCognitoStore creates a new Cognito identity provider store.

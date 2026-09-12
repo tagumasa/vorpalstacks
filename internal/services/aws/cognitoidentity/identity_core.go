@@ -1,6 +1,7 @@
 package cognitoidentity
 
 import (
+	"errors"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -70,6 +71,15 @@ type DeleteIdentitiesInput struct {
 	IdentityIDs []string
 }
 
+// UnprocessedIdentity is one DeleteIdentities failure entry: the identity
+// that could not be deleted and the model's ErrorCode enum value explaining
+// why — AccessDenied for an identity that does not exist (nothing the caller
+// may access), InternalServerError for a storage failure.
+type UnprocessedIdentity struct {
+	IdentityID string
+	ErrorCode  string
+}
+
 // ListIdentitiesInput carries every field that ListIdentities needs.
 type ListIdentitiesInput struct {
 	IdentityPoolID     string
@@ -124,7 +134,7 @@ func (s *CognitoIdentityService) getIdCore(reqCtx *request.RequestContext, in Ge
 		return "", mapStoreError(err, cognitoidentitystore.ErrIdentityPoolNotFound)
 	}
 
-	if !validateMapSize(len(in.Logins), 10) || !validateLoginsKeys(in.Logins) {
+	if !validateMapSize(len(in.Logins), maxLoginsPerRequest) || !validateLoginsKeys(in.Logins) {
 		return "", ErrInvalidParameter
 	}
 	if !validateLoginsValues(in.Logins) {
@@ -166,40 +176,56 @@ func (s *CognitoIdentityService) getCredentialsForIdentityCore(reqCtx *request.R
 
 	// When the caller provides fresh provider tokens via Logins, persist them
 	// onto the identity so that subsequent role selection and credential
-	// issuance reflect the current authentication state.
+	// issuance reflect the current authentication state. The merge runs in
+	// the store under the pool lock, so concurrent credential fetches for
+	// one identity cannot lose each other's links, and the merged map the
+	// critical section read is what role selection runs against — not a
+	// pre-merge local copy that could miss a concurrent merge.
 	if len(in.Logins) > 0 {
-		if !validateMapSize(len(in.Logins), 10) || !validateLoginsKeys(in.Logins) {
+		if !validateMapSize(len(in.Logins), maxLoginsPerRequest) || !validateLoginsKeys(in.Logins) {
 			return nil, ErrInvalidParameter
 		}
 		if !validateLoginsValues(in.Logins) {
 			return nil, ErrInvalidParameter
 		}
-		if identity.Logins == nil {
-			identity.Logins = make(map[string]string)
+		merged, err := store.MergeLogins(identity.IdentityPoolID, identity.ID, in.Logins)
+		if err != nil {
+			return nil, mapStoreError(err, cognitoidentitystore.ErrIdentityNotFound)
 		}
-		for k, v := range in.Logins {
-			identity.Logins[k] = v
-		}
-		identity.LastModifiedDate = time.Now().UTC()
-		if err := store.PutIdentity(identity); err != nil {
-			return nil, ErrInternalError
-		}
+		identity.Logins = merged
 	}
 
-	authRole, unauthRole, _, err := store.GetIdentityPoolRoles(identity.IdentityPoolID)
+	authRole, unauthRole, mappings, err := store.GetIdentityPoolRoles(identity.IdentityPoolID)
 	if err != nil {
 		return nil, ErrInvalidIdentityPoolConfig
 	}
 
-	// Determine which role to assume: authenticated if the identity has logins,
-	// unauthenticated otherwise. CustomRoleArn takes precedence when provided.
-	roleArn := in.CustomRoleARN
-	if roleArn == "" {
-		if len(identity.Logins) > 0 {
-			roleArn = authRole
-		} else {
-			roleArn = unauthRole
+	// Authenticated identities resolve their role through the pool's
+	// RoleMappings for the linked providers, with the claim set read from
+	// the linked platform user-pool ID tokens; a CustomRoleArn may only
+	// select among the roles the mapping grants. Unauthenticated identities
+	// have no token roles, so a CustomRoleArn has nothing to select among.
+	var roleArn string
+	var sessionTags map[string]string
+	if len(identity.Logins) > 0 {
+		claims, err := s.tokenClaimsForLogins(identity.Logins)
+		if err != nil {
+			return nil, err
 		}
+		roleArn, err = resolveAuthenticatedRole(authRole, mappings, identity.Logins, claims, in.CustomRoleARN)
+		if err != nil {
+			return nil, err
+		}
+		// The principal-tag attribute maps attach their tags to the issued
+		// session; they never feed the role selection above.
+		sessionTags, err = s.principalTagClaims(store, identity.IdentityPoolID, identity.Logins, claims)
+		if err != nil {
+			return nil, ErrInternalError
+		}
+	} else {
+		// No token, no roles to select among: CustomRoleArn is ignored on
+		// the unauthenticated grant like every other single-role case.
+		roleArn = unauthRole
 	}
 	if roleArn == "" {
 		return nil, ErrInvalidIdentityPoolConfig
@@ -209,7 +235,7 @@ func (s *CognitoIdentityService) getCredentialsForIdentityCore(reqCtx *request.R
 		return nil, ErrInternalError
 	}
 
-	result, err := s.credentialIssuer.IssueSession(roleArn, in.IdentityID, credentialSessionDurationSeconds)
+	result, err := s.credentialIssuer.IssueSession(roleArn, in.IdentityID, credentialSessionDurationSeconds, sessionTags)
 	if err != nil {
 		return nil, ErrInternalError
 	}
@@ -269,7 +295,7 @@ func (s *CognitoIdentityService) getOpenIdTokenCore(reqCtx *request.RequestConte
 	// perform external provider verification, so the parameter is accepted
 	// without side effects to prevent identity takeover via Logins injection.
 	if len(in.Logins) > 0 {
-		if !validateMapSize(len(in.Logins), 10) || !validateLoginsKeys(in.Logins) {
+		if !validateMapSize(len(in.Logins), maxLoginsPerRequest) || !validateLoginsKeys(in.Logins) {
 			return nil, ErrInvalidParameter
 		}
 		if !validateLoginsValues(in.Logins) {
@@ -289,8 +315,9 @@ func (s *CognitoIdentityService) getOpenIdTokenCore(reqCtx *request.RequestConte
 }
 
 // deleteIdentitiesCore is the single entry point for DeleteIdentities. It
-// returns the identity IDs that could not be deleted.
-func (s *CognitoIdentityService) deleteIdentitiesCore(reqCtx *request.RequestContext, in DeleteIdentitiesInput) ([]string, error) {
+// returns the identities that could not be deleted, each with the model's
+// ErrorCode enum value.
+func (s *CognitoIdentityService) deleteIdentitiesCore(reqCtx *request.RequestContext, in DeleteIdentitiesInput) ([]UnprocessedIdentity, error) {
 	if len(in.IdentityIDs) == 0 {
 		return nil, ErrInvalidParameter
 	}
@@ -303,15 +330,22 @@ func (s *CognitoIdentityService) deleteIdentitiesCore(reqCtx *request.RequestCon
 		return nil, err
 	}
 
-	var unprocessed []string
+	var unprocessed []UnprocessedIdentity
 	for _, id := range in.IdentityIDs {
 		identity, err := store.GetIdentityByID(id)
 		if err != nil {
-			unprocessed = append(unprocessed, id)
+			// A missing identity is not deletable by the caller; the enum's
+			// AccessDenied carries that. Any other lookup failure is a
+			// storage error.
+			code := "InternalServerError"
+			if errors.Is(err, cognitoidentitystore.ErrIdentityNotFound) {
+				code = "AccessDenied"
+			}
+			unprocessed = append(unprocessed, UnprocessedIdentity{IdentityID: id, ErrorCode: code})
 			continue
 		}
 		if err := store.DeleteIdentity(identity.IdentityPoolID, id); err != nil {
-			unprocessed = append(unprocessed, id)
+			unprocessed = append(unprocessed, UnprocessedIdentity{IdentityID: id, ErrorCode: "InternalServerError"})
 		}
 	}
 
@@ -381,7 +415,7 @@ func (s *CognitoIdentityService) unlinkIdentityCore(reqCtx *request.RequestConte
 	if len(in.Logins) == 0 {
 		return ErrNotAuthorized
 	}
-	if !validateMapSize(len(in.Logins), 10) || !validateLoginsKeys(in.Logins) {
+	if !validateMapSize(len(in.Logins), maxLoginsPerRequest) || !validateLoginsKeys(in.Logins) {
 		return ErrInvalidParameter
 	}
 	if !validateLoginsValues(in.Logins) {

@@ -17,13 +17,14 @@ type cognitoCredentialAdapter struct {
 	store stsstore.SessionStoreInterface
 }
 
-func (a *cognitoCredentialAdapter) IssueSession(roleArn, roleSessionName string, durationSeconds int) (*svccognitoidentity.CredentialResult, error) {
+func (a *cognitoCredentialAdapter) IssueSession(roleArn, roleSessionName string, durationSeconds int, tags map[string]string) (*svccognitoidentity.CredentialResult, error) {
 	session, err := a.store.Create(stsstore.CreateSessionParams{
 		PrincipalType:   "WebIdentity",
 		PrincipalName:   roleSessionName,
 		RoleArn:         roleArn,
 		RoleSessionName: roleSessionName,
 		DurationSeconds: durationSeconds,
+		Tags:            tags,
 	})
 	if err != nil {
 		return nil, err
@@ -124,6 +125,11 @@ func (a *App) wireCrossServiceDeps() error {
 			return err
 		}
 		eb.SetCognitoTokenValidator(st.cognitoService)
+		// Identity-pool role mappings read claims from platform user-pool
+		// ID tokens; the token-issuing service is the validator.
+		if st.cognitoIdentityService != nil {
+			st.cognitoIdentityService.SetCognitoIDTokenClaimResolver(st.cognitoService)
+		}
 	}
 
 	if st.eventBridgeService != nil {

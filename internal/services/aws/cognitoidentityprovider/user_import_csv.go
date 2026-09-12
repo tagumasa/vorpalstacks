@@ -2,7 +2,6 @@ package cognitoidentityprovider
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -41,6 +40,10 @@ type userImportRow struct {
 	PasswordHash     string
 	PasswordHashAlgo string
 	MFAOptions       []*cognitostore.MFAOptionType
+	// SmsMfaEnabled mirrors the cognito:mfa_enabled column onto the modern
+	// SMS factor so the imported user is actually challenged at sign-in;
+	// MFAOptions above stays for the admin projections.
+	SmsMfaEnabled bool
 }
 
 // importCSVRow is one data row of the import file together with its
@@ -93,6 +96,13 @@ func parseImportCSV(data []byte) (header []string, rows []importCSVRow, err erro
 	for i, raw := range lines {
 		lineNumber := i + 1
 		line := strings.TrimSuffix(raw, "\r")
+		// A whitespace-only line is blank whatever its length: it carries
+		// no data row, so the skip runs before the row-length ceiling and
+		// a long blank separator cannot fail the whole job. Blank lines
+		// keep their position in the per-user line numbering.
+		if i > 0 && strings.TrimSpace(line) == "" {
+			continue
+		}
 		// The documented row-length ceiling counts characters of the
 		// whole line, not fields: the file is unparsable line by line
 		// beyond it.
@@ -103,9 +113,6 @@ func parseImportCSV(data []byte) (header []string, rows []importCSVRow, err erro
 			for _, name := range splitImportCSVLine(line) {
 				header = append(header, strings.TrimSpace(name))
 			}
-			continue
-		}
-		if strings.TrimSpace(line) == "" {
 			continue
 		}
 		rows = append(rows, importCSVRow{Fields: splitImportCSVLine(line), LineNumber: lineNumber})
@@ -123,10 +130,12 @@ func parseImportCSV(data []byte) (header []string, rows []importCSVRow, err erro
 }
 
 // validateImportCSVHeader rejects header columns that cannot carry user
-// data: empty names (a stray trailing comma) and names that are neither an
-// import-control column, a standard importable attribute, nor an attribute
-// declared in the pool schema. Such a file can never produce valid users,
-// so the whole job fails rather than silently dropping the column.
+// data: empty names (a stray trailing comma), duplicated names (the row
+// projection keys columns by name, so a duplicate would silently collapse
+// two values into one), and names that are neither an import-control
+// column, a standard importable attribute, nor an attribute declared in the
+// pool schema. Such a file can never produce valid users, so the whole job
+// fails rather than silently dropping the column.
 func validateImportCSVHeader(pool *cognitostore.UserPool, header []string) error {
 	allowed := make(map[string]bool, len(csvHeaderBase)+len(pool.SchemaAttributes)+1)
 	for _, name := range csvHeaderBase {
@@ -139,10 +148,15 @@ func validateImportCSVHeader(pool *cognitostore.UserPool, header []string) error
 		}
 		allowed[schemaAttributeWireName(sa)] = true
 	}
+	seen := make(map[string]bool, len(header))
 	for _, name := range header {
 		if name == "" {
 			return fmt.Errorf("CSV header contains an empty column name")
 		}
+		if seen[name] {
+			return fmt.Errorf("CSV header contains the column %q more than once", name)
+		}
+		seen[name] = true
 		if !allowed[name] {
 			return fmt.Errorf("CSV header column %q is not a recognised user attribute for this user pool", name)
 		}
@@ -212,21 +226,6 @@ func applyImportRow(pool *cognitostore.UserPool, hashAlgo string, header []strin
 		}
 	}
 
-	for _, sa := range pool.SchemaAttributes {
-		if !sa.Required {
-			continue
-		}
-		name := schemaAttributeWireName(sa)
-		// sub is assigned by the service for every user; it is never
-		// supplied through the file.
-		if name == "sub" {
-			continue
-		}
-		if cols[name] == "" {
-			return out, fmt.Errorf("required attribute %s must have a value", name)
-		}
-	}
-
 	for name, value := range cols {
 		switch name {
 		case importColumnUsername, importColumnMFA:
@@ -252,7 +251,11 @@ func applyImportRow(pool *cognitostore.UserPool, hashAlgo string, header []strin
 		out.Attributes[name] = value
 	}
 
-	if err := validateImportRowAgainstSchema(pool, out.Attributes); err != nil {
+	// The shared Core validation covers the schema side of the row: value
+	// constraints, and the required attributes every import record must
+	// populate. A row that fails does so for that user only — the import
+	// job itself continues.
+	if err := validateUserAttributesAgainstSchema(pool, out.Attributes, true); err != nil {
 		return out, err
 	}
 
@@ -261,10 +264,20 @@ func applyImportRow(pool *cognitostore.UserPool, hashAlgo string, header []strin
 	}
 
 	if strings.ToLower(cols[importColumnMFA]) == "true" && out.Attributes[columnPhoneNumber] != "" {
+		// cognito:mfa_enabled turns on SMS MFA for the imported user: the
+		// entry is recorded in both models — the legacy MFAOptions the
+		// admin projections read, and the modern SmsMfa flag the sign-in
+		// second-factor decision challenges with. A row with the flag but
+		// no phone number imports all the same: the developer guide
+		// records that imported users may hold the MFA-enabled state
+		// without a valid factor — such users cannot complete sign-in
+		// until they configure an email attribute, phone number, or TOTP
+		// that is a valid factor in their pool.
 		out.MFAOptions = []*cognitostore.MFAOptionType{{
 			DeliveryMedium: "SMS",
 			AttributeName:  columnPhoneNumber,
 		}}
+		out.SmsMfaEnabled = true
 	}
 
 	out.UserStatus = importStatusReset
@@ -290,61 +303,6 @@ func convertImportBirthdate(value string) (string, error) {
 		return "", fmt.Errorf("birthdate %q must be in mm/dd/yyyy format", value)
 	}
 	return t.Format("2006-01-02"), nil
-}
-
-// validateImportRowAgainstSchema checks every populated attribute value
-// against the pool's attribute schema (custom definitions override the
-// standard defaults). A row whose values do not match the schema fails for
-// that user only — the import job itself continues.
-func validateImportRowAgainstSchema(pool *cognitostore.UserPool, attrs map[string]string) error {
-	schema := make(map[string]cognitostore.SchemaAttributeType)
-	for _, sa := range schemaAttributesForDescribe(pool) {
-		schema[sa.Name] = sa
-	}
-	for name, value := range attrs {
-		sa, ok := schema[name]
-		if !ok {
-			continue
-		}
-		switch sa.AttributeDataType {
-		case "Boolean":
-			if lower := strings.ToLower(value); lower != "true" && lower != "false" {
-				return fmt.Errorf("attribute %s must be true or false", name)
-			}
-		case "Number":
-			num, numErr := strconv.ParseFloat(value, 64)
-			if numErr != nil {
-				return fmt.Errorf("attribute %s must be a number", name)
-			}
-			if c := sa.NumberAttributeConstraints; c != nil {
-				if c.MinValue != "" {
-					if min, minErr := strconv.ParseFloat(c.MinValue, 64); minErr == nil && num < min {
-						return fmt.Errorf("attribute %s must be at least %s", name, c.MinValue)
-					}
-				}
-				if c.MaxValue != "" {
-					if max, maxErr := strconv.ParseFloat(c.MaxValue, 64); maxErr == nil && num > max {
-						return fmt.Errorf("attribute %s must be at most %s", name, c.MaxValue)
-					}
-				}
-			}
-		case "String":
-			length := utf8.RuneCountInString(value)
-			if c := sa.StringAttributeConstraints; c != nil {
-				if c.MinLength != "" {
-					if min, minErr := strconv.Atoi(c.MinLength); minErr == nil && length < min {
-						return fmt.Errorf("attribute %s must be at least %s characters long", name, c.MinLength)
-					}
-				}
-				if c.MaxLength != "" {
-					if max, maxErr := strconv.Atoi(c.MaxLength); maxErr == nil && length > max {
-						return fmt.Errorf("attribute %s must be at most %s characters long", name, c.MaxLength)
-					}
-				}
-			}
-		}
-	}
-	return nil
 }
 
 // validateImportMFASetting enforces the developer-guide rule that the

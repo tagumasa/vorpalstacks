@@ -10,7 +10,7 @@ import (
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUsersInGroup.html
 func (s *CognitoService) ListUsersInGroup(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	limit, err := parseListLimit(req.Parameters, "Limit", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (s *CognitoService) ListUsersInGroup(ctx context.Context, reqCtx *request.R
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_AdminListGroupsForUser.html
 func (s *CognitoService) AdminListGroupsForUser(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	limit, err := parseListLimit(req.Parameters, "Limit", listLimitMax)
 	if err != nil {
 		return nil, err
 	}

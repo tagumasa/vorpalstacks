@@ -12,6 +12,7 @@ func (r *TestRunner) cognitoIdentityDeveloperTests(tc *cognitoIdentityContext) [
 	var results []TestResult
 
 	var devIdentityID string
+	var devMixedIdentityID string
 	results = append(results, r.RunTest("cognito-identity", "GetOpenIdTokenForDeveloperIdentity", func() error {
 		resp, err := tc.client.GetOpenIdTokenForDeveloperIdentity(tc.ctx, &cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
 			IdentityPoolId: aws.String(tc.poolID),
@@ -151,6 +152,60 @@ func (r *TestRunner) cognitoIdentityDeveloperTests(tc *cognitoIdentityContext) [
 			if l == "graph.facebook.com" {
 				return fmt.Errorf("graph.facebook.com should have been unlinked")
 			}
+		}
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito-identity", "GetOpenIdTokenForDeveloperIdentity_MismatchedProviderName", func() error {
+		_, err := tc.client.GetOpenIdTokenForDeveloperIdentity(tc.ctx, &cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+			IdentityPoolId: aws.String(tc.poolID),
+			Logins: map[string]string{
+				"not-the-pool-domain": "dev-user-x",
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected InvalidParameterException for a provider name that is not the pool's developer provider")
+		}
+		return AssertErrorContains(err, "InvalidParameterException")
+	}))
+
+	results = append(results, r.RunTest("cognito-identity", "GetOpenIdTokenForDeveloperIdentity_MixedLogins", func() error {
+		resp, err := tc.client.GetOpenIdTokenForDeveloperIdentity(tc.ctx, &cognitoidentity.GetOpenIdTokenForDeveloperIdentityInput{
+			IdentityPoolId: aws.String(tc.poolID),
+			Logins: map[string]string{
+				"my-dev-provider":    "dev-user-mixed",
+				"graph.facebook.com": "mixed-fb-token",
+			},
+		})
+		if err != nil {
+			return err
+		}
+		if resp.IdentityId == nil || *resp.IdentityId == "" {
+			return fmt.Errorf("IdentityId is nil or empty")
+		}
+		if resp.Token == nil || *resp.Token == "" {
+			return fmt.Errorf("token is nil or empty")
+		}
+		devMixedIdentityID = *resp.IdentityId
+		return nil
+	}))
+
+	results = append(results, r.RunTest("cognito-identity", "GetOpenIdTokenForDeveloperIdentity_MixedLoginsLinked", func() error {
+		resp, err := tc.client.DescribeIdentity(tc.ctx, &cognitoidentity.DescribeIdentityInput{
+			IdentityId: aws.String(devMixedIdentityID),
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, provider := range resp.Logins {
+			if provider == "graph.facebook.com" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("graph.facebook.com was not linked to the developer identity")
 		}
 		return nil
 	}))

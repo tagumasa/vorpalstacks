@@ -96,7 +96,7 @@ func (s *CognitoService) DescribeUserPoolDomain(ctx context.Context, reqCtx *req
 
 // DeleteUserPoolDomain deletes a domain from a user pool.
 func (s *CognitoService) DeleteUserPoolDomain(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	if err := s.deleteUserPoolDomainCore(reqCtx.GetRegion(), req.GetParam("Domain")); err != nil {
+	if err := s.deleteUserPoolDomainCore(reqCtx.GetRegion(), getUserPoolID(req), req.GetParam("Domain")); err != nil {
 		return nil, err
 	}
 
@@ -201,7 +201,11 @@ func (s *CognitoService) DeleteResourceServer(ctx context.Context, reqCtx *reque
 
 // ListResourceServers lists all resource servers in a user pool.
 func (s *CognitoService) ListResourceServers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	maxResults := request.GetIntParam(req.Parameters, "MaxResults")
+	// Smithy ListResourceServersLimitType: range {min: 1, max: 50}
+	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", maxResourceServersListLimit)
+	if err != nil {
+		return nil, err
+	}
 	nextToken := request.GetStringParam(req.Parameters, "NextToken")
 
 	result, err := s.listResourceServersCore(reqCtx.GetRegion(), getUserPoolID(req), maxResults, nextToken)
@@ -278,47 +282,33 @@ func (s *CognitoService) DescribeIdentityProvider(ctx context.Context, reqCtx *r
 
 // UpdateIdentityProvider updates the configuration of a specified identity provider in a user pool.
 func (s *CognitoService) UpdateIdentityProvider(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	userPoolID := getUserPoolID(req)
-	providerName := req.GetParam("ProviderName")
-	if userPoolID == "" || providerName == "" {
-		return nil, ErrInvalidParameter
+	in := UpdateIdentityProviderInput{
+		UserPoolID:   getUserPoolID(req),
+		ProviderName: req.GetParam("ProviderName"),
 	}
-
-	ip, err := s.describeIdentityProviderCore(reqCtx.GetRegion(), userPoolID, providerName)
-	if err != nil {
-		return nil, err
+	if _, ok := req.Parameters["IdpIdentifiers"]; ok {
+		in.IdpIdentifiers = getStringSliceParam(req, "IdpIdentifiers")
+		in.IdpIdentifiersProvided = true
 	}
-
-	if providerType := req.GetParam("ProviderType"); providerType != "" {
-		if !validateProviderType(providerType) {
-			return nil, ErrInvalidParameter
-		}
-		ip.ProviderType = providerType
-	}
-
 	if pd, ok := req.Parameters["ProviderDetails"].(map[string]interface{}); ok {
-		providerDetails := make(map[string]string)
+		in.ProviderDetails = make(map[string]string)
 		for k, v := range pd {
 			if vs, ok := v.(string); ok {
-				providerDetails[k] = vs
+				in.ProviderDetails[k] = vs
 			}
 		}
-		ip.ProviderDetails = providerDetails
 	}
-
 	if am, ok := req.Parameters["AttributeMapping"].(map[string]interface{}); ok {
-		ip.AttributeMapping = make(map[string]string)
+		in.AttributeMapping = make(map[string]string)
 		for k, v := range am {
 			if vs, ok := v.(string); ok {
-				ip.AttributeMapping[k] = vs
+				in.AttributeMapping[k] = vs
 			}
 		}
 	}
-	if ids := getStringSliceParam(req, "IdpIdentifiers"); len(ids) > 0 {
-		ip.IdpIdentifiers = ids
-	}
 
-	if err := s.updateIdentityProviderCore(reqCtx.GetRegion(), ip); err != nil {
+	ip, err := s.updateIdentityProviderCore(reqCtx.GetRegion(), in)
+	if err != nil {
 		return nil, err
 	}
 
@@ -357,6 +347,17 @@ func (s *CognitoService) ListIdentityProviders(ctx context.Context, reqCtx *requ
 	}
 
 	return resp, nil
+}
+
+// GetIdentityProviderByIdentifier retrieves an IdP by its identifier (domain or DNS name).
+// https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_GetIdentityProviderByIdentifier.html
+func (s *CognitoService) GetIdentityProviderByIdentifier(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
+	idp, err := s.getIdentityProviderByIdentifierCore(reqCtx.GetRegion(), req.GetParam("UserPoolId"), req.GetParam("IdpIdentifier"))
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{"IdentityProvider": formatIdentityProvider(idp)}, nil
 }
 
 // GetCSVHeader returns the CSV headers for importing users into a user pool.

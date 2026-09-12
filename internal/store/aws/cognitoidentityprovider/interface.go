@@ -27,7 +27,7 @@ type CognitoStoreInterface interface {
 	ManagedLoginBrandingOperations
 	TermsOperations
 	UserPoolReplicaOperations
-	Raw() *CognitoStore
+	ProvisionedLimitOperations
 }
 
 // DeviceOperations defines operations for managing tracked devices.
@@ -72,11 +72,13 @@ type UserImportJobOperations interface {
 	UpdateUserImportJob(job *UserImportJob) error
 	ListUserImportJobsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserImportJob], error)
 	// ListUserImportJobsAll returns every import job in the regional store
-	// across all user pools, walking all pages. The start guard that limits
-	// the account to one active import job needs the cross-pool view.
+	// across all user pools, walking all pages. The startup sweep that
+	// finalises jobs a previous process left non-terminal needs the
+	// cross-pool view.
 	ListUserImportJobsAll() ([]*UserImportJob, error)
 	// StartUserImportJobIfEligible atomically moves a Created job to
-	// Pending when no other job in the account is active.
+	// Pending when the region's active-import marker does not name another
+	// active job.
 	StartUserImportJobIfEligible(userPoolID, jobID string) (*UserImportJob, error)
 	// TransitionUserImportJobStatus atomically moves a job from an
 	// expected status to a new one; concurrent Start, Stop, and worker
@@ -91,6 +93,7 @@ type UserImportJobOperations interface {
 type WebAuthnOperations interface {
 	CreateWebAuthnCredential(c *WebAuthnCredential) error
 	GetWebAuthnCredential(userPoolID, userID, credID string) (*WebAuthnCredential, error)
+	UpdateWebAuthnCredential(c *WebAuthnCredential) error
 	DeleteWebAuthnCredential(userPoolID, userID, credID string) error
 	ListWebAuthnCredentialsPaginated(userPoolID, userID string, opts common.ListOptions) (*common.ListResult[WebAuthnCredential], error)
 }
@@ -101,7 +104,6 @@ type ManagedLoginBrandingOperations interface {
 	GetManagedLoginBranding(userPoolID, brandingID string) (*ManagedLoginBranding, error)
 	GetManagedLoginBrandingByClient(userPoolID, clientID string) (*ManagedLoginBranding, error)
 	DeleteManagedLoginBranding(userPoolID, brandingID string) error
-	ListManagedLoginBrandings(userPoolID string) ([]*ManagedLoginBranding, error)
 }
 
 // TermsOperations defines operations for managing terms documents.
@@ -120,11 +122,18 @@ type UserPoolReplicaOperations interface {
 	ListUserPoolReplicasPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolReplica], error)
 }
 
+// ProvisionedLimitOperations defines operations for managing provisioned
+// API rate limits. The limits are regional account-level resources.
+type ProvisionedLimitOperations interface {
+	GetProvisionedLimit(category string) (*ProvisionedLimit, error)
+	SaveProvisionedLimit(limit *ProvisionedLimit) error
+}
+
 // UserPoolOperations defines operations for managing user pools.
 type UserPoolOperations interface {
 	CreateUserPool(userPool *UserPool) (*UserPool, error)
 	GetUserPool(userPoolID string) (*UserPool, error)
-	UpdateUserPool(userPool *UserPool) error
+	UpdateUserPoolFunc(userPoolID string, mutate func(*UserPool) error) error
 	DeleteUserPool(userPoolID string) error
 	ListUserPools() ([]*UserPool, error)
 	ListUserPoolsPaginated(opts common.ListOptions) (*common.ListResult[UserPool], error)
@@ -133,10 +142,12 @@ type UserPoolOperations interface {
 // UserOperations defines operations for managing users.
 type UserOperations interface {
 	CreateUser(user *User) error
+	CreateUserMigrateAliasClaims(user *User) error
 	GetUser(userPoolID, username string) (*User, error)
 	GetUserByID(userID string) (*User, error)
 	GetUserByProvider(userPoolID, providerName, providerAttrValue string) (*User, error)
 	UpdateUser(user *User) error
+	UpdateUserFunc(userPoolID, username string, mutate func(*User) error) error
 	DeleteUser(userPoolID, username string) error
 	ListUsers(userPoolID string) ([]*User, error)
 	ListUsersPaginated(userPoolID string, opts common.ListOptions, filter func(*User) bool) (*common.ListResult[User], error)
@@ -147,6 +158,7 @@ type GroupOperations interface {
 	CreateGroup(group *Group) error
 	GetGroup(userPoolID, groupName string) (*Group, error)
 	UpdateGroup(group *Group) error
+	UpdateGroupFunc(userPoolID, groupName string, mutate func(*Group) error) error
 	DeleteGroup(userPoolID, groupName string) error
 	ListGroups(userPoolID string) ([]*Group, error)
 	ListGroupsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[Group], error)
@@ -164,6 +176,7 @@ type ClientOperations interface {
 	GetUserPoolClient(userPoolID, clientID string) (*UserPoolClient, error)
 	GetUserPoolClientByName(userPoolID, clientName string) (*UserPoolClient, error)
 	UpdateUserPoolClient(client *UserPoolClient) error
+	UpdateUserPoolClientFunc(userPoolID, clientID string, mutate func(*UserPoolClient) error) error
 	DeleteUserPoolClient(userPoolID, clientID string) error
 	ListUserPoolClients(userPoolID string) ([]*UserPoolClient, error)
 	ListUserPoolClientsPaginated(userPoolID string, opts common.ListOptions) (*common.ListResult[UserPoolClient], error)
@@ -203,12 +216,8 @@ type TagOperations interface {
 	List(resourceArn string) (map[string]string, error)
 	ListAsSlice(resourceArn string) ([]types.Tag, error)
 	Tag(resourceArn string, tags map[string]string) error
+	Replace(resourceArn string, tags map[string]string) error
 	Untag(resourceArn string, tagKeys []string) error
-}
-
-// Raw returns the underlying Cognito store.
-func (s *CognitoStore) Raw() *CognitoStore {
-	return s
 }
 
 // DomainOperations defines operations for managing user pool domains.
@@ -216,7 +225,7 @@ type DomainOperations interface {
 	SetUserPoolDomain(domain string, entry *UserPoolDomain) error
 	GetUserPoolDomain(domain string) (*UserPoolDomain, error)
 	GetUserPoolDomainByPool(userPoolID string) (*UserPoolDomain, error)
-	DeleteUserPoolDomain(domain string) error
+	DeleteUserPoolDomain(userPoolID, domain string) error
 }
 
 // ResourceServerOperations defines operations for managing resource servers.

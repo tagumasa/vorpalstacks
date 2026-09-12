@@ -11,6 +11,7 @@ import (
 	"vorpalstacks/internal/core/resilience"
 	"vorpalstacks/internal/eventbus"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
+	storecommon "vorpalstacks/internal/store/aws/common"
 )
 
 // The user import data plane. CreateUserImportJob hands the caller an
@@ -45,6 +46,19 @@ const (
 // stoppedImportCompletionMessage is the completion message AWS reports for
 // developer-stopped import jobs.
 const stoppedImportCompletionMessage = "The Import Job was stopped by the developer."
+
+// interruptedImportCompletionMessage is the completion message for a job
+// moved to Failed because its worker exited without reaching a terminal
+// state (a crash or restart mid-import).
+const interruptedImportCompletionMessage = "The import job terminated before completion."
+
+// importStatusCheckRows spaces the worker's job-record and pool re-reads —
+// and, on the same cadence, its progress-counter flushes. Reading both
+// records on every CSV row dominates the import cost against the half-million-row
+// ceiling without changing the outcome: a stop request or a pool deletion
+// is asynchronous in AWS (no row-granularity contract exists), and becomes
+// visible here at the next boundary, row 0 included.
+const importStatusCheckRows = 100
 
 // importObjectKey is the S3 object key a job's CSV is uploaded to and read
 // back from; it doubles as the path portion of the upload URL.
@@ -104,10 +118,8 @@ func (s *CognitoService) startUserImportWorker(region string, job *cognitostore.
 
 // ensureTerminalImportState guarantees the job record never stays in a
 // non-terminal state after the worker exits — including after a recovered
-// panic. A job left in Stopping is finalised as developer-stopped; anything
-// else non-terminal is failed with an abnormal-termination message. AWS
-// removes the uploaded CSV once a job reaches a terminal state, so every
-// transition made here deletes the file as well.
+// panic. The finalisation itself is shared with the startup sweep through
+// finaliseImportJob.
 func (s *CognitoService) ensureTerminalImportState(region, userPoolID, jobID string) {
 	store, err := s.GetStoreForRegion(region)
 	if err != nil {
@@ -118,19 +130,7 @@ func (s *CognitoService) ensureTerminalImportState(region, userPoolID, jobID str
 	if err != nil {
 		return
 	}
-	switch job.Status {
-	case importJobStatusStopping:
-		s.finalizeStoppedImport(store, job)
-		s.deleteImportCSV(s.importS3Invoker(), region, userPoolID, jobID)
-	case importJobStatusPending, importJobStatusInProgress:
-		job.Status = importJobStatusFailed
-		job.CompletionDate = time.Now().UTC()
-		job.CompletionMessage = "The import job terminated before completion."
-		if err := store.UpdateUserImportJob(job); err != nil {
-			logs.Error("Failed to finalise an interrupted user import job", logs.String("jobId", jobID), logs.Err(err))
-		}
-		s.deleteImportCSV(s.importS3Invoker(), region, userPoolID, jobID)
-	}
+	s.finaliseImportJob(store, region, job)
 }
 
 // finalizeStoppedImport persists the terminal Stopped state with the
@@ -145,6 +145,52 @@ func (s *CognitoService) finalizeStoppedImport(store cognitostore.CognitoStoreIn
 	})
 	if err != nil && !errors.Is(err, cognitostore.ErrImportJobStatusConflict) {
 		logs.Error("Failed to persist stopped user import job", logs.String("jobId", job.JobID), logs.Err(err))
+	}
+}
+
+// finaliseImportJob moves one non-terminal job to its terminal state: a
+// job observed in Stopping is finalised as developer-stopped, and a job
+// still Pending or InProgress is failed with the abnormal-termination
+// message. Both legs run through the store's status-guarded transition
+// with the observed status as the source, so a concurrent stop request or
+// worker finalisation that changed the state after the read cannot be
+// overwritten — the tolerated status conflict is the record that someone
+// else finalised first. AWS removes the uploaded CSV once a job reaches a
+// terminal state, so every leg deletes the file as well.
+func (s *CognitoService) finaliseImportJob(store cognitostore.CognitoStoreInterface, region string, job *cognitostore.UserImportJob) {
+	switch job.Status {
+	case importJobStatusStopping:
+		s.finalizeStoppedImport(store, job)
+		s.deleteImportCSV(s.importS3Invoker(), region, job.UserPoolID, job.JobID)
+	case importJobStatusPending, importJobStatusInProgress:
+		completionDate := time.Now().UTC()
+		_, err := store.TransitionUserImportJobStatus(job.UserPoolID, job.JobID, job.Status, importJobStatusFailed, func(j *cognitostore.UserImportJob) {
+			j.CompletionDate = completionDate
+			j.CompletionMessage = interruptedImportCompletionMessage
+		})
+		if err != nil && !errors.Is(err, cognitostore.ErrImportJobStatusConflict) {
+			logs.Error("Failed to finalise an interrupted user import job", logs.String("jobId", job.JobID), logs.Err(err))
+		}
+		s.deleteImportCSV(s.importS3Invoker(), region, job.UserPoolID, job.JobID)
+	}
+}
+
+// finaliseStaleImportJobs moves import jobs a previous process left in a
+// non-terminal state (a crash or restart mid-import) to their terminal
+// state, through the same finaliseImportJob path as the worker's terminal
+// guard. It runs once per regional store instance, at creation time —
+// before any worker of this process exists, so every non-terminal record
+// it sees is genuinely orphaned. Without the sweep, the one-active-job
+// start guard would refuse every new import in the region until manual
+// storage surgery.
+func (s *CognitoService) finaliseStaleImportJobs(region string, store cognitostore.CognitoStoreInterface) {
+	jobs, err := store.ListUserImportJobsAll()
+	if err != nil {
+		logs.Error("Failed to list user import jobs for startup finalisation", logs.Err(err))
+		return
+	}
+	for _, job := range jobs {
+		s.finaliseImportJob(store, region, job)
 	}
 }
 
@@ -205,6 +251,14 @@ func (s *CognitoService) runUserImportJob(region, userPoolID, jobID string) {
 
 	job, err := store.GetUserImportJob(userPoolID, jobID)
 	if err != nil {
+		// A missing record means the pool's deletion cascade removed the
+		// job before this worker ran; the uploaded CSV has no owner left,
+		// so it is removed by its deterministic key. Any other store
+		// error may still be transient, so the CSV stays with the record.
+		if errors.Is(err, storecommon.ErrNotFound) {
+			s.deleteImportCSV(s.importS3Invoker(), region, userPoolID, jobID)
+			return
+		}
 		logs.Error("Failed to load user import job", logs.String("jobId", jobID), logs.Err(err))
 		return
 	}
@@ -216,6 +270,12 @@ func (s *CognitoService) runUserImportJob(region, userPoolID, jobID string) {
 	if _, err := store.TransitionUserImportJobStatus(userPoolID, jobID, importJobStatusPending, importJobStatusInProgress, nil); err != nil {
 		// The job was stopped (or already claimed) between the start
 		// request and this worker; nothing to import.
+		if errors.Is(err, storecommon.ErrNotFound) {
+			// The pool's deletion cascade won the race between the load
+			// above and this transition; the CSV has no owner left.
+			s.deleteImportCSV(s.importS3Invoker(), region, userPoolID, jobID)
+			return
+		}
 		if !errors.Is(err, cognitostore.ErrImportJobStatusConflict) {
 			logs.Error("Failed to mark user import job in progress", logs.String("jobId", jobID), logs.Err(err))
 		}
@@ -276,27 +336,55 @@ func (s *CognitoService) runUserImportJob(region, userPoolID, jobID string) {
 	}
 
 	seen := make(map[string]bool, len(rows))
-	for _, csvRow := range rows {
+	// Counters accumulate locally and flush to the job record on the
+	// status-check cadence and at every loop exit, so the record always
+	// reflects the rows processed so far while costing one write per batch
+	// instead of one per row.
+	var pendingImported, pendingSkipped, pendingFailed int64
+	flushProgress := func() {
+		if pendingImported == 0 && pendingSkipped == 0 && pendingFailed == 0 {
+			return
+		}
+		if err := store.UpdateUserImportJobProgress(userPoolID, jobID, func(j *cognitostore.UserImportJob) {
+			j.ImportedUsers += pendingImported
+			j.SkippedUsers += pendingSkipped
+			j.FailedUsers += pendingFailed
+		}); err != nil {
+			logs.Error("Failed to persist user import progress", logs.String("jobId", jobID), logs.Err(err))
+		}
+		pendingImported, pendingSkipped, pendingFailed = 0, 0, 0
+	}
+	for rowIdx, csvRow := range rows {
 		// A cancelled background context (server shutdown) must not
 		// leave the worker draining a large file while Close waits.
 		if err := s.bgCtx.Err(); err != nil {
+			flushProgress()
 			failJob("the import job was interrupted before completion")
 			return
 		}
 
-		current, err := store.GetUserImportJob(userPoolID, jobID)
-		if err == nil && current.Status != importJobStatusInProgress {
-			// Stopped or otherwise finalised concurrently; exit
-			// without overwriting the terminal state.
-			s.deleteImportCSV(s3, region, userPoolID, jobID)
-			return
-		}
+		// The job record and the pool are re-read on the cadence boundary,
+		// not on every row: reading both per row dominated the import cost
+		// without changing the outcome — a stop or pool deletion becomes
+		// visible at the next boundary (row 0 included) instead of the row
+		// after it happens.
+		if rowIdx%importStatusCheckRows == 0 {
+			current, err := store.GetUserImportJob(userPoolID, jobID)
+			if err == nil && current.Status != importJobStatusInProgress {
+				// Stopped or otherwise finalised concurrently; exit
+				// without overwriting the terminal state.
+				flushProgress()
+				s.deleteImportCSV(s3, region, userPoolID, jobID)
+				return
+			}
 
-		// Deleting the user pool mid-import fails the whole job; rows
-		// must not keep being attempted against a vanished pool.
-		if _, err := store.GetUserPool(userPoolID); err != nil {
-			failJob("the user pool was deleted during the import")
-			return
+			// Deleting the user pool mid-import fails the whole job; rows
+			// must not keep being attempted against a vanished pool.
+			if _, err := store.GetUserPool(userPoolID); err != nil {
+				flushProgress()
+				failJob("the user pool was deleted during the import")
+				return
+			}
 		}
 
 		parsed, applyErr := applyImportRow(pool, job.PasswordHashingAlgorithm, header, csvRow.Fields)
@@ -310,10 +398,16 @@ func (s *CognitoService) runUserImportJob(region, userPoolID, jobID string) {
 			seen[usernameKey(parsed.Username)] = true
 			user := cognitostore.NewUser(userPoolID, parsed.Username)
 			user.Attributes = parsed.Attributes
+			// Every user's record carries its immutable identifier as the
+			// required sub attribute; the import file has no sub column.
+			user.Attributes["sub"] = user.ID
 			user.UserStatus = parsed.UserStatus
 			user.PasswordHash = parsed.PasswordHash
 			user.PasswordHashAlgo = parsed.PasswordHashAlgo
 			user.MFAOptions = parsed.MFAOptions
+			if parsed.SmsMfaEnabled {
+				user.SmsMfa = &cognitostore.SmsMfaSettings{Enabled: true}
+			}
 			if err := store.CreateUser(user); err != nil {
 				if errors.Is(err, cognitostore.ErrUserAlreadyExists) {
 					outcome, message = "SKIPPED", "The user already exists."
@@ -324,20 +418,20 @@ func (s *CognitoService) runUserImportJob(region, userPoolID, jobID string) {
 				outcome, message = "SUCCEEDED", "The import succeeded."
 			}
 		}
-		if err := store.UpdateUserImportJobProgress(userPoolID, jobID, func(j *cognitostore.UserImportJob) {
-			switch outcome {
-			case "FAILED":
-				j.FailedUsers++
-			case "SKIPPED":
-				j.SkippedUsers++
-			default:
-				j.ImportedUsers++
-			}
-		}); err != nil {
-			logs.Error("Failed to persist user import progress", logs.String("jobId", jobID), logs.Err(err))
+		switch outcome {
+		case "FAILED":
+			pendingFailed++
+		case "SKIPPED":
+			pendingSkipped++
+		default:
+			pendingImported++
+		}
+		if (rowIdx+1)%importStatusCheckRows == 0 {
+			flushProgress()
 		}
 		writeOutcome(csvRow.LineNumber, outcome, message)
 	}
+	flushProgress()
 
 	// AWS publishes no numeric threshold for the "Too many users have
 	// failed or been skipped during the import." failure; the one

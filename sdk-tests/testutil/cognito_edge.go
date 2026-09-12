@@ -570,6 +570,73 @@ func (r *TestRunner) cognitoPoolValidationNegativeTests(tc *cognitoIDPContext) [
 		return fmt.Errorf("custom:loyalty missing from SchemaAttributes after update")
 	}))
 
+	// UpdateUserPool replaces the pool configuration: members omitted from
+	// the request revert to their defaults (triggers detach, auto-verified
+	// attributes clear, tags drop), and a deleted pool yields
+	// ResourceNotFoundException rather than an internal error.
+	results = append(results, r.RunTest("cognito", "UpdateUserPool_ResetsOmittedMembersToDefaults", func() error {
+		poolID, cleanupPool, err := tc.createUserPool(tc.unique("reset-contract"), func(input *cognitoidentityprovider.CreateUserPoolInput) {
+			input.LambdaConfig = &types.LambdaConfigType{
+				PreSignUp: aws.String("arn:aws:lambda:us-east-1:123456789012:function:pre-signup"),
+			}
+			input.AutoVerifiedAttributes = []types.VerifiedAttributeType{types.VerifiedAttributeTypeEmail}
+			input.UserPoolTags = map[string]string{"team": "core"}
+		})
+		if err != nil {
+			return fmt.Errorf("create pool: %v", err)
+		}
+		defer cleanupPool()
+
+		if _, err := tc.client.UpdateUserPool(tc.ctx, &cognitoidentityprovider.UpdateUserPoolInput{
+			UserPoolId: aws.String(poolID),
+			Policies: &types.UserPoolPolicyType{
+				PasswordPolicy: &types.PasswordPolicyType{
+					MinimumLength: aws.Int32(10),
+				},
+			},
+		}); err != nil {
+			return fmt.Errorf("update pool: %v", err)
+		}
+
+		descResp, err := tc.client.DescribeUserPool(tc.ctx, &cognitoidentityprovider.DescribeUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		})
+		if err != nil {
+			return fmt.Errorf("describe pool: %v", err)
+		}
+		if descResp.UserPool == nil {
+			return fmt.Errorf("UserPool missing from describe response")
+		}
+		if descResp.UserPool.LambdaConfig != nil && descResp.UserPool.LambdaConfig.PreSignUp != nil {
+			return fmt.Errorf("omitted LambdaConfig survived: PreSignUp=%v", *descResp.UserPool.LambdaConfig.PreSignUp)
+		}
+		if len(descResp.UserPool.AutoVerifiedAttributes) != 0 {
+			return fmt.Errorf("omitted AutoVerifiedAttributes survived: %v", descResp.UserPool.AutoVerifiedAttributes)
+		}
+		if len(descResp.UserPool.UserPoolTags) != 0 {
+			return fmt.Errorf("omitted UserPoolTags survived: %v", descResp.UserPool.UserPoolTags)
+		}
+		if descResp.UserPool.Policies == nil || descResp.UserPool.Policies.PasswordPolicy == nil ||
+			descResp.UserPool.Policies.PasswordPolicy.MinimumLength == nil ||
+			*descResp.UserPool.Policies.PasswordPolicy.MinimumLength != 10 {
+			return fmt.Errorf("requested PasswordPolicy not applied: %+v", descResp.UserPool.Policies)
+		}
+
+		if _, err := tc.client.DeleteUserPool(tc.ctx, &cognitoidentityprovider.DeleteUserPoolInput{
+			UserPoolId: aws.String(poolID),
+		}); err != nil {
+			return fmt.Errorf("delete pool: %v", err)
+		}
+		_, err = tc.client.UpdateUserPool(tc.ctx, &cognitoidentityprovider.UpdateUserPoolInput{
+			UserPoolId: aws.String(poolID),
+			PoolName:   aws.String("deleted-pool-update"),
+		})
+		if err := AssertErrorContains(err, "ResourceNotFoundException"); err != nil {
+			return err
+		}
+		return nil
+	}))
+
 	poolName := tc.unique("client-validation")
 	var poolID string
 	results = append(results, r.RunTest("cognito", "CreateUserPoolClient_InvalidClientName", func() error {

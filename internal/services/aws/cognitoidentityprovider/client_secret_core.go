@@ -2,6 +2,8 @@ package cognitoidentityprovider
 
 import (
 	"encoding/base64"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -13,10 +15,38 @@ import (
 // live here.
 
 // addUserPoolClientSecretCore attaches a new secret descriptor to a user
-// pool client. An empty secretValue triggers generation of a fresh secret.
+// pool client. An empty secretValue triggers generation of a fresh secret;
+// a supplied value must satisfy the ClientSecretType bounds — the same
+// validation every other client-secret write path applies. The append runs
+// as one serialised client mutation, so concurrent secret additions cannot
+// lose each other.
 func (s *CognitoService) addUserPoolClientSecretCore(region, userPoolID, clientID, secretValue string) (cognitostore.ClientSecretDescriptor, error) {
 	if userPoolID == "" || clientID == "" {
 		return cognitostore.ClientSecretDescriptor{}, ErrInvalidParameter
+	}
+	if secretValue != "" {
+		if secretLen := len(secretValue); secretLen < clientSecretMinLength || secretLen > clientSecretMaxLength ||
+			!clientSecretPattern.MatchString(secretValue) {
+			return cognitostore.ClientSecretDescriptor{}, ErrInvalidParameter
+		}
+	}
+
+	now := time.Now().UTC()
+	// The descriptor identifier follows the model's documented format
+	// <client-id>--<epoch-create-time>.
+	descriptor := cognitostore.ClientSecretDescriptor{
+		ClientSecretID:         fmt.Sprintf("%s--%d", clientID, now.Unix()),
+		ClientSecretCreateDate: now,
+	}
+	if secretValue == "" {
+		generated, gerr := generateSecretValue()
+		if gerr != nil {
+			return cognitostore.ClientSecretDescriptor{}, ErrInternalError
+		}
+		descriptor.ClientSecretValue = generated
+		descriptor.Generated = true
+	} else {
+		descriptor.ClientSecretValue = secretValue
 	}
 
 	store, err := s.GetStoreForRegion(region)
@@ -24,31 +54,13 @@ func (s *CognitoService) addUserPoolClientSecretCore(region, userPoolID, clientI
 		return cognitostore.ClientSecretDescriptor{}, err
 	}
 
-	client, err := store.GetUserPoolClient(userPoolID, clientID)
-	if err != nil {
-		return cognitostore.ClientSecretDescriptor{}, ErrResourceNotFound
-	}
-
-	now := time.Now().UTC()
-	secretID, err := generateSecretID()
-	if err != nil {
-		return cognitostore.ClientSecretDescriptor{}, ErrInternalError
-	}
-	descriptor := cognitostore.ClientSecretDescriptor{
-		ClientSecretID:         "secret-" + secretID,
-		ClientSecretValue:      secretValue,
-		ClientSecretCreateDate: now,
-	}
-	if descriptor.ClientSecretValue == "" {
-		generated, gerr := generateSecretValue()
-		if gerr != nil {
-			return cognitostore.ClientSecretDescriptor{}, ErrInternalError
+	if err := store.UpdateUserPoolClientFunc(userPoolID, clientID, func(c *cognitostore.UserPoolClient) error {
+		c.ClientSecrets = append(c.ClientSecrets, descriptor)
+		return nil
+	}); err != nil {
+		if errors.Is(err, cognitostore.ErrClientNotFound) {
+			return cognitostore.ClientSecretDescriptor{}, ErrResourceNotFound
 		}
-		descriptor.ClientSecretValue = generated
-	}
-	client.ClientSecrets = append(client.ClientSecrets, descriptor)
-	client.LastModifiedDate = now
-	if err := store.UpdateUserPoolClient(client); err != nil {
 		return cognitostore.ClientSecretDescriptor{}, ErrInternalError
 	}
 
@@ -69,7 +81,10 @@ func (s *CognitoService) deleteUserPoolClientSecretCore(region, userPoolID, clie
 
 	client, err := store.GetUserPoolClient(userPoolID, clientID)
 	if err != nil {
-		return ErrResourceNotFound
+		if errors.Is(err, cognitostore.ErrClientNotFound) {
+			return ErrResourceNotFound
+		}
+		return ErrInternalError
 	}
 
 	found := false
@@ -114,7 +129,10 @@ func (s *CognitoService) listUserPoolClientSecretsCore(region, userPoolID, clien
 
 	client, err := store.GetUserPoolClient(userPoolID, clientID)
 	if err != nil {
-		return nil, ErrResourceNotFound
+		if errors.Is(err, cognitostore.ErrClientNotFound) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalError
 	}
 
 	start := 0

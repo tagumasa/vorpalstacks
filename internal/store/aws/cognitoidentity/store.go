@@ -2,6 +2,8 @@
 package cognitoidentity
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -48,6 +50,21 @@ const identityIndexKeyPrefix = "idx" + keySeparator
 // allowing direct lookup without scanning the identity bucket.
 func identityIndexKey(identityID string) string {
 	return identityIndexKeyPrefix + identityID
+}
+
+// loginIndexKeyPrefix prefixes the login-claim index entries. Like the
+// identity-ID index prefix it carries no colon, so it can never collide with
+// a pool-prefixed identity key.
+const loginIndexKeyPrefix = "loginidx" + keySeparator
+
+// loginIndexKey maps a (provider, token) pair to the ID of the identity that
+// claims it within a pool, letting the login-conflict check and the
+// by-logins identity lookup resolve in one read instead of a sweep over
+// every identity the pool holds. The pair is hashed: provider names and
+// tokens may both contain the key separator.
+func loginIndexKey(poolID, provider, token string) string {
+	sum := sha256.Sum256([]byte(provider + "\x00" + token))
+	return loginIndexKeyPrefix + poolID + keySeparator + hex.EncodeToString(sum[:])
 }
 
 func identityPoolBucketName(region string) string {
@@ -163,16 +180,6 @@ func (s *CognitoIdentityStore) GetIdentityPool(id string) (*IdentityPool, error)
 	return &pool, nil
 }
 
-// UpdateIdentityPool updates an existing Identity Pool, serialised with the
-// pool's other mutations so a racing deletion cannot be overwritten and the
-// pool record cannot be resurrected.
-// Returns an error if the Identity Pool does not exist.
-func (s *CognitoIdentityStore) UpdateIdentityPool(pool *IdentityPool) error {
-	return s.keyLocker.WithLock(pool.ID, func() error {
-		return s.updateIdentityPoolUnlocked(pool)
-	})
-}
-
 // updateIdentityPoolUnlocked stamps and persists an Identity Pool; the caller
 // must hold the pool lock.
 func (s *CognitoIdentityStore) updateIdentityPoolUnlocked(pool *IdentityPool) error {
@@ -181,6 +188,24 @@ func (s *CognitoIdentityStore) updateIdentityPoolUnlocked(pool *IdentityPool) er
 	}
 	pool.LastModifiedDate = time.Now().UTC()
 	return s.Put(pool.ID, pool)
+}
+
+// UpdateIdentityPoolFunc reads the pool, applies mutate and persists the
+// result as one serialised mutation under the pool's key lock: concurrent
+// updates cannot lose each other's field changes, and a pool deleted before
+// or during the mutation surfaces ErrIdentityPoolNotFound instead of being
+// overwritten. A mutate error aborts without writing.
+func (s *CognitoIdentityStore) UpdateIdentityPoolFunc(id string, mutate func(*IdentityPool) error) error {
+	return s.keyLocker.WithLock(id, func() error {
+		pool, err := s.GetIdentityPool(id)
+		if err != nil {
+			return err
+		}
+		if err := mutate(pool); err != nil {
+			return err
+		}
+		return s.updateIdentityPoolUnlocked(pool)
+	})
 }
 
 // DeleteIdentityPool deletes an Identity Pool and all its associated
@@ -250,8 +275,8 @@ func deletePrefixBatch(store *common.BaseStore, prefix string) error {
 }
 
 // deletePoolIdentitiesBatch deletes every pool identity in one atomic batch,
-// dropping the identity-ID index entries of the deleted identities in the
-// same commit so the index never points at removed records.
+// dropping the identity-ID and login index entries of the deleted identities
+// in the same commit so the indexes never point at removed records.
 func deletePoolIdentitiesBatch(store *common.BaseStore, prefix string) error {
 	batchBucket, ok := store.Bucket().(storage.BatchBucket)
 	if !ok {
@@ -259,11 +284,26 @@ func deletePoolIdentitiesBatch(store *common.BaseStore, prefix string) error {
 	}
 	batch := batchBucket.NewBatch()
 	defer batch.Close()
-	if err := store.ScanPrefix(prefix, func(key string, _ []byte) error {
+	if err := store.ScanPrefix(prefix, func(key string, value []byte) error {
 		if err := batch.Delete([]byte(key)); err != nil {
 			return err
 		}
-		return batch.Delete([]byte(identityIndexKey(strings.TrimPrefix(key, prefix))))
+		if err := batch.Delete([]byte(identityIndexKey(strings.TrimPrefix(key, prefix)))); err != nil {
+			return err
+		}
+		var identity Identity
+		if err := json.Unmarshal(value, &identity); err != nil {
+			return err
+		}
+		for provider, token := range identity.Logins {
+			if token == "" {
+				continue
+			}
+			if err := batch.Delete([]byte(loginIndexKey(identity.IdentityPoolID, provider, token))); err != nil {
+				return err
+			}
+		}
+		return nil
 	}); err != nil {
 		return err
 	}
@@ -315,7 +355,20 @@ func (s *CognitoIdentityStore) createIdentityUnlocked(identity *Identity) error 
 	// Maintain the identity-ID index so lookups by ID alone resolve directly.
 	// A stale entry (identity deleted through the pool cascade) is harmless:
 	// the indexed pool lookup then reports the identity as missing.
-	return s.identitiesStore.Put(identityIndexKey(identity.ID), identity.IdentityPoolID)
+	if err := s.identitiesStore.Put(identityIndexKey(identity.ID), identity.IdentityPoolID); err != nil {
+		return err
+	}
+	// Claim each login's index entry so the conflict check and the
+	// by-logins lookup resolve without a pool sweep.
+	for provider, token := range identity.Logins {
+		if token == "" {
+			continue
+		}
+		if err := s.identitiesStore.Put(loginIndexKey(identity.IdentityPoolID, provider, token), identity.ID); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GetIdentity retrieves an Identity by its pool ID and identity ID.
@@ -341,17 +394,29 @@ func (s *CognitoIdentityStore) DeleteIdentity(poolID, identityID string) error {
 	})
 }
 
-// deleteIdentityUnlocked removes an Identity and its ID index entry; the
-// caller must hold the pool lock.
+// deleteIdentityUnlocked removes an Identity with its ID index and login
+// index entries; the caller must hold the pool lock.
 func (s *CognitoIdentityStore) deleteIdentityUnlocked(poolID, identityID string) error {
 	key := IdentityPoolIdentityKey(poolID, identityID)
-	if !s.identitiesStore.Exists(key) {
-		return ErrIdentityNotFound
+	identity, err := s.GetIdentity(poolID, identityID)
+	if err != nil {
+		return err
 	}
 	if err := s.identitiesStore.Delete(key); err != nil {
 		return err
 	}
-	return s.identitiesStore.Delete(identityIndexKey(identityID))
+	if err := s.identitiesStore.Delete(identityIndexKey(identityID)); err != nil {
+		return err
+	}
+	for provider, token := range identity.Logins {
+		if token == "" {
+			continue
+		}
+		if err := s.identitiesStore.Delete(loginIndexKey(poolID, provider, token)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // SetIdentityPoolRoles sets the authentication and unauthentication roles for an Identity Pool.
@@ -399,33 +464,52 @@ func IdentityPoolIdentityKey(poolID, identityID string) string {
 	return poolID + keySeparator + identityID
 }
 
-// FindIdentityByLogins scans identities in a pool and returns the first whose
-// logins map matches every entry in the requested logins. Returns
-// ErrIdentityNotFound when no match exists.
-func (s *CognitoIdentityStore) FindIdentityByLogins(poolID string, logins map[string]string) (*Identity, error) {
-	prefix := identityPoolPrefix(poolID)
-	var found *Identity
-
-	err := s.identitiesStore.ScanPrefix(prefix, func(key string, value []byte) error {
-		var identity Identity
-		if err := json.Unmarshal(value, &identity); err != nil {
-			return err
+// findIdentityByLogins resolves the pool identity whose logins match every
+// entry in the requested set through the login index: an identity holding
+// all the requested (provider, token) pairs has claimed each pair's index
+// entry, so every pair must resolve to the same identity. A pair with no
+// index entry matches nothing — a matching identity would have claimed it.
+// The resolved record is re-checked against the full set so a stale index
+// entry can never manufacture a match. Returns ErrIdentityNotFound when no
+// match exists.
+func (s *CognitoIdentityStore) findIdentityByLogins(poolID string, logins map[string]string) (*Identity, error) {
+	var matched *Identity
+	for provider, token := range logins {
+		if token == "" {
+			continue
 		}
-		for provider, token := range logins {
-			if identity.Logins[provider] != token {
-				return nil
+		var identityID string
+		if err := s.identitiesStore.Get(loginIndexKey(poolID, provider, token), &identityID); err != nil {
+			if common.IsNotFound(err) {
+				return nil, ErrIdentityNotFound
 			}
+			return nil, err
 		}
-		found = &identity
-		return nil
-	})
-	if err != nil {
-		return nil, err
+		identity, err := s.GetIdentity(poolID, identityID)
+		if err != nil {
+			// A stale index entry naming a deleted identity reads as no
+			// match — the create path re-points the index. Any other store
+			// failure propagates, so a transient read cannot make
+			// GetOrCreateIdentityByLogins mint a duplicate identity.
+			if errors.Is(err, ErrIdentityNotFound) {
+				return nil, ErrIdentityNotFound
+			}
+			return nil, err
+		}
+		if matched != nil && matched.ID != identity.ID {
+			return nil, ErrIdentityNotFound
+		}
+		matched = identity
 	}
-	if found == nil {
+	if matched == nil {
 		return nil, ErrIdentityNotFound
 	}
-	return found, nil
+	for provider, token := range logins {
+		if token != "" && matched.Logins[provider] != token {
+			return nil, ErrIdentityNotFound
+		}
+	}
+	return matched, nil
 }
 
 // GetOrCreateIdentityByLogins returns the pool identity whose logins match the
@@ -436,7 +520,7 @@ func (s *CognitoIdentityStore) GetOrCreateIdentityByLogins(poolID string, logins
 	var matched *Identity
 	err := s.keyLocker.WithLock(poolID, func() error {
 		if len(logins) > 0 {
-			existing, err := s.FindIdentityByLogins(poolID, logins)
+			existing, err := s.findIdentityByLogins(poolID, logins)
 			if err == nil {
 				matched = existing
 				return nil
@@ -467,7 +551,10 @@ func (s *CognitoIdentityStore) GetOrCreateIdentityByLogins(poolID string, logins
 func (s *CognitoIdentityStore) GetIdentityByID(identityID string) (*Identity, error) {
 	var poolID string
 	if err := s.identitiesStore.Get(identityIndexKey(identityID), &poolID); err != nil {
-		return nil, ErrIdentityNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrIdentityNotFound
+		}
+		return nil, err
 	}
 	return s.GetIdentity(poolID, identityID)
 }
@@ -492,15 +579,24 @@ func (s *CognitoIdentityStore) ListIdentitiesByPool(poolID string, maxResults in
 }
 
 // UnlinkLogins removes specified login providers from an identity, serialised
-// with the pool's other mutations.
+// with the pool's other mutations, releasing each removed provider's login
+// index entry.
 func (s *CognitoIdentityStore) UnlinkLogins(poolID, identityID string, loginsToRemove []string) error {
 	return s.keyLocker.WithLock(poolID, func() error {
 		key := IdentityPoolIdentityKey(poolID, identityID)
 		var identity Identity
 		if err := s.identitiesStore.Get(key, &identity); err != nil {
-			return ErrIdentityNotFound
+			if common.IsNotFound(err) {
+				return ErrIdentityNotFound
+			}
+			return err
 		}
 		for _, login := range loginsToRemove {
+			if old, held := identity.Logins[login]; held && old != "" {
+				if err := s.identitiesStore.Delete(loginIndexKey(poolID, login, old)); err != nil {
+					return err
+				}
+			}
 			delete(identity.Logins, login)
 		}
 		identity.LastModifiedDate = time.Now().UTC()
@@ -508,16 +604,102 @@ func (s *CognitoIdentityStore) UnlinkLogins(poolID, identityID string, loginsToR
 	})
 }
 
-func developerIdentityKey(poolID, providerName, devUserID string) string {
-	return poolID + keySeparator + providerName + keySeparator + devUserID
+// LinkLogins attaches public-provider login entries to an identity,
+// serialised with the pool's other mutations. A login that is already
+// linked to a different identity of the pool is rejected with
+// ErrLoginConflict — answered by the login index in one read per login,
+// without sweeping the pool's identities; entries already carried by the
+// identity are refreshed in place, with the superseded token's index entry
+// released.
+func (s *CognitoIdentityStore) LinkLogins(poolID, identityID string, logins map[string]string) error {
+	return s.keyLocker.WithLock(poolID, func() error {
+		key := IdentityPoolIdentityKey(poolID, identityID)
+		var identity Identity
+		if err := s.identitiesStore.Get(key, &identity); err != nil {
+			if common.IsNotFound(err) {
+				return ErrIdentityNotFound
+			}
+			return err
+		}
+		for provider, token := range logins {
+			if token == "" {
+				continue
+			}
+			var ownerID string
+			if err := s.identitiesStore.Get(loginIndexKey(poolID, provider, token), &ownerID); err == nil {
+				if ownerID != identityID {
+					return ErrLoginConflict
+				}
+			} else if !common.IsNotFound(err) {
+				return err
+			}
+		}
+		if identity.Logins == nil {
+			identity.Logins = make(map[string]string)
+		}
+		for provider, token := range logins {
+			if old, held := identity.Logins[provider]; held && old != "" && old != token {
+				if err := s.identitiesStore.Delete(loginIndexKey(poolID, provider, old)); err != nil {
+					return err
+				}
+			}
+			identity.Logins[provider] = token
+			if token != "" {
+				if err := s.identitiesStore.Put(loginIndexKey(poolID, provider, token), identityID); err != nil {
+					return err
+				}
+			}
+		}
+		identity.LastModifiedDate = time.Now().UTC()
+		return s.identitiesStore.Put(key, identity)
+	})
 }
 
-// LinkDeveloperIdentity creates or updates a mapping between a developer user identifier and an identity,
-// serialised with the pool's other mutations.
-func (s *CognitoIdentityStore) LinkDeveloperIdentity(di *DeveloperIdentity) error {
-	return s.keyLocker.WithLock(di.IdentityPoolID, func() error {
-		return s.linkDeveloperIdentityUnlocked(di)
+// MergeLogins merges login entries into an identity's stored Logins map,
+// reading and writing under the pool lock so concurrent credential fetches
+// for one identity cannot lose each other's provider links. Entries
+// already carried by the identity are refreshed in place. The merged map
+// read inside the critical section is returned, so the caller resolves
+// roles against the post-merge state rather than a pre-merge local copy.
+func (s *CognitoIdentityStore) MergeLogins(poolID, identityID string, logins map[string]string) (map[string]string, error) {
+	var merged map[string]string
+	err := s.keyLocker.WithLock(poolID, func() error {
+		key := IdentityPoolIdentityKey(poolID, identityID)
+		var identity Identity
+		if err := s.identitiesStore.Get(key, &identity); err != nil {
+			if common.IsNotFound(err) {
+				return ErrIdentityNotFound
+			}
+			return err
+		}
+		if identity.Logins == nil {
+			identity.Logins = make(map[string]string)
+		}
+		for provider, token := range logins {
+			if old, held := identity.Logins[provider]; held && old != "" && old != token {
+				if err := s.identitiesStore.Delete(loginIndexKey(poolID, provider, old)); err != nil {
+					return err
+				}
+			}
+			identity.Logins[provider] = token
+			if token != "" {
+				if err := s.identitiesStore.Put(loginIndexKey(poolID, provider, token), identityID); err != nil {
+					return err
+				}
+			}
+		}
+		identity.LastModifiedDate = time.Now().UTC()
+		if err := s.identitiesStore.Put(key, identity); err != nil {
+			return err
+		}
+		merged = identity.Logins
+		return nil
 	})
+	return merged, err
+}
+
+func developerIdentityKey(poolID, providerName, devUserID string) string {
+	return poolID + keySeparator + providerName + keySeparator + devUserID
 }
 
 // linkDeveloperIdentityUnlocked writes a developer identity mapping; the
@@ -646,14 +828,58 @@ func (s *CognitoIdentityStore) mergeDeveloperIdentities(poolID, providerName, so
 			}
 		}
 		destIdentity.LastModifiedDate = time.Now().UTC()
-		if err := s.identitiesStore.Put(IdentityPoolIdentityKey(poolID, destDI.IdentityID), destIdentity); err != nil {
-			return err
-		}
 
 		// The source identity has no remaining references once its logins are
-		// merged and the developer identity link has moved; delete it last so
-		// failures in the steps above leave it recoverable.
-		return s.deleteIdentityUnlocked(poolID, sourceDI.IdentityID)
+		// merged and the developer identity link has moved. The destination
+		// write and the source's removal (record plus identity-ID index)
+		// commit as one atomic batch: a mid-sequence failure commits
+		// neither, so a merge can never destroy a source identity whose
+		// logins were not handed over. The login index entries of the
+		// handed-over logins re-point at the destination in the same commit.
+		destKey := IdentityPoolIdentityKey(poolID, destDI.IdentityID)
+		sourceKey := IdentityPoolIdentityKey(poolID, sourceDI.IdentityID)
+		destValue, err := json.Marshal(destIdentity)
+		if err != nil {
+			return err
+		}
+		batchBucket, ok := s.identitiesStore.Bucket().(storage.BatchBucket)
+		if !ok {
+			return errors.New("cognitoidentity: storage bucket does not support atomic batches")
+		}
+		batch := batchBucket.NewBatch()
+		defer batch.Close()
+		if err := batch.Put([]byte(destKey), destValue); err != nil {
+			return err
+		}
+		if err := batch.Delete([]byte(sourceKey)); err != nil {
+			return err
+		}
+		if err := batch.Delete([]byte(identityIndexKey(sourceDI.IdentityID))); err != nil {
+			return err
+		}
+		for provider, token := range sourceIdentity.Logins {
+			if token == "" {
+				continue
+			}
+			if held, exists := destIdentity.Logins[provider]; exists && held != token {
+				// The destination keeps its own token for the provider, so
+				// the source's token is discarded with the source identity —
+				// its index entry goes in the same commit, or it would name
+				// a deleted identity forever.
+				if err := batch.Delete([]byte(loginIndexKey(poolID, provider, token))); err != nil {
+					return err
+				}
+				continue
+			}
+			idxValue, merr := json.Marshal(destDI.IdentityID)
+			if merr != nil {
+				return merr
+			}
+			if err := batch.Put([]byte(loginIndexKey(poolID, provider, token)), idxValue); err != nil {
+				return err
+			}
+		}
+		return batch.Commit()
 	})
 	if err != nil {
 		return "", err

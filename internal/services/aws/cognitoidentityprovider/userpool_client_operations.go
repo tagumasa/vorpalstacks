@@ -2,7 +2,6 @@ package cognitoidentityprovider
 
 import (
 	"context"
-	"strconv"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
@@ -16,19 +15,20 @@ func (s *CognitoService) CreateUserPoolClient(ctx context.Context, reqCtx *reque
 	if err != nil {
 		return nil, err
 	}
-	if err := applyUserPoolClientParams(req, client); err != nil {
-		return nil, err
+	applyUserPoolClientParams(req, client)
+	// GenerateSecret and ClientSecret are members of the create request
+	// only — the update request model defines neither, so the update
+	// handler never reads them.
+	if v, ok := getBoolParamOK(req, "GenerateSecret"); ok {
+		client.GenerateSecret = v
 	}
 
-	// Suppress the client secret when GenerateSecret is explicitly false.
-	s.suppressClientSecretCore(client)
-
-	if _, err := s.createUserPoolClientCore(reqCtx.GetRegion(), client); err != nil {
+	if _, err := s.createUserPoolClientCore(reqCtx.GetRegion(), client, req.GetParam("ClientSecret")); err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"UserPoolClient": formatUserPoolClient(client, true),
+		"UserPoolClient": formatUserPoolClient(client),
 	}, nil
 }
 
@@ -41,7 +41,7 @@ func (s *CognitoService) DescribeUserPoolClient(ctx context.Context, reqCtx *req
 	}
 
 	return map[string]interface{}{
-		"UserPoolClient": formatUserPoolClient(client, false),
+		"UserPoolClient": formatUserPoolClient(client),
 	}, nil
 }
 
@@ -62,52 +62,41 @@ func (s *CognitoService) UpdateUserPoolClient(ctx context.Context, reqCtx *reque
 	if clientName := req.GetParam("ClientName"); clientName != "" {
 		client.ClientName = clientName
 	}
-	if err := applyUserPoolClientParams(req, client); err != nil {
-		return nil, err
-	}
+	applyUserPoolClientParams(req, client)
 
 	if err := s.updateUserPoolClientCore(reqCtx.GetRegion(), client); err != nil {
 		return nil, err
 	}
 
 	return map[string]interface{}{
-		"UserPoolClient": formatUserPoolClient(client, false),
+		"UserPoolClient": formatUserPoolClient(client),
 	}, nil
 }
 
-func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.UserPoolClient) error {
-	if val := getIntParam(req, "RefreshTokenValidity"); val > 0 {
-		if !validateRefreshTokenValidity(val) {
-			return ErrInvalidParameter
-		}
-		client.RefreshTokenValidity = val
+// applyUserPoolClientParams applies the client-configuration members that
+// the create and update request models share onto the store-level client.
+// It is pure parameter application: the assembled configuration is
+// validated by validateUserPoolClientConfig inside the create/update Cores,
+// never here. Boolean members are applied on presence — an omitted member
+// keeps the stored value — and create-only members (GenerateSecret) are
+// handled by the create handler, not here.
+func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.UserPoolClient) {
+	// Token-validity members apply on presence so an explicit out-of-range
+	// value reaches the Core's validation (the model's minimum is 1); an
+	// omitted member keeps the stored value.
+	if _, ok := req.Parameters["RefreshTokenValidity"]; ok {
+		client.RefreshTokenValidity = getIntParam(req, "RefreshTokenValidity")
 	}
-	if val := getIntParam(req, "AccessTokenValidity"); val > 0 {
-		if !validateAccessTokenValidity(val) {
-			return ErrInvalidParameter
-		}
-		client.AccessTokenValidity = val
+	if _, ok := req.Parameters["AccessTokenValidity"]; ok {
+		client.AccessTokenValidity = getIntParam(req, "AccessTokenValidity")
 	}
-	if val := getIntParam(req, "IdTokenValidity"); val > 0 {
-		if !validateIdTokenValidity(val) {
-			return ErrInvalidParameter
-		}
-		client.IDTokenValidity = val
+	if _, ok := req.Parameters["IdTokenValidity"]; ok {
+		client.IDTokenValidity = getIntParam(req, "IdTokenValidity")
 	}
 	if flows := getStringSliceParam(req, "ExplicitAuthFlows"); len(flows) > 0 {
-		for _, f := range flows {
-			if !validateExplicitAuthFlow(f) {
-				return ErrInvalidParameter
-			}
-		}
 		client.ExplicitAuthFlows = flows
 	}
 	if flows := getStringSliceParam(req, "AllowedOAuthFlows"); len(flows) > 0 {
-		for _, f := range flows {
-			if !validateOAuthFlow(f) {
-				return ErrInvalidParameter
-			}
-		}
 		client.AllowedOAuthFlows = flows
 	}
 	if urls := getStringSliceParam(req, "CallbackURLs"); len(urls) > 0 {
@@ -126,12 +115,11 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 		client.AllowedOAuthScopes = scopes
 	}
 	// Parse AllowedOAuthFlowsUserPoolClient.
-	client.AllowedOAuthFlowsUserPoolClient = getBoolParam(req, "AllowedOAuthFlowsUserPoolClient")
+	if v, ok := getBoolParamOK(req, "AllowedOAuthFlowsUserPoolClient"); ok {
+		client.AllowedOAuthFlowsUserPoolClient = v
+	}
 	// Parse PreventUserExistenceErrors.
 	if v := req.GetParam("PreventUserExistenceErrors"); v != "" {
-		if !validatePreventUserExistenceErrors(v) {
-			return ErrInvalidParameter
-		}
 		client.PreventUserExistenceErrors = v
 	}
 	// Parse missing Smithy fields.
@@ -144,9 +132,12 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if attrs := getStringSliceParam(req, "WriteAttributes"); len(attrs) > 0 {
 		client.WriteAttributes = attrs
 	}
-	client.EnablePropagateAdditionalUserContextData = getBoolParam(req, "EnablePropagateAdditionalUserContextData")
-	client.EnableTokenRevocation = getBoolParam(req, "EnableTokenRevocation")
-	client.GenerateSecret = getBoolParam(req, "GenerateSecret")
+	if v, ok := getBoolParamOK(req, "EnablePropagateAdditionalUserContextData"); ok {
+		client.EnablePropagateAdditionalUserContextData = v
+	}
+	if v, ok := getBoolParamOK(req, "EnableTokenRevocation"); ok {
+		client.EnableTokenRevocation = v
+	}
 	if m, ok := req.Parameters["AnalyticsConfiguration"].(map[string]interface{}); ok {
 		ac := &cognitostore.AnalyticsConfiguration{}
 		if v, ok := m["ApplicationArn"].(string); ok {
@@ -169,21 +160,12 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if m, ok := req.Parameters["TokenValidityUnits"].(map[string]interface{}); ok {
 		tvu := &cognitostore.TokenValidityUnits{}
 		if v, ok := m["AccessToken"].(string); ok {
-			if !validateTimeUnit(v) {
-				return ErrInvalidParameter
-			}
 			tvu.AccessToken = v
 		}
 		if v, ok := m["IdToken"].(string); ok {
-			if !validateTimeUnit(v) {
-				return ErrInvalidParameter
-			}
 			tvu.IdToken = v
 		}
 		if v, ok := m["RefreshToken"].(string); ok {
-			if !validateTimeUnit(v) {
-				return ErrInvalidParameter
-			}
 			tvu.RefreshToken = v
 		}
 		client.TokenValidityUnits = tvu
@@ -191,9 +173,6 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 	if m, ok := req.Parameters["RefreshTokenRotation"].(map[string]interface{}); ok {
 		rtr := &cognitostore.RefreshTokenRotation{}
 		if v, ok := m["Feature"].(string); ok {
-			if !validateFeatureType(v) {
-				return ErrInvalidParameter
-			}
 			rtr.Feature = v
 		}
 		if v, ok := m["RetryGracePeriodSeconds"]; ok {
@@ -206,7 +185,6 @@ func applyUserPoolClientParams(req *request.ParsedRequest, client *cognitostore.
 		}
 		client.RefreshTokenRotation = rtr
 	}
-	return nil
 }
 
 // DeleteUserPoolClient deletes a user pool client.
@@ -222,7 +200,7 @@ func (s *CognitoService) DeleteUserPoolClient(ctx context.Context, reqCtx *reque
 // https://docs.aws.amazon.com/cognito-user-identity-pools/latest/APIReference/API_ListUserPoolClients.html
 func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	// Smithy QueryLimit: range {min: 1, max: 60}
-	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", 60)
+	maxResults, err := parseStrictListLimit(req.Parameters, "MaxResults", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -254,32 +232,24 @@ func (s *CognitoService) ListUserPoolClients(ctx context.Context, reqCtx *reques
 	return resp, nil
 }
 
+// getStringSliceParam reads a JSON array of strings under its awsJson1_1
+// member name; anything else (including a query-form Key.N family) reads
+// as absent.
 func getStringSliceParam(req *request.ParsedRequest, key string) []string {
+	arr, ok := req.Parameters[key].([]interface{})
+	if !ok {
+		return nil
+	}
 	var result []string
-	for i := 1; ; i++ {
-		idx := strconv.Itoa(i)
-		itemKey := key + "." + idx
-		item := req.GetParam(itemKey)
-		if item == "" {
-			break
-		}
-		result = append(result, item)
-	}
-
-	if len(result) == 0 {
-		if arr, ok := req.Parameters[key].([]interface{}); ok {
-			for _, v := range arr {
-				if s, ok := v.(string); ok {
-					result = append(result, s)
-				}
-			}
+	for _, v := range arr {
+		if s, ok := v.(string); ok {
+			result = append(result, s)
 		}
 	}
-
 	return result
 }
 
-func formatUserPoolClient(client *cognitostore.UserPoolClient, includeSecret bool) map[string]interface{} {
+func formatUserPoolClient(client *cognitostore.UserPoolClient) map[string]interface{} {
 	result := map[string]interface{}{
 		"ClientId":             client.ClientID,
 		"UserPoolId":           client.UserPoolID,
@@ -291,7 +261,10 @@ func formatUserPoolClient(client *cognitostore.UserPoolClient, includeSecret boo
 		"LastModifiedDate":     client.LastModifiedDate.Unix(),
 	}
 
-	if includeSecret && client.ClientSecret != "" {
+	// ClientSecret is a member of the shared response type: it is
+	// returned whenever the stored client carries one, on create, update
+	// and describe alike, and omitted for clients without a secret.
+	if client.ClientSecret != "" {
 		result["ClientSecret"] = client.ClientSecret
 	}
 

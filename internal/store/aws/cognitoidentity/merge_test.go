@@ -35,7 +35,7 @@ func TestMergeDeveloperIdentitiesFailurePreservesSourceIdentity(t *testing.T) {
 		{DeveloperUserIdentifier: "source-user", DeveloperProviderName: "login.example.com", IdentityPoolID: pool.ID, IdentityID: sourceIdentity.ID},
 		{DeveloperUserIdentifier: "dest-user", DeveloperProviderName: "login.example.com", IdentityPoolID: pool.ID, IdentityID: destIdentity.ID},
 	} {
-		if err := s.LinkDeveloperIdentity(link); err != nil {
+		if _, err := s.EnsureDeveloperIdentity(pool.ID, link.DeveloperProviderName, link.DeveloperUserIdentifier, link.IdentityID); err != nil {
 			t.Fatalf("link developer identity: %v", err)
 		}
 	}
@@ -71,7 +71,7 @@ func TestMergeDeveloperIdentitiesSuccessMovesLinkAndLogins(t *testing.T) {
 		{DeveloperUserIdentifier: "source-user", DeveloperProviderName: "login.example.com", IdentityPoolID: pool.ID, IdentityID: sourceIdentity.ID},
 		{DeveloperUserIdentifier: "dest-user", DeveloperProviderName: "login.example.com", IdentityPoolID: pool.ID, IdentityID: destIdentity.ID},
 	} {
-		if err := s.LinkDeveloperIdentity(link); err != nil {
+		if _, err := s.EnsureDeveloperIdentity(pool.ID, link.DeveloperProviderName, link.DeveloperUserIdentifier, link.IdentityID); err != nil {
 			t.Fatalf("link developer identity: %v", err)
 		}
 	}
@@ -100,5 +100,8 @@ func TestMergeDeveloperIdentitiesSuccessMovesLinkAndLogins(t *testing.T) {
 	}
 	if merged.Logins["graph.facebook.com"] != "source-token" {
 		t.Fatalf("source logins were not merged into the destination identity: %v", merged.Logins)
+	}
+	if _, err := s.GetIdentityByID(sourceIdentity.ID); err == nil {
+		t.Fatal("source identity's ID index entry survived the merge")
 	}
 }

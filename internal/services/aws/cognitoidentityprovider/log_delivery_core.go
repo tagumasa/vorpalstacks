@@ -1,6 +1,10 @@
 package cognitoidentityprovider
 
 import (
+	"encoding/json"
+	"strconv"
+	"time"
+
 	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
@@ -37,23 +41,67 @@ func (s *CognitoService) setLogDeliveryConfigurationCore(region, userPoolID stri
 			LogLevel:    getStringParam(m, "LogLevel"),
 			EventSource: getStringParam(m, "EventSource"),
 		}
-		if lc.LogLevel != "" && lc.LogLevel != "ERROR" && lc.LogLevel != "INFO" {
+		if lc.LogLevel != "ERROR" && lc.LogLevel != "INFO" {
 			return nil, ErrInvalidParameter
 		}
-		if lc.EventSource != "" && lc.EventSource != "userNotification" && lc.EventSource != "userAuthEvents" {
+		if lc.EventSource != "userNotification" && lc.EventSource != "userAuthEvents" {
 			return nil, ErrInvalidParameter
 		}
-		if cw, ok := m["CloudWatchLogsConfiguration"].(map[string]interface{}); ok {
+		// The developer guide binds the log level to the event source:
+		// message-delivery logs are userNotification at ERROR alone, and
+		// user-activity logs are userAuthEvents at INFO alone.
+		switch lc.EventSource {
+		case "userNotification":
+			if lc.LogLevel != "ERROR" {
+				return nil, ErrInvalidParameter
+			}
+		case "userAuthEvents":
+			if lc.LogLevel != "INFO" {
+				return nil, ErrInvalidParameter
+			}
+		}
+		// A configuration names exactly one destination, and the
+		// userNotification source goes to CloudWatch Logs alone — "You
+		// can't send user-notification logs to any destination other than
+		// CloudWatch Logs".
+		cwRaw, cwPresent := m["CloudWatchLogsConfiguration"]
+		s3Raw, s3Present := m["S3Configuration"]
+		fhRaw, fhPresent := m["FirehoseConfiguration"]
+		destinations := 0
+		for _, present := range []bool{cwPresent, s3Present, fhPresent} {
+			if present {
+				destinations++
+			}
+		}
+		if destinations != 1 {
+			return nil, ErrInvalidParameter
+		}
+		if lc.EventSource == "userNotification" && !cwPresent {
+			return nil, ErrInvalidParameter
+		}
+		if cwPresent {
+			cw, isMap := cwRaw.(map[string]interface{})
+			if !isMap {
+				return nil, ErrInvalidParameter
+			}
 			lc.CloudWatchLogsConfiguration = &cognitostore.CloudWatchLogsConfig{
 				LogGroupArn: getStringParam(cw, "LogGroupArn"),
 			}
 		}
-		if s3, ok := m["S3Configuration"].(map[string]interface{}); ok {
+		if s3Present {
+			s3, isMap := s3Raw.(map[string]interface{})
+			if !isMap {
+				return nil, ErrInvalidParameter
+			}
 			lc.S3Configuration = &cognitostore.S3Config{
 				BucketArn: getStringParam(s3, "BucketArn"),
 			}
 		}
-		if fh, ok := m["FirehoseConfiguration"].(map[string]interface{}); ok {
+		if fhPresent {
+			fh, isMap := fhRaw.(map[string]interface{})
+			if !isMap {
+				return nil, ErrInvalidParameter
+			}
 			lc.FirehoseConfiguration = &cognitostore.FirehoseConfig{
 				StreamArn: getStringParam(fh, "StreamArn"),
 			}
@@ -83,7 +131,7 @@ func (s *CognitoService) getLogDeliveryConfigurationCore(region, userPoolID stri
 
 	cfg, err := store.GetLogDeliveryConfiguration(userPoolID)
 	if err != nil {
-		return nil, nil
+		return nil, ErrInternalError
 	}
 	return cfg, nil
 }
@@ -108,7 +156,50 @@ func (s *CognitoService) publishAuthEventLogCore(reqCtx *request.RequestContext,
 		}
 		message := formatAuthEventLogMessage(event)
 		if lc.CloudWatchLogsConfiguration != nil && lc.CloudWatchLogsConfiguration.LogGroupArn != "" {
-			s.publishToCloudWatchLogs(lc.CloudWatchLogsConfiguration.LogGroupArn, userPoolID, message)
+			s.publishToCloudWatchLogs(lc.CloudWatchLogsConfiguration.LogGroupArn, reqCtx.GetRegion(), userPoolID, message)
 		}
+		if lc.S3Configuration != nil && lc.S3Configuration.BucketArn != "" {
+			s.publishToS3(lc.S3Configuration.BucketArn, reqCtx.GetRegion(), userPoolID, event.EventID, message)
+		}
+		// The Firehose destination is accepted and stored but delivers
+		// nothing until the platform Firehose service exists (release
+		// blocker; category-(a) missing substrate).
+	}
+}
+
+// publishNotificationLogCore delivers a message-delivery notification
+// record to the userNotification log destination. The userNotification
+// source is CloudWatch Logs alone, and delivery failures are swallowed
+// like every log destination — logging must never fail the notification
+// flow.
+func (s *CognitoService) publishNotificationLogCore(reqCtx *request.RequestContext, userPoolID, details string) {
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return
+	}
+
+	cfg, err := store.GetLogDeliveryConfiguration(userPoolID)
+	if err != nil || cfg == nil {
+		return
+	}
+
+	for _, lc := range cfg.LogConfigurations {
+		if lc.EventSource != "userNotification" {
+			continue
+		}
+		if lc.CloudWatchLogsConfiguration == nil || lc.CloudWatchLogsConfiguration.LogGroupArn == "" {
+			continue
+		}
+		record, merr := json.Marshal(map[string]interface{}{
+			"eventTimestamp": strconv.FormatInt(time.Now().UnixMilli(), 10),
+			"eventSource":    "USER_NOTIFICATION",
+			"logLevel":       "ERROR",
+			"message":        map[string]interface{}{"details": details},
+			"logSourceId":    map[string]interface{}{"userPoolId": userPoolID},
+		})
+		if merr != nil {
+			return
+		}
+		s.publishToCloudWatchLogs(lc.CloudWatchLogsConfiguration.LogGroupArn, reqCtx.GetRegion(), userPoolID, string(record))
 	}
 }

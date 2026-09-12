@@ -1,6 +1,7 @@
 package cognitoidentityprovider
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -77,10 +78,13 @@ func (s *CognitoService) createUserPoolDomainCore(in CreateUserPoolDomainInput) 
 		return nil, ErrResourceNotFound
 	}
 
+	// Domain names fold to lowercase, matching the router's Host folding:
+	// a mixed-case domain must resolve identically on every mount path.
+	domain := strings.ToLower(in.Domain)
 	cognitoSuffix := config.GetString("endpoints.cognito_suffix")
-	cfDomain := fmt.Sprintf("%s.auth.%s", in.Domain, strings.Replace(cognitoSuffix, "{region}", in.Region, 1))
+	cfDomain := fmt.Sprintf("%s.auth.%s", domain, strings.Replace(cognitoSuffix, "{region}", in.Region, 1))
 	domainEntry := &cognitostore.UserPoolDomain{
-		Domain:           in.Domain,
+		Domain:           domain,
 		UserPoolID:       in.UserPoolID,
 		CloudFrontDomain: cfDomain,
 		CreatedDate:      time.Now().UTC(),
@@ -123,7 +127,14 @@ func (s *CognitoService) createUserPoolDomainCore(in CreateUserPoolDomainInput) 
 		}
 		domainEntry.Routing = routing
 	}
+	// The domain family models no conflict-class error shape: every domain
+	// operation's error list documents the duplicate-binding violations as
+	// InvalidParameterException, so both rejection sentinels map there.
 	if err := store.SetUserPoolDomain(in.Domain, domainEntry); err != nil {
+		if errors.Is(err, cognitostore.ErrUserPoolDomainInUse) ||
+			errors.Is(err, cognitostore.ErrUserPoolAlreadyHasDomain) {
+			return nil, ErrInvalidParameter
+		}
 		return nil, err
 	}
 
@@ -148,9 +159,11 @@ func (s *CognitoService) describeUserPoolDomainCore(region, domain string) (*cog
 	return domainEntry, nil
 }
 
-// deleteUserPoolDomainCore removes a user-pool domain entry.
-func (s *CognitoService) deleteUserPoolDomainCore(region, domain string) error {
-	if domain == "" {
+// deleteUserPoolDomainCore removes a user-pool domain entry. The domain is
+// deleted only when it belongs to the named pool: a domain bound to another
+// pool — or a domain that does not exist — is reported as not found.
+func (s *CognitoService) deleteUserPoolDomainCore(region, userPoolID, domain string) error {
+	if domain == "" || userPoolID == "" {
 		return ErrInvalidParameter
 	}
 
@@ -158,12 +171,23 @@ func (s *CognitoService) deleteUserPoolDomainCore(region, domain string) error {
 	if err != nil {
 		return err
 	}
+	if _, err := store.GetUserPool(userPoolID); err != nil {
+		return ErrResourceNotFound
+	}
 
-	return store.DeleteUserPoolDomain(domain)
+	if err := store.DeleteUserPoolDomain(userPoolID, domain); err != nil {
+		if errors.Is(err, cognitostore.ErrUserPoolDomainNotFound) {
+			return ErrResourceNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 // updateUserPoolDomainCore rebuilds the stored domain entry for a domain,
 // preserving the original creation date, and returns the CloudFront domain.
+// The domain must belong to the named pool: a domain bound to another pool
+// is reported as not found.
 func (s *CognitoService) updateUserPoolDomainCore(in UpdateUserPoolDomainInput) (*cognitostore.UserPoolDomain, error) {
 	if in.Domain == "" || in.UserPoolID == "" {
 		return nil, ErrInvalidParameter
@@ -181,11 +205,16 @@ func (s *CognitoService) updateUserPoolDomainCore(in UpdateUserPoolDomainInput) 
 	if err != nil {
 		return nil, ErrResourceNotFound
 	}
+	if existing.UserPoolID != in.UserPoolID {
+		return nil, ErrResourceNotFound
+	}
 
+	// Domain names fold to lowercase, matching the router's Host folding.
+	domain := strings.ToLower(in.Domain)
 	cognitoSuffix := config.GetString("endpoints.cognito_suffix")
-	cfDomain := fmt.Sprintf("%s.auth.%s", in.Domain, strings.Replace(cognitoSuffix, "{region}", in.Region, 1))
+	cfDomain := fmt.Sprintf("%s.auth.%s", domain, strings.Replace(cognitoSuffix, "{region}", in.Region, 1))
 	domainEntry := &cognitostore.UserPoolDomain{
-		Domain:           in.Domain,
+		Domain:           domain,
 		UserPoolID:       in.UserPoolID,
 		CloudFrontDomain: cfDomain,
 		CreatedDate:      existing.CreatedDate,
@@ -243,6 +272,13 @@ func (s *CognitoService) updateUserPoolDomainCore(in UpdateUserPoolDomainInput) 
 	}
 
 	if err := store.SetUserPoolDomain(in.Domain, domainEntry); err != nil {
+		// The store re-checks the binding under its lock: a rejection here
+		// means the domain was rebound away from this pool after the
+		// ownership check above, which is the same not-found outcome.
+		if errors.Is(err, cognitostore.ErrUserPoolDomainInUse) ||
+			errors.Is(err, cognitostore.ErrUserPoolAlreadyHasDomain) {
+			return nil, ErrResourceNotFound
+		}
 		return nil, err
 	}
 
@@ -357,8 +393,9 @@ func (s *CognitoService) deleteResourceServerCore(region, userPoolID, identifier
 	return nil
 }
 
-// listResourceServersCore pages through the pool's resource servers with the
-// documented default and maximum page size of 50.
+// listResourceServersCore pages through the pool's resource servers. The
+// caller resolves the page size against the ListResourceServersLimitType
+// range; the default and maximum of 50 live with the parser.
 func (s *CognitoService) listResourceServersCore(region, userPoolID string, maxResults int, nextToken string) (*common.ListResult[cognitostore.ResourceServer], error) {
 	if userPoolID == "" {
 		return nil, ErrInvalidParameter
@@ -367,10 +404,6 @@ func (s *CognitoService) listResourceServersCore(region, userPoolID string, maxR
 	store, err := s.GetStoreForRegion(region)
 	if err != nil {
 		return nil, err
-	}
-
-	if maxResults <= 0 || maxResults > 50 {
-		maxResults = 50
 	}
 
 	opts := common.ListOptions{
@@ -505,7 +538,7 @@ func applyAccountTakeoverRiskConfiguration(cfg *cognitostore.RiskConfiguration, 
 	if actions, ok := m["Actions"].(map[string]interface{}); ok {
 		if low, ok := actions["LowAction"].(map[string]interface{}); ok {
 			action := getStringParam(low, "EventAction")
-			if !isValidAccountTakeoverAction(action) {
+			if !validateAccountTakeoverAction(action) {
 				return ErrInvalidParameter
 			}
 			cfg.AccountTakeoverLowAction = action
@@ -515,7 +548,7 @@ func applyAccountTakeoverRiskConfiguration(cfg *cognitostore.RiskConfiguration, 
 		}
 		if med, ok := actions["MediumAction"].(map[string]interface{}); ok {
 			action := getStringParam(med, "EventAction")
-			if !isValidAccountTakeoverAction(action) {
+			if !validateAccountTakeoverAction(action) {
 				return ErrInvalidParameter
 			}
 			cfg.AccountTakeoverMediumAction = action
@@ -525,7 +558,7 @@ func applyAccountTakeoverRiskConfiguration(cfg *cognitostore.RiskConfiguration, 
 		}
 		if high, ok := actions["HighAction"].(map[string]interface{}); ok {
 			action := getStringParam(high, "EventAction")
-			if !isValidAccountTakeoverAction(action) {
+			if !validateAccountTakeoverAction(action) {
 				return ErrInvalidParameter
 			}
 			cfg.AccountTakeoverHighAction = action

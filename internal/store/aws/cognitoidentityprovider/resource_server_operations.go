@@ -25,12 +25,18 @@ func (s *CognitoStore) CreateResourceServer(rs *ResourceServer) error {
 	return s.BaseStore.Put(key, rs)
 }
 
-// GetResourceServer retrieves a resource server by user pool ID and identifier.
+// GetResourceServer retrieves a resource server by user pool ID and
+// identifier. A missing resource server reports ErrResourceServerNotFound —
+// a distinct sentinel from a missing pool, so callers can tell the two
+// entities apart.
 func (s *CognitoStore) GetResourceServer(userPoolID, identifier string) (*ResourceServer, error) {
 	key := resourceServerKey(userPoolID, identifier)
 	var rs ResourceServer
 	if err := s.BaseStore.Get(key, &rs); err != nil {
-		return nil, ErrUserPoolNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrResourceServerNotFound
+		}
+		return nil, err
 	}
 	return &rs, nil
 }
@@ -42,11 +48,13 @@ func (s *CognitoStore) UpdateResourceServer(rs *ResourceServer) error {
 	return s.BaseStore.Put(key, rs)
 }
 
-// DeleteResourceServer removes a resource server from the store by user pool ID and identifier.
+// DeleteResourceServer removes a resource server from the store by user pool
+// ID and identifier; a missing resource server reports
+// ErrResourceServerNotFound.
 func (s *CognitoStore) DeleteResourceServer(userPoolID, identifier string) error {
 	key := resourceServerKey(userPoolID, identifier)
 	if !s.BaseStore.Exists(key) {
-		return ErrUserPoolNotFound
+		return ErrResourceServerNotFound
 	}
 	return s.BaseStore.Delete(key)
 }
@@ -87,12 +95,18 @@ func (s *CognitoStore) CreateIdentityProvider(ip *IdentityProvider) error {
 	return s.BaseStore.Put(key, ip)
 }
 
-// GetIdentityProvider retrieves an identity provider by user pool ID and provider name.
+// GetIdentityProvider retrieves an identity provider by user pool ID and
+// provider name. A missing provider reports ErrIdentityProviderNotFound —
+// a distinct sentinel from a missing pool, so callers can tell the two
+// entities apart.
 func (s *CognitoStore) GetIdentityProvider(userPoolID, providerName string) (*IdentityProvider, error) {
 	key := identityProviderKey(userPoolID, providerName)
 	var ip IdentityProvider
 	if err := s.BaseStore.Get(key, &ip); err != nil {
-		return nil, ErrUserPoolNotFound
+		if common.IsNotFound(err) {
+			return nil, ErrIdentityProviderNotFound
+		}
+		return nil, err
 	}
 	return &ip, nil
 }
@@ -104,11 +118,13 @@ func (s *CognitoStore) UpdateIdentityProvider(ip *IdentityProvider) error {
 	return s.BaseStore.Put(key, ip)
 }
 
-// DeleteIdentityProvider removes an identity provider from the store by user pool ID and provider name.
+// DeleteIdentityProvider removes an identity provider from the store by user
+// pool ID and provider name; a missing provider reports
+// ErrIdentityProviderNotFound.
 func (s *CognitoStore) DeleteIdentityProvider(userPoolID, providerName string) error {
 	key := identityProviderKey(userPoolID, providerName)
 	if !s.BaseStore.Exists(key) {
-		return ErrUserPoolNotFound
+		return ErrIdentityProviderNotFound
 	}
 	return s.BaseStore.Delete(key)
 }

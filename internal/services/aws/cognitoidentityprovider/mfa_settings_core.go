@@ -127,11 +127,14 @@ func (s *CognitoService) adminSetUserSettingsCore(reqCtx *request.RequestContext
 		return nil, ErrUserNotFound
 	}
 
-	opts, err := parseMFAOptions(in.Params)
+	pool, err := store.GetUserPool(in.UserPoolID)
 	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	if err := applyLegacyMFAOptions(user, pool, in.Params); err != nil {
 		return nil, err
 	}
-	user.MFAOptions = opts
 
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
@@ -162,17 +165,48 @@ func (s *CognitoService) setUserSettingsCore(reqCtx *request.RequestContext, in 
 		return nil, ErrUserNotFound
 	}
 
-	opts, err := parseMFAOptions(in.Params)
+	pool, err := store.GetUserPool(user.UserPoolID)
 	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
+	if err := applyLegacyMFAOptions(user, pool, in.Params); err != nil {
 		return nil, err
 	}
-	user.MFAOptions = opts
 
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}
 
 	return response.EmptyResponse(), nil
+}
+
+// applyLegacyMFAOptions validates the legacy SetUserSettings MFAOptions
+// list and applies it to the user record: the entry set is stored for the
+// admin projections, and an SMS-delivery entry maps onto the modern SmsMfa
+// factor the sign-in second-factor machinery challenges with — under the
+// same prerequisites as the modern preference path (pool MFA on, the
+// factor enabled in the pool's per-factor configuration, verified
+// phone_number).
+func applyLegacyMFAOptions(user *cognitostore.User, pool *cognitostore.UserPool, params map[string]interface{}) error {
+	opts, err := parseMFAOptions(params)
+	if err != nil {
+		return err
+	}
+	_, poolSMS, _ := mfaFactorAvailability(pool)
+	for _, opt := range opts {
+		if opt.DeliveryMedium == "SMS" {
+			if pool.MfaConfiguration == "OFF" || !poolSMS {
+				return ErrInvalidParameter
+			}
+			if !isAttributeVerified(user.Attributes, "phone_number") {
+				return ErrInvalidParameter
+			}
+			user.SmsMfa = &cognitostore.SmsMfaSettings{Enabled: true}
+		}
+	}
+	user.MFAOptions = opts
+	return nil
 }
 
 // applyMFAPreference parses SMS/SoftwareToken/Email/WebAuthn MFA settings from
@@ -265,7 +299,9 @@ func clearPreferredMfaExcept(user *cognitostore.User, keep string) {
 }
 
 // parseMFAOptions parses the legacy MFAOptions list from the request
-// parameters.
+// parameters. A present member must be a well-formed list of entries
+// carrying both a valid DeliveryMedium and an AttributeName of email or
+// phone_number — a malformed member is rejected, not silently dropped.
 func parseMFAOptions(params map[string]interface{}) ([]*cognitostore.MFAOptionType, error) {
 	val, ok := params["MFAOptions"]
 	if !ok {
@@ -273,26 +309,26 @@ func parseMFAOptions(params map[string]interface{}) ([]*cognitostore.MFAOptionTy
 	}
 	slice, ok := val.([]interface{})
 	if !ok {
-		return nil, nil
+		return nil, ErrInvalidParameter
 	}
 	result := make([]*cognitostore.MFAOptionType, 0, len(slice))
 	for _, v := range slice {
-		if m, ok := v.(map[string]interface{}); ok {
-			opt := &cognitostore.MFAOptionType{}
-			if dm, ok := m["DeliveryMedium"].(string); ok {
-				if !validateMFADeliveryMedium(dm) {
-					return nil, ErrInvalidParameter
-				}
-				opt.DeliveryMedium = dm
-			}
-			if an, ok := m["AttributeName"].(string); ok {
-				if an != "email" && an != "phone_number" {
-					return nil, ErrInvalidParameter
-				}
-				opt.AttributeName = an
-			}
-			result = append(result, opt)
+		m, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, ErrInvalidParameter
 		}
+		opt := &cognitostore.MFAOptionType{}
+		dm, ok := m["DeliveryMedium"].(string)
+		if !ok || !validateMFADeliveryMedium(dm) {
+			return nil, ErrInvalidParameter
+		}
+		an, ok := m["AttributeName"].(string)
+		if !ok || (an != "email" && an != "phone_number") {
+			return nil, ErrInvalidParameter
+		}
+		opt.DeliveryMedium = dm
+		opt.AttributeName = an
+		result = append(result, opt)
 	}
 	return result, nil
 }
@@ -316,8 +352,16 @@ func validateMFAPrerequisites(params map[string]interface{}, store cognitostore.
 		return nil
 	}
 
+	// The pool's per-factor configuration is the administrator's explicit
+	// switch for each second factor; enabling a factor the pool disabled is
+	// rejected exactly as the OFF pool rejects every enable.
+	poolSoftware, poolSMS, poolEmail := mfaFactorAvailability(pool)
+
 	if sms, ok := params["SMSMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := sms["Enabled"].(bool); enabled {
+			if !poolSMS {
+				return ErrInvalidParameter
+			}
 			if !isAttributeVerified(user.Attributes, "phone_number") {
 				return ErrInvalidParameter
 			}
@@ -326,6 +370,9 @@ func validateMFAPrerequisites(params map[string]interface{}, store cognitostore.
 
 	if st, ok := params["SoftwareTokenMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := st["Enabled"].(bool); enabled {
+			if !poolSoftware {
+				return ErrInvalidParameter
+			}
 			if user.SoftwareTokenMfa == nil || !user.SoftwareTokenMfa.Verified {
 				return ErrInvalidParameter
 			}
@@ -334,15 +381,24 @@ func validateMFAPrerequisites(params map[string]interface{}, store cognitostore.
 
 	if em, ok := params["EmailMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := em["Enabled"].(bool); enabled {
+			if !poolEmail {
+				return ErrInvalidParameter
+			}
 			if !isAttributeVerified(user.Attributes, "email") {
 				return ErrInvalidParameter
 			}
 		}
 	}
 
-	// WebAuthn MFA requires at least one registered WebAuthn credential.
+	// WebAuthn MFA is exercisable only when the pool runs WebAuthn under a
+	// configured relying party id and the user holds at least one
+	// registered credential — enabling a factor that could never be
+	// challenged or answered is rejected.
 	if wa, ok := params["WebAuthnMfaSettings"].(map[string]interface{}); ok {
 		if enabled, _ := wa["Enabled"].(bool); enabled {
+			if pool.WebAuthnConfiguration == nil || pool.WebAuthnConfiguration.RelyingPartyId == "" {
+				return ErrInvalidParameter
+			}
 			creds, _ := store.ListWebAuthnCredentialsPaginated(user.UserPoolID, user.ID, storecommon.ListOptions{})
 			if creds == nil || len(creds.Items) == 0 {
 				return ErrInvalidParameter

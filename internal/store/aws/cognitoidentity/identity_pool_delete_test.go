@@ -20,12 +20,7 @@ func TestDeleteIdentityPoolCascadesAllRecords(t *testing.T) {
 	if err := s.CreateIdentity(identity); err != nil {
 		t.Fatalf("create identity: %v", err)
 	}
-	if err := s.LinkDeveloperIdentity(&DeveloperIdentity{
-		DeveloperUserIdentifier: "user-1",
-		DeveloperProviderName:   "login.example.com",
-		IdentityPoolID:          pool.ID,
-		IdentityID:              identity.ID,
-	}); err != nil {
+	if _, err := s.EnsureDeveloperIdentity(pool.ID, "login.example.com", "user-1", identity.ID); err != nil {
 		t.Fatalf("link developer identity: %v", err)
 	}
 	if err := s.SetPrincipalTagAttributeMap(pool.ID, "login.example.com", map[string]string{"email": "email"}, false); err != nil {

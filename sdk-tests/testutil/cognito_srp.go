@@ -130,7 +130,10 @@ func (c *cognitoSrpClient) passwordVerifier(saltHex, srpBHex, secretBlockB64 str
 
 	hkdfKey := cognitoSrpHKDF(cognitoSrpPadHex(sVal.Text(16)), cognitoSrpPadHex(uVal.Text(16)))
 
-	timestamp = now.In(time.UTC).Format("Mon Jan 2 03:04:05 MST 2006")
+	// The SDKs sign the TIMESTAMP claim with the 24-hour layout the server
+	// parses for freshness; a 12-hour rendering would sit twelve hours off
+	// the server clock for afternoon claims.
+	timestamp = now.In(time.UTC).Format("Mon Jan 2 15:04:05 MST 2006")
 	msg := c.poolName + c.username + string(secretBlock) + timestamp
 	mac := hmac.New(sha256.New, hkdfKey)
 	mac.Write([]byte(msg))
@@ -364,6 +367,174 @@ func (r *TestRunner) cognitoSRPTests(tc *cognitoIDPContext) []TestResult {
 		}
 		if aws.ToString(authResp.AuthenticationResult.RefreshToken) == "" {
 			return fmt.Errorf("expected refresh token in the challenge sign-in result")
+		}
+		return nil
+	}))
+
+	// Choice-based sign-in through the PASSWORD_SRP challenge: USER_AUTH with
+	// PREFERRED_CHALLENGE=PASSWORD_SRP issues the challenge shell, its SRP_A
+	// answer returns PASSWORD_VERIFIER, and the claim completes the sign-in.
+	results = append(results, r.RunTest("cognito", "InitiateAuth_USER_AUTH_PreferredPasswordSrp", func() error {
+		srpClientID, cleanupClient, err := tc.createPoolClient(tc.userPoolID, tc.unique("pref-srp-client"))
+		if err != nil {
+			return fmt.Errorf("create client: %v", err)
+		}
+		defer cleanupClient()
+
+		srpUser := tc.unique("pref-srp-user")
+		cleanupUser, err := tc.createConfirmedUser(srpUser, "SrpPassword123!",
+			func(input *cognitoidentityprovider.AdminCreateUserInput) {
+				input.MessageAction = ""
+			})
+		if err != nil {
+			return fmt.Errorf("admin create user: %v", err)
+		}
+		defer cleanupUser()
+
+		c, err := newCognitoSrpClient(tc.userPoolID, srpUser, "SrpPassword123!")
+		if err != nil {
+			return err
+		}
+		initResp, err := tc.client.InitiateAuth(tc.ctx, &cognitoidentityprovider.InitiateAuthInput{
+			AuthFlow: "USER_AUTH",
+			ClientId: aws.String(srpClientID),
+			AuthParameters: map[string]string{
+				"USERNAME":            srpUser,
+				"PREFERRED_CHALLENGE": "PASSWORD_SRP",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("InitiateAuth USER_AUTH PREFERRED_CHALLENGE: %v", err)
+		}
+		if string(initResp.ChallengeName) != "PASSWORD_SRP" {
+			return fmt.Errorf("expected ChallengeName=PASSWORD_SRP, got %v", initResp.ChallengeName)
+		}
+
+		srpResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+			ChallengeName: "PASSWORD_SRP",
+			ClientId:      aws.String(srpClientID),
+			Session:       initResp.Session,
+			ChallengeResponses: map[string]string{
+				"USERNAME": srpUser,
+				"SRP_A":    c.srpAHex(),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RespondToAuthChallenge PASSWORD_SRP: %v", err)
+		}
+		if string(srpResp.ChallengeName) != "PASSWORD_VERIFIER" {
+			return fmt.Errorf("expected PASSWORD_VERIFIER after SRP_A, got %v", srpResp.ChallengeName)
+		}
+		cp := srpResp.ChallengeParameters
+		if cp["SALT"] == "" || cp["SECRET_BLOCK"] == "" || cp["SRP_B"] == "" {
+			return fmt.Errorf("missing verifier challenge parameters: %+v", cp)
+		}
+
+		sig, ts, err := c.passwordVerifier(cp["SALT"], cp["SRP_B"], cp["SECRET_BLOCK"], time.Now())
+		if err != nil {
+			return err
+		}
+		authResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+			ChallengeName: "PASSWORD_VERIFIER",
+			ClientId:      aws.String(srpClientID),
+			Session:       srpResp.Session,
+			ChallengeResponses: map[string]string{
+				"USERNAME":                    srpUser,
+				"PASSWORD_CLAIM_SIGNATURE":    sig,
+				"PASSWORD_CLAIM_SECRET_BLOCK": cp["SECRET_BLOCK"],
+				"TIMESTAMP":                   ts,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RespondToAuthChallenge PASSWORD_VERIFIER: %v", err)
+		}
+		if authResp.AuthenticationResult == nil || aws.ToString(authResp.AuthenticationResult.AccessToken) == "" {
+			return fmt.Errorf("no access token in the PASSWORD_SRP sign-in: %+v", authResp.AuthenticationResult)
+		}
+		return nil
+	}))
+
+	// The SELECT_CHALLENGE answer carries SRP_A inline: the selection
+	// response is already the PASSWORD_VERIFIER challenge.
+	results = append(results, r.RunTest("cognito", "RespondToAuthChallenge_SelectChallengeInlinePasswordSrp", func() error {
+		srpClientID, cleanupClient, err := tc.createPoolClient(tc.userPoolID, tc.unique("inline-srp-client"))
+		if err != nil {
+			return fmt.Errorf("create client: %v", err)
+		}
+		defer cleanupClient()
+
+		srpUser := tc.unique("inline-srp-user")
+		cleanupUser, err := tc.createConfirmedUser(srpUser, "SrpPassword123!",
+			func(input *cognitoidentityprovider.AdminCreateUserInput) {
+				input.MessageAction = ""
+			})
+		if err != nil {
+			return fmt.Errorf("admin create user: %v", err)
+		}
+		defer cleanupUser()
+
+		initResp, err := tc.client.InitiateAuth(tc.ctx, &cognitoidentityprovider.InitiateAuthInput{
+			AuthFlow: "USER_AUTH",
+			ClientId: aws.String(srpClientID),
+			AuthParameters: map[string]string{
+				"USERNAME": srpUser,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("InitiateAuth USER_AUTH: %v", err)
+		}
+		advertised := false
+		for _, c := range initResp.AvailableChallenges {
+			if c == "PASSWORD_SRP" {
+				advertised = true
+			}
+		}
+		if !advertised {
+			return fmt.Errorf("expected PASSWORD_SRP among available challenges, got %v", initResp.AvailableChallenges)
+		}
+
+		c, err := newCognitoSrpClient(tc.userPoolID, srpUser, "SrpPassword123!")
+		if err != nil {
+			return err
+		}
+		srpResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+			ChallengeName: "SELECT_CHALLENGE",
+			ClientId:      aws.String(srpClientID),
+			Session:       initResp.Session,
+			ChallengeResponses: map[string]string{
+				"USERNAME": srpUser,
+				"ANSWER":   "PASSWORD_SRP",
+				"SRP_A":    c.srpAHex(),
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RespondToAuthChallenge SELECT_CHALLENGE inline SRP_A: %v", err)
+		}
+		if string(srpResp.ChallengeName) != "PASSWORD_VERIFIER" {
+			return fmt.Errorf("expected PASSWORD_VERIFIER from the inline selection, got %v", srpResp.ChallengeName)
+		}
+
+		cp := srpResp.ChallengeParameters
+		sig, ts, err := c.passwordVerifier(cp["SALT"], cp["SRP_B"], cp["SECRET_BLOCK"], time.Now())
+		if err != nil {
+			return err
+		}
+		authResp, err := tc.client.RespondToAuthChallenge(tc.ctx, &cognitoidentityprovider.RespondToAuthChallengeInput{
+			ChallengeName: "PASSWORD_VERIFIER",
+			ClientId:      aws.String(srpClientID),
+			Session:       srpResp.Session,
+			ChallengeResponses: map[string]string{
+				"USERNAME":                    srpUser,
+				"PASSWORD_CLAIM_SIGNATURE":    sig,
+				"PASSWORD_CLAIM_SECRET_BLOCK": cp["SECRET_BLOCK"],
+				"TIMESTAMP":                   ts,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("RespondToAuthChallenge PASSWORD_VERIFIER: %v", err)
+		}
+		if authResp.AuthenticationResult == nil || aws.ToString(authResp.AuthenticationResult.RefreshToken) == "" {
+			return fmt.Errorf("expected tokens including the refresh token, got %+v", authResp.AuthenticationResult)
 		}
 		return nil
 	}))

@@ -1,25 +1,17 @@
 package cognitoidentityprovider
 
 import (
-	"context"
-	"crypto/rand"
-	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html"
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 
 	waf "vorpalstacks/internal/common/invokers/waf"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/server/fqdnrouter"
-	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 // HostedUIHandler serves the Cognito hosted UI pages for login, sign-up, and OAuth2 flows.
@@ -64,79 +56,56 @@ func (s *CognitoService) HostedUIHandler(w http.ResponseWriter, r *http.Request)
 		if r.Method == http.MethodPost {
 			s.handleLoginSubmit(w, r, poolID)
 		} else {
-			s.renderLoginPage(w, r, poolID)
+			s.renderLoginPage(w, r, hostedUIFlowParamsFromQuery(r.URL.Query()), poolID, "")
 		}
 	case path == "/signup" || path == "/register":
-		s.renderSignUpPage(w, r, poolID)
+		if r.Method == http.MethodPost {
+			s.handleSignUpSubmit(w, r, poolID)
+		} else {
+			s.renderSignUpPage(w, r, hostedUIFlowParamsFromQuery(r.URL.Query()), poolID, "")
+		}
+	case path == "/confirm":
+		if r.Method == http.MethodPost {
+			s.handleConfirmSubmit(w, r, poolID)
+		} else {
+			s.renderConfirmPage(w, r, hostedUIFlowParamsFromQuery(r.URL.Query()), "")
+		}
 	case path == "/oauth2/authorize":
-		s.renderLoginPage(w, r, poolID)
+		s.handleAuthorize(w, r, poolID)
 	case path == "/oauth2/token":
 		s.handleTokenEndpoint(w, r, poolID)
 	case path == "/logout":
-		redirectURL := r.URL.Query().Get("logout_uri")
-		if redirectURL == "" {
-			redirectURL = "/"
+		q := r.URL.Query()
+		reqCtx := request.NewRequestContext(r.Context(), s.storageManager, s.accountID, s.region)
+		target, herr := s.hostedUILogoutCore(reqCtx, poolID, q.Get("client_id"), q.Get("logout_uri"), q.Get("redirect_uri"), q.Get("response_type"))
+		if herr != nil {
+			http.Error(w, herr.desc, herr.status)
+			return
 		}
-		http.Redirect(w, r, redirectURL, http.StatusFound)
+		if target == "/login" {
+			// The redirect_uri form re-invites the user to the sign-in
+			// page with the original authorize parameters appended ("The
+			// logout endpoint appends the parameters in your original
+			// request to the redirect destination").
+			q.Del("logout_uri")
+			http.Redirect(w, r, "/login?"+q.Encode(), http.StatusFound)
+			return
+		}
+		http.Redirect(w, r, target, http.StatusFound)
 	default:
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }
 
 func (s *CognitoService) extractDomain(host string) string {
-	host = strings.Split(host, ":")[0]
+	// Host labels fold to lowercase, matching the production router's
+	// lowercasing of the Host header before domain extraction.
+	host = strings.ToLower(strings.Split(host, ":")[0])
 	parts := strings.Split(host, ".")
 	if len(parts) >= 2 {
 		return parts[0]
 	}
 	return ""
-}
-
-type authCodeEntry struct {
-	poolID   string
-	userID   string
-	clientID string
-	expires  time.Time
-}
-
-func generateAuthCode() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-func (s *CognitoService) startAuthCodeCleanup() {
-	s.authCodeCleanupOnce.Do(func() {
-		go func() {
-			ticker := time.NewTicker(hostedUIAuthCodeSweepEvery)
-			defer ticker.Stop()
-			for range ticker.C {
-				now := time.Now()
-				s.authCodes.Range(func(key, value interface{}) bool {
-					if entry, ok := value.(authCodeEntry); ok && now.After(entry.expires) {
-						s.authCodes.Delete(key)
-					}
-					return true
-				})
-			}
-		}()
-	})
-}
-
-// isRegisteredRedirectURI returns true if the redirectURI matches the client's
-// DefaultRedirectURI or one of its registered CallbackURLs.
-func isRegisteredRedirectURI(client *cognitostore.UserPoolClient, redirectURI string) bool {
-	if client.DefaultRedirectURI != "" && client.DefaultRedirectURI == redirectURI {
-		return true
-	}
-	for _, cb := range client.CallbackURLs {
-		if cb == redirectURI {
-			return true
-		}
-	}
-	return false
 }
 
 func writeOAuthError(w http.ResponseWriter, status int, errCode, desc string) {
@@ -160,108 +129,240 @@ func writeTokenJSON(w http.ResponseWriter, accessToken, idToken, refreshToken st
 	})
 }
 
+// writeClientCredentialsTokenJSON renders the client_credentials grant's
+// response: the machine access token alone, with no ID or refresh token.
+func writeClientCredentialsTokenJSON(w http.ResponseWriter, accessToken string, expiresIn int64) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"access_token": accessToken,
+		"token_type":   "Bearer",
+		"expires_in":   expiresIn,
+	})
+}
+
+// hostedUIErrorLine renders an error message for the hosted UI pages; an
+// empty message renders nothing.
+func hostedUIErrorLine(message string) string {
+	if message == "" {
+		return ""
+	}
+	return `<p class="error">` + html.EscapeString(message) + `</p>`
+}
+
+// handleAuthorize fronts the /oauth2/authorize endpoint: it validates the
+// authorisation request in the Core before any page renders, redirects the
+// documented formatting errors to the registered redirect URI, and
+// otherwise serves the login page carrying the request's members.
+func (s *CognitoService) handleAuthorize(w http.ResponseWriter, r *http.Request, poolID string) {
+	f := hostedUIFlowParamsFromQuery(r.URL.Query())
+	reqCtx := request.NewRequestContext(r.Context(), s.storageManager, s.accountID, s.region)
+
+	_, oauthErr, herr := s.hostedUIAuthorizeCore(reqCtx, poolID, f)
+	if herr != nil {
+		// The client or redirect URI failed validation: no redirect target
+		// is proven trustworthy, so the failure renders as an error page.
+		http.Error(w, herr.desc, herr.status)
+		return
+	}
+	if oauthErr != "" {
+		// AWS documents the formatting-error class as a bare error redirect:
+		// "HTTP 1.1 302 Found Location: https://client_redirect_uri?error=invalid_request".
+		eq := url.Values{}
+		eq.Set("error", oauthErr)
+		sep := "?"
+		if strings.Contains(f.RedirectURI, "?") {
+			sep = "&"
+		}
+		http.Redirect(w, r, f.RedirectURI+sep+eq.Encode(), http.StatusFound)
+		return
+	}
+	s.renderLoginPage(w, r, f, poolID, "")
+}
+
+// parseBasicClientCredentials decodes client_secret_basic authentication:
+// Authorization: Basic base64(client_id:client_secret). A malformed header
+// reports ok=false and is ignored — the grant then fails on the missing
+// credentials like any unauthenticated request.
+func parseBasicClientCredentials(header string) (clientID, clientSecret string, ok bool) {
+	const prefix = "Basic "
+	if len(header) <= len(prefix) || !strings.EqualFold(header[:len(prefix)], prefix) {
+		return "", "", false
+	}
+	raw, err := base64.StdEncoding.DecodeString(header[len(prefix):])
+	if err != nil {
+		return "", "", false
+	}
+	parts := strings.SplitN(string(raw), ":", 2)
+	if len(parts) != 2 {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}
+
 func (s *CognitoService) handleLoginSubmit(w http.ResponseWriter, r *http.Request, poolID string) {
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Could not parse form data", http.StatusBadRequest)
 		return
 	}
+	f := hostedUIFlowParamsFromForm(r)
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	clientID := r.FormValue("client_id")
-	redirectURI := r.FormValue("redirect_uri")
-	responseType := r.FormValue("response_type")
 
 	if username == "" || password == "" {
-		s.renderLoginPage(w, r, poolID)
+		s.renderLoginPage(w, r, f, poolID, "")
 		return
 	}
 
-	ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
-	store, err := s.store(ctx)
-	if err != nil {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+	reqCtx := request.NewRequestContext(r.Context(), s.storageManager, s.accountID, s.region)
+
+	if _, herr := s.hostedUIClientCore(reqCtx, poolID, f.ClientID, f.RedirectURI); herr != nil {
+		s.renderLoginPage(w, r, f, poolID, herr.desc)
 		return
 	}
 
-	if clientID != "" {
-		client, err := store.GetUserPoolClient(poolID, clientID)
-		if err != nil || client == nil {
-			http.Error(w, "Invalid client_id", http.StatusBadRequest)
-			return
+	outcome, herr := s.hostedUIAuthenticateCore(r.Context(), reqCtx, poolID, f.ClientID, username, password, f.Nonce)
+	if herr != nil {
+		s.renderLoginPage(w, r, f, poolID, herr.desc)
+		return
+	}
+	// The hosted UI pages collect a username and password only; when the
+	// pool's policy replaces token issuance with a challenge the pages
+	// cannot answer, the sign-in is refused rather than weakened.
+	if outcome.ChallengeName != "" {
+		s.renderLoginPage(w, r, f, poolID, "Sign-in requires an additional challenge that this page does not support.")
+		return
+	}
+
+	if f.RedirectURI == "" {
+		f.RedirectURI = "/"
+	}
+
+	if f.ResponseType == "token" {
+		frag := url.Values{}
+		frag.Set("access_token", outcome.Tokens.AccessToken)
+		frag.Set("id_token", outcome.Tokens.IDToken)
+		frag.Set("token_type", "Bearer")
+		frag.Set("expires_in", fmt.Sprintf("%d", outcome.Tokens.ExpiresIn))
+		if f.State != "" {
+			frag.Set("state", f.State)
 		}
-		if redirectURI != "" && !isRegisteredRedirectURI(client, redirectURI) {
-			http.Error(w, "Invalid redirect_uri", http.StatusBadRequest)
-			return
-		}
-	}
-
-	user, err := store.GetUser(poolID, username)
-	if err != nil || !user.Enabled || user.UserStatus != "CONFIRMED" {
-		s.renderLoginPage(w, r, poolID)
-		return
-	}
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-		s.renderLoginPage(w, r, poolID)
+		http.Redirect(w, r, f.RedirectURI+"#"+frag.Encode(), http.StatusFound)
 		return
 	}
 
-	code, err := generateAuthCode()
-	if err != nil {
-		http.Error(w, "Internal error", http.StatusInternalServerError)
-		return
-	}
-	s.authCodes.Store(code, authCodeEntry{
-		poolID:   poolID,
-		userID:   user.ID,
-		clientID: clientID,
-		expires:  time.Now().Add(hostedUIAuthCodeTTL),
-	})
-	s.startAuthCodeCleanup()
-
-	if redirectURI == "" {
-		redirectURI = "/"
-	}
-
-	if responseType == "token" {
-		accessToken, idToken, _, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationHostedAuth, nil)
-		if err != nil {
-			http.Error(w, "Internal error", http.StatusInternalServerError)
-			return
-		}
-		frag := fmt.Sprintf("access_token=%s&id_token=%s&expires_in=%d&token_type=Bearer", accessToken, idToken, expiresIn)
-		http.Redirect(w, r, redirectURI+"#"+frag, http.StatusFound)
+	code, herr := s.issueHostedUIAuthCode(reqCtx, poolID, f.ClientID, username, f.RedirectURI, f.Nonce, f.CodeChallenge)
+	if herr != nil {
+		http.Error(w, herr.desc, herr.status)
 		return
 	}
 
 	q := url.Values{}
 	q.Set("code", code)
+	if f.State != "" {
+		q.Set("state", f.State)
+	}
 	sep := "?"
-	if strings.Contains(redirectURI, "?") {
+	if strings.Contains(f.RedirectURI, "?") {
 		sep = "&"
 	}
-	http.Redirect(w, r, redirectURI+sep+q.Encode(), http.StatusFound)
+	http.Redirect(w, r, f.RedirectURI+sep+q.Encode(), http.StatusFound)
 }
 
-func (s *CognitoService) resolveDomainToPoolID(domain string) (string, error) {
-	ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
-	pools, _ := s.ListUserPoolsRaw(ctx)
-	for _, pool := range pools {
-		store, err := s.store(ctx)
-		if err != nil {
-			continue
-		}
-		domainEntry, err := store.GetUserPoolDomain(domain)
-		if err == nil && domainEntry != nil && domainEntry.UserPoolID == pool.ID {
-			return pool.ID, nil
-		}
+// handleSignUpSubmit creates the account through signUpCore — the same
+// registration path as the SignUp API. The default flow leaves the account
+// awaiting its confirmation code, so the browser is sent to the
+// confirmation page carrying the authorisation request's members; an
+// auto-confirmed registration continues straight to the login page.
+func (s *CognitoService) handleSignUpSubmit(w http.ResponseWriter, r *http.Request, poolID string) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not parse form data", http.StatusBadRequest)
+		return
 	}
-	return "", fmt.Errorf("domain %s not found", domain)
+	f := hostedUIFlowParamsFromForm(r)
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+	email := r.FormValue("email")
+
+	reqCtx := request.NewRequestContext(r.Context(), s.storageManager, s.accountID, s.region)
+
+	// The sign-up belongs to the pool behind this domain; a client from
+	// another pool must not register users through it.
+	if _, herr := s.hostedUIClientCore(reqCtx, poolID, f.ClientID, ""); herr != nil {
+		s.renderSignUpPage(w, r, f, poolID, herr.desc)
+		return
+	}
+
+	attrs := map[string]string{}
+	if email != "" {
+		attrs["email"] = email
+	}
+	result, err := s.signUpCore(r.Context(), reqCtx, SignUpInput{
+		ClientID:       f.ClientID,
+		Username:       username,
+		Password:       password,
+		UserAttributes: attrs,
+	})
+	if err != nil {
+		s.renderSignUpPage(w, r, f, poolID, hostedUISignUpErrorDescription(err))
+		return
+	}
+
+	confirmed := false
+	if m, ok := result.(map[string]interface{}); ok {
+		confirmed, _ = m["UserConfirmed"].(bool)
+	}
+	target := "/login?" + f.pageQuery().Encode()
+	if !confirmed {
+		target = "/confirm?" + f.pageQuery().Encode()
+	}
+	http.Redirect(w, r, target, http.StatusFound)
 }
 
-func (s *CognitoService) renderLoginPage(w http.ResponseWriter, r *http.Request, poolID string) {
-	redirectURI := r.URL.Query().Get("redirect_uri")
-	responseType := r.URL.Query().Get("response_type")
+// handleConfirmSubmit completes the hosted-UI sign-up flow: the
+// confirmation code the user received is checked through confirmSignUpCore
+// — the same path as the ConfirmSignUp API — and a confirmed account
+// continues to the login page with the authorisation request's members.
+func (s *CognitoService) handleConfirmSubmit(w http.ResponseWriter, r *http.Request, poolID string) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Could not parse form data", http.StatusBadRequest)
+		return
+	}
+	f := hostedUIFlowParamsFromForm(r)
+	username := r.FormValue("username")
+	confirmationCode := r.FormValue("confirmation_code")
 
+	reqCtx := request.NewRequestContext(r.Context(), s.storageManager, s.accountID, s.region)
+
+	if _, err := s.confirmSignUpCore(r.Context(), reqCtx, ConfirmSignUpInput{
+		ClientID:         f.ClientID,
+		Username:         username,
+		ConfirmationCode: confirmationCode,
+	}); err != nil {
+		s.renderConfirmPage(w, r, f, hostedUIConfirmErrorDescription(err))
+		return
+	}
+	http.Redirect(w, r, "/login?"+f.pageQuery().Encode(), http.StatusFound)
+}
+
+// hostedUIHiddenFields renders the authorisation-request members as hidden
+// form inputs so a page submission carries the flow forward. client_id must
+// name the app client, not the pool, or the submitted sign-in can never
+// validate.
+func hostedUIHiddenFields(f hostedUIFlowParams) string {
+	return fmt.Sprintf(`<input type="hidden" name="client_id" value="%s">
+<input type="hidden" name="redirect_uri" value="%s">
+<input type="hidden" name="response_type" value="%s">
+<input type="hidden" name="state" value="%s">
+<input type="hidden" name="nonce" value="%s">
+<input type="hidden" name="code_challenge" value="%s">
+<input type="hidden" name="code_challenge_method" value="%s">`,
+		html.EscapeString(f.ClientID), html.EscapeString(f.RedirectURI), html.EscapeString(f.ResponseType),
+		html.EscapeString(f.State), html.EscapeString(f.Nonce),
+		html.EscapeString(f.CodeChallenge), html.EscapeString(f.CodeChallengeMethod))
+}
+
+func (s *CognitoService) renderLoginPage(w http.ResponseWriter, r *http.Request, f hostedUIFlowParams, poolID, errMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `<!DOCTYPE html>
@@ -278,10 +379,9 @@ button:hover { background: #1274A3; }
 </head>
 <body>
 <h1>Sign in</h1>
+%s
 <form method="POST" action="/login">
-<input type="hidden" name="client_id" value="%s">
-<input type="hidden" name="redirect_uri" value="%s">
-<input type="hidden" name="response_type" value="%s">
+%s
 <label>Username</label>
 <input type="text" name="username" required>
 <label>Password</label>
@@ -289,10 +389,10 @@ button:hover { background: #1274A3; }
 <button type="submit">Sign In</button>
 </form>
 </body>
-</html>`, html.EscapeString(poolID), html.EscapeString(redirectURI), html.EscapeString(responseType))
+</html>`, hostedUIErrorLine(errMsg), hostedUIHiddenFields(f))
 }
 
-func (s *CognitoService) renderSignUpPage(w http.ResponseWriter, r *http.Request, poolID string) {
+func (s *CognitoService) renderSignUpPage(w http.ResponseWriter, r *http.Request, f hostedUIFlowParams, poolID, errMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `<!DOCTYPE html>
@@ -304,12 +404,14 @@ h1 { color: #333; }
 input { display: block; width: 100%%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
 button { width: 100%%; padding: 10px; background: #1597D3; color: white; border: none; cursor: pointer; margin-top: 10px; }
 button:hover { background: #1274A3; }
+.error { color: red; font-size: 0.9em; }
 </style>
 </head>
 <body>
 <h1>Sign Up</h1>
+%s
 <form method="POST" action="/signup">
-<input type="hidden" name="client_id" value="%s">
+%s
 <label>Username</label>
 <input type="text" name="username" required>
 <label>Password</label>
@@ -319,7 +421,43 @@ button:hover { background: #1274A3; }
 <button type="submit">Sign Up</button>
 </form>
 </body>
-</html>`, html.EscapeString(poolID))
+</html>`, hostedUIErrorLine(errMsg), hostedUIHiddenFields(f))
+}
+
+// renderConfirmPage serves the confirmation-code step of the hosted-UI
+// sign-up flow: the account exists but cannot sign in until the delivered
+// code is entered, per the documented confirmation process ("The user
+// enters the confirmation code in the app ... sets the user's account to
+// the confirmed state ... and the user can sign in").
+func (s *CognitoService) renderConfirmPage(w http.ResponseWriter, r *http.Request, f hostedUIFlowParams, errMsg string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `<!DOCTYPE html>
+<html>
+<head><title>Confirm your account</title>
+<style>
+body { font-family: sans-serif; max-width: 400px; margin: 60px auto; padding: 0 20px; }
+h1 { color: #333; }
+input { display: block; width: 100%%; padding: 8px; margin: 8px 0; box-sizing: border-box; }
+button { width: 100%%; padding: 10px; background: #1597D3; color: white; border: none; cursor: pointer; margin-top: 10px; }
+button:hover { background: #1274A3; }
+.error { color: red; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<h1>Confirm your account</h1>
+<p>Enter the confirmation code that was sent to your email address or phone number.</p>
+%s
+<form method="POST" action="/confirm">
+%s
+<label>Username</label>
+<input type="text" name="username" required>
+<label>Confirmation code</label>
+<input type="text" name="confirmation_code" required>
+<button type="submit">Confirm</button>
+</form>
+</body>
+</html>`, hostedUIErrorLine(errMsg), hostedUIHiddenFields(f))
 }
 
 func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Request, poolID string) {
@@ -335,132 +473,49 @@ func (s *CognitoService) handleTokenEndpoint(w http.ResponseWriter, r *http.Requ
 
 	grantType := r.FormValue("grant_type")
 	clientID := r.FormValue("client_id")
+	clientSecret := r.FormValue("client_secret")
+	// client_secret_basic: the Authorization header carries the same pair
+	// the body may carry; an explicit body parameter wins so the
+	// client_secret_post form stays authoritative.
+	if basicID, basicSecret, ok := parseBasicClientCredentials(r.Header.Get("Authorization")); ok {
+		if clientID == "" {
+			clientID = basicID
+		}
+		if clientSecret == "" {
+			clientSecret = basicSecret
+		}
+	}
+	reqCtx := request.NewRequestContext(r.Context(), s.storageManager, s.accountID, s.region)
 
 	switch grantType {
 	case "authorization_code":
-		code := r.FormValue("code")
-		if code == "" {
-			writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Missing code parameter")
+		res, herr := s.hostedUIAuthorizationCodeCore(reqCtx, poolID, clientID, clientSecret,
+			r.FormValue("code"), r.FormValue("redirect_uri"), r.FormValue("code_verifier"))
+		if herr != nil {
+			writeOAuthError(w, herr.status, herr.code, herr.desc)
 			return
 		}
-		raw, ok := s.authCodes.LoadAndDelete(code)
-		if !ok {
-			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "Invalid authorization code.")
-			return
-		}
-		entry := raw.(authCodeEntry)
-		if time.Now().After(entry.expires) {
-			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "Authorization code has expired.")
-			return
-		}
-		if clientID != entry.clientID {
-			writeOAuthError(w, http.StatusBadRequest, "invalid_grant", "Client ID mismatch.")
-			return
-		}
-		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
-		if entry.clientID != "" {
-			store, err := s.store(ctx)
-			if err == nil {
-				client, err := store.GetUserPoolClient(entry.poolID, entry.clientID)
-				if err == nil && client != nil && client.ClientSecret != "" {
-					clientSecret := r.FormValue("client_secret")
-					if subtle.ConstantTimeCompare([]byte(clientSecret), []byte(client.ClientSecret)) != 1 {
-						writeOAuthError(w, http.StatusUnauthorized, "invalid_client", "Client authentication failed.")
-						return
-					}
-				}
-			}
-		}
-		accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(ctx, entry.poolID, entry.userID, entry.clientID, TokenGenerationHostedAuth, nil)
-		if err != nil {
-			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Failed to create tokens.")
-			return
-		}
-		writeTokenJSON(w, accessToken, idToken, refreshToken, expiresIn)
+		writeTokenJSON(w, res.AccessToken, res.IDToken, res.RefreshToken, res.ExpiresIn)
 
-	case "password":
-		username := r.FormValue("username")
-		password := r.FormValue("password")
-		if username == "" || password == "" {
-			writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Missing username or password")
+	case "client_credentials":
+		// The client itself is the principal: the confidential client
+		// authenticates (client_secret_basic or client_secret_post) and
+		// the machine token issues through the same path the API-plane
+		// client-token operation uses.
+		res, herr := s.hostedUIClientCredentialsTokenCore(r.Context(), reqCtx, poolID, clientID, clientSecret, r.FormValue("scope"))
+		if herr != nil {
+			writeOAuthError(w, herr.status, herr.code, herr.desc)
 			return
 		}
-
-		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
-		store, err := s.store(ctx)
-		if err != nil {
-			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Internal error")
-			return
-		}
-
-		user, err := store.GetUser(poolID, username)
-		if err != nil {
-			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Incorrect username or password.")
-			return
-		}
-
-		if !user.Enabled {
-			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Incorrect username or password.")
-			return
-		}
-
-		if user.UserStatus != "CONFIRMED" {
-			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "User is not confirmed.")
-			return
-		}
-
-		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
-			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Incorrect username or password.")
-			return
-		}
-
-		accessToken, idToken, refreshToken, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationHostedAuth, nil)
-		if err != nil {
-			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Failed to create tokens.")
-			return
-		}
-
-		writeTokenJSON(w, accessToken, idToken, refreshToken, expiresIn)
+		writeClientCredentialsTokenJSON(w, res.accessToken, res.expiresIn)
 
 	case "refresh_token":
-		refreshToken := r.FormValue("refresh_token")
-		if refreshToken == "" {
-			writeOAuthError(w, http.StatusBadRequest, "invalid_request", "Missing refresh_token")
+		res, herr := s.hostedUIRefreshTokenCore(reqCtx, poolID, clientID, clientSecret, r.FormValue("refresh_token"))
+		if herr != nil {
+			writeOAuthError(w, herr.status, herr.code, herr.desc)
 			return
 		}
-
-		ctx := request.NewRequestContext(context.Background(), s.storageManager, s.accountID, s.region)
-		store, err := s.store(ctx)
-		if err != nil {
-			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Internal error")
-			return
-		}
-
-		storedToken, err := store.GetRefreshTokenByValue(refreshToken)
-		if err != nil {
-			errCode := "invalid_grant"
-			errDesc := "Invalid refresh token."
-			if errors.Is(err, cognitostore.ErrTokenExpired) {
-				errCode = "expired_grant"
-				errDesc = "Refresh token has expired."
-			}
-			writeOAuthError(w, http.StatusUnauthorized, errCode, errDesc)
-			return
-		}
-
-		user, err := store.GetUserByID(storedToken.UserID)
-		if err != nil {
-			writeOAuthError(w, http.StatusUnauthorized, "invalid_grant", "Invalid refresh token.")
-			return
-		}
-
-		accessToken, idToken, _, expiresIn, err := s.CreateTokens(ctx, poolID, user.ID, clientID, TokenGenerationRefreshTokens, nil)
-		if err != nil {
-			writeOAuthError(w, http.StatusInternalServerError, "server_error", "Failed to create tokens.")
-			return
-		}
-
-		writeTokenJSON(w, accessToken, idToken, refreshToken, expiresIn)
+		writeTokenJSON(w, res.AccessToken, res.IDToken, res.RefreshToken, res.ExpiresIn)
 
 	default:
 		writeOAuthError(w, http.StatusBadRequest, "unsupported_grant_type",

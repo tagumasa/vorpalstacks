@@ -62,19 +62,20 @@ func TestResolveCustomFlowChallengeRejectsMfaSetup(t *testing.T) {
 func TestCustomAuthWithoutLambdaIssuesCustomChallenge(t *testing.T) {
 	env := newChallengeTestEnv(t)
 
-	env.pool.LambdaConfig = &cognitostore.LambdaConfig{
-		DefineAuthChallenge: "arn:aws:lambda:us-east-1:000000000000:function:define",
-	}
-	if err := env.store.UpdateUserPool(env.pool); err != nil {
-		t.Fatal(err)
-	}
+	env.updatePool(t, func(p *cognitostore.UserPool) {
+		p.LambdaConfig = &cognitostore.LambdaConfig{
+			DefineAuthChallenge: "arn:aws:lambda:us-east-1:000000000000:function:define",
+		}
+	})
 
 	resp, err := env.svc.InitiateAuth(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
 		"AuthFlow": "CUSTOM_AUTH",
 		"ClientId": challengeTestClientID,
-		"Username": "victim",
-		// Deliberately no PASSWORD: the flow must still not hand out an
-		// MFA-capable challenge session.
+		"AuthParameters": map[string]interface{}{
+			"USERNAME": "victim",
+			// Deliberately no PASSWORD: the flow must still not hand out an
+			// MFA-capable challenge session.
+		},
 	}))
 	if err != nil {
 		t.Fatal(err)

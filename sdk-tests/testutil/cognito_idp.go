@@ -108,6 +108,44 @@ func (r *TestRunner) cognitoIDPTests(tc *cognitoIDPContext) []TestResult {
 		if descResp.IdentityProvider.ProviderDetails["updated_key"] != "updated_value" {
 			return fmt.Errorf("ProviderDetails not updated")
 		}
+		// IdpIdentifiers round-trip: an explicit list replaces the stored
+		// identifiers and an explicitly empty list clears them.
+		_, err = tc.client.UpdateIdentityProvider(tc.ctx, &cognitoidentityprovider.UpdateIdentityProviderInput{
+			UserPoolId:     aws.String(tc.userPoolID),
+			ProviderName:   aws.String("TestProvider"),
+			IdpIdentifiers: []string{"idp-alias"},
+		})
+		if err != nil {
+			return fmt.Errorf("UpdateIdentityProvider setting IdpIdentifiers failed: %v", err)
+		}
+		descResp, err = tc.client.DescribeIdentityProvider(tc.ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
+			ProviderName: aws.String("TestProvider"),
+		})
+		if err != nil {
+			return fmt.Errorf("DescribeIdentityProvider after setting identifiers failed: %v", err)
+		}
+		if len(descResp.IdentityProvider.IdpIdentifiers) != 1 || descResp.IdentityProvider.IdpIdentifiers[0] != "idp-alias" {
+			return fmt.Errorf("IdpIdentifiers not set: got %v", descResp.IdentityProvider.IdpIdentifiers)
+		}
+		_, err = tc.client.UpdateIdentityProvider(tc.ctx, &cognitoidentityprovider.UpdateIdentityProviderInput{
+			UserPoolId:     aws.String(tc.userPoolID),
+			ProviderName:   aws.String("TestProvider"),
+			IdpIdentifiers: []string{},
+		})
+		if err != nil {
+			return fmt.Errorf("UpdateIdentityProvider clearing IdpIdentifiers failed: %v", err)
+		}
+		descResp, err = tc.client.DescribeIdentityProvider(tc.ctx, &cognitoidentityprovider.DescribeIdentityProviderInput{
+			UserPoolId:   aws.String(tc.userPoolID),
+			ProviderName: aws.String("TestProvider"),
+		})
+		if err != nil {
+			return fmt.Errorf("DescribeIdentityProvider after clearing identifiers failed: %v", err)
+		}
+		if len(descResp.IdentityProvider.IdpIdentifiers) != 0 {
+			return fmt.Errorf("IdpIdentifiers not cleared: got %v", descResp.IdentityProvider.IdpIdentifiers)
+		}
 		return nil
 	}))
 

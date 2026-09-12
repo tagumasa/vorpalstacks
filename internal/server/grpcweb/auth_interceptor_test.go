@@ -1,12 +1,25 @@
 package grpcweb
 
 import (
+	"crypto/rsa"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"vorpalstacks/pkg/vsjwt"
 )
+
+// mustTestManager builds a Manager for the fixture key, failing the test on
+// a construction error — the exported panicking constructors the file once
+// used were removed with vsjwt's dead API surface.
+func mustTestManager(t *testing.T, privateKey *rsa.PrivateKey, issuer string) *vsjwt.Manager {
+	t.Helper()
+	manager, err := vsjwt.NewManager(privateKey, "key-id", issuer)
+	if err != nil {
+		t.Fatalf("new manager: %v", err)
+	}
+	return manager
+}
 
 // TestAuthHTTPMiddlewareRejectsIDToken verifies that the HTTP auth middleware
 // rejects ID tokens (token_use="id") even when the signature and issuer are
@@ -18,7 +31,7 @@ func TestAuthHTTPMiddlewareRejectsIDToken(t *testing.T) {
 	}
 
 	issuer := "https://test-issuer.com"
-	manager := vsjwt.MustNewManager(privateKey, "key-id", issuer)
+	manager := mustTestManager(t, privateKey, issuer)
 
 	user := &testJWTUser{
 		id:       "user-1",
@@ -66,7 +79,7 @@ func TestAuthHTTPMiddlewareRejectsIDToken(t *testing.T) {
 // authentication entirely.
 func TestAuthHTTPMiddlewareNoAuthPath(t *testing.T) {
 	privateKey, _ := vsjwt.GenerateRSAKeyPair()
-	manager := vsjwt.MustNewManager(privateKey, "key-id", "https://test-issuer.com")
+	manager := mustTestManager(t, privateKey, "https://test-issuer.com")
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -87,7 +100,7 @@ func TestAuthHTTPMiddlewareNoAuthPath(t *testing.T) {
 // are rejected.
 func TestAuthHTTPMiddlewareMissingToken(t *testing.T) {
 	privateKey, _ := vsjwt.GenerateRSAKeyPair()
-	manager := vsjwt.MustNewManager(privateKey, "key-id", "https://test-issuer.com")
+	manager := mustTestManager(t, privateKey, "https://test-issuer.com")
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -113,4 +126,5 @@ func (u *testJWTUser) GetID() string                           { return u.id }
 func (u *testJWTUser) GetUsername() string                     { return u.username }
 func (u *testJWTUser) GetGroups() []string                     { return nil }
 func (u *testJWTUser) GetEmail() string                        { return "" }
+func (u *testJWTUser) GetEmailVerified() bool                  { return false }
 func (u *testJWTUser) GetCustomClaims() map[string]interface{} { return nil }

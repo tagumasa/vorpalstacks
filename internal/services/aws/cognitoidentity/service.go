@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"vorpalstacks/internal/common/handler"
+	"vorpalstacks/internal/common/invokers"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/core/storage"
 	cognitoidentitystore "vorpalstacks/internal/store/aws/cognitoidentity"
@@ -20,6 +21,7 @@ type CognitoIdentityService struct {
 	storageManager   *storage.RegionStorageManager
 	tokenMgr         *tokenManager
 	credentialIssuer CredentialIssuer
+	idTokenClaims    invokers.CognitoIDTokenClaimResolver
 }
 
 // NewCognitoIdentityService creates a new Cognito Identity service.
@@ -35,6 +37,13 @@ func NewCognitoIdentityService(accountID, region string) *CognitoIdentityService
 // authflow (GetCredentialsForIdentity).
 func (s *CognitoIdentityService) SetCredentialIssuer(ci CredentialIssuer) {
 	s.credentialIssuer = ci
+}
+
+// SetCognitoIDTokenClaimResolver injects the user-pool ID-token claim
+// resolver role mappings read claims from — the token-issuing service behind
+// the invokers.CognitoIDTokenClaimResolver contract.
+func (s *CognitoIdentityService) SetCognitoIDTokenClaimResolver(resolver invokers.CognitoIDTokenClaimResolver) {
+	s.idTokenClaims = resolver
 }
 
 // SetStorageManager injects the region storage manager for lazy store creation.

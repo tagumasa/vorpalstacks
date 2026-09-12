@@ -40,14 +40,12 @@ func (s *CognitoService) AdminGetUser(ctx context.Context, reqCtx *request.Reque
 		return nil, err
 	}
 
-	result := formatUser(user)
-	result["UserAttributes"] = formatUserAttributes(user.Attributes)
-	return result, nil
+	return formatAdminGetUserResponse(user), nil
 }
 
 // AdminUpdateUserAttributes updates the specified user's attributes in the user pool.
 func (s *CognitoService) AdminUpdateUserAttributes(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
-	return s.adminUpdateUserAttributesCore(reqCtx, AdminUpdateUserAttributesInput{
+	return s.adminUpdateUserAttributesCore(ctx, reqCtx, AdminUpdateUserAttributesInput{
 		UserPoolID:     getUserPoolID(req),
 		Username:       getUsername(req),
 		UserAttributes: parseUserAttributes(req),
@@ -57,7 +55,7 @@ func (s *CognitoService) AdminUpdateUserAttributes(ctx context.Context, reqCtx *
 // ListUsers returns a list of users in the specified user pool.
 func (s *CognitoService) ListUsers(ctx context.Context, reqCtx *request.RequestContext, req *request.ParsedRequest) (interface{}, error) {
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit, err := parseListLimit(req.Parameters, "Limit", 60)
+	limit, err := parseListLimit(req.Parameters, "Limit", listLimitMax)
 	if err != nil {
 		return nil, err
 	}

@@ -25,11 +25,12 @@ var (
 	// that already exists.
 	ErrUserAlreadyExists = errors.New("user already exists")
 
+	// ErrAliasExists is returned when a write would claim an alias
+	// attribute value that another user already claims.
+	ErrAliasExists = errors.New("alias already exists")
+
 	// ErrInvalidUsername is returned when the username is not valid.
 	ErrInvalidUsername = errors.New("invalid username")
-
-	// ErrInvalidPassword is returned when the password is not valid.
-	ErrInvalidPassword = errors.New("invalid password")
 
 	// ErrGroupNotFound is returned when the specified group does not exist.
 	ErrGroupNotFound = errors.New("group not found")
@@ -55,12 +56,6 @@ var (
 	// ErrTokenExpired is returned when the token has expired.
 	ErrTokenExpired = errors.New("token expired")
 
-	// ErrInvalidToken is returned when the token is not valid.
-	ErrInvalidToken = errors.New("invalid token")
-
-	// ErrInvalidConfirmationCode is returned when the confirmation code is not valid.
-	ErrInvalidConfirmationCode = errors.New("invalid confirmation code")
-
 	// ErrUserNotConfirmed is returned when the user has not been confirmed.
 	ErrUserNotConfirmed = errors.New("user not confirmed")
 
@@ -74,15 +69,8 @@ var (
 	// the password policy requirements.
 	ErrPasswordPolicyViolation = errors.New("password policy violation")
 
-	// ErrStoreClosed is returned when the store has been closed.
-	ErrStoreClosed = errors.New("store is closed")
-
 	// ErrClientNotFound is returned when the specified client does not exist.
 	ErrClientNotFound = errors.New("client not found")
-
-	// ErrClientAlreadyExists is returned when attempting to create a client
-	// that already exists.
-	ErrClientAlreadyExists = errors.New("client already exists")
 
 	// ErrInvalidParameter is returned when a parameter is not valid.
 	ErrInvalidParameter = common.ErrInvalidParameter
@@ -93,6 +81,14 @@ var (
 	// ErrNotFound is returned when a generic resource is not found.
 	ErrNotFound = errors.New("not found")
 
+	// ErrManagedLoginBrandingExists is returned when a save would assign an
+	// app client a second branding style.
+	ErrManagedLoginBrandingExists = errors.New("app client already has an assigned managed login branding style")
+
+	// ErrTermsExists is returned when a save would give an app client a
+	// second terms document of the same name.
+	ErrTermsExists = errors.New("terms document name already held by the app client")
+
 	// ErrImportJobStatusConflict is returned when a conditional import job
 	// status transition finds the job in a different state than expected.
 	ErrImportJobStatusConflict = errors.New("user import job status conflict")
@@ -100,4 +96,27 @@ var (
 	// ErrImportJobActiveExists is returned when starting an import job
 	// while another job is still active in the account.
 	ErrImportJobActiveExists = errors.New("another user import job is active")
+
+	// ErrUserPoolDomainNotFound is returned when the specified user pool
+	// domain does not exist, or when it exists but is bound to a different
+	// pool than the one named in the request.
+	ErrUserPoolDomainNotFound = errors.New("user pool domain not found")
+
+	// ErrUserPoolDomainInUse is returned when attempting to bind a domain
+	// that is already assigned to another user pool.
+	ErrUserPoolDomainInUse = errors.New("user pool domain already in use")
+
+	// ErrUserPoolAlreadyHasDomain is returned when attempting to bind a
+	// second domain to a user pool that already owns one.
+	ErrUserPoolAlreadyHasDomain = errors.New("user pool already has a domain")
+
+	// ErrResourceServerNotFound is returned when the specified resource
+	// server does not exist. It is a distinct sentinel from a missing pool
+	// so callers can tell the two entities apart.
+	ErrResourceServerNotFound = errors.New("resource server not found")
+
+	// ErrIdentityProviderNotFound is returned when the specified identity
+	// provider does not exist. It is a distinct sentinel from a missing pool
+	// so callers can tell the two entities apart.
+	ErrIdentityProviderNotFound = errors.New("identity provider not found")
 )

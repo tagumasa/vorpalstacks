@@ -99,7 +99,24 @@ func (s *CognitoService) confirmDeviceCore(reqCtx *request.RequestContext, in Co
 		return nil, ErrUserNotFound
 	}
 
+	pool, err := store.GetUserPool(user.UserPoolID)
+	if err != nil {
+		return nil, ErrResourceNotFound
+	}
+
 	now := time.Now().UTC()
+
+	// DeviceOnlyRememberedOnUserPrompt governs the remembering axis: when
+	// true, the device is created not_remembered and the response asks the
+	// user to confirm remembering it through UpdateDeviceStatus; when false,
+	// the device is immediately set as remembered.
+	rememberedStatus := "remembered"
+	confirmationNecessary := false
+	if pool.DeviceConfiguration != nil && pool.DeviceConfiguration.DeviceOnlyRememberedOnUserPrompt {
+		rememberedStatus = "not_remembered"
+		confirmationNecessary = true
+	}
+
 	device := &cognitostore.Device{
 		DeviceKey:              in.DeviceKey,
 		UserPoolID:             user.UserPoolID,
@@ -107,7 +124,7 @@ func (s *CognitoService) confirmDeviceCore(reqCtx *request.RequestContext, in Co
 		DeviceName:             in.DeviceName,
 		DeviceCreateDate:       now,
 		DeviceLastModifiedDate: now,
-		DeviceRememberedStatus: "remembered",
+		DeviceRememberedStatus: rememberedStatus,
 	}
 
 	if svc, ok := in.Params["DeviceSecretVerifierConfig"]; ok {
@@ -122,23 +139,27 @@ func (s *CognitoService) confirmDeviceCore(reqCtx *request.RequestContext, in Co
 	}
 
 	if attrs := parseDeviceAttributes(in.Params); len(attrs) > 0 {
+		// Device attributes are user-pool schema attributes: the same
+		// schema validation every attribute write passes applies here.
+		if err := validateUserAttributesAgainstSchema(pool, attrs, false); err != nil {
+			return nil, err
+		}
 		device.DeviceAttributes = attrs
+	}
+
+	// A device key is unique per user: confirming an already-registered key
+	// is rejected instead of silently overwriting the stored device.
+	if _, err := store.GetDevice(user.UserPoolID, user.ID, in.DeviceKey); err == nil {
+		return nil, ErrDeviceKeyExists
 	}
 
 	if err := store.CreateDevice(device); err != nil {
 		return nil, ErrInternalError
 	}
 
-	result := map[string]interface{}{
-		"UserConfirmationNecessary": false,
-	}
-
-	pool, _ := store.GetUserPool(user.UserPoolID)
-	if pool != nil && pool.DeviceConfiguration != nil && pool.DeviceConfiguration.ChallengeRequiredOnNewDevice {
-		result["UserConfirmationNecessary"] = true
-	}
-
-	return result, nil
+	return map[string]interface{}{
+		"UserConfirmationNecessary": confirmationNecessary,
+	}, nil
 }
 
 // getDeviceCore retrieves a device by its key.
@@ -224,7 +245,7 @@ func (s *CognitoService) listDevicesCore(reqCtx *request.RequestContext, in List
 	}
 
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit, err := parseListLimit(in.Params, "Limit", 60)
+	limit, err := parseListLimit(in.Params, "Limit", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -254,7 +275,7 @@ func (s *CognitoService) updateDeviceStatusCore(reqCtx *request.RequestContext, 
 	if in.AccessToken == "" || in.DeviceKey == "" {
 		return nil, ErrInvalidParameter
 	}
-	if in.DeviceRememberedStatus != "remembered" && in.DeviceRememberedStatus != "not_remembered" {
+	if !validateDeviceRememberedStatus(in.DeviceRememberedStatus) {
 		return nil, ErrInvalidParameter
 	}
 
@@ -355,7 +376,7 @@ func (s *CognitoService) adminListDevicesCore(reqCtx *request.RequestContext, in
 	}
 
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	limit, err := parseListLimit(in.Params, "Limit", 60)
+	limit, err := parseListLimit(in.Params, "Limit", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -386,7 +407,7 @@ func (s *CognitoService) adminUpdateDeviceStatusCore(reqCtx *request.RequestCont
 	if in.UserPoolID == "" || in.Username == "" || in.DeviceKey == "" {
 		return nil, ErrInvalidParameter
 	}
-	if in.DeviceRememberedStatus != "remembered" && in.DeviceRememberedStatus != "not_remembered" {
+	if !validateDeviceRememberedStatus(in.DeviceRememberedStatus) {
 		return nil, ErrInvalidParameter
 	}
 

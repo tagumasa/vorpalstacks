@@ -1,6 +1,8 @@
 package cognitoidentityprovider
 
 import (
+	"errors"
+
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
@@ -25,6 +27,14 @@ type CreateTermsInput struct {
 type DescribeTermsInput struct {
 	UserPoolID string
 	TermsID    string
+}
+
+// DescribeTermsByClientInput carries the wire parameters of
+// DescribeTermsByClient.
+type DescribeTermsByClientInput struct {
+	UserPoolID string
+	ClientID   string
+	TermsName  string
 }
 
 // ListTermsInput carries the wire parameters of ListTerms. Params holds the
@@ -63,26 +73,38 @@ var validTermsEnforcements = map[string]bool{
 	"NONE": true,
 }
 
-// termsNameExists reports whether an app client of the user pool already
-// holds a terms document with the given name, excluding the document with
-// the given terms ID (empty excludes nothing).
-func termsNameExists(store cognitostore.CognitoStoreInterface, userPoolID, clientID, termsName, excludeTermsID string) bool {
+// findTermsByName returns the terms document an app client of the user pool
+// holds under the given name, walking all pages of the pool's documents.
+// Terms document names are unique to the app client, so at most one document
+// can match.
+func findTermsByName(store cognitostore.CognitoStoreInterface, userPoolID, clientID, termsName string) (*cognitostore.Terms, error) {
 	marker := ""
 	for {
-		result, err := store.ListTermsPaginated(userPoolID, storecommon.ListOptions{MaxItems: 60, Marker: marker})
+		result, err := store.ListTermsPaginated(userPoolID, storecommon.ListOptions{MaxItems: listLimitMax, Marker: marker})
 		if err != nil {
-			return false
+			return nil, err
 		}
 		for _, t := range result.Items {
-			if t.TermsID != excludeTermsID && t.ClientID == clientID && t.TermsName == termsName {
-				return true
+			if t.ClientID == clientID && t.TermsName == termsName {
+				return t, nil
 			}
 		}
 		if !result.IsTruncated || result.NextMarker == "" {
-			return false
+			return nil, nil
 		}
 		marker = result.NextMarker
 	}
+}
+
+// termsNameExists reports whether an app client of the user pool already
+// holds a terms document with the given name, excluding the document with
+// the given terms ID (empty excludes nothing).
+func termsNameExists(store cognitostore.CognitoStoreInterface, userPoolID, clientID, termsName, excludeTermsID string) (bool, error) {
+	t, err := findTermsByName(store, userPoolID, clientID, termsName)
+	if err != nil {
+		return false, err
+	}
+	return t != nil && t.TermsID != excludeTermsID, nil
 }
 
 // createTermsCore creates a terms document.
@@ -110,9 +132,22 @@ func (s *CognitoService) createTermsCore(reqCtx *request.RequestContext, in Crea
 	if _, err := store.GetUserPool(in.UserPoolID); err != nil {
 		return nil, ErrResourceNotFound
 	}
+	// The terms document's client must reference an existing app client:
+	// the model reports an unknown ClientId as ResourceNotFoundException.
+	if _, err := store.GetUserPoolClient(in.UserPoolID, in.ClientID); err != nil {
+		if errors.Is(err, cognitostore.ErrClientNotFound) {
+			return nil, ErrResourceNotFound
+		}
+		return nil, ErrInternalError
+	}
 
-	// Terms document names are unique to the app client.
-	if termsNameExists(store, in.UserPoolID, in.ClientID, in.TermsName, "") {
+	// Terms document names are unique to the app client; a storage failure
+	// in the duplicate check fails closed instead of reading as absence.
+	dup, err := termsNameExists(store, in.UserPoolID, in.ClientID, in.TermsName, "")
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	if dup {
 		return nil, ErrTermsExists
 	}
 
@@ -157,6 +192,35 @@ func (s *CognitoService) describeTermsCore(reqCtx *request.RequestContext, in De
 	return map[string]interface{}{"Terms": formatTerms(t)}, nil
 }
 
+// describeTermsByClientCore describes the terms document an app client holds
+// under a terms name — the client-keyed counterpart of describeTermsCore's
+// terms-ID lookup.
+func (s *CognitoService) describeTermsByClientCore(reqCtx *request.RequestContext, in DescribeTermsByClientInput) (interface{}, error) {
+	// DescribeTermsByClientRequest marks ClientId, UserPoolId and TermsName
+	// required.
+	if in.UserPoolID == "" || in.ClientID == "" || in.TermsName == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !validateTermsName(in.TermsName) {
+		return nil, ErrInvalidParameter
+	}
+
+	store, err := s.store(reqCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := findTermsByName(store, in.UserPoolID, in.ClientID, in.TermsName)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	if t == nil {
+		return nil, ErrResourceNotFound
+	}
+
+	return map[string]interface{}{"Terms": formatTerms(t)}, nil
+}
+
 // listTermsCore lists terms documents for a user pool.
 func (s *CognitoService) listTermsCore(reqCtx *request.RequestContext, in ListTermsInput) (interface{}, error) {
 	if in.UserPoolID == "" {
@@ -169,7 +233,7 @@ func (s *CognitoService) listTermsCore(reqCtx *request.RequestContext, in ListTe
 	}
 
 	// Smithy ListTermsRequestMaxResultsInteger: range {min: 1, max: 60}
-	maxResults, err := parseStrictListLimit(in.Params, "MaxResults", 60)
+	maxResults, err := parseStrictListLimit(in.Params, "MaxResults", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -216,8 +280,13 @@ func (s *CognitoService) updateTermsCore(reqCtx *request.RequestContext, in Upda
 			return nil, ErrInvalidParameter
 		}
 		// Renaming onto a name another terms document of the same app
-		// client already holds is a duplicate.
-		if termsNameExists(store, in.UserPoolID, t.ClientID, in.TermsName, in.TermsID) {
+		// client already holds is a duplicate; a storage failure in the
+		// check fails closed.
+		dup, err := termsNameExists(store, in.UserPoolID, t.ClientID, in.TermsName, in.TermsID)
+		if err != nil {
+			return nil, ErrInternalError
+		}
+		if dup {
 			return nil, ErrTermsExists
 		}
 		t.TermsName = in.TermsName
@@ -245,7 +314,10 @@ func (s *CognitoService) updateTermsCore(reqCtx *request.RequestContext, in Upda
 	return map[string]interface{}{"Terms": formatTerms(t)}, nil
 }
 
-// deleteTermsCore deletes a terms document.
+// deleteTermsCore deletes a terms document. The operation's error surface
+// reports a missing document as ResourceNotFoundException, so the delete is
+// guarded by an existence check instead of silently succeeding on an absent
+// record.
 func (s *CognitoService) deleteTermsCore(reqCtx *request.RequestContext, in DeleteTermsInput) (interface{}, error) {
 	if in.UserPoolID == "" || in.TermsID == "" {
 		return nil, ErrInvalidParameter
@@ -254,6 +326,10 @@ func (s *CognitoService) deleteTermsCore(reqCtx *request.RequestContext, in Dele
 	store, err := s.store(reqCtx)
 	if err != nil {
 		return nil, err
+	}
+
+	if _, err := store.GetTerms(in.UserPoolID, in.TermsID); err != nil {
+		return nil, ErrResourceNotFound
 	}
 
 	if err := store.DeleteTerms(in.UserPoolID, in.TermsID); err != nil {

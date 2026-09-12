@@ -1,13 +1,49 @@
 package cognitoidentityprovider
 
 import (
-	"fmt"
-
 	"vorpalstacks/internal/common/request"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 )
 
-func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedRequest) error {
+// applyCreateUserPoolRequest applies a CreateUserPool request onto a
+// fresh store record: the create-only members first, then the members the
+// create and update requests share. It is pure member application; the
+// whole-pool validation runs once in createUserPoolCore, the single
+// persistence path.
+func applyCreateUserPoolRequest(pool *cognitostore.UserPool, req *request.ParsedRequest, poolRegion string) error {
+	applyCreateOnlyUserPoolMembers(pool, req)
+	return applyUserPoolConfigMembers(pool, req, poolRegion)
+}
+
+// applyCreateOnlyUserPoolMembers applies the members CreateUserPool carries
+// but UpdateUserPool does not: the request model of the update operation has
+// no Schema, AliasAttributes, UsernameAttributes or UsernameConfiguration
+// member, so those parts of a pool are create-only and survive every update.
+func applyCreateOnlyUserPoolMembers(pool *cognitostore.UserPool, req *request.ParsedRequest) {
+	// The Schema parameter is a CreateUserPool-only member; the caller
+	// applies it before this helper so the whole-pool validation still sees
+	// the schema definitions.
+	if v := request.GetStringList(req.Parameters, "AliasAttributes"); v != nil {
+		pool.AliasAttributes = v
+	}
+	if v := request.GetStringList(req.Parameters, "UsernameAttributes"); v != nil {
+		pool.UsernameAttributes = v
+	}
+	if v := parseUsernameConfiguration(req); v != nil {
+		pool.UsernameConfiguration = v
+	}
+}
+
+// applyUserPoolConfigMembers applies the configuration members present in the
+// request onto pool. It is member-presence application, deliberately free of
+// reset semantics: the create path feeds it a defaults record, and
+// rebuildUserPoolFromUpdate feeds it the defaults record it rebuilt, so in
+// both cases an absent member leaves the member at its default value. The
+// per-member value validation runs here; the whole-pool validation belongs to
+// the callers. poolRegion is the pool's home Region, named so the
+// region-bound members (the End User Messaging SMS configuration) can be
+// checked against it.
+func applyUserPoolConfigMembers(pool *cognitostore.UserPool, req *request.ParsedRequest, poolRegion string) error {
 	if v := req.GetParam("PoolName"); v != "" {
 		pool.Name = v
 	}
@@ -35,37 +71,18 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 	if v := req.GetParam("SmsAuthenticationMessage"); v != "" {
 		pool.SmsAuthenticationMessage = v
 	}
-	if v := request.GetStringList(req.Parameters, "AliasAttributes"); v != nil {
-		for _, a := range v {
-			if !validateAliasAttribute(a) {
-				return fmt.Errorf("invalid AliasAttribute: %s", a)
-			}
-		}
-		pool.AliasAttributes = v
-	}
-	if v := request.GetStringList(req.Parameters, "UsernameAttributes"); v != nil {
-		for _, a := range v {
-			if !validateUsernameAttribute(a) {
-				return fmt.Errorf("invalid UsernameAttribute: %s", a)
-			}
-		}
-		pool.UsernameAttributes = v
-	}
 	if v := request.GetStringList(req.Parameters, "AutoVerifiedAttributes"); v != nil {
-		for _, a := range v {
-			if !validateVerifiedAttribute(a) {
-				return fmt.Errorf("invalid AutoVerifiedAttribute: %s", a)
-			}
-		}
 		pool.AutoVerifiedAttributes = v
 	}
-	// The Schema parameter is a CreateUserPool-only member; the caller
-	// applies it on the create path. UpdateUserPool has no such member in
-	// the model, so an update request never mutates the pool schema.
 	if v, err := parsePasswordPolicyWithBase(req, pool.PasswordPolicy); err != nil {
 		return err
 	} else if v != nil {
 		pool.PasswordPolicy = v
+	}
+	if v, err := parseSignInPolicy(req); err != nil {
+		return err
+	} else if v != nil {
+		pool.SignInPolicy = v
 	}
 	if v := parseLambdaConfigWithBase(req, pool.LambdaConfig); v != nil {
 		pool.LambdaConfig = v
@@ -76,7 +93,9 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		}
 		pool.EmailConfiguration = v
 	}
-	if v := parseSmsConfiguration(req); v != nil {
+	if v, err := parseSmsConfiguration(req, poolRegion); err != nil {
+		return err
+	} else if v != nil {
 		pool.SmsConfiguration = v
 	}
 	if v := parseAdminCreateUserConfig(req); v != nil {
@@ -95,6 +114,9 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		if v.AdvancedSecurityMode != "" && !validateAdvancedSecurityMode(v.AdvancedSecurityMode) {
 			return ErrInvalidParameter
 		}
+		if fl := v.AdvancedSecurityAdditionalFlows; fl != nil && fl.CustomAuthMode != "" && !validateCustomAuthMode(fl.CustomAuthMode) {
+			return ErrInvalidParameter
+		}
 		pool.UserPoolAddOns = v
 	}
 	if v := parseAccountRecoverySetting(req); v != nil {
@@ -104,9 +126,6 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 			}
 		}
 		pool.AccountRecoverySetting = v
-	}
-	if v := parseUsernameConfiguration(req); v != nil {
-		pool.UsernameConfiguration = v
 	}
 	if v := parseDeviceConfiguration(req); v != nil {
 		pool.DeviceConfiguration = v
@@ -128,8 +147,41 @@ func applyUserPoolUpdates(pool *cognitostore.UserPool, req *request.ParsedReques
 		}
 		pool.UserPoolTier = v
 	}
+	return nil
+}
 
-	// Re-run the whole-pool validation so updates are held to the same
-	// model-derived constraints as creation.
-	return validateUserPoolConfig(pool)
+// rebuildUserPoolFromUpdate implements the model's UpdateUserPool contract:
+// the request replaces the pool configuration — a member omitted from the
+// request reverts to its default value, exactly as the same request members
+// would shape a freshly created pool. Only what no update request can carry
+// survives from the stored record: identity (ID, ARN, status, name,
+// timestamps), the signing keys, the create-only members (schema, alias and
+// username attributes, username configuration) and the MFA settings owned by
+// SetUserPoolMfaConfig.
+func rebuildUserPoolFromUpdate(stored *cognitostore.UserPool, req *request.ParsedRequest, poolRegion string) (*cognitostore.UserPool, error) {
+	rebuilt := &cognitostore.UserPool{
+		ID:                            stored.ID,
+		Name:                          stored.Name,
+		Arn:                           stored.Arn,
+		Status:                        stored.Status,
+		CreationDate:                  stored.CreationDate,
+		LastModifiedDate:              stored.LastModifiedDate,
+		MfaConfiguration:              "OFF",
+		SchemaAttributes:              stored.SchemaAttributes,
+		AliasAttributes:               stored.AliasAttributes,
+		UsernameAttributes:            stored.UsernameAttributes,
+		UsernameConfiguration:         stored.UsernameConfiguration,
+		JwtPrivateKey:                 stored.JwtPrivateKey,
+		JwtPublicKey:                  stored.JwtPublicKey,
+		JwtKeyID:                      stored.JwtKeyID,
+		MfaConfigurationSms:           stored.MfaConfigurationSms,
+		MfaConfigurationSoftwareToken: stored.MfaConfigurationSoftwareToken,
+		EmailMfaConfig:                stored.EmailMfaConfig,
+		WebAuthnConfiguration:         stored.WebAuthnConfiguration,
+		EstimatedNumberOfUsers:        stored.EstimatedNumberOfUsers,
+	}
+	if err := applyUserPoolConfigMembers(rebuilt, req, poolRegion); err != nil {
+		return nil, err
+	}
+	return rebuilt, validateUserPoolConfig(rebuilt)
 }

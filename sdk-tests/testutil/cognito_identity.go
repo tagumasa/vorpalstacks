@@ -42,6 +42,7 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		resp, err := client.CreateIdentityPool(ctx, &cognitoidentity.CreateIdentityPoolInput{
 			IdentityPoolName:               aws.String(poolName),
 			AllowUnauthenticatedIdentities: true,
+			DeveloperProviderName:          aws.String("my-dev-provider"),
 		})
 		if err != nil {
 			return err
@@ -54,6 +55,9 @@ func (r *TestRunner) RunCognitoIdentityTests() []TestResult {
 		}
 		if !resp.AllowUnauthenticatedIdentities {
 			return fmt.Errorf("expected AllowUnauthenticatedIdentities true")
+		}
+		if resp.DeveloperProviderName == nil || *resp.DeveloperProviderName != "my-dev-provider" {
+			return fmt.Errorf("DeveloperProviderName mismatch: got %v, want my-dev-provider", resp.DeveloperProviderName)
 		}
 		tc.poolID = *resp.IdentityPoolId
 		return nil

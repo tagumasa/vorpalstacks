@@ -5,6 +5,7 @@ import (
 
 	"vorpalstacks/internal/common/request"
 	tagutil "vorpalstacks/internal/common/tags"
+	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
 	svcarn "vorpalstacks/internal/utils/aws/arn"
@@ -61,7 +62,7 @@ func (s *CognitoService) createUserPoolReplicaCore(reqCtx *request.RequestContex
 
 	// The replica lives in the region named by the request, so its pool ARN
 	// carries that region, not the service's constructor region.
-	replicaArn := svcarn.NewARNBuilder(s.accountID, in.RegionName).Build("cognito-idp", "userpool/"+pool.ID)
+	replicaArn := svcarn.NewARNBuilder(s.accountID, in.RegionName).Cognito().UserPool(pool.ID)
 	// ReplicaStatusType reports a replica available for both end-user and
 	// administrator operations as ACTIVE; ReplicaRoleType assigns SECONDARY
 	// to the replica (the source user pool keeps the PRIMARY role).
@@ -83,8 +84,13 @@ func (s *CognitoService) createUserPoolReplicaCore(reqCtx *request.RequestContex
 		replica.Tags = parsedTags
 		tagMap := tagutil.ToMap(parsedTags)
 		if err := store.Tag(replicaArn, tagMap); err != nil {
-			// Rollback: remove the saved replica to avoid an untagged orphan.
-			_ = store.DeleteUserPoolReplica(in.UserPoolID, in.RegionName)
+			// Rollback: remove the saved replica to avoid an untagged
+			// orphan. A failed rollback is logged: the untagged replica
+			// stays visible instead of silently orphaned.
+			if delErr := store.DeleteUserPoolReplica(in.UserPoolID, in.RegionName); delErr != nil {
+				logs.Error("failed to remove user pool replica after tag failure",
+					logs.String("userPoolId", in.UserPoolID), logs.String("regionName", in.RegionName), logs.Err(delErr))
+			}
 			return nil, ErrInternalError
 		}
 	}

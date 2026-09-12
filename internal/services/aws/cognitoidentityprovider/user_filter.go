@@ -35,6 +35,11 @@ func matchUserFilter(user *cognitostore.User, filter string) bool {
 		if user.Attributes != nil {
 			actual = user.Attributes[attrName]
 		}
+		// sub is a filterable attribute of every user even for records
+		// whose stored attribute map carries no materialised copy.
+		if attrName == "sub" && actual == "" {
+			actual = user.ID
+		}
 	}
 
 	switch op {

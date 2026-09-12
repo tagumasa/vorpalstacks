@@ -26,8 +26,15 @@ import (
 var (
 	bcryptHashPattern = regexp.MustCompile(`^\$2[abxy]\$(\d+)\$[./A-Za-z0-9]{53}$`)
 	scryptHashPattern = regexp.MustCompile(`^(\d+)\$(\d+)\$(\d+)\$([0-9a-fA-F]+)\$([0-9a-fA-F]+)$`)
-	argon2HashPattern = regexp.MustCompile(`^\$argon2id\$v=(\d+)\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/=]+)\$([A-Za-z0-9+/=]+)$`)
-	pbkdf2HashPattern = regexp.MustCompile(`^\$pbkdf2-sha256\$(\d+)\$([A-Za-z0-9+/=]+)\$([A-Za-z0-9+/=]+)$`)
+	// The Argon2id pattern pins the version to 19 and the encodings to
+	// unpadded standard base64: the verifier implements version 0x13 (19)
+	// alone — every documented example carries v=19 — and decodes with
+	// RawStdEncoding, so a padded or other-version hash that slips the
+	// pattern could never verify.
+	argon2HashPattern = regexp.MustCompile(`^\$argon2id\$v=19\$m=(\d+),t=(\d+),p=(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$`)
+	// Like Argon2id, the PBKDF2 salt and hash are unpadded standard base64
+	// in the documented examples and the verifier decodes RawStdEncoding.
+	pbkdf2HashPattern = regexp.MustCompile(`^\$pbkdf2-sha256\$(\d+)\$([A-Za-z0-9+/]+)\$([A-Za-z0-9+/]+)$`)
 )
 
 // validateImportedHashParams reports whether the encoded hash matches its
@@ -43,8 +50,8 @@ func validateImportedHashParams(algo, encoded string) error {
 			return fmt.Errorf("malformed BCRYPT hash")
 		}
 		cost, _ := strconv.Atoi(m[1])
-		if cost < cognitostore.MinImportHashParamValue {
-			return fmt.Errorf("BCRYPT cost %d is below the minimum of %d", cost, cognitostore.MinImportHashParamValue)
+		if cost < cognitostore.MinImportHashBcryptCost {
+			return fmt.Errorf("BCRYPT cost %d is below the minimum of %d", cost, cognitostore.MinImportHashBcryptCost)
 		}
 		if cost > cognitostore.MaxImportHashBcryptCost {
 			return fmt.Errorf("BCRYPT cost %d exceeds the maximum of %d", cost, cognitostore.MaxImportHashBcryptCost)
@@ -76,9 +83,9 @@ func validateImportedHashParams(algo, encoded string) error {
 		if m == nil {
 			return fmt.Errorf("malformed ARGON2ID hash")
 		}
-		mem, _ := strconv.Atoi(m[2])
-		tCost, _ := strconv.Atoi(m[3])
-		par, _ := strconv.Atoi(m[4])
+		mem, _ := strconv.Atoi(m[1])
+		tCost, _ := strconv.Atoi(m[2])
+		par, _ := strconv.Atoi(m[3])
 		// RFC 9106 requires t >= 1, p >= 1, and m >= 8*p; a zero-valued
 		// parameter is not a legitimate hash, and the argon2 library
 		// panics on rounds or parallelism below one.
@@ -147,14 +154,14 @@ func verifyImportedPasswordHash(algo, encoded, password string) bool {
 		return subtle.ConstantTimeCompare(got, want) == 1
 	case "ARGON2ID":
 		m := argon2HashPattern.FindStringSubmatch(encoded)
-		mem, _ := strconv.Atoi(m[2])
-		tCost, _ := strconv.Atoi(m[3])
-		par, _ := strconv.Atoi(m[4])
-		salt, err := base64.RawStdEncoding.DecodeString(m[5])
+		mem, _ := strconv.Atoi(m[1])
+		tCost, _ := strconv.Atoi(m[2])
+		par, _ := strconv.Atoi(m[3])
+		salt, err := base64.RawStdEncoding.DecodeString(m[4])
 		if err != nil {
 			return false
 		}
-		want, err := base64.RawStdEncoding.DecodeString(m[6])
+		want, err := base64.RawStdEncoding.DecodeString(m[5])
 		if err != nil {
 			return false
 		}

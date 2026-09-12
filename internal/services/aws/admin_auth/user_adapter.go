@@ -36,6 +36,12 @@ func (u *UserAdapter) GetEmail() string {
 	return ""
 }
 
+// GetEmailVerified reports whether the email is verified. IAM users carry
+// no verifiable email address.
+func (u *UserAdapter) GetEmailVerified() bool {
+	return false
+}
+
 // GetGroups returns the groups the user belongs to.
 func (u *UserAdapter) GetGroups() []string {
 	return u.groups

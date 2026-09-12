@@ -49,6 +49,15 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 		if !resp.Enabled {
 			return fmt.Errorf("expected user to be enabled")
 		}
+		sub := ""
+		for _, attr := range resp.UserAttributes {
+			if attr.Name != nil && *attr.Name == "sub" {
+				sub = aws.ToString(attr.Value)
+			}
+		}
+		if sub == "" {
+			return fmt.Errorf("AdminGetUser response carries no sub attribute")
+		}
 		return nil
 	}))
 
@@ -74,6 +83,45 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 		}
 		if !found {
 			return fmt.Errorf("created user %s not found in ListUsers", username)
+		}
+		return nil
+	}))
+
+	// The sub attribute is a filterable attribute of every user: the filter
+	// resolves the created user by its subject identifier alone.
+	results = append(results, r.RunTest("cognito", "ListUsers_FilterSub", func() error {
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			Username:   aws.String(username),
+		})
+		if err != nil {
+			return fmt.Errorf("AdminGetUser: %v", err)
+		}
+		sub := ""
+		for _, attr := range getResp.UserAttributes {
+			if attr.Name != nil && *attr.Name == "sub" {
+				sub = aws.ToString(attr.Value)
+			}
+		}
+		if sub == "" {
+			return fmt.Errorf("AdminGetUser carries no sub to filter on")
+		}
+		resp, err := tc.client.ListUsers(tc.ctx, &cognitoidentityprovider.ListUsersInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			Filter:     aws.String(`sub = "` + sub + `"`),
+		})
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, u := range resp.Users {
+			if u.Username != nil && *u.Username == username {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("sub filter did not resolve user %s (%d users returned)", username, len(resp.Users))
 		}
 		return nil
 	}))
@@ -154,6 +202,49 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 		}
 		if !found {
 			return fmt.Errorf("updated email attribute not found")
+		}
+		return nil
+	}))
+
+	// Attribute writes are validated against the pool schema: sub is
+	// immutable, and an attribute the pool schema does not define cannot be
+	// written at all.
+	results = append(results, r.RunTest("cognito", "AdminUpdateUserAttributes_SchemaRejected", func() error {
+		schemaUser := tc.unique("schema-user")
+		cleanupSchemaUser, err := tc.adminCreateUser(schemaUser)
+		if err != nil {
+			return fmt.Errorf("create user: %v", err)
+		}
+		defer cleanupSchemaUser()
+		for _, c := range []struct {
+			name  string
+			value string
+		}{
+			{"sub", "forged-subject"},
+			{"custom:undefined", "x"},
+		} {
+			_, err := tc.client.AdminUpdateUserAttributes(tc.ctx, &cognitoidentityprovider.AdminUpdateUserAttributesInput{
+				UserPoolId: aws.String(tc.userPoolID),
+				Username:   aws.String(schemaUser),
+				UserAttributes: []types.AttributeType{
+					{Name: aws.String(c.name), Value: aws.String(c.value)},
+				},
+			})
+			if err := expectAWSErrorCode(err, "InvalidParameterException"); err != nil {
+				return fmt.Errorf("updating %s: %v", c.name, err)
+			}
+		}
+		getResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			Username:   aws.String(schemaUser),
+		})
+		if err != nil {
+			return fmt.Errorf("AdminGetUser after rejections: %v", err)
+		}
+		for _, attr := range getResp.UserAttributes {
+			if attr.Name != nil && *attr.Name == "sub" && aws.ToString(attr.Value) == "forged-subject" {
+				return fmt.Errorf("rejected sub update was persisted")
+			}
 		}
 		return nil
 	}))
@@ -355,6 +446,57 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 		return nil
 	}))
 
+	// GetUser returns the authenticated caller's profile: the model's
+	// response members Username and UserAttributes, with the required sub
+	// attribute present.
+	results = append(results, r.RunTest("cognito", "GetUser", func() error {
+		getUser := tc.unique("getuser")
+		cleanupGetUser, err := tc.createConfirmedUser(getUser, "GetUserPass123!")
+		if err != nil {
+			return fmt.Errorf("create user: %v", err)
+		}
+		defer cleanupGetUser()
+		getUserClientID, cleanupGetUserClient, err := tc.createPoolClient(tc.userPoolID, tc.unique("getuser-client"))
+		if err != nil {
+			return fmt.Errorf("create client: %v", err)
+		}
+		defer cleanupGetUserClient()
+		authResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			ClientId:   aws.String(getUserClientID),
+			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
+			AuthParameters: map[string]string{
+				"USERNAME": getUser,
+				"PASSWORD": "GetUserPass123!",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("AdminInitiateAuth: %v", err)
+		}
+		if authResp.AuthenticationResult == nil || authResp.AuthenticationResult.AccessToken == nil {
+			return fmt.Errorf("AccessToken is nil")
+		}
+		resp, err := tc.client.GetUser(tc.ctx, &cognitoidentityprovider.GetUserInput{
+			AccessToken: authResp.AuthenticationResult.AccessToken,
+		})
+		if err != nil {
+			return err
+		}
+		if resp.Username == nil || *resp.Username != getUser {
+			return fmt.Errorf("username mismatch: got %v, want %s", resp.Username, getUser)
+		}
+		sub := ""
+		for _, attr := range resp.UserAttributes {
+			if attr.Name != nil && *attr.Name == "sub" {
+				sub = aws.ToString(attr.Value)
+			}
+		}
+		if sub == "" {
+			return fmt.Errorf("GetUser response carries no sub attribute")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("cognito", "AdminUserGlobalSignOut", func() error {
 		gsoUser := tc.unique("gso-user")
 		cleanupGsoUser, err := tc.createConfirmedUser(gsoUser, "GSOPass123!")
@@ -415,6 +557,95 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 		return nil
 	}))
 
+	results = append(results, r.RunTest("cognito", "AdminDisableUser_RevokesTokens", func() error {
+		disUser := tc.unique("disable-user")
+		cleanupDisUser, err := tc.createConfirmedUser(disUser, "DisablePass123!")
+		if err != nil {
+			return fmt.Errorf("create user: %v", err)
+		}
+		defer cleanupDisUser()
+		disClientID, cleanupDisClientID, err := tc.createPoolClient(tc.userPoolID, tc.unique("disable-client"))
+		if err != nil {
+			return fmt.Errorf("create client: %v", err)
+		}
+		defer cleanupDisClientID()
+		authResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			ClientId:   aws.String(disClientID),
+			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
+			AuthParameters: map[string]string{
+				"USERNAME": disUser,
+				"PASSWORD": "DisablePass123!",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("AdminInitiateAuth: %v", err)
+		}
+		if authResp.AuthenticationResult == nil || authResp.AuthenticationResult.AccessToken == nil || authResp.AuthenticationResult.RefreshToken == nil {
+			return fmt.Errorf("tokens are nil before disable")
+		}
+		accessToken := *authResp.AuthenticationResult.AccessToken
+		refreshToken := *authResp.AuthenticationResult.RefreshToken
+
+		if _, err := tc.client.AdminDisableUser(tc.ctx, &cognitoidentityprovider.AdminDisableUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			Username:   aws.String(disUser),
+		}); err != nil {
+			return fmt.Errorf("AdminDisableUser: %v", err)
+		}
+
+		_, err = tc.client.GetUser(tc.ctx, &cognitoidentityprovider.GetUserInput{
+			AccessToken: aws.String(accessToken),
+		})
+		if err == nil {
+			return fmt.Errorf("expected error using access token after disable")
+		}
+		var notAuthEx *types.NotAuthorizedException
+		if !errors.As(err, &notAuthEx) {
+			return fmt.Errorf("expected NotAuthorizedException for the pre-disable access token, got: %v", err)
+		}
+
+		_, err = tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			ClientId:   aws.String(disClientID),
+			AuthFlow:   types.AuthFlowTypeRefreshTokenAuth,
+			AuthParameters: map[string]string{
+				"REFRESH_TOKEN": refreshToken,
+			},
+		})
+		if err == nil {
+			return fmt.Errorf("expected error refreshing with the pre-disable refresh token")
+		}
+		if !errors.As(err, &notAuthEx) {
+			return fmt.Errorf("expected NotAuthorizedException for the pre-disable refresh token, got: %v", err)
+		}
+
+		// Re-enabling restores authentication: the block was the disabled
+		// profile, not a destroyed one.
+		if _, err := tc.client.AdminEnableUser(tc.ctx, &cognitoidentityprovider.AdminEnableUserInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			Username:   aws.String(disUser),
+		}); err != nil {
+			return fmt.Errorf("AdminEnableUser: %v", err)
+		}
+		reAuthResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(tc.userPoolID),
+			ClientId:   aws.String(disClientID),
+			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
+			AuthParameters: map[string]string{
+				"USERNAME": disUser,
+				"PASSWORD": "DisablePass123!",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("sign-in after re-enable failed: %v", err)
+		}
+		if reAuthResp.AuthenticationResult == nil || reAuthResp.AuthenticationResult.AccessToken == nil {
+			return fmt.Errorf("AccessToken is nil after re-enable")
+		}
+		return nil
+	}))
+
 	results = append(results, r.RunTest("cognito", "GlobalSignOut", func() error {
 		_, err := tc.client.GlobalSignOut(tc.ctx, &cognitoidentityprovider.GlobalSignOutInput{
 			AccessToken: aws.String("dummy-token"),
@@ -447,6 +678,222 @@ func (r *TestRunner) cognitoUserTests(tc *cognitoIDPContext) []TestResult {
 		var notFoundEx *types.UserNotFoundException
 		if !errors.As(err, &notFoundEx) {
 			return fmt.Errorf("expected UserNotFoundException, got: %v", err)
+		}
+		return nil
+	}))
+
+	// A pool with email as an alias attribute implements the staged claim
+	// model: duplicate values coexist while unverified, the second
+	// confirmation is rejected with AliasExistsException, alias values sign
+	// in, and AdminCreateUser's ForceAliasCreation migrates a verified claim
+	// to the new user.
+	results = append(results, r.RunTest("cognito", "AliasAttributes_ClaimAndSignIn", func() error {
+		aliasPoolID, cleanupAliasPool, err := tc.createUserPool(tc.unique("alias-pool"), func(in *cognitoidentityprovider.CreateUserPoolInput) {
+			in.AliasAttributes = []types.AliasAttributeType{types.AliasAttributeTypeEmail}
+			in.AutoVerifiedAttributes = []types.VerifiedAttributeType{types.VerifiedAttributeTypeEmail}
+			in.Policies = &types.UserPoolPolicyType{
+				PasswordPolicy: &types.PasswordPolicyType{
+					MinimumLength:    aws.Int32(8),
+					RequireUppercase: true,
+					RequireLowercase: true,
+					RequireNumbers:   true,
+				},
+			}
+		})
+		if err != nil {
+			return fmt.Errorf("create alias pool: %v", err)
+		}
+		defer cleanupAliasPool()
+		aliasClientID, cleanupAliasClient, err := tc.createPoolClient(aliasPoolID, tc.unique("alias-client"))
+		if err != nil {
+			return fmt.Errorf("create client: %v", err)
+		}
+		defer cleanupAliasClient()
+
+		shared := tc.unique("alias-shared") + "@example.com"
+		holder := tc.unique("alias-holder")
+		duplicate := tc.unique("alias-dup")
+		signUpWithSharedEmail := func(username string) error {
+			_, err := tc.client.SignUp(tc.ctx, &cognitoidentityprovider.SignUpInput{
+				ClientId: aws.String(aliasClientID),
+				Username: aws.String(username),
+				Password: aws.String("AliasPass123!"),
+				UserAttributes: []types.AttributeType{
+					{Name: aws.String("email"), Value: aws.String(shared)},
+				},
+			})
+			return err
+		}
+		if err := signUpWithSharedEmail(holder); err != nil {
+			return fmt.Errorf("sign-up holder: %v", err)
+		}
+		if err := signUpWithSharedEmail(duplicate); err != nil {
+			return fmt.Errorf("sign-up with a duplicate alias value must succeed: %v", err)
+		}
+
+		if _, err := tc.client.ConfirmSignUp(tc.ctx, &cognitoidentityprovider.ConfirmSignUpInput{
+			ClientId:         aws.String(aliasClientID),
+			Username:         aws.String(holder),
+			ConfirmationCode: aws.String("123456"),
+		}); err != nil {
+			return fmt.Errorf("confirm holder: %v", err)
+		}
+		_, err = tc.client.ConfirmSignUp(tc.ctx, &cognitoidentityprovider.ConfirmSignUpInput{
+			ClientId:         aws.String(aliasClientID),
+			Username:         aws.String(duplicate),
+			ConfirmationCode: aws.String("123456"),
+		})
+		if codeErr := expectAWSErrorCode(err, "AliasExistsException"); codeErr != nil {
+			return fmt.Errorf("confirming a duplicate alias value: %v", codeErr)
+		}
+
+		// Signing in with the alias value reaches the holder's account.
+		authResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(aliasPoolID),
+			ClientId:   aws.String(aliasClientID),
+			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
+			AuthParameters: map[string]string{
+				"USERNAME": shared,
+				"PASSWORD": "AliasPass123!",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("sign-in with the alias value: %v", err)
+		}
+		if authResp.AuthenticationResult == nil || authResp.AuthenticationResult.AccessToken == nil {
+			return fmt.Errorf("alias sign-in returned no tokens: %+v", authResp)
+		}
+		profile, err := tc.client.GetUser(tc.ctx, &cognitoidentityprovider.GetUserInput{
+			AccessToken: authResp.AuthenticationResult.AccessToken,
+		})
+		if err != nil {
+			return fmt.Errorf("GetUser after alias sign-in: %v", err)
+		}
+		if aws.ToString(profile.Username) != holder {
+			return fmt.Errorf("alias sign-in resolved username %q, want %q", aws.ToString(profile.Username), holder)
+		}
+
+		verifiedEmail := []types.AttributeType{
+			{Name: aws.String("email"), Value: aws.String(shared)},
+			{Name: aws.String("email_verified"), Value: aws.String("true")},
+		}
+		_, err = tc.client.AdminCreateUser(tc.ctx, &cognitoidentityprovider.AdminCreateUserInput{
+			UserPoolId:     aws.String(aliasPoolID),
+			Username:       aws.String(tc.unique("alias-challenger")),
+			MessageAction:  types.MessageActionTypeSuppress,
+			UserAttributes: verifiedEmail,
+		})
+		if codeErr := expectAWSErrorCode(err, "AliasExistsException"); codeErr != nil {
+			return fmt.Errorf("AdminCreateUser claiming a verified alias: %v", codeErr)
+		}
+
+		taker := tc.unique("alias-taker")
+		if _, err := tc.client.AdminCreateUser(tc.ctx, &cognitoidentityprovider.AdminCreateUserInput{
+			UserPoolId:         aws.String(aliasPoolID),
+			Username:           aws.String(taker),
+			MessageAction:      types.MessageActionTypeSuppress,
+			TemporaryPassword:  aws.String("TakerTemp123!"),
+			ForceAliasCreation: true,
+			UserAttributes:     verifiedEmail,
+		}); err != nil {
+			return fmt.Errorf("AdminCreateUser with ForceAliasCreation: %v", err)
+		}
+		holderResp, err := tc.client.AdminGetUser(tc.ctx, &cognitoidentityprovider.AdminGetUserInput{
+			UserPoolId: aws.String(aliasPoolID),
+			Username:   aws.String(holder),
+		})
+		if err != nil {
+			return fmt.Errorf("AdminGetUser holder after migration: %v", err)
+		}
+		emailVerified := ""
+		for _, attr := range holderResp.UserAttributes {
+			if aws.ToString(attr.Name) == "email_verified" {
+				emailVerified = aws.ToString(attr.Value)
+			}
+		}
+		if emailVerified != "false" {
+			return fmt.Errorf("previous holder email_verified = %q after alias migration, want false", emailVerified)
+		}
+
+		// After the migration the alias resolves to the new holder, whose
+		// admin-created account answers with the new-password challenge.
+		migratedResp, err := tc.client.AdminInitiateAuth(tc.ctx, &cognitoidentityprovider.AdminInitiateAuthInput{
+			UserPoolId: aws.String(aliasPoolID),
+			ClientId:   aws.String(aliasClientID),
+			AuthFlow:   types.AuthFlowTypeAdminNoSrpAuth,
+			AuthParameters: map[string]string{
+				"USERNAME": shared,
+				"PASSWORD": "TakerTemp123!",
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("sign-in with the migrated alias: %v", err)
+		}
+		if migratedResp.ChallengeName != types.ChallengeNameTypeNewPasswordRequired {
+			return fmt.Errorf("migrated alias sign-in challenge = %v, want NEW_PASSWORD_REQUIRED", migratedResp.ChallengeName)
+		}
+		return nil
+	}))
+
+	// The event history records the account lifecycle, not sign-in alone: a
+	// self-service sign-up leaves a SignUp event with response Pass, and the
+	// sign-in that follows leaves a SignIn event on the same user.
+	eventsPoolID, eventsPoolCleanup, err := tc.createUserPool(tc.unique("events-pool"))
+	if err != nil {
+		results = append(results, r.RunTest("cognito", "AdminListUserAuthEvents", func() error {
+			return fmt.Errorf("create events pool: %v", err)
+		}))
+		return results
+	}
+	defer eventsPoolCleanup()
+	eventsClientID, eventsClientCleanup, err := tc.createPoolClient(eventsPoolID, tc.unique("events-client"))
+	if err != nil {
+		results = append(results, r.RunTest("cognito", "AdminListUserAuthEvents", func() error {
+			return fmt.Errorf("create events app client: %v", err)
+		}))
+		return results
+	}
+	defer eventsClientCleanup()
+	eventsUser := tc.unique("events-user")
+	results = append(results, r.RunTest("cognito", "AdminListUserAuthEvents", func() error {
+		if _, err := tc.client.SignUp(tc.ctx, &cognitoidentityprovider.SignUpInput{
+			ClientId: aws.String(eventsClientID),
+			Username: aws.String(eventsUser),
+			Password: aws.String("EventsPass1!"),
+		}); err != nil {
+			return fmt.Errorf("self-service sign-up: %v", err)
+		}
+
+		events := map[string]string{}
+		nextToken := ""
+		for {
+			input := &cognitoidentityprovider.AdminListUserAuthEventsInput{
+				UserPoolId: aws.String(eventsPoolID),
+				Username:   aws.String(eventsUser),
+				MaxResults: aws.Int32(20),
+			}
+			if nextToken != "" {
+				input.NextToken = aws.String(nextToken)
+			}
+			resp, err := tc.client.AdminListUserAuthEvents(tc.ctx, input)
+			if err != nil {
+				return fmt.Errorf("admin list user auth events: %v", err)
+			}
+			for _, e := range resp.AuthEvents {
+				if e.EventType != "" {
+					events[string(e.EventType)] = string(e.EventResponse)
+				}
+			}
+			if resp.NextToken == nil {
+				break
+			}
+			nextToken = *resp.NextToken
+		}
+		if response, ok := events["SignUp"]; !ok || response != "Pass" {
+			return fmt.Errorf("SignUp event = (%q, %v), want Pass", response, ok)
+		}
+		if _, ok := events["SignIn"]; ok {
+			return fmt.Errorf("unexpected SignIn event on a user that never signed in: %v", events)
 		}
 		return nil
 	}))

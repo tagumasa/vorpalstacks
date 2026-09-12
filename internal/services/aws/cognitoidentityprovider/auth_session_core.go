@@ -3,18 +3,16 @@ package cognitoidentityprovider
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"time"
 
+	awserrors "vorpalstacks/internal/common/errors"
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 
 	"golang.org/x/crypto/bcrypt"
 )
-
-// SignOutInput carries the wire parameters of SignOut.
-type SignOutInput struct {
-	AccessToken string
-}
 
 // GlobalSignOutInput carries the wire parameters of GlobalSignOut.
 type GlobalSignOutInput struct {
@@ -41,30 +39,6 @@ type ConfirmForgotPasswordInput struct {
 	Username         string
 	Password         string
 	ConfirmationCode string
-}
-
-// signOutCore revokes the caller's access token. SignOut always returns
-// 200 OK per AWS spec, even for invalid or already-revoked access tokens. A
-// client that calls SignOut after token expiry or a previous sign-out
-// receives an empty success.
-func (s *CognitoService) signOutCore(reqCtx *request.RequestContext, in SignOutInput) (interface{}, error) {
-	if in.AccessToken == "" {
-		return nil, ErrInvalidParameter
-	}
-
-	store, err := s.store(reqCtx)
-	if err != nil {
-		return nil, err
-	}
-	at, err := store.GetAccessTokenByValue(in.AccessToken)
-	if err != nil {
-		return response.EmptyResponse(), nil
-	}
-
-	// Best-effort deletion; the token may have been concurrently revoked.
-	_ = store.DeleteAccessToken(at.UserPoolID, at.UserID, in.AccessToken)
-
-	return response.EmptyResponse(), nil
 }
 
 // globalSignOutCore revokes every token minted for the caller.
@@ -102,7 +76,9 @@ func (s *CognitoService) changePasswordCore(reqCtx *request.RequestContext, in C
 		return nil, ErrInvalidParameter
 	}
 
-	userID, err := s.ValidateAccessToken(reqCtx, in.AccessToken)
+	// The token record resolves both the caller and the app client the
+	// password change is attributed to in the event history.
+	tokenRecord, err := s.validateAccessTokenRecord(reqCtx, in.AccessToken)
 	if err != nil {
 		return nil, ErrNotAuthorized
 	}
@@ -112,7 +88,7 @@ func (s *CognitoService) changePasswordCore(reqCtx *request.RequestContext, in C
 		return nil, err
 	}
 
-	user, err := store.GetUserByID(userID)
+	user, err := store.GetUserByID(tokenRecord.UserID)
 	if err != nil {
 		return nil, ErrUserNotFound
 	}
@@ -122,21 +98,33 @@ func (s *CognitoService) changePasswordCore(reqCtx *request.RequestContext, in C
 		return nil, ErrResourceNotFound
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(in.PreviousPassword)); err != nil {
-		return nil, ErrIncorrectPassword
-	}
-
 	if err := validatePassword(in.NewPassword, userPool.PasswordPolicy); err != nil {
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	if err := setNativePasswordCredentials(user, user.UserPoolID, user.Username, in.NewPassword); err != nil {
+	// The previous-password check and the credential rewrite run as one
+	// serialised read-modify-write: with a detached read a concurrent
+	// password change could slip between them and have the write overwrite
+	// the other writer's history with a stale snapshot.
+	err = store.UpdateUserFunc(user.UserPoolID, user.Username, func(u *cognitostore.User) error {
+		if err := bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(in.PreviousPassword)); err != nil {
+			return ErrIncorrectPassword
+		}
+		return setNativePasswordCredentials(u, userPool.PasswordPolicy, in.NewPassword)
+	})
+	if err != nil {
+		if errors.Is(err, ErrPasswordHistoryViolation) {
+			return nil, ErrPasswordHistoryViolation
+		}
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, err
+		}
 		return nil, ErrInternalError
 	}
 
-	if err := store.UpdateUser(user); err != nil {
-		return nil, ErrInternalError
-	}
+	// The completed password change lands in the user's event history.
+	s.recordAuthEvent(reqCtx, user.UserPoolID, user.ID, user.Username, tokenRecord.ClientID, authEventPasswordChange, authEventResponsePass)
 
 	return response.EmptyResponse(), nil
 }
@@ -174,11 +162,14 @@ func (s *CognitoService) forgotPasswordCore(ctx context.Context, reqCtx *request
 	if err != nil {
 		return nil, ErrInternalError
 	}
-	user.ConfirmationCode = confirmationCode
-	user.ConfirmationCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
+	user.PasswordResetCode = confirmationCode
+	user.PasswordResetExpiry = time.Now().UTC().Add(verificationCodeTTL)
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}
+
+	// The issued reset code lands in the user's event history.
+	s.recordAuthEvent(reqCtx, userPool.ID, user.ID, in.Username, in.ClientID, authEventForgotPassword, authEventResponsePass)
 
 	// The CustomMessage ForgotPassword trigger fires for its side effects
 	// (custom email content); the documented response carries only the
@@ -211,31 +202,46 @@ func (s *CognitoService) confirmForgotPasswordCore(reqCtx *request.RequestContex
 		return nil, ErrResourceNotFound
 	}
 
-	user, err := store.GetUser(userPool.ID, in.Username)
-	if err != nil {
+	// The existence read keeps the UserNotFoundException precedence ahead of
+	// the code and policy checks; the authoritative code, expiry and history
+	// checks run against the fresh record below.
+	if _, err := store.GetUser(userPool.ID, in.Username); err != nil {
 		return nil, ErrUserNotFound
-	}
-
-	if user.ConfirmationCode == "" || subtle.ConstantTimeCompare([]byte(user.ConfirmationCode), []byte(in.ConfirmationCode)) != 1 {
-		return nil, ErrCodeMismatch
-	}
-
-	if time.Now().After(user.ConfirmationCodeExpiry) {
-		return nil, ErrExpiredCode
 	}
 
 	if err := validatePassword(in.Password, userPool.PasswordPolicy); err != nil {
 		return nil, ErrPasswordPolicyViolation
 	}
 
-	if err := setNativePasswordCredentials(user, user.UserPoolID, user.Username, in.Password); err != nil {
-		return nil, ErrInternalError
-	}
-	user.UserStatus = "CONFIRMED"
-	user.ConfirmationCode = ""
-	user.ConfirmationCodeExpiry = time.Time{}
-
-	if err := store.UpdateUser(user); err != nil {
+	// The code check and the credential rewrite run as one serialised
+	// read-modify-write: the single-use code is consumed, the status becomes
+	// CONFIRMED and the password history is written against the freshest
+	// record, so a concurrent writer's history cannot be overwritten by a
+	// stale snapshot.
+	err = store.UpdateUserFunc(userPool.ID, in.Username, func(u *cognitostore.User) error {
+		if u.PasswordResetCode == "" || subtle.ConstantTimeCompare([]byte(u.PasswordResetCode), []byte(in.ConfirmationCode)) != 1 {
+			return ErrCodeMismatch
+		}
+		if time.Now().After(u.PasswordResetExpiry) {
+			return ErrExpiredCode
+		}
+		if err := setNativePasswordCredentials(u, userPool.PasswordPolicy, in.Password); err != nil {
+			return err
+		}
+		u.UserStatus = "CONFIRMED"
+		u.MigratedAwaitingReset = false
+		u.PasswordResetCode = ""
+		u.PasswordResetExpiry = time.Time{}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, ErrPasswordHistoryViolation) {
+			return nil, ErrPasswordHistoryViolation
+		}
+		var awsErr *awserrors.AWSError
+		if errors.As(err, &awsErr) {
+			return nil, err
+		}
 		return nil, ErrInternalError
 	}
 

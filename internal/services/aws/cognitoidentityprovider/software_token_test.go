@@ -51,6 +51,18 @@ func TestValidateTOTPCodeAcceptsCurrentStepCode(t *testing.T) {
 	}
 }
 
+// The truncation modulus must be exactly 10^totpCodeDigits so the numeric
+// range of a generated code matches its formatted width.
+func TestTOTPCodeModulusMatchesDigitCount(t *testing.T) {
+	want := uint32(1)
+	for i := 0; i < totpCodeDigits; i++ {
+		want *= 10
+	}
+	if totpCodeModulus != want {
+		t.Fatalf("totpCodeModulus = %d, want 10^%d = %d", totpCodeModulus, totpCodeDigits, want)
+	}
+}
+
 // Codes from one step either side (clock drift tolerance) must be accepted.
 func TestValidateTOTPCodeAcceptsAdjacentSteps(t *testing.T) {
 	secret, err := generateTOTPSecret()
@@ -112,11 +124,13 @@ func TestSoftwareTokenMfaChallengeVerifiesTOTP(t *testing.T) {
 
 	respond := func(code string) (interface{}, error) {
 		return env.svc.RespondToAuthChallenge(context.Background(), env.reqCtx, challengeReq(map[string]interface{}{
-			"ClientId":                challengeTestClientID,
-			"ChallengeName":           "SOFTWARE_TOKEN_MFA",
-			"Session":                 sess,
-			"USERNAME":                "victim",
-			"SOFTWARE_TOKEN_MFA_CODE": code,
+			"ClientId":      challengeTestClientID,
+			"ChallengeName": "SOFTWARE_TOKEN_MFA",
+			"Session":       sess,
+			"ChallengeResponses": map[string]interface{}{
+				"USERNAME":                "victim",
+				"SOFTWARE_TOKEN_MFA_CODE": code,
+			},
 		}))
 	}
 
@@ -130,5 +144,161 @@ func TestSoftwareTokenMfaChallengeVerifiesTOTP(t *testing.T) {
 	}
 	if _, ok := resp.(map[string]interface{})["AuthenticationResult"]; !ok {
 		t.Fatalf("expected AuthenticationResult, got %#v", resp)
+	}
+}
+
+// The pool's per-factor MFA configuration gates both the challenge choice
+// and the enable: a factor the pool disabled is neither challenged when
+// enrolled nor enablable through the preference path.
+func TestPerFactorMfaConfiguration(t *testing.T) {
+	pool := &cognitostore.UserPool{
+		MfaConfiguration:              "ON",
+		MfaConfigurationSoftwareToken: &cognitostore.MfaConfigurationType{Enabled: false},
+	}
+	user := &cognitostore.User{
+		SoftwareTokenMfa: &cognitostore.SoftwareTokenMfaSettings{Enabled: true, Verified: true},
+	}
+	if got := mfaChallengeFor(pool, user, false); got != "MFA_SETUP" {
+		t.Fatalf("challenge %q with the software factor disabled in the pool, want MFA_SETUP", got)
+	}
+	pool.MfaConfigurationSoftwareToken = nil
+	if got := mfaChallengeFor(pool, user, false); got != "SOFTWARE_TOKEN_MFA" {
+		t.Fatalf("challenge %q with the per-factor configuration absent, want SOFTWARE_TOKEN_MFA", got)
+	}
+	pool.MfaConfigurationSms = &cognitostore.SmsMfaConfig{}
+	user.SmsMfa = &cognitostore.SmsMfaSettings{Enabled: true}
+	if got := mfaChallengeFor(pool, user, false); got != "SOFTWARE_TOKEN_MFA" {
+		t.Fatalf("challenge %q with SMS configured without its SmsConfiguration, want the available software factor", got)
+	}
+
+	env := newChallengeTestEnv(t)
+	env.updatePool(t, func(p *cognitostore.UserPool) {
+		p.MfaConfiguration = "ON"
+		p.MfaConfigurationSoftwareToken = &cognitostore.MfaConfigurationType{Enabled: false}
+	})
+	env.user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{Enabled: true, Verified: true, SecretKey: "JBSWY3DPEHPK3PXP"}
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+	if err := validateMFAPrerequisites(map[string]interface{}{
+		"SoftwareTokenMfaSettings": map[string]interface{}{"Enabled": true},
+	}, env.store, env.user, env.pool); err == nil {
+		t.Fatal("enabling software token MFA accepted on a pool that disabled the factor")
+	}
+}
+
+// VerifySoftwareToken attempts are budgeted on both entry paths: the
+// session path shares the challenge-session budget, and the access-token
+// path — which carries no session — counts on the registration itself;
+// once exhausted, even the correct code is refused.
+func TestVerifySoftwareTokenAttemptBudget(t *testing.T) {
+	env := newChallengeTestEnv(t)
+	secret, err := generateTOTPSecret()
+	if err != nil {
+		t.Fatal(err)
+	}
+	env.user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{SecretKey: secret}
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+	accessToken, _, _, _, err := env.svc.CreateTokens(env.reqCtx, env.pool.ID, env.user.ID, challengeTestClientID, TokenGenerationAuthentication, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifyToken := func(code string) error {
+		_, verr := env.svc.verifySoftwareTokenCore(context.Background(), env.reqCtx, VerifySoftwareTokenInput{AccessToken: accessToken, UserCode: code})
+		return verr
+	}
+
+	wrong := wrongCodeForSecret(t, secret)
+	for i := 0; i < maxChallengeAttempts; i++ {
+		if err := verifyToken(wrong); err == nil {
+			t.Fatalf("wrong enrolment code accepted on attempt %d", i)
+		}
+	}
+	if err := verifyToken(codeForSecret(t, secret, 0)); err == nil {
+		t.Fatal("correct code accepted after the registration's attempt budget was exhausted")
+	}
+
+	sess, err := mintChallengeSession(env.store, env.pool.ID, challengeTestClientID, "victim", "MFA_SETUP", 5*time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifySession := func(code string) error {
+		_, verr := env.svc.verifySoftwareTokenCore(context.Background(), env.reqCtx, VerifySoftwareTokenInput{Session: sess, UserCode: code})
+		return verr
+	}
+	for i := 0; i < maxChallengeAttempts; i++ {
+		if err := verifySession(wrong); err == nil {
+			t.Fatalf("wrong enrolment code accepted on session attempt %d", i)
+		}
+	}
+	if err := verifySession(codeForSecret(t, secret, 0)); err == nil {
+		t.Fatal("correct code accepted after the session budget was exhausted")
+	}
+}
+
+// An already-associated registration keeps its secret: a stray
+// AssociateSoftwareToken call returns the existing SecretCode instead of
+// destroying a working TOTP registration.
+func TestAssociateSoftwareTokenKeepsExistingSecret(t *testing.T) {
+	env := newChallengeTestEnv(t)
+	const existing = "JBSWY3DPEHPK3PXP"
+	env.user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{Enabled: true, Verified: true, SecretKey: existing}
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+	accessToken, _, _, _, err := env.svc.CreateTokens(env.reqCtx, env.pool.ID, env.user.ID, challengeTestClientID, TokenGenerationAuthentication, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp, err := env.svc.associateSoftwareTokenCore(context.Background(), env.reqCtx, AssociateSoftwareTokenInput{AccessToken: accessToken})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := resp.(map[string]interface{})["SecretCode"]; got != existing {
+		t.Fatalf("SecretCode %v, want the existing secret", got)
+	}
+	user, err := env.store.GetUser(env.pool.ID, "victim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.SoftwareTokenMfa == nil || !user.SoftwareTokenMfa.Verified || user.SoftwareTokenMfa.SecretKey != existing {
+		t.Fatalf("working registration destroyed: %+v", user.SoftwareTokenMfa)
+	}
+
+	// Without an existing registration a fresh secret is issued.
+	env.user.SoftwareTokenMfa = nil
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+	resp, err = env.svc.associateSoftwareTokenCore(context.Background(), env.reqCtx, AssociateSoftwareTokenInput{AccessToken: accessToken})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := resp.(map[string]interface{})["SecretCode"]; got == "" {
+		t.Fatal("fresh association returned no secret")
+	}
+}
+
+// AdminDeleteSoftwareToken carries no confirmed-status precondition: the
+// operation's contract stops at the token's existence.
+func TestAdminDeleteSoftwareTokenWithoutConfirmedStatus(t *testing.T) {
+	env := newChallengeTestEnv(t)
+	env.user.UserStatus = "FORCE_CHANGE_PASSWORD"
+	env.user.SoftwareTokenMfa = &cognitostore.SoftwareTokenMfaSettings{Enabled: true, SecretKey: "JBSWY3DPEHPK3PXP"}
+	if err := env.store.UpdateUser(env.user); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := env.svc.adminDeleteSoftwareTokenCore(env.reqCtx, AdminDeleteSoftwareTokenInput{UserPoolID: env.pool.ID, Username: "victim"}); err != nil {
+		t.Fatalf("AdminDeleteSoftwareToken rejected an unconfirmed user: %v", err)
+	}
+	user, err := env.store.GetUser(env.pool.ID, "victim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if user.SoftwareTokenMfa != nil {
+		t.Fatal("software token registration survived AdminDeleteSoftwareToken")
 	}
 }

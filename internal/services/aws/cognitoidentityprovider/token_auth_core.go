@@ -1,7 +1,10 @@
 package cognitoidentityprovider
 
 import (
+	"context"
 	"crypto/subtle"
+	"errors"
+	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
@@ -40,11 +43,21 @@ type VerifyUserAttributeInput struct {
 	Code          string
 }
 
+// verifiableAttributeNames lists the attributes the verification round
+// exists for: the model documents the attribute-verification pair for
+// contact attributes (email, phone_number), and the synthetic
+// "<name>_verified" flag is defined only for those two.
+var verifiableAttributeNames = map[string]bool{
+	"email":        true,
+	"phone_number": true,
+}
+
 // ResendConfirmationCodeInput carries the wire parameters of
 // ResendConfirmationCode.
 type ResendConfirmationCodeInput struct {
-	ClientID string
-	Username string
+	ClientID       string
+	Username       string
+	ClientMetadata map[string]string
 }
 
 // GetUserAuthFactorsInput carries the wire parameters of GetUserAuthFactors.
@@ -84,15 +97,18 @@ func (s *CognitoService) revokeTokenCore(reqCtx *request.RequestContext, in Revo
 		return response.EmptyResponse(), nil
 	}
 
-	// Verify ClientSecret when the client has one configured.
-	if in.ClientSecret != "" {
-		client, err := store.GetUserPoolClient(rt.UserPoolID, in.ClientID)
-		if err != nil {
+	// The secret direction follows the client's configuration, not the
+	// request: a confidential client must present its secret (omission is a
+	// mismatch), while a public client ignores whatever secret is sent.
+	client, err := store.GetUserPoolClient(rt.UserPoolID, in.ClientID)
+	if err != nil {
+		if errors.Is(err, cognitostore.ErrClientNotFound) {
 			return nil, ErrInvalidParameter
 		}
-		if client.ClientSecret != "" && subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(in.ClientSecret)) != 1 {
-			return nil, ErrNotAuthorized
-		}
+		return nil, ErrInternalError
+	}
+	if client.ClientSecret != "" && subtle.ConstantTimeCompare([]byte(client.ClientSecret), []byte(in.ClientSecret)) != 1 {
+		return nil, ErrNotAuthorized
 	}
 
 	// Best-effort deletion; a concurrent revocation may have already removed
@@ -119,16 +135,16 @@ func (s *CognitoService) getTokensFromRefreshTokenCore(reqCtx *request.RequestCo
 		return nil, ErrNotAuthorized
 	}
 
-	if time.Now().After(rt.Expires) {
-		return nil, ErrNotAuthorized
-	}
-
 	if rt.ClientID != in.ClientID {
 		return nil, ErrNotAuthorized
 	}
 
 	user, err := store.GetUserByID(rt.UserID)
 	if err != nil {
+		return nil, ErrNotAuthorized
+	}
+	// A disabled user cannot exchange a refresh token for new tokens.
+	if !user.Enabled {
 		return nil, ErrNotAuthorized
 	}
 
@@ -141,9 +157,10 @@ func (s *CognitoService) getTokensFromRefreshTokenCore(reqCtx *request.RequestCo
 		}
 	}
 
-	// CreateTokens fires TokenGenerationRefreshTokens internally and applies
-	// the trigger result to the token claims. ClientMetadata is forwarded.
-	accessToken, idToken, _, expiresIn, err := s.CreateTokens(reqCtx, rt.UserPoolID, user.ID, in.ClientID, TokenGenerationRefreshTokens, in.ClientMetadata)
+	// The refresh reissues the session's original scope; the trigger fires
+	// TokenGenerationRefreshTokens internally and its result applies to the
+	// token claims. ClientMetadata is forwarded.
+	accessToken, idToken, _, expiresIn, err := s.CreateTokensWithSessionScope(reqCtx, rt.UserPoolID, user.ID, in.ClientID, TokenGenerationRefreshTokens, rt.Scope, in.ClientMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +170,11 @@ func (s *CognitoService) getTokensFromRefreshTokenCore(reqCtx *request.RequestCo
 
 // getUserAttributeVerificationCodeCore generates and stores a verification
 // code for one of the caller's attributes.
-func (s *CognitoService) getUserAttributeVerificationCodeCore(reqCtx *request.RequestContext, in GetUserAttributeVerificationCodeInput) (interface{}, error) {
+func (s *CognitoService) getUserAttributeVerificationCodeCore(ctx context.Context, reqCtx *request.RequestContext, in GetUserAttributeVerificationCodeInput) (interface{}, error) {
 	if in.AccessToken == "" || in.AttributeName == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !verifiableAttributeNames[in.AttributeName] {
 		return nil, ErrInvalidParameter
 	}
 
@@ -192,6 +212,15 @@ func (s *CognitoService) getUserAttributeVerificationCodeCore(reqCtx *request.Re
 		return nil, ErrInternalError
 	}
 
+	// The CustomMessage VerifyUserAttribute trigger customises the code
+	// delivery; the documented response carries only the masked
+	// CodeDeliveryDetails.
+	userPool, err := store.GetUserPool(user.UserPoolID)
+	if err != nil {
+		return nil, ErrInternalError
+	}
+	_, _ = invokeCustomMessage(ctx, s, CustomMessageVerifyUserAttribute, user.UserPoolID, user.Username, "", userPool.LambdaConfig, code, userAttributesMap(user), nil)
+
 	deliveryMedium := "EMAIL"
 	if in.AttributeName == "phone_number" {
 		deliveryMedium = "SMS"
@@ -209,6 +238,9 @@ func (s *CognitoService) getUserAttributeVerificationCodeCore(reqCtx *request.Re
 // verifyUserAttributeCore verifies an attribute with a confirmation code.
 func (s *CognitoService) verifyUserAttributeCore(reqCtx *request.RequestContext, in VerifyUserAttributeInput) (interface{}, error) {
 	if in.AccessToken == "" || in.AttributeName == "" || in.Code == "" {
+		return nil, ErrInvalidParameter
+	}
+	if !verifiableAttributeNames[in.AttributeName] {
 		return nil, ErrInvalidParameter
 	}
 
@@ -242,6 +274,11 @@ func (s *CognitoService) verifyUserAttributeCore(reqCtx *request.RequestContext,
 	}
 	user.Attributes[in.AttributeName+"_verified"] = "true"
 	if err := store.UpdateUser(user); err != nil {
+		// Verifying a contact attribute claims its alias value; the model
+		// lists AliasExistsException on VerifyUserAttribute.
+		if errors.Is(err, cognitostore.ErrAliasExists) {
+			return nil, ErrAliasExists
+		}
 		return nil, ErrInternalError
 	}
 
@@ -250,7 +287,7 @@ func (s *CognitoService) verifyUserAttributeCore(reqCtx *request.RequestContext,
 
 // resendConfirmationCodeCore reissues the sign-up confirmation code. The
 // response is masked so the operation cannot be used to enumerate accounts.
-func (s *CognitoService) resendConfirmationCodeCore(reqCtx *request.RequestContext, in ResendConfirmationCodeInput) (interface{}, error) {
+func (s *CognitoService) resendConfirmationCodeCore(ctx context.Context, reqCtx *request.RequestContext, in ResendConfirmationCodeInput) (interface{}, error) {
 	if in.ClientID == "" || in.Username == "" {
 		return nil, ErrInvalidParameter
 	}
@@ -277,17 +314,36 @@ func (s *CognitoService) resendConfirmationCodeCore(reqCtx *request.RequestConte
 		}, nil
 	}
 
+	// The operation resends the code that confirms a NEW account; a
+	// CONFIRMED user has nothing left to confirm and the request is invalid
+	// (InvalidParameterException is a documented error of this operation).
+	if user.UserStatus == "CONFIRMED" {
+		return nil, ErrInvalidParameter
+	}
+
 	code, err := generateConfirmationCode()
 	if err != nil {
 		return nil, ErrInternalError
 	}
-	user.ConfirmationCode = code
-	user.ConfirmationCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
+	user.SignUpCode = code
+	user.SignUpCodeExpiry = time.Now().UTC().Add(verificationCodeTTL)
 	if err := store.UpdateUser(user); err != nil {
 		return nil, ErrInternalError
 	}
 
+	// The reissued confirmation code lands in the user's event history.
+	s.recordAuthEvent(reqCtx, userPool.ID, user.ID, in.Username, in.ClientID, authEventResendCode, authEventResponsePass)
+
+	// The CustomMessage ResendCode trigger customises the redelivery; the
+	// documented response carries only the masked CodeDeliveryDetails.
+	_, _ = invokeCustomMessage(ctx, s, CustomMessageResendCode, userPool.ID, in.Username, in.ClientID, userPool.LambdaConfig, code, userAttributesMap(user), in.ClientMetadata)
+
 	deliveryMedium, deliveryAttr := determineDeliveryMedium(userPool, user)
+
+	// The message-delivery notification log records the sign-up
+	// confirmation-code delivery for pools that configure the
+	// userNotification source.
+	s.publishNotificationLogCore(reqCtx, userPool.ID, fmt.Sprintf("SignUp confirmation code delivery via %s to %s", deliveryMedium, deliveryAttr))
 
 	return map[string]interface{}{
 		"CodeDeliveryDetails": map[string]interface{}{

@@ -1,12 +1,11 @@
 package cognitoidentityprovider
 
 import (
-	"crypto/rand"
-	"fmt"
 	"time"
 
 	"vorpalstacks/internal/common/request"
 	"vorpalstacks/internal/common/response"
+	"vorpalstacks/internal/core/logs"
 	cognitostore "vorpalstacks/internal/store/aws/cognitoidentityprovider"
 	storecommon "vorpalstacks/internal/store/aws/common"
 )
@@ -16,6 +15,21 @@ import (
 const (
 	riskDecisionNoRisk = "NoRisk"
 	riskLevelLow       = "Low"
+)
+
+// Authentication event types and responses — the Smithy EventType and
+// EventResponseType enum values. Sign-in paths record Pass, Fail and
+// InProgress; the lifecycle operations record their completed outcome.
+const (
+	authEventSignIn         = "SignIn"
+	authEventSignUp         = "SignUp"
+	authEventForgotPassword = "ForgotPassword"
+	authEventPasswordChange = "PasswordChange"
+	authEventResendCode     = "ResendCode"
+
+	authEventResponsePass       = "Pass"
+	authEventResponseFail       = "Fail"
+	authEventResponseInProgress = "InProgress"
 )
 
 // AdminListUserAuthEventsInput carries the wire parameters of
@@ -63,7 +77,7 @@ func (s *CognitoService) adminListUserAuthEventsCore(reqCtx *request.RequestCont
 	}
 
 	// Smithy QueryLimitType: range {min: 0, max: 60}
-	maxResults, err := parseListLimit(in.Params, "MaxResults", 60)
+	maxResults, err := parseListLimit(in.Params, "MaxResults", listLimitMax)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +179,8 @@ func (s *CognitoService) updateAuthEventFeedbackCore(reqCtx *request.RequestCont
 }
 
 // recordAuthEvent creates and stores an authentication event. Called from
-// the authentication flows.
+// the authentication flows and the account-lifecycle operations (sign-up,
+// password reset, password change, code resend).
 //
 // Every event is recorded with the neutral risk assessment values from the
 // Smithy EventRiskType enums (RiskDecision NoRisk, RiskLevel Low): this
@@ -174,6 +189,8 @@ func (s *CognitoService) updateAuthEventFeedbackCore(reqCtx *request.RequestCont
 func (s *CognitoService) recordAuthEvent(reqCtx *request.RequestContext, userPoolID, userID, username, clientID, eventType, eventResponse string) {
 	store, err := s.store(reqCtx)
 	if err != nil {
+		logs.Error("Failed to resolve store to record an authentication event",
+			logs.String("eventType", eventType), logs.String("username", username), logs.Err(err))
 		return
 	}
 
@@ -191,18 +208,12 @@ func (s *CognitoService) recordAuthEvent(reqCtx *request.RequestContext, userPoo
 	}
 
 	if err := store.CreateAuthEvent(event); err != nil {
+		logs.Error("Failed to store an authentication event",
+			logs.String("eventType", eventType), logs.String("username", username), logs.Err(err))
 		return
 	}
 
-	s.publishAuthEventLog(reqCtx, userPoolID, event)
-}
-
-func generateEventID() string {
-	b := make([]byte, 16)
-	if _, err := rand.Read(b); err != nil {
-		return fmt.Sprintf("evt-%d", time.Now().UnixNano())
-	}
-	return fmt.Sprintf("%x", b)
+	s.publishAuthEventLogCore(reqCtx, userPoolID, event)
 }
 
 func formatAuthEvent(e *cognitostore.AuthEvent) map[string]interface{} {

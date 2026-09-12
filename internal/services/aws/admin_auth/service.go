@@ -98,6 +98,12 @@ func (u *RootUserAdapter) GetEmail() string {
 	return ""
 }
 
+// GetEmailVerified reports whether the email is verified. The root user
+// carries no email address.
+func (u *RootUserAdapter) GetEmailVerified() bool {
+	return false
+}
+
 // GetGroups returns empty groups for root user.
 func (u *RootUserAdapter) GetGroups() []string {
 	return nil

@@ -1,6 +1,7 @@
 package cognitoidentityprovider
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 
@@ -151,7 +152,10 @@ func TestParseSchemaAttributesFillsStandardDefaults(t *testing.T) {
 		},
 	}
 
-	attrs := parseSchemaAttributes(req)
+	attrs, err := parseSchemaAttributes(req)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(attrs) != 2 {
 		t.Fatalf("expected 2 parsed schema attributes, got %d", len(attrs))
 	}
@@ -167,12 +171,12 @@ func TestParseSchemaAttributesFillsStandardDefaults(t *testing.T) {
 	}
 }
 
-// TestApplyUserPoolUpdatesIgnoresSchema pins that UpdateUserPool — whose
-// model request has no Schema member — never mutates the pool schema:
-// custom attributes added at creation or through AddCustomAttributes
-// survive an update request that carries a stray Schema parameter, while
-// the model members the operation does carry still apply.
-func TestApplyUserPoolUpdatesIgnoresSchema(t *testing.T) {
+// TestRebuildUserPoolFromUpdateIgnoresSchema pins that UpdateUserPool — whose
+// model request has no Schema member — never mutates the pool schema: custom
+// attributes added at creation or through AddCustomAttributes survive an
+// update request that carries a stray Schema parameter, while the model
+// members the operation does carry still apply.
+func TestRebuildUserPoolFromUpdateIgnoresSchema(t *testing.T) {
 	pool := cognitostore.NewUserPool("schema-update", "us-east-1")
 	pool.SchemaAttributes = []cognitostore.SchemaAttributeType{
 		{Name: "rank", AttributeDataType: "String", Mutable: true},
@@ -188,13 +192,64 @@ func TestApplyUserPoolUpdatesIgnoresSchema(t *testing.T) {
 		},
 	}
 
-	if err := applyUserPoolUpdates(pool, req); err != nil {
-		t.Fatalf("applyUserPoolUpdates failed: %v", err)
+	rebuilt, err := rebuildUserPoolFromUpdate(pool, req, "us-east-1")
+	if err != nil {
+		t.Fatalf("rebuildUserPoolFromUpdate failed: %v", err)
 	}
-	if len(pool.SchemaAttributes) != 1 || pool.SchemaAttributes[0].Name != "rank" {
-		t.Errorf("update request replaced the pool schema: %+v", pool.SchemaAttributes)
+	if len(rebuilt.SchemaAttributes) != 1 || rebuilt.SchemaAttributes[0].Name != "rank" {
+		t.Errorf("update request replaced the pool schema: %+v", rebuilt.SchemaAttributes)
 	}
-	if pool.Name != "schema-update-renamed" {
+	if rebuilt.Name != "schema-update-renamed" {
 		t.Error("the update did not apply the model members it does carry")
+	}
+}
+
+// The Schema member carries the SchemaAttributesListType bounds (1..50)
+// and rejects non-map entries; AddCustomAttributes carries the
+// CustomAttributesListType bounds (1..25) and rejects non-map entries too.
+func TestSchemaAndCustomAttributeBounds(t *testing.T) {
+	env := newChallengeTestEnv(t)
+
+	tooManySchema := []interface{}{}
+	for i := 0; i < 51; i++ {
+		tooManySchema = append(tooManySchema, map[string]interface{}{
+			"Name":              fmt.Sprintf("custom schema overflow %d", i),
+			"AttributeDataType": "String",
+		})
+	}
+	if _, err := env.svc.createUserPoolFromRequestCore("us-east-1", "schema-overflow", &request.ParsedRequest{
+		Parameters: map[string]interface{}{"Schema": tooManySchema},
+	}); err != ErrInvalidParameter {
+		t.Fatalf("51-entry Schema returned %v, want InvalidParameterException", err)
+	}
+
+	emptySchema := []interface{}{}
+	if _, err := env.svc.createUserPoolFromRequestCore("us-east-1", "schema-empty", &request.ParsedRequest{
+		Parameters: map[string]interface{}{"Schema": emptySchema},
+	}); err != ErrInvalidParameter {
+		t.Fatalf("empty present Schema returned %v, want InvalidParameterException", err)
+	}
+
+	if _, err := env.svc.createUserPoolFromRequestCore("us-east-1", "schema-malformed", &request.ParsedRequest{
+		Parameters: map[string]interface{}{"Schema": []interface{}{"not-a-map"}},
+	}); err != ErrInvalidParameter {
+		t.Fatalf("non-map Schema entry returned %v, want InvalidParameterException", err)
+	}
+
+	valid := []interface{}{}
+	for i := 0; i < 26; i++ {
+		valid = append(valid, map[string]interface{}{
+			"Name":              fmt.Sprintf("custom overflow %d", i),
+			"AttributeDataType": "String",
+		})
+	}
+	if err := env.svc.addCustomAttributesCore("us-east-1", env.pool.ID, valid); err != ErrInvalidParameter {
+		t.Fatalf("26-entry AddCustomAttributes returned %v, want InvalidParameterException", err)
+	}
+	if err := env.svc.addCustomAttributesCore("us-east-1", env.pool.ID, []interface{}{}); err != ErrInvalidParameter {
+		t.Fatalf("empty AddCustomAttributes returned %v, want InvalidParameterException", err)
+	}
+	if err := env.svc.addCustomAttributesCore("us-east-1", env.pool.ID, []interface{}{"not-a-map"}); err != ErrInvalidParameter {
+		t.Fatalf("non-map custom attribute returned %v, want InvalidParameterException", err)
 	}
 }
